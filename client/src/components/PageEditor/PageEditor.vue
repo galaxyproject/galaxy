@@ -1,13 +1,12 @@
 <template>
     <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
     <page-editor-markdown
-        v-else-if="contentFormat == 'markdown'"
+        v-else
         :title="title"
         :page-id="pageId"
         :public-url="publicUrl"
         :content="content"
         :content-data="contentData" />
-    <page-editor-html v-else :title="title" :page-id="pageId" :public-url="publicUrl" :content="content" />
 </template>
 
 <script>
@@ -16,12 +15,10 @@ import { Toast } from "ui/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";
-import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
 export default {
     components: {
-        PageEditorHtml,
         PageEditorMarkdown,
         LoadingSpan,
     },

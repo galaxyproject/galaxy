@@ -97,7 +97,7 @@ export function getRouter(Galaxy) {
             {
                 path: "/published/pages",
                 component: PageDisplay,
-                props: (route) => ({ pageId: route.query.id, }),
+                props: (route) => ({ pageId: route.query.id }),
             },
             /** Analysis routes */
             {

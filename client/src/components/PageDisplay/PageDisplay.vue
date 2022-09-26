@@ -1,14 +1,16 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <Published :details="markdownConfig">
+        <Published :details="pageConfig">
             <template v-slot>
-                <markdown
-                    v-if="!loading"
-                    :markdown-config="markdownConfig"
-                    :enable_beta_markdown_export="config.enable_beta_markdown_export"
-                    :download-endpoint="stsUrl(config)"
-                    :export-link="exportUrl"
-                    @onEdit="onEdit" />
+                <div v-if="!loading && pageConfig.content_format == 'markdown'">
+                    <markdown
+                        :markdown-config="pageConfig"
+                        :enable_beta_markdown_export="config.enable_beta_markdown_export"
+                        :download-endpoint="stsUrl(config)"
+                        :export-link="exportUrl"
+                        @onEdit="onEdit" />
+                </div>
+                <b-alert variant="info" show>Unsupported page format.</b-alert>
             </template>
         </Published>
     </config-provider>
@@ -19,7 +21,8 @@ import { safePath } from "utils/redirect";
 import { urlData } from "utils/url";
 import ConfigProvider from "components/providers/ConfigProvider";
 import Markdown from "components/Markdown/Markdown";
-import Published from "components/Common/Published"
+import Published from "components/Common/Published";
+
 export default {
     components: {
         ConfigProvider,

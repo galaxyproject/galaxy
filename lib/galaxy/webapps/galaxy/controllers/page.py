@@ -554,15 +554,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         # Security check raises error if user cannot access page.
         self.security_check(trans, page, False, True)
         # Encode page identifier.
-        latest_revision = page.latest_revision
-        if latest_revision.content_format == "html":
-            # Process page content.
-            processor = PageContentProcessor(trans, self._get_embed_html)
-            processor.feed(page.latest_revision.content)
-            # Output is string, so convert to unicode for display.
-            page_content = unicodify(processor.output(), "utf-8")
-        else:
-            page_content = trans.security.encode_id(page.id)
+        page_id = trans.security.encode_id(page.id)
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -576,7 +568,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         return trans.response.send_redirect(web.url_for(
             controller="published",
             action="pages",
-            id=page_content,
+            id=page_id,
             email=user.email,
             user_item_rating=user_item_rating,
             ave_item_rating=ave_item_rating,
@@ -674,11 +666,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
     def list_datasets_for_selection(self, trans, **kwargs):
         """Returns HTML that enables a user to select one or more datasets."""
         return self._datasets_selection_grid(trans, **kwargs)
-
-    @web.expose
-    def get_editor_iframe(self, trans):
-        """Returns the document for the page editor's iframe."""
-        return trans.fill_template("page/wymiframe.mako")
 
     def get_page(self, trans, id, check_ownership=True, check_accessible=False):
         """Get a page from the database by id."""

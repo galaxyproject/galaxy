@@ -18,7 +18,7 @@
             <router-link :to="publishedByUser">Published pages by {{ details.username }}</router-link>
             <div>{{ details.username }}</div>
             {{ details }}
-            <hr/>
+            <hr />
         </div>
     </div>
 </template>
@@ -37,14 +37,15 @@ export default {
         },
         publishedByUser() {
             return `/pages/list_published?f-username=${this.details.username}`;
-        }
+        },
     },
 };
 </script>
 <style scoped>
 .published-about {
     padding: 1rem;
-    > h3, > h4 {
+    > h3,
+    > h4 {
         margin-bottom: 1rem;
     }
 }
