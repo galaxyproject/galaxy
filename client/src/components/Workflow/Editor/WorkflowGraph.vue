@@ -16,16 +16,14 @@
                 @transform="onTransform"
                 @dragging="onDrag"
                 @scaling="onScale">
-                <svg :width="position.width" :height="position.height" class="canvas-svg">
-                    <svg>
+                <div ref="nodes" class="node-area">
+                    <svg class="canvas-svg">
                         <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
                         <terminal-connector
                             v-for="connection in connections"
                             :key="connection.id"
                             :connection="connection"></terminal-connector>
                     </svg>
-                </svg>
-                <div ref="nodes" class="nodeArea">
                     <WorkflowNode
                         v-for="(step, key) in steps"
                         :id="key"
@@ -113,7 +111,7 @@ export default {
     methods: {
         onTransform(transform) {
             const cssTransform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})`;
-            this.transform = transform.toString();
+            // this.transform = transform.toString();
             this.$refs.nodes.style.transform = cssTransform;
         },
         onPan(pan) {
@@ -221,9 +219,6 @@ export default {
             });
             return connections;
         },
-    },
-    beforeDestroy() {
-        this.svgpanzoom.destroy();
     },
 };
 </script>
