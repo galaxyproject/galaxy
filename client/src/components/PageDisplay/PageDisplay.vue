@@ -2,15 +2,16 @@
     <config-provider v-slot="{ config, loading }">
         <Published :details="pageConfig">
             <template v-slot>
-                <div v-if="!loading && pageConfig.content_format == 'markdown'">
+                <div v-if="!loading">
                     <markdown
+                        v-if="pageConfig.content_format == 'markdown'"
                         :markdown-config="pageConfig"
                         :enable_beta_markdown_export="config.enable_beta_markdown_export"
                         :download-endpoint="stsUrl(config)"
                         :export-link="exportUrl"
                         @onEdit="onEdit" />
                 </div>
-                <b-alert variant="info" show>Unsupported page format.</b-alert>
+                <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
             </template>
         </Published>
     </config-provider>

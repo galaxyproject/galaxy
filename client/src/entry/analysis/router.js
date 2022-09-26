@@ -95,7 +95,12 @@ export function getRouter(Galaxy) {
             { path: "/workflows/edit", component: WorkflowEditorModule },
             /** Published resources routes */
             {
-                path: "/published/pages",
+                path: "/published/history",
+                component: PageDisplay,
+                props: (route) => ({ pageId: route.query.id }),
+            },
+            {
+                path: "/published/page",
                 component: PageDisplay,
                 props: (route) => ({ pageId: route.query.id }),
             },

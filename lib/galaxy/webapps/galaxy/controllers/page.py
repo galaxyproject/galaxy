@@ -567,7 +567,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         # Redirect to client.
         return trans.response.send_redirect(web.url_for(
             controller="published",
-            action="pages",
+            action="page",
             id=page_id,
             email=user.email,
             user_item_rating=user_item_rating,
