@@ -55,6 +55,7 @@ import VisualizationsList from "components/Visualizations/Index";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
+import WorkflowPublished from "components/Workflow/WorkflowPublished";
 import { APIKey } from "components/User/APIKey";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
@@ -104,6 +105,11 @@ export function getRouter(Galaxy) {
                 path: "/published/page",
                 component: PageDisplay,
                 props: (route) => ({ pageId: route.query.id }),
+            },
+            {
+                path: "/published/workflow",
+                component: WorkflowPublished,
+                props: (route) => ({ id: route.query.id }),
             },
             /** Analysis routes */
             {

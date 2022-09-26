@@ -551,10 +551,13 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         page = trans.sa_session.query(model.Page).filter_by(user=user, slug=slug, deleted=False).first()
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
+
         # Security check raises error if user cannot access page.
         self.security_check(trans, page, False, True)
+
         # Encode page identifier.
         page_id = trans.security.encode_id(page.id)
+
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -564,12 +567,12 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
+
         # Redirect to client.
         return trans.response.send_redirect(web.url_for(
             controller="published",
             action="page",
             id=page_id,
-            email=user.email,
             user_item_rating=user_item_rating,
             ave_item_rating=ave_item_rating,
             num_ratings=num_ratings,

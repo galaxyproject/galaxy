@@ -589,7 +589,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             controller="published",
             action="history",
             id=history_id,
-            email=user.email,
             user_item_rating=user_item_rating,
             ave_item_rating=ave_item_rating,
             num_ratings=num_ratings,
