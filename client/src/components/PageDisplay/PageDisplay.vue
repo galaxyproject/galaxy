@@ -1,12 +1,16 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <markdown
-            v-if="!loading"
-            :markdown-config="page"
-            :enable_beta_markdown_export="config.enable_beta_markdown_export"
-            :download-endpoint="stsUrl(config)"
-            :export-link="exportUrl"
-            @onEdit="onEdit" />
+        <Published :details="markdownConfig">
+            <template v-slot>
+                <markdown
+                    v-if="!loading"
+                    :markdown-config="markdownConfig"
+                    :enable_beta_markdown_export="config.enable_beta_markdown_export"
+                    :download-endpoint="stsUrl(config)"
+                    :export-link="exportUrl"
+                    @onEdit="onEdit" />
+            </template>
+        </Published>
     </config-provider>
 </template>
 
@@ -14,12 +18,13 @@
 import { safePath } from "utils/redirect";
 import { urlData } from "utils/url";
 import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown.vue";
-
+import Markdown from "components/Markdown/Markdown";
+import Published from "components/Common/Published"
 export default {
     components: {
         ConfigProvider,
         Markdown,
+        Published,
     },
     props: {
         pageId: {

@@ -553,7 +553,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             raise web.httpexceptions.HTTPNotFound()
         # Security check raises error if user cannot access page.
         self.security_check(trans, page, False, True)
-
+        # Encode page identifier.
         latest_revision = page.latest_revision
         if latest_revision.content_format == "html":
             # Process page content.
@@ -563,7 +563,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             page_content = unicodify(processor.output(), "utf-8")
         else:
             page_content = trans.security.encode_id(page.id)
-
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -573,6 +572,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
+        # Redirect to client.
         return trans.response.send_redirect(web.url_for(
             controller="published",
             action="pages",
