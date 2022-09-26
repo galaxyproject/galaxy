@@ -1,7 +1,3 @@
-.vue-pan-zoom-scene {
-    width: 100%;
-    height: 100%;
-}
 .canvas-svg {
     // not sure if hack or not ...
     overflow: visible;
@@ -11,10 +7,10 @@
 .node-area {
     position: absolute;
     top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        transform-origin: 0 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform-origin: 0 0;
 }
 .workflow-client {
     .workflow-panel {
@@ -203,13 +199,13 @@
                     width: 100%;
                     height: 100%;
                 }
-                                .mini-node {
-                                    // this is $primary-brand / #25537b
-                                        filter: invert(26%) sepia(75%) saturate(489%) hue-rotate(166deg) brightness(90%) contrast(89%);
-                                }
-                                                                .viewport {
-                                                                    stroke: #25537b
-                                                                }
+                .mini-node {
+                    // this is $primary-brand / #25537b
+                    filter: invert(26%) sepia(75%) saturate(489%) hue-rotate(166deg) brightness(90%) contrast(89%);
+                }
+                .viewport {
+                    stroke: #25537b
+                }
             }
             #input-choices-menu {
                 color: black;

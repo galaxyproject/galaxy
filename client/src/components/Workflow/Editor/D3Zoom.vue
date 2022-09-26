@@ -1,6 +1,6 @@
 <script setup>
 import { zoom, zoomIdentity } from "d3-zoom";
-import { ref, onMounted, templateRef } from "vue";
+import { ref, onMounted } from "vue";
 import { pointer, select } from "d3-selection";
 
 const props = defineProps({

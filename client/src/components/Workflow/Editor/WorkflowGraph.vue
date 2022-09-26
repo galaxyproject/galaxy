@@ -84,7 +84,6 @@ export default {
         return {
             isWheeled: false,
             draggingConnection: null,
-            svgpanzoom: null,
             transform: null,
             pan: { x: 0, y: 0 },
             transform: "",
@@ -125,6 +124,9 @@ export default {
                 translateY: pan.y,
             });
         },
+        onMoveTo(moveTo) {
+            // implement me
+        },
         onResetAll() {
             this.pan = { x: 0, y: 0 };
             this.setScale(1);
@@ -149,9 +151,6 @@ export default {
             console.log(this.pan);
             this.setScale(scaleData.scale);
         },
-        onMoveTo(moveTo) {
-            this.svgpanzoom.pan(moveTo);
-        },
         onUpdatedCTM(CTM) {
             this.transform = CTM;
         },
@@ -170,13 +169,6 @@ export default {
         },
         onZoomButton(zoomLevel) {
             this.setScale(zoomLevel);
-            this.svgpanzoom.zoom(zoomLevel);
-        },
-        registerSvgPanZoom(svgpanzoom) {
-            this.svgpanzoom = svgpanzoom;
-        },
-        onPanContainer(e) {
-            this.svgpanzoom.panBy({ x: e.data.deltaX, y: e.data.deltaY });
         },
         onActivate(nodeId) {
             if (this.activeNodeId != nodeId) {
