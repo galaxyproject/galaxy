@@ -450,12 +450,10 @@ class WorkflowProgress:
             step_id = step.id
             if step_id not in self.inputs_by_step_id and "output" not in outputs:
                 default_value = step.input_default_value
-                if default_value:
+                if default_value or step.input_optional:
                     outputs["output"] = default_value
                 else:
-                    template = "Step with id %s not found in inputs_step_id (%s)"
-                    message = template % (step.log_str(), self.inputs_by_step_id)
-                    raise ValueError(message)
+                    raise ValueError(f"{step.log_str()} not found in inputs_step_id {self.inputs_by_step_id}")
             elif step_id in self.inputs_by_step_id:
                 outputs["output"] = self.inputs_by_step_id[step_id]
 
@@ -536,9 +534,9 @@ class WorkflowProgress:
         subworkflow_inputs = {}
         for input_subworkflow_step in subworkflow.input_steps:
             connection_found = False
+            subworkflow_step_id = input_subworkflow_step.id
             for input_connection in step.input_connections:
-                if input_connection.input_subworkflow_step == input_subworkflow_step:
-                    subworkflow_step_id = input_subworkflow_step.id
+                if input_connection.input_subworkflow_step_id == subworkflow_step_id:
                     is_data = input_connection.output_step.type != "parameter_input"
                     replacement = self.replacement_for_connection(
                         input_connection,
@@ -548,7 +546,7 @@ class WorkflowProgress:
                     connection_found = True
                     break
 
-            if not connection_found:
+            if not connection_found and not input_subworkflow_step.input_optional:
                 raise Exception("Could not find connections for all subworkflow inputs.")
 
         return WorkflowProgress(
