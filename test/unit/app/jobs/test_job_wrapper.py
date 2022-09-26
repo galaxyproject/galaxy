@@ -29,59 +29,69 @@ TEST_DEPENDENCIES_COMMANDS = ". /galaxy/modules/bwa/0.5.9/env.sh"
 TEST_COMMAND = ""
 
 
-class BaseWrapperTestCase(UsesApp):
-    def setUp(self):
-        self.setup_app()
-        job = Job()
-        job.id = 345
-        job.tool_id = TEST_TOOL_ID
-        job.user = User()
-        job.object_store_id = "foo"
-        self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
-        self.app.model.session = MockContext(self.model_objects)
+class AbstractTestCases:
+    """Test classes that should not be collected.
 
-        self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
-        self.working_directory = os.path.join(self.test_directory, "working")
-        self.app.object_store = cast(ObjectStore, MockObjectStore(self.working_directory))
+    Classes derived from unittest.TestCase are collected only if they are at the
+    module level: https://stackoverflow.com/a/25695512/4503125
 
-        self.queue = MockJobQueue(self.app)
-        self.job = job
+    This workaround is needed because unittest/pytest try to collect test
+    classes even if they are abstract, and therefore their tests fails.
+    """
 
-    def tearDown(self):
-        self.tear_down_app()
+    class BaseWrapperTestCase(TestCase, UsesApp):
+        def setUp(self):
+            self.setup_app()
+            job = Job()
+            job.id = 345
+            job.tool_id = TEST_TOOL_ID
+            job.user = User()
+            job.object_store_id = "foo"
+            self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
+            self.app.model.session = MockContext(self.model_objects)
 
-    @contextmanager
-    def _prepared_wrapper(self):
-        wrapper = self._wrapper()
-        wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[assignment]
-        wrapper.prepare()
-        yield wrapper
+            self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
+            self.working_directory = os.path.join(self.test_directory, "working")
+            self.app.object_store = cast(ObjectStore, MockObjectStore(self.working_directory))
 
-    def test_version_path(self):
-        wrapper = self._wrapper()
-        version_path = wrapper.get_version_string_path_legacy()
-        expected_path = os.path.join(self.test_directory, "working", "COMMAND_VERSION")
-        assert version_path == expected_path
+            self.queue = MockJobQueue(self.app)
+            self.job = job
 
-    def test_prepare_sets_command_line(self):
-        with self._prepared_wrapper() as wrapper:
-            assert TEST_COMMAND in wrapper.command_line
+        def tearDown(self):
+            self.tear_down_app()
 
-    def test_prepare_sets_dependency_shell_commands(self):
-        with self._prepared_wrapper() as wrapper:
-            assert TEST_DEPENDENCIES_COMMANDS == wrapper.dependency_shell_commands
+        @contextmanager
+        def _prepared_wrapper(self):
+            wrapper = self._wrapper()
+            wrapper._get_tool_evaluator = lambda *args, **kwargs: MockEvaluator(wrapper.app, wrapper.tool, wrapper.get_job(), wrapper.working_directory)  # type: ignore[assignment]
+            wrapper.prepare()
+            yield wrapper
 
-    @abc.abstractmethod
-    def _wrapper(self) -> JobWrapper:
-        pass
+        def test_version_path(self):
+            wrapper = self._wrapper()
+            version_path = wrapper.get_version_string_path_legacy()
+            expected_path = os.path.join(self.test_directory, "working", "COMMAND_VERSION")
+            assert version_path == expected_path
+
+        def test_prepare_sets_command_line(self):
+            with self._prepared_wrapper() as wrapper:
+                assert TEST_COMMAND in wrapper.command_line
+
+        def test_prepare_sets_dependency_shell_commands(self):
+            with self._prepared_wrapper() as wrapper:
+                assert TEST_DEPENDENCIES_COMMANDS == wrapper.dependency_shell_commands
+
+        @abc.abstractmethod
+        def _wrapper(self) -> JobWrapper:
+            pass
 
 
-class JobWrapperTestCase(BaseWrapperTestCase, TestCase):
+class JobWrapperTestCase(AbstractTestCases.BaseWrapperTestCase):
     def _wrapper(self):
         return JobWrapper(self.job, self.queue)  # type: ignore[arg-type]
 
 
-class TaskWrapperTestCase(BaseWrapperTestCase, TestCase):
+class TaskWrapperTestCase(AbstractTestCases.BaseWrapperTestCase):
     def setUp(self):
         super().setUp()
         self.task = Task(self.job, self.working_directory, "prepare_bwa_job.sh")
