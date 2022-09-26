@@ -21,10 +21,10 @@
             </tr>
         </job-information>
         <br />
-        <h3>Job Parameters</h3>
+        <h2 class="h-md">Job Parameters</h2>
         <job-parameters :job-id="id" :include-title="false" />
         <br />
-        <h3>Job Metrics</h3>
+        <h2 class="h-md">Job Metrics</h2>
         <job-metrics :job-id="id" :include-title="false" />
     </b-card>
 </template>

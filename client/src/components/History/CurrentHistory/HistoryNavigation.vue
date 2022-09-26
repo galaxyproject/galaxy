@@ -4,7 +4,7 @@
 <template>
     <div>
         <nav class="d-flex justify-content-between mx-3 my-2">
-            <h4 class="m-1">History</h4>
+            <h2 class="m-1 h-sm">History</h2>
             <b-button-group>
                 <b-button
                     v-b-tooltip.bottom.hover

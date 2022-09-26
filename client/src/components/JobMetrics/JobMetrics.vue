@@ -2,7 +2,7 @@
     <div v-if="orderedPlugins.length > 0">
         <h2 v-if="includeTitle" class="h-md">Job Metrics</h2>
         <div v-for="plugin in orderedPlugins" :key="plugin" class="metrics_plugin">
-            <h4 class="metrics_plugin_title">{{ plugin }}</h4>
+            <h3 class="metrics_plugin_title m-sm">{{ plugin }}</h3>
             <table class="tabletip info_data_table">
                 <tbody>
                     <tr v-for="(metricValue, metricTitle) in metricsByPlugins[plugin]" :key="metricTitle">
