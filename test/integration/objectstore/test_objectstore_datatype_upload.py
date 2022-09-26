@@ -14,13 +14,19 @@ from ..test_datatype_upload import (
     UploadTestDatatypeDataTestCase,
 )
 
+REFRESH_TIME = 30
+CONNECTION_POOL_MONITOR_INTERVAL = 60
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 IRODS_OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_HOST", "localhost")
 IRODS_OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PORT", 1247))
 IRODS_OBJECT_STORE_TIMEOUT = int(os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_TIMEOUT", 30))
-IRODS_OBJECT_STORE_REFRESH_TIME = int(os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_REFRESH_TIME", 300))
+IRODS_OBJECT_STORE_REFRESH_TIME = int(
+    os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_REFRESH_TIME", REFRESH_TIME)
+)
 IRODS_OBJECT_STORE_CONNECTION_POOL_MONITOR_INTERVAL = int(
-    os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_CONNECTION_POOL_MONITOR_INTERVAL", 600)
+    os.environ.get(
+        "GALAXY_INTEGRATION_IRODS_OBJECT_STORE_CONNECTION_POOL_MONITOR_INTERVAL", CONNECTION_POOL_MONITOR_INTERVAL
+    )
 )
 IRODS_OBJECT_STORE_USERNAME = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_USERNAME", "rods")
 IRODS_OBJECT_STORE_PASSWORD = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PASSWORD", "rods")
@@ -28,6 +34,7 @@ IRODS_OBJECT_STORE_RESOURCE = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_ST
 IRODS_OBJECT_STORE_ZONE = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_ZONE", "tempZone")
 # Run test for only the first 10 test files
 TEST_CASES = dict(list(TEST_CASES.items())[0:10])
+SINGLE_TEST_CASE = dict(list(TEST_CASES.items())[0:1])
 DISTRIBUTED_OBJECT_STORE_CONFIG = string.Template(
     """
 <object_store type="distributed">
@@ -194,3 +201,26 @@ def test_upload_datatype_irods(irods_instance, test_data, temp_file):
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_irods_and_disk(distributed_and_irods_instance, test_data, temp_file):
     upload_datatype_helper(distributed_and_irods_instance, test_data, temp_file)
+
+
+@pytest.mark.parametrize("test_data", SINGLE_TEST_CASE.values(), ids=list(SINGLE_TEST_CASE.keys()))
+def test_upload_datatype_irods_idle_connections(irods_instance, test_data, temp_file):
+    # Upload a file to iRods
+    upload_datatype_helper(irods_instance, test_data, temp_file, True)
+
+    # Get Irods object store's connection pool
+    connection_pool = irods_instance._test_driver.app.object_store.session.pool
+
+    # Verify the connection pool has 0 active and 1 idle connections
+    assert len(connection_pool.active) == 0
+    assert len(connection_pool.idle) == 1
+
+    # Wait for the idle connection to turn stale
+    time.sleep(REFRESH_TIME)
+
+    # Wait for the connection pool monitor thread to run and reclaim the stale idle connection
+    time.sleep(CONNECTION_POOL_MONITOR_INTERVAL)
+
+    # Check that the stale idle connection has been reclaimed
+    assert len(connection_pool.active) == 0
+    assert len(connection_pool.idle) == 0

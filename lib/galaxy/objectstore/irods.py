@@ -30,7 +30,6 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from galaxy.util.sleeper import Sleeper
 from ..objectstore import DiskObjectStore
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
@@ -236,17 +235,12 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         # Set connection timeout
         self.session.connection_timeout = self.timeout
 
-        # This Event object is initialized to False
-        # It is set to True in shutdown(), causing
-        # the connection pool monitor thread to return/terminate
-        self.stop_connection_pool_monitor_event = threading.Event()
-
-        # Helper for interruptible sleep
-        self.sleeper = Sleeper()
-
-        # Start connection pool monitor
         if self.connection_pool_monitor_interval != -1:
-            self.start_connection_pool_monitor()
+            # This Event object is initialized to False
+            # It is set to True in shutdown(), causing
+            # the connection pool monitor thread to return/terminate
+            self.stop_connection_pool_monitor_event = threading.Event()
+            self.connection_pool_monitor_thread = None
 
         log.debug("irods_pt __init__: %s", ipt_timer)
 
@@ -259,8 +253,11 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         except OSError:
             pass
 
-        # Set to True so the connection pool monitor thread will return/terminate
-        self.stop_connection_pool_monitor_event.set()
+        if self.connection_pool_monitor_interval != -1:
+            # Set to True so the connection pool monitor thread will return/terminate
+            self.stop_connection_pool_monitor_event.set()
+            self.connection_pool_monitor_thread.join(5)
+
         log.debug("irods_pt shutdown: %s", ipt_timer)
 
     @classmethod
@@ -275,20 +272,21 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 "refresh_time": self.refresh_time,
                 "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
                 "stop_connection_pool_monitor_event": self.stop_connection_pool_monitor_event,
-                "sleeper": self.sleeper,
             },
             name="ConnectionPoolMonitorThread",
+            daemon=True,
         )
+        self.connection_pool_monitor_thread.start()
         log.info("Connection pool monitor started")
 
     def start(self):
-        self.start_connection_pool_monitor()
+        if self.connection_pool_monitor_interval != -1:
+            self.start_connection_pool_monitor()
 
     def _connection_pool_monitor(self, *args, **kwargs):
         refresh_time = kwargs["refresh_time"]
         connection_pool_monitor_interval = kwargs["connection_pool_monitor_interval"]
         stop_connection_pool_monitor_event = kwargs["stop_connection_pool_monitor_event"]
-        sleeper = kwargs["sleeper"]
 
         while not stop_connection_pool_monitor_event.is_set():
             curr_time = datetime.now()
@@ -303,7 +301,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                         )
                     )
                     self.session.pool.release_connection(conn, True)
-            sleeper.sleep(connection_pool_monitor_interval)
+            stop_connection_pool_monitor_event.wait(connection_pool_monitor_interval)
 
     def to_dict(self):
         as_dict = super().to_dict()
