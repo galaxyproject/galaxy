@@ -182,7 +182,6 @@ export default {
             showLoading: true,
             highlight: false,
             scrolledTo: false,
-            mouseDown: {},
             offset: {
                 x: 0,
                 y: 0,
@@ -278,9 +277,6 @@ export default {
         },
         onUpdatePosition(position) {
             this.$emit("onUpdateStepPosition", this.step.id, position);
-        },
-        onMouseDown(e) {
-            this.mouseDown = { offsetX: e.offsetX, offsetY: e.offsetY };
         },
         onChange() {
             this.$emit("onChange");
