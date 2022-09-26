@@ -57,8 +57,8 @@ describe("ToolBox", () => {
             .replyOnce(200, toolsMock)
             .onGet(/api\/tools?.*/)
             .replyOnce(200, resultsMock);
-        let toolsResults = filterTools(toolsMock, resultsMock);
-        let toolsResultsSection = filterToolSections(toolsMock, resultsMock);
+        const toolsResults = filterTools(toolsMock, resultsMock);
+        const toolsResultsSection = filterToolSections(toolsMock, resultsMock);
         expect(toolsResults.length).toBe(2);
         expect(toolsResultsSection.length).toBe(2);
     });

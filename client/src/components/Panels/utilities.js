@@ -5,7 +5,6 @@ const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
 
 export function filterTools(tools, results) {
     let toolsResults = [];
-
     if (hasResults(results)) {
         tools = normalizeTools(tools);
         toolsResults = mapToolsResults(tools, results);
@@ -13,14 +12,12 @@ export function filterTools(tools, results) {
     } else {
         toolsResults = tools;
     }
-
     return toolsResults;
 }
 
 export function filterToolSections(tools, results) {
     let toolsResults = [];
     let toolsResultsSection = [];
-
     if (hasResults(results)) {
         toolsResults = tools.map((section) => {
             tools = flattenToolsSection(section);
@@ -36,20 +33,17 @@ export function filterToolSections(tools, results) {
     } else {
         toolsResults = tools;
     }
-
     return toolsResults;
 }
 
 function normalizeTools(tools) {
     tools = hideToolsSection(tools);
     tools = flattenTools(tools);
-
     return tools;
 }
 
 function flattenToolsSection(section) {
     const flattenTools = [];
-
     if (section.elems) {
         section.elems.forEach((tool) => {
             if (!tool.text) {
@@ -59,7 +53,6 @@ function flattenToolsSection(section) {
     } else if (!section.text) {
         flattenTools.push(section);
     }
-
     return flattenTools;
 }
 
@@ -70,7 +63,6 @@ function mapToolsResults(tools, results) {
             Object.assign(tool, setSort(tool, results));
             return tool;
         });
-
     return toolsResults;
 }
 
@@ -85,7 +77,6 @@ function sortToolsResults(toolsResults) {
 function deleteEmptyToolsSections(tools, results) {
     let isSection = false;
     let isMatchedTool = false;
-
     tools = tools
         .filter((section) => {
             isSection = section.elems && section.elems.length > 0;
@@ -108,11 +99,9 @@ function hideToolsSection(tools) {
 
 function flattenTools(tools) {
     let normalizedTools = [];
-
     tools.forEach((section) => {
         normalizedTools = normalizedTools.concat(flattenToolsSection(section));
     });
-
     return normalizedTools;
 }
 
