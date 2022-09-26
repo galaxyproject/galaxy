@@ -47,7 +47,7 @@ from whoosh.fields import (
 )
 from whoosh.qparser import (
     MultifieldParser,
-    OrGroup,
+    AndGroup
 )
 from whoosh.scoring import (
     BM25F,
@@ -334,10 +334,9 @@ class ToolPanelViewSearch:
         self.parser = MultifieldParser(
             fields,
             schema=self.schema,
-            group=OrGroup,  # We need OR grouping to match StopList phrases
+            group=AndGroup,
         )
-        cleaned_query = " ".join(token.text for token in self.rex(q.lower()))
-        parsed_query = self.parser.parse(cleaned_query)
+        parsed_query = self.parser.parse(q)
         hits = self.searcher.search(
             parsed_query,
             limit=float(config.tool_search_limit),

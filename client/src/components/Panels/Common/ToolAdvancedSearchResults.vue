@@ -1,69 +1,71 @@
 <template>
-    <div v-infinite-scroll="loadMore" infinite-scroll-disabled="busy">
-        <b-overlay :show="busy" opacity="0.5">
-            <b-table ref="toolTable" striped bordered :fields="fields" :items="buffer">
-                <template v-slot:cell(name)="row">
-                    <span v-if="!row.item.help_text"
-                        ><b>{{ row.item.name }}</b> {{ row.item.description }}</span
-                    >
-                    <span v-else>
-                        <b-link href="javascript:void(0)" role="button" @click="toggleHelp(row)">
-                            <b>{{ row.item.name }}</b> {{ row.item.description }}
-                        </b-link>
-                        <p v-if="!row.item._showDetails && row.item.summary" v-html="row.item.summary" />
-                    </span>
-                </template>
-                <template v-slot:row-details="row">
-                    <b-card v-if="row.item.help_text">
-                        <p class="mb-1" v-html="row.item.help_text" />
-                        <a
-                            :href="row.item.target === 'galaxy_main' ? 'javascript:void(0)' : row.item.link"
-                            @click.stop="onOpen(row.item)">
-                            Click here to open the tool
-                        </a>
-                    </b-card>
-                </template>
-                <template v-slot:cell(section)="row">
-                    {{ row.item.panel_section_name }}
-                </template>
-                <template v-slot:cell(workflow)="row">
-                    <span
-                        v-if="row.item.is_workflow_compatible"
-                        v-b-tooltip.hover
-                        class="fa fa-check text-success"
-                        title="Is Workflow Compatible" />
-                    <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Workflow Compatible" />
-                </template>
-                <template v-slot:cell(target)="row">
-                    <span
-                        v-if="row.item.target === 'galaxy_main'"
-                        v-b-tooltip.hover
-                        class="fa fa-check text-success"
-                        title="Is Local" />
-                    <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Local" />
-                </template>
-                <template v-slot:cell(open)="row">
-                    <b-button
-                        v-b-tooltip.hover.top
-                        :title="'Open Tool' | localize"
-                        class="fa fa-play"
-                        size="sm"
-                        variant="primary"
-                        :href="row.item.target === 'galaxy_main' ? 'javascript:void(0)' : row.item.link"
-                        @click.stop="onOpen(row.item)" />
-                </template>
-            </b-table>
-        </b-overlay>
+    <div v-infinite-scroll="loadTools" infinite-scroll-disabled="busy">
+        <b-table striped bordered :fields="fields" :items="buffer">
+            <template v-slot:cell(name)="row">
+                <span v-if="!row.item.help">
+                    <b>{{ row.item.name }}</b> {{ row.item.description }}
+                </span>
+                <span v-else>
+                    <b-link href="javascript:void(0)" role="button" @click.stop="row.toggleDetails()">
+                        <b>{{ row.item.name }}</b> {{ row.item.description }}
+                    </b-link>
+                    <p v-if="!row.item._showDetails && row.item.summary" v-html="row.item.summary" />
+                </span>
+            </template>
+            <template v-slot:row-details="row">
+                <b-card v-if="row.item.help">
+                    <p class="mb-1" v-html="row.item.help" />
+                    <a :href="row.item.link || '#'" target="_blank" @click.stop="onOpen(row.item)">
+                        Click here to open the tool
+                    </a>
+                </b-card>
+            </template>
+            <template v-slot:cell(section)="row">
+                {{ row.item.panel_section_name }}
+            </template>
+            <template v-slot:cell(workflow)="row">
+                <span
+                    v-if="row.item.is_workflow_compatible"
+                    v-b-tooltip.hover
+                    class="fa fa-check text-success"
+                    title="Is Workflow Compatible" />
+                <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Workflow Compatible" />
+            </template>
+            <template v-slot:cell(target)="row">
+                <span
+                    v-if="row.item.target === 'galaxy_main'"
+                    v-b-tooltip.hover
+                    class="fa fa-check text-success"
+                    title="Is Local" />
+                <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Local" />
+            </template>
+            <template v-slot:cell(open)="row">
+                <b-button
+                    v-b-tooltip.hover.top
+                    :title="'Open Tool' | localize"
+                    class="fa fa-play"
+                    size="sm"
+                    variant="primary"
+                    :href="row.item.target === 'galaxy_main' ? 'javascript:void(0)' : row.item.link"
+                    @click.stop="onOpen(row.item)" />
+            </template>
+        </b-table>
+        <div>
+            <i v-if="allLoaded">All {{ tools.length > 1 ? tools.length : "" }} results loaded</i>
+            <b-overlay :show="busy" opacity="0.5" />
+        </div>
     </div>
 </template>
 
 <script>
-const loadTimeout = 100;
-const defaultBufferLen = 4;
+import Vue from "vue";
 import _l from "utils/localization";
 import infiniteScroll from "vue-infinite-scroll";
 import { openGlobalUploadModal } from "components/Upload";
 import { fetchData } from "./services";
+
+const defaultBufferLen = 4;
+const loadTimeout = 100;
 
 export default {
     directives: { infiniteScroll },
@@ -75,8 +77,8 @@ export default {
     },
     data() {
         return {
-            buffer: {},
-            bufferLen: defaultBufferLen,
+            allLoaded: false,
+            bufferLen: 0,
             busy: false,
             fields: [
                 {
@@ -106,13 +108,13 @@ export default {
             ],
         };
     },
+    computed: {
+        buffer() {
+            return this.tools.slice(0, this.bufferLen);
+        },
+    },
     created() {
-        const initData = { summary: "", help_text: "", _showDetails: false, is_fetched: false };
-        this.buffer = this.tools.slice(0, this.bufferLen);
-        this.buffer.forEach((tool) => Object.assign(tool, { ...initData }));
-        this.buffer.forEach(async (tool, index) => {
-            await this.fetchHelp(index);
-        });
+        this.loadTools();
     },
     methods: {
         onOpen(tool) {
@@ -125,37 +127,31 @@ export default {
                 this.$router.push({ path: `/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}` });
             }
         },
-        async loadMore() {
-            if (this.buffer.length < this.tools.length) {
+        loadTools() {
+            if (this.tools && !this.busy && this.bufferLen < this.tools.length) {
                 this.busy = true;
                 setTimeout(() => {
                     this.bufferLen += defaultBufferLen;
-                    this.buffer = this.tools.slice(0, this.bufferLen);
-                    this.buffer.forEach(async (tool, index) => {
-                        await this.fetchHelp(index);
+                    this.tools.slice(this.bufferLen - defaultBufferLen, this.bufferLen).forEach(async (tool) => {
+                        await this.fetchHelp(tool);
                     });
                     this.busy = false;
                 }, loadTimeout);
+            } else if (this.bufferLen >= this.tools.length) {
+                this.allLoaded = true;
             }
         },
-        toggleHelp(row) {
-            row.toggleDetails();
-            this.$refs.toolTable.refresh();
-        },
-        async fetchHelp(index) {
-            const id = this.buffer[index]["id"];
-            if (!this.buffer[index]["is_fetched"]) {
-                this.buffer[index]["is_fetched"] = true; // tags the tool's help as being fetched
-                await fetchData(`api/tools/${id}/build`).then((response) => {
-                    if (response.help && response.help != "\n") {
-                        this.buffer[index]["help_text"] = response.help;
-                        this.buffer[index]["summary"] = this.parseHelp(response.help);
-                    } else {
-                        this.buffer[index]["help_text"] = ""; // for cases where helpText == '\n'
-                    }
-                });
-                this.$refs.toolTable.refresh();
-            }
+        async fetchHelp(tool) {
+            await fetchData(`api/tools/${tool.id}/build`).then((response) => {
+                const help = response.help;
+                Vue.set(tool, "_showDetails", false); // maybe not needed
+                if (help && help != "\n") {
+                    Vue.set(tool, "help", help);
+                    Vue.set(tool, "summary", this.parseHelp(help));
+                } else {
+                    Vue.set(tool, "help", ""); // for cases where helpText == '\n'
+                }
+            });
         },
         parseHelp(help) {
             let summary = "";

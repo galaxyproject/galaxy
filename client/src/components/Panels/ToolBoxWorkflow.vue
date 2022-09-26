@@ -18,6 +18,7 @@
             <tool-search
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
+                :toolbox="toolbox"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />

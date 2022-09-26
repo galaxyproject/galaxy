@@ -9,6 +9,7 @@ describe("ToolSearch", () => {
             propsData: {
                 currentPanelView: "default",
                 showAdvanced: false,
+                toolbox: [],
             },
             localVue,
             stubs: {
@@ -23,7 +24,7 @@ describe("ToolSearch", () => {
             "[placeholder='any tool name']": "name-filter",
             "[placeholder='any section']": "section-filter",
             "[placeholder='any id']": "id-filter",
-            "[placeholder='any description']": "desc-filter",
+            "[placeholder='any help text']": "help-filter",
         };
 
         // Now add filters in all input fields in the advanced menu

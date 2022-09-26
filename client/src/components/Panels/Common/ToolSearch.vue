@@ -1,36 +1,33 @@
 <template>
     <div>
+        <small v-if="showAdvanced">Filter by name:</small>
         <DelayedInput
             :class="!showAdvanced && 'mb-3'"
             :query="query"
-            :loading="loading"
             :show-advanced="showAdvanced"
-            include-adv-btn
-            :placeholder="placeholder"
+            :enable-advanced="enableAdvanced"
+            :placeholder="showAdvanced ? 'any name' : placeholder"
             @change="checkQuery"
             @onToggle="onToggle" />
         <div
             v-if="showAdvanced"
-            class="mt-2"
             description="advanced tool filters"
             @keyup.enter="onSearch"
             @keyup.esc="onToggle(false)">
-            <small>Filter by tool name:</small>
-            <b-form-input v-model="filterSettings['name']" size="sm" placeholder="any tool name" />
             <small class="mt-1">Filter by section:</small>
-            <b-form-input v-model="filterSettings['panelSectionName']" size="sm" placeholder="any section" />
+            <b-form-input v-model="filterSettings['section']" size="sm" placeholder="any section" />
             <small class="mt-1">Filter by id:</small>
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
-            <small class="mt-1">Filter by description:</small>
-            <b-form-input v-model="filterSettings['description']" size="sm" placeholder="any description" />
+            <small class="mt-1">Filter by help text:</small>
+            <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ "Search" | localize }}</span>
                 </b-button>
-                <b-button size="sm" description="clear filters" @click="filterSettings = {}">
+                <b-button size="sm" description="clear filters" @click="onToggle(false)">
                     <icon icon="redo" />
-                    <span>{{ "Clear" | localize }}</span>
+                    <span>{{ "Cancel" | localize }}</span>
                 </b-button>
             </div>
         </div>
@@ -38,8 +35,6 @@
 </template>
 
 <script>
-import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
 
@@ -53,6 +48,10 @@ export default {
             type: String,
             required: true,
         },
+        enableAdvanced: {
+            type: Boolean,
+            default: false,
+        },
         placeholder: {
             type: String,
             default: "search tools",
@@ -65,12 +64,15 @@ export default {
             type: Boolean,
             default: false,
         },
+        toolbox: {
+            type: Array,
+            required: true,
+        },
     },
     data() {
         return {
             favorites: ["#favs", "#favorites", "#favourites"],
             minQueryLength: 3,
-            loading: false,
             filterSettings: {},
         };
     },
@@ -82,24 +84,28 @@ export default {
     },
     methods: {
         checkQuery(q) {
+            this.filterSettings["name"] = q;
             this.$emit("onQuery", q);
             if (q && q.length >= this.minQueryLength) {
                 if (this.favorites.includes(q)) {
                     this.$emit("onResults", this.favoritesResults);
                 } else {
-                    this.loading = true;
-                    axios
-                        .get(`${getAppRoot()}api/tools`, {
-                            params: { q, view: this.currentPanelView },
-                        })
-                        .then((response) => {
-                            this.loading = false;
-                            this.$emit("onResults", response.data);
-                        })
-                        .catch((err) => {
-                            this.loading = false;
-                            this.$emit("onError", err);
-                        });
+                    const returnedTools = [];
+                    const keys = ["name", "description"];
+                    for (const section of this.toolbox) {
+                        if (section.elems) {
+                            for (const tool of section.elems) {
+                                for (const key of keys) {
+                                    const actualValue = tool[key];
+                                    if (actualValue && actualValue.toUpperCase().match(q.toUpperCase())) {
+                                        returnedTools.push(tool.id);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    this.$emit("onResults", returnedTools);
                 }
             } else {
                 this.$emit("onResults", null);

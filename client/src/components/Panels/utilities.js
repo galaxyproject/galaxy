@@ -5,13 +5,9 @@ const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
 
 export function filterTools(tools, results) {
     let toolsResults = [];
-    if (hasResults(results)) {
-        tools = normalizeTools(tools);
-        toolsResults = mapToolsResults(tools, results);
-        toolsResults = sortToolsResults(toolsResults);
-    } else {
-        toolsResults = tools;
-    }
+    tools = normalizeTools(tools);
+    toolsResults = mapToolsResults(tools, results);
+    toolsResults = sortToolsResults(toolsResults);
     return toolsResults;
 }
 
@@ -23,7 +19,6 @@ export function filterToolSections(tools, results) {
             tools = flattenToolsSection(section);
             toolsResultsSection = mapToolsResults(tools, results);
             toolsResultsSection = sortToolsResults(toolsResultsSection);
-
             return {
                 ...section,
                 elems: toolsResultsSection,
@@ -34,6 +29,10 @@ export function filterToolSections(tools, results) {
         toolsResults = tools;
     }
     return toolsResults;
+}
+
+export function hasResults(results) {
+    return Array.isArray(results) && results.length > 0;
 }
 
 function normalizeTools(tools) {
@@ -103,8 +102,4 @@ function flattenTools(tools) {
         normalizedTools = normalizedTools.concat(flattenToolsSection(section));
     });
     return normalizedTools;
-}
-
-function hasResults(results) {
-    return Array.isArray(results) && results.length > 0;
 }

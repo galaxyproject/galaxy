@@ -20,9 +20,11 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search
+                enable-advanced
                 :current-panel-view="currentPanelView"
                 :placeholder="titleSearchTools"
                 :show-advanced.sync="showAdvanced"
+                :toolbox="toolbox"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
@@ -70,7 +72,7 @@ import ToolSearch from "./Common/ToolSearch";
 import { UploadButton, openGlobalUploadModal } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
-import { filterToolSections, filterTools } from "./utilities";
+import { filterToolSections, filterTools, hasResults } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -127,7 +129,7 @@ export default {
             if (this.showSections) {
                 return filterToolSections(this.toolbox, this.results);
             } else {
-                return filterTools(this.toolbox, this.results);
+                return hasResults(this.results) ? filterTools(this.toolbox, this.results) : this.toolbox;
             }
         },
         isUser() {
