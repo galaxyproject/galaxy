@@ -61,12 +61,21 @@ export default {
     data() {
         return {
             MultipleViewItem,
-            selectedHistories: [],
+            selectedHistories: localStorage.getItem("selectedHistories")
+                ? JSON.parse(localStorage.getItem("selectedHistories"))
+                : [],
         };
     },
+    watch: {
+        selectedHistories() {
+            localStorage.setItem("selectedHistories", JSON.stringify(this.selectedHistories));
+        },
+    },
     created() {
-        const firstHistory = this.histories[0];
-        this.selectedHistories = [{ id: firstHistory.id }];
+        if (!this.selectedHistories.length) {
+            const firstHistory = this.histories[0];
+            this.selectedHistories = [{ id: firstHistory.id }];
+        }
     },
     methods: {
         addHistoriesToList(histories) {
