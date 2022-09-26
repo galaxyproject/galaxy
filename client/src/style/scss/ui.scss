@@ -498,3 +498,15 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .h-text {
     font-size: $font-size-base;
 }
+
+/* hides element in a way where it can still be read by screen-readers */
+.hide-element {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}

@@ -1,9 +1,9 @@
 <template>
     <div>
-        <h3 v-if="title">
+        <h2 v-if="title" class="h-md">
             {{ title }}
             <span v-if="paginate && totalLength > firstN"> (showing {{ firstN }} of {{ totalLength }}) </span>
-        </h3>
+        </h2>
         <table id="job-outputs" class="tabletip info_data_table">
             <thead>
                 <tr>

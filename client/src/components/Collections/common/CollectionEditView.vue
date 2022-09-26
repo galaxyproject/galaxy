@@ -1,6 +1,6 @@
 <template>
-    <div>
-        <h4>{{ l("Edit Collection Attributes") }}</h4>
+    <div aria-labelledby="collection-edit-view-heading">
+        <h1 id="collection-edit-view-heading" class="h-lg">{{ l("Edit Collection Attributes") }}</h1>
         <b-alert show variant="info" dismissible>
             {{ l(newCollectionInfoMessage) }}
         </b-alert>

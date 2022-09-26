@@ -1,6 +1,6 @@
 <template>
     <div v-if="orderedPlugins.length > 0">
-        <h3 v-if="includeTitle">Job Metrics</h3>
+        <h2 v-if="includeTitle" class="h-md">Job Metrics</h2>
         <div v-for="plugin in orderedPlugins" :key="plugin" class="metrics_plugin">
             <h4 class="metrics_plugin_title">{{ plugin }}</h4>
             <table class="tabletip info_data_table">
