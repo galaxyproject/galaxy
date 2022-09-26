@@ -577,6 +577,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             controller="published",
             action="pages",
             id=page_content,
+            email=user.email,
             user_item_rating=user_item_rating,
             ave_item_rating=ave_item_rating,
             num_ratings=num_ratings,
