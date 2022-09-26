@@ -581,11 +581,14 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, history)
 
+        # Encode history id.
+        history_id = trans.security.encode_id(history.id)
+
         # Redirect to client.
         return trans.response.send_redirect(web.url_for(
             controller="published",
             action="history",
-            id=history.id,
+            id=history_id,
             email=user.email,
             user_item_rating=user_item_rating,
             ave_item_rating=ave_item_rating,

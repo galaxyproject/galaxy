@@ -96,8 +96,8 @@ export function getRouter(Galaxy) {
             /** Published resources routes */
             {
                 path: "/published/history",
-                component: PageDisplay,
-                props: (route) => ({ pageId: route.query.id }),
+                component: HistoryView,
+                props: (route) => ({ id: route.query.id }),
             },
             {
                 path: "/published/page",
