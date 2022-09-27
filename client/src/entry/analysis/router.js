@@ -385,6 +385,9 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/export",
                         component: WorkflowExport,
+                        props: (route) => ({
+                            id: route.query.id,
+                        }),
                     },
                     {
                         path: "workflows/import",
