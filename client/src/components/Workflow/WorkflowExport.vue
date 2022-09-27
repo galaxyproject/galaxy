@@ -27,38 +27,33 @@
             <small class="text-muted"> Download an image of the workflow in SVG format. </small>
         </div>
         <hr />
-
-        <div class="sharing-section">
-            <span>
-                Export to the
-                <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.
-            </span>
-            <form :action="myExperimentUrl" method="POST">
-                <div class="form-row">
-                    <label>myExperiment username:</label>
-                    <input
-                        type="text"
-                        name="myexp_username"
-                        value=""
-                        size="25"
-                        placeholder="username"
-                        autocomplete="off" />
-                </div>
-                <div class="form-row">
-                    <label>myExperiment password:</label>
-                    <input
-                        type="password"
-                        name="myexp_password"
-                        value=""
-                        size="25"
-                        placeholder="password"
-                        autocomplete="off" />
-                </div>
-                <div class="form-row">
-                    <input type="submit" value="Export to myExperiment" />
-                </div>
-            </form>
+        <div class="mb-2">
+            Export to the
+            <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.
         </div>
+        <form :action="myExperimentUrl" method="POST">
+            <b-form-input
+                type="text"
+                name="myexp_username"
+                value=""
+                size="25"
+                placeholder="Username"
+                autocomplete="off" />
+            <small>Enter your username for myExperiment.</small>
+            <b-form-input
+                type="password"
+                name="myexp_password"
+                value=""
+                size="25"
+                placeholder="Password"
+                autocomplete="off" />
+            <small>Enter your password for myExperiment.</small>
+            <div>
+                <b-button type="submit">
+                    Export to myExperiment
+                </b-button>
+            </div>
+        </form>
     </div>
     <b-alert v-else-if="!!error" variant="danger" show>
         {{ error }}
