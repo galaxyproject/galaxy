@@ -23,8 +23,6 @@ const modulesExcludedFromLibs = [
     "pikaday",
     "moment",
     "elkjs",
-    "@citation-js",
-    "citeproc",
 ].join("|");
 
 const buildDate = new Date();
