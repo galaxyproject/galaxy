@@ -48,7 +48,7 @@
                 placeholder="Password"
                 autocomplete="off" />
             <small>Enter your password for myExperiment.</small>
-            <div>
+            <div class="mt-2">
                 <b-button type="submit">
                     Export to myExperiment
                 </b-button>

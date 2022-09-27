@@ -327,45 +327,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         )
 
     @web.expose
-    @web.require_login("use Galaxy workflows")
-    def share(self, trans, id, email="", use_panels=False):
-        msg = mtype = None
-        # Load workflow from database
-        stored = self.get_stored_workflow(trans, id)
-        if email:
-            other = (
-                trans.sa_session.query(model.User)
-                .filter(and_(model.User.table.c.email == email, model.User.table.c.deleted == expression.false()))
-                .first()
-            )
-            if not other:
-                mtype = "error"
-                msg = f"User '{escape(email)}' does not exist"
-            elif other == trans.get_user():
-                mtype = "error"
-                msg = "You cannot share a workflow with yourself"
-            elif (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=other, stored_workflow=stored)
-                .count()
-                > 0
-            ):
-                mtype = "error"
-                msg = f"Workflow already shared with '{escape(email)}'"
-            else:
-                share = model.StoredWorkflowUserShareAssociation()
-                share.stored_workflow = stored
-                share.user = other
-                session = trans.sa_session
-                session.add(share)
-                session.flush()
-                trans.set_message(f"Workflow '{escape(stored.name)}' shared with user '{escape(other.email)}'")
-                return trans.response.send_redirect(url_for(controller="workflow", action="sharing", id=id))
-        return trans.fill_template(
-            "/ind_share_base.mako", message=msg, messagetype=mtype, item=stored, email=email, use_panels=use_panels
-        )
-
-    @web.expose
     @web.require_login("to import a workflow", use_panels=True)
     def imp(self, trans, id, **kwargs):
         """Imports a workflow shared by other users."""
