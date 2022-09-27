@@ -414,7 +414,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             title = ""
             slug = ""
             content = ""
-            content_format_hide = False
             content_hide = True
             if "invocation_id" in kwd:
                 invocation_id = kwd.get("invocation_id")
@@ -425,7 +424,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 )
                 title = invocation_report.get("title")
                 content = invocation_report.get("markdown")
-                content_format_hide = True
                 content_hide = False
             return {
                 "title": form_title,
@@ -449,10 +447,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     {
                         "name": "content_format",
                         "label": "Content Format",
-                        "type": "select",
-                        "hidden": content_format_hide,
-                        "options": [("Markdown", "markdown"), ("HTML", "html")],
-                        "help": "Use the traditional rich HTML editor or the newer experimental Markdown editor to create the page content. The HTML editor has several known bugs, is unmaintained and pages created with it will be read-only in future releases of Galaxy.",
+                        "type": "hidden",
+                        "value": "markdown",
                     },
                     {
                         "name": "content",

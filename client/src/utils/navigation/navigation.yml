@@ -421,8 +421,6 @@ pages:
     export: '.markdown-pdf-export'
   editor:
     selectors:
-      wym_iframe: 'div.wym_iframe iframe'
-      wym_iframe_content: '.text-content'
       save: '#save-button'
       embed_button: '#embed-galaxy-object'
       dataset_selector: '.saved-datasets'
