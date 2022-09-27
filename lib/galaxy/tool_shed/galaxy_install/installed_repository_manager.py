@@ -19,7 +19,7 @@ from galaxy.model.tool_shed_install import (
     ToolDependency,
     ToolShedRepository,
 )
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -43,14 +43,14 @@ RepositoryTupleT = Tuple[str, str, str, str]
 
 
 class InstalledRepositoryManager:
-    app: MinimalManagerApp
+    app: InstallationTarget
     _tool_paths: List[str]
     installed_repository_dicts: List[Dict[str, Any]]
     repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
     installed_repository_dependencies_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
     installed_dependent_repositories_of_installed_repositories: Dict[RepositoryTupleT, List[RepositoryTupleT]]
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: InstallationTarget):
         """
         Among other things, keep in in-memory sets of tuples defining installed repositories and tool dependencies along with
         the relationships between each of them.  This will allow for quick discovery of those repositories or components that

@@ -33,7 +33,7 @@ class MockTrans:
 class MockApp(galaxy_mock.MockApp):
     def __init__(self):
         super().__init__()
-        self.toolbox = MockToolbox()
+        self._toolbox = MockToolbox()
         self.workflow_manager = WorkflowsManager(self)
 
 

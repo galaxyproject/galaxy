@@ -4,11 +4,17 @@ import logging
 import os
 from typing import (
     Dict,
+    List,
     Optional,
+    Union,
 )
 
 from galaxy import util
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_shed.galaxy_install.client import (
+    DataManagerInterface,
+    DataManagersInterface,
+)
 from galaxy.tools.data import TabularToolDataTable
 from galaxy.util.template import fill_template
 
@@ -19,9 +25,10 @@ VALUE_TRANSLATION_FUNCTIONS = dict(abspath=os.path.abspath)
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
 
 
-class DataManagers:
+class DataManagers(DataManagersInterface):
     data_managers: Dict[str, "DataManager"]
     managed_data_tables: Dict[str, "DataManager"]
+    _reload_count: int
 
     def __init__(self, app: MinimalManagerApp, xml_filename=None):
         self.app = app
@@ -98,7 +105,7 @@ class DataManagers:
     def get_manager(self, *args, **kwds):
         return self.data_managers.get(*args, **kwds)
 
-    def remove_manager(self, manager_ids):
+    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None:
         if not isinstance(manager_ids, list):
             manager_ids = [manager_ids]
         for manager_id in manager_ids:
@@ -119,7 +126,7 @@ class DataManagers:
                         del self.managed_data_tables[data_table_name]
 
 
-class DataManager:
+class DataManager(DataManagerInterface):
     GUID_TYPE = "data_manager"
     DEFAULT_VERSION = "0.0.1"
 

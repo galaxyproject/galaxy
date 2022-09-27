@@ -1,6 +1,6 @@
 import pytest
 
-from galaxy.tools.data import ToolDataTableManager
+from galaxy.tool_util.data import ToolDataTableManager
 
 LOC_ALPHA_CONTENTS = """
 data1	data1name	${__HERE__}/data1/entry.txt
