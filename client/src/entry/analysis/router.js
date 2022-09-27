@@ -49,6 +49,7 @@ import UserInvocations from "components/Workflow/UserInvocations";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
+import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
 import { CloudAuth } from "components/User/CloudAuth";
@@ -380,6 +381,10 @@ export function getRouter(Galaxy) {
                             submitIcon: "fa-check",
                             cancelRedirect: "workflows/list",
                         },
+                    },
+                    {
+                        path: "workflows/export",
+                        component: WorkflowExport,
                     },
                     {
                         path: "workflows/import",
