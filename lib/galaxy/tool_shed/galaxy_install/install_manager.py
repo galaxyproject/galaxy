@@ -15,7 +15,7 @@ from galaxy import (
     exceptions,
     util,
 )
-from galaxy.structured_app import StructuredApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
@@ -41,10 +41,10 @@ log = logging.getLogger(__name__)
 
 
 class InstallRepositoryManager:
-    app: StructuredApp
+    app: InstallationTarget
     tpm: tool_panel_manager.ToolPanelManager
 
-    def __init__(self, app: StructuredApp, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
+    def __init__(self, app: InstallationTarget, tpm: Optional[tool_panel_manager.ToolPanelManager] = None):
         self.app = app
         self.install_model = self.app.install_model
         self._view = views.DependencyResolversView(app)

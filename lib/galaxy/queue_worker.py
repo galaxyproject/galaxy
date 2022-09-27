@@ -184,7 +184,7 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
-    app.toolbox = new_toolbox
+    app._toolbox = new_toolbox
     app.toolbox.persist_cache()
 
 
@@ -194,9 +194,8 @@ def reload_data_managers(app, **kwargs):
     log.debug("Executing data managers reload on '%s'", app.config.server_name)
     app._configure_tool_data_tables(from_shed_config=False)
     reload_tool_data_tables(app)
-    reload_count = app.data_managers._reload_count
     app.data_managers = DataManagers(app)
-    app.data_managers._reload_count = reload_count + 1
+    app.data_managers.increment_reload_count()
     if hasattr(app, "tool_cache"):
         app.tool_cache.reset_status()
     if hasattr(app, "watchers"):
