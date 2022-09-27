@@ -32,10 +32,10 @@ export default {
     },
     methods: {
         navigateToCreate: function () {
-            this.$router.push(`${this.root}workflows/create`);
+            this.$router.push("/workflows/create");
         },
         navigateToImport: function () {
-            this.$router.push(`${this.root}workflows/import`);
+            this.$router.push("/workflows/import");
         },
     },
 };
