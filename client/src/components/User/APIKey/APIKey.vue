@@ -29,7 +29,7 @@
         <b-container v-else-if="items.length" class="mt-2">
             <b-row class="justify-content-between">
                 <b-col v-for="(item, index) in items" :key="index" cols="12" md="auto" class="mb-2">
-                    <APIKeyItem :item="item" @listAPIKeys="listAPIKeys" />
+                    <APIKeyItem :item="item" @getAPIKey="getAPIKey" />
                 </b-col>
             </b-row>
         </b-container>
@@ -61,13 +61,13 @@ export default {
         },
     },
     mounted() {
-        this.listAPIKeys();
+        this.getAPIKey();
     },
     methods: {
-        listAPIKeys() {
+        getAPIKey() {
             this.loading = true;
 
-            svc.listAPIKeys(this.currentUserId)
+            svc.getAPIKey(this.currentUserId)
                 .then((items) => (this.items = items))
                 .catch((err) => (this.errorMessage = err.message))
                 .finally(() => (this.loading = false));
@@ -76,7 +76,7 @@ export default {
             this.createLoading = true;
 
             svc.createNewAPIKey(this.currentUserId)
-                .then(() => this.listAPIKeys())
+                .then(() => this.getAPIKey())
                 .catch((err) => (this.errorMessage = err.message))
                 .finally(() => (this.createLoading = false));
         },

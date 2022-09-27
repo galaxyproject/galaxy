@@ -80,8 +80,8 @@ export default {
             this.$refs.modal.toggle();
         },
         deleteKey() {
-            svc.deleteAPIKey(this.currentUser.id, this.item.key)
-                .then(() => this.$emit("listAPIKeys"))
+            svc.deleteAPIKey(this.currentUser.id)
+                .then(() => this.$emit("getAPIKey"))
                 .catch((err) => (this.errorMessage = err.message));
         },
     },

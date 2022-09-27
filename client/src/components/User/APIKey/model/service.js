@@ -3,14 +3,14 @@ import { getRootFromIndexLink } from "onload";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 
-export async function listAPIKeys(userId) {
-    const url = getUrl(`api/users/${userId}/api_key`);
+export async function getAPIKey(userId) {
+    const url = getUrl(`api/users/${userId}/api_key/detailed`);
     const response = await axios.get(url);
     if (response.status === 204) {
         return [];
     }
     if (response.status !== 200) {
-        throw new Error("Unexpected response from listing API keys.");
+        throw new Error("Unexpected response retrieving the API key.");
     }
     return [response.data];
 }
@@ -24,8 +24,8 @@ export async function createNewAPIKey(userId) {
     return response.data;
 }
 
-export async function deleteAPIKey(userId, key) {
-    const url = getUrl(`api/users/${userId}/api_key/${key}`);
+export async function deleteAPIKey(userId) {
+    const url = getUrl(`api/users/${userId}/api_key`);
     const response = await axios.delete(url);
     if (response.status !== 204) {
         throw new Error("Delete API Key failure.");
@@ -33,7 +33,7 @@ export async function deleteAPIKey(userId, key) {
 }
 
 export default {
-    listAPIKeys,
+    getAPIKey,
     createNewAPIKey,
     deleteAPIKey,
 };
