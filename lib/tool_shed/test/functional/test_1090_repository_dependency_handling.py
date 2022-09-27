@@ -79,17 +79,13 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             )
 
     def test_0015_create_and_upload_dependency_files(self):
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         repository_dependencies_path = self.generate_temp_path("test_1085", additional_paths=["column"])
         repository_tuple = (
             self.url,
             convert_repository.name,
-            convert_repository.user.username,
+            convert_repository.owner,
             self.get_repository_tip(convert_repository),
         )
         self.create_repository_dependency(
@@ -98,7 +94,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         repository_tuple = (
             self.url,
             column_repository.name,
-            column_repository.user.username,
+            column_repository.owner,
             self.get_repository_tip(column_repository),
         )
         self.create_repository_dependency(

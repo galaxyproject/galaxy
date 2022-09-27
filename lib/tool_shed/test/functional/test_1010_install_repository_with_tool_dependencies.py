@@ -81,7 +81,7 @@ class ToolWithToolDependencies(ShedTwillTestCase):
                 uncompress_file=False,
                 remove_repo_files_not_in_tar=False,
                 commit_message="Uploaded malformed tool dependency XML.",
-                strings_displayed=["Exception attempting to parse", "not well-formed"],
+                strings_displayed=["Exception attempting to parse", "invalid element name"],
                 strings_not_displayed=[],
             )
             self.upload_file(

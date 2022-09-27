@@ -55,7 +55,6 @@ class TestBismarkRepository(ShedTwillTestCase):
             strings_not_displayed=[],
         )
         valid_revision = self.get_repository_tip(repository)
-        self.test_db_util.refresh(repository)
         tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/bismark_0070/bismark_methylation_extractor/0.7.7.3"
         tool_metadata_strings_displayed = [
             tool_guid,

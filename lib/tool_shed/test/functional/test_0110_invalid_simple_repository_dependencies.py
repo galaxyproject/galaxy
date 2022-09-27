@@ -77,15 +77,13 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
     def test_0025_generate_repository_dependency_with_invalid_url(self):
         """Generate a repository dependency for emboss 5 with an invalid URL."""
         dependency_path = self.generate_temp_path("test_0110", additional_paths=["simple"])
-        column_maker_repository = self.test_db_util.get_repository_by_name_and_owner(
+        column_maker_repository = self._get_repository_by_name_and_owner(
             column_maker_repository_name, common.test_user_1_name
         )
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         url = "http://http://this is not an url!"
         name = column_maker_repository.name
-        owner = column_maker_repository.user.username
+        owner = column_maker_repository.owner
         changeset_revision = self.get_repository_tip(column_maker_repository)
         strings_displayed = ["Repository dependencies are currently supported only within the same tool shed"]
         repository_tuple = (url, name, owner, changeset_revision)
@@ -100,15 +98,11 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
     def test_0030_generate_repository_dependency_with_invalid_name(self):
         """Generate a repository dependency for emboss 5 with an invalid name."""
         dependency_path = self.generate_temp_path("test_0110", additional_paths=["simple"])
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_maker_repository_name, common.test_user_1_name
-        )
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         url = self.url
         name = "!?invalid?!"
-        owner = repository.user.username
+        owner = repository.owner
         changeset_revision = self.get_repository_tip(repository)
         strings_displayed = ["because the name is invalid."]
         repository_tuple = (url, name, owner, changeset_revision)
@@ -123,12 +117,8 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
     def test_0035_generate_repository_dependency_with_invalid_owner(self):
         """Generate a repository dependency for emboss 5 with an invalid owner."""
         dependency_path = self.generate_temp_path("test_0110", additional_paths=["simple"])
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_maker_repository_name, common.test_user_1_name
-        )
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         url = self.url
         name = repository.name
         owner = "!?invalid?!"
@@ -146,15 +136,11 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
     def test_0040_generate_repository_dependency_with_invalid_changeset_revision(self):
         """Generate a repository dependency for emboss 5 with an invalid changeset revision."""
         dependency_path = self.generate_temp_path("test_0110", additional_paths=["simple", "invalid"])
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_maker_repository_name, common.test_user_1_name
-        )
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner(column_maker_repository_name, common.test_user_1_name)
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         url = self.url
         name = repository.name
-        owner = repository.user.username
+        owner = repository.owner
         changeset_revision = "!?invalid?!"
         strings_displayed = ["because the changeset revision is invalid."]
         repository_tuple = (url, name, owner, changeset_revision)

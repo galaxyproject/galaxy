@@ -95,17 +95,13 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     def test_0020_upload_dependency_xml(self):
         """Upload a repository_dependencies.xml file to column_maker that specifies convert_chars."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         repository_dependencies_path = self.generate_temp_path("test_1085", additional_paths=["column"])
         convert_tuple = (
             self.url,
             convert_repository.name,
-            convert_repository.user.username,
+            convert_repository.owner,
             self.get_repository_tip(convert_repository),
         )
         self.create_repository_dependency(
@@ -114,12 +110,8 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0025_verify_repository_dependency(self):
         """Verify that the new revision of column_maker now depends on convert_chars."""
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         self.check_repository_dependency(column_repository, convert_repository)
 
     def test_0030_reinstall_column_repository(self):
@@ -128,9 +120,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         strings_displayed = [
             "Handle repository dependencies",
             "convert_chars_1087",

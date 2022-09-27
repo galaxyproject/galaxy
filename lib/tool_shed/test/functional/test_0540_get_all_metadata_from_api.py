@@ -143,9 +143,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
 
     def test_0020_create_repository_dependency(self):
         """Make column_maker depend on convert_chars."""
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["column"]["name"], common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner(repositories["column"]["name"], common.test_user_1_name)
         self.upload_file(
             repository,
             filename="0540_files/column_maker/repository_dependencies.xml",
@@ -163,9 +161,7 @@ class TestGetAllMetadata(ShedTwillTestCase):
         Load the API endpoint to retrieve all repository metadata and verify
         that all three repository names are displayed.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["column"]["name"], common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner(repositories["column"]["name"], common.test_user_1_name)
         strings_displayed = [
             repositories["column"]["name"],
             repositories["convert"]["name"],

@@ -36,7 +36,9 @@ for deletion instead of writing new tests and modernizing the API.
 | get_ordered_installable_revisions | NO | NO | YES | YES | NO | used by complete_repo_information in ephemeris for shed_tools |
 | reset_metadata_on_repository | NO | NO | NO | YES | NO | Bjoern said it was a thing that is done via the UI still |
 | GET repositories/{repository_id}/metadata| Yes (getRepository in client?) | NO? | NO? | YES | NO | |
-| tool search | NO | NO | NO | YES | NO | Community contributed - used by tool dog or something? |
-| repo search | YES | NO | NO | YES | NO | Used by the Vue tool shed install interface. |
+/github.com/galaxyproject/galaxy/pull/14672#pullrequestreview-1116016874) |
+| repo search (Get repositories + q param) | YES | NO | NO | YES | NO | Used by the Vue tool shed install interface. |
 | repositories/{repository_id}/changeset_revision | NO | YES | NO | YES | NO | |
 | POST repositories | NO | YES | NO | YES | NO | |
+| GET repositories (without search query) | ? | ? |? | True | True | |
+

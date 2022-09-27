@@ -90,17 +90,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         Column maker repository dependency:
             <repository toolshed="self.url" name="convert_chars" owner="test" changeset_revision="<tip>" prior_installation_required="True" />
         """
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         dependency_xml_path = self.generate_temp_path("test_0150", additional_paths=["column"])
         convert_tuple = (
             self.url,
             convert_repository.name,
-            convert_repository.user.username,
+            convert_repository.owner,
             self.get_repository_tip(convert_repository),
         )
         self.create_repository_dependency(
@@ -112,12 +108,8 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0020_verify_repository_dependency(self):
         """Verify that the previously generated repositiory dependency displays correctly."""
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         self.check_repository_dependency(
             repository=column_repository,
             depends_on_repository=convert_repository,

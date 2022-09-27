@@ -113,10 +113,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         and installed first.
         """
         global running_standalone
-        numpy_repository = self.test_db_util.get_repository_by_name_and_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        numpy_repository = self._get_repository_by_name_and_owner(numpy_repository_name, common.test_user_1_name)
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         # Generate the new dependency XML. Normally, the create_repository_dependency method would be used for this, but
@@ -128,7 +126,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         new_xml += "    </package>\n"
         url = self.url
         name = numpy_repository.name
-        owner = numpy_repository.user.username
+        owner = numpy_repository.owner
         if running_standalone:
             changeset_revision = self.get_repository_tip(numpy_repository)
             processed_xml = new_xml % (url, name, owner, changeset_revision)
@@ -157,10 +155,8 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         'Inherited' in this case means that matplotlib should show a package tool dependency on numpy version 1.7, and a repository
         dependency on the latest revision of package_numpy_1_7_0170.
         """
-        numpy_repository = self.test_db_util.get_repository_by_name_and_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        numpy_repository = self._get_repository_by_name_and_owner(numpy_repository_name, common.test_user_1_name)
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         changeset_revision = self.get_repository_tip(numpy_repository)
@@ -175,7 +171,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         This is step 4 - Install package_matplotlib_1_2_0170 with repository dependencies.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        matplotlib_repository = self.test_db_util.get_repository_by_name_and_owner(
+        matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
         preview_strings_displayed = ["package_matplotlib_1_2_0170", self.get_repository_tip(matplotlib_repository)]

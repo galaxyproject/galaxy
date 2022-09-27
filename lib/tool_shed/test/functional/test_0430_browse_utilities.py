@@ -103,7 +103,7 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         We are at step 3.
         Verify the existence of emboss tools in the browse tools page.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         changeset_revision = self.get_repository_tip(repository)
         strings_displayed = ["EMBOSS", "antigenic1", "5.0.0", changeset_revision, "user1", "emboss_0430"]
         self.browse_tools(strings_displayed=strings_displayed)
@@ -114,7 +114,7 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         We are at step 4.
         Verify that the browse tool dependencies page shows the correct dependencies defined for freebayes_0430.
         """
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
         freebayes_changeset_revision = self.get_repository_tip(freebayes_repository)

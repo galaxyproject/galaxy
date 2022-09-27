@@ -66,7 +66,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             column_maker_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
@@ -97,7 +97,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             column_maker_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
@@ -128,7 +128,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_5_repository.name,
-                emboss_5_repository.user.username,
+                emboss_5_repository.owner,
                 self.get_repository_tip(emboss_5_repository),
             )
             self.create_repository_dependency(
@@ -139,7 +139,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_6_repository.name,
-                emboss_6_repository.user.username,
+                emboss_6_repository.owner,
                 self.get_repository_tip(emboss_6_repository),
             )
             self.create_repository_dependency(

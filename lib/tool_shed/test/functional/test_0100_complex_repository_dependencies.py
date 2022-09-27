@@ -89,13 +89,9 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
         """Generate and upload a complex repository definition that specifies an invalid tool shed URL."""
         dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "invalid"])
         # The repository named bwa_base_repository_0100 is the dependent repository.
-        base_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_base_repository_name, common.test_user_1_name
-        )
+        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
         # The repository named package_bwa_0_5_9_0100 is the required repository.
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_package_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         url = "http://http://this is not an url!"
         name = "package_bwa_0_5_9_0100"
         owner = "user1"
@@ -117,13 +113,9 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
         """Generate and upload a complex repository definition that specifies an invalid repository name."""
         dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "invalid"])
         # The base_repository named bwa_base_repository_0100 is the dependent repository.
-        base_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_base_repository_name, common.test_user_1_name
-        )
+        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
         # The repository named package_bwa_0_5_9_0100 is the required repository.
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_package_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         url = self.url
         name = "invalid_repository!?"
         owner = "user1"
@@ -145,13 +137,9 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
         """Generate and upload a complex repository definition that specifies an invalid owner."""
         dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "invalid"])
         # The base_repository named bwa_base_repository_0100 is the dependent repository.
-        base_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_base_repository_name, common.test_user_1_name
-        )
+        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
         # The repository named package_bwa_0_5_9_0100 is the required repository.
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_package_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         url = self.url
         name = "package_bwa_0_5_9_0100"
         owner = "invalid_owner!?"
@@ -172,9 +160,7 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
         """Generate and upload a complex repository definition that specifies an invalid changeset revision."""
         dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex", "invalid"])
         # The base_repository named bwa_base_repository_0100 is the dependent repository.
-        base_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_base_repository_name, common.test_user_1_name
-        )
+        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
         # The repository named package_bwa_0_5_9_0100 is the required repository.
         url = self.url
         name = "package_bwa_0_5_9_0100"
@@ -195,13 +181,9 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
     def test_0035_generate_complex_repository_dependency(self):
         """Generate and upload a valid tool_dependencies.xml file that specifies package_bwa_0_5_9_0100."""
         # The base_repository named bwa_base_repository_0100 is the dependent repository.
-        base_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_base_repository_name, common.test_user_1_name
-        )
+        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
         # The repository named package_bwa_0_5_9_0100 is the required repository.
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_package_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         dependency_path = self.generate_temp_path("test_0100", additional_paths=["complex"])
         url = self.url
         name = "package_bwa_0_5_9_0100"
@@ -224,13 +206,9 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
     def test_0040_generate_tool_dependency(self):
         """Generate and upload a new tool_dependencies.xml file that specifies an arbitrary file on the filesystem, and verify that bwa_base depends on the new changeset revision."""
         # The base_repository named bwa_base_repository_0100 is the dependent repository.
-        base_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_base_repository_name, common.test_user_1_name
-        )
+        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
         # The repository named package_bwa_0_5_9_0100 is the required repository.
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_package_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         previous_changeset = self.get_repository_tip(tool_repository)
         old_tool_dependency = self.get_filename(os.path.join("bwa", "complex", "readme", "tool_dependencies.xml"))
         new_tool_dependency_path = self.generate_temp_path("test_1100", additional_paths=["tool_dependency"])

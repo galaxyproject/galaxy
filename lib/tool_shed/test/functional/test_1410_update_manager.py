@@ -98,7 +98,7 @@ class TestUpdateManager(ShedTwillTestCase):
         revision.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="readme.txt",

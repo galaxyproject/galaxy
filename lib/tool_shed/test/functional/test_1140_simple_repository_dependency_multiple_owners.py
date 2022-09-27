@@ -77,9 +77,7 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         Check for appropriate strings, most importantly BlastXml, BlastNucDb, and BlastProtDb,
         the datatypes that are defined in datatypes_conf.xml.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            datatypes_repository_name, common.test_user_2_name
-        )
+        repository = self._get_repository_by_name_and_owner(datatypes_repository_name, common.test_user_2_name)
         strings_displayed = [
             "BlastXml",
             "BlastNucDb",
@@ -130,7 +128,7 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 2a.
         Check for appropriate strings, such as tool name, description, and version.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         strings_displayed = ["blastxml_to_top_descr_0120", "BLAST top hit descriptions", "Make a table from BLAST XML"]
         strings_displayed.extend(["0.0.1", "Valid tools"])
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
@@ -143,17 +141,15 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         """
         global running_standalone
         if running_standalone:
-            datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
+            datatypes_repository = self._get_repository_by_name_and_owner(
                 datatypes_repository_name, common.test_user_2_name
             )
-            tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-                tool_repository_name, common.test_user_1_name
-            )
+            tool_repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
             dependency_xml_path = self.generate_temp_path("test_1120", additional_paths=["dependencies"])
             datatypes_tuple = (
                 self.url,
                 datatypes_repository.name,
-                datatypes_repository.user.username,
+                datatypes_repository.owner,
                 self.get_repository_tip(datatypes_repository),
             )
             self.create_repository_dependency(
@@ -166,12 +162,10 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 3a.
         Check the newly created repository dependency to ensure that it was defined and displays correctly.
         """
-        datatypes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        datatypes_repository = self._get_repository_by_name_and_owner(
             datatypes_repository_name, common.test_user_2_name
         )
-        tool_repository = self.test_db_util.get_repository_by_name_and_owner(
-            tool_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         self.check_repository_dependency(tool_repository, datatypes_repository)
 
     def test_0045_install_blastxml_to_top_descr(self):

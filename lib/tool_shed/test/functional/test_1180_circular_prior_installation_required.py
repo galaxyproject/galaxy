@@ -140,23 +140,17 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         Each of the three repositories should depend on the other two, to make this as circular as possible.
         """
         global running_standalone
-        filter_repository = self.test_db_util.get_repository_by_name_and_owner(
-            filter_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         filter_revision = self.get_repository_tip(filter_repository)
         column_revision = self.get_repository_tip(column_repository)
         convert_revision = self.get_repository_tip(convert_repository)
         if running_standalone:
             dependency_xml_path = self.generate_temp_path("test_1160", additional_paths=["column"])
-            column_tuple = (self.url, column_repository.name, column_repository.user.username, column_revision)
-            convert_tuple = (self.url, convert_repository.name, convert_repository.user.username, convert_revision)
-            filter_tuple = (self.url, filter_repository.name, filter_repository.user.username, filter_revision)
+            column_tuple = (self.url, column_repository.name, column_repository.owner, column_revision)
+            convert_tuple = (self.url, convert_repository.name, convert_repository.owner, convert_revision)
+            filter_tuple = (self.url, filter_repository.name, filter_repository.owner, filter_revision)
             self.create_repository_dependency(
                 repository=column_repository,
                 repository_tuples=[convert_tuple, filter_tuple],
@@ -178,15 +172,9 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0025_verify_repository_dependency(self):
         """Verify that the previously generated repositiory dependency displays correctly."""
-        filter_repository = self.test_db_util.get_repository_by_name_and_owner(
-            filter_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         self.check_repository_dependency(
             repository=column_repository,
             depends_on_repository=convert_repository,
@@ -227,9 +215,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
     def test_0030_install_filtering_repository(self):
         """Install the filtering_0160 repository."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        filter_repository = self.test_db_util.get_repository_by_name_and_owner(
-            filter_repository_name, common.test_user_1_name
-        )
+        filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["filtering_0160", self.get_repository_tip(filter_repository)]
         strings_displayed = ["Choose the tool panel section"]
         self.install_repository(

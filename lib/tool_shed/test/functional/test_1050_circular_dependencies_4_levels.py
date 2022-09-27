@@ -196,22 +196,18 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         """Set up the dependency structure."""
         global running_standalone
         if running_standalone:
-            column_repository = self.test_db_util.get_repository_by_name_and_owner(
-                column_repository_name, common.test_user_1_name
-            )
-            convert_repository = self.test_db_util.get_repository_by_name_and_owner(
+            column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+            convert_repository = self._get_repository_by_name_and_owner(
                 convert_repository_name, common.test_user_1_name
             )
-            emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-                emboss_repository_name, common.test_user_1_name
-            )
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+            emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+            filtering_repository = self._get_repository_by_name_and_owner(
                 filtering_repository_name, common.test_user_1_name
             )
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+            freebayes_repository = self._get_repository_by_name_and_owner(
                 freebayes_repository_name, common.test_user_1_name
             )
-            bismark_repository = self.test_db_util.get_repository_by_name_and_owner(
+            bismark_repository = self._get_repository_by_name_and_owner(
                 bismark_repository_name, common.test_user_1_name
             )
             dependency_xml_path = self.generate_temp_path("test_1050", additional_paths=["dependencies"])
@@ -223,31 +219,31 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             column_tuple = (
                 self.url,
                 column_repository.name,
-                column_repository.user.username,
+                column_repository.owner,
                 self.get_repository_tip(column_repository),
             )
             convert_tuple = (
                 self.url,
                 convert_repository.name,
-                convert_repository.user.username,
+                convert_repository.owner,
                 self.get_repository_tip(convert_repository),
             )
             freebayes_tuple = (
                 self.url,
                 freebayes_repository.name,
-                freebayes_repository.user.username,
+                freebayes_repository.owner,
                 self.get_repository_tip(freebayes_repository),
             )
             emboss_tuple = (
                 self.url,
                 emboss_repository.name,
-                emboss_repository.user.username,
+                emboss_repository.owner,
                 self.get_repository_tip(emboss_repository),
             )
             bismark_tuple = (
                 self.url,
                 bismark_repository.name,
-                bismark_repository.user.username,
+                bismark_repository.owner,
                 self.get_repository_tip(bismark_repository),
             )
             self.create_repository_dependency(
@@ -261,7 +257,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             )
             self.create_repository_dependency(
                 repository=freebayes_repository,
-                repository_tuples=[freebayes_tuple, bismark_tuple, emboss_tuple, column_tuple],
+                repository_tuples=[freebayes_tuple, emboss_tuple, column_tuple],
                 filepath=dependency_xml_path,
             )
             self.create_repository_dependency(
@@ -287,24 +283,16 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
              id: 7 key: http://toolshed.local:10001__ESEP__emboss_5__ESEP__test__ESEP__8de5fe0d7b04
                  ['http://toolshed.local:10001', 'emboss_datatypes', 'test', 'dbd4f68bf507']
         """
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
+        filtering_repository = self._get_repository_by_name_and_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        bismark_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bismark_repository_name, common.test_user_1_name
-        )
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        bismark_repository = self._get_repository_by_name_and_owner(bismark_repository_name, common.test_user_1_name)
         self.check_repository_dependency(convert_repository, column_repository)
         self.check_repository_dependency(column_repository, convert_repository)
         self.check_repository_dependency(emboss_repository, bismark_repository)
@@ -323,12 +311,10 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0050_verify_tool_dependencies(self):
         """Check that freebayes and emboss display tool dependencies."""
-        freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+        freebayes_repository = self._get_repository_by_name_and_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         self.display_manage_repository_page(
             freebayes_repository,
             strings_displayed=["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18", "Tool dependencies"],

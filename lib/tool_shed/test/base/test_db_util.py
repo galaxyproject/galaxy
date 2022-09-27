@@ -1,4 +1,5 @@
 import logging
+from typing import Optional
 
 from sqlalchemy import (
     and_,
@@ -128,7 +129,10 @@ def get_repository_downloadable_revisions(repository_id):
     return revisions
 
 
-def get_repository_metadata_for_changeset_revision(repository_id, changeset_revision):
+def get_repository_metadata_for_changeset_revision(
+    repository_id: int, changeset_revision: Optional[str]
+) -> model.RepositoryMetadata:
+    assert sa_session
     repository_metadata = (
         sa_session.query(model.RepositoryMetadata)
         .filter(
