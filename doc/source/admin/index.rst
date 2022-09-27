@@ -21,6 +21,7 @@ This documentation is in the midst of being ported and unified based on resource
    mq
    dependency_resolvers
    conda_faq
+   db_migration
    reports
    useful_scripts
    options
