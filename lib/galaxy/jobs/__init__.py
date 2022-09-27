@@ -2286,8 +2286,7 @@ class MinimalJobWrapper(HasResourceParameters):
             container_config_dict["callback_url"] = callback_url
 
         if get_ip_method:
-            assert get_ip_method.startswith('command:'), \
-                f"Unsupported get_ip_method: {get_ip_method}"
+            assert get_ip_method.startswith("command:"), f"Unsupported get_ip_method: {get_ip_method}"
             container_config_dict["get_ip_method"] = get_ip_method
 
         with open(container_config, "w") as f:

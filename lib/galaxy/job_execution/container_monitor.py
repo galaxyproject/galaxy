@@ -7,12 +7,16 @@ import tempfile
 import time
 import traceback
 from functools import partial
+from typing import Callable
 
 import requests
 
 from galaxy.tool_util.deps import docker_util
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.util.sockets import get_ip
+
+
+GetIpCallable = Callable[[], str]
 
 
 def parse_ports(container_name, connection_configuration):
@@ -28,7 +32,7 @@ def parse_ports(container_name, connection_configuration):
                 return ports_raw
 
 
-def get_ip_command(cmd):
+def get_ip_command(cmd) -> str:
     return subprocess.check_output(shlex.split(cmd), text=True).strip()
 
 
@@ -48,6 +52,7 @@ def main():
     if container_type != "docker":
         raise Exception(f"Monitoring container type [{container_type}], not yet implemented.")
 
+    _get_ip: GetIpCallable
     if get_ip_method is not None:
         method, arg = [e.strip() for e in get_ip_method.split(":", 1)]
         if method == "command":
