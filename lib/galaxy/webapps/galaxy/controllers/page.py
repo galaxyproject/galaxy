@@ -19,9 +19,7 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.managers.pages import (
-    PageManager,
-)
+from galaxy.managers.pages import PageManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
