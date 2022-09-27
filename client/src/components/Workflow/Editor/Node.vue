@@ -115,7 +115,7 @@ const OFFSET_RANGE = 100;
 export default {
     setup() {
         const el = ref(null);
-        const position = reactive(useElementBounding(el));
+        const position = reactive(useElementBounding(el, { windowResize: false }));
         return { el, position };
     },
     components: {

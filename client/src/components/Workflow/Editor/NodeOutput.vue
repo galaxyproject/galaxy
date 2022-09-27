@@ -27,13 +27,13 @@
 <script>
 import DraggableWrapper from "./Draggable";
 import WorkflowConnector from "./Connector";
-import { reactive, ref } from "vue";
-import { useElementBounding } from "@vueuse/core";
+import { useCoordinatePosition } from "./composables/usesCoodinatePosition";
+import { ref } from "vue";
 
 export default {
-    setup() {
+    setup(props) {
         const el = ref(null);
-        const position = reactive(useElementBounding(el));
+        const position = useCoordinatePosition(el, props.rootOffset);
         return { el, position };
     },
     components: {
@@ -79,10 +79,10 @@ export default {
             return Object.freeze({ startX: this.startX, startY: this.startY });
         },
         initX() {
-            return this.position.left + this.position.width / 2 - this.rootOffset.left;
+            return this.position.left + this.position.width / 2;
         },
         initY() {
-            return this.position.top + this.position.height / 2 - this.rootOffset.top;
+            return this.position.top + this.position.height / 2;
         },
         startX() {
             return this.initX + this.offsetX;

@@ -61,7 +61,7 @@ import D3Zoom from "./D3Zoom.vue";
 export default {
     setup() {
         const el = ref(null);
-        const position = reactive(useElementBounding(el));
+        const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
         return { el, position };
     },
     components: {
