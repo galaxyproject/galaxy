@@ -57,10 +57,10 @@ class UsersService(ServiceBase):
         result = APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time)
         return result
 
-    def delete_api_key(self, trans: ProvidesUserContext, user_id: int, api_key: str) -> None:
+    def delete_api_key(self, trans: ProvidesUserContext, user_id: int) -> None:
         """Deletes a particular API key"""
         user = self._get_user(trans, user_id)
-        self.api_key_manager.delete_api_key(user, api_key)
+        self.api_key_manager.delete_api_key(user)
 
     def _get_user(self, trans: ProvidesUserContext, user_id):
         user = trans.user

@@ -126,17 +126,16 @@ class FastAPIHistories:
         return self.service.create_api_key(trans, user_id).key
 
     @router.delete(
-        "/api/users/{user_id}/api_key/{api_key}",
-        summary="Delete the given API key of the user",
+        "/api/users/{user_id}/api_key",
+        summary="Delete the current API key of the user",
         status_code=status.HTTP_204_NO_CONTENT,
     )
     def delete_api_key(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
-        api_key: str = APIKeyPathParam,
     ):
-        self.service.delete_api_key(trans, user_id, api_key)
+        self.service.delete_api_key(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 

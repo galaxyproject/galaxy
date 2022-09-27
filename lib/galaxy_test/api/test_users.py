@@ -138,11 +138,11 @@ class UsersApiTestCase(ApiTestCase):
             api_key = response.json()
             assert api_key["key"] == user_api_key
             # Delete user API key
-            response = self._delete(f"users/{user_id}/api_key/{user_api_key}")
+            response = self._delete(f"users/{user_id}/api_key")
             self._assert_status_code_is(response, 204)
-            # No API key anymore, so the request fails with 401
-            response = self._get(f"users/{user_id}/api_key")
-            self._assert_status_code_is(response, 401)
+            # No API key anymore, so the detailed request returns no content 204
+            response = self._get(f"users/{user_id}/api_key/detailed")
+            self._assert_status_code_is(response, 204)
             # create new as admin
             response = self._post(f"users/{user_id}/api_key", admin=True)
             self._assert_status_code_is_ok(response)
@@ -153,8 +153,6 @@ class UsersApiTestCase(ApiTestCase):
     def test_only_admin_can_manage_other_users_api_key(self):
         with self._different_user():
             other_user_id = self._get_current_user_id()
-            response = self._get(f"users/{other_user_id}/api_key")
-            other_user_api_key = response.json()
         current_user_id = self._get_current_user_id()
         # Users cannot access other users API keys
         assert current_user_id != other_user_id
@@ -162,7 +160,7 @@ class UsersApiTestCase(ApiTestCase):
         self._assert_status_code_is(response, 403)
         response = self._post(f"users/{other_user_id}/api_key")
         self._assert_status_code_is(response, 403)
-        response = self._delete(f"users/{other_user_id}/api_key/{other_user_api_key}")
+        response = self._delete(f"users/{other_user_id}/api_key")
         self._assert_status_code_is(response, 403)
 
         # Admins can access other users API keys
@@ -170,7 +168,7 @@ class UsersApiTestCase(ApiTestCase):
         self._assert_status_code_is_ok(response)
         response = self._post(f"users/{other_user_id}/api_key", admin=True)
         self._assert_status_code_is_ok(response)
-        response = self._delete(f"users/{other_user_id}/api_key/{other_user_api_key}", admin=True)
+        response = self._delete(f"users/{other_user_id}/api_key", admin=True)
         self._assert_status_code_is_ok(response)
 
     @skip_without_tool("cat1")
