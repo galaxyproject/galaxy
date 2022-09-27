@@ -290,7 +290,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         """
         if self.ensure_registered:
             self.login()
-            self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -622,16 +621,11 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         return history_id
 
     def workflow_run_wait_for_ok(self, hid: int, expand=False):
-        if self.is_beta_history():
-            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
-            item = self.content_item_by_attributes(hid=hid, state="ok")
-            item.wait_for_present(timeout=timeout)
-            if expand:
-                item.title.wait_for_and_click()
-        else:
-            self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
-            if expand:
-                self.history_panel_click_item_title(hid=hid, wait=True)
+        timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+        item = self.content_item_by_attributes(hid=hid, state="ok")
+        item.wait_for_present(timeout=timeout)
+        if expand:
+            item.title.wait_for_and_click()
 
 
 def default_web_host_for_selenium_tests():

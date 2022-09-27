@@ -27,34 +27,13 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
     @selenium_test
     def test_dataset_state(self):
-        item = self._prepare_dataset()
+        self._prepare_dataset()
         self.history_panel_item_body_component(FIRST_HID, wait=True)
-
         self.assert_item_summary_includes(FIRST_HID, "1 sequence")
         self.assert_item_dbkey_displayed_as(FIRST_HID, "?")
         self.assert_item_info_includes(FIRST_HID, "uploaded fasta file")
         self.assert_item_peek_includes(FIRST_HID, ">hg17")
-
         self.screenshot("history_panel_dataset_before_click_dbkey")
-
-        if not self.is_beta_history():
-            # beta history doesn't have a button - rewrite this is as a helper
-            # that works with beta history.
-            item.tool_help_button.wait_for_and_click()
-            self.screenshot("history_panel_dataset_tool_help")
-
-        if not self.is_beta_history():
-            # need to redo tooltip stuff for beta history panel...
-            toolhelp_title_text = item.toolhelp_title.wait_for_visible().text
-            # assert tool helptext
-            assert (
-                EXPECTED_TOOLHELP_TITLE_TEXT == toolhelp_title_text
-            ), "Toolhelp title [{}] was not expected text [{}].".format(
-                EXPECTED_TOOLHELP_TITLE_TEXT, toolhelp_title_text
-            )
-
-        self.screenshot("history_panel_dataset_expanded")
-
         self._assert_action_buttons(FIRST_HID)
         self._assert_downloadable(FIRST_HID)
         self.history_panel_item_view_dataset_details(FIRST_HID)
@@ -73,8 +52,7 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
             dbkey_text=TEST_DBKEY_TEXT
         ).wait_for_and_click()
         self.components.edit_dataset_attributes.save_btn.wait_for_and_click()
-        if self.is_beta_history():
-            self.sleep_for(self.wait_types.JOB_COMPLETION)
+        self.sleep_for(self.wait_types.JOB_COMPLETION)
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")
 
@@ -86,18 +64,13 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
             history_id,
             store_dict=one_hda_model_store_dict(include_source=False),
         )
-        if not self.is_beta_history():
-            self.history_panel_refresh_click()
-        else:
-            # regression after 3/24/2022 - explicit refresh now required.
-            self.home()
+        # regression after 3/24/2022 - explicit refresh now required.
+        self.home()
         self.history_panel_wait_for_hid_state(FIRST_HID, state="discarded", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_discarded")
         # Next if is a hack for recent changes to beta history...
         # https://github.com/galaxyproject/galaxy/pull/13477/files#r823842897
-        if not self.is_beta_history():
-            self.assert_item_summary_includes(FIRST_HID, "job creating")
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
 
         self.history_panel_item_view_dataset_details(FIRST_HID)
@@ -111,18 +84,13 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
             history_id,
             store_dict=deferred_hda_model_store_dict(),
         )
-        if not self.is_beta_history():
-            self.history_panel_refresh_click()
-        else:
-            # regression after 3/24/2022 - explicit refresh now required.
-            self.home()
+        # regression after 3/24/2022 - explicit refresh now required.
+        self.home()
         self.history_panel_wait_for_hid_state(FIRST_HID, state="deferred", allowed_force_refreshes=1)
         self.history_panel_click_item_title(hid=FIRST_HID, wait=True)
         self.screenshot("history_panel_dataset_deferred")
         # Next if is a hack for recent changes to beta history...
         # https://github.com/galaxyproject/galaxy/pull/13477/files#r823842897
-        if not self.is_beta_history():
-            self.assert_item_summary_includes(FIRST_HID, "This dataset is remote")
         self._assert_downloadable(FIRST_HID, is_downloadable=False)
 
         self.history_panel_item_view_dataset_details(FIRST_HID)
@@ -152,38 +120,22 @@ class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self._assert_buttons(hid, expected_buttons)
 
     def _assert_downloadable(self, hid, is_downloadable=True):
-        if not self.is_beta_history():
-            item = self.history_panel_item_component(hid=hid)
-            if is_downloadable:
-                assert item.download_button.is_displayed
-            else:
-                item.download_button.assert_absent_or_hidden()
+        item = self.history_panel_item_component(hid=hid)
+        item.dataset_operations_dropdown.wait_for_and_click()
+        item.info_button.wait_for_visible()
+        if is_downloadable:
+            assert item.download_button.is_displayed
         else:
-            item = self.history_panel_item_component(hid=hid)
-            item.dataset_operations_dropdown.wait_for_and_click()
-            item.info_button.wait_for_visible()
-            if is_downloadable:
-                assert item.download_button.is_displayed
-            else:
-                item.download_button.assert_absent_or_hidden()
+            item.download_button.assert_absent_or_hidden()
 
-            # close menu...
-            item.dataset_operations_dropdown.wait_for_and_click()
-            self.sleep_for(self.wait_types.UX_RENDER)
+        # close menu...
+        item.dataset_operations_dropdown.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def _assert_buttons(self, hid, expected_buttons):
-        item_button = self.history_panel_item_component(hid=hid)
-        for i, expected_button in enumerate(expected_buttons):
-
-            # ensure old tooltip expired,
-            # no tooltip appeared before the 1st element
-            if i > 0:
-                if not self.is_beta_history():
-                    previous_button = item_button[f"{expected_buttons[i - 1]}_button"].wait_for_visible()
-                    if previous_button.get_attribute("aria-describedby") is not None:
-                        # wait for tooltip to disappear
-                        self.components._.tooltip_balloon.wait_for_absent()
-
-            button = item_button[f"{expected_button}_button"]
-            if not self.is_beta_history():
-                self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])
+        # TODO: Useful but unmigrated test from legacy history
+        # item = self.history_panel_item_component(hid=hid)
+        # for expected_button in expected_buttons:
+        #    button = item[f"{expected_button}_button"]
+        #    self.assert_tooltip_text(button.wait_for_visible(), BUTTON_TOOLTIPS[expected_button])'''
+        return
