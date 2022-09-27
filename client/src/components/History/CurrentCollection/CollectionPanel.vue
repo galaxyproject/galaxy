@@ -12,7 +12,7 @@
             <section class="dataset-collection-panel w-100 d-flex flex-column">
                 <section>
                     <CollectionNavigation
-                        :history="history"
+                        :history-name="history.name"
                         :selected-collections="selectedCollections"
                         v-on="$listeners" />
                     <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
