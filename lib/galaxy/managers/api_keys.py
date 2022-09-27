@@ -1,4 +1,4 @@
-from typing import List
+from typing import Optional
 
 from galaxy.model import (
     APIKeys,
@@ -11,8 +11,10 @@ class ApiKeyManager:
     def __init__(self, app: BasicSharedApp):
         self.app = app
 
-    def get_api_keys(self, user: User) -> List[APIKeys]:
-        return user.api_keys
+    def get_api_key(self, user: User) -> Optional[APIKeys]:
+        sa_session = self.app.model.context
+        api_key = sa_session.query(APIKeys).filter_by(user_id=user.id, deleted=False).first()
+        return api_key
 
     def create_api_key(self, user: User) -> APIKeys:
         guid = self.app.security.get_new_guid()

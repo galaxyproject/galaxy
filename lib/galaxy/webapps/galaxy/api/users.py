@@ -91,7 +91,18 @@ class FastAPIHistories:
 
     @router.get(
         "/api/users/{user_id}/api_key",
+        name="get_or_create_api_key",
         summary="Return the user's API key",
+    )
+    def get_or_create_api_key(
+        self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
+    ) -> str:
+        return self.service.get_or_create_api_key(trans, user_id)
+
+    @router.get(
+        "/api/users/{user_id}/api_key/detailed",
+        name="get_api_key_detailed",
+        summary="Return the user's API key with extra information.",
         responses={
             200: {
                 "model": APIKeyModel,
@@ -111,8 +122,8 @@ class FastAPIHistories:
     @router.post("/api/users/{user_id}/api_key", summary="Creates a new API key for the user")
     def create_api_key(
         self, trans: ProvidesUserContext = DependsOnTrans, user_id: DecodedDatabaseIdField = UserIdPathParam
-    ) -> APIKeyModel:
-        return self.service.create_api_key(trans, user_id)
+    ) -> str:
+        return self.service.create_api_key(trans, user_id).key
 
     @router.delete(
         "/api/users/{user_id}/api_key/{api_key}",

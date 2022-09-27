@@ -129,13 +129,14 @@ class UsersApiTestCase(ApiTestCase):
     def test_manage_api_key(self):
         with self._different_user("manage-api-key-test@user.com"):
             user_id = self._get_current_user_id()
+            # Initially we have an API key because it is bootstrapped for tests
             response = self._get(f"users/{user_id}/api_key")
-            if response.status_code == 204:
-                # No API key yet, create new
-                response = self._post(f"users/{user_id}/api_key")
-                self._assert_status_code_is_ok(response)
-            user_api_key = response.json()["key"]
+            user_api_key = response.json()
             assert user_api_key
+            # Test detailed endpoint
+            response = self._get(f"users/{user_id}/api_key/detailed")
+            api_key = response.json()
+            assert api_key["key"] == user_api_key
             # Delete user API key
             response = self._delete(f"users/{user_id}/api_key/{user_api_key}")
             self._assert_status_code_is(response, 204)
@@ -145,7 +146,7 @@ class UsersApiTestCase(ApiTestCase):
             # create new as admin
             response = self._post(f"users/{user_id}/api_key", admin=True)
             self._assert_status_code_is_ok(response)
-            new_api_key = response.json()["key"]
+            new_api_key = response.json()
             assert new_api_key
             assert new_api_key != user_api_key
 
@@ -153,7 +154,7 @@ class UsersApiTestCase(ApiTestCase):
         with self._different_user():
             other_user_id = self._get_current_user_id()
             response = self._get(f"users/{other_user_id}/api_key")
-            other_user_api_key = response.json()["key"]
+            other_user_api_key = response.json()
         current_user_id = self._get_current_user_id()
         # Users cannot access other users API keys
         assert current_user_id != other_user_id

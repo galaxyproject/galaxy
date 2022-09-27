@@ -1,7 +1,4 @@
-from typing import (
-    List,
-    Optional,
-)
+from typing import Optional
 
 from galaxy import exceptions as glx_exceptions
 from galaxy.managers import api_keys
@@ -43,16 +40,15 @@ class UsersService(ServiceBase):
             )
 
     def get_api_key(self, trans: ProvidesUserContext, user_id: int) -> Optional[APIKeyModel]:
-        """Returns the default API key (the last one created if there are multiple)"""
-        keys = self.get_api_keys(trans, user_id)
-        return keys[0] if keys else None
-
-    def get_api_keys(self, trans: ProvidesUserContext, user_id: int) -> List[APIKeyModel]:
-        """Returns a list with all the API keys of the given user"""
+        """Returns the current API key or None if the user doesn't have any valid API key."""
         user = self._get_user(trans, user_id)
-        api_keys = self.api_key_manager.get_api_keys(user)
-        result = [APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time) for api_key in api_keys]
-        return result
+        api_key = self.api_key_manager.get_api_key(user)
+        return APIKeyModel.construct(key=api_key.key, create_time=api_key.create_time) if api_key else None
+
+    def get_or_create_api_key(self, trans: ProvidesUserContext, user_id: int) -> str:
+        """Returns the current API key (as plain string) or creates a new one."""
+        user = self._get_user(trans, user_id)
+        return self.api_key_manager.get_or_create_api_key(user)
 
     def create_api_key(self, trans: ProvidesUserContext, user_id: int) -> APIKeyModel:
         """Creates a new API key for the given user"""
