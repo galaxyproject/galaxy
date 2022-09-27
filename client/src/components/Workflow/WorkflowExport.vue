@@ -32,26 +32,12 @@
             <a href="http://www.myexperiment.org/" target="_blank">www.myexperiment.org</a> site.
         </div>
         <form :action="myExperimentUrl" method="POST">
-            <b-form-input
-                type="text"
-                name="myexp_username"
-                value=""
-                size="25"
-                placeholder="Username"
-                autocomplete="off" />
+            <b-form-input type="text" name="myexp_username" placeholder="Username" autocomplete="off" />
             <small>Enter your username for myExperiment.</small>
-            <b-form-input
-                type="password"
-                name="myexp_password"
-                value=""
-                size="25"
-                placeholder="Password"
-                autocomplete="off" />
+            <b-form-input type="password" name="myexp_password" placeholder="Password" autocomplete="off" />
             <small>Enter your password for myExperiment.</small>
             <div class="mt-2">
-                <b-button type="submit">
-                    Export to myExperiment
-                </b-button>
+                <b-button type="submit"> Export to myExperiment </b-button>
             </div>
         </form>
     </div>

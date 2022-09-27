@@ -5,10 +5,7 @@ from html.parser import HTMLParser
 from http.client import HTTPConnection
 
 from markupsafe import escape
-from sqlalchemy import (
-    and_,
-    desc,
-)
+from sqlalchemy import desc
 from sqlalchemy.orm import (
     joinedload,
     lazyload,
