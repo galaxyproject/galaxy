@@ -15,7 +15,7 @@ import { ref } from "vue";
 export default {
     setup(props) {
         const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset);
+        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset);
         return { el, position };
     },
     props: {
@@ -32,6 +32,10 @@ export default {
             required: true,
         },
         rootOffset: {
+            type: Object,
+            required: true,
+        },
+        parentOffset: {
             type: Object,
             required: true,
         },

@@ -28,12 +28,12 @@
 import DraggableWrapper from "./Draggable";
 import WorkflowConnector from "./Connector";
 import { useCoordinatePosition } from "./composables/usesCoodinatePosition";
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 
 export default {
     setup(props) {
         const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset);
+        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset);
         return { el, position };
     },
     components: {
@@ -56,6 +56,10 @@ export default {
         rootOffset: {
             type: Object,
             required: true,
+        },
+        parentOffset: {
+            type: Object,
+            default: {},
         },
         offsetX: {
             type: Number,
