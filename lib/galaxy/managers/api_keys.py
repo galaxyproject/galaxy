@@ -13,7 +13,12 @@ class ApiKeyManager:
 
     def get_api_key(self, user: User) -> Optional[APIKeys]:
         sa_session = self.app.model.context
-        api_key = sa_session.query(APIKeys).filter_by(user_id=user.id, deleted=False).first()
+        api_key = (
+            sa_session.query(APIKeys)
+            .filter_by(user_id=user.id, deleted=False)
+            .order_by(APIKeys.create_time.desc())
+            .first()
+        )
         return api_key
 
     def create_api_key(self, user: User) -> APIKeys:
