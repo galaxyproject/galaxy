@@ -291,9 +291,9 @@ class BaseObjectStore(ObjectStore):
 
     def start(self):
         """
-        Call all postfork function(s) here. These functions spawn a thread,
-        but do not start it. We register start() with app, so app starts
-        the threads. Override this function in subclasses, if needed.
+        Call all postfork function(s) here. These functions spawn a thread.
+        We register start(self) with app, so app starts the threads. Override
+        this function in subclasses, as needed.
         """
         return
 
