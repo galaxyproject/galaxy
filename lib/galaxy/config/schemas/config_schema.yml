@@ -3466,6 +3466,12 @@ mapping:
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
 
+      celery_conf:
+        type: any
+        required: false
+        desc: |
+          Configuration options passed to Celery.
+
       enable_celery_tasks:
         type: bool
         default: false

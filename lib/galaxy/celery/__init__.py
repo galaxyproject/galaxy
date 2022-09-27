@@ -140,6 +140,11 @@ if backend:
 celery_app = Celery("galaxy", **celery_app_kwd)
 celery_app.set_default()
 
+# apply Celery config options set in Galaxy
+config = get_config()
+if config and config.celery_conf:
+    celery_app.conf.update(config.celery_conf)
+
 # setup cron like tasks...
 beat_schedule: Dict[str, Dict[str, Any]] = {}
 
