@@ -1045,7 +1045,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict["inputs"] = do_inputs(module.get_runtime_inputs(), step.state.inputs, "", step)
             step_dicts.append(step_dict)
         return {
-            "name" : workflow.name,
+            "name": workflow.name,
             "steps": step_dicts,
         }
 

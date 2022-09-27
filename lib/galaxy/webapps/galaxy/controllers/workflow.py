@@ -285,14 +285,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_id = trans.security.encode_id(stored_workflow.id)
 
         # Redirect to client.
-        return trans.response.send_redirect(web.url_for(
-            controller="published",
-            action="workflow",
-            id=workflow_id,
-            user_item_rating=user_item_rating,
-            ave_item_rating=ave_item_rating,
-            num_ratings=num_ratings,
-        ))
+        return trans.response.send_redirect(
+            web.url_for(
+                controller="published",
+                action="workflow",
+                id=workflow_id,
+                user_item_rating=user_item_rating,
+                ave_item_rating=ave_item_rating,
+                num_ratings=num_ratings,
+            )
+        )
 
     @web.expose
     @web.require_login("to import a workflow", use_panels=True)

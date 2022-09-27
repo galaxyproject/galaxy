@@ -585,14 +585,16 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         history_id = trans.security.encode_id(history.id)
 
         # Redirect to client.
-        return trans.response.send_redirect(web.url_for(
-            controller="published",
-            action="history",
-            id=history_id,
-            user_item_rating=user_item_rating,
-            ave_item_rating=ave_item_rating,
-            num_ratings=num_ratings,
-        ))
+        return trans.response.send_redirect(
+            web.url_for(
+                controller="published",
+                action="history",
+                id=history_id,
+                user_item_rating=user_item_rating,
+                ave_item_rating=ave_item_rating,
+                num_ratings=num_ratings,
+            )
+        )
 
     @web.legacy_expose_api
     @web.require_login("changing default permissions")
