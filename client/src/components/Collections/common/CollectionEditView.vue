@@ -87,7 +87,7 @@ export default {
     },
     data: function () {
         return {
-            attributes_data: {},
+            attributesData: {},
             errorMessage: null,
             jobError: null,
             noQuotaIncrease: true,
@@ -95,10 +95,10 @@ export default {
     },
     computed: {
         databaseKeyFromElements: function () {
-            return this.attributes_data.dbkey;
+            return this.attributesData.dbkey;
         },
         datatypeFromElements: function () {
-            return this.attributes_data.extension;
+            return this.attributesData.extension;
         },
         newCollectionInfoMessage: function () {
             let newCollectionMessage = "This will create a new collection in your History.";
@@ -107,6 +107,9 @@ export default {
             }
             return newCollectionMessage;
         },
+        historyId: function() {
+            return this.$store.getters["history/currentHistoryId"];
+        }
     },
     created() {
         this.getCollectionDataAndAttributes();
@@ -118,7 +121,7 @@ export default {
                 await this.$store.dispatch("fetchCollectionAttributes", this.collection_id);
                 attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
             }
-            this.attributes_data = attributesGet;
+            this.attributesData = attributesGet;
         },
         clickedSave: function (attribute, newValue) {
             const url = prependPath(`/api/dataset_collections/${this.collection_id}/copy`);
@@ -143,10 +146,7 @@ export default {
             axios.post(url, data).catch(this.handleError);
         },
         clickedDatatypeChange: function (selectedDatatype) {
-            const historyId = this.$store?.getters["history/currentHistoryId"];
-
-            console.log("New Type:", selectedDatatype);
-            const url = prependPath(`/api/histories/${historyId}/contents/bulk`);
+            const url = prependPath(`/api/histories/${this.historyId}/contents/bulk`);
             const data = {
                 operation: "change_datatype",
                 items: [
