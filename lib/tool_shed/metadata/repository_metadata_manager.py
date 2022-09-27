@@ -14,7 +14,6 @@ from sqlalchemy import (
 )
 
 from galaxy import util
-from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_shed.metadata.metadata_generator import (
     BaseMetadataGenerator,
     HandleResultT,
@@ -43,6 +42,7 @@ log = logging.getLogger(__name__)
 class ToolShedMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on ToolShed's app and repository constructs."""
 
+    app: ToolShedApp
     repository: Optional[Repository]
 
     # why is mypy making me re-annotate these things from the base class, it didn't
@@ -52,7 +52,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
 
     def __init__(
         self,
-        app: MinimalManagerApp,
+        app: ToolShedApp,
         repository: Optional[Repository] = None,
         changeset_revision: Optional[str] = None,
         repository_clone_url: Optional[str] = None,

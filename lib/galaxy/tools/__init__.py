@@ -3044,7 +3044,7 @@ class DataManagerTool(OutputParameterJSONTool):
         super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
         # process results of tool
         data_manager_id = job.data_manager_association.data_manager_id
-        data_manager = self.app.data_managers.get_manager(data_manager_id, None)
+        data_manager = self.app.data_managers.get_manager(data_manager_id)
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."

@@ -1,9 +1,13 @@
 import logging
 import os
 import shutil
-from typing import List
+from typing import (
+    List,
+    Union,
+)
 
-from galaxy.structured_app import StructuredApp
+from galaxy.structured_app import BasicSharedApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util import hg_util
 from galaxy.util import etree
 from galaxy.util.tool_shed import xml_util
@@ -12,7 +16,9 @@ log = logging.getLogger(__name__)
 
 
 class ShedToolDataTableManager:
-    def __init__(self, app: StructuredApp):
+    app: Union[BasicSharedApp, InstallationTarget]
+
+    def __init__(self, app: Union[BasicSharedApp, InstallationTarget]):
         self.app = app
 
     def generate_repository_info_elem(
