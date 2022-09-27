@@ -50,7 +50,7 @@ class AbstractTestCases:
             self.model_objects: Dict[Type[Base], Dict[int, Base]] = {Job: {345: job}}
             self.app.model.session = MockContext(self.model_objects)
 
-            self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
+            self.app._toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
             self.working_directory = os.path.join(self.test_directory, "working")
             self.app.object_store = cast(BaseObjectStore, MockObjectStore(self.working_directory))
 

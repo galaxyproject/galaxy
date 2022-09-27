@@ -10,7 +10,7 @@ from sqlalchemy import false
 
 from galaxy import util
 from galaxy.model.tool_shed_install import ToolShedRepository
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.metadata.metadata_generator import GalaxyMetadataGenerator
 from galaxy.tool_shed.util.repository_util import (
@@ -29,9 +29,11 @@ log = logging.getLogger(__name__)
 
 
 class InstalledRepositoryMetadataManager(GalaxyMetadataGenerator):
+    app: InstallationTarget
+
     def __init__(
         self,
-        app: MinimalManagerApp,
+        app: InstallationTarget,
         tpm: Optional[tool_panel_manager.ToolPanelManager] = None,
         repository: Optional[ToolShedRepository] = None,
         changeset_revision: Optional[str] = None,

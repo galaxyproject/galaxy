@@ -72,7 +72,10 @@ from galaxy.model.scoped_session import (
     install_model_scoped_session,
 )
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.model.tool_shed_install import mapping as install_mapping
+from galaxy.model.tool_shed_install import (
+    HasToolBox,
+    mapping as install_mapping,
+)
 from galaxy.objectstore import (
     BaseObjectStore,
     build_object_store_from_config,
@@ -92,8 +95,10 @@ from galaxy.security.vault import (
     VaultFactory,
 )
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
+from galaxy.tool_util.data import ToolDataTableManager as BaseToolDataTableManager
 from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
@@ -203,14 +208,13 @@ class SentryClientMixin:
             self.application_stack.register_postfork_function(postfork_sentry_client)
 
 
-class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMixin):
+class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMixin, HasToolBox):
     """Encapsulates the state of a minimal Galaxy application"""
 
     model: GalaxyModelMapping
     config: config.GalaxyAppConfiguration
     tool_cache: ToolCache
     job_config: jobs.JobConfiguration
-    toolbox: tools.ToolBox
     toolbox_search: ToolBoxSearch
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
@@ -286,15 +290,12 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             self.config.tool_configs.append(self.config.migrated_tools_config)
 
     def _configure_toolbox(self):
-        if not isinstance(self, BasicSharedApp):
-            raise Exception("Must inherit from BasicSharedApp")
-
         self.citations_manager = CitationsManager(self)
         self.biotools_metadata_source = get_galaxy_biotools_metadata_source(self.config)
 
         self.dynamic_tools_manager = DynamicToolManager(self)
         self._toolbox_lock = threading.RLock()
-        self.toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
+        self._toolbox = tools.ToolBox(self.config.tool_configs, self.config.tool_path, self)
         galaxy_root_dir = os.path.abspath(self.config.root)
         file_path = os.path.abspath(self.config.file_path)
         app_info = AppInfo(
@@ -331,6 +332,10 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
             ToolBoxSearch(self.toolbox, index_dir=self.config.tool_search_index_dir, index_help=index_help),
         )
 
+    @property
+    def toolbox(self) -> tools.ToolBox:
+        return self._toolbox
+
     def reindex_tool_search(self) -> None:
         # Call this when tools are added or removed.
         self.toolbox_search.build_index(tool_cache=self.tool_cache, toolbox=self.toolbox)
@@ -352,7 +357,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
 
     def _configure_tool_data_tables(self, from_shed_config):
         # Initialize tool data tables using the config defined by self.config.tool_data_table_config_path.
-        self.tool_data_tables = ToolDataTableManager(
+        self.tool_data_tables: BaseToolDataTableManager = ToolDataTableManager(
             tool_data_path=self.config.tool_data_path,
             config_filename=self.config.tool_data_table_config_path,
             other_config_dict=self.config,
@@ -481,7 +486,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 time.sleep(pause)
 
     @property
-    def tool_dependency_dir(self):
+    def tool_dependency_dir(self) -> Optional[str]:
         return self.toolbox.dependency_manager.default_base_path
 
     def _shutdown_object_store(self):
@@ -491,7 +496,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.model.engine.dispose()
 
 
-class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
+class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication, InstallationTarget[tools.ToolBox]):
     """Extends the MinimalGalaxyApplication with most managers that are not tied to a web or job handling context."""
 
     model: GalaxyModelMapping

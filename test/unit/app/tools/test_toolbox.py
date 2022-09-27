@@ -81,7 +81,7 @@ class BaseToolBoxTestCase(TestCase, UsesTools):
     @property
     def toolbox(self):
         if self._toolbox is None:
-            self.app.toolbox = self._toolbox = SimplifiedToolBox(self)
+            self.app._toolbox = self._toolbox = SimplifiedToolBox(self)
         return self._toolbox
 
     def setUp(self):
