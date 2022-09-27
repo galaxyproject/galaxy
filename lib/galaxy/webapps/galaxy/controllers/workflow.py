@@ -217,9 +217,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             operation = kwargs["operation"].lower()
             if operation == "rename":
                 return self.rename(trans, **kwargs)
-            history_ids = util.listify(kwargs.get("id", []))
+            workflow_ids = util.listify(kwargs.get("id", []))
             if operation == "sharing":
-                return self.sharing(trans, id=history_ids)
+                return self.sharing(trans, id=workflow_ids)
         return self.stored_list_grid(trans, **kwargs)
 
     @web.expose

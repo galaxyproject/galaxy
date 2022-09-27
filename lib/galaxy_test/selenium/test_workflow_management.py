@@ -40,8 +40,8 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         workflow_show = self.components.workflow_show
         title_item = self.components.workflow_show.title.wait_for_visible()
         assert "TestWorkflow1" in title_item.text
-        annotation_item = workflow_show.annotation.wait_for_visible()
-        assert "simple workflow" in annotation_item.text
+        import_link = workflow_show.import_link.wait_for_visible()
+        assert "Import Workflow" in import_link.get_attribute("title")
         self.screenshot("workflow_manage_view")
         # TODO: Test display of steps...
 

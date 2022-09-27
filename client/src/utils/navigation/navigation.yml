@@ -606,8 +606,8 @@ workflow_editor:
 
 workflow_show:
   selectors:
-    title: 'h3.item_name'
-    annotation: '.page-item-header .annotation'
+    title: '[data-description="workflow name"]'
+    import_link: '[data-description="workflow import"]'
 
 invocations:
   selectors:
