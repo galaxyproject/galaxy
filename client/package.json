@@ -25,6 +25,9 @@
     "vue-loader": "15.10.0"
   },
   "dependencies": {
+    "@citation-js/core": "^0.6.1",
+    "@citation-js/plugin-bibtex": "^0.6.1",
+    "@citation-js/plugin-csl": "^0.6.4",
     "@fontsource/atkinson-hyperlegible": "^5.0.15",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "@fortawesome/fontawesome-svg-core": "^6.2.1",
@@ -45,7 +48,6 @@
     "backbone": "1.4.1",
     "bootstrap": "4.6",
     "bootstrap-vue": "^2.23.0",
-    "citation-js": "^0.6.4",
     "core-js": "^3.33.0",
     "csv-parse": "^5.5.2",
     "d3": "^7.8.5",
