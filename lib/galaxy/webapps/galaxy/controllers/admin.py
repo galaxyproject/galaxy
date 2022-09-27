@@ -1584,6 +1584,46 @@ class AdminGalaxy(controller.JSAppLauncher):
                 "message": f"User '{user.email}' has been updated with {len(in_roles) - 1} associated roles and {len(in_groups)} associated groups (private roles are not displayed)."
             }
 
+    @web.expose
+    @web.require_admin
+    def manage_tool_dependencies(
+        self,
+        trans,
+        install_dependencies=False,
+        uninstall_dependencies=False,
+        remove_unused_dependencies=False,
+        selected_tool_ids=None,
+        selected_environments_to_uninstall=None,
+        viewkey="View tool-centric dependencies",
+    ):
+        if not selected_tool_ids:
+            selected_tool_ids = []
+        if not selected_environments_to_uninstall:
+            selected_environments_to_uninstall = []
+        tools_by_id = trans.app.toolbox.tools_by_id.copy()
+        view = next(iter(trans.app.toolbox.tools_by_id.values()))._view
+        if selected_tool_ids:
+            # install the dependencies for the tools in the selected_tool_ids list
+            if not isinstance(selected_tool_ids, list):
+                selected_tool_ids = [selected_tool_ids]
+            requirements = {tools_by_id[tid].tool_requirements for tid in selected_tool_ids}
+            if install_dependencies:
+                [view.install_dependencies(r) for r in requirements]
+            elif uninstall_dependencies:
+                [view.uninstall_dependencies(index=None, requirements=r) for r in requirements]
+        if selected_environments_to_uninstall and remove_unused_dependencies:
+            if not isinstance(selected_environments_to_uninstall, list):
+                selected_environments_to_uninstall = [selected_environments_to_uninstall]
+            view.remove_unused_dependency_paths(selected_environments_to_uninstall)
+        return trans.fill_template(
+            "/webapps/galaxy/admin/manage_dependencies.mako",
+            tools=tools_by_id,
+            requirements_status=view.toolbox_requirements_status,
+            tool_ids_by_requirements=view.tool_ids_by_requirements,
+            unused_environments=view.unused_dependency_paths,
+            viewkey=viewkey,
+        )
+
 
 # ---- Utility methods -------------------------------------------------------
 
