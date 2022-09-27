@@ -2194,6 +2194,28 @@ class GroupUserListModel(Model):
     __root__: List[GroupUserModel]
 
 
+class ToolShedRepository(Model):
+    tool_shed_url: str = Field(
+        title="Tool Shed URL", default="https://toolshed.g2.bx.psu.edu/", description="Tool Shed target"
+    )
+    name: str = Field(name="Name", description="Name of repository")
+    owner: str = Field(name="Owner", description="Owner of repository")
+
+
+class ToolShedRepositoryChangeset(ToolShedRepository):
+    changeset_revision: str
+
+
+CheckForUpdatesResponseStatusT = Literal["ok", "error"]
+
+
+class CheckForUpdatesResponse(Model):
+    status: CheckForUpdatesResponseStatusT = Field(title="Status", description="'ok' or 'error'")
+    message: str = Field(
+        title="Message", description="Unstructured description of tool shed updates discovered or failure"
+    )
+
+
 # Libraries -----------------------------------------------------------------
 
 

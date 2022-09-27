@@ -14,8 +14,6 @@ from galaxy import (
     web,
 )
 from galaxy.tool_shed.util.repository_util import (
-    check_for_updates,
-    check_or_update_tool_shed_status_for_installed_repository,
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
     generate_tool_shed_repository_install_dir,
@@ -593,8 +591,6 @@ def validate_repository_name(app, name, user):
 
 __all__ = (
     "change_repository_name_in_hgrc_file",
-    "check_for_updates",
-    "check_or_update_tool_shed_status_for_installed_repository",
     "create_or_update_tool_shed_repository",
     "create_repo_info_dict",
     "create_repository_admin_role",
