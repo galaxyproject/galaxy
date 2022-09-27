@@ -25,7 +25,7 @@ TRS_VERSION_WORKFLOWHUB = "4"
 WORKFLOW_NAME = "COVID-19: variation analysis on ARTIC PE data"
 
 
-class TrsImportTestCase(SeleniumIntegrationTestCase):
+class TestTrsImport(SeleniumIntegrationTestCase):
     ensure_registered = True
 
     @classmethod

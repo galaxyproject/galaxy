@@ -2,10 +2,8 @@
 Unit tests for base DataProviders.
 .. seealso:: galaxy.datatypes.dataproviders.base
 """
-import logging
 import os
 import tempfile
-import unittest
 from io import StringIO
 from typing import Type
 
@@ -14,46 +12,56 @@ from galaxy.datatypes.dataproviders import (
     exceptions,
 )
 from galaxy.util import clean_multiline_string
-
-log = logging.getLogger(__name__)
+from galaxy.util.unittest import TestCase
 
 # TODO: fix imports there after dist and retry
 # TODO: fix off by ones in FilteredDataProvider counters
 # currently because of dataproviders.dataset importing galaxy.model this doesn't work
 
 
-class BaseTestCase(unittest.TestCase):
+class TempFileCache:
+    """
+    Creates and caches tempfiles with/based-on the given contents.
+    """
+
+    def __init__(self):
+        self._content_dict = {}
+
+    def create_tmpfile(self, contents):
+        if contents not in self._content_dict:
+            # create a named tmp and write contents to it, return filename
+            with tempfile.NamedTemporaryFile(delete=False, mode="w+") as tmpfile:
+                tmpfile.write(contents)
+                tmpfile_name = tmpfile.name
+            self._content_dict[contents] = tmpfile_name
+        return self._content_dict[contents]
+
+    def clear(self):
+        for tmpfile in self._content_dict.values():
+            if os.path.exists(tmpfile):
+                os.unlink(tmpfile)
+        self._content_dict = {}
+
+
+class BaseTestCase(TestCase):
     default_file_contents = """
             One
             Two
             Three
         """
+    tmpfiles: TempFileCache
 
     @classmethod
     def setUpClass(cls):
-        log.debug("CLASS %s %s", ("_" * 40), cls.__name__)
+        cls.tmpfiles = TempFileCache()
 
     @classmethod
     def tearDownClass(cls):
-        log.debug("CLASS %s %s\n\n", ("_" * 40), cls.__name__)
-
-    def __init__(self, *args):
-        unittest.TestCase.__init__(self, *args)
-        self.tmpfiles = TempFileCache()
-
-    def setUp(self):
-        log.debug("BEGIN %s %s", ("." * 40), self._testMethodName)
-        if self._testMethodDoc:
-            log.debug(' """%s"""', self._testMethodDoc.strip())
-
-    def tearDown(self):
-        self.tmpfiles.clear()
-        log.debug("END\n")
+        cls.tmpfiles.clear()
 
     def format_tmpfile_contents(self, contents=None):
         contents = contents or self.default_file_contents
         contents = clean_multiline_string(contents)
-        log.debug("file contents:\n%s", contents)
         return contents
 
     def parses_default_content_as(self):
@@ -73,28 +81,23 @@ class Test_BaseDataProvider(BaseTestCase):
         if not source:
             source = open(filename)
         provider = self.provider_class(source, *provider_args, **provider_kwargs)
-        log.debug("provider: %s", provider)
         data = list(provider)
-        log.debug("data: %s", str(data))
         return (contents, provider, data)
 
     def test_iterators(self):
         source = (str(x) for x in range(1, 10))
         provider = self.provider_class(source)
         data = list(provider)
-        log.debug("data: %s", str(data))
         assert data == [str(x) for x in range(1, 10)]
 
         source = (str(x) for x in range(1, 10))
         provider = self.provider_class(source)
         data = list(provider)
-        log.debug("data: %s", str(data))
         assert data == [str(x) for x in range(1, 10)]
 
         source = (str(x) for x in range(1, 10))
         provider = self.provider_class(source)
         data = list(provider)
-        log.debug("data: %s", str(data))
         assert data == [str(x) for x in range(1, 10)]
 
     def test_validate_source(self):
@@ -131,7 +134,6 @@ class Test_BaseDataProvider(BaseTestCase):
         source = (str(x) for x in range(1, 10))
         provider = self.provider_class(source)
         data = provider.readlines()
-        log.debug("data: %s", str(data))
         assert data == [str(x) for x in range(1, 10)]
 
     def test_stringio(self):
@@ -146,7 +148,6 @@ class Test_BaseDataProvider(BaseTestCase):
         source = StringIO(contents)
         provider = self.provider_class(source)
         data = list(provider)
-        log.debug("data: %s", str(data))
         # provider should call close on file
         assert data == self.parses_default_content_as()
         assert source.closed
@@ -259,7 +260,6 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
             (3, 2, result_data[2:3], 1, 1, 1),
         ]
         for test in test_data:
-            log.debug("limit_offset_combo: %s", ", ".join(str(e) for e in test))
             limit_offset_combo(*test)
 
     def test_limit_with_offset_and_filter(self):
@@ -284,7 +284,6 @@ class Test_LimitedOffsetDataProvider(Test_FilteredDataProvider):
             (1, 2, result_data[2:3], 0, 0, 0),
         ]
         for test in test_data:
-            log.debug("limit_offset_combo: %s", ", ".join(str(e) for e in test))
             limit_offset_combo(*test)
 
 
@@ -324,9 +323,7 @@ class Test_MultiSourceDataProvider(BaseTestCase):
         source_list = [open(self.tmpfiles.create_tmpfile(c)) for c in contents]
 
         provider = self.provider_class(source_list)
-        log.debug("provider: %s", provider)
         data = list(provider)
-        log.debug("data: %s", str(data))
         assert "".join(data) == "".join(contents)
 
     def test_multiple_compound_sources(self):
@@ -367,36 +364,5 @@ class Test_MultiSourceDataProvider(BaseTestCase):
             base.FilteredDataProvider(source_list_f[2], filter_fn=no_youtube),
         ]
         provider = self.provider_class(source_list)
-        log.debug("provider: %s", provider)
         data = list(provider)
-        log.debug("data: %s", str(data))
         assert "".join(data) == "Two\nThree\nNine\nEleven\n"
-
-
-class TempFileCache:
-    """
-    Creates and caches tempfiles with/based-on the given contents.
-    """
-
-    def __init__(self):
-        self._content_dict = {}
-
-    def create_tmpfile(self, contents):
-        if contents not in self._content_dict:
-            # create a named tmp and write contents to it, return filename
-            with tempfile.NamedTemporaryFile(delete=False, mode="w+") as tmpfile:
-                tmpfile.write(contents)
-                tmpfile_name = tmpfile.name
-            log.debug("created tmpfile.name: %s", tmpfile_name)
-            self._content_dict[contents] = tmpfile_name
-
-        else:
-            log.debug("(cached): %s", self._content_dict[contents])
-        return self._content_dict[contents]
-
-    def clear(self):
-        for tmpfile in self._content_dict.values():
-            if os.path.exists(tmpfile):
-                log.debug("unlinking tmpfile: %s", tmpfile)
-                os.unlink(tmpfile)
-        self._content_dict = {}

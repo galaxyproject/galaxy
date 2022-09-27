@@ -1,8 +1,8 @@
 import os
 import string
 import tempfile
-import unittest
 
+import pytest
 from cryptography.fernet import InvalidToken
 
 from galaxy.model.unittest_utils.data_app import (
@@ -14,40 +14,51 @@ from galaxy.security.vault import (
     Vault,
     VaultFactory,
 )
+from galaxy.util.unittest import TestCase
 
 
-class VaultTestBase:
-    vault: Vault
+class AbstractTestCases:
+    """Test classes that should not be collected.
 
-    def test_read_write_secret(self):
-        self.vault.write_secret("my/test/secret", "hello world")
-        assert self.vault.read_secret("my/test/secret") == "hello world"  # type: ignore
+    Classes derived from unittest.TestCase are collected only if they are at the
+    module level: https://stackoverflow.com/a/25695512/4503125
 
-    def test_overwrite_secret(self):
-        self.vault.write_secret("my/new/secret", "hello world")
-        self.vault.write_secret("my/new/secret", "hello overwritten")
-        assert self.vault.read_secret("my/new/secret") == "hello overwritten"  # type: ignore
+    This workaround is needed because unittest/pytest try to collect test
+    classes even if they are abstract, and therefore their tests fails.
+    """
 
-    def test_valid_paths(self):
-        with self.assertRaises(InvalidVaultKeyException):  # type: ignore
-            self.vault.write_secret("", "hello world")
-        with self.assertRaises(InvalidVaultKeyException):  # type: ignore
-            self.vault.write_secret("my//new/secret", "hello world")
-        with self.assertRaises(InvalidVaultKeyException):  # type: ignore
-            self.vault.write_secret("my/ /new/secret", "hello world")
-        # leading and trailing slashes should be ignored
-        self.vault.write_secret("/my/new/secret with space/", "hello overwritten")
-        assert self.vault.read_secret("my/new/secret with space") == "hello overwritten"  # type: ignore
+    class VaultTestBase(TestCase):
+        vault: Vault
+
+        def test_read_write_secret(self):
+            self.vault.write_secret("my/test/secret", "hello world")
+            assert self.vault.read_secret("my/test/secret") == "hello world"  # type: ignore
+
+        def test_overwrite_secret(self):
+            self.vault.write_secret("my/new/secret", "hello world")
+            self.vault.write_secret("my/new/secret", "hello overwritten")
+            assert self.vault.read_secret("my/new/secret") == "hello overwritten"  # type: ignore
+
+        def test_valid_paths(self):
+            with self.assertRaises(InvalidVaultKeyException):  # type: ignore
+                self.vault.write_secret("", "hello world")
+            with self.assertRaises(InvalidVaultKeyException):  # type: ignore
+                self.vault.write_secret("my//new/secret", "hello world")
+            with self.assertRaises(InvalidVaultKeyException):  # type: ignore
+                self.vault.write_secret("my/ /new/secret", "hello world")
+            # leading and trailing slashes should be ignored
+            self.vault.write_secret("/my/new/secret with space/", "hello overwritten")
+            assert self.vault.read_secret("my/new/secret with space") == "hello overwritten"  # type: ignore
 
 
 VAULT_CONF_HASHICORP = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_hashicorp.yml")
 
 
-@unittest.skipIf(
+@pytest.mark.skipif(
     not os.environ.get("VAULT_ADDRESS") or not os.environ.get("VAULT_TOKEN"),
-    "VAULT_ADDRESS and VAULT_TOKEN env vars not set",
+    reason="VAULT_ADDRESS and VAULT_TOKEN env vars not set",
 )
-class TestHashicorpVault(VaultTestBase, unittest.TestCase):
+class TestHashicorpVault(AbstractTestCases.VaultTestBase):
     def setUp(self) -> None:
         with tempfile.NamedTemporaryFile(mode="w", prefix="vault_hashicorp", delete=False) as tempconf, open(
             VAULT_CONF_HASHICORP
@@ -70,7 +81,7 @@ VAULT_CONF_DATABASE_ROTATED = os.path.join(os.path.dirname(__file__), "fixtures/
 VAULT_CONF_DATABASE_INVALID = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_database_invalid_keys.yml")
 
 
-class TestDatabaseVault(VaultTestBase, unittest.TestCase):
+class TestDatabaseVault(AbstractTestCases.VaultTestBase):
     def setUp(self) -> None:
         config = GalaxyDataTestConfig(vault_config_file=VAULT_CONF_DATABASE)
         app = GalaxyDataTestApp(config=config)
@@ -103,11 +114,11 @@ class TestDatabaseVault(VaultTestBase, unittest.TestCase):
 VAULT_CONF_CUSTOS = os.path.join(os.path.dirname(__file__), "fixtures/vault_conf_custos.yml")
 
 
-@unittest.skipIf(
+@pytest.mark.skipif(
     not os.environ.get("CUSTOS_CLIENT_ID") or not os.environ.get("CUSTOS_CLIENT_SECRET"),
-    "CUSTOS_CLIENT_ID and CUSTOS_CLIENT_SECRET env vars not set",
+    reason="CUSTOS_CLIENT_ID and CUSTOS_CLIENT_SECRET env vars not set",
 )
-class TestCustosVault(VaultTestBase, unittest.TestCase):
+class TestCustosVault(AbstractTestCases.VaultTestBase):
     def setUp(self) -> None:
         with tempfile.NamedTemporaryFile(mode="w", prefix="vault_custos", delete=False) as tempconf, open(
             VAULT_CONF_CUSTOS

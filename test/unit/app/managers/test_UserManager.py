@@ -30,7 +30,7 @@ lowercase_email_user = dict(email="user5@user5.user5", username="user5", passwor
 
 
 # =============================================================================
-class UserManagerTestCase(BaseTestCase):
+class TestUserManager(BaseTestCase):
     def test_framework(self):
         self.log("(for testing) should have admin_user, and admin_user is current")
         assert self.trans.user == self.admin_user
@@ -121,7 +121,8 @@ class UserManagerTestCase(BaseTestCase):
         user2 = self.user_manager.create(**user2_data)
 
         self.log("should be able to tell if a user is anonymous")
-        self.assertRaises(exceptions.AuthenticationFailed, self.user_manager.error_if_anonymous, anon)
+        with self.assertRaises(exceptions.AuthenticationFailed):
+            self.user_manager.error_if_anonymous(anon)
         assert self.user_manager.error_if_anonymous(user2) == user2
 
     def test_current(self):
@@ -218,7 +219,7 @@ class UserManagerTestCase(BaseTestCase):
 
 
 # =============================================================================
-class UserSerializerTestCase(BaseTestCase):
+class TestUserSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.user_serializer = users.UserSerializer(self.app)
@@ -237,11 +238,9 @@ class UserSerializerTestCase(BaseTestCase):
         self.log("should have a serializer for all serializable keys")
         for key in self.user_serializer.serializable_keyset:
             instantiated_attribute = getattr(user, key, None)
-            if not (
-                (key in self.user_serializer.serializers)
-                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
-            ):
-                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
+            assert key in self.user_serializer.serializers or isinstance(
+                instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS
+            ), f"No serializer for: {key} ({instantiated_attribute})"
 
     def test_views_and_keys(self):
         user = self.user_manager.create(**user2_data)
@@ -278,7 +277,7 @@ class UserSerializerTestCase(BaseTestCase):
         self.assertIsJsonifyable(serialized)
 
 
-class CurrentUserSerializerTestCase(BaseTestCase):
+class TestCurrentUserSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[histories.HistoryManager]
@@ -305,7 +304,7 @@ class CurrentUserSerializerTestCase(BaseTestCase):
 
 
 # =============================================================================
-class UserDeserializerTestCase(BaseTestCase):
+class TestUserDeserializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.deserializer = users.UserDeserializer(self.app)
@@ -355,7 +354,7 @@ class UserDeserializerTestCase(BaseTestCase):
 
 
 # =============================================================================
-class AdminUserFilterParserTestCase(BaseTestCase):
+class TestAdminUserFilterParser(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.filter_parser = users.AdminUserFilterParser(self.app)

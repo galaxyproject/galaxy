@@ -42,7 +42,7 @@ class _BaseResubmissionIntegerationTestCase(integration_util.IntegrationTestCase
         assert exception_thrown
 
 
-class JobResubmissionIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionIntegration(_BaseResubmissionIntegerationTestCase):
 
     framework_tool_and_types = True
 
@@ -175,7 +175,7 @@ class JobResubmissionIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
         )
 
 
-class JobResubmissionDefaultIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionDefaultIntegration(_BaseResubmissionIntegerationTestCase):
 
     framework_tool_and_types = True
 
@@ -190,7 +190,7 @@ class JobResubmissionDefaultIntegrationTestCase(_BaseResubmissionIntegerationTes
         self._assert_job_passes(resource_parameters={"test_name": "test_default_resubmission"})
 
 
-class JobResubmissionDynamicIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegerationTestCase):
 
     framework_tool_and_types = True
 
@@ -204,7 +204,7 @@ class JobResubmissionDynamicIntegrationTestCase(_BaseResubmissionIntegerationTes
 
 
 # Verify the test tool fails if only a small amount of memory is allocated.
-class JobResubmissionSmallMemoryIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionSmallMemoryIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -216,7 +216,7 @@ class JobResubmissionSmallMemoryIntegrationTestCase(_BaseResubmissionIntegeratio
 
 # Verify the test tool will resubmit on failure tested above and will then pass with
 # proper resubmission condition.
-class JobResubmissionSmallMemoryResubmitsToLargeIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionSmallMemoryResubmitsToLargeIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -227,7 +227,7 @@ class JobResubmissionSmallMemoryResubmitsToLargeIntegrationTestCase(_BaseResubmi
 
 
 # Verify the test tool fails with an exit code issue.
-class JobResubmissionToolDetectedErrorIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionToolDetectedErrorIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -239,7 +239,7 @@ class JobResubmissionToolDetectedErrorIntegrationTestCase(_BaseResubmissionInteg
 
 # Verify the test tool will resubmit on failure tested above and will then pass in
 # an environment without a tool indicated error.
-class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionToolDetectedErrorResubmitsIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -250,7 +250,7 @@ class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmis
 
 
 # Verify that a failure to connect to pulsar can trigger a resubmit
-class JobResubmissionPulsarIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionPulsarIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

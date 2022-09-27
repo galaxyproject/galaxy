@@ -84,7 +84,7 @@ class BaseExportTestCase(BaseTestCase):
         return collection
 
 
-class ToBasicMarkdownTestCase(BaseExportTestCase):
+class TestToBasicMarkdown(BaseExportTestCase):
     def setUp(self):
         super().setUp()
         self.test_dataset_path = None
@@ -280,7 +280,7 @@ invocation_time(invocation_id=1)
         invocation = self._new_invocation()
         self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
         result = self._to_basic(example)
-        assert "\n    %s" % invocation.create_time.isoformat() in result
+        assert f"\n    {invocation.create_time.isoformat()}" in result
 
     def test_job_parameters(self):
         job = model.Job()
@@ -329,7 +329,7 @@ job_metrics(job_id=1)
         return to_basic_markdown(self.trans, example)
 
 
-class ReadyExportTestCase(BaseExportTestCase):
+class TestReadyExport(BaseExportTestCase):
     def test_ready_dataset_display(self):
         hda = self._new_hda()
         example = """

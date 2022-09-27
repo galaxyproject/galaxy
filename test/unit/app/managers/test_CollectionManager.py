@@ -18,7 +18,7 @@ user3_data = dict(email="user3@user3.user3", username="user3", password=default_
 
 
 # =============================================================================
-class DatasetCollectionManagerTestCase(BaseTestCase, CreatesCollectionsMixin):
+class TestDatasetCollectionManager(BaseTestCase, CreatesCollectionsMixin):
     def set_up_managers(self):
         super().set_up_managers()
         self.dataset_manager = self.app[DatasetManager]

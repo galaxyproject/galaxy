@@ -43,7 +43,7 @@ config1 = """\
 """
 
 
-class VisualizationsRegistry_TestCase(VisualizationsBase_TestCase):
+class TestVisualizationsRegistry(VisualizationsBase_TestCase):
     def test_plugin_load_from_repo(self):
         """should attempt load if criteria met"""
         mock_app = galaxy_mock.MockApp(root=glx_dir)

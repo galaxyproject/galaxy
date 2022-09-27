@@ -4,7 +4,6 @@ import logging
 import os
 import string
 import time
-import unittest
 from typing import Optional
 
 import pytest
@@ -22,6 +21,7 @@ from galaxy.tool_util.unittest_utils.sample_data import (
 )
 from galaxy.tools import ToolBox
 from galaxy.tools.cache import ToolCache
+from galaxy.util.unittest import TestCase
 
 log = logging.getLogger(__name__)
 
@@ -64,7 +64,7 @@ class SimplifiedToolBox(ToolBox):
         self.app.watchers.start()
 
 
-class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
+class BaseToolBoxTestCase(TestCase, UsesTools):
     _toolbox: Optional[SimplifiedToolBox] = None
 
     @property
@@ -105,7 +105,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
             "tools": [
                 {
                     "add_to_tool_panel": False,  # to have repository.includes_tools_for_display_in_tool_panel=False in InstalledRepositoryManager.activate_repository()
-                    "guid": "github.com/galaxyproject/example/test_tool/0.%s" % changeset,
+                    "guid": f"github.com/galaxyproject/example/test_tool/0.{changeset}",
                     "tool_config": "tool.xml",
                 }
             ],
@@ -173,7 +173,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
 
     def _init_dynamic_tool_conf(self):
         # Add a dynamic tool conf (such as a ToolShed managed one) to list of configs.
-        self._add_config("""<toolbox tool_path="%s"></toolbox>""" % self.test_directory)
+        self._add_config(f"""<toolbox tool_path="{self.test_directory}"></toolbox>""")
 
     def _tool_conf_path(self, name="tool_conf.xml"):
         path = os.path.join(self.test_directory, name)
@@ -187,7 +187,7 @@ class BaseToolBoxTestCase(unittest.TestCase, UsesTools):
         self.reindexed = True
 
 
-class ToolBoxTestCase(BaseToolBoxTestCase):
+class TestToolBox(BaseToolBoxTestCase):
     def test_load_file(self):
         self._init_tool()
         self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
@@ -447,7 +447,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
 
     def test_tool_dir(self):
         self._init_tool()
-        self._add_config("""<toolbox><tool_dir dir="%s" /></toolbox>""" % self.test_directory)
+        self._add_config(f"""<toolbox><tool_dir dir="{self.test_directory}" /></toolbox>""")
 
         toolbox = self.toolbox
         assert toolbox.get_tool("test_tool") is not None
@@ -462,7 +462,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
     def test_workflow_in_panel(self):
         stored_workflow = self.__test_workflow()
         encoded_id = self.app.security.encode_id(stored_workflow.id)
-        self._add_config("""<toolbox><workflow id="%s" /></toolbox>""" % encoded_id)
+        self._add_config(f"""<toolbox><workflow id="{encoded_id}" /></toolbox>""")
         assert len(self.toolbox._tool_panel) == 1
         panel_workflow = next(iter(self.toolbox._tool_panel.values()))
         assert panel_workflow == stored_workflow.latest_workflow
@@ -472,7 +472,7 @@ class ToolBoxTestCase(BaseToolBoxTestCase):
         stored_workflow = self.__test_workflow()
         encoded_id = self.app.security.encode_id(stored_workflow.id)
         self._add_config(
-            """<toolbox><section id="tid" name="TID"><workflow id="%s" /></section></toolbox>""" % encoded_id
+            f"""<toolbox><section id="tid" name="TID"><workflow id="{encoded_id}" /></section></toolbox>"""
         )
         assert len(self.toolbox._tool_panel) == 1
         section = self.toolbox._tool_panel["tid"]

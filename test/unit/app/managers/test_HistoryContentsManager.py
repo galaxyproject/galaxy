@@ -52,7 +52,7 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
 
 
 # =============================================================================
-class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
+class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_contents(self):
         user2 = self.user_manager.create(**user2_data)
         history = self.history_manager.create(name="history", user=user2)
@@ -329,7 +329,7 @@ class HistoryAsContainerTestCase(HistoryAsContainerBaseTestCase):
         assert self.contents_manager.contents(history, filters=filters) == [contents[1], contents[6]]
 
 
-class HistoryContentsFilterParserTestCase(HistoryAsContainerBaseTestCase):
+class TestHistoryContentsFilterParser(HistoryAsContainerBaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.filter_parser = history_contents.HistoryContentsFilters(self.app)

@@ -7,7 +7,7 @@ from galaxy.util import bunch
 from .util import BaseParameterTestCase
 
 
-class DataColumnParameterTestCase(BaseParameterTestCase):
+class TestDataColumnParameter(BaseParameterTestCase):
     def test_not_optional_by_default(self):
         assert not self.__param_optional()
 
@@ -99,8 +99,7 @@ class DataColumnParameterTestCase(BaseParameterTestCase):
             data_ref_text = ""
             if self.set_data_ref:
                 data_ref_text = 'data_ref="input_tsv"'
-            template_xml = """<param name="my_name" type="%s" %s %s %s %s></param>"""
-            param_str = template_xml % (self.type, data_ref_text, multi_text, optional_text, self.other_attributes)
+            param_str = f"""<param name="my_name" type="{self.type}" {data_ref_text} {multi_text} {optional_text} {self.other_attributes}></param>"""
             self._param = self._parameter_for(xml=param_str)
             self._param.ref_input = bunch.Bunch(formats=[datatypes_registry.get_datatype_by_extension("tabular")])
 

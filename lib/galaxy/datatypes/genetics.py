@@ -1236,9 +1236,3 @@ class AllegroLOD(LinkageStudies):
                 return False
 
         return True
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

@@ -7,7 +7,7 @@ from galaxy.tools.parameters import basic
 from .util import BaseParameterTestCase
 
 
-class SelectToolParameterTestCase(BaseParameterTestCase):
+class TestSelectToolParameter(BaseParameterTestCase):
     def test_validated_values(self):
         self.options_xml = """<options><filter type="data_meta" ref="input_bam" key="dbkey"/></options>"""
         with pytest.raises(ValueError) as exc_info:
@@ -52,8 +52,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
         assert ("testname2", "testpath2", False) in self.param.get_options(self.trans, {"input_bam": "testpath2"})
         assert len(self.param.get_options(self.trans, {"input_bam": "testpath3"})) == 0
 
-    # TODO: Good deal of overlap here with DataToolParameterTestCase,
-    # refactor.
+    # TODO: Good deal of overlap here with TestDataToolParameter, refactor.
     def setUp(self):
         super().setUp()
         self.test_history = model.History()
@@ -87,8 +86,7 @@ class SelectToolParameterTestCase(BaseParameterTestCase):
             data_ref_text = ""
             if self.set_data_ref:
                 data_ref_text = 'data_ref="input_bam"'
-            template_xml = """<param name="my_name" type="%s" %s %s %s>%s</param>"""
-            param_str = template_xml % (self.type, data_ref_text, multi_text, optional_text, options_text)
+            param_str = f"""<param name="my_name" type="{self.type}" {data_ref_text} {multi_text} {optional_text}>{options_text}</param>"""
             self._param = self._parameter_for(xml=param_str)
 
         return self._param

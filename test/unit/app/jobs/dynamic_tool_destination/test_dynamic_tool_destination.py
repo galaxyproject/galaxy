@@ -1,12 +1,12 @@
 import logging
 import os
-import unittest
 
 from testfixtures.logcapture import log_capture
 
 import galaxy.jobs.dynamic_tool_destination as dt
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from galaxy.jobs.mapper import JobMappingException
+from galaxy.util.unittest import TestCase
 from . import (
     mockGalaxy as mg,
     ymltests as yt,
@@ -88,7 +88,7 @@ valueZ = valueE * 1024
 valueY = valueZ * 1024
 
 
-class TestDynamicToolDestination(unittest.TestCase):
+class TestDynamicToolDestination(TestCase):
     def setUp(self):
         self.maxDiff = None
         self.logger = logging.getLogger()

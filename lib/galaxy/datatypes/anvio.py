@@ -5,7 +5,6 @@ https://github.com/merenlab/anvio
 import glob
 import logging
 import os
-import sys
 from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
@@ -168,9 +167,3 @@ class AnvioSamplesDB(AnvioDB):
     _anvio_basename = "SAMPLES.db"
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = "anvio_samples_db"
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

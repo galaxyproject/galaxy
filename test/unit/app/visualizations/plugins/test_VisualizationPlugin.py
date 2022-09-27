@@ -11,7 +11,7 @@ from galaxy.visualization.plugins import (
 from . import VisualizationsBase_TestCase
 
 
-class VisualizationsPlugin_TestCase(VisualizationsBase_TestCase):
+class TestVisualizationsPlugin(VisualizationsBase_TestCase):
     plugin_class = vis_plugin.VisualizationPlugin
 
     def test_default_init(self):

@@ -10,7 +10,6 @@ import os
 import re
 import shutil
 import struct
-import sys
 import tempfile
 import zipfile
 from functools import partial
@@ -942,9 +941,3 @@ DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gzip=gzip.GzipFile, bz2=bz
 
 class InappropriateDatasetContentError(Exception):
     pass
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

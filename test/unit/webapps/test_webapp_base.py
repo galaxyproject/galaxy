@@ -3,7 +3,6 @@ Unit tests for ``galaxy.web.framework.webapp``
 """
 import logging
 import re
-import unittest
 
 import galaxy.config
 from galaxy.app_unittest_utils import galaxy_mock
@@ -28,7 +27,7 @@ class CORSParsingMockConfig(galaxy_mock.MockAppConfig):
         return galaxy.config.Configuration._parse_allowed_origin_hostnames(hostnames)
 
 
-class GalaxyWebTransaction_Headers_TestCase(unittest.TestCase):
+class TestGalaxyWebTransactionHeaders:
     def _new_trans(self, allowed_origin_hostnames=None):
         app = galaxy_mock.MockApp()
         app.config = CORSParsingMockConfig(allowed_origin_hostnames=allowed_origin_hostnames)

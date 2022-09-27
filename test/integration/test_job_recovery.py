@@ -10,7 +10,8 @@ DELAY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "delay_job_conf.yml")
 SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 
 
-class JobRecoveryBeforeHandledIntegerationTestCase(integration_util.IntegrationTestCase):
+class TestJobRecoveryBeforeHandledIntegeration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     def setUp(self):
@@ -39,7 +40,8 @@ class JobRecoveryBeforeHandledIntegerationTestCase(integration_util.IntegrationT
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
 
-class JobRecoveryAfterHandledIntegerationTestCase(integration_util.IntegrationTestCase):
+class TestJobRecoveryAfterHandledIntegeration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     def setUp(self):

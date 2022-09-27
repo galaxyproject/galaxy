@@ -23,7 +23,7 @@ user3_data = dict(email="user3@user3.user3", username="user3", password=default_
 
 
 # =============================================================================
-class DatasetManagerTestCase(BaseTestCase):
+class TestDatasetManager(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
@@ -187,28 +187,25 @@ class DatasetManagerTestCase(BaseTestCase):
         assert not self.dataset_manager.permissions.access.is_permitted(dataset, None)
 
 
-# =============================================================================
-class DatasetRBACPermissionsTestCase(BaseTestCase):
-    def set_up_managers(self):
-        super().set_up_managers()
-        self.dataset_manager = DatasetManager(self.app)
-
-    # def test_manage( self ):
-    #     self.log("should be able to create a new Dataset")
-    #     dataset1 = self.dataset_manager.create()
-    #     assert isinstance(dataset1, model.Dataset)
-    #     assert dataset1 == self.app.model.context.query(model.Dataset).get(dataset1.id)
-    #
+# class TestDatasetRBACPermissions(BaseTestCase):
+#     def set_up_managers(self):
+#         super().set_up_managers()
+#         self.dataset_manager = DatasetManager(self.app)
+#
+#     def test_manage( self ):
+#         self.log("should be able to create a new Dataset")
+#         dataset1 = self.dataset_manager.create()
+#         assert isinstance(dataset1, model.Dataset)
+#         assert dataset1 == self.app.model.context.query(model.Dataset).get(dataset1.id)
 
 
-# =============================================================================
 # web.url_for doesn't work well in the framework
 def testable_url_for(*a, **k):
     return f"(fake url): {a}, {k}"
 
 
 @mock.patch("galaxy.managers.datasets.DatasetSerializer.url_for", testable_url_for)
-class DatasetSerializerTestCase(BaseTestCase):
+class TestDatasetSerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.dataset_manager = DatasetManager(self.app)
@@ -229,11 +226,9 @@ class DatasetSerializerTestCase(BaseTestCase):
         self.log("should have a serializer for all serializable keys")
         for key in self.dataset_serializer.serializable_keyset:
             instantiated_attribute = getattr(dataset, key, None)
-            if not (
-                (key in self.dataset_serializer.serializers)
-                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
-            ):
-                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
+            assert key in self.dataset_serializer.serializers or isinstance(
+                instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS
+            ), f"No serializer for: {key} ({instantiated_attribute})"
 
     def test_views_and_keys(self):
         dataset = self.dataset_manager.create()

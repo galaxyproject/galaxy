@@ -28,7 +28,7 @@ user4_data = dict(email="user4@user4.user4", username="user4", password=default_
 parsed_filter = base.ModelFilterParser.parsed_filter
 
 
-class HistoryManagerTestCase(BaseTestCase):
+class TestHistoryManager(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]
@@ -384,7 +384,7 @@ def testable_url_for(*a, **k):
 
 @mock.patch("galaxy.managers.histories.HistorySerializer.url_for", testable_url_for)
 @mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
-class HistorySerializerTestCase(BaseTestCase):
+class TestHistorySerializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]
@@ -410,11 +410,9 @@ class HistorySerializerTestCase(BaseTestCase):
         self.log("should have a serializer for all serializable keys")
         for key in self.history_serializer.serializable_keyset:
             instantiated_attribute = getattr(history1, key, None)
-            if not (
-                (key in self.history_serializer.serializers)
-                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
-            ):
-                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
+            assert key in self.history_serializer.serializers or isinstance(
+                instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS
+            ), f"No serializer for: {key} ({instantiated_attribute})"
 
     def test_views_and_keys(self):
         user2 = self.user_manager.create(**user2_data)
@@ -608,7 +606,7 @@ class HistorySerializerTestCase(BaseTestCase):
 
 
 # =============================================================================
-class HistoryDeserializerTestCase(BaseTestCase):
+class TestHistoryDeserializer(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]
@@ -669,7 +667,7 @@ class HistoryDeserializerTestCase(BaseTestCase):
 
 
 # =============================================================================
-class HistoryFiltersTestCase(BaseTestCase):
+class TestHistoryFilters(BaseTestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.history_manager = self.app[HistoryManager]

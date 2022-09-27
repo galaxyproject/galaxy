@@ -5,7 +5,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import unittest
 from typing import (
     ClassVar,
     NamedTuple,
@@ -97,43 +96,42 @@ def cli_job_config(remote_connection, shell_plugin="ParamikoShell", job_plugin="
     return job_conf.name
 
 
-@integration_util.skip_unless_docker()
-class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
-    container_name: ClassVar[str]
-    jobs_directory: ClassVar[str]
-    remote_connection: ClassVar[RemoteConnection]
-    image: ClassVar[str]
-    shell_plugin: ClassVar[str]
-    job_plugin: ClassVar[str]
+class AbstractTestCases:
+    @integration_util.skip_unless_docker()
+    class BaseCliIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+        container_name: ClassVar[str]
+        jobs_directory: ClassVar[str]
+        remote_connection: ClassVar[RemoteConnection]
+        image: ClassVar[str]
+        shell_plugin: ClassVar[str]
+        job_plugin: ClassVar[str]
 
-    @classmethod
-    def setUpClass(cls):
-        if cls is BaseCliIntegrationTestCase:
-            raise unittest.SkipTest("Base class")
-        cls.container_name = "%s_container" % cls.__name__
-        cls.jobs_directory = tempfile.mkdtemp()
-        cls.remote_connection = start_ssh_docker(
-            container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image
-        )
-        super().setUpClass()
+        @classmethod
+        def setUpClass(cls):
+            cls.container_name = f"{cls.__name__}_container"
+            cls.jobs_directory = tempfile.mkdtemp()
+            cls.remote_connection = start_ssh_docker(
+                container_name=cls.container_name, jobs_directory=cls.jobs_directory, image=cls.image
+            )
+            super().setUpClass()
 
-    @classmethod
-    def tearDownClass(cls):
-        stop_ssh_docker(cls.container_name, cls.remote_connection)
-        super().tearDownClass()
+        @classmethod
+        def tearDownClass(cls):
+            stop_ssh_docker(cls.container_name, cls.remote_connection)
+            super().tearDownClass()
 
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        config["jobs_directory"] = cls.jobs_directory
-        config["file_path"] = cls.jobs_directory
-        config["job_config_file"] = cli_job_config(
-            remote_connection=cls.remote_connection, shell_plugin=cls.shell_plugin, job_plugin=cls.job_plugin
-        )
+        @classmethod
+        def handle_galaxy_config_kwds(cls, config):
+            config["jobs_directory"] = cls.jobs_directory
+            config["file_path"] = cls.jobs_directory
+            config["job_config_file"] = cli_job_config(
+                remote_connection=cls.remote_connection, shell_plugin=cls.shell_plugin, job_plugin=cls.job_plugin
+            )
 
-    @skip_without_tool("job_environment_default")
-    def test_running_cli_job(self):
-        job_env = self._run_and_get_environment_properties()
-        assert job_env.some_env == "42"
+        @skip_without_tool("job_environment_default")
+        def test_running_cli_job(self):
+            job_env = self._run_and_get_environment_properties()
+            assert job_env.some_env == "42"
 
 
 @pytest.mark.xfail(reason="Container entrypoint occasionally fails to set default queue")
@@ -155,17 +153,17 @@ class SecureShell:
     shell_plugin = "SecureShell"
 
 
-class ParamikoCliSlurmIntegrationTestCase(SlurmSetup, ParamikoShell, BaseCliIntegrationTestCase):
+class TestParamikoCliSlurmIntegration(SlurmSetup, ParamikoShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass
 
 
-class ShellJobCliSlurmIntegrationTestCase(SlurmSetup, SecureShell, BaseCliIntegrationTestCase):
+class TestShellJobCliSlurmIntegration(SlurmSetup, SecureShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass
 
 
-class ParamikoCliOpenPBSIntegrationTestCase(OpenPBSSetup, ParamikoShell, BaseCliIntegrationTestCase):
+class TestParamikoCliOpenPBSIntegration(OpenPBSSetup, ParamikoShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass
 
 
-class ShellJobCliOpenPBSIntegrationTestCase(OpenPBSSetup, SecureShell, BaseCliIntegrationTestCase):
+class TestShellJobCliOpenPBSIntegration(OpenPBSSetup, SecureShell, AbstractTestCases.BaseCliIntegrationTestCase):
     pass

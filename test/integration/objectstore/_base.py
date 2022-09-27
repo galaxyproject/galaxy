@@ -51,6 +51,7 @@ def stop_minio(container_name):
 
 class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
 
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod
@@ -67,7 +68,7 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
             dir_name = os.path.basename(path)
             os.path.join(temp_directory, dir_name)
             os.makedirs(path)
-            setattr(cls, "%s_path" % dir_name, path)
+            setattr(cls, f"{dir_name}_path", path)
 
     def setUp(self):
         super().setUp()
@@ -85,7 +86,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def setUpClass(cls):
-        cls.container_name = "%s_container" % cls.__name__
+        cls.container_name = f"{cls.__name__}_container"
         start_minio(cls.container_name)
         super().setUpClass()
 

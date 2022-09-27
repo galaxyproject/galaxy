@@ -15,7 +15,9 @@ from galaxy_test.driver.integration_setup import (
 )
 
 
-class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.IntegrationTestCase):
+class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self._write_file_fixtures()

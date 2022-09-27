@@ -169,12 +169,14 @@ class KubernetesDatasetPopulator(DatasetPopulator):
         try:
             super().wait_for_history(*args, **kwargs)
         except AssertionError:
-            print("Kubernetes status:\n %s" % unicodify(subprocess.check_output(["kubectl", "describe", "nodes"])))
+            print(
+                "Kubernetes status:\n {}".format(unicodify(subprocess.check_output(["kubectl", "describe", "nodes"])))
+            )
             raise
 
 
 @integration_util.skip_unless_kubernetes()
-class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
     def setUp(self):
         super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
@@ -299,7 +301,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
             assert status["status"]["active"] == 1
 
             output = unicodify(subprocess.check_output(["kubectl", "delete", "job", external_id, "-o", "name"]))
-            assert "job.batch/%s" % external_id in output
+            assert f"job.batch/{external_id}" in output
 
             result = self.dataset_populator.wait_for_tool_run(
                 run_response=running_response, history_id=history_id, assert_ok=False
@@ -381,7 +383,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
 
         # Tool is mapped to destination without cleanup, make sure job still exists in kubernetes API
         job_dict = running_response["jobs"][0]
-        job = self.galaxy_interactor.get("jobs/%s" % job_dict["id"], admin=True).json()
+        job = self.galaxy_interactor.get("jobs/{}".format(job_dict["id"]), admin=True).json()
         external_id = job["external_id"]
         output = unicodify(subprocess.check_output(["kubectl", "get", "job", external_id, "-o", "json"]))
         status = json.loads(output)

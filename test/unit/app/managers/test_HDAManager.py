@@ -34,7 +34,7 @@ class HDATestCase(BaseTestCase):
 
 
 # =============================================================================
-class HDAManagerTestCase(HDATestCase):
+class TestHDAManager(HDATestCase):
     def test_base(self):
         hda_model = model.HistoryDatasetAssociation
         owner = self.user_manager.create(**user2_data)
@@ -365,7 +365,7 @@ def testable_url_for(*a, **k):
 
 
 @mock.patch("galaxy.managers.hdas.HDASerializer.url_for", testable_url_for)
-class HDASerializerTestCase(HDATestCase):
+class TestHDASerializer(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.hda_serializer = hdas.HDASerializer(self.app)
@@ -400,12 +400,11 @@ class HDASerializerTestCase(HDATestCase):
         self.log("should have a serializer for all serializable keys")
         for key in self.hda_serializer.serializable_keyset:
             instantiated_attribute = getattr(hda, key, None)
-            if not (
-                (key in self.hda_serializer.serializers)
-                or (isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS))
-                or (is_metadata(key))
-            ):
-                self.fail(f"no serializer for: {key} ({instantiated_attribute})")
+            assert (
+                key in self.hda_serializer.serializers
+                or isinstance(instantiated_attribute, self.TYPES_NEEDING_NO_SERIALIZERS)
+                or is_metadata(key)
+            ), f"No serializer for: {key} ({instantiated_attribute})"
 
     def test_views_and_keys(self):
         hda = self._create_vanilla_hda()
@@ -527,7 +526,7 @@ class HDASerializerTestCase(HDATestCase):
 
 
 # =============================================================================
-class HDADeserializerTestCase(HDATestCase):
+class TestHDADeserializer(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.hda_deserializer = hdas.HDADeserializer(self.app)
@@ -634,7 +633,7 @@ class HDADeserializerTestCase(HDATestCase):
 
 
 # =============================================================================
-class HDAFilterParserTestCase(HDATestCase):
+class TestHDAFilterParser(HDATestCase):
     def set_up_managers(self):
         super().set_up_managers()
         self.filter_parser = hdas.HDAFilterParser(self.app)

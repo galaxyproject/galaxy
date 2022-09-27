@@ -17,7 +17,7 @@ THIS_DIR = os.path.dirname(__file__)
 SOURCE_TOOL_DATA_DIRECTORY = os.path.join(THIS_DIR, os.pardir, "functional", "tool-data")
 
 
-class AdminToolDataIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestAdminToolDataIntegration(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     def setUp(self):

@@ -1,5 +1,4 @@
 import string
-import unittest
 from typing import cast
 
 from galaxy import model
@@ -13,6 +12,7 @@ from galaxy.tools.actions import (
     on_text_for_names,
 )
 from galaxy.util import XML
+from galaxy.util.unittest import TestCase
 
 # I cannot think of a saner way to test if data is being wrapped than use a
 # data param in the output label - though you would probably never want to do
@@ -58,7 +58,7 @@ def test_on_text_for_names():
     assert_on_text_is("data 1 and data 2", "data 1", "data 1", "data 2")
 
 
-class DefaultToolActionTestCase(unittest.TestCase, tools_support.UsesTools):
+class TestDefaultToolAction(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
         history = model.History()

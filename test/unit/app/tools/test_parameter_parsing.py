@@ -2,13 +2,12 @@ from typing import (
     Any,
     Dict,
 )
-from unittest import TestCase
 
 from galaxy.tools.parameters.meta import process_key
 from .util import BaseParameterTestCase
 
 
-class ProcessKeyTestCase(TestCase):
+class TestProcessKey:
     def test_process_key(self):
         nested_dict: Dict[str, Any] = {}
         d = {
@@ -43,7 +42,7 @@ class ProcessKeyTestCase(TestCase):
         assert nested_dict == expected_dict
 
 
-class ParameterParsingTestCase(BaseParameterTestCase):
+class TestParameterParsing(BaseParameterTestCase):
     """Test the parsing of XML for most parameter types - in many
     ways these are not very good tests since they break the abstraction
     established by the tools. The docs tests in basic.py are better but

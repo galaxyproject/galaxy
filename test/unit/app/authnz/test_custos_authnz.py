@@ -1,7 +1,6 @@
 import hashlib
 import json
 import os
-import unittest
 import uuid
 from datetime import (
     datetime,
@@ -24,9 +23,10 @@ from galaxy.model import (
     User,
 )
 from galaxy.util import unicodify
+from galaxy.util.unittest import TestCase
 
 
-class CustosAuthnzTestCase(unittest.TestCase):
+class TestCustosAuthnz(TestCase):
 
     _create_oauth2_session_called = False
     _fetch_token_called = False
@@ -237,6 +237,7 @@ class CustosAuthnzTestCase(unittest.TestCase):
 
     def tearDown(self):
         requests.get = self.orig_requests_get
+        os.environ.pop("OAUTHLIB_INSECURE_TRANSPORT", None)
 
     def test_parse_config(self):
         assert self.custos_authnz.config["verify_ssl"]
@@ -298,15 +299,15 @@ class CustosAuthnzTestCase(unittest.TestCase):
             },
         )
         self.setupMocks()
-        assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None) is None
+        assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") is None
         self.custos_authnz.authenticate(self.trans)
-        assert "1" == os.environ["OAUTHLIB_INSECURE_TRANSPORT"]
+        assert os.environ["OAUTHLIB_INSECURE_TRANSPORT"] == "1"
 
     def test_authenticate_does_not_set_env_var_when_https_redirect(self):
         assert self.custos_authnz.config["redirect_uri"].startswith("https:")
-        assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None) is None
+        assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") is None
         self.custos_authnz.authenticate(self.trans)
-        assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT", None) is None
+        assert os.environ.get("OAUTHLIB_INSECURE_TRANSPORT") is None
 
     def test_callback_verify_with_state_cookie(self):
         """Verify that state from cookie is passed to OAuth2Session constructor."""
