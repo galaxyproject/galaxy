@@ -10,7 +10,6 @@ class CollectionEditTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_change_dbkey_simple_list(self):
-        self.use_beta_history()
         self.create_simple_list_collection()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
@@ -19,7 +18,6 @@ class CollectionEditTestCase(SeleniumTestCase):
         dbkeyNew = "hg17"
         self.change_dbkey_value_and_click_submit(dbkeyValue, dbkeyNew)
         self.history_panel_wait_for_hid_ok(4)
-        self.use_beta_history()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
         self.check_current_dbkey_value(dbkeyNew)
@@ -27,9 +25,7 @@ class CollectionEditTestCase(SeleniumTestCase):
     def create_simple_list_collection(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])
-
         self._collection_dropdown("build list")
-
         self.collection_builder_set_name("my cool list")
         self.screenshot("collection_builder_list")
         self.collection_builder_create()

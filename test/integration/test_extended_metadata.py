@@ -42,7 +42,9 @@ TEST_TOOL_IDS = [
 ]
 
 
-class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -91,7 +93,9 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
         assert dataset["created_from_basename"] == "4.bed"
 
 
-class ExtendedMetadataDeferredIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

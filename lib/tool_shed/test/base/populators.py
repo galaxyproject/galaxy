@@ -1,4 +1,8 @@
-from typing import Union
+from typing import (
+    List,
+    Optional,
+    Union,
+)
 
 import requests
 
@@ -10,9 +14,12 @@ from galaxy_test.base import api_asserts
 from galaxy_test.base.api_util import random_name
 from tool_shed_client.schema import (
     Category,
+    CreateCategoryRequest,
     GetOrderedInstallableRevisionsRequest,
     OrderedInstallableRevisions,
     Repository,
+    RepositoryIndexRequest,
+    RepositoryIndexResponse,
     RepositoryMetadata,
     RepositorySearchRequest,
     RepositorySearchResults,
@@ -109,12 +116,29 @@ class ToolShedPopulator:
         index_response = self._admin_api_interactor.put("tools/build_search_index")
         index_response.raise_for_status()
 
-    def new_category(self, prefix=DEFAULT_PREFIX) -> Category:
-        name = random_name(prefix=prefix)
-        body = {"name": name, "description": "testcreaterepo"}
-        response = self._admin_api_interactor.post("categories", json=body)
+    def new_category(
+        self, name: Optional[str] = None, description: Optional[str] = None, prefix=DEFAULT_PREFIX
+    ) -> Category:
+        category_name = name or random_name(prefix=prefix)
+        category_description = description or "testcreaterepo"
+        request = CreateCategoryRequest(name=category_name, description=category_description)
+        response = self._admin_api_interactor.post("categories", json=request.dict())
         response.raise_for_status()
         return Category(**response.json())
+
+    def get_categories(self) -> List[Category]:
+        response = self._api_interactor.get("categories")
+        response.raise_for_status()
+        return [Category(**c) for c in response.json()]
+
+    def get_category_with_name(self, name: str) -> Optional[Category]:
+        response = self._api_interactor.get("categories")
+        response.raise_for_status()
+        categories = [c for c in self.get_categories() if c.name == name]
+        return categories[0] if categories else None
+
+    def has_category_with_name(self, name: str) -> bool:
+        return self.get_category_with_name(name) is not None
 
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
         request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)
@@ -124,9 +148,25 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(revisions_response)
         return OrderedInstallableRevisions(__root__=revisions_response.json())
 
-    def get_metadata(self, repository: HasRepositoryId) -> RepositoryMetadata:
+    def get_repository_for(self, owner: str, name: str, deleted: str = "false") -> Optional[Repository]:
+        request = RepositoryIndexRequest(
+            owner=owner,
+            name=name,
+            deleted=deleted,
+        )
+        index = self.repository_index(request)
+        return index.__root__[0] if index.__root__ else None
+
+    def repository_index(self, request: Optional[RepositoryIndexRequest]) -> RepositoryIndexResponse:
+        repository_response = self._api_interactor.get("repositories", params=(request.dict() if request else {}))
+        api_asserts.assert_status_code_is_ok(repository_response)
+        return RepositoryIndexResponse(__root__=repository_response.json())
+
+    def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)
-        metadata_response = self._api_interactor.get(f"repositories/{repository_id}/metadata")
+        metadata_response = self._api_interactor.get(
+            f"repositories/{repository_id}/metadata?downloadable_only={downloadable_only}"
+        )
         api_asserts.assert_status_code_is_ok(metadata_response)
         return RepositoryMetadata(__root__=metadata_response.json())
 

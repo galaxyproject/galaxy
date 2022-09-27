@@ -815,17 +815,23 @@ class RepositoriesController(BaseAPIController):
 
         :param id: the encoded id of the Repository object
 
+        :param downloadable_only: Return only downloadable revisions (defaults to True).
+                                  Added for test cases - shouldn't be considered part of the stable API.
+
         :returns:   A dictionary containing the specified repository's metadata, by changeset,
                     recursively including dependencies and their metadata.
 
         :not found:  Empty dictionary.
         """
         recursive = util.asbool(kwd.get("recursive", "True"))
+        downloadable_only = util.asbool(kwd.get("downloadable_only", "True"))
         all_metadata = {}
         repository = repository_util.get_repository_in_tool_shed(
             self.app, id, eagerload_columns=["downloadable_revisions"]
         )
-        for changeset, changehash in repository.installable_revisions(self.app):
+        for changeset, changehash in metadata_util.get_metadata_revisions(
+            self.app, repository, sort_revisions=True, downloadable=downloadable_only
+        ):
             metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(
                 self.app, repository, changehash
             )

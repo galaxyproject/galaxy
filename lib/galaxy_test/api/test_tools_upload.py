@@ -51,22 +51,22 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_upload_posix_newline_fixes_by_default(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_fetch_posix_unaltered(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch")
-        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
+        assert result_content == ONE_TO_SIX_ON_WINDOWS
 
     def test_upload_disable_posix_fix(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, to_posix_lines=None)
-        self.assertEqual(result_content, windows_content)
+        assert result_content == windows_content
 
     def test_fetch_post_lines_option(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch", to_posix_lines=True)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     # Test how trailing new lines are added
     # - upload1 adds by default because to_posix_lines is on by default
@@ -75,47 +75,47 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_post_lines_trailing(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_post_lines_trailing_off(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content, to_posix_lines=False)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+        assert result_content == ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
 
     def test_fetch_post_lines_trailing_off_by_default(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content, api="fetch")
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+        assert result_content == ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
 
     def test_fetch_post_lines_trailing_if_to_posix(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content, api="fetch", to_posix_lines=True)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_upload_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table)
-        self.assertEqual(result_content, table)
+        assert result_content == table
 
     def test_fetch_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch")
-        self.assertEqual(result_content, table)
+        assert result_content == table
 
     def test_upload_tab_to_space(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, space_to_tab="Yes")
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_fetch_tab_to_space(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_fetch_tab_to_space_doesnt_swap_newlines(self):
         table = ONE_TO_SIX_WITH_SPACES_ON_WINDOWS
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
-        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
+        assert result_content == ONE_TO_SIX_ON_WINDOWS
 
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -191,42 +191,42 @@ class ToolsUploadTestCase(ApiTestCase):
         rdata_path = TestDataResolver().get_filename("1.RData")
         with open(rdata_path, "rb") as fh:
             rdata_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEqual(rdata_metadata["file_ext"], "rdata")
+        assert rdata_metadata["file_ext"] == "rdata"
 
     @skip_without_datatype("csv")
     def test_csv_upload(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="csv")
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("csv")
     def test_csv_upload_auto(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("csv")
     def test_csv_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="csv", to_posix_lines=True)
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("csv")
     def test_csv_sniff_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="auto", to_posix_lines=True)
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("tiff")
     def test_image_upload_auto(self):
         tiff_path = TestDataResolver().get_filename("1.tiff")
         with open(tiff_path, "rb") as fh:
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEqual(tiff_metadata["file_ext"], "tiff")
+        assert tiff_metadata["file_ext"] == "tiff"
 
     @uses_test_history(require_new=False)
     def test_newlines_stage_fetch(self, history_id):
@@ -241,7 +241,7 @@ class ToolsUploadTestCase(ApiTestCase):
         dataset = datasets[0][0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline.
-        self.assertEqual(content, "This is a line of text.\n")
+        assert content == "This is a line of text.\n"
 
     @uses_test_history(require_new=False)
     def test_stage_object(self, history_id):
@@ -251,7 +251,7 @@ class ToolsUploadTestCase(ApiTestCase):
         )
         dataset = datasets[0][0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
-        self.assertEqual(content.strip(), '"randomstr"')
+        assert content.strip() == '"randomstr"'
 
     @uses_test_history(require_new=False)
     def test_stage_object_fetch(self, history_id):
@@ -259,7 +259,7 @@ class ToolsUploadTestCase(ApiTestCase):
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
         dataset = datasets[0][0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
-        self.assertEqual(content, '"randomstr"')
+        assert content == '"randomstr"'
 
     @uses_test_history(require_new=False)
     def test_newlines_stage_fetch_configured(self, history_id):
@@ -277,7 +277,7 @@ class ToolsUploadTestCase(ApiTestCase):
         dataset = datasets[0][0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline, but we disabled with 'to_posix_lines=False' above.
-        self.assertEqual(content, "This is a line of text.")
+        assert content == "This is a line of text."
         details = self.dataset_populator.get_history_dataset_details(history_id=history_id, dataset=dataset)
         assert details["genome_build"] == "hg19"
 

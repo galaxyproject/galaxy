@@ -34,15 +34,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_convert_repository(self):
         """Create and populate convert_chars_0160."""
@@ -53,7 +45,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             description=convert_repository_description,
             long_description=convert_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -76,7 +68,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -99,7 +91,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             description=filter_repository_description,
             long_description=filter_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -119,22 +111,16 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
         Each of the three repositories should depend on the other two, to make this as circular as possible.
         """
-        filter_repository = self.test_db_util.get_repository_by_name_and_owner(
-            filter_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         dependency_xml_path = self.generate_temp_path("test_0160", additional_paths=["column"])
         filter_revision = self.get_repository_tip(filter_repository)
         column_revision = self.get_repository_tip(column_repository)
         convert_revision = self.get_repository_tip(convert_repository)
-        column_tuple = (self.url, column_repository.name, column_repository.user.username, column_revision)
-        convert_tuple = (self.url, convert_repository.name, convert_repository.user.username, convert_revision)
-        filter_tuple = (self.url, filter_repository.name, filter_repository.user.username, filter_revision)
+        column_tuple = (self.url, column_repository.name, column_repository.owner, column_revision)
+        convert_tuple = (self.url, convert_repository.name, convert_repository.owner, convert_revision)
+        filter_tuple = (self.url, filter_repository.name, filter_repository.owner, filter_revision)
         self.create_repository_dependency(
             repository=column_repository,
             repository_tuples=[convert_tuple, filter_tuple],
@@ -156,15 +142,9 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0025_verify_repository_dependency(self):
         """Verify that the previously generated repositiory dependency displays correctly."""
-        filter_repository = self.test_db_util.get_repository_by_name_and_owner(
-            filter_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         self.check_repository_dependency(
             repository=column_repository,
             depends_on_repository=convert_repository,

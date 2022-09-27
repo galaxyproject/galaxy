@@ -2,7 +2,6 @@
 Neo4j Composite Dataset
 """
 import logging
-import sys
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
@@ -132,9 +131,3 @@ class Neo4jDBzip(Neo4j, Data):
         self.add_composite_file(
             "%s.zip", description="neostore zip", substitute_name_with_metadata="reference_name", is_binary=True
         )
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

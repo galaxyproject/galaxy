@@ -79,7 +79,7 @@ import CodeRow from "./CodeRow.vue";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
-import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "utils/job-states-model";
 import { formatDuration, intervalToDuration } from "date-fns";
 
 export default {

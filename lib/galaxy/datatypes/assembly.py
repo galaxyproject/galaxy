@@ -7,7 +7,6 @@ for velvet assembler tool in galaxy
 import logging
 import os
 import re
-import sys
 
 from galaxy.datatypes import (
     data,
@@ -242,9 +241,3 @@ class Velvet(Html):
     def set_meta(self, dataset, **kwd):
         Html.set_meta(self, dataset, **kwd)
         self.regenerate_primary_file(dataset)
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

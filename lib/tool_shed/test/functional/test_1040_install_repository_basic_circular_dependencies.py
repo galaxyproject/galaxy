@@ -22,15 +22,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_freebayes_repository(self):
         """Create and populate freebayes_0040."""
@@ -44,7 +36,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             description=freebayes_repository_description,
             long_description=freebayes_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -73,7 +65,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             description=filtering_repository_description,
             long_description=filtering_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -98,17 +90,17 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         # Filtering will have two revisions, one with just the filtering tool, and one with the filtering tool and a dependency on freebayes.
         global running_standalone
         if running_standalone:
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
+            freebayes_repository = self._get_repository_by_name_and_owner(
                 freebayes_repository_name, common.test_user_1_name
             )
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
+            filtering_repository = self._get_repository_by_name_and_owner(
                 filtering_repository_name, common.test_user_1_name
             )
             repository_dependencies_path = self.generate_temp_path("test_1040", additional_paths=["circular"])
             repository_tuple = (
                 self.url,
                 freebayes_repository.name,
-                freebayes_repository.user.username,
+                freebayes_repository.owner,
                 self.get_repository_tip(freebayes_repository),
             )
             self.create_repository_dependency(
@@ -119,7 +111,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             repository_tuple = (
                 self.url,
                 filtering_repository.name,
-                filtering_repository.user.username,
+                filtering_repository.owner,
                 self.get_repository_tip(filtering_repository),
             )
             self.create_repository_dependency(

@@ -15,9 +15,10 @@ from galaxy.security.ssh_util import (
     generate_ssh_keys,
     SSHKeys,
 )
+from galaxy.util.unittest import TestCase
 
 
-class TestCliInterface(unittest.TestCase):
+class TestCliInterface(TestCase):
     ssh_keys: SSHKeys
     username: str
     shell_params: Dict[str, Any]

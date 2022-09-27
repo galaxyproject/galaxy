@@ -97,7 +97,7 @@ def config_file(template, assign_with=""):
 
 
 class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestCase):
-
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
     assign_with = ""
 
@@ -117,10 +117,10 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
         index_map = {"0": dict(src="hda", id=hda1["id"])}
         request = {}
-        request["history"] = "hist_id=%s" % history_id
+        request["history"] = f"hist_id={history_id}"
         request["inputs"] = dumps(index_map)
         request["inputs_by"] = "step_index"
-        url = "workflows/%s/invocations" % (workflow_id)
+        url = f"workflows/{workflow_id}/invocations"
         for _ in range(n):
             self._post(url, data=request)
 
@@ -139,7 +139,7 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         return self._app.workflow_scheduling_manager.request_monitor is not None
 
 
-class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestHistoryRestrictionConfiguration(BaseWorkflowHandlerConfigurationTestCase):
 
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
     assign_with = "db-preassign"
@@ -156,7 +156,7 @@ class HistoryRestrictionConfigurationTestCase(BaseWorkflowHandlerConfigurationTe
         assert JOB_HANDLER_PATTERN.match(workflow_invocations[0].handler)
 
 
-class HistoryParallelConfigurationTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestHistoryParallelConfiguration(BaseWorkflowHandlerConfigurationTestCase):
 
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
     assign_with = "db-preassign"
@@ -180,7 +180,7 @@ class HistoryParallelConfigurationTestCase(BaseWorkflowHandlerConfigurationTestC
 
 
 # Setup an explicit workflow handler and make sure this is assigned to that.
-class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCase):
+class TestWorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCase):
 
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
     assign_with = "db-preassign"
@@ -207,7 +207,7 @@ class WorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCas
 #  - If a workflow scheduler conf is defined and assign_with is set to db-skip-locked, invocation handler is correctly set
 #  - If a workflow scheduler conf is defined and assign_with is set to db-transaction-isolation, invocation handler is correctly set
 #  - If a workflow scheduler conf is defined and the process is not listed as a handler, it is not workflow scheduler.
-class DefaultWorkflowHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestDefaultWorkflowHandlerOn(BaseWorkflowHandlerConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         # Override so we don't setup a job conf like in the base class.
@@ -217,7 +217,7 @@ class DefaultWorkflowHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase)
         assert self.is_app_workflow_scheduler
 
 
-class DefaultWorkflowHandlerIfJobHandlerOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestDefaultWorkflowHandlerIfJobHandlerOn(BaseWorkflowHandlerConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -227,7 +227,7 @@ class DefaultWorkflowHandlerIfJobHandlerOnTestCase(BaseWorkflowHandlerConfigurat
         assert self.is_app_workflow_scheduler
 
 
-class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurationTestCase):
+class TestJobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurationTestCase):
 
     assign_with = "db-skip-locked"
 
@@ -246,7 +246,7 @@ class JobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurati
         assert self.is_app_workflow_scheduler
 
 
-class JobHandlerAsWorkflowHandlerWithDbSkipLockedAttachToPool(JobHandlerAsWorkflowHandlerWithDbSkipLocked):
+class TestJobHandlerAsWorkflowHandlerWithDbSkipLockedAttachToPool(TestJobHandlerAsWorkflowHandlerWithDbSkipLocked):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = config_file(POOL_JOB_CONFIG_TEMPLATE, assign_with=cls.assign_with)
@@ -254,7 +254,7 @@ class JobHandlerAsWorkflowHandlerWithDbSkipLockedAttachToPool(JobHandlerAsWorkfl
         config["attach_to_pools"] = ["job-handlers"]
 
 
-class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestDefaultWorkflowHandlerIfJobHandlerOff(BaseWorkflowHandlerConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -264,7 +264,7 @@ class DefaultWorkflowHandlerIfJobHandlerOffTestCase(BaseWorkflowHandlerConfigura
         assert not self.is_app_workflow_scheduler
 
 
-class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestExplicitWorkflowHandlersOn(BaseWorkflowHandlerConfigurationTestCase):
 
     assign_with = ""
 
@@ -281,7 +281,7 @@ class ExplicitWorkflowHandlersOnTestCase(BaseWorkflowHandlerConfigurationTestCas
 
 
 @integration_util.skip_unless_postgres()
-class WorkflowSchedulerHandlerAssignmentDbSkipLocked(ExplicitWorkflowHandlersOnTestCase):
+class TestWorkflowSchedulerHandlerAssignmentDbSkipLocked(TestExplicitWorkflowHandlersOn):
 
     assign_with = "db-skip-locked"
 
@@ -293,12 +293,12 @@ class WorkflowSchedulerHandlerAssignmentDbSkipLocked(ExplicitWorkflowHandlersOnT
 
 
 @integration_util.skip_unless_postgres()
-class WorkflowSchedulerHandlerAssignmentDbTransactionIsolation(WorkflowSchedulerHandlerAssignmentDbSkipLocked):
+class TestWorkflowSchedulerHandlerAssignmentDbTransactionIsolation(TestWorkflowSchedulerHandlerAssignmentDbSkipLocked):
 
     assign_with = "db-transaction-isolation"
 
 
-class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestExplicitWorkflowHandlersOff(BaseWorkflowHandlerConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -311,7 +311,7 @@ class ExplicitWorkflowHandlersOffTestCase(BaseWorkflowHandlerConfigurationTestCa
         assert not self.is_app_workflow_scheduler
 
 
-class ExplicitWorkflowHandlersOffPoolTestCase(BaseWorkflowHandlerConfigurationTestCase):
+class TestExplicitWorkflowHandlersOffPool(BaseWorkflowHandlerConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

@@ -5,7 +5,7 @@ from .framework import (
 )
 
 
-class EdamToolPanelViewsSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
+class TestEdamToolPanelViewsSeleniumIntegration(SeleniumIntegrationTestCase):
 
     ensure_registered = True  # to test workflow editor
 

@@ -5,17 +5,6 @@ from ..base.api import ShedApiTestCase
 COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
 
 
-# Things seemingly *NOT* used by Galaxy, Planemo, or Ephemeris...
-#   (perhaps we can delete instead of test?)...
-# - reset_metadata_on_repository
-# - reset_metadata_on_repositories
-# - remove_repository_registry_entry
-# - get_repository_revision_install_info
-# - get_installable_revisions
-
-# Non repositories API seemingly unused and seemingly better rewritten if wanted.
-# - The whole Groups API.
-# - The whole Repository Revisions API.
 class ShedRepositoriesApiTestCase(ShedApiTestCase):
     def test_create(self):
         populator = self.populator
@@ -60,13 +49,18 @@ class ShedRepositoriesApiTestCase(ShedApiTestCase):
 
     def test_index_simple(self):
         populator = self.populator
-        repository_id = populator.setup_column_maker_repo(prefix="repoforindex").id
+        repo = populator.setup_column_maker_repo(prefix="repoforindex")
+        repository_id = repo.id
         show_response = self.api_interactor.get(f"repositories/{repository_id}")
         index_response = self.api_interactor.get("repositories")
         api_asserts.assert_status_code_is_ok(show_response)
         api_asserts.assert_status_code_is_ok(index_response)
         repository_ids = [r["id"] for r in index_response.json()]
         assert repository_id in repository_ids
+
+        repository = self.populator.get_repository_for(repo.owner, repo.name)
+        assert repository.owner == repo.owner
+        assert repository.name == repo.name
 
     def test_get_ordered_installable_revisions(self):
         # Used in ephemeris...

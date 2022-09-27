@@ -1,8 +1,6 @@
 import logging
 import os
 import shutil
-import sys
-from string import Template
 
 import markupsafe
 
@@ -47,35 +45,6 @@ CMD ["/usr/bin/startup"]
 SELECTED_REPOSITORIES_TEMPLATE = """
 RUN install-repository "--url ${tool_shed_url} -o ${repository_owner} --name ${repository_name}"
 """
-
-
-def evaluate_template(text, install_environment):
-    """
-    Substitute variables defined in XML blocks from dependencies file.  The value of the received
-    repository_install_dir is the root installation directory of the repository that contains the
-    tool dependency.  The value of the received install_dir is the root installation directory of
-    the tool_dependency.
-    """
-    return Template(text).safe_substitute(get_env_var_values(install_environment))
-
-
-def get_env_var_values(install_environment):
-    """
-    Return a dictionary of values, some of which enable substitution of reserved words for the values.
-    The received install_enviroment object has 3 important attributes for reserved word substitution:
-    install_environment.tool_shed_repository_install_dir is the root installation directory of the repository
-    that contains the tool dependency being installed, install_environment.install_dir is the root
-    installation directory of the tool dependency, and install_environment.tmp_work_dir is the
-    temporary directory where the tool dependency compilation/installation is being processed.
-    """
-    env_var_dict = {}
-    env_var_dict["REPOSITORY_INSTALL_DIR"] = install_environment.tool_shed_repository_install_dir
-    env_var_dict["INSTALL_DIR"] = install_environment.install_dir
-    env_var_dict["TMP_WORK_DIR"] = install_environment.tmp_work_dir
-    env_var_dict["system_install"] = install_environment.install_dir
-    # If the Python interpreter is 64bit then we can safely assume that the underlying system is also 64bit.
-    env_var_dict["__is64bit__"] = sys.maxsize > 2**32
-    return env_var_dict
 
 
 def get_file_type_str(changeset_revision, file_type):
@@ -157,8 +126,6 @@ def to_html_string(text):
 __all__ = (
     "CHUNK_SIZE",
     "DOCKER_IMAGE_TEMPLATE",
-    "evaluate_template",
-    "get_env_var_values",
     "get_file_type_str",
     "INSTALLATION_LOG",
     "MAX_DISPLAY_SIZE",

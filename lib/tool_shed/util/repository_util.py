@@ -5,6 +5,7 @@ import re
 
 from markupsafe import escape
 from sqlalchemy import false
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import select
 
 import tool_shed.dependencies.repository
@@ -32,7 +33,6 @@ from galaxy.tool_shed.util.repository_util import (
     get_repository_dependency_types,
     get_repository_for_dependency_relationship,
     get_repository_ids_requiring_prior_import_or_install,
-    get_repository_in_tool_shed,
     get_repository_owner,
     get_repository_owner_from_clone_url,
     get_repository_query,
@@ -230,6 +230,14 @@ def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_rev
     if changeset_revision:
         sharable_url += f"/{changeset_revision}"
     return sharable_url
+
+
+def get_repository_in_tool_shed(app, id, eagerload_columns=None):
+    """Get a repository on the tool shed side from the database via id."""
+    q = get_repository_query(app)
+    if eagerload_columns:
+        q = q.options(joinedload(*eagerload_columns))
+    return q.get(app.security.decode_id(id))
 
 
 def get_repo_info_dict(app, user, repository_id, changeset_revision):

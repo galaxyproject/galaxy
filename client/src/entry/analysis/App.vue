@@ -45,6 +45,7 @@ import { getAppRoot } from "onload";
 import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
 import { fetchMenu } from "entry/analysis/menu";
 import { WindowManager } from "layout/window-manager";
+import { safePath } from "utils/redirect";
 
 export default {
     components: {
@@ -97,7 +98,12 @@ export default {
             if (!urlObj.target) {
                 this.$router.push(urlObj.url);
             } else {
-                this.windowManager.add(urlObj);
+                const url = safePath(urlObj.url);
+                if (urlObj.target == "_blank") {
+                    window.open(url);
+                } else {
+                    window.location = url;
+                }
             }
         },
     },

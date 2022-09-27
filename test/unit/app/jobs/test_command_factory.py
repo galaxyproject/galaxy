@@ -6,7 +6,6 @@ from typing import (
     List,
     Tuple,
 )
-from unittest import TestCase
 
 from galaxy.jobs.command_factory import (
     build_command,
@@ -15,6 +14,7 @@ from galaxy.jobs.command_factory import (
 )
 from galaxy.tool_util.deps.container_classes import TRAP_KILL_CONTAINER
 from galaxy.util.bunch import Bunch
+from galaxy.util.unittest import TestCase
 
 MOCK_COMMAND_LINE = "/opt/galaxy/tools/bowtie /mnt/galaxyData/files/000/input000.dat"
 TEST_METADATA_LINE = "set_metadata_and_stuff.sh"
@@ -119,7 +119,7 @@ class TestCommandFactory(TestCase):
         self._test_set_metadata()
 
     def test_strips_trailing_semicolons(self):
-        self.job_wrapper.command_line = "%s;" % MOCK_COMMAND_LINE
+        self.job_wrapper.command_line = f"{MOCK_COMMAND_LINE};"
         self._test_set_metadata()
 
     def _test_set_metadata(self):
@@ -173,10 +173,10 @@ class TestCommandFactory(TestCase):
 
     def _assert_command_is(self, expected_command, **command_kwds):
         command = self.__command(**command_kwds)
-        self.assertEqual(command, expected_command)
+        assert command == expected_command
 
     def __assert_tool_script_is(self, expected_command):
-        self.assertEqual(open(self.__tool_script).read(), expected_command)
+        assert open(self.__tool_script).read() == expected_command
 
     @property
     def __tool_script(self):

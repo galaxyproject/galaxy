@@ -66,7 +66,7 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
         """Extension point that lets subclasses investigate the completed job."""
 
 
-class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -119,7 +119,7 @@ class DefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTest
         assert job_env.home == os.path.join(job_directory, "home"), job_env.home
 
 
-class EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestEmbeddedPulsarDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -149,7 +149,7 @@ class EmbeddedPulsarDefaultJobEnvironmentIntegrationTestCase(BaseJobEnvironmentI
         assert not job_env.tmp.startswith(job_directory)
 
 
-class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestTmpDirToTrueJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -167,7 +167,7 @@ class TmpDirToTrueJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegratio
         assert job_env.tmp.startswith(job_directory), job_env
 
 
-class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestTmpDirAsShellCommandJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -185,7 +185,7 @@ class TmpDirAsShellCommandJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIn
         assert basename.startswith("cooltmp"), job_env.tmp
 
 
-class SharedHomeJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestSharedHomeJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -222,7 +222,7 @@ class SharedHomeJobEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationT
         assert job_env.home == os.path.join(job_directory, "home"), job_env.home
 
 
-class JobIOEnvironmentIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestJobIOEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

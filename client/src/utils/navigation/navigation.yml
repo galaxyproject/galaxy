@@ -160,7 +160,7 @@ history_panel:
       rerun_button: '${_} .rerun-btn'
       alltags: '${_} .alltags .ti-tags'
 
-  # beta content item
+  # history content item
   content_item:
     selectors:
       # specific rows selectable with attributes via suffix
@@ -203,7 +203,7 @@ history_panel:
       tags_input: '${_} .tags input'
       save_button: '${_} [data-description="editor save button"]'
 
-  # beta history tags
+  # history tags
   tag_editor:
     selectors:
       _: '${scope} .details .tags'
@@ -236,22 +236,17 @@ history_panel:
       subtitle: '.dataset-collection-panel .controls .title .subtitle'
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
       tag_area_input: '.controls .tags-display .tags-input input'
-      list_items: '.dataset-collection-panel .list-items .list-item'
-      list_items_beta: '.dataset-collection-panel .listing .content-item'
+      list_items: '.dataset-collection-panel .listing .content-item'
 
   selectors:
-    beta: '.history-index'
-    legacy: '.list-panel'
     _: '#current-history-panel'
     search: '#current-history-panel input.search-query'
     refresh_button: '.history-refresh-button'
-    name: '.title .name'
-    name_beta: '.history-title span:last-child'
+    name: '.history-title span:last-child'
     name_edit_input:
       selector: 'name input'
       type: data-description
-    contents: '#current-history-panel .history-content'
-    contents_beta: '.history-index .content-item'
+    contents: '.history-index .content-item'
     empty_message: '.empty-message'
     size: '.history-size'
     tag_icon: '.actions .history-tag-btn'
@@ -272,26 +267,19 @@ history_panel:
     annotation_done: '.details .history-annotation .annotation button'
 
     options_button: '[data-description="history options"]'
-    options_button_icon: '.details .menu-expand-button'
-    options_button_icon_beta: '[data-description="history options"] button'
-    options_button_copy_datasets_beta: '.copy-datasets-menu-item'
+    options_button_icon: '[data-description="history options"] button'
     options_menu: '.history-options-button-menu'
     options_menu_item:
       type: sizzle
       selector: '.history-options-button-menu > a:contains("${option_label}")'
     options_show_export_history_to_file: 'a[data-description="export to file"]'
-    options_use_beta_history:
-      type: xpath
-      selector: '//a[text()="Use Beta History Panel"]'
-    options_use_legacy_history: 'a[data-description="switch to legacy history view"]'
 
     collection_menu_button: '.collection-menu'
     collection_menu_edit_attributes: '.edit-btn'
 
-    new_history_button: '.history-new-button'
-    multi_view_button: '.history-view-multi-button'
+    new_history_button: '[data-description="create new history"]'
     histories_operation_menu: '[data-description="history options"]'
-    multi_view_button_beta: '[data-description="switch to multi history view"]'
+    multi_view_button: '[data-description="switch to multi history view"]'
 
     pagination_pages: '.list-pagination .pages'
     pagination_pages_options: '.list-pagination .pages option'

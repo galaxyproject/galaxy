@@ -1,6 +1,11 @@
 import os
 from contextlib import contextmanager
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    Optional,
+    Tuple,
+)
 from urllib.parse import (
     urlencode,
     urljoin,
@@ -122,7 +127,7 @@ class UsesApiTestCaseMixin:
         user = [user for user in users if user["email"] == email][0]
         return user
 
-    def _setup_user_get_key(self, email, password=None, is_admin=True):
+    def _setup_user_get_key(self, email, password=None, is_admin=True) -> Tuple[Dict[str, Any], str]:
         user = self._setup_user(email, password, is_admin)
         return user, self._post(f"users/{user['id']}/api_key", admin=True).json()
 

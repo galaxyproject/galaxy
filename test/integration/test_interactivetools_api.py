@@ -53,11 +53,11 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
                 print(e)
                 return None
 
-        content = wait_on(get_hosted_content, "realtime hosted content at %s" % target)
+        content = wait_on(get_hosted_content, f"realtime hosted content at {target}")
         return content
 
     def entry_point_target(self, entry_point_id):
-        entry_point_access_response = self._get("entry_points/%s/access" % entry_point_id)
+        entry_point_access_response = self._get(f"entry_points/{entry_point_id}/access")
         api_asserts.assert_status_code_is(entry_point_access_response, 200)
         access_json = entry_point_access_response.json()
         api_asserts.assert_has_key(access_json, "target")
@@ -81,7 +81,7 @@ class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
         return wait_on(active_entry_points, "entry points to become active", timeout=120)
 
     def entry_points_for_job(self, job_id):
-        entry_points_response = self._get("entry_points?job_id=%s" % job_id)
+        entry_points_response = self._get(f"entry_points?job_id={job_id}")
         api_asserts.assert_status_code_is(entry_points_response, 200)
         return entry_points_response.json()
 
@@ -135,11 +135,11 @@ class RunsInterativeToolTests:
         assert not it_output_details["deleted"]
 
 
-class InteractiveToolsIntegrationTestCase(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+class TestInteractiveToolsIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
     pass
 
 
-class InteractiveToolsPulsarIntegrationTestCase(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+class TestInteractiveToolsPulsarIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
@@ -147,13 +147,13 @@ class InteractiveToolsPulsarIntegrationTestCase(BaseInteractiveToolsIntegrationT
         disable_dependency_resolution(config)
 
 
-class InteractiveToolsRemoteProxyIntegrationTestCase(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+class TestInteractiveToolsRemoteProxyIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
     """
     $ cd gx-it-proxy
     $ ./lib/createdb.js --sessions $HOME/gxitexproxy.sqlite
     $ ./lib/main.js --port 9001 --ip 0.0.0.0 --verbose --sessions $HOME/gxitexproxy.sqlite
     $ # Need to create new DB for each test I think, duplicate IDs are the problem I think because each test starts at 1
-    $ GALAXY_TEST_EXTERNAL_PROXY_HOST="localhost:9001" GALAXY_TEST_EXTERNAL_PROXY_MAP="$HOME/gxitexproxy.sqlite" pytest -s test/integration/test_interactivetools_api.py::InteractiveToolsRemoteProxyIntegrationTestCase
+    $ GALAXY_TEST_EXTERNAL_PROXY_HOST="localhost:9001" GALAXY_TEST_EXTERNAL_PROXY_MAP="$HOME/gxitexproxy.sqlite" pytest -s test/integration/test_interactivetools_api.py::TestInteractiveToolsRemoteProxyIntegration
     """
 
     @classmethod
@@ -173,9 +173,7 @@ class InteractiveToolsRemoteProxyIntegrationTestCase(BaseInteractiveToolsIntegra
 @integration_util.skip_unless_kubernetes()
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
-class KubeInteractiveToolsRemoteProxyIntegrationTestCase(
-    BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests
-):
+class TestKubeInteractiveToolsRemoteProxyIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
     """
     $ git clone https://github.com/galaxyproject/gx-it-proxy.git $HOME/gx-it-proxy
     $ cd $HOME/gx-it-proxy/docker/k8s
@@ -187,7 +185,7 @@ class KubeInteractiveToolsRemoteProxyIntegrationTestCase(
     $ ./lib/createdb.js --sessions $HOME/gxitk8proxy.sqlite
     $ ./lib/main.js --port 9002 --ip 0.0.0.0 --verbose --sessions $HOME/gxitk8proxy.sqlite --forwardIP localhost --forwardPort 8910 &
     $ cd back/to/galaxy
-    $ GALAXY_TEST_K8S_EXTERNAL_PROXY_HOST="localhost:9002" GALAXY_TEST_K8S_EXTERNAL_PROXY_MAP="$HOME/gxitk8proxy.sqlite" pytest -s test/integration/test_interactivetools_api.py::KubeInteractiveToolsRemoteProxyIntegrationTestCase
+    $ GALAXY_TEST_K8S_EXTERNAL_PROXY_HOST="localhost:9002" GALAXY_TEST_K8S_EXTERNAL_PROXY_MAP="$HOME/gxitk8proxy.sqlite" pytest -s test/integration/test_interactivetools_api.py::TestKubeInteractiveToolsRemoteProxyIntegration
     """
 
     @classmethod

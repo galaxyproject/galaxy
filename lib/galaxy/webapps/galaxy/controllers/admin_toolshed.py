@@ -14,20 +14,24 @@ from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.tool_shed.galaxy_install import install_manager
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
+from galaxy.tool_shed.util import (
+    hg_util,
+    tool_dependency_util,
+    tool_util,
+)
 from galaxy.tool_util.deps import views
 from galaxy.util import unicodify
+from galaxy.util.tool_shed import (
+    common_util,
+    encoding_util,
+)
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.galaxy_install import dependency_display
 from tool_shed.galaxy_install.grids import admin_toolshed_grids
 from tool_shed.util import (
-    common_util,
-    encoding_util,
-    hg_util,
     readme_util,
     repository_util,
     shed_util_common as suc,
-    tool_dependency_util,
-    tool_util,
 )
 from tool_shed.util.web_util import escape
 from .admin import AdminGalaxy

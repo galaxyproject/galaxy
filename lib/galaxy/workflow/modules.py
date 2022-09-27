@@ -690,7 +690,7 @@ class InputModule(WorkflowModule):
 
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
-        if invocation.copy_inputs_to_history:
+        if progress.copy_inputs_to_history:
             for input_dataset_hda in list(step_outputs.values()):
                 content_type = input_dataset_hda.history_content_type
                 if content_type == "dataset":
@@ -1991,7 +1991,7 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 validate_outputs=validate_outputs,
-                job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
+                job_callback=lambda job: self._handle_post_job_actions(step, job, progress.replacement_dict),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters,
             )
@@ -2015,7 +2015,7 @@ class ToolModule(WorkflowModule):
             step_inputs = mapping_params.param_template
             step_inputs.update(collection_info.collections)
 
-            self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, invocation.replacement_dict)
+            self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, progress.replacement_dict)
         if execution_tracker.execution_errors:
             message = "Failed to create one or more job(s) for workflow step."
             raise Exception(message)

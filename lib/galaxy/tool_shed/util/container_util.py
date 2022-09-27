@@ -9,13 +9,13 @@ STRSEP = "__ESEP__"
 
 
 def generate_repository_dependencies_key_for_repository(
-    toolshed_base_url,
-    repository_name,
-    repository_owner,
-    changeset_revision,
-    prior_installation_required,
-    only_if_compiling_contained_td,
-):
+    toolshed_base_url: str,
+    repository_name: str,
+    repository_owner: str,
+    changeset_revision: str,
+    prior_installation_required: bool,
+    only_if_compiling_contained_td: bool,
+) -> str:
     """
     Assumes tool shed is current tool shed since repository dependencies across tool sheds
     is not yet supported.
@@ -39,7 +39,7 @@ def generate_repository_dependencies_key_for_repository(
     )
 
 
-def get_components_from_key(key):
+def get_components_from_key(key: str) -> tuple:
     """
     Assumes tool shed is current tool shed since repository dependencies across tool sheds is not
     yet supported.

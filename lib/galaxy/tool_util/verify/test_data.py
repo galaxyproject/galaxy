@@ -35,21 +35,26 @@ class TestDataResolver:
         else:
             self.resolvers = []
 
-    def get_filename(self, name):
+    def get_filename(self, name: str) -> str:
         for resolver in self.resolvers or []:
             if not resolver.exists(name):
                 continue
             filename = resolver.path(name)
             if filename:
                 return os.path.abspath(filename)
+        raise TestDataNotFoundError(f"Failed to find test file {name} against any test data resolvers")
 
-    def get_filecontent(self, name):
+    def get_filecontent(self, name: str) -> bytes:
         filename = self.get_filename(name=name)
         with open(filename, mode="rb") as f:
             return f.read()
 
-    def get_directory(self, name):
+    def get_directory(self, name: str) -> str:
         return self.get_filename(name=name)
+
+
+class TestDataNotFoundError(ValueError):
+    pass
 
 
 def build_resolver(uri, environ):

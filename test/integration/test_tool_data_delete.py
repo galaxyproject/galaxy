@@ -17,7 +17,7 @@ THIS_DIR = os.path.dirname(__file__)
 SOURCE_TOOL_DATA_DIRECTORY = os.path.join(THIS_DIR, os.pardir, "functional", "tool-data")
 
 
-class AdminToolDataIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestAdminToolDataIntegration(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     def setUp(self):
@@ -54,7 +54,7 @@ class AdminToolDataIntegrationTestCase(integration_util.IntegrationTestCase):
         time.sleep(2)
         show_response = self._get("tool_data/testbeta")
         updated_fields = show_response.json()["fields"]
-        self.assertEqual(len(updated_fields), original_count + 1)
+        assert len(updated_fields) == original_count + 1
         new_field = updated_fields[-1]
         url = self._api_url(f"tool_data/testbeta?key={self.galaxy_interactor.api_key}")
 

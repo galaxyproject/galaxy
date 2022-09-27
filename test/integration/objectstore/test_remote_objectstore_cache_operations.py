@@ -9,7 +9,7 @@ from ._base import (
 )
 
 
-class CacheOperationTestCase(BaseSwiftObjectStoreIntegrationTestCase):
+class TestCacheOperation(BaseSwiftObjectStoreIntegrationTestCase):
     def tearDown(self):
         shutil.rmtree(self.object_store_cache_path)
         os.mkdir(self.object_store_cache_path)

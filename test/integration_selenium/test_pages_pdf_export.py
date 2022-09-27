@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
+class TestPagesPdfExportSeleniumIntegration(SeleniumIntegrationTestCase):
     ensure_registered = True
 
     @classmethod

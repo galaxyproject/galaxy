@@ -42,7 +42,7 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
         }
     );
 }
-function createCollectionViaRules(selection, defaultHideSourceItems) {
+function createCollectionViaRules(selection, defaultHideSourceItems = true) {
     let elements;
     let elementsType;
     let importType;

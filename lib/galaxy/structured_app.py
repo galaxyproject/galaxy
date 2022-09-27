@@ -43,6 +43,7 @@ if TYPE_CHECKING:
     from galaxy.managers.histories import HistoryManager
     from galaxy.managers.workflows import WorkflowsManager
     from galaxy.tools import ToolBox
+    from galaxy.tools.cache import ToolShedRepositoryCache
     from galaxy.tools.data import ToolDataTableManager
     from galaxy.tools.error_reports import ErrorReports
     from galaxy.visualization.genomes import Genomes
@@ -112,6 +113,9 @@ class MinimalManagerApp(MinimalApp):
     def is_job_handler(self) -> bool:
         pass
 
+    def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None:
+        ...
+
 
 class StructuredApp(MinimalManagerApp):
     """Interface defining typed description of the Galaxy UniverseApplication.
@@ -127,6 +131,7 @@ class StructuredApp(MinimalManagerApp):
 
     amqp_internal_connection_obj: Optional[Connection]
     dependency_resolvers_view: DependencyResolversView
+    tool_dependency_dir: Optional[str]
     test_data_resolver: test_data.TestDataResolver
     trs_proxy: TrsProxy
     vault: Vault
@@ -136,7 +141,7 @@ class StructuredApp(MinimalManagerApp):
     tool_data_tables: "ToolDataTableManager"
     tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
     tool_shed_registry: ToolShedRegistry
-    tool_shed_repository_cache: Optional[Any]  # 'galaxy.tools.cache.ToolShedRepositoryCache'
+    tool_shed_repository_cache: Optional["ToolShedRepositoryCache"]
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any

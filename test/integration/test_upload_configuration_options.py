@@ -23,12 +23,12 @@ import os
 import re
 import shutil
 import tempfile
-import unittest
 from typing import (
     Any,
     Dict,
 )
 
+from galaxy.util.unittest import TestCase
 from galaxy_test.base.api_util import TEST_USER
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
@@ -47,7 +47,7 @@ TEST_DATA_DIRECTORY = os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "test-data"
 
 
 class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstance):
-
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     def setUp(self):
@@ -80,11 +80,11 @@ class BaseUploadContentConfigurationInstance(integration_util.IntegrationInstanc
             os.makedirs(path)
 
 
-class BaseUploadContentConfigurationTestCase(BaseUploadContentConfigurationInstance, unittest.TestCase):
+class BaseUploadContentConfigurationTestCase(BaseUploadContentConfigurationInstance, TestCase):
     pass
 
 
-class InvalidFetchRequestsTestCase(BaseUploadContentConfigurationTestCase):
+class TestInvalidFetchRequests(BaseUploadContentConfigurationTestCase):
     def test_in_place_not_allowed(self):
         elements = [{"src": "files", "in_place": False}]
         target = {
@@ -108,7 +108,7 @@ class InvalidFetchRequestsTestCase(BaseUploadContentConfigurationTestCase):
         assert "Failed to find uploaded file matching target" in response.json()["err_msg"]
 
 
-class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCase):
+class TestNonAdminsCannotPasteFilePath(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -116,7 +116,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
 
     def test_disallowed_for_primary_file(self):
         payload = self.dataset_populator.upload_payload(
-            self.history_id, "file://%s/1.RData" % TEST_DATA_DIRECTORY, file_type="binary"
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/1.RData", file_type="binary"
         )
         create_response = self.dataset_populator.tools_post(payload)
         # Ideally this would be 403 but the tool API endpoint isn't using
@@ -134,7 +134,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
             extra_inputs={
                 "files_1|url_paste": "roadmaps content",
                 "files_1|type": "upload_dataset",
-                "files_2|url_paste": "file://%s" % path,
+                "files_2|url_paste": f"file://{path}",
                 "files_2|type": "upload_dataset",
             },
         )
@@ -171,7 +171,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
     def test_disallowed_for_fetch_urls(self):
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
         assert os.path.exists(path)
-        elements = [{"src": "url", "url": "file://%s" % path}]
+        elements = [{"src": "url", "url": f"file://{path}"}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -182,7 +182,7 @@ class NonAdminsCannotPasteFilePathTestCase(BaseUploadContentConfigurationTestCas
         assert os.path.exists(path)
 
 
-class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
+class TestAdminsCanPasteFilePaths(BaseUploadContentConfigurationTestCase):
 
     require_admin_user = True
 
@@ -194,7 +194,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
     def test_admin_path_paste(self):
         payload = self.dataset_populator.upload_payload(
             self.history_id,
-            "file://%s/random-file" % TEST_DATA_DIRECTORY,
+            f"file://{TEST_DATA_DIRECTORY}/random-file",
         )
         create_response = self.dataset_populator.tools_post(payload)
         # Is admin - so this should work fine!
@@ -202,7 +202,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_admin_path_paste_libraries(self):
         library = self.library_populator.new_private_library("pathpasteallowedlibraries")
-        path = "%s/1.txt" % TEST_DATA_DIRECTORY
+        path = f"{TEST_DATA_DIRECTORY}/1.txt"
         assert os.path.exists(path)
         payload, files = self.library_populator.create_dataset_request(
             library, upload_option="upload_paths", paths=path
@@ -215,7 +215,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_admin_path_paste_libraries_link(self):
         library = self.library_populator.new_private_library("pathpasteallowedlibraries")
-        path = "%s/1.txt" % TEST_DATA_DIRECTORY
+        path = f"{TEST_DATA_DIRECTORY}/1.txt"
         assert os.path.exists(path)
         payload, files = self.library_populator.create_dataset_request(
             library, upload_option="upload_paths", paths=path, link_data=True
@@ -241,7 +241,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_admin_fetch_file_url(self):
         path = os.path.join(TEST_DATA_DIRECTORY, "1.txt")
-        elements = [{"src": "url", "url": "file://%s" % path}]
+        elements = [{"src": "url", "url": f"file://{path}"}]
         target = {
             "destination": {"type": "hdca"},
             "elements": elements,
@@ -252,7 +252,7 @@ class AdminsCanPasteFilePathsTestCase(BaseUploadContentConfigurationTestCase):
         assert os.path.exists(path)
 
 
-class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase):
+class TestDefaultBinaryContentFilters(BaseUploadContentConfigurationTestCase):
 
     require_admin_user = True
 
@@ -263,20 +263,20 @@ class DefaultBinaryContentFiltersTestCase(BaseUploadContentConfigurationTestCase
 
     def test_random_binary_allowed(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/random-file" % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/random-file", file_type="auto", wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         assert dataset["file_ext"] == "binary", dataset
 
     def test_gzipped_html_content_blocked_by_default(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/bad.html.gz" % TEST_DATA_DIRECTORY, file_type="auto", wait=True, assert_ok=False
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/bad.html.gz", file_type="auto", wait=True, assert_ok=False
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset, assert_ok=False)
         assert dataset["file_size"] == 0
 
 
-class DisableContentCheckingTestCase(BaseUploadContentConfigurationTestCase):
+class TestDisableContentChecking(BaseUploadContentConfigurationTestCase):
 
     require_admin_user = True
 
@@ -288,14 +288,14 @@ class DisableContentCheckingTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_gzipped_html_content_now_allowed(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/bad.html.gz" % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/bad.html.gz", file_type="auto", wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         # Same file was empty above!
         assert dataset["file_size"] != 0
 
 
-class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
+class TestAutoDecompress(BaseUploadContentConfigurationTestCase):
 
     require_admin_user = True
 
@@ -307,7 +307,7 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
     def test_auto_decompress_off(self):
         dataset = self.dataset_populator.new_dataset(
             self.history_id,
-            "file://%s/1.sam.gz" % TEST_DATA_DIRECTORY,
+            f"file://{TEST_DATA_DIRECTORY}/1.sam.gz",
             file_type="auto",
             auto_decompress=False,
             wait=True,
@@ -317,13 +317,13 @@ class AutoDecompressTestCase(BaseUploadContentConfigurationTestCase):
 
     def test_auto_decompress_on(self):
         dataset = self.dataset_populator.new_dataset(
-            self.history_id, "file://%s/1.sam.gz" % TEST_DATA_DIRECTORY, file_type="auto", wait=True
+            self.history_id, f"file://{TEST_DATA_DIRECTORY}/1.sam.gz", file_type="auto", wait=True
         )
         dataset = self.dataset_populator.get_history_dataset_details(self.history_id, dataset=dataset)
         assert dataset["file_ext"] == "sam", dataset
 
 
-class LocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
+class TestLocalAddressWhitelisting(BaseUploadContentConfigurationTestCase):
     def test_blocked_url_for_primary_file(self):
         payload = self.dataset_populator.upload_payload(self.history_id, "http://localhost/", file_type="txt")
         create_response = self.dataset_populator.tools_post(payload)
@@ -415,7 +415,7 @@ class BaseFtpUploadConfigurationTestCase(BaseUploadContentConfigurationTestCase)
         return ftp_path
 
 
-class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
+class TestSimpleFtpUploadConfiguration(BaseFtpUploadConfigurationTestCase):
     def test_ftp_upload(self):
         content = "hello world\n"
         ftp_path = self._write_ftp_file(content)
@@ -453,13 +453,13 @@ class SimpleFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
         self._check_content(dataset, content)
 
 
-class ExplicitEmailAsIdentifierFtpUploadConfigurationTestCase(SimpleFtpUploadConfigurationTestCase):
+class TestExplicitEmailAsIdentifierFtpUploadConfiguration(TestSimpleFtpUploadConfiguration):
     @classmethod
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_dir_identifier"] = "email"
 
 
-class PerUsernameFtpUploadConfigurationTestCase(SimpleFtpUploadConfigurationTestCase):
+class TestPerUsernameFtpUploadConfiguration(TestSimpleFtpUploadConfiguration):
     @classmethod
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_dir_identifier"] = "username"
@@ -469,16 +469,16 @@ class PerUsernameFtpUploadConfigurationTestCase(SimpleFtpUploadConfigurationTest
         return os.path.join(self.ftp_dir(), username)
 
 
-class TemplatedFtpDirectoryUploadConfigurationTestCase(SimpleFtpUploadConfigurationTestCase):
+class TestTemplatedFtpDirectoryUploadConfiguration(TestSimpleFtpUploadConfiguration):
     @classmethod
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_dir_template"] = "${ftp_upload_dir}/moo_${ftp_upload_dir_identifier}_cow"
 
     def _get_user_ftp_path(self):
-        return os.path.join(self.ftp_dir(), "moo_%s_cow" % TEST_USER)
+        return os.path.join(self.ftp_dir(), f"moo_{TEST_USER}_cow")
 
 
-class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
+class TestDisableFtpPurgeUploadConfiguration(BaseFtpUploadConfigurationTestCase):
     @classmethod
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_purge"] = "False"
@@ -489,7 +489,7 @@ class DisableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestC
         assert os.path.exists(ftp_path)
 
 
-class EnableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
+class TestEnableFtpPurgeUploadConfiguration(BaseFtpUploadConfigurationTestCase):
     @classmethod
     def handle_extra_ftp_config(cls, config):
         config["ftp_upload_purge"] = "True"
@@ -499,7 +499,7 @@ class EnableFtpPurgeUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCa
         assert not os.path.exists(ftp_path)
 
 
-class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
+class TestAdvancedFtpUploadFetch(BaseFtpUploadConfigurationTestCase):
     def test_fetch_ftp_directory(self):
         dir_path = self._get_user_ftp_path()
         self._write_file(os.path.join(dir_path, "subdir"), "content 1", filename="1")
@@ -554,7 +554,7 @@ class AdvancedFtpUploadFetchTestCase(BaseFtpUploadConfigurationTestCase):
         assert element0["element_identifier"] == "subdirel1"
 
 
-class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTestCase):
+class TestUploadOptionsFtpUploadConfiguration(BaseFtpUploadConfigurationTestCase):
     def test_upload_api_option_space_to_tab(self):
         self._write_user_ftp_file("0.txt", ONE_TO_SIX_WITH_SPACES)
         self._write_user_ftp_file("1.txt", ONE_TO_SIX_WITH_SPACES)
@@ -666,7 +666,7 @@ class UploadOptionsFtpUploadConfigurationTestCase(BaseFtpUploadConfigurationTest
         return self._write_file(os.path.join(self.ftp_dir(), TEST_USER), content, filename=path)
 
 
-class ServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
+class TestServerDirectoryOffByDefault(BaseUploadContentConfigurationTestCase):
 
     require_admin_user = True
 
@@ -685,7 +685,7 @@ class ServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase
         assert '"library_import_dir" is not set' in response.json()["err_msg"]
 
 
-class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
+class TestServerDirectoryValidUsage(BaseUploadContentConfigurationTestCase):
     # This tests the library contents API - I think equivalent functionality is available via library datasets API
     # and should also be tested.
 
@@ -738,7 +738,7 @@ class ServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
         return cls.temp_config_dir("server")
 
 
-class UserServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTestCase):
+class TestUserServerDirectoryOffByDefault(BaseUploadContentConfigurationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -754,7 +754,7 @@ class UserServerDirectoryOffByDefaultTestCase(BaseUploadContentConfigurationTest
         assert response.status_code == 403, response.json()
 
 
-class UserServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCase):
+class TestUserServerDirectoryValidUsage(BaseUploadContentConfigurationTestCase):
     @classmethod
     def user_server_dir(cls):
         return cls.temp_config_dir("user_library_import_dir")
@@ -786,7 +786,7 @@ class UserServerDirectoryValidUsageTestCase(BaseUploadContentConfigurationTestCa
         assert library_dataset["file_size"] == 12, library_dataset
 
 
-class FetchByPathTestCase(BaseUploadContentConfigurationTestCase):
+class TestFetchByPath(BaseUploadContentConfigurationTestCase):
 
     require_admin_user = True
 
@@ -934,7 +934,7 @@ class TestDirectoryAndCompressedTypes(BaseUploadContentConfigurationTestCase):
     def test_tar_to_directory(self):
         dataset = self.dataset_populator.new_dataset(
             self.history_id,
-            "file://%s/testdir.tar" % TEST_DATA_DIRECTORY,
+            f"file://{TEST_DATA_DIRECTORY}/testdir.tar",
             file_type="tar",
             auto_decompress=False,
             wait=True,

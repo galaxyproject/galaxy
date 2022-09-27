@@ -1727,9 +1727,3 @@ class ScIdx(Tabular):
         if count >= 1:
             return True
         return False
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

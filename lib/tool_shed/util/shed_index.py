@@ -69,8 +69,6 @@ def build_index(whoosh_index_dir, file_path, hgweb_config_dir, dburi, **kwargs):
             tool_index_writer.delete_by_term("repo_id", repo_id)
             for tool in tools_list:
                 tool_contents = tool.copy()
-                # tool_id = tool_contents["id"]
-                # tool_contents["path"] = f"{repo_id}/{tool_id}"
                 tool_contents["repo_owner_username"] = repo.get("repo_owner_username")
                 tool_contents["repo_name"] = repo.get("name")
                 tool_contents["repo_id"] = repo_id

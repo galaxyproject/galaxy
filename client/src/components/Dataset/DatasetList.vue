@@ -29,7 +29,6 @@
 </template>
 <script>
 import store from "store";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { Services } from "./services";
 import DatasetName from "./DatasetName";
@@ -106,8 +105,7 @@ export default {
     },
     created() {
         this.loadHistories();
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     methods: {

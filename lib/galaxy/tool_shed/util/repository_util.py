@@ -2,6 +2,15 @@ import logging
 import os
 import re
 import shutil
+from typing import (
+    Any,
+    cast,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Union,
+)
 from urllib.error import HTTPError
 
 from markupsafe import escape
@@ -136,7 +145,6 @@ def create_or_update_tool_shed_repository(
         tool_shed_repository.changeset_revision = current_changeset_revision
         tool_shed_repository.ctx_rev = ctx_rev
         tool_shed_repository.metadata_ = metadata_dict
-        tool_shed_repository.includes_datatypes = False
         tool_shed_repository.deleted = deleted
         tool_shed_repository.uninstalled = uninstalled
         tool_shed_repository.status = status
@@ -153,7 +161,6 @@ def create_or_update_tool_shed_repository(
             changeset_revision=current_changeset_revision,
             ctx_rev=ctx_rev,
             metadata_=metadata_dict,
-            includes_datatypes=False,
             dist_to_shed=dist_to_shed,
             deleted=deleted,
             uninstalled=uninstalled,
@@ -334,9 +341,16 @@ def get_prior_import_or_install_required_dict(app, tsr_ids, repo_info_dicts):
     return prior_import_or_install_required_dict
 
 
-def get_repo_info_tuple_contents(repo_info_tuple):
+ToolDependenciesDictT = Dict[str, Union[Dict[str, Any], List[Dict[str, Any]]]]
+OldRepositoryTupleT = Tuple[str, str, str, str, str, ToolDependenciesDictT]
+RepositoryTupleT = Tuple[str, str, str, str, str, Optional[Any], ToolDependenciesDictT]
+AnyRepositoryTupleT = Union[OldRepositoryTupleT, RepositoryTupleT]
+
+
+def get_repo_info_tuple_contents(repo_info_tuple: AnyRepositoryTupleT) -> RepositoryTupleT:
     """Take care in handling the repo_info_tuple as it evolves over time as new tool shed features are introduced."""
     if len(repo_info_tuple) == 6:
+        old_repo_info = cast(OldRepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -344,9 +358,10 @@ def get_repo_info_tuple_contents(repo_info_tuple):
             ctx_rev,
             repository_owner,
             tool_dependencies,
-        ) = repo_info_tuple
+        ) = old_repo_info
         repository_dependencies = None
     elif len(repo_info_tuple) == 7:
+        repo_info = cast(RepositoryTupleT, repo_info_tuple)
         (
             description,
             repository_clone_url,
@@ -355,7 +370,7 @@ def get_repo_info_tuple_contents(repo_info_tuple):
             repository_owner,
             repository_dependencies,
             tool_dependencies,
-        ) = repo_info_tuple
+        ) = repo_info
     return (
         description,
         repository_clone_url,
@@ -562,14 +577,6 @@ def get_repository_ids_requiring_prior_import_or_install(app, tsr_ids, repositor
     return prior_tsr_ids
 
 
-def get_repository_in_tool_shed(app, id, eagerload_columns=None):
-    """Get a repository on the tool shed side from the database via id."""
-    q = get_repository_query(app)
-    if eagerload_columns:
-        q = q.options(joinedload(*eagerload_columns))
-    return q.get(app.security.decode_id(id))
-
-
 def get_repository_owner(cleaned_repository_url):
     """Gvien a "cleaned" repository clone URL, return the owner of the repository."""
     items = cleaned_repository_url.split("/repos/")
@@ -759,7 +766,6 @@ __all__ = (
     "get_repository_dependency_types",
     "get_repository_for_dependency_relationship",
     "get_repository_ids_requiring_prior_import_or_install",
-    "get_repository_in_tool_shed",
     "get_repository_owner",
     "get_repository_owner_from_clone_url",
     "get_repository_query",

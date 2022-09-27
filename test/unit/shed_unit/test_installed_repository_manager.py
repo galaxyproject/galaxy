@@ -31,7 +31,7 @@ class ToolShedRepoBaseTestCase(BaseToolBoxTestCase):
         return self._repo_install(changeset="1", config_filename=self.config_files[0])
 
 
-class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
+class TestInstallRepositoryManager(ToolShedRepoBaseTestCase):
     def setUp(self):
         super().setUp()
         self.irm = InstallRepositoryManager(self.app)
@@ -89,7 +89,7 @@ class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
         assert repository.changeset_revision == changeset_revision
 
 
-class InstalledRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
+class TestInstalledRepositoryManager(ToolShedRepoBaseTestCase):
     def setUp(self):
         super().setUp()
         self.irm = InstalledRepositoryManager(self.app)
@@ -124,8 +124,7 @@ class InstalledRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
             description=repository.description,
             installed_changeset_revision=repository.installed_changeset_revision,
             ctx_rev=repository.changeset_revision,
-            repository_clone_url="https://github.com/galaxyproject/example/test_tool/0.%s"
-            % repository.installed_changeset_revision,  # not needed if owner is given
+            repository_clone_url=f"https://github.com/galaxyproject/example/test_tool/0.{repository.installed_changeset_revision}",  # not needed if owner is given
             status=repository.status,
             metadata_dict=None,
             current_changeset_revision=str(int(repository.changeset_revision) + 1),

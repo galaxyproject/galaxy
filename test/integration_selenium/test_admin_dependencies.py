@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class AdminDependencyContainersTestCase(SeleniumIntegrationTestCase):
+class TestAdminDependencyContainers(SeleniumIntegrationTestCase):
     requires_admin = True
 
     @selenium_test

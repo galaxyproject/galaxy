@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class UploadFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
+class TestUploadFtpSeleniumIntegration(SeleniumIntegrationTestCase):
     ensure_registered = True
 
     @classmethod

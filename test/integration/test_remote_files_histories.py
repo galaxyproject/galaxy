@@ -4,7 +4,7 @@ import os
 from .test_remote_files import ConfiguresRemoteFilesIntegrationTestCase
 
 
-class RemoteFilesHistoryImportExportIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
+class TestRemoteFilesHistoryImportExportIntegration(ConfiguresRemoteFilesIntegrationTestCase):
 
     framework_tool_and_types = True
 

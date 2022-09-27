@@ -79,7 +79,6 @@ log = logging.getLogger("test_driver")
 
 # Global variables to pass database contexts around - only needed for older
 # Tool Shed twill tests that didn't utilize the API for such interactions.
-galaxy_context = None
 tool_shed_context = None
 install_context = None
 
@@ -633,9 +632,7 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     app = GalaxyUniverseApplication(**simple_kwargs)
     log.info("Embedded Galaxy application started")
 
-    global galaxy_context
     global install_context
-    galaxy_context = app.model.context
     install_context = app.install_model.context
 
     # Toolbox indexing happens via the work queue out of band recently, and,

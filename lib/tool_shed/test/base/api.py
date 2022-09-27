@@ -28,6 +28,37 @@ from .populators import ToolShedPopulator
 
 
 class ShedBaseTestCase(DrivenFunctionalTestCase):
+    _populator: Optional[ToolShedPopulator] = None
+
+    @property
+    def populator(self) -> ToolShedPopulator:
+        if self._populator is None:
+            self._populator = ToolShedPopulator(self.admin_api_interactor, self.api_interactor)
+        return self._populator
+
+    @property
+    def admin_api_interactor(self) -> ShedApiInteractor:
+        return ShedApiInteractor(self.url, get_admin_api_key())
+
+    @property
+    def api_interactor(self) -> ShedApiInteractor:
+        user_api_key = get_user_api_key()
+        if user_api_key is None:
+            email = TEST_USER
+            password = "testpassword"
+            ensure_user_with_email(self.admin_api_interactor, email, password)
+            user_api_key = self._api_key(email, password)
+        return ShedApiInteractor(self.url, user_api_key)
+
+    def _api_key(self, email: str, password: str) -> str:
+        headers = baseauth_headers(email, password)
+        url = urljoin(self.url, "api/authenticate/baseauth")
+        auth_response = requests.get(url, headers=headers)
+        api_asserts.assert_status_code_is(auth_response, 200)
+        auth_dict = auth_response.json()
+        api_asserts.assert_has_keys(auth_dict, "api_key")
+        return auth_dict["api_key"]
+
     def setUp(self):
         host = os.environ.get("TOOL_SHED_TEST_HOST")
         assert host
@@ -78,40 +109,10 @@ class ShedGalaxyInteractorApi(GalaxyInteractorApi):
 
 
 class ShedApiTestCase(ShedBaseTestCase, UsesShedApi):
-    _populator: Optional[ToolShedPopulator] = None
     _galaxy_interactor: Optional[GalaxyInteractorApi] = None
-
-    @property
-    def populator(self) -> ToolShedPopulator:
-        if self._populator is None:
-            self._populator = ToolShedPopulator(self.admin_api_interactor, self.api_interactor)
-        return self._populator
 
     @property
     def galaxy_interactor(self) -> GalaxyInteractorApi:
         if self._galaxy_interactor is None:
             self._galaxy_interactor = ShedGalaxyInteractorApi(self.galaxy_url)
         return self._galaxy_interactor
-
-    @property
-    def admin_api_interactor(self) -> ShedApiInteractor:
-        return ShedApiInteractor(self.url, get_admin_api_key())
-
-    @property
-    def api_interactor(self) -> ShedApiInteractor:
-        user_api_key = get_user_api_key()
-        if user_api_key is None:
-            email = TEST_USER
-            password = "testpassword"
-            ensure_user_with_email(self.admin_api_interactor, email, password)
-            user_api_key = self._api_key(email, password)
-        return ShedApiInteractor(self.url, user_api_key)
-
-    def _api_key(self, email: str, password: str) -> str:
-        headers = baseauth_headers(email, password)
-        url = urljoin(self.url, "api/authenticate/baseauth")
-        auth_response = requests.get(url, headers=headers)
-        api_asserts.assert_status_code_is(auth_response, 200)
-        auth_dict = auth_response.json()
-        api_asserts.assert_has_keys(auth_dict, "api_key")
-        return auth_dict["api_key"]

@@ -23,6 +23,7 @@
                 </div>
                 <DatasetActions
                     :item="result"
+                    :writable="writable"
                     :show-highlight="showHighlight"
                     :item-urls="itemUrls"
                     @toggleHighlights="toggleHighlights" />
@@ -97,6 +98,7 @@ export default {
     },
     props: {
         dataset: { type: Object, required: true },
+        writable: { type: Boolean, default: true },
         showHighlight: { type: Boolean, default: false },
         itemUrls: { type: Object, required: true },
     },
