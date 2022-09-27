@@ -294,11 +294,10 @@ def __copy_if_exists_command(work_dir_output):
 
 class CommandsBuilder:
     def __init__(self, initial_command=""):
-        # Remove trailing semi-colon so we can start hacking up this command.
         # TODO: Refactor to compose a list and join with ';', would be more clean.
         self.raw_command = initial_command
         initial_command = util.unicodify(initial_command or "")
-        commands = initial_command.rstrip("; ")
+        commands = initial_command.rstrip(" ")
         self.commands = commands
 
         # Coping work dir outputs or setting metadata will mask return code of
