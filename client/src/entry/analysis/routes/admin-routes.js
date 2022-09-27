@@ -194,7 +194,7 @@ export default [
                 component: FormGeneric,
                 props: {
                     url: "/admin/create_group",
-                    redirect: "admin/groups",
+                    redirect: "/admin/groups",
                 },
             },
             {
