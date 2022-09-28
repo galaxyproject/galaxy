@@ -7,11 +7,12 @@ import { useElementBounding } from "@vueuse/core";
  * @param {Object} rootOffset - Bounding rectangle of element that determines the canvas coordinates
  * @param {Object} parentOffset - Bounding rectangle of direct parent.
  */
-export function useCoordinatePosition(target, rootOffset, parentOffset = null) {
+export function useCoordinatePosition(target, rootOffset, parentOffset = null, stepPosition = null) {
     const position = reactive(useElementBounding(target, { windowResize: false }));
     const offset = unref(rootOffset);
-    parent = unref(parentOffset);
     const transform = inject("transform");
+    const parent = unref(parentOffset);
+    const step = unref(stepPosition);
 
     watchEffect(() => {
         /*
@@ -19,7 +20,9 @@ export function useCoordinatePosition(target, rootOffset, parentOffset = null) {
          * force an update of child coordinates, think addition/removal of extra outputs,
          * adding a long label, etc.
          */
-        parentOffset?.height;
+        parent?.height;
+        step?.left;
+        step?.top;
         position.update();
         // Apply scale and offset so that position is in an unscaled coordinate system
         applyTransform(position, offset, transform);

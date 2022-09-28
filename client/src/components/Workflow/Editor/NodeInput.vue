@@ -10,12 +10,12 @@
 
 <script>
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { ref } from "vue";
+import { reactive, ref } from "vue";
 
 export default {
     setup(props) {
         const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset);
+        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
         return { el, position };
     },
     props: {
@@ -31,20 +31,16 @@ export default {
             type: Object,
             required: true,
         },
+        stepPosition: {
+            type: Object,
+            required: true,
+        },
         rootOffset: {
             type: Object,
             required: true,
         },
         parentOffset: {
             type: Object,
-            required: true,
-        },
-        offsetX: {
-            type: Number,
-            required: true,
-        },
-        offsetY: {
-            type: Number,
             required: true,
         },
     },
@@ -83,10 +79,10 @@ export default {
             return cls;
         },
         startX() {
-            return this.initX + this.offsetX;
+            return this.initX; // + this.offsetX;
         },
         startY() {
-            return this.initY + this.offsetY;
+            return this.initY; // + this.offsetY;
         },
     },
     beforeDestroy() {

@@ -2,9 +2,10 @@
     <draggable-wrapper
         ref="el"
         :scale="scale"
+        :root-offset="rootOffset"
         @updatePosition="onUpdatePosition"
         @mouseup="makeActive"
-        @move="onMove"
+        @move="onMoveTo"
         :id="idString"
         :name="name"
         :node-label="label"
@@ -67,10 +68,9 @@
                 :input="input"
                 :get-node="getNode"
                 :datatypes-mapper="datatypesMapper"
+                :step-position="step.position"
                 :root-offset="rootOffset"
                 :parent-offset="position"
-                :offset-x="offset.x"
-                :offset-y="offset.y"
                 @onAdd="onAddInput"
                 @onRemove="onRemoveInput"
                 @onDisconnect="onDisconnect"
@@ -82,10 +82,9 @@
                 :output="output"
                 :post-job-actions="postJobActions"
                 :get-node="getNode"
+                :step-position="step.position"
                 :root-offset="rootOffset"
                 :parent-offset="position"
-                :offset-x="offset.x"
-                :offset-y="offset.y"
                 v-on="$listeners"
                 @stopDragging="onStopDragging"
                 @onAdd="onAddOutput"
@@ -267,11 +266,10 @@ export default {
         },
     },
     methods: {
-        onMove(deltaPosition) {
-            this.offset = { x: this.offset.x + deltaPosition.x, y: this.offset.y + deltaPosition.y };
+        onMoveTo(position) {
             this.onUpdatePosition({
-                top: this.step.position.top + deltaPosition.y,
-                left: this.step.position.left + deltaPosition.x,
+                top: position.y,
+                left: position.x,
             });
         },
         onStopDragging() {

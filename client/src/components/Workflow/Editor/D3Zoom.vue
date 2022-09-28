@@ -34,7 +34,6 @@ defineExpose({ setZoom });
 
 onMounted(() => {
     const d3Selection = select(viewport.value).call(d3Zoom);
-    const d3ZoomHandler = d3Selection.on("wheel.zoom");
     const updatedTransform = zoomIdentity.translate(transform.x, transform.y).scale(transform.zoom);
     d3Zoom.transform(d3Selection, updatedTransform);
 
@@ -57,12 +56,10 @@ onMounted(() => {
     });
 
     d3Zoom.on("start", (event) => {
-        isZoomingOrPanning = true;
         emit("transform", event.transform);
     });
 
     d3Zoom.on("end", (event) => {
-        isZoomingOrPanning = false;
         emit("transform", event.transform);
     });
 });

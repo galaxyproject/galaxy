@@ -33,7 +33,7 @@ import { reactive, ref } from "vue";
 export default {
     setup(props) {
         const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset);
+        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
         return { el, position };
     },
     components: {
@@ -53,6 +53,9 @@ export default {
             type: Object,
             required: true,
         },
+        stepPosition: {
+            type: Object,
+        },
         rootOffset: {
             type: Object,
             required: true,
@@ -60,14 +63,6 @@ export default {
         parentOffset: {
             type: Object,
             default: {},
-        },
-        offsetX: {
-            type: Number,
-            required: true,
-        },
-        offsetY: {
-            type: Number,
-            required: true,
         },
     },
     data() {
@@ -89,10 +84,10 @@ export default {
             return this.position.top + this.position.height / 2;
         },
         startX() {
-            return this.initX + this.offsetX;
+            return this.initX;
         },
         startY() {
-            return this.initY + this.offsetY;
+            return this.initY;
         },
         endX() {
             return this.startX + this.deltaX;

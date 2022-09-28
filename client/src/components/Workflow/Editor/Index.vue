@@ -365,7 +365,8 @@ export default {
             this.steps[stepId] = step;
         },
         onUpdateStepPosition(stepId, position) {
-            this.steps[stepId].position = position;
+            this.steps[stepId].position.top = position.top;
+            this.steps[stepId].position.left = position.left;
         },
         onDisconnect(nodeId, inputName) {
             delete this.steps[nodeId].input_connections[inputName];

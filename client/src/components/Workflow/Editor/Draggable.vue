@@ -5,36 +5,29 @@
 </template>
 
 <script>
-import { reactive, ref } from "vue";
-import { useElementBounding } from "@vueuse/core";
-
+import { ref, inject } from "vue";
 import { useDraggable } from "@vueuse/core";
 
 export default {
     setup(props, { emit }) {
         const draggable = ref();
-        let lastPosition = null;
-        const deltaPosition = { x: 0, y: 0 };
-        const startPosition = reactive(useElementBounding(draggable));
+        const transform = inject("transform");
 
         const onStart = (position, event) => {
             emit("mousedown", event);
         };
 
         const onMove = (position, event) => {
-            deltaPosition.x = (position.x - (lastPosition?.x || startPosition.x)) / props.scale;
-            deltaPosition.y = (position.y - (lastPosition?.y || startPosition.y)) / props.scale;
-            console.log("delta xy", deltaPosition.x, deltaPosition.y);
-            lastPosition = { ...position };
-            emit("move", deltaPosition);
+            position.x = (position.x - props.rootOffset.x - transform.x) / transform.k;
+            position.y = (position.y - props.rootOffset.y - transform.y) / transform.k;
+            emit("move", position);
         };
 
         const onEnd = (position, event) => {
-            // lastPosition = null;
             emit("mouseup");
         };
 
-        const { x, y, isDragging, position } = useDraggable(draggable, {
+        const { isDragging, position } = useDraggable(draggable, {
             preventDefault: true,
             onStart: onStart,
             onMove: onMove,
@@ -42,11 +35,8 @@ export default {
         });
         return {
             draggable,
-            x,
-            y,
             isDragging,
             position,
-            deltaPosition,
         };
     },
     props: {
@@ -71,11 +61,6 @@ export default {
             timeout: null,
             programmaticDelta: { x: 0, y: 0 },
         };
-    },
-    watch: {
-        position(newVal) {
-            console.log(newVal.x, newVal.y);
-        },
     },
     methods: {
         emitPan(doMove = true) {
