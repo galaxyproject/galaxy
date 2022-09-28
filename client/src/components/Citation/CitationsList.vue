@@ -21,7 +21,7 @@
                 <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
             </div>
             <div class="citations-formatted">
-                <Citation
+                <CitationItem
                     v-for="(citation, index) in citations"
                     :key="index"
                     class="formatted-reference"
@@ -39,7 +39,7 @@
                 @hide="$emit('hide')"
                 @hidden="$emit('hidden')">
                 <b-card>
-                    <Citation
+                    <CitationItem
                         v-for="(citation, index) in citations"
                         :key="index"
                         class="formatted-reference"
@@ -54,7 +54,7 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getCitations } from "./services";
-import Citation from "./Citation";
+import CitationItem from "./CitationItem";
 
 Vue.use(BootstrapVue);
 
@@ -66,7 +66,7 @@ const outputFormats = Object.freeze({
 
 export default {
     components: {
-        Citation,
+        CitationItem,
     },
     props: {
         source: {

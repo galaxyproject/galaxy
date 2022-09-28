@@ -8,7 +8,7 @@
                 icon="copy"
                 style="cursor: pointer"
                 @click="copyBibtex" />
-            <Citation
+            <CitationItem
                 v-for="(citation, index) in citations"
                 :key="index"
                 class="formatted-reference"
@@ -72,14 +72,14 @@ import { faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp } from "@fortawe
 library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
 
 import { getCitations } from "components/Citation/services";
-import Citation from "components/Citation/Citation";
+import CitationItem from "components/Citation/CitationItem";
 import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
 
 export default {
     components: {
-        Citation,
+        CitationItem,
         License,
         Creators,
         FontAwesomeIcon,

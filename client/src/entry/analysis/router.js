@@ -15,7 +15,7 @@ import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
 
 // child components
-import Citations from "components/Citation/Citations";
+import CitationsList from "components/Citation/CitationsList";
 import AboutGalaxy from "components/AboutGalaxy.vue";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
@@ -166,7 +166,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/citations",
-                        component: Citations,
+                        component: CitationsList,
                         props: (route) => ({
                             id: route.query.id,
                             source: "histories",
