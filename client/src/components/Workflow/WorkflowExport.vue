@@ -90,6 +90,11 @@ export default {
             return safePath(`/workflow/gen_image?id=${this.workflow.id}`);
         },
     },
+    watch: {
+        id() {
+            this.getWorkflow();
+        },
+    },
     created() {
         this.getWorkflow();
     },
