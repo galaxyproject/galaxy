@@ -223,16 +223,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return self.stored_list_grid(trans, **kwargs)
 
     @web.expose
-    @web.require_login("use Galaxy workflows", use_panels=True)
-    def list(self, trans):
-        """
-        Render workflow main page (management of existing workflows)
-        """
-        # Take care of proxy prefix in url as well
-        redirect_url = f"{url_for('/')}workflow"
-        return trans.response.send_redirect(redirect_url)
-
-    @web.expose
     @web.json
     def list_published(self, trans, **kwargs):
         return self.published_list_grid(trans, **kwargs)
@@ -406,7 +396,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def get_name_and_link_async(self, trans, id=None):
         """Returns workflow's name and link."""
         stored = self.get_stored_workflow(trans, id)
-
         return_dict = {
             "name": stored.name,
             "link": url_for(
@@ -425,59 +414,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         try:
             svg = self._workflow_to_svg_canvas(trans, stored)
         except Exception:
-            status = "error"
             message = (
                 "Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools."
             )
-            return trans.fill_template(
-                "/workflow/sharing.mako", use_panels=True, item=stored, status=status, message=message
-            )
+            return trans.show_error_message(message)
         trans.response.set_content_type("image/svg+xml")
         s = STANDALONE_SVG_TEMPLATE % svg.tostring()
         return s.encode("utf-8")
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def copy(self, trans, id, save_as_name=None):
-        # Get workflow to copy.
-        stored = self.get_stored_workflow(trans, id, check_ownership=False)
-        user = trans.get_user()
-        if stored.user == user:
-            owner = True
-        else:
-            if (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=user, stored_workflow=stored)
-                .count()
-                == 0
-            ):
-                error("Workflow is not owned by or shared with current user")
-            owner = False
-
-        # Copy.
-        new_stored = model.StoredWorkflow()
-        if save_as_name:
-            new_stored.name = f"{save_as_name}"
-        else:
-            new_stored.name = f"Copy of {stored.name}"
-        new_stored.latest_workflow = stored.latest_workflow
-        # Copy annotation.
-        annotation_obj = self.get_item_annotation_obj(trans.sa_session, stored.user, stored)
-        if annotation_obj:
-            self.add_item_annotation(trans.sa_session, trans.get_user(), new_stored, annotation_obj.annotation)
-        new_stored.copy_tags_from(trans.user, stored)
-        if not owner:
-            new_stored.name += f" shared by {stored.user.email}"
-        new_stored.user = user
-        # Persist
-        session = trans.sa_session
-        session.add(new_stored)
-        session.flush()
-        # Display the management page
-        message = f"Created new workflow with name: {escape(new_stored.name)}"
-        trans.set_message(message)
-        return_url = f"{url_for('/')}workflow?status=done&message={escape(message)}"
-        trans.response.send_redirect(return_url)
 
     @web.legacy_expose_api
     def create(self, trans, payload=None, **kwd):
@@ -572,25 +515,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             log.exception("Error in Save As workflow: no name.")
 
     @web.expose
-    def delete(self, trans, id=None):
-        """
-        Mark a workflow as deleted
-        """
-        # Load workflow from database
-        stored = self.get_stored_workflow(trans, id)
-        # Mark as deleted and save
-        stored.deleted = True
-        trans.user.stored_workflow_menu_entries = [
-            entry for entry in trans.user.stored_workflow_menu_entries if entry.stored_workflow != stored
-        ]
-        trans.sa_session.add(stored)
-        trans.sa_session.flush()
-        # Display the management page
-        message = f"Workflow deleted: {escape(stored.name)}"
-        trans.set_message(message)
-        return trans.response.send_redirect(f"{url_for('/')}workflow?status=done&message={escape(message)}")
-
-    @web.expose
     @web.json
     @web.require_login("edit workflows")
     def editor(self, trans, id=None, workflow_id=None, version=None):
@@ -604,8 +528,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 stored_workflow = self.app.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=False)
                 self.security_check(trans, stored_workflow, True, False)
                 stored_workflow_id = trans.security.encode_id(stored_workflow.id)
-                return trans.response.send_redirect(f'{url_for("/")}workflow/editor?id={stored_workflow_id}')
-
+                return trans.response.send_redirect(f'{url_for("/")}workflows/edit?id={stored_workflow_id}')
             error("Invalid workflow id")
         stored = self.get_stored_workflow(trans, id)
         # The following query loads all user-owned workflows,
