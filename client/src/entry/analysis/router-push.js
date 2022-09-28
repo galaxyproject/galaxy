@@ -33,7 +33,7 @@ export function patchRouterPush(VueRouter) {
             Galaxy.frame.add({ title: title, url: location });
             return;
         }
-        // always emit event when a duplicate route is pushed
+        // always emit event, even when a duplicate route is pushed
         this.app.$emit("router-push");
         // avoid console warning when user clicks to revisit same route
         return originalPush.call(this, location).catch((err) => {
