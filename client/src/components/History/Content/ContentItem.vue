@@ -203,7 +203,7 @@ export default {
             }
         },
         onDisplay() {
-            this.$router.push(this.itemUrls.display, this.name);
+            this.$router.push(this.itemUrls.display, { title: this.name });
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";

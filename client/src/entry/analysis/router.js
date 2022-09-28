@@ -55,12 +55,18 @@ import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import { StorageDashboardRouter } from "components/User/DiskUsage";
+import { addSearchParams } from "utils/url";
 
 Vue.use(VueRouter);
 
 // patches $router.push() to trigger an event and hide duplication warnings
 const originalPush = VueRouter.prototype.push;
-VueRouter.prototype.push = function push(location, windowManagerTitle = null) {
+VueRouter.prototype.push = function push(location, options = {}) {
+    const { title, force } = options;
+    // location
+    if (force) {
+        location = addSearchParams(location, { vkey: Date.now() });
+    }
     // verify if confirmation is required
     console.debug("VueRouter - push: ", location);
     if (this.confirmation) {
@@ -72,12 +78,13 @@ VueRouter.prototype.push = function push(location, windowManagerTitle = null) {
     }
     // show location in window manager
     const Galaxy = getGalaxyInstance();
-    if (windowManagerTitle && Galaxy.frame && Galaxy.frame.active) {
-        Galaxy.frame.add({ title: windowManagerTitle, url: location });
+    if (title && Galaxy.frame && Galaxy.frame.active) {
+        Galaxy.frame.add({ title: title, url: location });
         return;
     }
-    // always emit event when a route is pushed
+    // always emit event when a duplicate route is pushed
     this.app.$emit("router-push");
+
     // avoid console warning when user clicks to revisit same route
     return originalPush.call(this, location).catch((err) => {
         if (err.name !== "NavigationDuplicated") {
