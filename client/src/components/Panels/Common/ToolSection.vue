@@ -51,6 +51,8 @@ import ToolPanelLabel from "./ToolPanelLabel";
 import ariaAlert from "utils/ariaAlert";
 import ToolPanelLinks from "./ToolPanelLinks";
 
+import { useConfig } from "composables/useConfig";
+
 export default {
     name: "ToolSection",
     components: {
@@ -94,6 +96,13 @@ export default {
             default: false,
         },
     },
+    setup() {
+        const { config, isLoaded } = useConfig();
+        return {
+            config,
+            isLoaded,
+        };
+    },
     data() {
         return {
             opened: this.expanded || this.checkFilter(),
@@ -122,7 +131,8 @@ export default {
             // the order set and hope for the best from the integrated
             // panel.
             if (
-                this.$store.state.config.sortTools &&
+                this.isLoaded &&
+                this.config.toolbox_auto_sort === true &&
                 !this.category.elems.some((el) => el.text !== undefined && el.text !== "")
             ) {
                 return Object.entries(
