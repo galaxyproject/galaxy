@@ -33,7 +33,8 @@ describe("Citation", () => {
                 template: "apa",
                 lang: "en-US",
             });
-            console.debug(formattedCitation);
+            expect(formattedCitation).toContain("Hourahine");
+            // TODO: actually test formatting here, too.
         });
     });
 });
