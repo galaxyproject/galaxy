@@ -117,15 +117,19 @@ export default {
             return this.category.links || {};
         },
         sortedElements() {
-            // This obviously breaks when people have manually inserted labels
-            // into particular spots in the tool section, so if there are any,
-            // just skip the whole section and trust ordering
-            if (this.category.elems.some((el) => el.text !== undefined && el.text !== "")) {
-                return Object.entries(this.category.elems);
-            } else {
+            // If this.config.sortTools is true, sort the tools alphabetically
+            // When administrators have manually inserted labels we respect
+            // the order set and hope for the best from the integrated
+            // panel.
+            if (
+                this.$store.state.config.sortTools &&
+                !this.category.elems.some((el) => el.text !== undefined && el.text !== "")
+            ) {
                 return Object.entries(
                     [...this.category.elems].sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase())
                 );
+            } else {
+                return Object.entries(this.category.elems);
             }
         },
     },
