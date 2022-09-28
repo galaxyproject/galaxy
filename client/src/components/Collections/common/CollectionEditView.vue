@@ -107,9 +107,9 @@ export default {
             }
             return newCollectionMessage;
         },
-        historyId: function() {
+        historyId: function () {
             return this.$store.getters["history/currentHistoryId"];
-        }
+        },
     },
     created() {
         this.getCollectionDataAndAttributes();
