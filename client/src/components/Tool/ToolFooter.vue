@@ -18,6 +18,7 @@
         <div v-if="hasRequirements" class="mb-1">
             <span v-localize class="footer-section-name">Requirements</span>
             <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
+                <span class="sr-only">Learn more about Galaxy requirements</span>
                 <font-awesome-icon v-b-tooltip.hover title="Learn more about Galaxy Requirements" icon="question" />
             </a>
             <div v-for="(requirement, index) in requirements" :key="index">
