@@ -2,7 +2,7 @@ import { getGalaxyInstance } from "app";
 import { addSearchParams } from "utils/url";
 
 /**
- * Is called before the regular router.push and allows us to provide logs,
+ * Is called before the regular router.push() and allows us to provide logs,
  * handle the window manager, avoid duplication warnings, and force a component
  * refresh if needed.
  *
@@ -17,6 +17,7 @@ export function patchRouterPush(VueRouter) {
         if (force) {
             location = addSearchParams(location, { __vkey__: Date.now() });
         }
+        // log upcoming location
         console.debug("VueRouter - push: ", location);
         // verify if confirmation is required
         if (this.confirmation) {
@@ -34,7 +35,6 @@ export function patchRouterPush(VueRouter) {
         }
         // always emit event when a duplicate route is pushed
         this.app.$emit("router-push");
-
         // avoid console warning when user clicks to revisit same route
         return originalPush.call(this, location).catch((err) => {
             if (err.name !== "NavigationDuplicated") {
