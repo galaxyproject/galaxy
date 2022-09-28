@@ -51,7 +51,7 @@
                                 v-model="form.table"
                                 type="text"
                                 class="form-control"
-                                placeholder="BCO"
+                                placeholder="GALXY"
                                 required />
                         </div>
                         <div class="form-group">
