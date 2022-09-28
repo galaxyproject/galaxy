@@ -24,7 +24,6 @@ class CollectionEditTestCase(SeleniumTestCase):
 
     @selenium_test
     def test_change_datatype_simple_list(self):
-        self.use_beta_history()
         self.create_simple_list_collection_txt()
         self.open_collection_edit_view()
         self.navigate_to_datatype_tab()
