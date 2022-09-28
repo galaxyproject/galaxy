@@ -1,7 +1,10 @@
 # Galaxy Database Schema Migrations
 
+
 Galaxy's database schema migration system is built on top of [Alembic](https://alembic.sqlalchemy.org) - a lightweight database migration tool for usage with SQLAlchemy. 
 (This documentation applies to release 22.05 and up. Prior to 22.05, Galaxy used SQLAlchemy Migrate.)
+
+*NOTE: Starting with release 23.1, this documentation will be available on [Galaxy's documentation website](https://docs.galaxyproject.org/en/master/admin/index.html).*
 
 ## Administering Galaxy: upgrading and downgrading the database
 
