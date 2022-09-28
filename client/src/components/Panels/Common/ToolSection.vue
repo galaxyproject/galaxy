@@ -5,7 +5,9 @@
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
             :title="title"
             @mouseover="hover = true"
-            @mouseleave="hover = false">
+            @mouseleave="hover = false"
+            @focus="hover = true"
+            @blur="hover = false">
             <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
                     {{ name }}
