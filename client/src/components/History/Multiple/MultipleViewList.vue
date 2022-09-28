@@ -34,6 +34,7 @@
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem";
 import SelectorModal from "components/History/Modals/SelectorModal";
+import { getHistories, addHistory, removeHistory } from "./localStorage.js";
 
 export default {
     components: {
@@ -61,15 +62,8 @@ export default {
     data() {
         return {
             MultipleViewItem,
-            selectedHistories: localStorage.getItem("selectedHistories")
-                ? JSON.parse(localStorage.getItem("selectedHistories"))
-                : [],
+            selectedHistories: getHistories(),
         };
-    },
-    watch: {
-        selectedHistories() {
-            localStorage.setItem("selectedHistories", JSON.stringify(this.selectedHistories));
-        },
     },
     created() {
         if (!this.selectedHistories.length) {
@@ -83,6 +77,7 @@ export default {
                 const historyExists = this.selectedHistories.find((h) => h.id == history.id);
                 if (!historyExists) {
                     this.selectedHistories.push({ id: history.id });
+                    addHistory(history.id);
                 }
             });
         },
@@ -90,6 +85,7 @@ export default {
             this.selectedHistories = this.selectedHistories.filter((item) => {
                 return item.id !== history.id;
             });
+            removeHistory(history.id);
         },
     },
 };
