@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import { useCoordinatePosition } from "./composables/usesCoodinatePosition";
+import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { ref } from "vue";
 
 export default {

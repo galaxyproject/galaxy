@@ -27,7 +27,7 @@
 <script>
 import DraggableWrapper from "./Draggable";
 import WorkflowConnector from "./Connector";
-import { useCoordinatePosition } from "./composables/usesCoodinatePosition";
+import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { reactive, ref } from "vue";
 
 export default {

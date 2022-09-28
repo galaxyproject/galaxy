@@ -2,13 +2,13 @@
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl
             :zoom-level="zoomLevel"
-            :pan="pan"
+            :pan="transform"
             @onZoom="onZoomButton"
             @reset-all="onResetAll"
             @update:pan="onPan" />
         <div ref="el" class="canvas-viewport" @drop.prevent>
-            <d3-zoom id="canvas-container" @transform="onTransform" @dragging="onDrag" @scaling="onScale">
-                <div ref="nodes" class="node-area">
+            <d3-zoom ref="d3Zoom" id="canvas-container" @transform="onTransform" @dragging="onDrag" @scaling="onScale">
+                <div ref="nodes" class="node-area" :style="nodesStyle">
                     <svg class="canvas-svg node-area">
                         <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
                         <terminal-connector
@@ -43,7 +43,7 @@
             :steps="steps"
             :root-offset="position"
             :scale="zoomLevel"
-            :pan="pan"
+            :pan="transform"
             @pan-by="onPan"
             @moveTo="onMoveTo" />
     </div>
@@ -57,12 +57,24 @@ import Minimap from "./Minimap.vue";
 import { reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
 import D3Zoom from "./D3Zoom.vue";
+import { provide } from "vue";
+import { useScale, setScale } from "./composables/useScale";
 
 export default {
     setup() {
+        const transform = reactive({ x: 0, y: 0, k: 1 });
+
+        function onTransform(newTransform) {
+            transform.x = newTransform.x;
+            transform.y = newTransform.y;
+            transform.k = newTransform.k;
+            setScale(transform.k);
+        }
+        provide("transform", transform);
+        const scale = useScale();
         const el = ref(null);
         const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
-        return { el, position };
+        return { el, position, zoomLevel: scale, onTransform, transform, setScale };
     },
     components: {
         D3Zoom,
@@ -76,9 +88,6 @@ export default {
         return {
             isWheeled: false,
             draggingConnection: null,
-            transform: null,
-            pan: { x: 0, y: 0 },
-            transform: "",
         };
     },
     props: {
@@ -100,11 +109,6 @@ export default {
         },
     },
     methods: {
-        onTransform(transform) {
-            const cssTransform = `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})`;
-            // this.transform = transform.toString();
-            this.$refs.nodes.style.transform = cssTransform;
-        },
         onPan(pan) {
             console.log("onPan", pan);
             this.pan = pan;
@@ -146,9 +150,6 @@ export default {
         onUpdatedCTM(CTM) {
             this.transform = CTM;
         },
-        setScale(scale) {
-            this.$store.commit("workflowState/setScale", scale);
-        },
         onZoom(zoomLevel) {
             // SvgZoomPanel returns array
             this.setScale(zoomLevel?.[0]);
@@ -160,6 +161,7 @@ export default {
             this.draggingConnection = vector;
         },
         onZoomButton(zoomLevel) {
+            this.$refs.d3Zoom.setZoom(zoomLevel);
             this.setScale(zoomLevel);
         },
         onActivate(nodeId) {
@@ -176,8 +178,9 @@ export default {
         },
     },
     computed: {
-        zoomLevel() {
-            return this.$store.getters["workflowState/getScale"]();
+        nodesStyle() {
+            const transform = `translate(${this.transform.x}px, ${this.transform.y}px) scale(${this.transform.k})`;
+            return { transform };
         },
         activeNodeId() {
             return this.$store.getters["workflowState/getActiveNode"]();
@@ -185,21 +188,23 @@ export default {
         connections() {
             const connections = [];
             Object.entries(this.steps).forEach(([stepId, step]) => {
-                Object.entries(step.input_connections).forEach(([input_name, outputArray]) => {
-                    if (!Array.isArray(outputArray)) {
-                        outputArray = [outputArray];
-                    }
-                    outputArray.forEach((output) => {
-                        const connection = {
-                            id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
-                            inputStepId: step.id,
-                            inputName: input_name,
-                            outputStepId: output.id,
-                            outputName: output.output_name,
-                        };
-                        connections.push(connection);
+                if (step.input_connections) {
+                    Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
+                        if (!Array.isArray(outputArray)) {
+                            outputArray = [outputArray];
+                        }
+                        outputArray.forEach((output) => {
+                            const connection = {
+                                id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
+                                inputStepId: step.id,
+                                inputName: input_name,
+                                outputStepId: output.id,
+                                outputName: output.output_name,
+                            };
+                            connections.push(connection);
+                        });
                     });
-                });
+                }
             });
             return connections;
         },

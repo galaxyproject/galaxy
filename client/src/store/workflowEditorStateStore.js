@@ -18,7 +18,7 @@ const getters = {
     getActiveNode: (state) => () => {
         return state.activeNode;
     },
-    getScale: (state) => () => {
+    getScale: (state) => {
         return state.scale;
     },
     getNode: (state) => (nodeId) => {
