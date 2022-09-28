@@ -174,6 +174,8 @@ YIELD_PER_ROWS = 100
 
 if TYPE_CHECKING:
     from galaxy.datatypes.data import Data
+    from galaxy.tools import DefaultToolState
+    from galaxy.workflow.modules import WorkflowModule
 
     class _HasTable:
         table: Table
@@ -6825,7 +6827,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     source_metadata = Column(JSONType)
     uuid = Column(UUIDType, nullable=True)
 
-    steps = relationship(
+    steps: List["WorkflowStep"] = relationship(
         "WorkflowStep",
         back_populates="workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),  # type: ignore[has-type]
@@ -6876,7 +6878,7 @@ class Workflow(Base, Dictifiable, RepresentById):
             steps[step_id] = step
         return steps
 
-    def step_by_index(self, order_index):
+    def step_by_index(self, order_index: int):
         for step in self.steps:
             if order_index == step.order_index:
                 return step
@@ -6987,19 +6989,19 @@ class WorkflowStep(Base, RepresentById):
     workflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=False)
     subworkflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=True)
     dynamic_tool_id = Column(Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True)
-    type = Column(String(64))
+    type: str = Column(String(64))
     tool_id = Column(TEXT)
     tool_version = Column(TEXT)
     tool_inputs = Column(JSONType)
     tool_errors = Column(JSONType)
     position = Column(MutableJSONType)
     config = Column(JSONType)
-    order_index = Column(Integer)
+    order_index: int = Column(Integer)
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]
 
-    subworkflow = relationship(
+    subworkflow: Optional[Workflow] = relationship(
         "Workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
         back_populates="parent_workflow_steps",
@@ -7022,6 +7024,10 @@ class WorkflowStep(Base, RepresentById):
     workflow = relationship(
         "Workflow", primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id), back_populates="steps"
     )
+
+    module: Optional["WorkflowModule"]
+    state: Optional["DefaultToolState"]
+    upgrade_messages: Optional[Dict]
 
     STEP_TYPE_TO_INPUT_TYPE = {
         "data_input": "dataset",
@@ -7421,7 +7427,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         uselist=True,
     )
     steps = relationship("WorkflowInvocationStep", back_populates="workflow_invocation")
-    workflow = relationship("Workflow")
+    workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
     )

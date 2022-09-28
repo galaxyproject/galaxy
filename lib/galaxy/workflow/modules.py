@@ -31,6 +31,7 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     PostJobAction,
     Workflow,
+    WorkflowStep,
     WorkflowStepConnection,
 )
 from galaxy.model.dataset_collections import matching
@@ -244,7 +245,7 @@ class WorkflowModule:
 
     # ---- Run time ---------------------------------------------------------
 
-    def get_runtime_state(self):
+    def get_runtime_state(self) -> DefaultToolState:
         raise TypeError("Abstract method")
 
     def get_runtime_inputs(self, **kwds):
@@ -595,7 +596,9 @@ class SubWorkflowModule(WorkflowModule):
         inputs = {}
         for step in self.subworkflow.steps:
             if step.type == "tool":
+                assert isinstance(step.module, ToolModule)
                 tool = step.module.tool
+                assert tool
                 tool_inputs = step.module.state
 
                 def callback(input, prefixed_name, prefixed_label, value=None, **kwds):
@@ -617,6 +620,7 @@ class SubWorkflowModule(WorkflowModule):
         replacement_parameters = set()
         for subworkflow_step in self.subworkflow.steps:
             module = subworkflow_step.module
+            assert module
             for replacement_parameter in module.get_replacement_parameters(subworkflow_step):
                 replacement_parameters.add(replacement_parameter)
 
@@ -1126,7 +1130,10 @@ class InputParameterModule(WorkflowModule):
             # Retrieve possible runtime options for 'select' type inputs
             for connection in connections:
                 # Well this isn't a great assumption...
-                module = connection.input_step.module  # type: ignore[union-attr]
+                assert connection.input_step
+                module = connection.input_step.module
+                assert isinstance(module, ToolModule)
+                assert module.tool
                 tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
                 def callback(input, prefixed_name, context, **kwargs):
@@ -2101,7 +2108,7 @@ class WorkflowModuleFactory:
         ), f"Unexpected workflow step type [{type}] not found in [{self.module_types.keys()}]"
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
-    def from_workflow_step(self, trans, step, **kwargs):
+    def from_workflow_step(self, trans, step: WorkflowStep, **kwargs) -> WorkflowModule:
         """
         Return module initialized from the WorkflowStep object `step`.
         """
@@ -2176,7 +2183,7 @@ class WorkflowModuleInjector:
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject(self, step, step_args=None, steps=None, **kwargs):
+    def inject(self, step: WorkflowStep, step_args=None, steps=None, **kwargs):
         """Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.
