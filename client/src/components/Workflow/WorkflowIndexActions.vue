@@ -24,12 +24,6 @@ export default {
         BButton,
         FontAwesomeIcon,
     },
-    props: {
-        root: {
-            type: String,
-            required: true,
-        },
-    },
     methods: {
         navigateToCreate: function () {
             this.$router.push("/workflows/create");
