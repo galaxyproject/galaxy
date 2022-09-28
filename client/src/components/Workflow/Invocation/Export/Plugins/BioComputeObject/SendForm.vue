@@ -27,7 +27,7 @@ function hideModal() {
 function resetForm() {
     form.fetch = "";
     form.authorization = "";
-    form.table = "BCO";
+    form.table = "GALXY";
     form.owner_group = "";
 }
 
@@ -122,7 +122,7 @@ defineExpose({ showModal });
                             v-model="form.table"
                             type="text"
                             class="form-control"
-                            placeholder="BCO"
+                            placeholder="GALXY"
                             required />
                         Prefix
                     </label>
