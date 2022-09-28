@@ -19,7 +19,7 @@
                 <div v-html="config.citations_export_message_html"></div>
             </div>
             <div class="citations-formatted">
-                <Citation
+                <CitationItem
                     v-for="(citation, index) in citations"
                     :key="index"
                     class="formatted-reference"
@@ -37,7 +37,7 @@
                 @hide="$emit('hide')"
                 @hidden="$emit('hidden')">
                 <b-card>
-                    <Citation
+                    <CitationItem
                         v-for="(citation, index) in citations"
                         :key="index"
                         class="formatted-reference"
@@ -54,8 +54,8 @@ import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
 
-import Citation from "./Citation";
 import { getCitations } from "./services";
+import CitationItem from "./CitationItem";
 
 Vue.use(BootstrapVue);
 
@@ -67,7 +67,7 @@ const outputFormats = Object.freeze({
 
 export default {
     components: {
-        Citation,
+        CitationItem,
     },
     props: {
         source: {

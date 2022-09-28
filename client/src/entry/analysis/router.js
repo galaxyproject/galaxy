@@ -1,5 +1,5 @@
 import { getGalaxyInstance } from "app";
-import Citations from "components/Citation/Citations";
+import CitationsList from "components/Citation/CitationsList";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import DatasetList from "components/Dataset/DatasetList";
@@ -220,7 +220,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/citations",
-                        component: Citations,
+                        component: CitationsList,
                         props: (route) => ({
                             id: route.query.id,
                             source: "histories",
