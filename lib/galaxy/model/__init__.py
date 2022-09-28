@@ -7025,6 +7025,8 @@ class WorkflowStep(Base, RepresentById):
         "Workflow", primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id), back_populates="steps"
     )
 
+    # Injected attributes
+    # TODO: code using these should be refactored to not depend on these non-persistent fields
     module: Optional["WorkflowModule"]
     state: Optional["DefaultToolState"]
     upgrade_messages: Optional[Dict]
