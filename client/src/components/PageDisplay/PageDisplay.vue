@@ -10,6 +10,7 @@
                         :download-endpoint="stsUrl(config)"
                         :export-link="exportUrl"
                         @onEdit="onEdit" />
+                    <PageHtml v-else :page-id="pageId" />
                 </div>
                 <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
             </template>
@@ -23,11 +24,13 @@ import { safePath } from "utils/redirect";
 import ConfigProvider from "components/providers/ConfigProvider";
 import Markdown from "components/Markdown/Markdown";
 import Published from "components/Common/Published";
+import PageHtml from "./PageHtml";
 
 export default {
     components: {
         ConfigProvider,
         Markdown,
+        PageHtml,
         Published,
     },
     props: {
