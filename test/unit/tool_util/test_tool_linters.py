@@ -361,40 +361,40 @@ INPUTS_VALIDATOR_CORRECT = """
 <tool>
     <inputs>
         <param name="data_param" type="data" format="data">
-            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message" negate="true"/>
-            <validator type="unspecified_build" message="cutom validation message" negate="true"/>
-            <validator type="dataset_ok_validator" message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message" negate="true"/>
+            <validator type="unspecified_build" message="custom validation message" negate="true"/>
+            <validator type="dataset_ok_validator" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message" negate="true"/>
         </param>
         <param name="collection_param" type="collection">
-            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message"/>
-            <validator type="unspecified_build" message="cutom validation message"/>
-            <validator type="dataset_ok_validator" message="cutom validation message"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message"/>
+            <validator type="unspecified_build" message="custom validation message"/>
+            <validator type="dataset_ok_validator" message="custom validation message"/>
+            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="custom validation message"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message"/>
         </param>
         <param name="text_param" type="text">
             <validator type="regex">reg.xp</validator>
-            <validator type="length" min="0" max="100" message="cutom validation message"/>
-            <validator type="empty_field" message="cutom validation message"/>
-            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
-            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+            <validator type="length" min="0" max="100" message="custom validation message"/>
+            <validator type="empty_field" message="custom validation message"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message"/>
+            <validator type="expression" message="custom validation message">somepythonexpression</validator>
         </param>
         <param name="select_param" type="select">
             <options from_data_table="bowtie2_indexes"/>
             <validator type="no_options" negate="true"/>
             <validator type="regex" negate="true">reg.xp</validator>
-            <validator type="length" min="0" max="100" message="cutom validation message" negate="true"/>
-            <validator type="empty_field" message="cutom validation message" negate="true"/>
-            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
-            <validator type="expression" message="cutom validation message" negate="true">somepythonexpression</validator>
+            <validator type="length" min="0" max="100" message="custom validation message" negate="true"/>
+            <validator type="empty_field" message="custom validation message" negate="true"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message" negate="true"/>
+            <validator type="expression" message="custom validation message" negate="true">somepythonexpression</validator>
         </param>
         <param name="int_param" type="integer">
             <validator type="in_range" min="0" max="100" exclude_min="true" exclude_max="true" negate="true"/>
-            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+            <validator type="expression" message="custom validation message">somepythonexpression</validator>
         </param>
     </inputs>
 </tool>
