@@ -189,6 +189,7 @@ class ConfigSerializer(base.ModelSerializer):
             "python": _defaults_to((sys.version_info.major, sys.version_info.minor)),
             "select_type_workflow_threshold": _use_config,
             "file_sources_configured": lambda item, key, **context: self.app.file_sources.custom_sources_configured,
+            "toolbox_auto_sort": _use_config,
             "panel_views": lambda item, key, **context: self.app.toolbox.panel_view_dicts(),
             "default_panel_view": _use_config,
             "upload_from_form_button": _use_config,
