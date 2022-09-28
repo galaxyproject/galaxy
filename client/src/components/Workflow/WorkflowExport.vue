@@ -37,12 +37,16 @@
             <b-form-input type="password" name="myexp_password" placeholder="Password" autocomplete="off" />
             <small>Enter your password for myExperiment.</small>
             <div class="mt-2">
-                <b-button type="submit"> Export to myExperiment </b-button>
+                <b-button type="submit" variant="outline-primary"> Export to myExperiment </b-button>
             </div>
         </form>
     </div>
     <b-alert v-else-if="!!error" variant="danger" show>
-        {{ error }}
+        <span>
+            {{ error }}. Click
+            <router-link class="require-login-link" to="/login/start">here</router-link>
+            to login.
+        </span>
     </b-alert>
     <LoadingSpan v-else message="Loading workflow" />
 </template>
