@@ -16,7 +16,6 @@ export async function urlData({ url, headers, params }) {
 
 export function addSearchParams(url, query) {
     const placeholder = url.indexOf("?") == -1 ? "?" : "&";
-    console.log(placeholder);
-    const params = new URLSearchParams(query)
+    const params = new URLSearchParams(query);
     return `${url}${placeholder}${params.toString()}`;
 }
