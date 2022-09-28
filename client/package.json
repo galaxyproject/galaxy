@@ -134,7 +134,6 @@
   "devDependencies": {
     "@babel/core": "^7.23.2",
     "@babel/helper-validator-identifier": "^7.22.20",
-    "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/plugin-transform-runtime": "^7.23.2",
     "@babel/preset-env": "^7.23.2",
     "@babel/preset-typescript": "^7.23.2",

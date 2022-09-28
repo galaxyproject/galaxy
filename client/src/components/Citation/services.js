@@ -7,16 +7,15 @@ export async function getCitations(source, id) {
         const request = await axios.get(`${getAppRoot()}api/${source}/${id}/citations`);
         const rawCitations = request.data;
         const citations = [];
-        import(/* webpackChunkName: "cite" */ "./cite.js").then(({ Cite }) => {
-            for (const rawCitation of rawCitations) {
-                try {
-                    const cite = new Cite(rawCitation.content);
-                    citations.push({ raw: rawCitation.content, cite: cite });
-                } catch (err) {
-                    console.warn(`Error parsing bibtex: ${err}`);
-                }
+        const { Cite } = await import(/* webpackChunkName: "cite" */ "./cite.js");
+        for (const rawCitation of rawCitations) {
+            try {
+                const cite = new Cite(rawCitation.content);
+                citations.push({ raw: rawCitation.content, cite: cite });
+            } catch (err) {
+                console.warn(`Error parsing bibtex: ${err}`);
             }
-        });
+        }
         return citations;
     } catch (e) {
         rethrowSimple(e);
