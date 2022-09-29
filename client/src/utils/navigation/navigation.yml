@@ -422,12 +422,14 @@ pages:
   editor:
     selectors:
       save: '#save-button'
-      embed_button: '#embed-galaxy-object'
-      dataset_selector: '.saved-datasets'
+      embed_dataset:
+        type: xpath
+        selector: '//span[text() = "Embedded Dataset"]'
+      dataset_selector:
+        type: xpath
+        selector: '//span[text() = "1: 1.fasta"]'
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
       markdown_editor: '.markdown-textarea'
-    labels:
-      embed_dataset: 'Embed Dataset'
 
 login:
   selectors:
