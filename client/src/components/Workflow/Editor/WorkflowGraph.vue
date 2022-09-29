@@ -3,7 +3,7 @@
         <ZoomControl
             :zoom-level="zoomLevel"
             :pan="transform"
-            @onZoom="onZoomButton"
+            @onZoom="onZoom"
             @reset-all="onResetAll"
             @update:pan="onPan" />
         <div ref="el" class="canvas-viewport" @drop.prevent>
@@ -113,11 +113,10 @@ export default {
             this.$refs.d3Zoom.panBy(pan);
         },
         onMoveTo(moveTo) {
-            // implement me
+            console.log("moveTo", moveTo);
         },
         onResetAll() {
-            this.pan = { x: 0, y: 0 };
-            this.setScale(1);
+            this.onZoom(1, { x: 0, y: 0 });
         },
         onDrag(panData) {
             console.log("panData", panData);
@@ -132,27 +131,22 @@ export default {
             console.log(this.pan);
             this.setScale(scaleData.scale);
         },
-        onUpdatedCTM(CTM) {
-            this.transform = CTM;
-        },
-        onZoom(zoomLevel) {
-            // SvgZoomPanel returns array
-            this.setScale(zoomLevel?.[0]);
-        },
         onStopDragging() {
             this.draggingConnection = null;
         },
         onDragConnector(vector) {
             this.draggingConnection = vector;
         },
-        onZoomButton(zoomLevel) {
+        onZoom(zoomLevel, panTo = null) {
             this.$refs.d3Zoom.setZoom(zoomLevel);
+            if (panTo) {
+                this.onPan({ x: panTo.x - this.transform.x, y: panTo.y - this.transform.y });
+            }
             this.setScale(zoomLevel);
         },
         onActivate(nodeId) {
             if (this.activeNodeId != nodeId) {
                 this.$store.commit("workflowState/setActiveNode", nodeId);
-                // this.canvasManager.drawOverview();
             }
         },
         onDeactivate() {
