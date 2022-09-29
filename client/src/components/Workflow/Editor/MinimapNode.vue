@@ -11,7 +11,9 @@ const props = defineProps({
 });
 
 const nodeClass = computed(() => {
-    return props.node.errors ? "mini-node-error" : "mini-node-ok";
+    const stateClass = props.node.errors ? "error" : "ok";
+    const highlightClass = props.node.isActive ? "highlight" : "";
+    return [stateClass, highlightClass];
 });
 </script>
 <template>
