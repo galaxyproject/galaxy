@@ -44,7 +44,7 @@ class Validator(abc.ABC):
         param elem the validator element
         return an object of a Validator subclass that corresponds to the type attribute of the validator element
         """
-        _type = elem.get("type", None)
+        _type = elem.get("type")
         assert _type is not None, "Required 'type' attribute missing from validator"
         return validator_types[_type].from_element(param, elem)
 
@@ -129,7 +129,7 @@ class RegexValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message", None), elem.text, elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.text, elem.get("negate", "false"))
 
     def __init__(self, message, expression, negate):
         if message is None:
@@ -154,7 +154,7 @@ class ExpressionValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message", None), elem.text, elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.text, elem.get("negate", "false"))
 
     def __init__(self, message, expression, negate):
         if message is None:
@@ -214,7 +214,7 @@ class InRangeValidator(ExpressionValidator):
     @classmethod
     def from_element(cls, param, elem):
         return cls(
-            elem.get("message", None),
+            elem.get("message"),
             elem.get("min"),
             elem.get("max"),
             elem.get("exclude_min", "false"),
@@ -289,7 +289,7 @@ class LengthValidator(InRangeValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message", None), elem.get("min", None), elem.get("max", None), elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.get("min"), elem.get("max"), elem.get("negate", "false"))
 
     def __init__(self, message, length_min, length_max, negate):
         if message is None:
@@ -346,7 +346,7 @@ class DatasetOkValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         negate = elem.get("negate", "false")
-        message = elem.get("message", None)
+        message = elem.get("message")
         if message is None:
             if negate == "false":
                 message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
@@ -404,7 +404,7 @@ class DatasetEmptyValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate=='false' else ''}empty files."
@@ -462,7 +462,7 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"The selected dataset's extra_files_path directory is {'non-' if negate == 'true' else ''}empty or does {'not ' if negate == 'false' else ''}exist, this tool expects {'non-' if negate == 'false' else ''}empty extra_files_path directories associated with the selected input."
@@ -534,7 +534,7 @@ class MetadataValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         return cls(
             message=message, check=elem.get("check", ""), skip=elem.get("skip", ""), negate=elem.get("negate", "false")
         )
@@ -607,7 +607,7 @@ class UnspecifiedBuildValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"{'Unspecified' if negate == 'false' else 'Specified'} genome build, click the pencil icon in the history item to {'set' if negate == 'false' else 'remove'} the genome build"
@@ -655,7 +655,7 @@ class NoOptionsValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"{'No options' if negate == 'false' else 'Options'} available for selection"
@@ -694,7 +694,7 @@ class EmptyTextfieldValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             if negate == "false":
@@ -720,16 +720,17 @@ class MetadataInFileColumnValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        filename = elem.get("filename", None)
-        if filename:
-            filename = f"{param.tool.app.config.tool_data_path}/{filename.strip()}"
-        metadata_name = elem.get("metadata_name", None)
-        if metadata_name:
-            metadata_name = metadata_name.strip()
+        filename = elem.get("filename")
+        assert filename, f"Required 'filename' attribute missing from {elem.get('type')} validator."
+        filename = f"{param.tool.app.config.tool_data_path}/{filename.strip()}"
+        assert os.path.exists(filename), f"File {filename} specified by the 'filename' attribute not found"
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
+        metadata_name = metadata_name.strip()
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
         message = elem.get("message", f"Value for metadata {metadata_name} was not found in {filename}.")
-        line_startswith = elem.get("line_startswith", None)
+        line_startswith = elem.get("line_startswith")
         if line_startswith:
             line_startswith = line_startswith.strip()
         negate = elem.get("negate", "false")
@@ -748,11 +749,12 @@ class MetadataInFileColumnValidator(Validator):
         super().__init__(message, negate)
         self.metadata_name = metadata_name
         self.valid_values = set()
-        for line in open(filename):
-            if line_startswith is None or line.startswith(line_startswith):
-                fields = line.split(split)
-                if metadata_column < len(fields):
-                    self.valid_values.add(fields[metadata_column].strip())
+        with open(filename) as fh:
+            for line in fh:
+                if line_startswith is None or line.startswith(line_startswith):
+                    fields = line.split(split)
+                    if metadata_column < len(fields):
+                        self.valid_values.add(fields[metadata_column].strip())
 
     def validate(self, value, trans=None):
         if not value:
@@ -772,8 +774,8 @@ class ValueInDataTableColumnValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        table_name = elem.get("table_name", None)
-        assert table_name, "You must specify a table_name."
+        table_name = elem.get("table_name")
+        assert table_name, f"Required 'table_name' attribute missing from {elem.get('type')} validator."
         tool_data_table = param.tool.app.tool_data_tables[table_name]
         column = elem.get("metadata_column", 0)
         try:
@@ -844,12 +846,12 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        table_name = elem.get("table_name", None)
-        assert table_name, "You must specify a table_name."
+        table_name = elem.get("table_name")
+        assert table_name, f"Required 'table_name' attribute missing from {elem.get('type')} validator."
         tool_data_table = param.tool.app.tool_data_tables[table_name]
-        metadata_name = elem.get("metadata_name", None)
-        if metadata_name:
-            metadata_name = metadata_name.strip()
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
+        metadata_name = metadata_name.strip()
         # TODO rename to column?
         metadata_column = elem.get("metadata_column", 0)
         try:
@@ -907,12 +909,12 @@ class MetadataInRangeValidator(InRangeValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        metadata_name = elem.get("metadata_name", None)
-        assert metadata_name, "dataset_metadata_in_range validator requires metadata_name attribute."
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
         metadata_name = metadata_name.strip()
         ret = cls(
             metadata_name,
-            elem.get("message", None),
+            elem.get("message"),
             elem.get("min"),
             elem.get("max"),
             elem.get("exclude_min", "false"),
