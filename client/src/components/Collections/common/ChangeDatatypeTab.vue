@@ -1,7 +1,7 @@
 <template>
     <div>
-        <div class="alert alert-secondary" role="alert">
-            <div class="float-left">Change Datatype/Extension of all elements in collection</div>
+        <div>
+            <h4 class="float-left">Change Datatype/Extension of all elements in collection</h4>
             <div class="text-right">
                 <button
                     class="save-datatype-edit btn btn-primary"

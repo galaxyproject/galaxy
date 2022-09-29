@@ -35,7 +35,7 @@
                         <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatypes") }}
                     </template>
                     <datatypes-provider v-slot="{ item, loading }">
-                        <div v-if="loading"><b-spinner label="Loading Datatypes..."></b-spinner></div>
+                        <div v-if="loading"><loading-span :message="loadingString"/></div>
                         <div v-else>
                             <change-datatype-tab
                                 v-if="item && datatypeFromElements"
@@ -64,6 +64,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ChangeDatatypeTab from "./ChangeDatatypeTab";
+import LoadingSpan from "../../LoadingSpan.vue"
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 
@@ -78,6 +79,7 @@ export default {
         ConfigProvider,
         ChangeDatatypeTab,
         DatatypesProvider,
+        LoadingSpan,
     },
     props: {
         collection_id: {
@@ -91,6 +93,7 @@ export default {
             errorMessage: null,
             jobError: null,
             noQuotaIncrease: true,
+            loadingString: "Loading Datatypes"
         };
     },
     computed: {

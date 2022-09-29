@@ -35,7 +35,6 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.wait_for_history()
         self.find_element_by_selector("span.content-title").click()
         self.wait_for_selector_clickable("div.d-flex.justify-content-between")
-        # into dataset
         self.find_element_by_selector("div.d-flex.justify-content-between").click()
         self.wait_for_selector_visible("span.datatype")
         assert self.find_element_by_selector("span.datatype > span").text == dataNew
