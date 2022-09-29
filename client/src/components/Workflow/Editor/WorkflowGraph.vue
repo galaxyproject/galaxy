@@ -113,22 +113,19 @@ export default {
             this.$refs.d3Zoom.panBy(pan);
         },
         onMoveTo(moveTo) {
-            console.log("moveTo", moveTo);
+            this.$refs.d3Zoom.moveTo(moveTo);
         },
         onResetAll() {
             this.onZoom(1, { x: 0, y: 0 });
         },
         onDrag(panData) {
-            console.log("panData", panData);
             this.pan = { x: panData.x, y: panData.y };
         },
         onScale(scaleData) {
-            console.log("scaleData", scaleData);
             this.pan = {
                 x: scaleData.translateX * scaleData.scale,
                 y: scaleData.translateY * scaleData.scale,
             };
-            console.log(this.pan);
             this.setScale(scaleData.scale);
         },
         onStopDragging() {

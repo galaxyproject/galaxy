@@ -1,6 +1,6 @@
 <template>
     <div ref="overview" class="workflow-overview" :style="style" aria-hidden="true">
-        <div class="workflow-overview-body">
+        <div class="workflow-overview-body" @click="onClick">
             <svg width="100%" height="100%" :viewBox="viewBox">
                 <MinimapNode
                     class="mini-node"
@@ -50,11 +50,15 @@ export default {
             let p;
             Object.values(props.steps).forEach((step) => {
                 const node = props.nodes[step.id];
+                // TODO: something here isn't fully "reactive", this breaks when HMR kicks in,
+                // because position is not a reactive property of node (and I guess it shouldn't be?)
                 p = node.position;
-                left = Math.min(left, step.position.left);
-                right = Math.max(right, p.right);
-                top = Math.min(top, step.position.top);
-                bottom = Math.max(bottom, p.bottom);
+                if (p) {
+                    left = Math.min(left, step.position.left);
+                    right = Math.max(right, p.right);
+                    top = Math.min(top, step.position.top);
+                    bottom = Math.max(bottom, p.bottom);
+                }
             });
 
             return {
@@ -84,16 +88,10 @@ export default {
                 onMove: (position, event) => {
                     const offsetX = event.clientX - startX;
                     const offsetY = event.clientY - startY;
-                    console.log("panX", props.pan.x - offsetX * scaleFactorX.value);
-                    console.log("panY", props.pan.y - offsetY * scaleFactorY.value);
                     emit("pan-by", { x: -offsetX * scaleFactorX.value, y: -offsetY * scaleFactorY.value });
                     startX = event.clientX;
                     startY = event.clientY;
                 },
-                // onEnd: (position, event) => {
-                //     startX = null;
-                //     startY = null;
-                // },
             })
         );
         return {
@@ -176,17 +174,9 @@ export default {
     },
     methods: {
         onClick(e) {
-            console.log("panX", this.pan.x - offsetX * this.scaleFactorX);
-            console.log("panY", this.pan.y - offsetY * this.scaleFactorY);
-            // console.log("got click", e);
-            // const scaledOffsetX = e.offsetX * this.scaleFactorX;
-            // const scaledOffsetY = e.offsetY * this.scaleFactorY;
-            // console.log("scaled offset", scaledOffsetX, scaledOffsetY);
-            // const x = scaledOffsetX - this.rootOffset.width / 2;
-            // const y = scaledOffsetY - this.rootOffset.height / 2;
-            // console.log("adjusted offset", x, y);
-            console.log("panX", props.pan.x - offsetX * scaleFactorX.value);
-            this.$emit("moveTo", { x: -x, y: -y });
+            const x = e.offsetX * this.scaleFactorX;
+            const y = e.offsetY * this.scaleFactorY;
+            this.$emit("moveTo", { x, y });
         },
     },
 };
