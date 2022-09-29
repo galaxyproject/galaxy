@@ -1,5 +1,5 @@
 <template>
-    <Draggable :root-offset="rootOffset" @move="onMove" @mouseup="isPanning = false">
+    <Draggable :root-offset="rootOffset" @move="onMove" @mouseup="onMouseUp">
         <slot></slot>
     </Draggable>
 </template>
@@ -72,6 +72,10 @@ export default {
             this.panBy = panBy;
             this.isPanning = doPan;
             this.emitPan(position);
+        },
+        onMouseUp(e) {
+            this.isPanning = false;
+            this.$emit("mouseup", e);
         },
     },
     beforeDestroy() {

@@ -7,7 +7,7 @@
             @reset-all="onResetAll"
             @update:pan="onPan" />
         <div ref="el" class="canvas-viewport" @drop.prevent>
-            <d3-zoom ref="d3Zoom" id="canvas-container" @transform="onTransform" @dragging="onDrag" @scaling="onScale">
+            <d3-zoom ref="d3Zoom" id="canvas-container" @transform="onTransform">
                 <div ref="nodes" class="node-area" :style="nodesStyle">
                     <svg class="canvas-svg node-area">
                         <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
@@ -117,9 +117,6 @@ export default {
         },
         onResetAll() {
             this.onZoom(1, { x: 0, y: 0 });
-        },
-        onDrag(panData) {
-            this.pan = { x: panData.x, y: panData.y };
         },
         onScale(scaleData) {
             this.pan = {
