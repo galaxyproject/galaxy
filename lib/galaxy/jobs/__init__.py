@@ -2263,6 +2263,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         exec_dir = kwds.get("exec_dir", os.path.abspath(os.getcwd()))
         monitor_command = self.get_destination_configuration("container_monitor_command")
+        get_ip_method = self.get_destination_configuration("container_monitor_get_ip_method")
         work_dir = self.working_directory
         configs_dir = ensure_configs_directory(work_dir)
         container_config = os.path.join(configs_dir, "container_config.json")
@@ -2283,6 +2284,10 @@ class MinimalJobWrapper(HasResourceParameters):
             endpoint_base = "%s/api/jobs/%s/ports?job_key=%s"
             callback_url = endpoint_base % (galaxy_url, encoded_job_id, job_key)
             container_config_dict["callback_url"] = callback_url
+
+        if get_ip_method:
+            assert get_ip_method.startswith("command:"), f"Unsupported get_ip_method: {get_ip_method}"
+            container_config_dict["get_ip_method"] = get_ip_method
 
         with open(container_config, "w") as f:
             json.dump(container_config_dict, f)

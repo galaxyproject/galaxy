@@ -538,6 +538,11 @@ execution:
       # package if you wish to install it somewhere (e.g. on a Pulsar server)
       #container_monitor_command: python /path/to/galaxy/lib/galaxy_ext/container_monitor/monitor.py
 
+      # The method used by the container monitor script used to determine the
+      # node IP. The default if unset is galaxy.util.sockets.get_ip(). Set to
+      # 'command: <command>' to execute a command on the node and use its output
+      #container_monitor_get_ip_method: null
+
     singularity_local:
       runner: local
       # Enable Singularity execution of tools with the follow property.
