@@ -364,17 +364,17 @@ INPUTS_VALIDATOR_CORRECT = """
             <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message" negate="true"/>
             <validator type="unspecified_build" message="custom validation message" negate="true"/>
             <validator type="dataset_ok_validator" message="custom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="custom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_range" metadata_name="sequences" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split="," metadata_name="dbkey" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" metadata_name="dbkey" message="custom validation message" negate="true"/>
         </param>
         <param name="collection_param" type="collection">
             <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message"/>
             <validator type="unspecified_build" message="custom validation message"/>
             <validator type="dataset_ok_validator" message="custom validation message"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="custom validation message"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message"/>
+            <validator type="dataset_metadata_in_range" metadata_name="sequences" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split="," metadata_name="dbkey" message="custom validation message"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" metadata_name="dbkey" message="custom validation message"/>
         </param>
         <param name="text_param" type="text">
             <validator type="regex">reg.xp</validator>
