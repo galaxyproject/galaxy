@@ -3,8 +3,8 @@ import logging
 from galaxy import util
 from galaxy.model import tool_shed_install
 from galaxy.tool_shed.util.repository_util import (
-    get_tool_shed_from_clone_url,
     get_installed_repository,
+    get_tool_shed_from_clone_url,
 )
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import (
