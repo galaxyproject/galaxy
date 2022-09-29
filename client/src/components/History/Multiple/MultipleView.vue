@@ -59,11 +59,6 @@ export default {
             filter: "",
         };
     },
-    created() {
-        return setTimeout(() => {
-            document.getElementById("left").__vue__.hide();
-        }, 1000);
-    },
     methods: {
         updateFilter(filter) {
             this.filter = filter;
