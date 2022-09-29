@@ -26,7 +26,7 @@
 <script>
 import MinimapNode from "./MinimapNode.vue";
 import Draggable from "./Draggable.vue";
-import { computed, reactive, ref, watchEffect } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useDraggable } from "@vueuse/core";
 
 export default {
