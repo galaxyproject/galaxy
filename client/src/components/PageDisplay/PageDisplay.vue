@@ -10,7 +10,7 @@
                         :download-endpoint="stsUrl(config)"
                         :export-link="exportUrl"
                         @onEdit="onEdit" />
-                    <PageHtml v-else :page-id="pageId" />
+                    <PageHtml v-else :page="contentDetails" />
                 </div>
                 <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
             </template>

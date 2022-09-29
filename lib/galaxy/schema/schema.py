@@ -3014,6 +3014,11 @@ class SharingStatus(Model):
         title="Importable",
         description="Whether this resource can be published using a link.",
     )
+    username: Optional[str] = Field(
+        None,
+        title="Username",
+        description="The owner's username.",
+    )
     published: bool = Field(
         ...,
         title="Published",

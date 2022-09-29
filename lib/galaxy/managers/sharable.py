@@ -382,7 +382,7 @@ class SharableModelSerializer(
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
-        self.add_view("sharing", ["id", "title", "importable", "published", "username_and_slug", "users_shared_with"])
+        self.add_view("sharing", ["id", "title", "importable", "published", "username", "username_and_slug", "users_shared_with"])
 
     def add_serializers(self):
         super().add_serializers()
@@ -393,6 +393,7 @@ class SharableModelSerializer(
             {
                 "id": self.serialize_id,
                 "title": self.serialize_title,
+                "username": self.serialize_username,
                 "username_and_slug": self.serialize_username_and_slug,
                 "users_shared_with": self.serialize_users_shared_with,
             }
@@ -405,6 +406,11 @@ class SharableModelSerializer(
             return item.title
         elif hasattr(item, "name"):
             return item.name
+
+    def serialize_username(self, item, key, **context):
+        if not (item.user and item.user.username):
+            return None
+        return item.user.username
 
     def serialize_username_and_slug(self, item, key, **context):
         if not (item.user and item.user.username and item.slug and self.SINGLE_CHAR_ABBR):

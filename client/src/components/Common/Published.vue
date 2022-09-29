@@ -22,9 +22,7 @@
                         <router-link :to="urlAll">All published {{ plural }}.</router-link>
                     </div>
                     <div>
-                        <router-link :to="publishedByUser">
-                            Published {{ plural }} by {{ owner }}.
-                        </router-link>
+                        <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}. </router-link>
                     </div>
                 </div>
                 <LoadingSpan v-else message="Loading details" />

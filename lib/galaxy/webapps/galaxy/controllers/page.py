@@ -577,46 +577,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         )
 
     @web.expose
-    @web.json
-    def display_html(self, trans, id):
-        """Display html page based on id."""
-
-        # replace embedded elements with simple tags
-        def _get_embed_html(trans, item_class, item_id):
-            """Returns HTML snippets for html pages"""
-            item_class = self.get_class(item_class)
-            encoded_id, _ = get_page_identifiers(item_id, trans.app)
-            if item_class == model.History:
-                url = web.url_for("/published/history?id=%s" % encoded_id)
-                return "<p><a href='%s'>View History<a></p>" % (url)
-            elif item_class == model.HistoryDatasetAssociation:
-                url = web.url_for("/datasets/%s/preview" % encoded_id)
-                return "<p><a href='%s'>View Dataset<a></p>" % (url)
-            elif item_class == model.StoredWorkflow:
-                url = web.url_for("/published/workflow?id=%s" % encoded_id)
-                return "<p><a href='%s'>View Workflow<a></p>" % (url)
-            elif item_class == model.Visualization:
-                url = web.url_for("/published/visualization?id=%s" % encoded_id)
-                return "<p><a href='%s'>View Visualization<a></p>" % (url)
-            elif item_class == model.Page:
-                pass
-
-        # load and serialize html page
-        decoded_id = trans.security.decode_id(id)
-        page = trans.sa_session.query(model.Page).filter_by(id=decoded_id, deleted=False).first()
-        if page is None:
-            raise web.httpexceptions.HTTPNotFound()
-        self.security_check(trans, page, False, True)
-        latest_revision = page.latest_revision
-        if latest_revision.content_format == "html":
-            processor = PageContentProcessor(trans, _get_embed_html)
-            processor.feed(page.latest_revision.content)
-            page_content = unicodify(processor.output(), "utf-8")
-        else:
-            return trans.show_error_message("The specified page is not an html page.")
-        return page_content
-
-    @web.expose
     @web.require_login("use Galaxy pages")
     def set_accessible_async(self, trans, id=None, accessible=False):
         """Set page's importable attribute and slug."""

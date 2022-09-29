@@ -1,28 +1,16 @@
 <template>
     <div>
-        <p v-html="contentDetails" />
+        <p v-html="page.content" />
     </div>
 </template>
 
 <script>
-import { urlData } from "utils/url";
 export default {
     props: {
-        pageId: {
-            type: String,
+        page: {
+            type: Object,
             required: true,
         },
-    },
-    data() {
-        return {
-            contentDetails: {},
-        };
-    },
-    created() {
-        const url = `/page/display_html?id=${this.pageId}`;
-        urlData({ url }).then((data) => {
-            this.contentDetails = data;
-        });
     },
 };
 </script>
