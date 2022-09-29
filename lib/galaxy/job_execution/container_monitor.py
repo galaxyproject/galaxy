@@ -15,7 +15,6 @@ from galaxy.tool_util.deps import docker_util
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from galaxy.util.sockets import get_ip
 
-
 GetIpCallable = Callable[[], str]
 
 
