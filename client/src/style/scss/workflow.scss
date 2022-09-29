@@ -199,10 +199,14 @@
                     width: 100%;
                     height: 100%;
                 }
-                .mini-node {
+                .mini-node-ok {
                     // this is $primary-brand / #25537b
                     filter: invert(26%) sepia(75%) saturate(489%) hue-rotate(166deg) brightness(90%) contrast(89%);
                 }
+                .mini-node-error {
+                    // this is #e31a1e
+                    filter: invert(16%) sepia(86%) saturate(3962%) hue-rotate(350deg) brightness(96%) contrast(97%);
+                                }
                 .viewport {
                     stroke: #25537b
                 }

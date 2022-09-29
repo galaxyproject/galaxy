@@ -1,18 +1,24 @@
-<template>
-    <rect :x="step.position.left" :y="step.position.top" :width="node.position.width" :height="node.position.height" />
-</template>
+<script setup>
+import { computed } from "vue";
 
-<script>
-export default {
-    props: {
-        node: {
-            type: Object,
-        },
-        step: {
-            type: Object,
-        },
+const props = defineProps({
+    node: {
+        type: Object,
     },
-};
-</script>
+    step: {
+        type: Object,
+    },
+});
 
-<style></style>
+const nodeClass = computed(() => {
+    return props.node.errors ? "mini-node-error" : "mini-node-ok";
+});
+</script>
+<template>
+    <rect
+        :class="nodeClass"
+        :x="step.position.left"
+        :y="step.position.top"
+        :width="node.position.width"
+        :height="node.position.height" />
+</template>
