@@ -1,17 +1,18 @@
 <script setup>
-import { ref, inject } from "vue";
-import { useDraggable } from "@vueuse/core";
+import { ref, inject, reactive } from "vue";
+import { useDraggable, useElementSize } from "@vueuse/core";
 
 const props = defineProps({
     rootOffset: {
         type: Object,
-        required: false,
+        required: true,
     },
 });
 
 const emit = defineEmits(["mousedown", "mouseup", "move"]);
 
 const draggable = ref();
+const size = reactive(useElementSize(draggable));
 const transform = inject("transform");
 
 const onStart = (position, event) => {
@@ -19,9 +20,10 @@ const onStart = (position, event) => {
 };
 
 const onMove = (position, event) => {
+    position.unscaled = { ...position, ...size };
     position.x = (position.x - props.rootOffset.x - transform.x) / transform.k;
     position.y = (position.y - props.rootOffset.y - transform.y) / transform.k;
-    emit("move", position);
+    emit("move", position, event);
 };
 
 const onEnd = (position, event) => {

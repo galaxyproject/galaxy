@@ -30,7 +30,12 @@ function setZoom(zoom) {
     d3Zoom.scaleTo(d3Selection, zoom);
 }
 
-defineExpose({ setZoom });
+function panBy(panBy) {
+    const d3Selection = select(viewport.value).call(d3Zoom);
+    d3Zoom.translateBy(d3Selection, panBy.x, panBy.y);
+}
+
+defineExpose({ setZoom, panBy });
 
 onMounted(() => {
     const d3Selection = select(viewport.value).call(d3Zoom);

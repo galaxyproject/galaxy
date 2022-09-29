@@ -6,6 +6,7 @@
         @updatePosition="onUpdatePosition"
         @mouseup="makeActive"
         @move="onMoveTo"
+        @pan-by="onPanBy"
         :id="idString"
         :name="name"
         :node-label="label"
@@ -104,7 +105,7 @@ import { getGalaxyInstance } from "app";
 import Recommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
-import DraggableWrapper from "./Draggable";
+import DraggableWrapper from "./DraggablePan";
 import { ActiveOutputs } from "./modules/outputs";
 import { reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
@@ -266,11 +267,14 @@ export default {
         },
     },
     methods: {
-        onMoveTo(position) {
+        onMoveTo(position, event) {
             this.onUpdatePosition({
                 top: position.y,
                 left: position.x,
             });
+        },
+        onPanBy(panBy) {
+            this.$emit("pan-by", panBy);
         },
         onStopDragging() {
             this.$emit("stopDragging");

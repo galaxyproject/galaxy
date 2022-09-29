@@ -110,15 +110,7 @@ export default {
     },
     methods: {
         onPan(pan) {
-            console.log("onPan", pan);
-            this.pan = pan;
-            // this.$refs.zoomControl.setData({
-            //     scale: this.scale,
-            //     originX: pan.x,
-            //     originY: pan.y,
-            //     translateX: pan.x,
-            //     translateY: pan.y,
-            // });
+            this.$refs.d3Zoom.panBy(pan);
         },
         onMoveTo(moveTo) {
             // implement me
@@ -126,13 +118,6 @@ export default {
         onResetAll() {
             this.pan = { x: 0, y: 0 };
             this.setScale(1);
-            // this.$refs.zoomControl.setData({
-            //     scale: 1,
-            //     originX: 0,
-            //     originY: 0,
-            //     translateX: 0,
-            //     translateY: 0,
-            // });
         },
         onDrag(panData) {
             console.log("panData", panData);
