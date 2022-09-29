@@ -9,6 +9,7 @@
                     v-for="node of Object.values(nodes)"
                     :key="node.id" />
                 <rect
+                    @click.stop
                     class="viewport"
                     ref="rect"
                     :x="visible.x"
@@ -79,9 +80,7 @@ export default {
         let startY = null;
         const rectPosition = reactive(
             useDraggable(rect, {
-                preventDefault: true,
                 onStart: (position, event) => {
-                    event.stopPropagation();
                     startX = event.clientX;
                     startY = event.clientY;
                 },
