@@ -4416,7 +4416,7 @@ if ``type`` is ``dataset_metadata_in_file``. File should be present Galaxy's
         <xs:attribute name="metadata_name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Target metadata attribute name for
-``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table`` and ``dataset_metadata_in_file`` options.</xs:documentation>
+``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, ``dataset_metadata_in_file`` and ``dataset_metadata_in_range`` options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="metadata_column" type="xs:string">

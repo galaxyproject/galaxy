@@ -723,9 +723,9 @@ class MetadataInFileColumnValidator(Validator):
         filename = elem.get("filename", None)
         if filename:
             filename = f"{param.tool.app.config.tool_data_path}/{filename.strip()}"
-        metadata_name = elem.get("metadata_name", None)
-        if metadata_name:
-            metadata_name = metadata_name.strip()
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
+        metadata_name = metadata_name.strip()
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
         message = elem.get("message", f"Value for metadata {metadata_name} was not found in {filename}.")
@@ -847,9 +847,9 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
         table_name = elem.get("table_name", None)
         assert table_name, "You must specify a table_name."
         tool_data_table = param.tool.app.tool_data_tables[table_name]
-        metadata_name = elem.get("metadata_name", None)
-        if metadata_name:
-            metadata_name = metadata_name.strip()
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
+        metadata_name = metadata_name.strip()
         # TODO rename to column?
         metadata_column = elem.get("metadata_column", 0)
         try:
@@ -907,8 +907,8 @@ class MetadataInRangeValidator(InRangeValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        metadata_name = elem.get("metadata_name", None)
-        assert metadata_name, "dataset_metadata_in_range validator requires metadata_name attribute."
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
         metadata_name = metadata_name.strip()
         ret = cls(
             metadata_name,
