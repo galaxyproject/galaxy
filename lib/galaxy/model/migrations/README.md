@@ -454,11 +454,11 @@ Downgrade to 1 revision below specific revision:
 
 To create a revision for the galaxy model:
 
-`./run_alembic.sh revision --head=gxy@head -message "your description"`
+`./run_alembic.sh revision --head=gxy@head --message "your description"`
 
 To create a revision for the install model:
 
-`./run_alembic.sh revision --head=tsi@head -message "your description"`
+`./run_alembic.sh revision --head=tsi@head --message "your description"`
 
 Check [Alembic's documentation](https://alembic.sqlalchemy.org) for more examples.
 
