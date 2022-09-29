@@ -1,5 +1,5 @@
 <template>
-    <Published :details="contentDetails">
+    <Published :details="visualization">
         <template v-slot>
             <CenterFrame :src="getUrl" />
         </template>
@@ -23,7 +23,7 @@ export default {
     },
     data() {
         return {
-            contentDetails: {},
+            visualization: {},
         };
     },
     computed: {
@@ -34,7 +34,7 @@ export default {
     created() {
         const url = `/api/visualizations/${this.id}`;
         urlData({ url }).then((data) => {
-            this.contentDetails = { ...data };
+            this.visualization = data;
         });
     },
 };

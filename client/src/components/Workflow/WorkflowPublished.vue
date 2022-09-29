@@ -1,7 +1,7 @@
 <template>
-    <Published :details="contentDetails">
+    <Published :details="workflow">
         <template v-slot>
-            <WorkflowDisplay :args="{ workflow_id: id }" :workflow="contentDetails" :expanded="true" />
+            <WorkflowDisplay :args="{ workflow_id: id }" :workflow="workflow" :expanded="true" />
         </template>
     </Published>
 </template>
@@ -24,13 +24,13 @@ export default {
     },
     data() {
         return {
-            contentDetails: {},
+            workflow: {},
         };
     },
     created() {
         const url = `/api/workflows/${this.id}`;
         urlData({ url }).then((data) => {
-            this.contentDetails = { ...data };
+            this.workflow = data;
         });
     },
 };

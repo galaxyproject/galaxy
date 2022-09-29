@@ -1,5 +1,5 @@
 <template>
-    <Published :details="contentDetails">
+    <Published :details="history">
         <template v-slot>
             <HistoryView :id="id" />
         </template>
@@ -24,13 +24,13 @@ export default {
     },
     data() {
         return {
-            contentDetails: {},
+            history: {},
         };
     },
     created() {
         const url = `/api/histories/${this.id}`;
         urlData({ url }).then((data) => {
-            this.contentDetails = { ...data };
+            this.history = data;
         });
     },
 };

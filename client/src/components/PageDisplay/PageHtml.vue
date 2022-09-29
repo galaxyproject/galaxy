@@ -1,6 +1,6 @@
 <template>
     <div>
-        <div v-for="child in childList">
+        <div v-for="(child, childIndex) in childList" :key="childIndex">
             <p v-html="child" />
         </div>
     </div>
@@ -8,7 +8,6 @@
 
 <script>
 import { safePath } from "utils/redirect";
-import WorkflowDisplay from "components/Markdown/Elements/Workflow/WorkflowDisplay";
 export default {
     props: {
         page: {

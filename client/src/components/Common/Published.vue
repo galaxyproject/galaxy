@@ -40,18 +40,10 @@ export default {
     props: {
         details: {
             type: Object,
-            default: () => ({}),
-        },
-    },
-    watch: {
-        details() {
-            console.log(this.details);
+            required: true,
         },
     },
     computed: {
-        gravatar() {
-            return `https://secure.gravatar.com/avatar/aysam.guerler@gmail.com?d=identicon`;
-        },
         modelTitle() {
             const modelClass = this.details ? this.details.model_class : "Item";
             if (modelClass == "StoredWorkflow") {
@@ -77,9 +69,6 @@ export default {
         urlAll() {
             return `/${this.pluralPath}/list_published`;
         },
-    },
-    created() {
-        console.log(this.details);
     },
 };
 </script>

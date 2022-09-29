@@ -382,7 +382,9 @@ class SharableModelSerializer(
 
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
-        self.add_view("sharing", ["id", "title", "importable", "published", "username", "username_and_slug", "users_shared_with"])
+        self.add_view(
+            "sharing", ["id", "title", "importable", "published", "username", "username_and_slug", "users_shared_with"]
+        )
 
     def add_serializers(self):
         super().add_serializers()
