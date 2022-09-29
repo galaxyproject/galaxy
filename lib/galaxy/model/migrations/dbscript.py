@@ -128,7 +128,7 @@ class ParserBuilder:
             "Upgrade to a later version",
             parents=[self._sql_arg_parser],
         )
-        parser.add_argument("revision", help="Revision identifier", nargs="?")
+        parser.add_argument("revision", help="Revision identifier or release tag", nargs="?")
 
     def add_downgrade_command(self):
         parser = self._add_parser(
@@ -137,7 +137,7 @@ class ParserBuilder:
             "Revert to a previous version",
             parents=[self._sql_arg_parser],
         )
-        parser.add_argument("revision", help="Revision identifier")
+        parser.add_argument("revision", help="Revision identifier or release tag")
 
     def add_version_command(self):
         self._add_parser(
