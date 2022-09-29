@@ -1076,8 +1076,9 @@ class WorkflowContentsManager(UsesAnnotations):
             self.__set_default_label(step, module, step.tool_inputs)
             # Fix any missing parameters
             upgrade_message_dict = module.check_and_update_state() or {}
-            if hasattr(module, "version_changes") and module.version_changes:
-                upgrade_message_dict[module.get_name()] = "\n".join(module.version_changes)
+            version_changes = getattr(module, "version_changes", None)
+            if version_changes:
+                upgrade_message_dict[module.get_name()] = "\n".join(version_changes)
             # Get user annotation.
             config_form = module.get_config_form(step=step)
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
@@ -1104,7 +1105,7 @@ class WorkflowContentsManager(UsesAnnotations):
             input_connections = step.input_connections
             input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be multiple
-            if (step.type is None or step.type == "tool") and module.tool:
+            if isinstance(module, ToolModule) and module.tool:
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
@@ -1330,7 +1331,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "annotation": annotation_str,
             }
             # Add tool shed repository information and post-job actions to step dict.
-            if module.type == "tool":
+            if isinstance(module, ToolModule):
                 if module.tool and module.tool.tool_shed:
                     step_dict["tool_shed_repository"] = {
                         "name": module.tool.repository_name,
@@ -1411,7 +1412,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
             # Connections
             input_connections = step.input_connections
-            if step.type is None or step.type == "tool":
+            if isinstance(module, ToolModule):
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 

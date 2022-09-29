@@ -148,6 +148,7 @@ def _normalize_step_parameters(
                 if step_index not in subworkflow_param_dict:
                     subworkflow_param_dict[step_index] = {}
                 subworkflow_param_dict[step_index][param_name] = value
+            assert step.subworkflow
             param_dict = _normalize_step_parameters(
                 step.subworkflow.steps, subworkflow_param_dict, legacy=legacy, already_normalized=already_normalized
             )
@@ -476,6 +477,7 @@ def workflow_run_config_to_request(
     steps_by_id = {}
     for step in workflow.steps:
         steps_by_id[step.id] = step
+        assert step.module
         serializable_runtime_state = step.module.encode_runtime_state(step.state)
 
         step_state = WorkflowRequestStepState()
@@ -495,6 +497,7 @@ def workflow_run_config_to_request(
                 allow_tool_state_corrections=run_config.allow_tool_state_corrections,
                 resource_params=run_config.resource_params,
             )
+            assert step.subworkflow
             subworkflow_invocation = workflow_run_config_to_request(
                 trans,
                 subworkflow_run_config,
