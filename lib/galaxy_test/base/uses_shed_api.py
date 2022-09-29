@@ -4,6 +4,8 @@ from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 from galaxy.util import unicodify
 from galaxy_test.base.api_asserts import assert_status_code_is
 
+DEFAULT_TOOL_SHED_URL = "https://toolshed.g2.bx.psu.edu"
+
 
 class UsesShedApi:
     @property
@@ -18,13 +20,13 @@ class UsesShedApi:
             "tool_shed_repositories/new/install_repository_revision", data=payload, admin=True
         )
 
-    def repository_operation(self, operation, owner, name, changeset, tool_shed_url="https://toolshed.g2.bx.psu.edu"):
+    def repository_operation(self, operation, owner, name, changeset, tool_shed_url=DEFAULT_TOOL_SHED_URL):
         payload = {"tool_shed_url": tool_shed_url, "name": name, "owner": owner, "changeset_revision": changeset}
         create_response = operation(payload)
         assert_status_code_is(create_response, 200)
         return create_response.json()
 
-    def install_repository(self, owner, name, changeset, tool_shed_url="https://toolshed.g2.bx.psu.edu"):
+    def install_repository(self, owner, name, changeset, tool_shed_url=DEFAULT_TOOL_SHED_URL):
         try:
             return self.repository_operation(
                 operation=self.install_repo_request,
@@ -38,7 +40,7 @@ class UsesShedApi:
                 raise SkipTest(f"Toolshed '{tool_shed_url}' unavailable")
             raise
 
-    def uninstall_repository(self, owner, name, changeset, tool_shed_url="https://toolshed.g2.bx.psu.edu"):
+    def uninstall_repository(self, owner, name, changeset, tool_shed_url=DEFAULT_TOOL_SHED_URL):
         return self.repository_operation(
             operation=self.delete_repo_request, owner=owner, name=name, changeset=changeset, tool_shed_url=tool_shed_url
         )
