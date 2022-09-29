@@ -251,6 +251,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/workflows/list")
     webapp.add_client_route("/workflows/list_published")
     webapp.add_client_route("/workflows/edit")
+    webapp.add_client_route("/workflows/export")
     webapp.add_client_route("/workflows/create")
     webapp.add_client_route("/workflows/run")
     webapp.add_client_route("/workflows/import")

@@ -29,7 +29,7 @@ class WorkflowSharingRedirectTestCase(SeleniumTestCase):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.logout()
         self.go_to_workflow_export(workflow_id)
-        self.assert_error_message(contains="You must be logged in to export Galaxy workflows.")
+        self.assert_error_message(contains="Workflow is neither importable, nor owned by or shared with current user")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components._.messages.require_login.wait_for_and_click()
         self.fill_login_and_submit(user_email)

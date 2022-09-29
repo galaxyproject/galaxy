@@ -92,7 +92,7 @@ export default {
             return `/workflows/sharing?id=${this.workflow.id}`;
         },
         urlExport() {
-            return `${getAppRoot()}workflow/export?id=${this.workflow.id}`;
+            return `${getAppRoot()}workflows/export?id=${this.workflow.id}`;
         },
         urlView() {
             return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;

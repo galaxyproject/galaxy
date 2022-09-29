@@ -1472,6 +1472,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["name"] = workflow.name
         item["url"] = url_for("workflow", id=item["id"])
         item["owner"] = stored.user.username
+        item["slug"] = stored.slug
         inputs = {}
         for step in workflow.input_steps:
             step_type = step.type
