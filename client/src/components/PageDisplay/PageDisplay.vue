@@ -1,16 +1,16 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <Published :details="contentDetails">
+        <Published :details="page">
             <template v-slot>
                 <div v-if="!loading">
                     <markdown
-                        v-if="contentDetails.content_format == 'markdown'"
-                        :markdown-config="contentDetails"
+                        v-if="page.content_format == 'markdown'"
+                        :markdown-config="page"
                         :enable_beta_markdown_export="config.enable_beta_markdown_export"
                         :download-endpoint="stsUrl(config)"
                         :export-link="exportUrl"
                         @onEdit="onEdit" />
-                    <PageHtml v-else :page="contentDetails" />
+                    <PageHtml v-else :page="page" />
                 </div>
                 <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
             </template>
