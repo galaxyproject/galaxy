@@ -1,12 +1,12 @@
 import logging
 import os
-import unittest
 from typing import (
     Any,
     Optional,
 )
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.util.unittest import TestCase
 from galaxy_test.base.env import (
     setup_keep_outdir,
     target_url_parts,
@@ -15,7 +15,7 @@ from galaxy_test.base.env import (
 log = logging.getLogger(__name__)
 
 
-class FunctionalTestCase(unittest.TestCase):
+class FunctionalTestCase(TestCase):
     """Base class for tests targetting actual Galaxy servers.
 
     Subclass should override galaxy_driver_class if a Galaxy server
@@ -24,7 +24,6 @@ class FunctionalTestCase(unittest.TestCase):
     """
 
     galaxy_driver_class: Optional[type] = None
-    history_id: Optional[str]
     host: str
     port: Optional[str]
     url: str
@@ -33,7 +32,6 @@ class FunctionalTestCase(unittest.TestCase):
     _test_driver: Optional[Any]
 
     def setUp(self) -> None:
-        self.history_id = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
         self.host, self.port, self.url = target_url_parts()
         server_wrapper = (
             self._test_driver and self._test_driver.server_wrappers and self._test_driver.server_wrappers[0]

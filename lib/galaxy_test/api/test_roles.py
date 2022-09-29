@@ -143,7 +143,7 @@ class TestRolesApi(ApiTestCase):
         assert "administrator" in response_err["err_msg"]
 
     @staticmethod
-    def check_role_dict(role_dict: Dict[str, Any], assert_id: Optional[str] = None):
+    def check_role_dict(role_dict: Dict[str, Any], assert_id: Optional[str] = None) -> None:
         assert_has_keys(role_dict, "id", "name", "model_class", "url")
         assert role_dict["model_class"] == "Role"
         if assert_id is not None:

@@ -209,20 +209,6 @@ def summarize_instance_history_on_error(method):
     return wrapped_method
 
 
-def uses_test_history(**test_history_kwd):
-    """Can override require_new and cancel_executions using kwds to decorator."""
-
-    def method_wrapper(method):
-        @wraps(method)
-        def wrapped_method(api_test_case, *args, **kwds):
-            with api_test_case.dataset_populator.test_history(**test_history_kwd) as history_id:
-                method(api_test_case, history_id, *args, **kwds)
-
-        return wrapped_method
-
-    return method_wrapper
-
-
 def _raise_skip_if(check, *args):
     if check:
         raise unittest.SkipTest(*args)
