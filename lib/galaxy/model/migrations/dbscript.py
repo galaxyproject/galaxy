@@ -245,7 +245,7 @@ class Command:
         try:
             getattr(dbscript, command)(args)
         except alembic.util.exc.CommandError as e:
-            if args.raiseerr:
+            if hasattr(args, "raiseerr") and args.raiseerr:
                 raise
             else:
                 log.error(e)
