@@ -325,7 +325,7 @@ class CommandsBuilder:
 
     def capture_stdout_stderr(self, stdout_file: str, stderr_file: str, stream_stdout_stderr: bool = False) -> None:
         if not stream_stdout_stderr:
-            self._commands[-1] += "> '{stdout_file}' 2> '{stderr_file}'"
+            self._commands[-1] += " > '{stdout_file}' 2> '{stderr_file}'"
             return
         trap_command = """trap 'rm -f "$__out" "$__err"' EXIT"""
         for i, c in enumerate(self._commands):
@@ -342,7 +342,7 @@ tee -a '{stdout_file}' < "$__out" &
 tee -a '{stderr_file}' < "$__err" >&2 &"""
             + self._commands[0]
         )
-        self._commands[-1] += '> "$__out" 2> "$__err"'
+        self._commands[-1] += ' > "$__out" 2> "$__err"'
 
     def capture_return_code(self, exit_code_path: str) -> None:
         self.append_command(CAPTURE_RETURN_CODE)
