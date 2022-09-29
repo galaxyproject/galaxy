@@ -274,9 +274,8 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             filter_repository.installed_changeset_revision,
         ]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "Filter1"])
-        self.display_installed_repository_manage_page(filter_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(filter_repository)
+        self._assert_has_valid_tool_with_name("Filter1")
+        self._assert_repo_has_tool_with_id(filter_repository, "Filter1")
 
     def test_0050_verify_reinstallation_order(self):
         """Verify that convert_chars_0160 and column_maker_0160 were reinstalled before filtering_0160."""

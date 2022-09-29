@@ -197,6 +197,7 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         datatypes_repository = self.test_db_util.get_installed_repository_by_name_owner(
             datatypes_repository_name, common.test_user_2_name
         )
+        self._assert_has_valid_tool_with_name("BLAST top hit")
         strings_displayed = ["Installed repository dependencies", "user1", "blast_datatypes_0120"]
         strings_displayed.extend(
             ["Valid tools", "BLAST top hit", "Make a table", datatypes_repository.installed_changeset_revision]

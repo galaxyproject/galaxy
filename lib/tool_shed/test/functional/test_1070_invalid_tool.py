@@ -86,12 +86,5 @@ class TestFreebayesRepository(ShedTwillTestCase):
             installed_repository.installed_changeset_revision,
         ]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["methylation extractor", "Invalid tools"])
-        self.display_installed_repository_manage_page(
-            installed_repository, strings_displayed=strings_displayed, strings_not_displayed=["bisulfite mapper"]
-        )
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
         self.update_installed_repository_api(installed_repository, verify_no_updates=True)
-        assert "invalid_tools" in installed_repository.metadata_, (
-            "No invalid tools were defined in %s." % installed_repository.name
-        )
+        self._assert_repo_has_invalid_tool_in_file(installed_repository, "bismark_bowtie_wrapper.xml")

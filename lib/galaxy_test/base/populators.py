@@ -2956,3 +2956,15 @@ class GiWorkflowPopulator(GiHttpMixin, BaseWorkflowPopulator):
 
 def wait_on(function: Callable, desc: str, timeout: timeout_type = DEFAULT_TIMEOUT):
     return tool_util_wait_on(function, desc, timeout)
+
+
+def wait_on_assertion(function: Callable, desc: str, timeout: timeout_type = DEFAULT_TIMEOUT):
+
+    def inner_func():
+        try:
+            function()
+            return True
+        except AssertionError:
+            return False
+
+    wait_on(inner_func, desc, timeout)

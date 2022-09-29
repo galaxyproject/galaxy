@@ -189,9 +189,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
             installed_repository.installed_changeset_revision,
         ]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "antigenic"])
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
+        self._assert_has_valid_tool_with_name("antigenic")
         self.update_installed_repository_api(installed_repository, verify_no_updates=True)
 
     def test_0025_verify_installed_repository_metadata(self):

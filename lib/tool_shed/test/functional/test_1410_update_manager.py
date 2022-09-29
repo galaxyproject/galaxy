@@ -72,22 +72,21 @@ class TestUpdateManager(ShedTwillTestCase):
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.install_repository(
-            "filtering_1410", common.test_user_1_name, category_name, new_tool_panel_section_label="test_1410"
+            repository_name, common.test_user_1_name, category_name, new_tool_panel_section_label="test_1410"
         )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filtering_1410", common.test_user_1_name
+            repository_name, common.test_user_1_name
         )
         strings_displayed = [
-            "filtering_1410",
-            "Galaxy's filtering tool",
-            "user1",
+            repository_name,
+            repository_description,
+            common.test_user_1_name,
             self.url.replace("http://", ""),
             installed_repository.installed_changeset_revision,
         ]
         self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "Filter1"])
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
+        self._assert_has_valid_tool_with_name("Filter")
+        self._assert_repo_has_tool_with_id(installed_repository, "Filter1")
 
     def test_0015_upload_readme_file(self):
         """Upload readme.txt to filtering_1410.
