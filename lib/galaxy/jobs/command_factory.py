@@ -309,23 +309,19 @@ class CommandsBuilder:
     def commands(self) -> str:
         return "; ".join(self._commands)
 
-    def prepend_command(self, command: str) -> CommandsBuilder:
+    def prepend_command(self, command: str) -> None:
         if command:
             self._commands.insert(0, command)
-        return self
 
-    def prepend_commands(self, commands: List[str]) -> CommandsBuilder:
+    def prepend_commands(self, commands: List[str]) -> None:
         self._commands = commands + self._commands
-        return self
 
-    def append_command(self, command: str) -> CommandsBuilder:
+    def append_command(self, command: str) -> None:
         if command:
             self._commands.append(command)
-        return self
 
-    def append_commands(self, commands: List) -> CommandsBuilder:
+    def append_commands(self, commands: List) -> None:
         self._commands.extend(commands)
-        return self
 
     def capture_stdout_stderr(self, stdout_file: str, stderr_file: str, stream_stdout_stderr: bool = False) -> None:
         if not stream_stdout_stderr:
