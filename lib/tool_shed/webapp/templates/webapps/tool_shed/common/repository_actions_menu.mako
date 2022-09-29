@@ -155,7 +155,6 @@
     <br/><br/>
     <ul class="manage-table-actions">
         %if repository:
-            <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), changeset_revisions=changeset_revision )}">Install to Galaxy</a></li>
             <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Browse repository</a></li>
             <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
             <div popupmenu="repository-${repository.id}-popup">

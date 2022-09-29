@@ -171,12 +171,10 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
     def test_0015_install_emboss_repository(self):
         """Install the emboss repository without installing tool dependencies."""
         global running_standalone
-        strings_displayed = ["Handle", "Never installed", "tool dependencies", "emboss", "5.0.0", "package"]
         self.install_repository(
             "emboss_0030",
             common.test_user_1_name,
             "Test 0030 Repository Dependency Revisions",
-            strings_displayed=strings_displayed,
             install_tool_dependencies=False,
             new_tool_panel_section_label="test_1030",
         )
@@ -194,7 +192,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
         strings_displayed.extend(["Installed tool shed repository", "Valid tools", "antigenic"])
         self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
         self.verify_tool_metadata_for_installed_repository(installed_repository)
-        self.update_installed_repository(installed_repository, strings_displayed=["there are no updates available"])
+        self.update_installed_repository_api(installed_repository, verify_no_updates=True)
 
     def test_0025_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

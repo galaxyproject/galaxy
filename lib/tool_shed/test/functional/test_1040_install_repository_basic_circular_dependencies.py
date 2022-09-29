@@ -123,12 +123,10 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
     def test_0025_install_freebayes_repository(self):
         """Install freebayes with blank tool panel section, without tool dependencies but with repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        strings_displayed = ["Handle", "tool dependencies", "freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18"]
         self.install_repository(
             freebayes_repository_name,
             common.test_user_1_name,
             category_name,
-            strings_displayed=strings_displayed,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
         )

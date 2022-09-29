@@ -645,89 +645,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return self.valid_repository_grid(trans, **kwd)
 
     @web.expose
-    def check_for_updates(self, trans, **kwd):
-        """Handle a request from a local Galaxy instance."""
-        message = escape(kwd.get("message", ""))
-        # If the request originated with the UpdateRepositoryManager, it will not include a galaxy_url.
-        galaxy_url = common_util.handle_galaxy_url(trans, **kwd)
-        name = kwd.get("name", None)
-        owner = kwd.get("owner", None)
-        changeset_revision = kwd.get("changeset_revision", None)
-        repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-        repo = repository.hg_repo
-        # Default to the current changeset revision.
-        update_to_ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
-        latest_changeset_revision = changeset_revision
-        from_update_manager = kwd.get("from_update_manager", False)
-        if from_update_manager:
-            update = "true"
-            no_update = "false"
-        elif galaxy_url:
-            # Start building up the url to redirect back to the calling Galaxy instance.
-            params = dict(
-                tool_shed_url=web.url_for("/", qualified=True),
-                name=str(repository.name),
-                owner=str(repository.user.username),
-                changeset_revision=changeset_revision,
-            )
-            pathspec = ["admin_toolshed", "update_to_changeset_revision"]
-        else:
-            message = f"Unable to check for updates due to an invalid Galaxy URL: <b>{galaxy_url}</b>.  "
-            message += "You may need to enable third-party cookies in your browser.  "
-            return trans.show_error_message(message)
-        if changeset_revision == repository.tip():
-            # If changeset_revision is the repository tip, there are no additional updates.
-            if from_update_manager:
-                return no_update
-            # Return the same value for changeset_revision and latest_changeset_revision.
-        else:
-            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
-                trans.app, trans.security.encode_id(repository.id), changeset_revision
-            )
-            if repository_metadata:
-                # If changeset_revision is in the repository_metadata table for this repository, there are no
-                # additional updates.
-                if from_update_manager:
-                    return no_update
-                # Return the same value for changeset_revision and latest_changeset_revision.
-            else:
-                # The changeset_revision column in the repository_metadata table has been updated with a new
-                # changeset_revision value since the repository was installed.  We need to find the changeset_revision
-                # to which we need to update.
-                update_to_changeset_hash = None
-                for changeset in repo.changelog:
-                    changeset_hash = str(repo[changeset])
-                    hg_util.get_changectx_for_changeset(repo, changeset_hash)
-                    if update_to_changeset_hash:
-                        if changeset_hash == repository.tip():
-                            update_to_ctx = hg_util.get_changectx_for_changeset(repo, changeset_hash)
-                            latest_changeset_revision = changeset_hash
-                            break
-                        else:
-                            repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
-                                trans.app, trans.security.encode_id(repository.id), changeset_hash
-                            )
-                            if repository_metadata:
-                                # We found a RepositoryMetadata record.
-                                update_to_ctx = hg_util.get_changectx_for_changeset(repo, changeset_hash)
-                                latest_changeset_revision = changeset_hash
-                                break
-                            else:
-                                update_to_changeset_hash = changeset_hash
-                    else:
-                        if changeset_hash == changeset_revision:
-                            # We've found the changeset in the changelog for which we need to get the next update.
-                            update_to_changeset_hash = changeset_hash
-                if from_update_manager:
-                    if latest_changeset_revision == changeset_revision:
-                        return no_update
-                    return update
-        params["latest_changeset_revision"] = str(latest_changeset_revision)
-        params["latest_ctx_rev"] = str(update_to_ctx.rev())
-        url = util.build_url(galaxy_url, pathspec=pathspec, params=params)
-        return trans.response.send_redirect(url)
-
-    @web.expose
     def contact_owner(self, trans, id, **kwd):
         message = escape(kwd.get("message", ""))
         status = kwd.get("status", "done")
@@ -1042,22 +959,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     else:
                         a = "view_repository"
                     return trans.response.send_redirect(web.url_for(controller="repository", action=a, **kwd))
-                if operation == "install to galaxy":
-                    # We've received a list of RepositoryMetadata ids, so we need to build a list of associated Repository ids.
-                    encoded_repository_ids = []
-                    changeset_revisions = []
-                    for repository_metadata_id in util.listify(item_id):
-                        repository_metadata = metadata_util.get_repository_metadata_by_id(
-                            trans.app, repository_metadata_id
-                        )
-                        encoded_repository_ids.append(trans.security.encode_id(repository_metadata.repository.id))
-                        changeset_revisions.append(repository_metadata.changeset_revision)
-                    new_kwd = {}
-                    new_kwd["repository_ids"] = encoded_repository_ids
-                    new_kwd["changeset_revisions"] = changeset_revisions
-                    return trans.response.send_redirect(
-                        web.url_for(controller="repository", action="install_repositories_by_revision", **new_kwd)
-                    )
             else:
                 # This can only occur when there is a multi-select grid with check boxes and an operation,
                 # and the user clicked the operation button without checking any of the check boxes.
@@ -1663,39 +1564,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             message=message,
             status=status,
         )
-
-    @web.expose
-    def install_repositories_by_revision(self, trans, **kwd):
-        """
-        Send the list of repository_ids and changeset_revisions to Galaxy so it can begin the installation
-        process.  If the value of repository_ids is not received, then the name and owner of a single repository
-        must be received to install a single repository.
-        """
-        repository_ids = kwd.get("repository_ids", None)
-        changeset_revisions = kwd.get("changeset_revisions", None)
-        name = kwd.get("name", None)
-        owner = kwd.get("owner", None)
-        if not repository_ids:
-            repository = repository_util.get_repository_by_name_and_owner(trans.app, name, owner)
-            repository_ids = trans.security.encode_id(repository.id)
-        galaxy_url = common_util.handle_galaxy_url(trans, **kwd)
-        if galaxy_url:
-            # Redirect back to local Galaxy to perform install.
-            params = dict(
-                tool_shed_url=web.url_for("/", qualified=True),
-                repository_ids=",".join(util.listify(repository_ids)),
-                changeset_revisions=",".join(util.listify(changeset_revisions)),
-            )
-            pathspec = ["admin_toolshed", "prepare_for_install"]
-            url = util.build_url(galaxy_url, pathspec=pathspec, params=params)
-            return trans.response.send_redirect(url)
-        else:
-            message = f"Repository installation is not possible due to an invalid Galaxy URL: <b>{galaxy_url}</b>.  "
-            message += "You may need to enable third-party cookies in your browser.  "
-            status = "error"
-            return trans.response.send_redirect(
-                web.url_for(controller="repository", action="browse_valid_categories", message=message, status=status)
-            )
 
     @web.expose
     def load_invalid_tool(self, trans, repository_id, tool_config, changeset_revision, **kwd):

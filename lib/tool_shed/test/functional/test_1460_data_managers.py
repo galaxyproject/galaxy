@@ -72,13 +72,11 @@ class TestDataManagers(ShedTwillTestCase):
         This is step 3 - Attempt to install the repository into a galaxy instance, verify that it is installed.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        post_submit_strings_displayed = [data_manager_repository_name]
         self.install_repository(
             data_manager_repository_name,
             common.test_user_1_name,
             category_name,
             install_tool_dependencies=True,
-            post_submit_strings_displayed=post_submit_strings_displayed,
         )
 
     def test_0030_verify_data_manager_tool(self):

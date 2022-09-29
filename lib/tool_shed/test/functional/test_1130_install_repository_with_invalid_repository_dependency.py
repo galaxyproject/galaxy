@@ -182,8 +182,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
-            post_submit_strings_displayed=[repository.name, repository.name, "New"],
-            includes_tools_for_display_in_tool_panel=True,
         )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name

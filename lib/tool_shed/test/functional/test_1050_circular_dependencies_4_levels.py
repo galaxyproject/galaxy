@@ -431,7 +431,6 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             freebayes_repository_name,
             common.test_user_1_name,
             category_name,
-            strings_displayed=strings_displayed,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             new_tool_panel_section_label="freebayes",

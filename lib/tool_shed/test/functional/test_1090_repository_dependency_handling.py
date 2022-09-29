@@ -111,7 +111,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             new_tool_panel_section_label="column_maker",
-            strings_displayed=["install_repository_dependencies"],
         )
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name

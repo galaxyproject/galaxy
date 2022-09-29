@@ -150,38 +150,6 @@ class InstalledRepositoryGrid(grids.Grid):
             label="Update tool shed status", condition=(lambda item: not item.deleted), allow_multiple=False
         ),
         grids.GridOperation(
-            label="Get updates",
-            condition=(
-                lambda item: not item.deleted
-                and item.revision_update_available
-                and item.status
-                not in [
-                    tool_shed_install.ToolShedRepository.installation_status.ERROR,
-                    tool_shed_install.ToolShedRepository.installation_status.NEW,
-                ]
-            ),
-            allow_multiple=False,
-            target="center",
-            url_args=dict(controller="admin_toolshed", action="check_for_updates"),
-        ),
-        grids.GridOperation(
-            label="Install latest revision",
-            condition=(lambda item: item.upgrade_available),
-            allow_multiple=False,
-            target="center",
-            url_args=dict(controller="admin_toolshed", action="install_latest_repository_revision"),
-        ),
-        grids.GridOperation(
-            label="Install",
-            condition=(
-                lambda item: not item.deleted
-                and item.status == tool_shed_install.ToolShedRepository.installation_status.NEW
-            ),
-            allow_multiple=False,
-            target="center",
-            url_args=dict(controller="admin_toolshed", action="manage_repository", operation="install"),
-        ),
-        grids.GridOperation(
             label="Deactivate or uninstall",
             condition=(
                 lambda item: not item.deleted

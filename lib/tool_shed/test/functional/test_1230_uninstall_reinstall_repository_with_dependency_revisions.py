@@ -157,7 +157,6 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             emboss_repository_name,
             common.test_user_1_name,
             "Test 0030 Repository Dependency Revisions",
-            strings_displayed=strings_displayed,
             new_tool_panel_section_label="test_1210",
         )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(

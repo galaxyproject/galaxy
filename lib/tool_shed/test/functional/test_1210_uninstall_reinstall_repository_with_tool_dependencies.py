@@ -106,12 +106,10 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0010_install_freebayes_repository(self):
         """Install the freebayes repository into the Galaxy instance."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        strings_displayed = []
         self.install_repository(
             "freebayes_0010",
             common.test_user_1_name,
             "Test 0010 Repository With Tool Dependencies",
-            strings_displayed=strings_displayed,
             new_tool_panel_section_label="test_1210",
         )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(

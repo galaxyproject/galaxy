@@ -256,7 +256,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
     def test_0045_install_base_repository(self):
         """Verify installation of the repository with complex repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        base_repository = self._get_repository_by_name_and_owner(bwa_base_repository_name, common.test_user_1_name)
         tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         preview_strings_displayed = [tool_repository.name, self.get_repository_tip(tool_repository)]
         self.install_repository(
@@ -265,8 +264,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             category_name,
             install_tool_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
-            post_submit_strings_displayed=[base_repository.name, tool_repository.name, "New"],
-            includes_tools_for_display_in_tool_panel=True,
         )
 
     def test_0050_verify_installed_repositories(self):
