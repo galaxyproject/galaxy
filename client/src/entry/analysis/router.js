@@ -40,7 +40,6 @@ import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import ToolAdvancedSearch from "components/Panels/Common/ToolAdvancedSearch";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
-import ToolsView from "components/ToolsView/ToolsView";
 import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
 import TrsImport from "components/Workflow/TrsImport";
@@ -297,10 +296,6 @@ export function getRouter(Galaxy) {
                                 ...route.query,
                             };
                         },
-                    },
-                    {
-                        path: "tools/view",
-                        component: ToolsView,
                     },
                     {
                         path: "tools/json",
