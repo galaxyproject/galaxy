@@ -18,8 +18,8 @@ Note that a tool only knows the paths to its inputs and outputs, but if using th
 
 There are three approaches to protect Galaxy against these risks:
 
-- Use different credentials for running tools and make ``file_path``, ``tool_data_path`` writable only by the user running Galaxy. This can be configured using the ``real_system_username`` config variable. Note that this implies ``outputs_to_working_directory``.
 - Configure Galaxy to run jobs in a container and enable ``outputs_to_working_directory``. Then the tool will execute in an environment that allows write access only for the job working dir. All other paths will be accessible read only. 
 - Use [Pulsar](https://pulsar.readthedocs.io/) to stage inputs and outputs.
+- If containers or pulsar are not an option the following strategy is suggested. Use different credentials for running tools which can be configured using the ``real_system_username`` config variable. Note that this implies ``outputs_to_working_directory``. Furthermore (in particular) ``file_path``, ``tool_data_path`` should be made writable only by the user running Galaxy. 
 
 More information on pulsar configuration can be found in the [job configuration](jobs.md) documentation, and the other two are explained in [using a compute cluster](cluster.md).
