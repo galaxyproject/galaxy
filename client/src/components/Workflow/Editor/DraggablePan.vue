@@ -1,5 +1,5 @@
 <template>
-    <Draggable :root-offset="rootOffset" @move="onMove" @mouseup="onMouseUp">
+    <Draggable :root-offset="rootOffset" @move="onMove" @mouseup="onMouseUp" v-on="$listeners">
         <slot></slot>
     </Draggable>
 </template>

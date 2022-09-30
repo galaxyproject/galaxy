@@ -17,7 +17,7 @@
             :root-offset="rootOffset"
             @pan-by="onPanBy"
             @start="isDragging = true"
-            @stopDragging="onStopDragging"
+            @stop="onStopDragging"
             @move="onMove">
             <div class="icon" ref="terminal"></div>
         </draggable-wrapper>
@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import DraggableWrapper from "./Draggable";
+import DraggableWrapper from "./DraggablePan";
 import WorkflowConnector from "./Connector";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { reactive, ref } from "vue";
@@ -69,8 +69,8 @@ export default {
         return {
             isMultiple: false,
             isDragging: false,
-            deltaX: 0,
-            deltaY: 0,
+            dragX: 0,
+            dragY: 0,
         };
     },
     computed: {
@@ -90,10 +90,10 @@ export default {
             return this.initY;
         },
         endX() {
-            return this.startX + this.deltaX;
+            return this.dragX || this.startX;
         },
         endY() {
-            return this.startY + this.deltaY;
+            return this.dragY || this.startY;
         },
         dragPosition() {
             return {
@@ -173,14 +173,14 @@ export default {
         onPanBy(panBy) {
             this.$emit("pan-by", panBy);
         },
-        onMove(e) {
-            this.deltaX += e.data.deltaX;
-            this.deltaY += e.data.deltaY;
+        onMove(position, event) {
+            this.dragX = position.x + this.position.width / 2;
+            this.dragY = position.y + this.position.height / 2;
         },
         onStopDragging() {
             this.isDragging = false;
-            this.deltaX = 0;
-            this.deltaY = 0;
+            this.dragX = 0;
+            this.dragY = 0;
             this.$emit("stopDragging");
         },
         inputDragStart(e) {},

@@ -16,6 +16,7 @@ const size = reactive(useElementSize(draggable));
 const transform = inject("transform");
 
 const onStart = (position, event) => {
+    emit("start");
     emit("mousedown", event);
 };
 
@@ -27,11 +28,14 @@ const onMove = (position, event) => {
 };
 
 const onEnd = (position, event) => {
+    emit("stop");
     emit("mouseup");
 };
 
 useDraggable(draggable, {
     preventDefault: true,
+    stopPropagation: true,
+    useCapture: false,
     onStart: onStart,
     onMove: onMove,
     onEnd: onEnd,
