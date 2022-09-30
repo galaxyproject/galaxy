@@ -729,7 +729,7 @@ class BaseDatasetPopulator(BasePopulator):
         """Abstract method for summarizing a target history - override to provide details."""
 
     @contextlib.contextmanager
-    def test_history(self, cancel_executions: bool = True, require_new: bool = True, **kwds):
+    def test_history(self, cancel_executions: bool = True, **kwds):
         cleanup = "GALAXY_TEST_NO_CLEANUP" not in os.environ
         history_id = None
 
@@ -738,10 +738,7 @@ class BaseDatasetPopulator(BasePopulator):
                 self.cancel_history_jobs(history_id)
 
         try:
-            if not require_new:
-                history_id = kwds.get("GALAXY_TEST_HISTORY_ID", None)
-
-            history_id = history_id or self.new_history()
+            history_id = self.new_history()
             yield history_id
             wrap_up()
         except Exception:
