@@ -15,36 +15,96 @@
           title-tag="h1"
           @show="loadSettings">
 
-        <h3>About Beacon</h3>
+        <!-- Explanation text-->
         <p>
-          A beacon is a web service that shares information about the occurrence of genetic variants.
-          A beacon answers questions of the form "Do you have information about the following mutation?" and responds with one of "Yes" or "No".
-
-          <b-link href="https://beacon-network.org/#/about">Learn more</b-link>
+          This setting will enable the possibility to share your Variants (in VCF (vcf) or compressed VCF (vcf_gz))
+          with the entire community in a secure way without sharing the entire file or Galaxy history. This is possible
+          by utilizing the <a href="https://beacon-project.io">Global Alliance for Genomics & Health Beacon Project</a>.
+          <br>
+          <br>
+          We turn Galaxy into a Beacon server and offer your variants anonymously via the Beacon Network. All shared
+          Variants will be merged to a single dataset. If someone searches in the Beacon Network for a specific variant
+          that is in one of your datasets our Galaxy server will return
+          <span class="cursive">“Yes, we have seen such a variant”</span>. Nothing more.
+          <br>
+          <br>
+          The user has the possibility to contact the Admin of the Galaxy server and we will in turn contact
+          you and ask if you want to contact this user and negotiate a potential data access.
+          Sharing is essential in Galaxy, secure sharing of sensitive data is now possible using Beacon.
         </p>
 
 
-        <b-alert show>Apart from the "Yes/No" response <span class="bold">no data will be shared</span></b-alert>
-
-
-
-        <h3>Participate</h3>
-        There is a beacon instance set up on this galaxy instance. To contribute variant information follow the steps below.
-
-        <div class="actual-settings">
-          <h4>Opt-in to variant sharing</h4>
-          <div class="setting-container">
-            <div class="setting-text">
-              <p v-if="!enabled"> you are currently not opted in</p>
-              <p v-if="enabled"> you have already opted in and you can share data</p>
+        <b-alert v-if="enabled" show>
+          <div class="flex-row space-between">
+            <div class="no-shrink">
+              Beacon sharing is <span class="bold">enabled</span> for your profile
             </div>
-            <div class="setting-buttons">
-              <b-button v-if="!enabled" @click="optIn" variant="success">Opt-in</b-button>
-              <b-button v-if="enabled" @click="optOut" variant="danger">Opt-out</b-button>
+            <div class="fill"></div>
+            <div class="no-shrink">
+              <b-button @click="optOut" variant="danger">Disable</b-button>
+            </div>
+          </div>
+        </b-alert>
+
+
+        <!-- Setting to show when beacon is disabled -->
+        <b-alert v-if="!enabled" show>
+          <div class="flex-row space-between">
+            <div class="no-shrink">
+              Beacon sharing is currently <span class="bold">disabled</span> - no data will be shared
+            </div>
+            <div class="fill"></div>
+            <div>
+              <b-button @click="optIn" variant="success">Enable</b-button>
+            </div>
+          </div>
+        </b-alert>
+
+        <div v-if="enabled">
+          <p>
+            If you this setting you can share data by copying VCF/VCF.gz files to a history called
+            <span class="cursive">___BEACON_PICKUP___</span>. The Beacon database is rebuild every day, this means if
+            you disable the option here, of if we remove the history, or data in the history, the variants will disappear
+            from the Beacon in the next 24h.
+          </p>
+        </div>
+
+
+        <!-- Detailed information about the beacon history -->
+        <div v-if="enabled" class="gray-box">
+          <!-- Case: History does not exist-->
+          <div v-if="!beaconHistory.id" class="flex-row">
+            <div class="no-shrink">
+              No beacon history found
+            </div>
+            <div class="fill"></div>
+            <div class="no-shrink">
+              <b-button @click="createBeaconHistory">Create Beacon History</b-button>
+            </div>
+          </div>
+
+          <!-- Case: History exists -->
+          <div v-if="beaconHistory.id" class="flex-row">
+            <div class="no-shrink">
+              Variant files are searched in your beacon history
+            </div>
+            <div class="fill"></div>
+            <div class="no-shrink">
+              <b-button @click="switchHistory(beaconHistory.id)">Switch to History</b-button>
             </div>
           </div>
         </div>
 
+        <div v-if="enabled">
+          <p>
+            Datasets must fulfill the following conditions in order to be processed
+          </p>
+          <ul>
+            <li>must be VCF or VCF.bzip format</li>
+            <li>must have a human reference assigned to it (e.g. hg19)</li>
+            <li>must define at least one sample</li>
+          </ul>
+        </div>
       </b-modal>
     </div>
   </b-row>
@@ -54,7 +114,6 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { userLogoutClient } from "layout/menu";
 Vue.use(BootstrapVue);
 
 export default {
@@ -71,20 +130,53 @@ export default {
   data() {
     return {
       enabled: false,
+      beaconHistory: {}
     };
   },
-  computed: {
-    showDeleteError() {
-      return this.deleteError !== "";
-    },
+  created() {
+      this.getBeaconHistory();
   },
   methods: {
+    switchHistory: function (id) {
+      // history/switch_to_history?hist_id=
+      axios
+           .get(`${this.root}history/switch_to_history?hist_id=${id}`)
+          .then(() => {
+            window.location.reload()
+          })
+          .catch((error) => {console.log(error)});
+    },
+    getBeaconHistory: function () {
+      axios
+          .get(this.root + "api/histories?q=name&qv=___BEACON_PICKUP___")
+          .then((response) => {
+            if (response.data.length > 0) {
+              // always select first match
+              this.beaconHistory = response.data[0];
+
+            }
+          })
+          .catch((error) => {console.log(error.response)});
+    },
+    async createBeaconHistory() {
+      const annotation = "Variant files will be collected from this history if beacon sharing is activated"
+      await axios
+          .post(this.root + "api/histories", {name: "___BEACON_PICKUP___"})
+          .then((response) => {
+            this.beaconHistory = response.data
+            axios.put(`${this.root}api/histories/${this.beaconHistory.id}`, {"annotation": annotation});
+          })
+          .catch((error) => {this.errorMessages.push(error.response.data.err_msg), console.log(error.response)});
+    },
     async optIn() {
       try {
         await axios.post(`${this.root}api/users/${this.userId}/beacon`, {"enabled": true}).then(
             response => {
               // TODO check response
               this.loadSettings();
+              if (!this.beaconHistory.id) {
+                this.createBeaconHistory()
+              }
             }
         );
       } catch (e) {
@@ -112,42 +204,6 @@ export default {
         );
       } catch (e) {
         console.log(e);
-      }
-    },
-    checkFormValidity() {
-      const valid = this.$refs.form.checkValidity();
-      this.nameState = valid;
-      return valid;
-    },
-    resetModal() {
-      this.name = "";
-      this.nameState = null;
-    },
-    handleOk(bvModalEvt) {
-      // Prevent modal from closing
-      bvModalEvt.preventDefault();
-      // Trigger submit handler
-      this.handleSubmit();
-    },
-    async handleSubmit() {
-      if (!this.checkFormValidity()) {
-        return false;
-      }
-      if (this.email === this.name) {
-        this.nameState = true;
-        try {
-          await axios.delete(`${this.root}api/users/${this.userId}`);
-        } catch (e) {
-          if (e.response.status === 403) {
-            this.deleteError =
-                "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
-            return false;
-          }
-        }
-        userLogoutClient();
-      } else {
-        this.nameState = false;
-        return false;
       }
     },
   },
@@ -184,12 +240,38 @@ span.bold {
   margin-right: 0;
 }
 
-.actual-settings {
+.gray-box {
   padding: 8px 16px;
   margin-top: 32px;
   margin-bottom: 32px;
   border: 1px solid #bdc6d0;
   border-radius: 5px;
   background-color: rgba(0, 0, 0, 0.04);
+}
+
+.flex-row {
+  display: flex;
+  flex-flow: row;
+}
+
+.space-between {
+  justify-content: space-between;
+  align-items: center;
+}
+
+.cursive {
+  font-style: italic;
+}
+
+.bold {
+  font-weight: bolder;
+}
+
+.fill {
+  width: 100%;
+}
+
+.no-shrink {
+  flex-shrink: 0;
 }
 </style>
