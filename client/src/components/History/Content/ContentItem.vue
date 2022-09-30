@@ -90,14 +90,15 @@
             :collection-type="item.collection_type"
             :element-count="item.element_count"
             :elements-datatypes="item.elements_datatypes" />
-        <StatelessTags
+        <!--StatelessTags
             v-if="!tagsDisabled || hasTags"
             class="alltags p-1"
             :value="tags"
             :use-toggle-link="false"
             :disabled="tagsDisabled"
             @tag-click="onTagClick"
-            @input="onTags" />
+            @input="onTags" /-->
+        <Tags v-if="!tagsDisabled || hasTags" :value="tags" :disabled="tagsDisabled" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <b-collapse :visible="expandDataset">
             <DatasetDetails
@@ -113,7 +114,7 @@
 </template>
 
 <script>
-import { StatelessTags } from "components/Tags";
+import Tags from "components/TagsMultiselect/Tags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
@@ -131,7 +132,7 @@ export default {
         CollectionDescription,
         ContentOptions,
         DatasetDetails,
-        StatelessTags,
+        Tags,
         FontAwesomeIcon,
     },
     props: {
@@ -251,6 +252,9 @@ export default {
 };
 </script>
 <style lang="scss">
+.content-item:hover {
+    //filter: brightness(105%);
+}
 .content-item {
     .name {
         word-break: break-all;
