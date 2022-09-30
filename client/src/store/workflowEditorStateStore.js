@@ -15,7 +15,7 @@ const getters = {
     getOutputTerminalPosition: (state) => (stepId, outputName) => {
         return state.outputTerminals[stepId]?.[outputName];
     },
-    getActiveNode: (state) => () => {
+    getActiveNode: (state) => {
         return state.activeNode;
     },
     getScale: (state) => {
@@ -24,7 +24,7 @@ const getters = {
     getNode: (state) => (nodeId) => {
         return state.nodes[nodeId];
     },
-    getNodes: (state) => () => {
+    getNodes: (state) => {
         return state.nodes;
     },
 };

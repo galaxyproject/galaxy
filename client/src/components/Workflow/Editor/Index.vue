@@ -274,7 +274,7 @@ export default {
     },
     computed: {
         nodes() {
-            return this.$store.getters["workflowState/getNodes"]();
+            return this.$store.getters["workflowState/getNodes"];
         },
         showAttributes() {
             return this.showInPanel == "attributes";
@@ -290,7 +290,7 @@ export default {
             return this.nodes[this.activeNodeId];
         },
         activeNodeId() {
-            return this.$store.getters["workflowState/getActiveNode"]();
+            return this.$store.getters["workflowState/getActiveNode"];
         },
         activeNodeName() {
             return this.activeNode?.name;

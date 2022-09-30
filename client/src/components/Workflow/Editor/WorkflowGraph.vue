@@ -147,7 +147,7 @@ export default {
             return { transform };
         },
         activeNodeId() {
-            return this.$store.getters["workflowState/getActiveNode"]();
+            return this.$store.getters["workflowState/getActiveNode"];
         },
     },
 };
