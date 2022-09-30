@@ -35,6 +35,7 @@ ATTRIB_VALIDATOR_COMPATIBILITY = {
         "dataset_metadata_in_data_table",
         "dataset_metadata_not_in_data_table",
         "dataset_metadata_in_file",
+        "dataset_metadata_in_range",
     ],
     "metadata_column": [
         "dataset_metadata_in_data_table",
@@ -359,6 +360,20 @@ def lint_inputs(tool_xml, lint_ctx):
             ):
                 lint_ctx.error(
                     f"Parameter [{param_name}]: '{vtype}' validators need to define the 'table_name' attribute",
+                    node=validator,
+                )
+            if (
+                vtype
+                in [
+                    "dataset_metadata_in_data_table",
+                    "dataset_metadata_not_in_data_table",
+                    "dataset_metadata_in_file",
+                    "dataset_metadata_in_range",
+                ]
+                and "metadata_name" not in validator.attrib
+            ):
+                lint_ctx.error(
+                    f"Parameter [{param_name}]: '{vtype}' validators need to define the 'metadata_name' attribute",
                     node=validator,
                 )
 

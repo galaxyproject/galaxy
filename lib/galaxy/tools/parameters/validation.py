@@ -720,12 +720,13 @@ class MetadataInFileColumnValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        filename = elem.get("filename", None)
-        if filename:
-            filename = f"{param.tool.app.config.tool_data_path}/{filename.strip()}"
-        metadata_name = elem.get("metadata_name", None)
-        if metadata_name:
-            metadata_name = metadata_name.strip()
+        filename = elem.get("filename")
+        assert filename, f"Required 'filename' attribute missing from {elem.get('type')} validator."
+        filename = f"{param.tool.app.config.tool_data_path}/{filename.strip()}"
+        assert os.path.exists(filename), f"File {filename} specified by the 'filename' attribute not found"
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
+        metadata_name = metadata_name.strip()
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
         message = elem.get("message", f"Value for metadata {metadata_name} was not found in {filename}.")
@@ -748,11 +749,12 @@ class MetadataInFileColumnValidator(Validator):
         super().__init__(message, negate)
         self.metadata_name = metadata_name
         self.valid_values = set()
-        for line in open(filename):
-            if line_startswith is None or line.startswith(line_startswith):
-                fields = line.split(split)
-                if metadata_column < len(fields):
-                    self.valid_values.add(fields[metadata_column].strip())
+        with open(filename) as fh:
+            for line in fh:
+                if line_startswith is None or line.startswith(line_startswith):
+                    fields = line.split(split)
+                    if metadata_column < len(fields):
+                        self.valid_values.add(fields[metadata_column].strip())
 
     def validate(self, value, trans=None):
         if not value:
@@ -772,8 +774,8 @@ class ValueInDataTableColumnValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        table_name = elem.get("table_name", None)
-        assert table_name, "You must specify a table_name."
+        table_name = elem.get("table_name")
+        assert table_name, f"Required 'table_name' attribute missing from {elem.get('type')} validator."
         tool_data_table = param.tool.app.tool_data_tables[table_name]
         column = elem.get("metadata_column", 0)
         try:
@@ -844,12 +846,12 @@ class MetadataInDataTableColumnValidator(ValueInDataTableColumnValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        table_name = elem.get("table_name", None)
-        assert table_name, "You must specify a table_name."
+        table_name = elem.get("table_name")
+        assert table_name, f"Required 'table_name' attribute missing from {elem.get('type')} validator."
         tool_data_table = param.tool.app.tool_data_tables[table_name]
-        metadata_name = elem.get("metadata_name", None)
-        if metadata_name:
-            metadata_name = metadata_name.strip()
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
+        metadata_name = metadata_name.strip()
         # TODO rename to column?
         metadata_column = elem.get("metadata_column", 0)
         try:
@@ -907,8 +909,8 @@ class MetadataInRangeValidator(InRangeValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        metadata_name = elem.get("metadata_name", None)
-        assert metadata_name, "dataset_metadata_in_range validator requires metadata_name attribute."
+        metadata_name = elem.get("metadata_name")
+        assert metadata_name, f"Required 'metadata_name' attribute missing from {elem.get('type')} validator."
         metadata_name = metadata_name.strip()
         ret = cls(
             metadata_name,
