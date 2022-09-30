@@ -65,29 +65,29 @@ export default {
         };
     },
     computed: {
-        ...mapGetters("multipleView", ["getSelectedHistories"]),
+        ...mapGetters("history", ["getPinnedHistories"]),
         selectedHistories() {
-            return this.getSelectedHistories();
+            return this.getPinnedHistories();
         },
     },
     created() {
         if (!this.selectedHistories.length) {
             const firstHistory = this.histories[0];
-            this.addHistoryToMultipleView(firstHistory.id);
+            this.pinHistory(firstHistory.id);
         }
     },
     methods: {
-        ...mapActions("multipleView", ["addHistoryToMultipleView", "removeHistoryFromMultipleView"]),
+        ...mapActions("history", ["pinHistory", "unpinHistory"]),
         addHistoriesToList(histories) {
             histories.forEach((history) => {
                 const historyExists = this.selectedHistories.find((h) => h.id == history.id);
                 if (!historyExists) {
-                    this.addHistoryToMultipleView(history.id);
+                    this.pinHistory(history.id);
                 }
             });
         },
         removeHistoryFromList(history) {
-            this.removeHistoryFromMultipleView(history.id);
+            this.unpinHistory(history.id);
         },
     },
 };
