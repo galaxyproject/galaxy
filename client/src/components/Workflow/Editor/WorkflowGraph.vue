@@ -9,13 +9,7 @@
         <div ref="el" class="canvas-viewport" @drop.prevent>
             <d3-zoom ref="d3Zoom" id="canvas-container" @transform="onTransform">
                 <div ref="nodes" class="node-area" :style="nodesStyle">
-                    <svg class="canvas-svg node-area">
-                        <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
-                        <terminal-connector
-                            v-for="connection in connections"
-                            :key="connection.id"
-                            :connection="connection"></terminal-connector>
-                    </svg>
+                    <WorkflowEdges :steps="steps" :dragging-connection="draggingConnection" />
                     <WorkflowNode
                         v-for="(step, key) in steps"
                         :id="key"
@@ -51,8 +45,7 @@
 <script>
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
-import RawConnector from "./Connector";
-import TerminalConnector from "./TerminalConnector";
+import WorkflowEdges from "./WorkflowEdges.vue";
 import Minimap from "./Minimap.vue";
 import { reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
@@ -78,15 +71,13 @@ export default {
     },
     components: {
         D3Zoom,
-        RawConnector,
-        TerminalConnector,
+        WorkflowEdges,
         WorkflowNode,
         Minimap,
         ZoomControl,
     },
     data() {
         return {
-            isWheeled: false,
             draggingConnection: null,
         };
     },
@@ -157,29 +148,6 @@ export default {
         },
         activeNodeId() {
             return this.$store.getters["workflowState/getActiveNode"]();
-        },
-        connections() {
-            const connections = [];
-            Object.entries(this.steps).forEach(([stepId, step]) => {
-                if (step.input_connections) {
-                    Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
-                        if (!Array.isArray(outputArray)) {
-                            outputArray = [outputArray];
-                        }
-                        outputArray.forEach((output) => {
-                            const connection = {
-                                id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
-                                inputStepId: step.id,
-                                inputName: input_name,
-                                outputStepId: output.id,
-                                outputName: output.output_name,
-                            };
-                            connections.push(connection);
-                        });
-                    });
-                }
-            });
-            return connections;
         },
     },
 };
