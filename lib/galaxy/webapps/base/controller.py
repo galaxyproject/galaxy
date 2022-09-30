@@ -24,7 +24,6 @@ from galaxy import (
 )
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.managers import (
-    api_keys,
     base as managers_base,
     configuration,
     users,
@@ -380,17 +379,6 @@ class Datatype:
 #
 # -- Mixins for working with Galaxy objects. --
 #
-
-
-class CreatesApiKeysMixin:
-    """
-    Mixing centralizing logic for creating API keys for user objects.
-
-    Deprecated - please use api_keys.ApiKeyManager for new development.
-    """
-
-    def create_api_key(self, trans, user: model.User) -> model.APIKeys:
-        return api_keys.ApiKeyManager(trans.app).create_api_key(user)
 
 
 class SharableItemSecurityMixin:
