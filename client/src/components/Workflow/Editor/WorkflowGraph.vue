@@ -103,6 +103,13 @@ export default {
         onPan(pan) {
             this.$refs.d3Zoom.panBy(pan);
         },
+        onZoom(zoomLevel, panTo = null) {
+            this.$refs.d3Zoom.setZoom(zoomLevel);
+            if (panTo) {
+                this.onPan({ x: panTo.x - this.transform.x, y: panTo.y - this.transform.y });
+            }
+            this.setScale(zoomLevel);
+        },
         onMoveTo(moveTo) {
             this.$refs.d3Zoom.moveTo(moveTo);
         },
@@ -121,13 +128,6 @@ export default {
         },
         onDragConnector(vector) {
             this.draggingConnection = vector;
-        },
-        onZoom(zoomLevel, panTo = null) {
-            this.$refs.d3Zoom.setZoom(zoomLevel);
-            if (panTo) {
-                this.onPan({ x: panTo.x - this.transform.x, y: panTo.y - this.transform.y });
-            }
-            this.setScale(zoomLevel);
         },
         onActivate(nodeId) {
             if (this.activeNodeId != nodeId) {
