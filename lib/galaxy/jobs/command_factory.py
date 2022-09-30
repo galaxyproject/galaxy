@@ -339,7 +339,7 @@ class CommandsBuilder:
 mkfifo "$__out" "$__err"
 {trap_command}
 tee -a '{stdout_file}' < "$__out" &
-tee -a '{stderr_file}' < "$__err" >&2 &"""
+tee -a '{stderr_file}' < "$__err" >&2 & """
             + self._commands[0]
         )
         self._commands[-1] += ' > "$__out" 2> "$__err"'
