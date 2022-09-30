@@ -77,17 +77,11 @@ export default {
         terminalPosition() {
             return Object.freeze({ startX: this.startX, startY: this.startY });
         },
-        initX() {
+        startX() {
             return this.position.left + this.position.width / 2;
         },
-        initY() {
-            return this.position.top + this.position.height / 2;
-        },
-        startX() {
-            return this.initX;
-        },
         startY() {
-            return this.initY;
+            return this.position.top + this.position.height / 2;
         },
         endX() {
             return this.dragX || this.startX;

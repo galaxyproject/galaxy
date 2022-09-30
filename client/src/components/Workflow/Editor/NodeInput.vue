@@ -58,10 +58,10 @@ export default {
         terminalPosition() {
             return Object.freeze({ endX: this.startX, endY: this.startY });
         },
-        initX() {
+        startX() {
             return this.position.left + this.position.width / 2;
         },
-        initY() {
+        startY() {
             return this.position.top + this.position.height / 2;
         },
         id() {
@@ -77,12 +77,6 @@ export default {
                 return `${cls} multiple`;
             }
             return cls;
-        },
-        startX() {
-            return this.initX; // + this.offsetX;
-        },
-        startY() {
-            return this.initY; // + this.offsetY;
         },
     },
     beforeDestroy() {
