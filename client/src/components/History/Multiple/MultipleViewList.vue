@@ -31,10 +31,10 @@
 </template>
 
 <script>
+import { mapActions, mapGetters } from "vuex";
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem";
 import SelectorModal from "components/History/Modals/SelectorModal";
-import { getHistories, addHistory, removeHistory } from "./localStorage.js";
 
 export default {
     components: {
@@ -62,30 +62,32 @@ export default {
     data() {
         return {
             MultipleViewItem,
-            selectedHistories: getHistories(),
         };
+    },
+    computed: {
+        ...mapGetters("multipleView", ["getSelectedHistories"]),
+        selectedHistories() {
+            return this.getSelectedHistories();
+        },
     },
     created() {
         if (!this.selectedHistories.length) {
             const firstHistory = this.histories[0];
-            this.selectedHistories = [{ id: firstHistory.id }];
+            this.addHistoryToMultipleView(firstHistory.id);
         }
     },
     methods: {
+        ...mapActions("multipleView", ["addHistoryToMultipleView", "removeHistoryFromMultipleView"]),
         addHistoriesToList(histories) {
             histories.forEach((history) => {
                 const historyExists = this.selectedHistories.find((h) => h.id == history.id);
                 if (!historyExists) {
-                    this.selectedHistories.push({ id: history.id });
-                    addHistory(history.id);
+                    this.addHistoryToMultipleView(history.id);
                 }
             });
         },
         removeHistoryFromList(history) {
-            this.selectedHistories = this.selectedHistories.filter((item) => {
-                return item.id !== history.id;
-            });
-            removeHistory(history.id);
+            this.removeHistoryFromMultipleView(history.id);
         },
     },
 };
