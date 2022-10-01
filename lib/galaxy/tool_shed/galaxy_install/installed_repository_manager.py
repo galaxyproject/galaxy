@@ -15,7 +15,10 @@ from typing import (
 )
 
 from galaxy import util
-from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.model.tool_shed_install import (
+    ToolDependency,
+    ToolShedRepository,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
@@ -102,7 +105,7 @@ class InstalledRepositoryManager:
             self.app, repository
         )
         repository.deleted = False
-        repository.status = self.install_model.ToolShedRepository.installation_status.INSTALLED
+        repository.status = ToolShedRepository.installation_status.INSTALLED
         if repository.includes_tools_for_display_in_tool_panel:
             repository_clone_url = common_util.generate_clone_url_for_installed_repository(self.app, repository)
             tpm = tool_panel_manager.ToolPanelManager(self.app)
@@ -139,8 +142,8 @@ class InstalledRepositoryManager:
                     repository,
                     repository_tools_tups,
                 )
-        self.install_model.session.add(repository)
-        self.install_model.session.flush()
+        self.context.add(repository)
+        self.context.flush()
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories(
         self, repository: ToolShedRepository
@@ -153,7 +156,7 @@ class InstalledRepositoryManager:
         repository_tup = self.get_repository_tuple_for_installed_repository_manager(repository)
         tool_shed, name, owner, installed_changeset_revision = repository_tup
         # Get the list of repository dependencies for this repository.
-        status = self.install_model.ToolShedRepository.installation_status.INSTALLED
+        status = ToolShedRepository.installation_status.INSTALLED
         repository_dependency_tups = self.get_repository_dependency_tups_for_installed_repository(
             repository, status=status
         )
@@ -199,9 +202,7 @@ class InstalledRepositoryManager:
 
     def get_containing_repository_for_tool_dependency(self, tool_dependency_tup: tuple) -> ToolShedRepository:
         tool_shed_repository_id, name, version, type = tool_dependency_tup
-        return self.app.install_model.context.query(self.app.install_model.ToolShedRepository).get(
-            tool_shed_repository_id
-        )
+        return self.context.query(ToolShedRepository).get(tool_shed_repository_id)
 
     def get_dependencies_for_repository(
         self,
@@ -364,7 +365,7 @@ class InstalledRepositoryManager:
                     tsr.id,
                     tsr.status,
                 ]
-                if tsr.status == self.app.install_model.ToolShedRepository.installation_status.INSTALLED:
+                if tsr.status == ToolShedRepository.installation_status.INSTALLED:
                     installed_rd_tups.append(rd_tup)
                 else:
                     # We'll only add the rd_tup to the missing_rd_tups list if the received repository
@@ -458,7 +459,7 @@ class InstalledRepositoryManager:
                             repository.id,
                             repository.status,
                         ]
-                        if repository.status == self.install_model.ToolShedRepository.installation_status.INSTALLED:
+                        if repository.status == ToolShedRepository.installation_status.INSTALLED:
                             if new_rd_tup not in installed_rd_tups:
                                 installed_rd_tups.append(new_rd_tup)
                         else:
@@ -519,7 +520,7 @@ class InstalledRepositoryManager:
             tmp_tool_dependencies_dict: dict = copy.deepcopy(tool_dependencies_dict)
             for td_key, val in tmp_tool_dependencies_dict.items():
                 # Default the status to NEVER_INSTALLED.
-                tool_dependency_status = self.install_model.ToolDependency.installation_status.NEVER_INSTALLED
+                tool_dependency_status = ToolDependency.installation_status.NEVER_INSTALLED
                 if td_key == "set_environment":
                     # Set environment tool dependencies are a list.
                     assert isinstance(val, list)
@@ -541,7 +542,7 @@ class InstalledRepositoryManager:
                             tool_dependency_status = tool_dependency.status
                         requirement_dict["status"] = tool_dependency_status
                         new_val.append(requirement_dict)
-                        if tool_dependency_status in [self.install_model.ToolDependency.installation_status.INSTALLED]:
+                        if tool_dependency_status in [ToolDependency.installation_status.INSTALLED]:
                             if td_key in installed_tool_dependencies:
                                 installed_tool_dependencies[td_key].extend(new_val)
                             else:
@@ -565,7 +566,7 @@ class InstalledRepositoryManager:
                     if tool_dependency:
                         tool_dependency_status = tool_dependency.status
                     val["status"] = tool_dependency_status
-                if tool_dependency_status in [self.install_model.ToolDependency.installation_status.INSTALLED]:
+                if tool_dependency_status in [ToolDependency.installation_status.INSTALLED]:
                     installed_tool_dependencies[td_key] = val
                 else:
                     missing_tool_dependencies[td_key] = val
@@ -688,150 +689,13 @@ class InstalledRepositoryManager:
                         errors = f"{errors}  {error_message}"
         repository.deleted = True
         if remove_from_disk:
-            repository.status = self.app.install_model.ToolShedRepository.installation_status.UNINSTALLED
+            repository.status = ToolShedRepository.installation_status.UNINSTALLED
             repository.error_message = None
         else:
-            repository.status = self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED
-        self.app.install_model.session.add(repository)
-        self.app.install_model.session.flush()
+            repository.status = ToolShedRepository.installation_status.DEACTIVATED
+        self.context.add(repository)
+        self.context.flush()
         return errors
-
-    def purge_repository(self, repository: ToolShedRepository) -> Tuple[str, str]:
-        """Purge a repository with status New (a white ghost) from the database."""
-        sa_session = self.app.model.session
-        status = "ok"
-        message = ""
-        purged_tool_versions = 0
-        purged_tool_dependencies = 0
-        purged_required_repositories = 0
-        purged_orphan_repository_repository_dependency_association_records = 0
-        purged_orphan_repository_dependency_records = 0
-        if repository.is_new:
-            # Purge this repository's associated tool versions.
-            if repository.tool_versions:
-                for tool_version in repository.tool_versions:
-                    if tool_version.parent_tool_association:
-                        for tool_version_association in tool_version.parent_tool_association:
-                            try:
-                                sa_session.delete(tool_version_association)
-                                sa_session.flush()
-                            except Exception as e:
-                                status = "error"
-                                message = (
-                                    "Error attempting to purge tool_versions for the repository named %s with status %s: %s."
-                                    % (str(repository.name), str(repository.status), str(e))
-                                )
-                                return status, message
-                    if tool_version.child_tool_association:
-                        for tool_version_association in tool_version.child_tool_association:
-                            try:
-                                sa_session.delete(tool_version_association)
-                                sa_session.flush()
-                            except Exception as e:
-                                status = "error"
-                                message = (
-                                    "Error attempting to purge tool_versions for the repository named %s with status %s: %s."
-                                    % (str(repository.name), str(repository.status), str(e))
-                                )
-                                return status, message
-                    try:
-                        sa_session.delete(tool_version)
-                        sa_session.flush()
-                        purged_tool_versions += 1
-                    except Exception as e:
-                        status = "error"
-                        message = (
-                            "Error attempting to purge tool_versions for the repository named %s with status %s: %s."
-                            % (str(repository.name), str(repository.status), str(e))
-                        )
-                        return status, message
-            # Purge this repository's associated tool dependencies.
-            if repository.tool_dependencies:
-                for tool_dependency in repository.tool_dependencies:
-                    try:
-                        sa_session.delete(tool_dependency)
-                        sa_session.flush()
-                        purged_tool_dependencies += 1
-                    except Exception as e:
-                        status = "error"
-                        message = (
-                            "Error attempting to purge tool_dependencies for the repository named %s with status %s: %s."
-                            % (str(repository.name), str(repository.status), str(e))
-                        )
-                        return status, message
-            # Purge this repository's associated required repositories.
-            if repository.required_repositories:
-                for rrda in repository.required_repositories:
-                    try:
-                        sa_session.delete(rrda)
-                        sa_session.flush()
-                        purged_required_repositories += 1
-                    except Exception as e:
-                        status = "error"
-                        message = (
-                            "Error attempting to purge required_repositories for the repository named %s with status %s: %s."
-                            % (str(repository.name), str(repository.status), str(e))
-                        )
-                        return status, message
-            # Purge any "orphan" repository_dependency records associated with the repository, but not with any
-            # repository_repository_dependency_association records.
-            for orphan_repository_dependency in sa_session.query(self.app.install_model.RepositoryDependency).filter(
-                self.app.install_model.RepositoryDependency.table.c.tool_shed_repository_id == repository.id
-            ):
-                # Purge any repository_repository_dependency_association records whose repository_dependency_id is
-                # the id of the orphan repository_dependency record.
-                for orphan_rrda in sa_session.query(
-                    self.app.install_model.RepositoryRepositoryDependencyAssociation
-                ).filter(
-                    self.app.install_model.RepositoryRepositoryDependencyAssociation.table.c.repository_dependency_id
-                    == orphan_repository_dependency.id
-                ):
-                    try:
-                        sa_session.delete(orphan_rrda)
-                        sa_session.flush()
-                        purged_orphan_repository_repository_dependency_association_records += 1
-                    except Exception as e:
-                        status = "error"
-                        message = "Error attempting to purge repository_repository_dependency_association records associated with "
-                        message += (
-                            "an orphan repository_dependency record for the repository named %s with status %s: %s."
-                            % (str(repository.name), str(repository.status), str(e))
-                        )
-                        return status, message
-                try:
-                    sa_session.delete(orphan_repository_dependency)
-                    sa_session.flush()
-                    purged_orphan_repository_dependency_records += 1
-                except Exception as e:
-                    status = "error"
-                    message = (
-                        "Error attempting to purge orphan repository_dependency records for the repository named %s with status %s: %s."
-                        % (str(repository.name), str(repository.status), str(e))
-                    )
-                    return status, message
-            # Purge the repository.
-            sa_session.delete(repository)
-            sa_session.flush()
-            message = f"The repository named <b>{repository.name}</b> with status <b>{repository.status}</b> has been purged.<br/>"
-            message += "Total associated tool_version records purged: %d<br/>" % purged_tool_versions
-            message += "Total associated tool_dependency records purged: %d<br/>" % purged_tool_dependencies
-            message += (
-                "Total associated repository_repository_dependency_association records purged: %d<br/>"
-                % purged_required_repositories
-            )
-            message += (
-                "Total associated orphan repository_repository_dependency_association records purged: %d<br/>"
-                % purged_orphan_repository_repository_dependency_association_records
-            )
-            message += (
-                "Total associated orphan repository_dependency records purged: %d<br/>"
-                % purged_orphan_repository_dependency_records
-            )
-        else:
-            status = "error"
-            message = "A repository must have the status <b>New</b> in order to be purged.  This repository has "
-            message += f" the status {repository.status}."
-        return status, message
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories(
         self, repository: ToolShedRepository
@@ -992,7 +856,7 @@ class InstalledRepositoryManager:
                 dependency_install_dir
             )
             if removed_from_disk:
-                context = self.app.install_model.context
+                context = self.context
                 new_dependency_name = None
                 new_dependency_type = None
                 new_dependency_version = None
@@ -1017,7 +881,7 @@ class InstalledRepositoryManager:
                     )
                     tool_dependency.type = new_dependency_type
                     tool_dependency.version = new_dependency_version
-                    tool_dependency.status = self.app.install_model.ToolDependency.installation_status.UNINSTALLED
+                    tool_dependency.status = ToolDependency.installation_status.UNINSTALLED
                     tool_dependency.error_message = None
                     context.add(tool_dependency)
                     context.flush()
