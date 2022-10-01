@@ -25,28 +25,37 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.scoped_session import install_model_scoped_session
+from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
 from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
 )
+from galaxy.util.tool_shed.tool_shed_registry import Registry
 
 log = logging.getLogger(__name__)
 
 VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
 
 
-def check_for_updates(app, model, repository_id=None):
+def check_for_updates(
+    tool_shed_registry: Registry,
+    install_model_context: install_model_scoped_session,
+    repository_id: Optional[int] = None,
+) -> Tuple[str, str]:
     message = ""
     status = "ok"
     if repository_id is None:
         success_count = 0
         repository_names_not_updated = []
         updated_count = 0
-        for repository in model.context.query(model.ToolShedRepository).filter(
-            model.ToolShedRepository.table.c.deleted == false()
+        for repository in install_model_context.query(ToolShedRepository).filter(
+            ToolShedRepository.table.c.deleted == false()
         ):
-            ok, updated = check_or_update_tool_shed_status_for_installed_repository(app, repository)
+            ok, updated = _check_or_update_tool_shed_status_for_installed_repository(
+                tool_shed_registry, install_model_context, repository
+            )
             if ok:
                 success_count += 1
             else:
@@ -59,8 +68,10 @@ def check_for_updates(app, model, repository_id=None):
             message += "Unable to retrieve status from the tool shed for the following repositories:\n"
             message += ", ".join(repository_names_not_updated)
     else:
-        repository = get_tool_shed_repository_by_id(app, repository_id)
-        ok, updated = check_or_update_tool_shed_status_for_installed_repository(app, repository)
+        repository = get_tool_shed_repository_by_decoded_id(install_model_context, repository_id)
+        ok, updated = _check_or_update_tool_shed_status_for_installed_repository(
+            tool_shed_registry, install_model_context, repository
+        )
         if ok:
             if updated:
                 message = f"The tool shed status for repository <b>{escape(str(repository.name))}</b> has been updated."
@@ -76,15 +87,17 @@ def check_for_updates(app, model, repository_id=None):
     return message, status
 
 
-def check_or_update_tool_shed_status_for_installed_repository(app, repository):
+def _check_or_update_tool_shed_status_for_installed_repository(
+    tool_shed_registry: Registry, install_model_context: install_model_scoped_session, repository: ToolShedRepository
+) -> Tuple[bool, bool]:
     updated = False
-    tool_shed_status_dict = get_tool_shed_status_for_installed_repository(app, repository)
+    tool_shed_status_dict = get_tool_shed_status_for(tool_shed_registry, repository)
     if tool_shed_status_dict:
         ok = True
         if tool_shed_status_dict != repository.tool_shed_status:
             repository.tool_shed_status = tool_shed_status_dict
-            app.install_model.context.add(repository)
-            app.install_model.context.flush()
+            install_model_context.add(repository)
+            install_model_context.flush()
             updated = True
     else:
         ok = False
@@ -611,29 +624,28 @@ def get_tool_shed_from_clone_url(repository_clone_url):
     return tmp_url.split("/repos/")[0].rstrip("/")
 
 
-def get_tool_shed_repository_by_id(app, repository_id):
+def get_tool_shed_repository_by_id(app, repository_id) -> ToolShedRepository:
     """Return a tool shed repository database record defined by the id."""
     # This method is used only in Galaxy, not the tool shed.
+    return get_tool_shed_repository_by_decoded_id(app.install_model.context, app.security.decode_id(repository_id))
+
+
+def get_tool_shed_repository_by_decoded_id(
+    install_model_context: install_model_scoped_session, repository_id: int
+) -> ToolShedRepository:
     return (
-        app.install_model.context.query(app.install_model.ToolShedRepository)
-        .filter(app.install_model.ToolShedRepository.table.c.id == app.security.decode_id(repository_id))
-        .first()
+        install_model_context.query(ToolShedRepository).filter(ToolShedRepository.table.c.id == repository_id).first()
     )
 
 
-def get_tool_shed_status_for_installed_repository(app, repository):
-    """
-    Send a request to the tool shed to retrieve information about newer installable repository revisions,
-    current revision updates, whether the repository revision is the latest downloadable revision, and
-    whether the repository has been deprecated in the tool shed.  The received repository is a ToolShedRepository
-    object from Galaxy.
-    """
-    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(app, str(repository.tool_shed))
+def get_tool_shed_status_for(tool_shed_registry: Registry, repository: ToolShedRepository):
+    tool_shed_url = tool_shed_registry.get_tool_shed_url(str(repository.tool_shed))
+    assert tool_shed_url
     params = dict(name=repository.name, owner=repository.owner, changeset_revision=repository.changeset_revision)
     pathspec = ["repository", "status_for_installed_repository"]
     try:
         encoded_tool_shed_status_dict = util.url_get(
-            tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
+            tool_shed_url, auth=tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
         )
         tool_shed_status_dict = encoding_util.tool_shed_decode(encoded_tool_shed_status_dict)
         return tool_shed_status_dict
@@ -649,7 +661,7 @@ def get_tool_shed_status_for_installed_repository(app, repository):
         try:
             # The value of text will be 'true' or 'false', depending upon whether there is an update available for the installed revision.
             text = util.url_get(
-                tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
+                tool_shed_url, auth=tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
             )
             return dict(revision_update=text)
         except Exception:
@@ -658,6 +670,17 @@ def get_tool_shed_status_for_installed_repository(app, repository):
     except Exception:
         log.exception("Error attempting to get tool shed status for installed repository %s", str(repository.name))
         return {}
+
+
+def get_tool_shed_status_for_installed_repository(app, repository: ToolShedRepository):
+    """
+    Send a request to the tool shed to retrieve information about newer installable repository revisions,
+    current revision updates, whether the repository revision is the latest downloadable revision, and
+    whether the repository has been deprecated in the tool shed.  The received repository is a ToolShedRepository
+    object from Galaxy.
+    """
+    tool_shed_registry = app.tool_shed_registry
+    return get_tool_shed_status_for(tool_shed_registry, repository)
 
 
 def is_tool_shed_client(app):
@@ -748,7 +771,6 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
 
 __all__ = (
     "check_for_updates",
-    "check_or_update_tool_shed_status_for_installed_repository",
     "create_or_update_tool_shed_repository",
     "extract_components_from_tuple",
     "generate_tool_shed_repository_install_dir",

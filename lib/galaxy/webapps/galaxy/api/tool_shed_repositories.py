@@ -1,6 +1,7 @@
 import json
 import logging
 from time import strftime
+from typing import Optional
 
 from paste.httpexceptions import (
     HTTPBadRequest,
@@ -18,13 +19,14 @@ from galaxy import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import CheckForUpdatesResponse
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
 from galaxy.tool_shed.util.repository_util import (
-    check_for_updates,
     get_installed_repository,
     get_installed_tool_shed_repository,
     get_tool_shed_repository_by_id,
@@ -36,9 +38,17 @@ from galaxy.web import (
     require_admin,
     url_for,
 )
-from . import BaseGalaxyAPIController
+from galaxy.webapps.galaxy.api import (
+    BaseGalaxyAPIController,
+    depends,
+    Router,
+)
+from galaxy.webapps.galaxy.services.tool_shed_repositories import ToolShedRepositoriesService
 
 log = logging.getLogger(__name__)
+
+
+router = Router(tags=["tool_shed_repositories"])
 
 
 def get_message_for_no_shed_tool_config():
@@ -349,19 +359,6 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def check_for_updates(self, trans, **kwd):
-        """
-        GET /api/tool_shed_repositories/check_for_updates
-        Check for updates to the specified repository, or all installed repositories.
-
-        :param id: the encoded repository id
-        """
-        repository_id = kwd.get("id", None)
-        message, status = check_for_updates(self.app, trans.install_model, repository_id)
-        return {"status": status, "message": message}
-
-    @require_admin
-    @expose_api
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
         repository_ids = util.listify(kwd.get("repository_ids"))
         if repository_ids:
@@ -474,3 +471,17 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             controller="tool_shed_repositories", action="show", id=trans.security.encode_id(tool_shed_repository.id)
         )
         return tool_shed_repository_dict
+
+
+@router.cbv
+class FastAPIToolShedRepositories:
+    service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService)
+
+    @router.get(
+        "/api/tool_shed_repositories/check_for_updates",
+        summary="Check for updates to the specified repository, or all installed repositories.",
+        response_description="A description of the state and updates message.",
+        require_admin=True,
+    )
+    def check_for_updates(self, id: Optional[DecodedDatabaseIdField] = None) -> CheckForUpdatesResponse:
+        return self.service.check_for_updates(id and int(id))
