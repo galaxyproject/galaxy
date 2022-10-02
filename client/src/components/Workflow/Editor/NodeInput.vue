@@ -10,13 +10,14 @@
 
 <script>
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { reactive, ref } from "vue";
+import { inject, reactive, ref } from "vue";
 
 export default {
     setup(props) {
         const el = ref(null);
         const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
-        return { el, position };
+        const isDragging = inject("isDragging");
+        return { el, position, isDragging };
     },
     props: {
         input: {
@@ -72,11 +73,16 @@ export default {
             return this.input.label || this.input.name;
         },
         terminalClass() {
-            const cls = "terminal input-terminal";
-            if (this.isMultiple) {
-                return `${cls} multiple`;
+            const classes = ["terminal", "input-terminal"];
+            if (this.isDragging) {
+                // TODO: check input compatible
+                classes.push("input-terminal-active");
+                classes.push("can-accept");
             }
-            return cls;
+            if (this.isMultiple) {
+                classes.push("multiple");
+            }
+            return classes;
         },
     },
     beforeDestroy() {

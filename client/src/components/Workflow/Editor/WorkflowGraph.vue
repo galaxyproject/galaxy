@@ -63,11 +63,13 @@ export default {
             transform.k = newTransform.k;
             setScale(transform.k);
         }
+        const isDragging = ref(false);
+        provide("isDragging", isDragging);
         provide("transform", transform);
         const scale = useScale();
         const el = ref(null);
         const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
-        return { el, position, zoomLevel: scale, onTransform, transform, setScale };
+        return { el, position, zoomLevel: scale, onTransform, transform, setScale, isDragging };
     },
     components: {
         D3Zoom,
@@ -125,8 +127,10 @@ export default {
         },
         onStopDragging() {
             this.draggingConnection = null;
+            this.isDragging = false;
         },
         onDragConnector(vector) {
+            this.isDragging = true;
             this.draggingConnection = vector;
         },
         onActivate(nodeId) {
