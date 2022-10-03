@@ -1,7 +1,7 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl
-            :zoom-level="zoomLevel"
+            :zoom-level="scale"
             :pan="transform"
             @onZoom="onZoom"
             @reset-all="onResetAll"
@@ -22,7 +22,7 @@
                         :get-manager="getManager"
                         :activeNodeId="activeNodeId"
                         :root-offset="position"
-                        :scale="zoomLevel"
+                        :scale="scale"
                         @pan-by="onPan"
                         @stopDragging="onStopDragging"
                         @onDragConnector="onDragConnector"
@@ -36,123 +36,101 @@
             :nodes="nodes"
             :steps="steps"
             :root-offset="position"
-            :scale="zoomLevel"
+            :scale="scale"
             :pan="transform"
             @pan-by="onPan"
             @moveTo="onMoveTo" />
     </div>
 </template>
-<script>
+<script setup>
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import WorkflowEdges from "./WorkflowEdges.vue";
 import Minimap from "./Minimap.vue";
-import { reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
 import D3Zoom from "./D3Zoom.vue";
 import { provide } from "vue";
-import { useScale, setScale } from "./composables/useScale";
+import { useScale, setScale, useActiveNodeId, setActiveNodeId } from "./composables/useWorkflowState";
 
-export default {
-    setup() {
-        const transform = reactive({ x: 0, y: 0, k: 1 });
+const props = defineProps({
+    steps: {
+        type: Object,
+        required: true,
+    },
+    getManager: {
+        type: Function,
+        default: null,
+    },
+    datatypesMapper: {
+        type: Object,
+        default: null,
+    },
+    nodes: {
+        type: Object,
+        required: true,
+    },
+});
+const transform = reactive({ x: 0, y: 0, k: 1 });
 
-        function onTransform(newTransform) {
-            transform.x = newTransform.x;
-            transform.y = newTransform.y;
-            transform.k = newTransform.k;
-            setScale(transform.k);
-        }
-        const isDragging = ref(false);
-        provide("isDragging", isDragging);
-        provide("transform", transform);
-        const scale = useScale();
-        const el = ref(null);
-        const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
-        return { el, position, zoomLevel: scale, onTransform, transform, setScale, isDragging };
-    },
-    components: {
-        D3Zoom,
-        WorkflowEdges,
-        WorkflowNode,
-        Minimap,
-        ZoomControl,
-    },
-    data() {
-        return {
-            draggingConnection: null,
-        };
-    },
-    props: {
-        steps: {
-            type: Object,
-            required: true,
-        },
-        getManager: {
-            type: Function,
-            default: null,
-        },
-        datatypesMapper: {
-            type: Object,
-            default: null,
-        },
-        nodes: {
-            type: Object,
-            required: true,
-        },
-    },
-    methods: {
-        onPan(pan) {
-            this.$refs.d3Zoom.panBy(pan);
-        },
-        onZoom(zoomLevel, panTo = null) {
-            this.$refs.d3Zoom.setZoom(zoomLevel);
-            if (panTo) {
-                this.onPan({ x: panTo.x - this.transform.x, y: panTo.y - this.transform.y });
-            }
-            this.setScale(zoomLevel);
-        },
-        onMoveTo(moveTo) {
-            this.$refs.d3Zoom.moveTo(moveTo);
-        },
-        onResetAll() {
-            this.onZoom(1, { x: 0, y: 0 });
-        },
-        onScale(scaleData) {
-            this.pan = {
-                x: scaleData.translateX * scaleData.scale,
-                y: scaleData.translateY * scaleData.scale,
-            };
-            this.setScale(scaleData.scale);
-        },
-        onStopDragging() {
-            this.draggingConnection = null;
-            this.isDragging = false;
-        },
-        onDragConnector(vector) {
-            this.isDragging = true;
-            this.draggingConnection = vector;
-        },
-        onActivate(nodeId) {
-            if (this.activeNodeId != nodeId) {
-                this.$store.commit("workflowState/setActiveNode", nodeId);
-            }
-        },
-        onDeactivate() {
-            this.$store.commit("workflowState/setActiveNode", null);
-        },
-        onRemove(nodeId) {
-            this.$emit("onRemove", nodeId);
-        },
-    },
-    computed: {
-        nodesStyle() {
-            const transform = `translate(${this.transform.x}px, ${this.transform.y}px) scale(${this.transform.k})`;
-            return { transform };
-        },
-        activeNodeId() {
-            return this.$store.getters["workflowState/getActiveNode"];
-        },
-    },
-};
+let draggingConnection = ref(null);
+let isDragging = ref(false);
+provide("isDragging", isDragging);
+provide("transform", transform);
+const scale = useScale();
+const activeNodeId = useActiveNodeId();
+const el = ref(null);
+const d3Zoom = ref(null);
+const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
+
+function onPan(pan) {
+    d3Zoom.value.panBy(pan);
+}
+function onZoom(zoomLevel, panTo = null) {
+    d3Zoom.value.setZoom(zoomLevel);
+    if (panTo) {
+        onPan({ x: panTo.x - this.transform.x, y: panTo.y - this.transform.y });
+    }
+    setScale(zoomLevel);
+}
+function onMoveTo(moveTo) {
+    d3Zoom.value.moveTo(moveTo);
+}
+function onResetAll() {
+    onZoom(1, { x: 0, y: 0 });
+}
+function onStopDragging() {
+    draggingConnection.value = null;
+    isDragging.value = false;
+}
+function onDragConnector(vector) {
+    isDragging.value = true;
+    draggingConnection.value = vector;
+}
+function onActivate(nodeId) {
+    if (activeNodeId != nodeId) {
+        setActiveNodeId(nodeId);
+    }
+}
+function onDeactivate() {
+    setActiveNodeId(null);
+}
+function onRemove(nodeId) {
+    emit("onRemove", nodeId);
+}
+
+function onTransform(newTransform) {
+    transform.x = newTransform.x;
+    transform.y = newTransform.y;
+    transform.k = newTransform.k;
+    setScale(transform.k);
+}
+
+const nodesStyle = computed(() => {
+    return { transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})` };
+});
+
+const emit = defineEmits(["transform", "graph-offset", "onRemove"]);
+emit("transform", transform);
+emit("graph-offset", position);
 </script>

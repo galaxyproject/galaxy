@@ -70,6 +70,8 @@
                     :datatypes-mapper="datatypesMapper"
                     :get-manager="getManager"
                     :nodes="nodes"
+                    @transform="(value) => (transform = value)"
+                    @graph-offset="(value) => (graphOffset = value)"
                     @onUpdate="onUpdate"
                     @onClone="onClone"
                     @onCreate="onInsertTool"
@@ -196,6 +198,7 @@ import MessagesModal from "./MessagesModal";
 import { hide_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import WorkflowGraph from "./WorkflowGraph.vue";
+import { defaultPosition } from "./composables/useDefaultStepPosition";
 
 import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
@@ -270,6 +273,8 @@ export default {
             saveAsName: null,
             saveAsAnnotation: null,
             showSaveAsModal: false,
+            transform: { x: 0, y: 0, k: 1 },
+            graphOffset: { left: 0, top: 0, width: 0 },
         };
     },
     computed: {
@@ -633,9 +638,11 @@ export default {
                 return;
             }
             Vue.set(this.steps, this.nodeIndex++, {
+                id: this.nodeIndex - 1,
                 name: name,
                 content_id: contentId,
                 type: type,
+                position: defaultPosition(this.graphOffset, this.transform),
             });
             this.$store.commit("workflowState/setActiveNode", this.nodeIndex);
         },

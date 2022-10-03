@@ -107,18 +107,17 @@ import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import DraggableWrapper from "./DraggablePan";
 import { ActiveOutputs } from "./modules/outputs";
-import { reactive, ref } from "vue";
+import { inject, reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
 
 Vue.use(BootstrapVue);
-
-const OFFSET_RANGE = 100;
 
 export default {
     setup() {
         const el = ref(null);
         const position = reactive(useElementBounding(el, { windowResize: false }));
-        return { el, position };
+        const transform = inject("transform");
+        return { el, position, transform };
     },
     components: {
         DraggableWrapper,
@@ -253,18 +252,6 @@ export default {
             }
             return { top: this.step.position.top + "px", left: this.step.position.left + "px" };
         },
-        defaultPosition() {
-            const p = document.getElementById("canvas-viewport");
-            const o = document.getElementById("canvas-container");
-            if (p && o) {
-                const el = this.$el;
-                const left =
-                    -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                const top =
-                    -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                return { left, top };
-            }
-        },
     },
     methods: {
         onMoveTo(position, event) {
@@ -384,9 +371,6 @@ export default {
         },
         makeActive() {
             this.$emit("onActivate", this.id);
-        },
-        offsetVaryPosition(offsetRange) {
-            return Math.floor(Math.random() * offsetRange);
         },
     },
     beforeDestroy() {
