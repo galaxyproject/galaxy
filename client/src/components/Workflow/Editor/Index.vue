@@ -307,7 +307,7 @@ export default {
             return this.activeNode && this.activeNode.contentId;
         },
         activeNodeLabel() {
-            return this.activeNode?.label;
+            return this.steps[this.activeNodeId]?.label;
         },
         activeNodeAnnotation() {
             return this.activeNode?.annotation;
@@ -369,6 +369,9 @@ export default {
         hide_modal();
     },
     methods: {
+        onNewSteps(newSteps) {
+            Vue.set(this, "steps", newSteps);
+        },
         onUpdateStep(stepId, step) {
             this.steps[stepId] = step;
         },
@@ -431,6 +434,9 @@ export default {
                 content_id: node.contentId,
                 _: "true",
             }).then((response) => {
+                // TODO: state, inputs and outputs should go to store and data should flow from there,
+                // but complicated by mixing state and presentation details
+                this.steps[node.id].tool_state = response.tool_state;
                 const newData = Object.assign({}, response, node.step);
                 newData.workflow_outputs = newData.outputs.map((o) => {
                     return {
@@ -545,19 +551,24 @@ export default {
             this.$store.commit("workflowState/setActiveNode", null);
             this.showInPanel = "attributes";
         },
+        onWorkflowTextEditor() {
+            this.$store.commit("workflowState/setActiveNode", null);
+            this.showInPanel = "attributes";
+        },
         onAnnotation(nodeId, newAnnotation) {
-            const node = this.nodes[nodeId];
-            node.setAnnotation(newAnnotation);
+            const step = this.steps[nodeId];
+            step.annotation = newAnnotation;
         },
         onSetData(nodeId, newData) {
             const node = this.nodes[nodeId];
             this.lastQueue.enqueue(getModule, newData).then((data) => {
+                // TODO: change data in store, don't change node ...
+                this.steps[nodeId].tool_state = data.tool_state;
                 node.setData(data);
             });
         },
         onLabel(nodeId, newLabel) {
-            const node = this.nodes[nodeId];
-            node.setLabel(newLabel);
+            Vue.set(this.steps[nodeId], "label", newLabel);
         },
         onScrollTo(nodeId) {
             const node = this.nodes[nodeId];

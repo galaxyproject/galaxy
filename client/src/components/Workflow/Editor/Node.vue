@@ -9,7 +9,7 @@
         @pan-by="onPanBy"
         :id="idString"
         :name="name"
-        :node-label="label"
+        :node-label="title"
         :class="classes"
         :style="style">
         <div class="node-header unselectable clearfix">
@@ -177,8 +177,6 @@ export default {
             postJobActions: {},
             activeOutputs: null,
             errors: null,
-            label: null,
-            annotation: null,
             config_form: {},
             showLoading: true,
             highlight: false,
@@ -202,7 +200,7 @@ export default {
     },
     computed: {
         title() {
-            return this.label || this.name;
+            return this.step.label || this.step.name;
         },
         idString() {
             return `wf-node-step-${this.id}`;
@@ -327,14 +325,6 @@ export default {
             this.initData(data);
             this.$emit("onChange");
         },
-        setAnnotation(annotation) {
-            this.annotation = annotation;
-            this.$emit("onChange");
-        },
-        setLabel(label) {
-            this.label = label;
-            this.$emit("onChange");
-        },
         setData(data) {
             this.content_id = data.content_id;
             this.tool_state = data.tool_state;
@@ -352,8 +342,6 @@ export default {
         },
         initData(data) {
             this.uuid = data.uuid;
-            this.annotation = data.annotation;
-            this.label = data.label;
             this.setData(data);
             this.showLoading = false;
         },
