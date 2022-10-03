@@ -22,7 +22,11 @@
             icon="link" />
         <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlEdit)">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item"
+                @keypress="$router.push(urlEdit)"
+                @click.prevent="$router.push(urlEdit)">
                 <span class="fa fa-edit fa-fw mr-1" />
                 <span v-localize>Edit</span>
             </a>
@@ -30,7 +34,11 @@
                 <span class="fa fa-copy fa-fw mr-1" />
                 <span v-localize>Copy</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlInvocations)">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item"
+                @keypress="$router.push(urlInvocations)"
+                @click.prevent="$router.push(urlInvocations)">
                 <span class="fa fa-list fa-fw mr-1" />
                 <span v-localize>Invocations</span>
             </a>
@@ -42,7 +50,11 @@
                 <span class="fa fa-signature fa-fw mr-1" />
                 <span v-localize>Rename</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlShare)">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item"
+                @keypress="$router.push(urlShare)"
+                @click.prevent="$router.push(urlShare)">
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span v-localize>Share</span>
             </a>
