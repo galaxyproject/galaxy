@@ -166,6 +166,7 @@
                                     @onUnhighlight="onUnhighlight"
                                     @onRefactor="onAttemptRefactor"
                                     @onScrollTo="onScrollTo" />
+                                <workflow-text :steps="steps" @new-steps="onNewSteps" />
                             </div>
                         </div>
                     </div>
@@ -198,6 +199,7 @@ import MessagesModal from "./MessagesModal";
 import { hide_modal } from "layout/modal";
 import WorkflowAttributes from "./Attributes";
 import WorkflowGraph from "./WorkflowGraph.vue";
+import WorkflowText from "./WorkflowText";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 
 import Vue from "vue";
@@ -214,6 +216,7 @@ export default {
         WorkflowOptions,
         WorkflowAttributes,
         WorkflowLint,
+        WorkflowText,
         RefactorConfirmationModal,
         MessagesModal,
         WorkflowGraph,
