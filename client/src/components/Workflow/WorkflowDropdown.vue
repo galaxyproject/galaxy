@@ -1,7 +1,6 @@
 <template>
     <div>
         <b-link
-            id="workflow-dropdown"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             aria-haspopup="true"
