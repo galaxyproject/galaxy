@@ -65,7 +65,7 @@
             <loading-span v-if="showLoading" message="Loading details" />
             <node-input
                 v-for="input in inputs"
-                :key="input.name"
+                :key="nodeIOKey(input.name, step.position)"
                 :input="input"
                 :get-node="getNode"
                 :datatypes-mapper="datatypesMapper"
@@ -79,7 +79,7 @@
             <div v-if="showRule" class="rule" />
             <node-output
                 v-for="output in outputs"
-                :key="output.name"
+                :key="nodeIOKey(output.name, step.position)"
                 :output="output"
                 :post-job-actions="postJobActions"
                 :get-node="getNode"
@@ -114,10 +114,11 @@ Vue.use(BootstrapVue);
 
 export default {
     setup() {
+        const nodeIOKey = (key, position) => key + position?.left + position?.right;
         const el = ref(null);
         const position = reactive(useElementBounding(el, { windowResize: false }));
         const transform = inject("transform");
-        return { el, position, transform };
+        return { el, position, transform, nodeIOKey };
     },
     components: {
         DraggableWrapper,
