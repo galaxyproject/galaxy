@@ -4,7 +4,11 @@
             <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
             <p>Please provide a Galaxy workflow export URL or a workflow file.</p>
             <b-form-group label="Archived Workflow URL">
-                <b-form-input id="workflow-import-url-input" v-model="sourceURL" type="url" />
+                <b-form-input
+                    id="workflow-import-url-input"
+                    v-model="sourceURL"
+                    aria-label="Workflow Import URL"
+                    type="url" />
                 If the workflow is accessible via a URL, enter the URL above and click Import.
             </b-form-group>
             <b-form-group label="Archived Workflow File">

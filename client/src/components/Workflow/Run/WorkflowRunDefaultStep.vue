@@ -60,16 +60,16 @@ export default {
             modelInputs: this.model.inputs,
         };
     },
+    computed: {
+        icon() {
+            return WorkflowIcons[this.model.step_type];
+        },
+    },
     watch: {
         validationScrollTo() {
             if (this.validationScrollTo.length > 0) {
                 this.expanded = true;
             }
-        },
-    },
-    computed: {
-        icon() {
-            return WorkflowIcons[this.model.step_type];
         },
     },
     methods: {

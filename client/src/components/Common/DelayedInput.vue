@@ -17,6 +17,8 @@
                 size="sm"
                 :pressed="showAdvanced"
                 :variant="showAdvanced ? 'info' : 'secondary'"
+                :title="titleAdvanced | l"
+                data-description="toggle advanced search"
                 @click="onToggle">
                 <icon v-if="showAdvanced" icon="angle-double-up" />
                 <icon v-else icon="angle-double-down" />
@@ -68,6 +70,7 @@ export default {
             queryTimer: null,
             queryCurrent: null,
             titleClear: "clear search (esc)",
+            titleAdvanced: "toggle advanced search",
         };
     },
     watch: {
