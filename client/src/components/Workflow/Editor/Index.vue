@@ -310,7 +310,7 @@ export default {
             return this.steps[this.activeNodeId]?.label;
         },
         activeNodeAnnotation() {
-            return this.activeNode?.annotation;
+            return this.steps[this.activeNodeId]?.annotation;
         },
         activeNodeConfigForm() {
             return this.activeNode?.config_form;
