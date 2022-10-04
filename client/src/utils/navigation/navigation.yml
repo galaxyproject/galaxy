@@ -173,6 +173,7 @@ history_panel:
       name: '${_} .name'
       blurb: '${_} .not-loading .blurb .value'
       dbkey: '${_} .not-loading .dbkey .value'
+      datatype: '${_} .not-loading .datatype .value'
       info: '${_} .not-loading .info .value'
       peek: '${_} .not-loading .dataset-peek'
       toolhelp_title: '${_} .toolhelp strong'

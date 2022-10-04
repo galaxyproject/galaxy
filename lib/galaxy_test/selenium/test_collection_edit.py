@@ -34,9 +34,10 @@ class CollectionEditTestCase(SeleniumTestCase):
         self.check_current_data_value(dataNew)
         self.wait_for_history()
         self.find_element_by_selector("span.content-title").click()
-        self.wait_for_selector_clickable("div.d-flex.justify-content-between")
-        self.find_element_by_selector("div.d-flex.justify-content-between").click()
-        self.wait_for_selector_visible("span.datatype")
+        self.wait_for_selector_clickable("div.content-item")
+        self.find_element_by_selector("div.content-item").click()
+        item = self.history_panel_item_component(hid=1)
+        item.datatype.wait_for_visible()
         assert self.find_element_by_selector("span.datatype > span").text == dataNew
 
     def create_simple_list_collection(self):
