@@ -870,7 +870,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                 "inputs": [
                     {
                         "name": "default",
-                        "label": "Assign, increase by amount, or decrease by amount?",
+                        "label": "Is this quota a default for a class of users (if yes, what type)?",
                         "options": default_options,
                         "value": default_value,
                         "help": "Warning: Any users or groups associated with this quota will be disassociated.",
