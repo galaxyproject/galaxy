@@ -78,7 +78,7 @@ export default {
         },
         nodeContentId: {
             type: String,
-            default: null,
+            required: false,
         },
         nodeAnnotation: {
             type: String,
@@ -86,7 +86,7 @@ export default {
         },
         nodeLabel: {
             type: String,
-            required: true,
+            required: false,
         },
         nodeType: {
             type: String,
