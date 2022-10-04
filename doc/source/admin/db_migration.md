@@ -34,21 +34,29 @@ optional arguments:
 
 Upgrade to a later version. The revision argument is optional.
 
-If you are upgrading a database that
-has not been version-controlled by Alembic, you should run this command for the fist time without
-the revision argument: `./manage_db.sh upgrade` - this will ensure proper initialization of the
-migration system for your database(s).
-
 ```
 usage: manage_db.sh upgrade [-h] [--sql] [revision]
 
 positional arguments:
-  revision    Revision identifier
+  revision    Revision identifier or release tag
 
 optional arguments:
   -h, --help  show this help message and exit
   --sql       Don't emit SQL to database - dump to standard output/file instead.
 ```
+
+If you are upgrading a database that has not been version-controlled by Alembic, you should run this
+command for the first time without the revision argument: `./manage_db.sh upgrade` - this will ensure
+proper initialization of the migration system for your database(s).
+
+If you are upgrading to a specific release, you may use a release tag as the revision argument:
+
+```
+./manage_db.sh upgrade release_22.05
+./manage_db.sh upgrade 22.05
+```
+
+You can upgrade to releases 22.05 and up.
 
 For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html).
 
@@ -60,12 +68,25 @@ Revert to a previous version.
 usage: manage_db.sh downgrade [-h] [--sql] revision
 
 positional arguments:
-  revision    Revision identifier
+  revision    Revision identifier or release tag
 
 optional arguments:
   -h, --help  show this help message and exit
   --sql       Don't emit SQL to database - dump to standard output/file instead.
 ```
+
+If you are downgrading to a specific release, you may use a release tag as the revision argument:
+
+```
+./manage_db.sh downgrade release_22.01
+./manage_db.sh downgrade 22.01
+```
+
+The oldest release you can downgrade to is 22.01.
+
+*Note that when you downgrade to 22.01, your database should be under version control by
+SQLAlchemy Migrate (the migrations tool used prior to release 22.05). Your database should have a
+table `migrate_version` that contains version 180.*
 
 For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html). 
 Note that in this mode, instead of specifying a revision identifier, you have to specify a range of revisions using the following format: `<from-rev>:<to-ref>`.
@@ -216,25 +237,33 @@ This command is identical to the *upgrade* command in the `manage_db.sh` script.
 
 Upgrade to a later version. The revision argument is optional.
 
-Omitting the revision argument is equivalent to specifying `heads` as the revision identifier; in
-that case, the database(s) will be upgraded to the latest revisions in both branches, *gxy* and
-*tsi*.
-
-If you are upgrading a database that has not been version-controlled by Alembic, you should run this
-command for the fist time without the revision argument: `./db_dev.sh upgrade` - this will ensure
-proper initialization of the migration system for your database(s).
-
-
 ```
 usage: db_dev.sh upgrade [-h] [--sql] [revision]
 
 positional arguments:
-  revision    Revision identifier
+  revision    Revision identifier or release tag
 
 optional arguments:
   -h, --help  show this help message and exit
   --sql       Don't emit SQL to database - dump to standard output/file instead.
 ```
+
+Omitting the revision argument is equivalent to specifying `heads` as the revision identifier; in
+that case, the database(s) will be upgraded to the latest revisions in both branches, *gxy* and
+*tsi*.
+
+If you are upgrading a database that has not been version-controlled by Alembic, you should run this
+command for the first time without the revision argument: `./db_dev.sh upgrade` - this will ensure
+proper initialization of the migration system for your database(s).
+
+If you are upgrading to a specific release, you may use a release tag as the revision argument:
+
+```
+./manage_db.sh upgrade release_22.05
+./manage_db.sh upgrade 22.05
+```
+
+You can upgrade to releases 22.05 and up.
 
 For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html).
 
@@ -248,7 +277,7 @@ Revert to a previous version.
 usage: db_dev.sh downgrade [-h] [--sql] revision
 
 positional arguments:
-  revision    Revision identifier
+  revision    Revision identifier or release tag
 
 optional arguments:
   -h, --help  show this help message and exit
@@ -257,6 +286,20 @@ optional arguments:
 
 Specifying `base` as the revision identifier will downgrade both branches, *gxy* and *tsi*, to their
 initial state prior to any revisions; the `alembic_version` table will be empty.
+
+If you are downgrading to a specific release, you may use a release tag as the revision argument:
+
+```
+./manage_db.sh downgrade release_22.01
+./manage_db.sh downgrade 22.01
+```
+
+The oldest release you can downgrade to is 22.01. Downgrading to 22.01 is the same as specifying
+`base` as the revision identifier.
+
+*Note that when you downgrade to 22.01, your database should be under version control by
+SQLAlchemy Migrate (the migrations tool used prior to release 22.05). Your database should have a
+table `migrate_version` that contains version 180.*
 
 For the `--sql` option, see [Alembic documentation on offline mode](https://alembic.sqlalchemy.org/en/latest/offline.html). 
 Note that in this mode, instead of specifying a revision identifier, you have to specify a range of revisions using the following format: `<from-rev>:<to-ref>`*.
