@@ -2,7 +2,6 @@
 API operations for Workflows
 """
 
-import hashlib
 import json
 import logging
 import os
@@ -37,7 +36,6 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     fetch_job_states,
     invocation_job_source_iter,
-    summarize_job_metrics,
 )
 from galaxy.managers.workflows import (
     MissingToolsException,
@@ -56,7 +54,6 @@ from galaxy.schema.schema import (
     SharingStatus,
     StoreContentSource,
     WorkflowSortByEnum,
-    WriteStoreToPayload,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -64,7 +61,6 @@ from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -96,6 +92,7 @@ from galaxy.webapps.galaxy.services.invocations import (
     InvocationSerializationParams,
     InvocationsService,
     PrepareStoreDownloadPayload,
+    WriteInvocationStoreToPayload,
 )
 from galaxy.webapps.galaxy.services.workflows import (
     WorkflowIndexPayload,
@@ -1000,278 +997,6 @@ class WorkflowsAPIController(
         trans.response.set_content_type("application/pdf")
         return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
 
-    def _generate_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
-        history = workflow_invocation.history
-        workflow = workflow_invocation.workflow
-        stored_workflow = workflow.stored_workflow
-
-        # pull in the license info from workflow if it exists
-        bco_license = ""
-        if workflow.license:
-            bco_license = workflow.license
-
-        # pull in the creator_metadata info from workflow if it exists
-        reviewers: list = []
-        contributors = []
-        if workflow.creator_metadata:
-            for creator in workflow.creator_metadata:
-                if creator["class"] == "Person":
-                    contributor = {}
-                    contributor["contribution"] = ["contributedBy"]
-                    if "name" in creator:
-                        contributor["name"] = creator["name"]
-                    if "email" in creator:
-                        contributor["email"] = creator["email"]
-                    if "identifier" in creator:
-                        contributor["orcid"] = creator["identifier"]
-
-                    contributors.append(contributor)
-
-        encoded_workflow_id = trans.security.encode_id(stored_workflow.id)
-        encoded_history_id = trans.security.encode_id(history.id)
-        dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
-
-        spec_version = kwd.get("spec_version", "https://w3id.org/ieee/ieee-2791-schema/2791object.json")
-
-        for i, w in enumerate(reversed(stored_workflow.workflows)):
-            if workflow == w:
-                current_version = i
-
-        provenance_domain = {
-            "name": workflow.name,
-            "version": str(current_version) + ".0",
-            "review": reviewers,
-            "created": workflow_invocation.create_time.isoformat(),
-            "modified": workflow_invocation.update_time.isoformat(),
-            "contributors": contributors,
-            "license": bco_license,
-        }
-
-        keywords = []
-        for tag in stored_workflow.tags:
-            keywords.append(tag.user_tname)
-        for tag in history.tags:
-            if tag.user_tname not in keywords:
-                keywords.append(tag.user_tname)
-
-        metrics = {}
-        tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
-        for step in workflow_invocation.steps:
-            if step.workflow_step.type == "tool":
-                workflow_outputs_list, output_list, input_list = set(), [], []
-                for wo in step.workflow_step.workflow_outputs:
-                    workflow_outputs_list.add(wo.output_name)
-                for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
-                    for job_input in job.input_datasets:
-                        if hasattr(job_input.dataset, "dataset_id"):
-                            encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
-                            input_obj = {
-                                # TODO: that should maybe be a step prefix + element identifier where appropriate.
-                                "filename": job_input.dataset.name,
-                                "uri": url_for(
-                                    "history_content",
-                                    history_id=encoded_history_id,
-                                    id=encoded_dataset_id,
-                                    qualified=True,
-                                ),
-                                "access_time": job_input.dataset.create_time.isoformat(),
-                            }
-                            input_list.append(input_obj)
-
-                    for job_output in job.output_datasets:
-                        if hasattr(job_output.dataset, "dataset_id"):
-                            encoded_dataset_id = trans.security.encode_id(job_output.dataset.dataset_id)
-                            output_obj = {
-                                "filename": job_output.dataset.name,
-                                "uri": url_for(
-                                    "history_content",
-                                    history_id=encoded_history_id,
-                                    id=encoded_dataset_id,
-                                    qualified=True,
-                                ),
-                                "access_time": job_output.dataset.create_time.isoformat(),
-                            }
-                            output_list.append(output_obj)
-
-                            if job_output.name in workflow_outputs_list:
-                                output = {
-                                    "mediatype": job_output.dataset.extension,
-                                    "uri": {
-                                        "filename": job_output.dataset.name,
-                                        "uri": url_for(
-                                            "history_content",
-                                            history_id=encoded_history_id,
-                                            id=encoded_dataset_id,
-                                            qualified=True,
-                                        ),
-                                        "access_time": job_output.dataset.create_time.isoformat(),
-                                    },
-                                }
-                                output_subdomain.append(output)
-                workflow_step = step.workflow_step
-                step_index = workflow_step.order_index
-                current_step = dict_workflow["steps"][str(step_index)]
-                pipeline_step = {
-                    "step_number": step_index,
-                    "name": current_step["name"],
-                    "description": current_step["annotation"],
-                    "version": current_step["tool_version"],
-                    "prerequisite": kwd.get("prerequisite", []),
-                    "input_list": input_list,
-                    "output_list": output_list,
-                }
-                pipeline_steps.append(pipeline_step)
-                try:
-                    software_prerequisite = {
-                        "name": current_step["content_id"],
-                        "version": current_step["tool_version"],
-                        "uri": {"uri": current_step["content_id"], "access_time": current_step["uuid"]},
-                    }
-                    if software_prerequisite["uri"]["uri"] not in tools:
-                        software_prerequisites.append(software_prerequisite)
-                        tools.append(software_prerequisite["uri"]["uri"])
-                except Exception:
-                    continue
-
-            if step.workflow_step.type == "data_input" and step.output_datasets:
-                for output_assoc in step.output_datasets:
-                    encoded_dataset_id = trans.security.encode_id(output_assoc.dataset_id)
-                    input_obj = {
-                        "filename": step.workflow_step.label,
-                        "uri": url_for(
-                            "history_content", history_id=encoded_history_id, id=encoded_dataset_id, qualified=True
-                        ),
-                        "access_time": step.workflow_step.update_time.isoformat(),
-                    }
-                    input_subdomain.append(input_obj)
-
-            if step.workflow_step.type == "data_collection_input" and step.output_dataset_collections:
-                for output_dataset_collection_association in step.output_dataset_collections:
-                    encoded_dataset_id = trans.security.encode_id(
-                        output_dataset_collection_association.dataset_collection_id
-                    )
-                    input_obj = {
-                        "filename": step.workflow_step.label,
-                        "uri": url_for(
-                            "history_content",
-                            history_id=encoded_history_id,
-                            id=encoded_dataset_id,
-                            type="dataset_collection",
-                            qualified=True,
-                        ),
-                        "access_time": step.workflow_step.update_time.isoformat(),
-                    }
-                    input_subdomain.append(input_obj)
-
-        usability_domain = []
-        for a in stored_workflow.annotations:
-            usability_domain.append(a.annotation)
-        for h in history.annotations:
-            usability_domain.append(h.annotation)
-
-        parametric_domain = []
-        for inv_step in workflow_invocation.steps:
-            try:
-                for k, v in inv_step.workflow_step.tool_inputs.items():
-                    param, value, step = k, v, inv_step.workflow_step.order_index
-                    parametric_domain.append({"param": str(param), "value": str(value), "step": str(step)})
-            except Exception:
-                continue
-
-        execution_domain = {
-            "script": [{"uri": {"uri": url_for("workflows", encoded_workflow_id=encoded_workflow_id, qualified=True)}}],
-            "script_driver": "Galaxy",
-            "software_prerequisites": software_prerequisites,
-            "external_data_endpoints": [{"name": "Access to Galaxy", "url": url_for("/", qualified=True)}],
-            "environment_variables": kwd.get("environment_variables", {}),
-        }
-
-        extension = [
-            {
-                "extension_schema": "https://raw.githubusercontent.com/biocompute-objects/extension_domain/1.2.0/galaxy/galaxy_extension.json",
-                "galaxy_extension": {
-                    "galaxy_url": url_for("/", qualified=True),
-                    "galaxy_version": VERSION,
-                    # TODO:
-                    # Extend this definition to include more information that is significan for a galaxy workflow/invocation?
-                    # 'aws_estimate': aws_estimate,
-                    # 'job_metrics': metrics
-                },
-            }
-        ]
-
-        error_domain = {
-            "empirical_error": kwd.get("empirical_error", {}),
-            "algorithmic_error": kwd.get("algorithmic_error", {}),
-        }
-
-        bco_dict = {
-            "provenance_domain": provenance_domain,
-            "usability_domain": usability_domain,
-            "extension_domain": extension,
-            "description_domain": {
-                "keywords": keywords,
-                "xref": kwd.get("xref", []),
-                "platform": ["Galaxy"],
-                "pipeline_steps": pipeline_steps,
-            },
-            "execution_domain": execution_domain,
-            "parametric_domain": parametric_domain,
-            "io_domain": {
-                "input_subdomain": input_subdomain,
-                "output_subdomain": output_subdomain,
-            },
-            "error_domain": error_domain,
-        }
-        # Generate etag from the BCO excluding object_id and spec_version, as
-        # specified in https://opensource.ieee.org/2791-object/ieee-2791-schema/-/blob/master/2791object.json
-        etag = hashlib.sha256(json.dumps(bco_dict, sort_keys=True).encode()).hexdigest()
-        bco_dict.update(
-            {
-                "object_id": url_for(
-                    controller=f"api/invocations/{invocation_id}", action="biocompute", qualified=True
-                ),
-                "spec_version": spec_version,
-                "etag": etag,
-            }
-        )
-        return bco_dict
-
-    @expose_api
-    def export_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/invocations/{invocations_id}/biocompute
-
-        Return a BioCompute Object for the workflow invocation.
-
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-        """
-        return self._generate_invocation_bco(trans, invocation_id, **kwd)
-
-    @expose_api_raw
-    def download_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/invocations/{invocations_id}/biocompute/download
-
-        Returns a selected BioCompute Object as a file for download (HTTP
-        headers configured with filename and such).
-
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-        """
-        ret_dict = self._generate_invocation_bco(trans, invocation_id, **kwd)
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="bco_{invocation_id}.json"'
-        trans.response.set_content_type("application/json")
-        return format_return_as_json(ret_dict, pretty=True)
-
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):
         """
@@ -1685,7 +1410,7 @@ class FastAPIWorkflows:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-        payload: WriteStoreToPayload = Body(...),
+        payload: WriteInvocationStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(
             trans,

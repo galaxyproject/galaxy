@@ -1902,9 +1902,6 @@ outer_input:
                 "workflow_step_label"
             ] == "random_lines"
 
-            bco = self.workflow_populator.get_biocompute_object(invocation_id)
-            self.workflow_populator.validate_biocompute_object(bco)
-
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
         with self.dataset_populator.test_history() as history_id:
@@ -2207,15 +2204,6 @@ steps:
             assert "\n```galaxy\nhistory_dataset_display(history_dataset_id=" in markdown_content
             assert "## Workflow Inputs" in markdown_content
             assert "## About This Report" in markdown_content
-
-    @skip_without_tool("cat1")
-    def test_export_invocation_bco(self):
-        with self.dataset_populator.test_history() as history_id:
-            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
-            invocation_id = summary.invocation_id
-            bco = self.workflow_populator.get_biocompute_object(invocation_id)
-            self.workflow_populator.validate_biocompute_object(bco)
-            assert bco["provenance_domain"]["name"] == "Simple Workflow"
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):

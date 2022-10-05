@@ -37,6 +37,7 @@ from galaxy.model import (
     DatasetInstance,
     Job,
 )
+from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
@@ -1332,6 +1333,28 @@ class StoreExportPayload(Model):
         default=False,
         title="Include hidden",
         description="Include file contents for hidden datasets (if include_files is True).",
+    )
+
+
+class BcoGenerationParametersMixin(BaseModel):
+    bco_merge_history_metadata: bool = Field(
+        default=False, description="When reading tags/annotations to generate BCO object include history metadata."
+    )
+    bco_override_environment_variables: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Override environment variables for 'execution_domain' when generating BioCompute object.",
+    )
+    bco_override_empirical_error: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Override empirical error for 'error domain' when generating BioCompute object.",
+    )
+    bco_override_algorithmic_error: Optional[Dict[str, str]] = Field(
+        default=None,
+        description="Override algorithmic error for 'error domain' when generating BioCompute object.",
+    )
+    bco_override_xref: Optional[List[XrefItem]] = Field(
+        default=None,
+        description="Override xref for 'description domain' when generating BioCompute object.",
     )
 
 
