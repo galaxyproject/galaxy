@@ -18,7 +18,7 @@ from galaxy.model import (
     Task,
     User,
 )
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import BaseObjectStore
 from galaxy.tools import ToolBox
 from galaxy.util.bunch import Bunch
 from galaxy.util.unittest import TestCase
@@ -52,7 +52,7 @@ class AbstractTestCases:
 
             self.app.toolbox = cast(ToolBox, MockToolbox(MockTool(self)))
             self.working_directory = os.path.join(self.test_directory, "working")
-            self.app.object_store = cast(ObjectStore, MockObjectStore(self.working_directory))
+            self.app.object_store = cast(BaseObjectStore, MockObjectStore(self.working_directory))
 
             self.queue = MockJobQueue(self.app)
             self.job = job

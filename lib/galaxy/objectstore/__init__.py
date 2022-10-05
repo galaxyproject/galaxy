@@ -16,6 +16,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Tuple,
     Type,
 )
 
@@ -1089,8 +1090,8 @@ class HierarchicalObjectStore(NestedObjectStore):
         self.backends[0].create(obj, **kwargs)
 
 
-def type_to_object_store_class(store, fsmon=False):
-    objectstore_class: Type[ObjectStore]
+def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
+    objectstore_class: Type[BaseObjectStore]
     objectstore_constructor_kwds = {}
     if store == "disk":
         objectstore_class = DiskObjectStore

@@ -216,6 +216,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     toolbox_search: ToolBoxSearch
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
+    object_store: BaseObjectStore
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
