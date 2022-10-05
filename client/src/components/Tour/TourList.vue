@@ -47,7 +47,7 @@ export default {
     },
     created() {
         this.root = getAppRoot();
-        urlData({ url: `api/tours` })
+        urlData({ url: `/api/tours` })
             .then((response) => {
                 this.tours = response;
             })

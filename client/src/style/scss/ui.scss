@@ -116,15 +116,16 @@ $ui-margin-horizontal-large: $margin-v * 2;
     .ui-thumbnails-item {
         cursor: pointer;
         .ui-thumbnails-image {
-            padding: 10px;
-            width: 100px;
-            height: 86px;
+            padding: 1rem;
+            width: 5rem;
+            height: 4.3rem;
         }
         .ui-thumbnails-icon {
-            width: 100px;
-            height: 86px;
-            font-size: 4em;
-            padding: 20px 26px;
+            padding: 1rem;
+            width: 5rem;
+            height: 4.3rem;
+            font-size: 2em;
+            text-align: center;
             color: $text-color;
         }
         .ui-thumbnails-text {

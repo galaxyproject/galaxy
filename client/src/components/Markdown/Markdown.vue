@@ -23,11 +23,11 @@
                 <span class="float-left font-weight-light mb-3">
                     <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
                     ><br />
-                    <small>Username: {{ markdownConfig.username }}</small>
+                    <small>Created by {{ markdownConfig.username }}</small>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }}</div>
+                <div class="float-left m-1">Published with Galaxy {{ getVersion }} on {{ getTime }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
@@ -206,20 +206,29 @@ export default {
         },
     },
     watch: {
-        markdownConfig: function (config) {
-            const markdown = config.markdown;
-            this.markdownErrors = config.errors || [];
-            this.markdownObjects = this.splitMarkdown(markdown);
-            this.historyDatasets = config.history_datasets || {};
-            this.histories = config.histories || {};
-            this.historyDatasetCollections = config.history_dataset_collections || {};
-            this.workflows = config.workflows || {};
-            this.jobs = config.jobs || {};
-            this.invocations = config.invocations || {};
-            this.loading = false;
+        markdownConfig() {
+            this.initConfig();
         },
     },
+    created() {
+        this.initConfig();
+    },
     methods: {
+        initConfig() {
+            if (Object.keys(this.markdownConfig).length) {
+                const config = this.markdownConfig;
+                const markdown = config.content || config.markdown;
+                this.markdownErrors = config.errors || [];
+                this.markdownObjects = this.splitMarkdown(markdown);
+                this.historyDatasets = config.history_datasets || {};
+                this.histories = config.histories || {};
+                this.historyDatasetCollections = config.history_dataset_collections || {};
+                this.workflows = config.workflows || {};
+                this.jobs = config.jobs || {};
+                this.invocations = config.invocations || {};
+                this.loading = false;
+            }
+        },
         splitMarkdown(markdown) {
             const sections = [];
             let digest = markdown;

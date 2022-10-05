@@ -28,7 +28,7 @@ export default {
     },
     methods: {
         async getState() {
-            this.editorConfig = await urlData({ url: `workflow/editor?id=${this.workflowId}` });
+            this.editorConfig = await urlData({ url: `/workflow/editor?id=${this.workflowId}` });
         },
     },
 };

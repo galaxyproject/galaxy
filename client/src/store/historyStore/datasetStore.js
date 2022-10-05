@@ -16,7 +16,7 @@ const getters = {
 const actions = {
     fetchDataset: async ({ state, commit }, { id }) => {
         if (!state.items[id]) {
-            const url = `api/datasets/${id}`;
+            const url = `/api/datasets/${id}`;
             const dataset = await urlData({ url });
             commit("saveDataset", { id, dataset });
         }

@@ -1,15 +1,17 @@
 <template>
     <iframe
         :id="id"
+        :name="id"
+        :src="srcWithRoot"
         frameborder="0"
         class="center-frame"
         title="galaxy frame"
-        :name="id"
-        :src="srcWithRoot"
+        width="100%"
+        height="100%"
         @load="onLoad" />
 </template>
 <script>
-import { getAppRoot } from "onload";
+import { safePath } from "utils/redirect";
 export default {
     props: {
         id: {
@@ -23,14 +25,11 @@ export default {
     },
     computed: {
         srcWithRoot() {
-            if (this.src) {
-                return `${getAppRoot()}${this.src}`;
-            }
-            return undefined;
+            return safePath(this.src);
         },
     },
     methods: {
-        onLoad: function (ev) {
+        onLoad(ev) {
             const iframe = ev.currentTarget;
             const location = iframe.contentWindow && iframe.contentWindow.location;
             try {

@@ -142,51 +142,51 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     title: "Reset passwords",
-                    url: `admin/reset_user_password?id=${route.query.id}`,
+                    url: `/admin/reset_user_password?id=${route.query.id}`,
                     icon: "fa-user",
                     submitTitle: "Save new password",
-                    redirect: "admin/users",
+                    redirect: "/admin/users",
                 }),
             },
             {
                 path: "form/manage_roles_and_groups_for_user",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
+                    url: `/admin/manage_roles_and_groups_for_user?id=${route.query.id}`,
                     icon: "fa-users",
-                    redirect: "admin/users",
+                    redirect: "/admin/users",
                 }),
             },
             {
                 path: "form/manage_users_and_groups_for_role",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "admin/users",
+                    url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
+                    redirect: "/admin/users",
                 }),
             },
             {
                 path: "form/manage_users_and_roles_for_group",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_users_and_roles_for_group?id=${route.query.id}`,
-                    redirect: "admin/users",
+                    url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
+                    redirect: "/admin/users",
                 }),
             },
             {
                 path: "form/manage_users_and_groups_for_quota",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/manage_users_and_groups_for_quota?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/manage_users_and_groups_for_quota?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/create_role",
                 component: FormGeneric,
                 props: {
-                    url: "admin/create_role",
-                    redirect: "admin/roles",
+                    url: "/admin/create_role",
+                    redirect: "/admin/roles",
                 },
             },
             {
@@ -201,64 +201,64 @@ export default [
                 path: "form/create_quota",
                 component: FormGeneric,
                 props: {
-                    url: "admin/create_quota",
-                    redirect: "admin/quotas",
+                    url: "/admin/create_quota",
+                    redirect: "/admin/quotas",
                 },
             },
             {
                 path: "form/rename_role",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/rename_role?id=${route.query.id}`,
-                    redirect: "admin/roles",
+                    url: `/admin/rename_role?id=${route.query.id}`,
+                    redirect: "/admin/roles",
                 }),
             },
             {
                 path: "form/rename_group",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/rename_group?id=${route.query.id}`,
-                    redirect: "admin/groups",
+                    url: `/admin/rename_group?id=${route.query.id}`,
+                    redirect: "/admin/groups",
                 }),
             },
             {
                 path: "form/rename_quota",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/rename_quota?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/rename_quota?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/edit_quota",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/edit_quota?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/edit_quota?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/set_quota_default",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `admin/set_quota_default?id=${route.query.id}`,
-                    redirect: "admin/quotas",
+                    url: `/admin/set_quota_default?id=${route.query.id}`,
+                    redirect: "/admin/quotas",
                 }),
             },
             {
                 path: "form/create_form",
                 component: FormGeneric,
                 props: {
-                    url: "forms/create_form",
-                    redirect: "admin/forms",
+                    url: "/forms/create_form",
+                    redirect: "/admin/forms",
                 },
             },
             {
                 path: "form/edit_form",
                 component: FormGeneric,
                 props: (route) => ({
-                    url: `forms/edit_form?id=${route.query.id}`,
-                    redirect: "admin/forms",
+                    url: `/forms/edit_form?id=${route.query.id}`,
+                    redirect: "/admin/forms",
                 }),
             },
         ],
