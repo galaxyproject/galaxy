@@ -93,7 +93,7 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
     def _test_export_import_invocation_collection_input(self, use_uris, model_store_format="tgz"):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_output_collections(history_id)
-            invocation_details = self._export_and_import_worklflow_invocation(
+            invocation_details = self._export_and_import_workflow_invocation(
                 summary, use_uris, model_store_format=model_store_format
             )
             output_collections = invocation_details["output_collections"]
@@ -110,7 +110,7 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
     def _test_export_import_invocation_with_input_as_output(self, use_uris):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_inputs_as_outputs(history_id)
-            invocation_details = self._export_and_import_worklflow_invocation(summary, use_uris)
+            invocation_details = self._export_and_import_workflow_invocation(summary, use_uris)
             output_values = invocation_details["output_values"]
             assert len(output_values) == 1
             assert "wf_output_param" in output_values
@@ -126,10 +126,10 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
         # Run this to ensure order indices are preserved.
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
-            invocation_details = self._export_and_import_worklflow_invocation(summary, use_uris)
+            invocation_details = self._export_and_import_workflow_invocation(summary, use_uris)
             self._rerun_imported_workflow(summary, invocation_details)
 
-    def _export_and_import_worklflow_invocation(
+    def _export_and_import_workflow_invocation(
         self, summary: RunJobsSummary, use_uris: bool = True, model_store_format="tgz"
     ) -> Dict[str, Any]:
         invocation_id = summary.invocation_id
