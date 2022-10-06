@@ -166,13 +166,6 @@ class InstalledRepositoryGrid(grids.Grid):
             target="center",
             url_args=dict(controller="admin_toolshed", action="restore_repository"),
         ),
-        grids.GridOperation(
-            label="Purge",
-            condition=(lambda item: item.is_new),
-            allow_multiple=False,
-            target="center",
-            url_args=dict(controller="admin_toolshed", action="purge_repository"),
-        ),
     ]
     default_filter = dict(deleted="False")
     num_rows_per_page = 50
