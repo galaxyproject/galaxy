@@ -6,6 +6,6 @@
         "vis": "^4.21.0"
     },
     "scripts": {
-        "build": "mkdir -p static/dist && cp node_modules/vis/vis.min.js node_modules/vis/vis.min.css static/dist"
+        "build": "mkdir -p static/dist && cp node_modules/vis/dist/vis.min.js node_modules/vis/dist/vis.min.css static/dist"
     }
 }
