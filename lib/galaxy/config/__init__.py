@@ -797,10 +797,9 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             with open(json_file) as f:
                 extra_info = json.load(f)
         except OSError:
-            log.info("Galaxy extra version JSON file %s not loaded.", json_file)
+            log.debug("Galaxy extra version JSON file %s not loaded.", json_file)
         else:
             self.version_extra = extra_info
-
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))
         if not self.database_connection:  # Provide default if not supplied by user
