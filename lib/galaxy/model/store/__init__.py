@@ -71,6 +71,7 @@ from galaxy.schema.bco import (
     UsabilityDomain,
     XrefItem,
 )
+from galaxy.schema.bco.io_domain import Uri
 from galaxy.schema.bco.util import (
     extension_domains,
     galaxy_execution_domain,
@@ -2286,6 +2287,9 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
         workflow = workflow_invocation.workflow
         stored_workflow = workflow.stored_workflow
 
+        def get_dataset_url(encoded_dataset_id: str):
+            return f"{export_options.galaxy_url}api/datasets/{encoded_dataset_id}/display"
+
         # pull in the creator_metadata info from workflow if it exists
         contributors = get_contributors(workflow.creator_metadata)
         provenance_domain = ProvenanceDomain(
@@ -2312,7 +2316,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
         input_subdomain_items: List[InputSubdomainItem] = []
         output_subdomain_items: List[OutputSubdomainItem] = []
         for step in workflow_invocation.steps:
-            software_prerequisite_tracker.register_step(step)
+            software_prerequisite_tracker.register_step(step.workflow_step)
             if step.workflow_step.type == "tool":
                 workflow_outputs_list = set()
                 output_list: List[DescriptionDomainUri] = []
@@ -2323,7 +2327,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                     for job_input in job.input_datasets:
                         if hasattr(job_input.dataset, "dataset_id"):
                             encoded_dataset_id = self.app.security.encode_id(job_input.dataset.dataset_id)
-                            url = f"{export_options.galaxy_url}/api/datasets/{encoded_dataset_id}/display"
+                            url = get_dataset_url(encoded_dataset_id)
                             input_uri_obj = DescriptionDomainUri(
                                 # TODO: that should maybe be a step prefix + element identifier where appropriate.
                                 filename=job_input.dataset.name,
@@ -2335,7 +2339,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                     for job_output in job.output_datasets:
                         if hasattr(job_output.dataset, "dataset_id"):
                             encoded_dataset_id = self.app.security.encode_id(job_output.dataset.dataset_id)
-                            url = f"{export_options.galaxy_url}/api/datasets/{encoded_dataset_id}/display"
+                            url = get_dataset_url(encoded_dataset_id)
                             output_obj = DescriptionDomainUri(
                                 filename=job_output.dataset.name,
                                 uri=url,
@@ -2358,7 +2362,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                 pipeline_step = PipelineStep(
                     step_number=step_index,
                     name=workflow_step.label,
-                    description=workflow_step.annotation,
+                    description="\n".join(workflow_step.annotations),
                     version=workflow_step.tool_version,
                     prerequisite=[],
                     input_list=input_list,
@@ -2369,11 +2373,13 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
             if step.workflow_step.type == "data_input" and step.output_datasets:
                 for output_assoc in step.output_datasets:
                     encoded_dataset_id = self.app.security.encode_id(output_assoc.dataset_id)
-                    url = f"{export_options.galaxy_url}/api/datasets/{encoded_dataset_id}/display"
+                    url = get_dataset_url(encoded_dataset_id)
                     input_obj = InputSubdomainItem(
-                        filename=step.workflow_step.label,
-                        uri=url,
-                        access_time=step.workflow_step.update_time.isoformat(),
+                        uri=Uri(
+                            uri=url,
+                            filename=step.workflow_step.label,
+                            access_time=step.workflow_step.update_time.isoformat(),
+                        ),
                     )
                     input_subdomain_items.append(input_obj)
 
@@ -2382,11 +2388,13 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                     encoded_dataset_id = self.app.security.encode_id(
                         output_dataset_collection_association.dataset_collection_id
                     )
-                    url = f"{export_options.galaxy_url}/TODO/{encoded_dataset_id}"
+                    url = f"{export_options.galaxy_url}TODO/{encoded_dataset_id}"
                     input_obj = InputSubdomainItem(
-                        filename=step.workflow_step.label,
-                        uri=url,
-                        access_time=step.workflow_step.update_time.isoformat(),
+                        uri=Uri(
+                            uri=url,
+                            filename=step.workflow_step.label,
+                            access_time=step.workflow_step.update_time.isoformat(),
+                        ),
                     )
                     input_subdomain_items.append(input_obj)
 
@@ -2441,7 +2449,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
             usability_domain=usability_domain,
         )
         encoded_invocation_id = self.app.security.encode_id(workflow_invocation.id)
-        url = f"{export_options.galaxy_url}/api/invocations/{encoded_invocation_id}"
+        url = f"{export_options.galaxy_url}api/invocations/{encoded_invocation_id}"
         return core, url
 
 
