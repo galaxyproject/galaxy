@@ -11,13 +11,6 @@ def appconfig():
     return config.GalaxyAppConfiguration(override_tempdir=False)
 
 
-@pytest.fixture
-def mock_config_file(monkeypatch):
-    # Set this to return None to force the creation of base config directories
-    # in _set_config_directories(). Used to test the values of these directories only.
-    monkeypatch.setattr(config, "find_config_file", lambda x: None)
-
-
 def test_root(appconfig):
     assert appconfig.root == os.path.abspath(".")
 
@@ -31,7 +24,7 @@ def test_common_base_config(appconfig):
     assert appconfig.sample_config_dir == expected_path
 
 
-def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
+def test_base_config_if_running_from_source(monkeypatch):
     # Simulated condition: running from source, config_file is None.
     monkeypatch.setattr(config, "running_from_source", True)
     appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
@@ -41,7 +34,7 @@ def test_base_config_if_running_from_source(monkeypatch, mock_config_file):
     assert appconfig.managed_config_dir == appconfig.config_dir
 
 
-def test_base_config_if_running_not_from_source(monkeypatch, mock_config_file):
+def test_base_config_if_running_not_from_source(monkeypatch):
     # Simulated condition: running not from source, config_file is None.
     monkeypatch.setattr(config, "running_from_source", False)
     appconfig = config.GalaxyAppConfiguration(override_tempdir=False)
