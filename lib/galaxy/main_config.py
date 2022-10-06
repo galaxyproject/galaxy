@@ -24,17 +24,17 @@ def default_relative_config_paths_for(app_name: str) -> List[str]:
     return paths
 
 
-def absolute_config_path(path, galaxy_root):
-    if path and not os.path.isabs(path):
+def absolute_config_path(path, galaxy_root: Optional[str]) -> Optional[str]:
+    if path and not os.path.isabs(path) and galaxy_root:
         path = os.path.join(galaxy_root, path)
     return path
 
 
-def config_is_ini(config_file):
-    return config_file and (config_file.endswith(".ini") or config_file.endswith(".ini.sample"))
+def config_is_ini(config_file: Optional[str]) -> bool:
+    return bool(config_file and (config_file.endswith(".ini") or config_file.endswith(".ini.sample")))
 
 
-def find_config(supplied_config, galaxy_root, app_name="galaxy"):
+def find_config(supplied_config: Optional[str], galaxy_root: Optional[str], app_name: str = "galaxy") -> Optional[str]:
     if supplied_config:
         return supplied_config
 
