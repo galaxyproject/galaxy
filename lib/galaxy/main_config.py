@@ -17,7 +17,11 @@ DEFAULT_CONFIG_SECTION = "galaxy"
 
 
 def default_relative_config_paths_for(app_name: str) -> List[str]:
-    return [f"config/{app_name}.yml", f"config/{app_name}.ini", "universe_wsgi.ini", f"config/{app_name}.yml.sample"]
+    paths = [f"config/{app_name}.yml", f"config/{app_name}.ini", "universe_wsgi.ini"]
+    # Do not load sample config for galaxy
+    if app_name != "galaxy":
+        paths.append(f"config/{app_name}.yml.sample")
+    return paths
 
 
 def absolute_config_path(path, galaxy_root):
@@ -37,15 +41,12 @@ def find_config(supplied_config, galaxy_root, app_name="galaxy"):
     if galaxy_root is None:
         return os.path.abspath(f"{app_name}.yml")
 
-    # If not explicitly supplied an config, check galaxy.ini and then
-    # just resort to sample if that has not been configured.
-    guess = None
-    for guess in default_relative_config_paths_for(app_name):
-        config_path = os.path.join(galaxy_root, guess)
+    for filename in default_relative_config_paths_for(app_name):
+        config_path = os.path.join(galaxy_root, filename)
         if os.path.exists(config_path):
             return config_path
 
-    return guess
+    return None
 
 
 class WebappSetupProps(NamedTuple):
@@ -84,7 +85,7 @@ class WebappConfigResolver:
 
         return WebappConfig(global_conf=global_conf, load_app_kwds=self.app_kwds)
 
-    def _resolve_config_file_path(self) -> str:
+    def _resolve_config_file_path(self) -> Optional[str]:
         config_file = self.app_kwds.get("config_file")
         if not config_file and os.environ.get(self.props.env_config_file):
             config_file = os.path.abspath(os.environ[self.props.env_config_file])
@@ -94,9 +95,6 @@ class WebappConfigResolver:
             config_file = absolute_config_path(config_file, galaxy_root=galaxy_root)
         else:
             config_file = find_config_file([self.props.app_name])
-
-        if not config_file or not os.path.exists(config_file):
-            raise FileNotFoundError(f"Can not find a configuration file for {self.props.app_name}")
         return config_file
 
     def _resolve_section_name(self) -> str:
