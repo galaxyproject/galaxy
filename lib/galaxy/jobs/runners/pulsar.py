@@ -9,6 +9,10 @@ import os
 import re
 import subprocess
 from time import sleep
+from typing import (
+    Any,
+    Dict,
+)
 
 import packaging.version
 import pulsar.core
@@ -420,20 +424,22 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 guest_ports=job_wrapper.guest_ports,
                 tool_directory_required_files=tool_directory_required_files,
             )
-            job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
-            log.info(f"Pulsar job submitted with job_id {job_id}")
+            external_job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
+            log.info(f"Pulsar job submitted with job_id {external_job_id}")
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
             # params from the Pulsar client.
             # Flush with change_state.
-            job_wrapper.set_job_destination(job_destination, external_id=job_id, flush=False, job=job)
+            job_wrapper.set_job_destination(job_destination, external_id=external_job_id, flush=False, job=job)
             job_wrapper.change_state(model.Job.states.QUEUED, job=job)
         except Exception:
             job_wrapper.fail("failure running job", exception=True)
             log.exception("failure running job %d", job_wrapper.job_id)
             return
 
-        pulsar_job_state = AsynchronousJobState(job_wrapper=job_wrapper, job_id=job_id, job_destination=job_destination)
+        pulsar_job_state = AsynchronousJobState(
+            job_wrapper=job_wrapper, job_id=external_job_id, job_destination=job_destination
+        )
         pulsar_job_state.old_state = True
         pulsar_job_state.running = False
         self.monitor_job(pulsar_job_state)
@@ -584,7 +590,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def get_client_from_state(self, job_state):
         job_destination_params = job_state.job_destination.params
-        job_id = job_state.job_id
+        job_id = job_state.job_wrapper.job_id  # we want the Galaxy ID here, job_state.job_id is the external one.
         return self.get_client(job_destination_params, job_id)
 
     def get_client(self, job_destination_params, job_id, env=None):
@@ -910,6 +916,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
 
     def __async_update(self, full_status):
         galaxy_job_id = None
+        remote_job_id = None
         try:
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
@@ -924,7 +931,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
-            log.exception("Failed to update Pulsar job status for job_id %s", galaxy_job_id)
+            log.exception("Failed to update Pulsar job status for job_id (%s/%s)" % (galaxy_job_id, remote_job_id))
             raise
             # Nothing else to do? - Attempt to fail the job?
 
@@ -954,21 +961,20 @@ class PulsarMQJobRunner(PulsarJobRunner):
     )
 
 
-KUBERNETES_DESTINATION_DEFAULTS = {
+DEFAULT_PULSAR_CONTAINER = "galaxy/pulsar-pod-staging:0.15.0.1"
+COEXECUTION_DESTENTATION_DEFAULTS = {
     "default_file_action": "remote_transfer",
     "rewrite_parameters": "true",
     "jobs_directory": "/pulsar_staging",
-    "pulsar_container_image": "galaxy/pulsar-pod-staging:0.14.0",
+    "pulsar_container_image": DEFAULT_PULSAR_CONTAINER,
     "remote_container_handling": True,
-    "k8s_enabled": True,
     "url": PARAMETER_SPECIFICATION_IGNORED,
     "private_token": PARAMETER_SPECIFICATION_IGNORED,
 }
 
 
-class PulsarKubernetesJobRunner(PulsarMQJobRunner):
-    destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
-    poll = True  # Poll so we can check API for pod IP for ITs.
+class PulsarCoexecutionJobRunner(PulsarMQJobRunner):
+    destination_defaults = COEXECUTION_DESTENTATION_DEFAULTS
 
     def _populate_parameter_defaults(self, job_destination):
         super()._populate_parameter_defaults(job_destination)
@@ -980,6 +986,24 @@ class PulsarKubernetesJobRunner(PulsarMQJobRunner):
         if "staging_directory" not in pulsar_app_config:
             # coexecution always uses a fixed path for staging directory
             pulsar_app_config["staging_directory"] = params.get("jobs_directory")
+
+
+KUBERNETES_DESTINATION_DEFAULTS: Dict[str, Any] = {"k8s_enabled": True, **COEXECUTION_DESTENTATION_DEFAULTS}
+
+
+class PulsarKubernetesJobRunner(PulsarCoexecutionJobRunner):
+    destination_defaults = KUBERNETES_DESTINATION_DEFAULTS
+    poll = True  # Poll so we can check API for pod IP for ITs.
+
+
+TES_DESTENTATION_DEFAULTS: Dict[str, Any] = {
+    "tes_url": PARAMETER_SPECIFICATION_REQUIRED,
+    **COEXECUTION_DESTENTATION_DEFAULTS,
+}
+
+
+class PulsarTesJobRunner(PulsarCoexecutionJobRunner):
+    destination_defaults = TES_DESTENTATION_DEFAULTS
 
 
 class PulsarRESTJobRunner(PulsarJobRunner):
