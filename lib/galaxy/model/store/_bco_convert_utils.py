@@ -46,7 +46,7 @@ class SoftwarePrerequisteTracker:
         return self._software_prerequisites
 
 
-def bco_worklfow_version(workflow: Workflow) -> str:
+def bco_workflow_version(workflow: Workflow) -> str:
     current_version = 0
     for i, w in enumerate(reversed(workflow.stored_workflow.workflows)):
         if workflow == w:

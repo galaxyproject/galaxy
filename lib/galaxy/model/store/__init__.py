@@ -87,7 +87,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.path import safe_walk
 from ._bco_convert_utils import (
-    bco_worklfow_version,
+    bco_workflow_version,
     SoftwarePrerequisteTracker,
 )
 from ..custom_types import json_encoder
@@ -2287,12 +2287,12 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
         stored_workflow = workflow.stored_workflow
 
         # pull in the creator_metadata info from workflow if it exists
-        contirbutors = get_contributors(workflow.creator_metadata)
+        contributors = get_contributors(workflow.creator_metadata)
         provenance_domain = ProvenanceDomain(
             name=workflow.name,
-            version=bco_worklfow_version(workflow),
+            version=bco_workflow_version(workflow),
             review=[],
-            contirbutors=contirbutors,
+            contributors=contributors,
             license=workflow.license or "",
             created=workflow_invocation.create_time.isoformat(),
             modified=workflow_invocation.update_time.isoformat(),

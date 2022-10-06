@@ -3,6 +3,7 @@
 Someday when the API tests can safely assume the target Galaxy has tasks enabled, this should be moved
 into the API test suite.
 """
+import json
 import os
 from typing import (
     Any,
@@ -53,18 +54,30 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
         self._test_export_import_invocation_with_input_as_output(False)
 
     def test_export_ro_crate_basic(self):
-        ro_crate_path = self._export_ro_crate(False)
+        ro_crate_path = self._export_invocation_to_format(extension="rocrate.zip", to_uri=False)
         assert CompressedFile(ro_crate_path).file_type == "zip"
 
     def test_export_ro_crate_to_uri(self):
-        ro_crate_path = self._export_ro_crate(True)
+        ro_crate_path = self._export_invocation_to_format(extension="rocrate.zip", to_uri=True)
         assert CompressedFile(ro_crate_path).file_type == "zip"
 
-    def _export_ro_crate(self, to_uri):
+    def test_export_bco_basic(self):
+        bco_path = self._export_invocation_to_format(extension="bco.json", to_uri=False)
+        with open(bco_path) as f:
+            bco_json = json.load(f)
+        assert bco_json["spec_version"] == "https://w3id.org/ieee/ieee-2791-schema/2791object.json"
+        assert bco_json["object_id"]
+        assert bco_json["description_domain"]
+        assert bco_json["execution_domain"]
+        assert bco_json["extension_domain"]
+        assert bco_json["io_domain"]
+        assert bco_json["parametric_domain"]
+        assert bco_json["provenance_domain"]
+
+    def _export_invocation_to_format(self, extension: str, to_uri: bool):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
             invocation_id = summary.invocation_id
-            extension = "rocrate.zip"
             if to_uri:
                 uri = f"gxfiles://posix_test/invocation.{extension}"
                 self.workflow_populator.download_invocation_to_uri(invocation_id, uri, extension=extension)
