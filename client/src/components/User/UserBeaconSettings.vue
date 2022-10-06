@@ -111,6 +111,7 @@
 </template>
 
 <script>
+import store from "store"
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -137,14 +138,9 @@ export default {
       this.getBeaconHistory();
   },
   methods: {
-    switchHistory: function (id) {
+    switchHistory: async function (historyId) {
       // history/switch_to_history?hist_id=
-      axios
-           .get(`${this.root}history/switch_to_history?hist_id=${id}`)
-          .then(() => {
-            window.location.reload()
-          })
-          .catch((error) => {console.log(error)});
+      await store.dispatch("history/setCurrentHistory", historyId);
     },
     getBeaconHistory: function () {
       axios
