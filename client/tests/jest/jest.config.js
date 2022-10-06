@@ -5,6 +5,7 @@ const { defaults: tsjPreset } = require("ts-jest/presets");
 // https://jestjs.io/docs/en/configuration.html
 
 const modulesToTransform = [
+    "axios",
     "bootstrap-vue",
     "rxjs",
     "@hirez_io",
