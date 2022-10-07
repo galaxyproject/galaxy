@@ -131,72 +131,6 @@ output = load_data()
     ${h.stylesheet_link(app_root + "dist/vis.min.css")}
     ${h.stylesheet_link(app_root + "style.css")}
 
-    <script type="text/javascript">
-        var nodes = new vis.DataSet([ ${output["nodes"]} ]);
-        var border_nodes = [ ${output["border_nodes"]} ];
-        var edges = new vis.DataSet([ ${output["edges"]} ]);
-        var self_loops = [ ${output["self_loops"]} ];
-        var fromNode = ${output["fromNode"]};
-    </script>
-
-    ${h.javascript_link(app_root + "script.js")}
-
-    <script type="text/javascript">
-        var options = {
-            layout: {improvedLayout: true},
-            physics: {
-                enabled: true,
-                barnesHut: {
-                    gravitationalConstant: -25000,
-                    centralGravity: 0.5,
-                    springConstant: 0.5,
-                    springLength: 200,
-                    damping: 0.15
-                },
-                maxVelocity: 50,
-                minVelocity: 7.5,
-                solver: 'barnesHut',
-                timestep: 0.5,
-                stabilization: {
-                    enabled: true,
-                    iterations: ${output["iterations"]},
-                    updateInterval: ${output["step"]}
-                },
-            },
-            nodes: {
-                size: 15,
-                font: {
-                    size: 20
-                },
-                borderWidth: 2,
-                borderWidthSelected: 4,
-                color:{highlight:{border: '#B20F0F', background: 'red'}}
-            },
-            edges: {
-                width: 4,
-                selectionWidth: function (width) {return width*2.5;},
-                color:{color:'#2B7CE9', hover:'#2B7CE9', highlight: 'red'}
-            },
-            interaction: {
-            navigationButtons: true,
-            keyboard: true,
-            hover: true,
-            tooltipDelay: 500,
-            multiselect: true
-            }
-        };
-        
-        network.on("stabilizationProgress", function(params) {
-            var iterations = ${output["iterations"]};
-            var updateInterval = ${output["step"]};
-            var width = 5*(params.iterations/updateInterval);
-            var widthFactor = params.iterations/iterations;
-
-            document.getElementById('bar').style.width = width + 'px';
-            document.getElementById('text').innerHTML = Math.round(widthFactor*100) + '%';
-        });
-    </script>
-
 </head>
 <body>
     <div id="mynetwork"></div>
@@ -257,6 +191,19 @@ output = load_data()
             </div>
         </div>
     </div>
+
+    <script type="text/javascript">
+        var nodes = new vis.DataSet([ ${output["nodes"]} ]);
+        var border_nodes = [ ${output["border_nodes"]} ];
+        var edges = new vis.DataSet([ ${output["edges"]} ]);
+        var self_loops = [ ${output["self_loops"]} ];
+        var fromNode = ${output["fromNode"]};
+
+        var def_iterations = ${output["iterations"]};
+        var def_updateInterval = ${output["step"]};
+    </script>
+
+    ${h.javascript_link(app_root + "script.js")}
 
 </body>
 </html>
