@@ -258,24 +258,30 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     def _get_mount_volumes(self, destination_params):
         volumes, mount_points = [], []
-        volumes.append(
-            {
-                "name": "efs_whole",
-                "efsVolumeConfiguration": {
-                    "fileSystemId": destination_params.get("efs_filesystem_id"),
-                    "rootDirectory": "/",
-                    "transitEncryption": "ENABLED",
-                    "authorizationConfig": {"iam": "ENABLED"},
+
+        efs_filesystem_id = destination_params.get("efs_filesystem_id")
+        efs_mount_point = destination_params.get("efs_mount_point")
+        for efs_id, mnt_point in zip(efs_filesystem_id.split(","), efs_mount_point.split(",")):
+            efs_id, mnt_point = efs_id.strip(), mnt_point.strip()
+            volumes.append(
+                {
+                    "name": efs_id,
+                    "efsVolumeConfiguration": {
+                        "fileSystemId": efs_id,
+                        "rootDirectory": "/",
+                        "transitEncryption": "ENABLED",
+                        "authorizationConfig": {"iam": "ENABLED"},
+                    },
                 },
-            },
-        )
-        mount_points.append(
-            {
-                "containerPath": destination_params.get("efs_mount_point"),
-                "readOnly": False,
-                "sourceVolume": "efs_whole",
-            },
-        )
+            )
+            mount_points.append(
+                {
+                    "containerPath": mnt_point,
+                    "readOnly": False,
+                    "sourceVolume": efs_id,
+                },
+            )
+
         if destination_params.get("platform") == 'Fargate':   # Fargate doesn't support host volumes
             return volumes, mount_points
 
@@ -583,6 +589,15 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             )
 
         parsed_params["platform"] = platform
+
+        efs_filesystem_id = parsed_params.get("efs_filesystem_id")
+        efs_mount_point = parsed_params.get("efs_mount_point")
+        if efs_filesystem_id.count(",") != efs_mount_point.count(","):
+            raise AWSBatchRunnerException(
+                "AWSBatchJobRunner: the number of EFS file systems provided (`efs_filesystem_id`) doesn't "
+                "match the number of mounting points (`efs_mount_point`)!"
+            )
+
         return parsed_params
 
     def write_command(self, job_wrapper: "MinimalJobWrapper") -> str:
