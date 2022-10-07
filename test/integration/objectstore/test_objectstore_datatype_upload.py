@@ -186,6 +186,7 @@ class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
 distributed_instance = integration_util.integration_module_instance(UploadTestDosDiskAndDiskTestCase)
 irods_instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)
 distributed_and_irods_instance = integration_util.integration_module_instance(UploadTestDosIrodsAndDiskTestCase)
+idle_connection_irods_instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
@@ -204,12 +205,12 @@ def test_upload_datatype_dos_irods_and_disk(distributed_and_irods_instance, test
 
 
 @pytest.mark.parametrize("test_data", SINGLE_TEST_CASE.values(), ids=list(SINGLE_TEST_CASE.keys()))
-def test_upload_datatype_irods_idle_connections(irods_instance, test_data, temp_file):
+def test_upload_datatype_irods_idle_connections(idle_connection_irods_instance, test_data, temp_file):
     # Upload a file to iRods
-    upload_datatype_helper(irods_instance, test_data, temp_file, True)
+    upload_datatype_helper(idle_connection_irods_instance, test_data, temp_file, True)
 
     # Get Irods object store's connection pool
-    connection_pool = irods_instance._test_driver.app.object_store.session.pool
+    connection_pool = idle_connection_irods_instance._test_driver.app.object_store.session.pool
 
     # Verify the connection pool has 0 active and 1 idle connections
     assert len(connection_pool.active) == 0
