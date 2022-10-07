@@ -148,7 +148,6 @@ window.onresize = function() {
         document.getElementById('text').innerHTML = '100%';
         document.getElementById('bar').style.width = '496px';
         document.getElementById('loadingBar').style.opacity = 0;
-        // really clean the dom element
         setTimeout(function () {document.getElementById('loadingBar').style.display = 'none';}, 0);
     });
 

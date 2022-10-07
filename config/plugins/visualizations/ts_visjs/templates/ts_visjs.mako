@@ -56,7 +56,7 @@ def write_reaction(edge_id, left_index, right_index, substrates, products, rate,
 
 
 def load_data():
-    output = dict()
+    output = {"nodes": "", "border_nodes": "", "edges": "", "edges": "", "self_loops": ""}
 
     data = ''.join(list(hda.datatype.dataprovider(hda, 'line', strip_lines=True, strip_newlines=True)))
     data = json.loads(data)
@@ -65,9 +65,9 @@ def load_data():
     nodes = {int(key): to_counter(data['nodes'][key], ordering) for key in data['nodes'].keys()}
 
     border_nodes = set()
-
     edges = []
     self_loops = []
+
     for edge_id, edge in enumerate(data['edges'], 1):
         substrates, products = create_sides(nodes[edge['s']], nodes[edge['t']])
         if edge['s'] == edge['t']:
@@ -78,8 +78,6 @@ def load_data():
         if products == inf and substrates != inf:
             border_nodes.add(edge['s'])
 
-    output["nodes"] = ""
-
     border_nodes_write = []
     for id, state in nodes.items():
         if id in border_nodes:
@@ -89,29 +87,20 @@ def load_data():
             node_class = "default"
         output["nodes"] += write_node(id, node_to_string(state), node_class)
 
-    output["border_nodes"] = ""
-
     for node in border_nodes_write:
         output["border_nodes"] += write_node(*node)
-
-    output["edges"] = ""
 
     for edge in edges:
         output["edges"] += write_reaction(*edge)
 
-    output["self_loops"] = ""
-
     for edge in self_loops:
         output["self_loops"] += write_reaction(*edge)
 
-    initial = data['initial']
-
     iterations = (len(nodes)//100+1) * 100
-    step = iterations//100
 
-    output["step"] = step
     output["iterations"] = iterations
-    output["fromNode"] = str(int(initial))
+    output["step"] = iterations//100
+    output["fromNode"] = str(int(data['initial']))
     return output
 
 
