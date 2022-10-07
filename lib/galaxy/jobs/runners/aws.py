@@ -592,7 +592,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
         efs_filesystem_id = parsed_params.get("efs_filesystem_id")
         efs_mount_point = parsed_params.get("efs_mount_point")
-        if efs_filesystem_id.count(",") != efs_mount_point.count(","):
+        if efs_filesystem_id.count(",") != efs_mount_point.count(","):  # type: ignore[union-attr]
             raise AWSBatchRunnerException(
                 "AWSBatchJobRunner: the number of EFS file systems provided (`efs_filesystem_id`) doesn't "
                 "match the number of mounting points (`efs_mount_point`)!"
