@@ -2362,7 +2362,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                 pipeline_step = PipelineStep(
                     step_number=step_index,
                     name=workflow_step.label,
-                    description="\n".join(workflow_step.annotations),
+                    description=workflow_step.annotations[0].annotation if workflow_step.annotations else "",
                     version=workflow_step.tool_version,
                     prerequisite=[],
                     input_list=input_list,
@@ -2388,7 +2388,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                     encoded_dataset_id = self.app.security.encode_id(
                         output_dataset_collection_association.dataset_collection_id
                     )
-                    url = f"{export_options.galaxy_url}TODO/{encoded_dataset_id}"
+                    url = f"{export_options.galaxy_url}api/dataset_collections/{encoded_dataset_id}/download"
                     input_obj = InputSubdomainItem(
                         uri=Uri(
                             uri=url,
@@ -2416,8 +2416,10 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
             except Exception:
                 continue
 
+        encoded_workflow_id = self.app.security.encode_id(workflow.id)
         execution_domain = galaxy_execution_domain(
             export_options.galaxy_url,
+            f"{export_options.galaxy_url}api/workflows?encoded_workflow_id={encoded_workflow_id}",
             software_prerequisite_tracker.software_prerequisites,
             export_options.override_environment_variables,
         )
@@ -2429,7 +2431,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
         usability_domain = UsabilityDomain(__root__=usability_domain_str)
         description_domain = DescriptionDomain(
             keywords=keywords,
-            xrefs=export_options.override_xref or [],
+            xref=export_options.override_xref or [],
             platform=["Galaxy"],
             pipeline_steps=pipeline_steps,
         )

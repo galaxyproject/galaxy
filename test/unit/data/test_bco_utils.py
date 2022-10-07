@@ -43,7 +43,7 @@ def example_bc_core_object() -> BioComputeObjectCore:
         empirical_error={},
         algorithmic_error={},
     )
-    execution_domain = galaxy_execution_domain("https://usegalaxy.org")
+    execution_domain = galaxy_execution_domain("https://usegalaxy.org", "https://usegalaxy.org/api/workflows?blah")
     io_domain = InputAndOutputDomain(
         input_subdomain=[],
         output_subdomain=[],

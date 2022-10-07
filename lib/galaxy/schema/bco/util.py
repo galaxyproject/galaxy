@@ -44,7 +44,8 @@ def extension_domains(galaxy_url: str, galaxy_version: str) -> List[GalaxyExtens
 
 def galaxy_execution_domain(
     url: str,
-    software_prerequistes: Optional[List[SoftwarePrerequisite]] = None,
+    workflow_url: str,
+    software_prerequisites: Optional[List[SoftwarePrerequisite]] = None,
     environment_variables: Optional[Dict[str, str]] = None,
 ) -> ExecutionDomain:
     data_endpoint = ExternalDataEndpoint(
@@ -52,9 +53,9 @@ def galaxy_execution_domain(
         url=url,
     )
     execution_domain = ExecutionDomain(
-        script=[_galaxy_script_item("https://usegalaxy.org")],
+        script=[_galaxy_script_item(workflow_url)],
         script_driver="Galaxy",
-        software_prerequisites=software_prerequistes or [],
+        software_prerequisites=software_prerequisites or [],
         external_data_endpoints=[data_endpoint],
         environment_variables=environment_variables or {},
     )
@@ -82,7 +83,7 @@ def get_contributors(creator_metadata: Optional[List[Dict[str, Any]]]):
                     name = creator["name"]
                 if "email" in creator:
                     email = creator["email"]
-                if "identifier" in creator:
+                if "identifier" in creator and "://" in creator["identifier"]:  # Must be an URL
                     orcid = creator["identifier"]
 
             if name:
