@@ -296,7 +296,6 @@ class BaseObjectStore(ObjectStore):
         We register start(self) with app, so app starts the threads. Override
         this function in subclasses, as needed.
         """
-        return
 
     def shutdown(self):
         """Close any connections for this ObjectStore."""
