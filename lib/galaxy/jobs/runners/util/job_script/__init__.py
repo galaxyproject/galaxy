@@ -8,7 +8,8 @@ from typing import (
     Dict,
 )
 
-from galaxy.job_execution.setup import JobIO
+from typing_extensions import Protocol
+
 from galaxy.util import (
     RWXR_XR_X,
     unicodify,
@@ -41,7 +42,7 @@ INTEGRITY_SYNC_COMMAND = "/bin/sync"
 DEFAULT_INTEGRITY_CHECK = True
 DEFAULT_INTEGRITY_COUNT = 35
 DEFAULT_INTEGRITY_SLEEP = 0.25
-REQUIRED_TEMPLATE_PARAMS = ["working_directory", "command", "exit_code_path"]
+REQUIRED_TEMPLATE_PARAMS = ["working_directory", "command"]
 OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     "galaxy_lib": None,
     "galaxy_virtual_env": None,
@@ -103,7 +104,13 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     return template.safe_substitute(template_params)
 
 
-def write_script(path, contents, job_io: JobIO, mode=RWXR_XR_X):
+class DescribesScriptIntegrityChecks(Protocol):
+    check_job_script_integrity: bool
+    check_job_script_integrity_count: int
+    check_job_script_integrity_sleep: float
+
+
+def write_script(path, contents, job_io: DescribesScriptIntegrityChecks, mode=RWXR_XR_X) -> None:
     dir = os.path.dirname(path)
     if not os.path.exists(dir):
         os.makedirs(dir)
