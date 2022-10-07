@@ -13,13 +13,13 @@
         </p>
         <p>
             You may choose to stop some of the displayed jobs and provide the user with message. Your stop message will
-            be displayed to the user as: "This job was stopped by an administrator: <strong>&lt;YOUR MESSAGE&gt;</strong>
+            be displayed to the user as: "This job was stopped by an administrator:
+            <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
         <b-row>
             <b-col class="col-sm-4">
-                <b-form-group
-                    description="Select whether or not to use the cutoff below.">
+                <b-form-group description="Select whether or not to use the cutoff below.">
                     <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </b-form-checkbox>
@@ -35,8 +35,7 @@
                         </b-input-group>
                     </b-form-group>
                 </b-form>
-                <b-form-group
-                    description="Use strings or regular expressions to search jobs.">
+                <b-form-group description="Use strings or regular expressions to search jobs.">
                     <b-input-group id="filter-regex">
                         <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
                     </b-input-group>
