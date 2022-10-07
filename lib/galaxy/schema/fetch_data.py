@@ -224,7 +224,7 @@ NestedElement.update_forward_refs()
 
 
 class BaseDataTarget(BaseFetchDataTarget):
-    destination: Union[HdaDestination, HdcaDestination, LibraryFolderDestination, LibraryDestination] = Field(..., discriminator="type")
+    destination: Union[HdaDestination, LibraryFolderDestination, LibraryDestination] = Field(..., discriminator="type")
 
 
 class DataElementsTarget(BaseDataTarget):
