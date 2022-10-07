@@ -4,44 +4,39 @@
         <b-alert v-if="message" :variant="status" show>
             {{ message }}
         </b-alert>
-        <p>
-            Unfinished jobs (in the state 'new', 'queued', 'running', or 'upload') and recently terminal jobs (in the
-            state 'error' or 'ok') are displayed on this page. The 'cutoff' input box will limit the display of jobs to
-            only those jobs that have had their state updated in the specified timeframe.
-        </p>
-        <p>
-            If any jobs are displayed, you may choose to stop them. Your stop message will be displayed to the user as:
-            "This job was stopped by an administrator: <strong>&lt;YOUR MESSAGE&gt;</strong> For more information or
-            help, report this error".
-        </p>
-        <h3>Job Control</h3>
+        <h3>Job Lock</h3>
         <job-lock />
-        <h3>Job Details</h3>
+        <h3>Job Overview</h3>
+        <p>
+            Below are displayed unfinished jobs (in the state 'new', 'queued', 'running', or 'upload') and recently
+            terminal jobs (in the state 'error' or 'ok').
+        </p>
+        <p>
+            You may choose to stop some of the displayed jobs and provide the user with message. Your stop message will
+            be displayed to the user as: "This job was stopped by an administrator: <strong>&lt;YOUR MESSAGE&gt;</strong>
+            For more information or help, report this error".
+        </p>
         <b-row>
             <b-col class="col-sm-4">
                 <b-form-group
-                    label="Filters"
-                    label-for="show-all-running"
-                    description="Select whether or not to use the cutoff, or show all jobs.">
-                    <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch @change="update">
-                        {{ showAllRunning ? "Showing all currently running jobs" : "Time cutoff applied to query" }}
+                    description="Select whether or not to use the cutoff below.">
+                    <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
+                        {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </b-form-checkbox>
                 </b-form-group>
                 <b-form name="jobs" @submit.prevent="onRefresh">
                     <b-form-group
                         v-show="!showAllRunning"
                         id="cutoff"
-                        label="Cutoff time period"
-                        description="in minutes">
+                        label="Cutoff in minutes"
+                        description="Display jobs that had their state updated in the given time period.">
                         <b-input-group>
                             <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
                         </b-input-group>
                     </b-form-group>
                 </b-form>
                 <b-form-group
-                    label="Filter Jobs"
-                    label-for="filter-regex"
-                    description="by strings or regular expressions">
+                    description="Use strings or regular expressions to search jobs.">
                     <b-input-group id="filter-regex">
                         <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
                     </b-input-group>
