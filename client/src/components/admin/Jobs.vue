@@ -8,8 +8,8 @@
         <job-lock />
         <h3>Job Overview</h3>
         <p>
-            Below are displayed unfinished jobs (in the state 'new', 'queued', 'running', or 'upload') and recently
-            terminal jobs (in the state 'error' or 'ok').
+            Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
+            completed jobs (in 'error' or 'ok' states).
         </p>
         <p>
             You may choose to stop some of the displayed jobs and provide the user with message. Your stop message will
