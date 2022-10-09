@@ -197,6 +197,8 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE,
     dry_run=False,
     conda_version=None,
+    mamba_version=None,
+    use_mamba=False,
     verbose=False,
     binds=DEFAULT_BINDS,
     rebuild=True,
@@ -284,9 +286,18 @@ def mull_targets(
         involucro_args.extend(["-set", f"USER_ID={os.getuid()}:{os.getgid()}"])
     if test:
         involucro_args.extend(["-set", f"TEST={test}"])
-    if conda_version is not None:
-        verbose = "--verbose" if verbose else "--quiet"
-        involucro_args.extend(["-set", f"PREINSTALL=conda install {verbose} --yes conda={conda_version}"])
+
+    verbose = "--verbose" if verbose else "--quiet"
+    conda_bin = "conda"
+    if use_mamba:
+        constraint = "" if mamba_version is None else f"={mamba_version}"
+        involucro_args.extend(["-set", f"PREINSTALL=conda install {verbose} --yes mamba{constraint}"])
+        conda_bin = "mamba"
+    else:
+        if conda_version is not None:
+            involucro_args.extend(["-set", f"PREINSTALL=conda install {verbose} --yes conda={conda_version}"])
+    involucro_args.extend(["-set", "CONDA_BIN=%s" % conda_bin])
+
     involucro_args.append(command)
     if test_files:
         test_bind = []
@@ -457,6 +468,18 @@ def add_build_arguments(parser):
         help="Change to specified version of Conda before installing packages.",
     )
     parser.add_argument(
+        "--mamba-version",
+        dest="mamba_version",
+        default=None,
+        help="Change to specified version of Mamba before installing packages.",
+    )
+    parser.add_argument(
+        "--use-mamba",
+        dest="use_mamba",
+        action="store_true",
+        help="Use Mamba instead of Conda for package installation.",
+    )
+    parser.add_argument(
         "--oauth-token",
         dest="oauth_token",
         default=None,
@@ -521,6 +544,10 @@ def args_to_mull_targets_kwds(args):
         kwds["repository_template"] = args.repository_template
     if hasattr(args, "conda_version"):
         kwds["conda_version"] = args.conda_version
+    if hasattr(args, "mamba_version"):
+        kwds["mamba_version"] = args.mamba_version
+    if hasattr(args, "use_mamba"):
+        kwds["use_mamba"] = args.use_mamba
     if hasattr(args, "oauth_token"):
         kwds["oauth_token"] = args.oauth_token
     if hasattr(args, "rebuild"):
