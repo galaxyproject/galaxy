@@ -1,5 +1,6 @@
-<tool id="master2gd_snp" name="MasterVar to gd_snp" version="1.0.0">
+<tool id="master2gd_snp" name="MasterVar to gd_snp" version="1.0.1">
     <description>Convert from MasterVar to gd_snp table</description>
+    <requirement type="package" version="5.32.1">perl</requirement>
     <command>
 perl '$__tool_directory__/master2gd_snp.pl' '$input1' -name='$indName' -build=${input1.metadata.dbkey}
 #if $snptab.tab2 == "yes"

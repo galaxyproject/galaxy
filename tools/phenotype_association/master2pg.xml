@@ -1,5 +1,8 @@
-<tool id="master2pgSnp" name="MasterVar to pgSnp" version="1.0.0">
+<tool id="master2pgSnp" name="MasterVar to pgSnp" version="1.0.1">
     <description>Convert from MasterVar to pgSnp format</description>
+    <requirements>
+        <requirement type="package" version="5.32.1">perl</requirement>
+    </requirements>
     <command>
 perl '$__tool_directory__/master2pg.pl' $indel '$input1' > '$out_file1'
     </command>

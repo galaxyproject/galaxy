@@ -1,6 +1,8 @@
-<tool id="hgv_linkToGProfile" name="g:Profiler" version="1.0.0">
+<tool id="hgv_linkToGProfile" name="g:Profiler" version="1.0.1">
   <description>tools for functional profiling of gene lists</description>
-
+  <requirements>
+    <requirement type="package" version="5.32.1">perl</requirement>
+  </requirements>
   <command detect_errors="exit_code">
 perl '$__tool_directory__/linkToGProfile.pl' '$input' $type '$out_file1' -region='$region' -gene=$genes -chr=${input.metadata.chromCol} -start=${input.metadata.startCol} -end=${input.metadata.endCol}
   </command>

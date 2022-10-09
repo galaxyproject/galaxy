@@ -1,5 +1,8 @@
-<tool id="addValue" name="Add column" version="1.0.0">
+<tool id="addValue" name="Add column" version="1.0.1">
   <description>to an existing dataset</description>
+  <requirements>
+    <requirement type="package" version="5.32.1">perl</requirement>
+  </requirements>
   <edam_operations>
     <edam_operation>operation_3096</edam_operation>
   </edam_operations>

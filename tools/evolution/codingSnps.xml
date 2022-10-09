@@ -1,7 +1,8 @@
-<tool id="hgv_codingSnps" name="aaChanges" version="1.0.1">
+<tool id="hgv_codingSnps" name="aaChanges" version="1.0.2">
   <description>amino-acid changes caused by a set of SNPs</description>
 
   <requirements>
+    <requirement type="package" version="5.32.1">perl</requirement>
     <requirement type="package" version="8.25">coreutils</requirement>
     <requirement type="package" version="357">ucsc-twobittofa</requirement>
     <requirement type="package" version="357">ucsc-nibfrag</requirement>
