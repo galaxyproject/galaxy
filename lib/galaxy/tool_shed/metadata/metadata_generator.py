@@ -898,7 +898,6 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
         self.updating_installed_repository = updating_installed_repository
         self.persist = persist
         self.invalid_file_tups = []
-        self.sa_session = app.model.session
 
     def initial_metadata_dict(self) -> Dict[str, Any]:
         # Shed related tool panel configs are only relevant to Galaxy.
