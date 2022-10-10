@@ -5,37 +5,35 @@ import logging
 
 from paste.httpexceptions import (
     HTTPBadRequest,
-    HTTPNotImplemented
+    HTTPNotImplemented,
 )
 
-from galaxy import (
-    web
-)
+from galaxy import web
 from galaxy.managers.hdas import HDAManager
-from . import BaseGalaxyAPIController, depends
+from galaxy.util import string_as_bool
+from . import (
+    BaseGalaxyAPIController,
+    depends,
+)
 
 log = logging.getLogger(__name__)
 
 
 class BaseProvenanceController(BaseGalaxyAPIController):
-    """
-    """
+    """ """
 
     @web.legacy_expose_api
     def index(self, trans, **kwd):
-        follow = kwd.get('follow', False)
+        follow = string_as_bool(kwd.get("follow", False))
         value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
         return value
 
     @web.legacy_expose_api
     def show(self, trans, elem_name, **kwd):
-        follow = kwd.get('follow', False)
-        value = self._get_provenance(trans, self.provenance_item_class, kwd[self.provenance_item_id], follow)
-        return value
+        raise HTTPNotImplemented()
 
     @web.legacy_expose_api
     def create(self, trans, tag_name, payload=None, **kwd):
-        payload = payload or {}
         raise HTTPNotImplemented()
 
     @web.legacy_expose_api
