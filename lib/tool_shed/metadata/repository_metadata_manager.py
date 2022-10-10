@@ -261,6 +261,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             metadata_dict=metadata_dict,
             user=user,
         )
+        self.sa_session = app.model.context
         self.app = app
         self.user = user
         # Repository metadata comparisons for changeset revisions.
