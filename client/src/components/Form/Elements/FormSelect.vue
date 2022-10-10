@@ -12,7 +12,7 @@
             <b-col v-if="display == 'radio'">
                 <b-form-group>
                     <!-- Select single from radio -->
-                    <b-form-radio-group v-model="currentValue" :options="optArray" text-field="label" stacked>
+                    <b-form-radio-group v-model="currentValue" :options="formattedOptions" text-field="label" stacked>
                     </b-form-radio-group>
                 </b-form-group>
             </b-col>
@@ -21,7 +21,7 @@
                 <b-form-group>
                     <b-form-checkbox-group
                         v-model="currentValue"
-                        :options="optArray"
+                        :options="formattedOptions"
                         value-field="value"
                         text-field="label"
                         stacked>
@@ -33,7 +33,7 @@
                 <multiselect
                     v-if="multiple"
                     v-model="currentValue"
-                    :options="optArray"
+                    :options="formattedOptions"
                     :multiple="true"
                     placeholder="Select value"
                     deselect-label=""
@@ -45,7 +45,7 @@
                 <multiselect
                     v-else
                     v-model="currentValue"
-                    :options="optArray"
+                    :options="formattedOptions"
                     deselect-label=""
                     select-label=""
                     label="label"
@@ -101,7 +101,7 @@ export default {
         };
     },
     computed: {
-        optArray() {
+        formattedOptions() {
             const formattedOptions = [];
             for (let i = 0, len = this.options.length; i < len; i++) {
                 formattedOptions[i] = {
@@ -138,9 +138,9 @@ export default {
                         }
                         for (var i = 0; i < array_val.length; i++) {
                             if (this.display == "checkboxes") {
-                                selected.push(this.optArray.find((element) => element.value == array_val[i]).value);
+                                selected.push(this.formattedOptions.find((element) => element.value == array_val[i]).value);
                             } else {
-                                selected.push(this.optArray.find((element) => element.value == array_val[i]));
+                                selected.push(this.formattedOptions.find((element) => element.value == array_val[i]));
                             }
                         }
                         return selected;
@@ -148,19 +148,19 @@ export default {
                         const selected = [];
                         // Create list from default selected values
                         for (var n = 0; n < this.defaultValue.length; n++) {
-                            selected.push(this.optArray.find((element) => element.value === this.defaultValue[n]));
+                            selected.push(this.formattedOptions.find((element) => element.value === this.defaultValue[n]));
                         }
                         return selected;
                         // Return null if value is optional
                     } else {
                         // Try to find a value labeled default in the options
-                        for (let x = 0, len = this.optArray.length; x < len; x++) {
-                            if (this.optArray[x].default) {
-                                return this.optArray[x];
+                        for (let x = 0, len = this.formattedOptions.length; x < len; x++) {
+                            if (this.formattedOptions[x].default) {
+                                return this.formattedOptions[x];
                             }
                         }
                         // Else return first value
-                        return this.optArray[0];
+                        return this.formattedOptions[0];
                     }
 
                     // If single select
@@ -171,22 +171,22 @@ export default {
                             return;
                         }
                         if (this.display == "radio") {
-                            return this.optArray.find((element) => element.value === this.value).value;
+                            return this.formattedOptions.find((element) => element.value === this.value).value;
                         } else {
-                            return this.optArray.find((element) => element.value === this.value);
+                            return this.formattedOptions.find((element) => element.value === this.value);
                         }
                         // if no value provided, use default value
                     } else if (this.defaultValue !== "") {
-                        return this.optArray.find((element) => element.default === this.defaultValue);
+                        return this.formattedOptions.find((element) => element.default === this.defaultValue);
                         // If no default value provided and optional is selected, return null
                     } else {
-                        for (let i = 0, len = this.optArray.length; i < len; i++) {
-                            if (this.optArray[i].default) {
-                                return this.optArray[i];
+                        for (let i = 0, len = this.formattedOptions.length; i < len; i++) {
+                            if (this.formattedOptions[i].default) {
+                                return this.formattedOptions[i];
                             }
                         }
                         // Else return first value
-                        return this.optArray[0];
+                        return this.formattedOptions[0];
                     }
                 }
             },
