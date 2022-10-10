@@ -193,18 +193,16 @@ export default {
             set(val) {
                 // Checkbox is mutliple, but not automatically set. If it IS set, this prevents the multiple from overriding the checkbox
                 if (this.multiple && this.display != "checkboxes") {
-                    const values = [];
-                    for (var i = 0; i < val.length; i++) {
-                        values.push(val[i].value);
-                    }
+                    const values = getValuesFromFormattedOptions(val);
                     this.$emit("input", values);
+                } else if (this.display == "radio" || this.display == "checkboxes") {
+                    this.$emit("input", val);
                 } else {
-                    if (this.display == "radio" || this.display == "checkboxes") {
-                        this.$emit("input", val);
-                    } else {
-                        this.$emit("input", val.value);
-                    }
+                    this.$emit("input", val.value);
                 }
+            },
+            getValuesFromFormattedOptions(options) {
+                return Array.isArray(options) ? options.map((o) => o.value) : options;
             },
         },
     },
