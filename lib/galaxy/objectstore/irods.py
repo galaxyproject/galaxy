@@ -256,7 +256,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self.connection_pool_monitor_interval != -1:
             # Set to True so the connection pool monitor thread will return/terminate
             self.stop_connection_pool_monitor_event.set()
-            self.connection_pool_monitor_thread.join(5)
+            if self.connection_pool_monitor_thread is not None:
+                self.connection_pool_monitor_thread.join(5)
 
         log.debug("irods_pt shutdown: %s", ipt_timer)
 
