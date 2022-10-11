@@ -32,6 +32,7 @@ const STATIC_PLUGIN_BUILD_IDS = [
     "pv",
     "nora",
     "venn",
+    "ts_visjs"
 ];
 const DIST_PLUGIN_BUILD_IDS = ["new_user"];
 const PLUGIN_BUILD_IDS = Array.prototype.concat(DIST_PLUGIN_BUILD_IDS, STATIC_PLUGIN_BUILD_IDS);
