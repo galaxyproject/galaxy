@@ -12,8 +12,8 @@
             completed jobs (in 'error' or 'ok' states).
         </p>
         <p>
-            You may choose to stop some of the displayed jobs and provide the user with message. Your stop message will
-            be displayed to the user as: "This job was stopped by an administrator:
+            You may choose to stop some of the displayed jobs and provide the user with a message. Your stop message
+            will be displayed to the user as: "This job was stopped by an administrator:
             <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
