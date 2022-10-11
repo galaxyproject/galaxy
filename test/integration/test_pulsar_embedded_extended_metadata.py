@@ -25,6 +25,8 @@ instance = integration_util.integration_module_instance(EmbeddedAndExtendedMetad
 
 test_tools = integration_util.integration_tool_runner(
     [
+        "version_command_plain",
+        "version_command_tool_dir",
         "simple_constructs",
         "metadata_bam",
         # "job_properties",  # https://github.com/galaxyproject/galaxy/issues/11813
