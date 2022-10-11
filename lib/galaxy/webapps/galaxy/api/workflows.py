@@ -461,23 +461,14 @@ class WorkflowsAPIController(
     def delete(self, trans: ProvidesUserContext, id, **kwd):
         """
         DELETE /api/workflows/{encoded_workflow_id}
-        Deletes a specified workflow
-        Author: rpark
-
-        copied from galaxy.web.controllers.workflows.py (delete)
+        Delete a specified workflow
         """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
-
+        workflow_to_delete = self.__get_stored_workflow(trans, id, **kwd)
         # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin:
+        if workflow_to_delete.user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException()
-
-        # Mark a workflow as deleted
-        stored_workflow.deleted = True
-        trans.sa_session.flush()
-
-        # TODO: Unsure of response message to let api know that a workflow was successfully deleted
-        return f"Workflow '{stored_workflow.name}' successfully deleted"
+        self.workflow_manager.delete(workflow_to_delete)
+        return self.workflow_contents_manager.workflow_to_dict(trans, workflow_to_delete, style="instance")
 
     @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):

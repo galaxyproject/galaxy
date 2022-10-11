@@ -42,6 +42,7 @@ from galaxy import (
     util,
 )
 from galaxy.job_execution.actions.post import ActionBox
+from galaxy.managers import deletable
 from galaxy.managers import sharable
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
@@ -107,7 +108,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class WorkflowsManager(sharable.SharableModelManager):
+class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManagerMixin):
     """Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
@@ -485,6 +486,10 @@ class WorkflowsManager(sharable.SharableModelManager):
             if self.check_security(trans, inv, check_ownership=True, check_accessible=False)
         ]
         return invocations, total_matches
+    
+    def delete(self, stored_workflow, flush=True):
+        """Mark the given workflow deleted."""
+        super().delete(stored_workflow, flush=flush)
 
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
