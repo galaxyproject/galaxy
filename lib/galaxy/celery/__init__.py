@@ -236,7 +236,3 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
         return decorate(args[0])
     else:
         return decorate
-
-
-if __name__ == "__main__":
-    celery_app.start()
