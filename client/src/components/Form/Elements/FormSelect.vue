@@ -1,8 +1,8 @@
 <template>
     <div>
         <b-alert
-            class="mt-2"
             v-if="errorMessage"
+            class="mt-2"
             :show="dismissCountDown"
             variant="info"
             @dismissed="dismissCountDown = 0">
@@ -149,10 +149,11 @@ export default {
             },
             set(val) {
                 // Checkbox is mutliple, but not automatically set. If it IS set, this prevents the multiple from overriding the checkbox
-                if (val == null) { // This case can occur when single-select dropdown is re-selected
+                if (val == null) {
+                    // This case can occur when single-select dropdown is re-selected
                     return;
                 } else if (this.multiple && this.display != "checkboxes") {
-                    const values = getValuesFromFormattedOptions(val);
+                    const values = this.getValuesFromFormattedOptions(val);
                     this.$emit("input", values);
                 } else if (this.display == "radio" || this.display == "checkboxes") {
                     this.$emit("input", val);
@@ -196,7 +197,7 @@ export default {
                     return this.formattedOptions[i];
                 }
             }
-            
+
             return this.selectFirstValue();
         },
         selectFirstValue() {
@@ -207,8 +208,8 @@ export default {
         },
         normalizeSelectedValues(val) {
             // A string is returned if single, but an array if zero or multiple
-            return (!Array.isArray(val)) ? [val] : val;
-        }
+            return !Array.isArray(val) ? [val] : val;
+        },
     },
 };
 </script>
