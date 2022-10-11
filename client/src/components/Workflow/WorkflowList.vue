@@ -63,6 +63,7 @@
 <script>
 import _l from "utils/localization";
 import { Services } from "./services";
+import { getAppRoot } from "onload/loadConfig";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
 import Tags from "components/Common/Tags";
 import WorkflowDropdown from "./WorkflowDropdown";
@@ -166,6 +167,7 @@ export default {
         },
     },
     created() {
+        this.root = getAppRoot();
         this.services = new Services();
     },
     methods: {
