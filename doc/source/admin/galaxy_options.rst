@@ -592,22 +592,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``load_tool_shed_datatypes``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    This option controls whether legacy datatypes are loaded from
-    installed tool shed repositories. We're are in the process of
-    disabling Tool Shed datatypes. This option with a default of true
-    will be added in 22.01, we will disable the datatypes on the big
-    public servers during that release. This option will be switched
-    to False by default in 22.05 and this broken functionality will be
-    removed all together during some future release.
-:Default: ``true``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~
 ``watch_tools``
 ~~~~~~~~~~~~~~~
@@ -4775,6 +4759,21 @@
     the commented out line below).
 :Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
 :Type: str
+
+
+~~~~~~~~~~~~~~~
+``celery_conf``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Configuration options passed to Celery.
+    To refer to a task by name, use the template `galaxy.foo` where
+    `foo` is the function name of the task defined in the
+    galaxy.celery.tasks module.
+    For details, see Celery documentation at
+    https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+:Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
+:Type: any
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~

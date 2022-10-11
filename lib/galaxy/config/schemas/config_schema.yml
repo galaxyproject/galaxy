@@ -3469,8 +3469,17 @@ mapping:
       celery_conf:
         type: any
         required: false
+        default:
+          task_routes:
+            'galaxy.fetch_data': 'galaxy.external'
+            'galaxy.set_job_metadata': 'galaxy.external'
         desc: |
           Configuration options passed to Celery.
+
+          To refer to a task by name, use the template `galaxy.foo` where `foo` is the function name
+          of the task defined in the galaxy.celery.tasks module.
+
+          For details, see Celery documentation at https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 
       enable_celery_tasks:
         type: bool
