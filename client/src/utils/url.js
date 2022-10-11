@@ -1,5 +1,5 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
+import { safePath } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
 export async function urlData({ url, headers, params }) {
@@ -7,7 +7,7 @@ export async function urlData({ url, headers, params }) {
         console.debug("Requesting data from: ", url);
         headers = headers || {};
         params = params || {};
-        const { data } = await axios.get(`${getAppRoot()}${url}`, { headers, params });
+        const { data } = await axios.get(safePath(url), { headers, params });
         return data;
     } catch (e) {
         rethrowSimple(e);

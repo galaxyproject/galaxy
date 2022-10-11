@@ -10,7 +10,8 @@
                     role="button"
                     title="Download Workflow"
                     type="button"
-                    class="py-0 px-1">
+                    class="py-0 px-1"
+                    data-description="workflow download">
                     <span class="fa fa-download" />
                 </b-button>
                 <b-button
@@ -20,18 +21,19 @@
                     variant="link"
                     title="Import Workflow"
                     type="button"
-                    class="py-0 px-1">
+                    class="py-0 px-1"
+                    data-description="workflow import">
                     <span class="fa fa-file-import" />
                 </b-button>
             </span>
             <span>
                 <span>Workflow:</span>
-                <span class="font-weight-light">{{ workflowName }}</span>
+                <span class="font-weight-light" data-description="workflow name">{{ workflowName }}</span>
             </span>
         </b-card-header>
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
-            <div v-else class="content-height">
+            <div v-else :class="!expanded && 'content-height'">
                 <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
                     <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
                     <WorkflowTree :input="step" :skip-head="true" />
@@ -42,10 +44,10 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { safePath } from "utils/redirect";
+import { urlData } from "utils/url";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowTree from "./WorkflowTree";
-import axios from "axios";
 export default {
     components: {
         LoadingSpan,
@@ -56,11 +58,11 @@ export default {
             type: Object,
             required: true,
         },
-        workflows: {
-            type: Object,
-            required: true,
-        },
         embedded: {
+            type: Boolean,
+            default: false,
+        },
+        expanded: {
             type: Boolean,
             default: false,
         },
@@ -73,34 +75,24 @@ export default {
     },
     computed: {
         workflowName() {
-            const workflow = this.workflows[this.args.workflow_id];
-            return workflow && workflow.name;
+            return this.itemContent ? this.itemContent.name : "...";
         },
         downloadUrl() {
-            return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?format=json-download`;
+            return safePath("/api/workflows/${this.args.workflow_id}/download?format=json-download");
         },
         importUrl() {
-            return `${getAppRoot()}workflow/imp?id=${this.args.workflow_id}`;
+            return safePath("/workflow/imp?id=${this.args.workflow_id}");
         },
         itemUrl() {
-            return `${getAppRoot()}api/workflows/${this.args.workflow_id}/download?style=preview`;
+            return `/api/workflows/${this.args.workflow_id}/download?style=preview`;
         },
     },
     created() {
-        this.getContent().then((data) => {
+        const url = this.itemUrl;
+        urlData({ url }).then((data) => {
             this.itemContent = data;
             this.loading = false;
         });
-    },
-    methods: {
-        async getContent() {
-            try {
-                const response = await axios.get(this.itemUrl);
-                return response.data;
-            } catch (e) {
-                return `Failed to retrieve content. ${e}`;
-            }
-        },
     },
 };
 </script>

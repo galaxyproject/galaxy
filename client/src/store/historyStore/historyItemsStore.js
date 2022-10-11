@@ -55,7 +55,7 @@ const actions = {
     fetchHistoryItems: async ({ commit }, { historyId, filterText, offset }) => {
         const queryString = getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
-        const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
+        const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
         const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
         await queue.enqueue(urlData, { url, headers }, historyId).then((data) => {
             const stats = data.stats;

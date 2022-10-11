@@ -1,5 +1,5 @@
 <template>
-    <CenterFrame src="welcome" />
+    <CenterFrame src="/welcome" />
 </template>
 
 <script>

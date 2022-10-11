@@ -2,7 +2,7 @@
     <config-provider v-slot="{ config, loading }">
         <markdown
             v-if="!loading"
-            :markdown-config="markdownConfig"
+            :markdown-config="page"
             :enable_beta_markdown_export="config.enable_beta_markdown_export"
             :download-endpoint="stsUrl(config)"
             :export-link="exportUrl"
@@ -11,8 +11,8 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { safePath } from "utils/redirect";
+import { urlData } from "utils/url";
 import ConfigProvider from "components/providers/ConfigProvider";
 import Markdown from "components/Markdown/Markdown.vue";
 
@@ -29,39 +29,31 @@ export default {
     },
     data() {
         return {
-            markdownConfig: {},
+            page: {},
         };
     },
     computed: {
         dataUrl() {
-            return `${getAppRoot()}api/pages/${this.pageId}`;
+            return `/api/pages/${this.pageId}`;
         },
         exportUrl() {
             return `${this.dataUrl}.pdf`;
         },
         editUrl() {
-            return `${getAppRoot()}page/edit_content?id=${this.pageId}`;
+            return `/page/edit_content?id=${this.pageId}`;
         },
     },
     created() {
-        this.getContent().then((data) => {
-            this.markdownConfig = { ...data, markdown: data.content };
+        urlData({ url: this.dataUrl }).then((data) => {
+            this.page = { ...data };
         });
     },
     methods: {
         onEdit() {
-            window.location = this.editUrl;
+            window.location = safePath(this.editUrl);
         },
         stsUrl(config) {
             return `${this.dataUrl}/prepare_download`;
-        },
-        async getContent() {
-            try {
-                const response = await axios.get(this.dataUrl);
-                return response.data;
-            } catch (e) {
-                return `Failed to retrieve content. ${e}`;
-            }
         },
     },
 };
