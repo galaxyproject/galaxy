@@ -5,6 +5,7 @@ API operations for Workflows
 import json
 import logging
 import os
+from io import BytesIO
 from typing import (
     Any,
     Dict,
@@ -22,6 +23,7 @@ from fastapi import (
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from pydantic import Extra
+from starlette.responses import StreamingResponse
 
 from galaxy import (
     exceptions,
@@ -44,6 +46,7 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncFile,
@@ -61,6 +64,7 @@ from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
@@ -1418,3 +1422,88 @@ class FastAPIWorkflows:
             payload,
         )
         return rval
+
+    # TODO: remove this endpoint after 23.1 release
+    @router.get(
+        "/api/invocations/{invocation_id}/biocompute",
+        summary="Return a BioCompute Object for the workflow invocation.",
+        deprecated=True,
+    )
+    def export_invocation_bco(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        merge_history_metadata: Optional[bool] = Query(default=False),
+    ):
+        """
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+
+        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
+
+        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
+            ```
+            {
+                model_store_format: bco.json
+            }
+            ```
+        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
+
+        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
+        """
+        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        return json.loads(bco)
+
+    # TODO: remove this endpoint after 23.1 release
+    @router.get(
+        "/api/invocations/{invocation_id}/biocompute/download",
+        summary="Return a BioCompute Object for the workflow invocation as a file for download.",
+        response_class=StreamingResponse,
+        deprecated=True,
+    )
+    def download_invocation_bco(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        merge_history_metadata: Optional[bool] = Query(default=False),
+    ):
+        """
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+
+        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
+
+        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
+            ```
+            {
+                model_store_format: bco.json
+            }
+            ```
+        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
+
+        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
+        """
+        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        return StreamingResponse(
+            content=BytesIO(bco),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="bco_{trans.security.encode_id(invocation_id)}.json"',
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+
+    # TODO: remove this after 23.1 release
+    def _deprecated_generate_bco(
+        self, trans, invocation_id: DecodedDatabaseIdField, merge_history_metadata: Optional[bool]
+    ):
+        export_options = BcoExportOptions(
+            galaxy_url=trans.request.base,
+            galaxy_version=VERSION,
+            merge_history_metadata=merge_history_metadata or False,
+        )
+        return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)
