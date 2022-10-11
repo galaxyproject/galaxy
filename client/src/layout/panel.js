@@ -143,7 +143,6 @@ const SidePanel = Backbone.View.extend({
             const whichSide = this.id;
             this.saved_size = this.$el.width();
             animation[whichSide] = -this.saved_size;
-            this.resize(0);
             this.$el.animate(animation, "fast", () => this.motionQueue--);
             animation[whichSide] = 0;
             this.$center().animate(animation, "fast", () => this.motionQueue--);
