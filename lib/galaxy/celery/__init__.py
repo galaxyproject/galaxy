@@ -46,6 +46,19 @@ serialization.register(
 )
 
 
+class GalaxyCelery(Celery):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def gen_task_name(self, name, module):
+        # drop "celery.tasks" infix for less verbose task names:
+        # - galaxy.celery.tasks.do_foo >> galaxy.do_foo
+        # - galaxy.celery.tasks.subtasks.do_fuz >> galaxy.subtasks.do_fuz
+        if module.startswith("galaxy.celery.tasks"):
+            module = f"galaxy{module[19:]}"
+        return super().gen_task_name(name, module)
+
+
 def set_thread_app(app):
     APP_LOCAL.app = app
 
@@ -137,7 +150,7 @@ celery_app_kwd: Dict[str, Any] = {
 if backend:
     celery_app_kwd["backend"] = backend
 
-celery_app = Celery("galaxy", **celery_app_kwd)
+celery_app = GalaxyCelery("galaxy", **celery_app_kwd)
 celery_app.set_default()
 
 # apply Celery config options set in Galaxy
