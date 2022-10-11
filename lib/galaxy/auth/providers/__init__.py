@@ -14,7 +14,7 @@ class AuthProvider(metaclass=abc.ABCMeta):
         """Short string providing labelling this plugin"""
 
     @abc.abstractmethod
-    def authenticate(self, email, username, password, options):
+    def authenticate(self, email, username, password, options, request):
         """
         Check that the user credentials are correct.
 
@@ -37,7 +37,7 @@ class AuthProvider(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def authenticate_user(self, user, password, options):
+    def authenticate_user(self, user, password, options, request):
         """
         Same as authenticate() method, except an User object is provided instead
         of a username.

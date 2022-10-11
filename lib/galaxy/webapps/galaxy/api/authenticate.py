@@ -55,4 +55,4 @@ class AuthenticationController(BaseGalaxyAPIController):
 
         :raises: ObjectNotFound, HTTPBadRequest
         """
-        return self.authentication_service.get_api_key(trans.environ)
+        return self.authentication_service.get_api_key(trans.environ, trans.request)
