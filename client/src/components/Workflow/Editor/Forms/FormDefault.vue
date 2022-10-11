@@ -145,7 +145,7 @@ export default {
         },
         onUpgradeSubworkflow() {
             this.$emit("onAttemptRefactor", [
-                { action_type: "upgrade_subworkflow", step: { order_index: parseInt(this.node.id) } },
+                { action_type: "upgrade_subworkflow", step: { order_index: parseInt(this.nodeId) } },
             ]);
         },
         onChange(values) {

@@ -118,6 +118,7 @@ import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolSuccess from "./ToolSuccess";
 import ToolCardSection from "./ToolCardSection";
+import ToolRecommendation from "../ToolRecommendation";
 import UserHistories from "components/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
 
@@ -132,6 +133,7 @@ export default {
         FormElement,
         ToolEntryPoints,
         ToolSuccess,
+        ToolRecommendation,
         UserHistories,
         Webhook,
         ToolCardSection,
