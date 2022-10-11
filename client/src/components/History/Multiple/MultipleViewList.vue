@@ -31,6 +31,7 @@
 </template>
 
 <script>
+import { mapActions, mapGetters } from "vuex";
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem";
 import SelectorModal from "components/History/Modals/SelectorModal";
@@ -61,26 +62,32 @@ export default {
     data() {
         return {
             MultipleViewItem,
-            selectedHistories: [],
         };
     },
+    computed: {
+        ...mapGetters("history", ["getPinnedHistories"]),
+        selectedHistories() {
+            return this.getPinnedHistories();
+        },
+    },
     created() {
-        const firstHistory = this.histories[0];
-        this.selectedHistories = [{ id: firstHistory.id }];
+        if (!this.selectedHistories.length) {
+            const firstHistory = this.histories[0];
+            this.pinHistory(firstHistory.id);
+        }
     },
     methods: {
+        ...mapActions("history", ["pinHistory", "unpinHistory"]),
         addHistoriesToList(histories) {
             histories.forEach((history) => {
                 const historyExists = this.selectedHistories.find((h) => h.id == history.id);
                 if (!historyExists) {
-                    this.selectedHistories.push({ id: history.id });
+                    this.pinHistory(history.id);
                 }
             });
         },
         removeHistoryFromList(history) {
-            this.selectedHistories = this.selectedHistories.filter((item) => {
-                return item.id !== history.id;
-            });
+            this.unpinHistory(history.id);
         },
     },
 };

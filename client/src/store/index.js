@@ -44,7 +44,14 @@ galaxyStorage.config({
 const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
-    modules: ["panels", "userFlags"],
+    reducer: (state) => {
+        const { panels, userFlags, history } = state;
+        return {
+            panels,
+            userFlags,
+            history: { pinnedHistories: history.pinnedHistories },
+        };
+    },
 });
 
 export function createStore() {
