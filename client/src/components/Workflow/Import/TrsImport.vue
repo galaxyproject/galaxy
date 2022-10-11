@@ -123,6 +123,7 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
             <div>
                 <b>TRS Server:</b>
                 <TrsServerSelection
+                    :trs-selection="trsSelection"
                     :query-trs-server="props.queryTrsServer"
                     @onError="onTrsSelectionError"
                     @onTrsSelection="onTrsSelection" />
