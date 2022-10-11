@@ -78,10 +78,10 @@
     </div>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { safePath } from "utils/redirect";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 
@@ -97,24 +97,26 @@ export default {
             return `/workflows/edit?id=${this.workflow.id}`;
         },
         urlDownload() {
-            return `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`;
+            return safePath(`/api/workflows/${this.workflow.id}/download?format=json-download`);
         },
         urlShare() {
             return `/workflows/sharing?id=${this.workflow.id}`;
         },
         urlExport() {
-            return `${getAppRoot()}workflows/export?id=${this.workflow.id}`;
+            return safePath(`/workflows/export?id=${this.workflow.id}`);
         },
         urlView() {
-            return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;
+            return safePath(`/workflow/display_by_id?id=${this.workflow.id}`);
         },
         urlInvocations() {
             return `/workflows/${this.workflow.id}/invocations`;
         },
         urlViewShared() {
-            return `${getAppRoot()}workflow/display_by_username_and_slug?username=${
-                this.workflow.owner
-            }&slug=${encodeURIComponent(this.workflow.slug)}`;
+            return safePath(
+                `/workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${encodeURIComponent(
+                    this.workflow.slug
+                )}`
+            );
         },
         readOnly() {
             return !!this.workflow.shared;
@@ -154,8 +156,7 @@ export default {
         },
     },
     created() {
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
     },
     methods: {
         onCopy: function () {
