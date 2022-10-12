@@ -169,6 +169,11 @@ class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
         }
 
 
+class IrodsIdleConnectionUploadTestCase(IrodsUploadTestDatatypeDataTestCase):
+
+    object_store_template = IRODS_OBJECT_STORE_CONFIG
+
+
 class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
 
     object_store_template = DISTRIBUTED_OBJECT_STORE_CONFIG
@@ -186,7 +191,7 @@ class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
 distributed_instance = integration_util.integration_module_instance(UploadTestDosDiskAndDiskTestCase)
 irods_instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)
 distributed_and_irods_instance = integration_util.integration_module_instance(UploadTestDosIrodsAndDiskTestCase)
-idle_connection_irods_instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)
+idle_connection_irods_instance = integration_util.integration_module_instance(IrodsIdleConnectionUploadTestCase)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
