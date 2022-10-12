@@ -11,13 +11,13 @@ from pydantic import BaseModel
 
 from galaxy import exceptions
 from galaxy.auth import AuthManager
-from galaxy.web.framework.base import Request
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.users import UserManager
 from galaxy.util import (
     smart_str,
     unicodify,
 )
+from galaxy.web.framework.base import Request
 
 
 class APIKeyResponse(BaseModel):
