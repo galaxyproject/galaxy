@@ -5,7 +5,7 @@ from galaxy.model import User
 
 def test_alwaysreject():
     t = AlwaysReject()
-    assert t.authenticate("testmail", "testuser", "secret", dict()) == (None, "", "")
+    assert t.authenticate("testmail", "testuser", "secret", dict(), None) == (None, "", "")
 
 
 def test_localdb():
