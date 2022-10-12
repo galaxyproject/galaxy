@@ -20,7 +20,8 @@ import yaml
 from requests import (
     delete,
     get,
-    put,
+    post,
+    put
 )
 
 from galaxy.exceptions import error_codes
@@ -379,6 +380,26 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
             workflow_url = self._api_url(f"workflows/{workflow_id}", use_key=True)
             delete_response = delete(workflow_url)
             self._assert_status_code_is(delete_response, 403)
+
+    def test_undelete(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_undelete")
+        workflow_name = "test_undelete"
+        self._assert_user_has_workflow_with_name(workflow_name)
+        workflow_delete_url = self._api_url(f"workflows/{workflow_id}", use_key=True)
+        delete(workflow_delete_url)
+        workflow_undelete_url = self._api_url(f"workflows/{workflow_id}/undelete", use_key=True)
+        undelete_response = post(workflow_undelete_url)
+        self._assert_status_code_is(undelete_response, 200)
+        assert workflow_name in self._workflow_names()
+
+    def test_other_cannot_undelete(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_other_undelete")
+        workflow_delete_url = self._api_url(f"workflows/{workflow_id}", use_key=True)
+        delete(workflow_delete_url)
+        with self._different_user():
+            workflow_undelete_url = self._api_url(f"workflows/{workflow_id}/undelete", use_key=True)
+            undelete_response = post(workflow_undelete_url)
+            self._assert_status_code_is(undelete_response, 403)
 
     def test_index(self):
         index_response = self._get("workflows")
