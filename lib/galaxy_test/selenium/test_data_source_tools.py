@@ -1,4 +1,4 @@
-from galaxy_test.base.populators import skip_if_site_down
+from galaxy.tool_util.unittest_utils import skip_if_site_down
 from .framework import (
     managed_history,
     selenium_test,

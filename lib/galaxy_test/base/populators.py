@@ -85,6 +85,7 @@ from galaxy.tool_util.cwl.util import (
     output_to_cwl_json,
     tool_response_to_output,
 )
+from galaxy.tool_util.unittest_utils import skip_if_site_down
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     timeout_type,
@@ -186,26 +187,6 @@ def skip_without_datatype(extension):
         def wrapped_method(api_test_case, *args, **kwargs):
             _raise_skip_if(not has_datatype(api_test_case))
             method(api_test_case, *args, **kwargs)
-
-        return wrapped_method
-
-    return method_wrapper
-
-
-def is_site_up(url):
-    try:
-        response = requests.get(url, timeout=10)
-        return response.status_code == 200
-    except Exception:
-        return False
-
-
-def skip_if_site_down(url):
-    def method_wrapper(method):
-        @wraps(method)
-        def wrapped_method(*args, **kwargs):
-            _raise_skip_if(not is_site_up(url), f"Test depends on [{url}] being up and it appears to be down.")
-            method(*args, **kwargs)
 
         return wrapped_method
 
