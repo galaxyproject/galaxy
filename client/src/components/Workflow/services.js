@@ -76,7 +76,7 @@ export class Services {
         // better than the alternatives IMO. -John
         // https://github.com/pallets/flask/issues/900
         toolId = btoa(toolId);
-        const url = safePath(`/}api/trs_consume/${trsServer}/tools/${toolId}?tool_id_b64_encoded=true`);
+        const url = safePath(`/api/trs_consume/${trsServer}/tools/${toolId}?tool_id_b64_encoded=true`);
         try {
             const response = await axios.get(url);
             return response.data;

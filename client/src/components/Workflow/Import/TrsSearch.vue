@@ -114,6 +114,7 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
             <b-input-group class="mb-3">
                 <DebouncedInput v-slot="{ value, input }" v-model="query">
                     <b-form-input
+                        id="trs-search-query"
                         :value="value"
                         placeholder="search query"
                         data-description="filter text input"
