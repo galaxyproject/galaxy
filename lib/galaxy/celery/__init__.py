@@ -185,8 +185,12 @@ def init_celery_app():
 
 
 def config_celery_app(config, celery_app):
+    # Apply settings from galaxy's config
     celery_app.conf.update(config.celery_conf)
-    celery_app.conf.broker_url = config.celery_broker or config.amqp_internal_connection
+
+    # Handle special cases
+    if not celery_app.conf.broker_url:
+        celery_app.conf.broker_url = config.amqp_internal_connection
     if config.celery_backend:
         celery_app.conf.results_backend = config.celery_backend
 
