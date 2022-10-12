@@ -137,7 +137,9 @@ class User(BaseUser):
             status = "error"
         else:
             # check user is allowed to register
-            message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
+            message, status = trans.app.auth_manager.check_registration_allowed(
+                email, username, password, trans.request
+            )
             if not message:
                 # Create the user, save all the user info and login to Galaxy
                 if params.get("create_user_button", False):
