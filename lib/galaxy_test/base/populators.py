@@ -118,9 +118,9 @@ SKIP_FLAKEY_TESTS_ON_ERROR = os.environ.get("GALAXY_TEST_SKIP_FLAKEY_TESTS_ON_ER
 
 def flakey(method):
     @wraps(method)
-    def wrapped_method(test_case, *args, **kwargs):
+    def wrapped_method(*args, **kwargs):
         try:
-            method(test_case, *args, **kwargs)
+            method(*args, **kwargs)
         except unittest.SkipTest:
             raise
         except Exception:
@@ -203,9 +203,9 @@ def is_site_up(url):
 def skip_if_site_down(url):
     def method_wrapper(method):
         @wraps(method)
-        def wrapped_method(api_test_case, *args, **kwargs):
+        def wrapped_method(*args, **kwargs):
             _raise_skip_if(not is_site_up(url), f"Test depends on [{url}] being up and it appears to be down.")
-            method(api_test_case, *args, **kwargs)
+            method(*args, **kwargs)
 
         return wrapped_method
 
