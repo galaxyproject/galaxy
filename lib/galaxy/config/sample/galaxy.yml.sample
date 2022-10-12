@@ -2410,9 +2410,6 @@ galaxy:
   # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
 
-  # If set, it will be the results backend for Celery.
-  #celery_backend: null
-
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific
   # reason to disable it.

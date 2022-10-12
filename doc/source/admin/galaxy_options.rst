@@ -4790,16 +4790,6 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~~~~
-``celery_backend``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If set, it will be the results backend for Celery.
-:Default: ``None``
-:Type: str
-
-
 ~~~~~~~~~~~~~~
 ``use_pbkdf2``
 ~~~~~~~~~~~~~~
