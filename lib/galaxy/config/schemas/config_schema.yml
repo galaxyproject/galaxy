@@ -3479,6 +3479,8 @@ mapping:
           To refer to a task by name, use the template `galaxy.foo` where `foo` is the function name
           of the task defined in the galaxy.celery.tasks module.
 
+          The `broker_url` option, if unset, defaults to the value of `amqp_internal_connection`.
+
           For details, see Celery documentation at https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 
       enable_celery_tasks:
@@ -3489,12 +3491,6 @@ mapping:
           Offload long-running tasks to a Celery task queue.
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
-
-      celery_broker:
-        type: str
-        required: false
-        desc: |
-          Celery broker (if unset falls back to amqp_internal_connection).
 
       celery_backend:
         type: str
