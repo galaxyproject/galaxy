@@ -51,12 +51,18 @@ class GalaxyCelery(Celery):
         super().__init__(*args, **kwargs)
 
     def gen_task_name(self, name, module):
-        # drop "celery.tasks" infix for less verbose task names:
-        # - galaxy.celery.tasks.do_foo >> galaxy.do_foo
-        # - galaxy.celery.tasks.subtasks.do_fuz >> galaxy.subtasks.do_fuz
+        module = self.trim_module_name(module)
+        return super().gen_task_name(name, module)
+
+    def trim_module_name(self, module):
+        """
+        Drop "celery.tasks" infix for less verbose task names:
+        - galaxy.celery.tasks.do_foo >> galaxy.do_foo
+        - galaxy.celery.tasks.subtasks.do_fuz >> galaxy.subtasks.do_fuz
+        """
         if module.startswith("galaxy.celery.tasks"):
             module = f"galaxy{module[19:]}"
-        return super().gen_task_name(name, module)
+        return module
 
 
 def set_thread_app(app):
@@ -196,9 +202,11 @@ def config_celery_app(config, celery_app):
 def setup_periodic_tasks(config, celery_app):
     def schedule_task(task, interval):
         if interval > 0:
-            task_name = task.replace("_", "-")
-            beat_schedule[task_name] = {
-                "task": f"{MAIN_TASK_MODULE}.{task}",
+            task_key = task.replace("_", "-")
+            module_name = celery_app.trim_module_name(MAIN_TASK_MODULE)
+            task_name = f"{module_name}.{task}"
+            beat_schedule[task_key] = {
+                "task": task_name,
                 "schedule": interval,
             }
 
