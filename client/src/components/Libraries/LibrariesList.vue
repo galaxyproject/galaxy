@@ -59,6 +59,7 @@
                     <textarea
                         v-if="row.item.editMode"
                         v-model="row.item.name"
+                        aria-label="Library name"
                         class="form-control input_library_name"
                         rows="3" />
 
@@ -92,7 +93,11 @@
                         icon="globe" />
                 </template>
                 <template v-slot:cell(buttons)="row">
-                    <b-button v-if="row.item.deleted" :title="'Undelete ' + row.item.name" @click="undelete(row.item)">
+                    <b-button
+                        v-if="row.item.deleted"
+                        size="sm"
+                        :title="'Undelete ' + row.item.name"
+                        @click="undelete(row.item)">
                         <font-awesome-icon icon="unlock" />
                         {{ titleUndelete }}
                     </b-button>
@@ -106,7 +111,7 @@
                         {{ titleSave }}
                     </b-button>
                     <b-button
-                        v-if="row.item.can_user_modify"
+                        v-if="row.item.can_user_modify && !row.item.deleted"
                         size="sm"
                         class="lib-btn edit_library_btn save_library_btn"
                         :title="`Edit ${row.item.name}`"
@@ -121,7 +126,7 @@
                         </div>
                     </b-button>
                     <b-button
-                        v-if="user.is_admin"
+                        v-if="user.is_admin && !row.item.deleted"
                         size="sm"
                         class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
@@ -130,7 +135,7 @@
                         Manage
                     </b-button>
                     <b-button
-                        v-if="user.is_admin && row.item.editMode"
+                        v-if="user.is_admin && row.item.editMode && !row.item.deleted"
                         size="sm"
                         class="lib-btn delete-lib-btn"
                         :title="`Delete ${row.item.name}`"
