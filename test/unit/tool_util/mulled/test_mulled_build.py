@@ -29,7 +29,7 @@ def test_base_image_for_targets(target, version, base_image):
 
 @pytest.mark.parametrize("use_mamba", [False, True])
 @external_dependency_management
-def test_mulled_build_files_cli(target, tmpdir):
+def test_mulled_build_files_cli(use_mamba, tmpdir):
     singularity_image_dir = tmpdir.mkdir("singularity image dir")
     target = build_target("zlib")
     mull_targets(
