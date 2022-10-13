@@ -1,3 +1,35 @@
+<script setup>
+import { ref } from "vue";
+import svc from "./model/service";
+import APIKeyItem from "./APIKeyItem";
+import { getGalaxyInstance } from "app";
+import LoadingSpan from "components/LoadingSpan";
+
+const apiKey = ref(null);
+const loading = ref(false);
+const errorMessage = ref(null);
+const createLoading = ref(false);
+
+const currentUserId = getGalaxyInstance().user.id;
+
+const getAPIKey = () => {
+    loading.value = true;
+    svc.getAPIKey(currentUserId)
+        .then((result) => (apiKey.value = result[0]))
+        .catch((err) => (errorMessage.value = err.message))
+        .finally(() => (loading.value = false));
+};
+const createNewAPIKey = () => {
+    createLoading.value = true;
+    svc.createNewAPIKey(currentUserId)
+        .then(() => getAPIKey())
+        .catch((err) => (errorMessage.value = err.message))
+        .finally(() => (createLoading.value = false));
+};
+
+getAPIKey();
+</script>
+
 <template>
     <section class="api-key d-flex flex-column">
         <h2 v-localize>Manage API Key</h2>
@@ -7,82 +39,30 @@
             access your account and should be treated with the same care as your login password.
         </span>
 
-        <b-alert dismissible fade variant="warning" :show="errorMessage" @dismissed="errorMessage = null">
+        <b-alert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
         </b-alert>
 
-        <b-alert v-if="loading" class="m-2" variant="info" show>
+        <b-alert v-if="loading" class="m-2" show variant="info">
             <LoadingSpan message="Loading API keys" />
         </b-alert>
 
         <b-button
-            v-else-if="!loading && !items.length"
-            variant="primary"
+            v-else-if="!loading && !apiKey"
             :disabled="createLoading"
             class="create-button"
+            variant="primary"
             @click.prevent="createNewAPIKey">
             <icon v-if="!createLoading" icon="plus" />
             <icon v-else icon="spinner" spin />
             <span v-localize>Create a new key</span>
         </b-button>
 
-        <b-container v-else-if="items.length" class="mt-2">
-            <b-row class="justify-content-between">
-                <b-col v-for="(item, index) in items" :key="index" cols="12" md="auto" class="mb-2">
-                    <APIKeyItem :item="item" @getAPIKey="getAPIKey" />
-                </b-col>
-            </b-row>
-        </b-container>
+        <div v-else-if="apiKey" class="mx-2">
+            <APIKeyItem :item="apiKey" @getAPIKey="getAPIKey" />
+        </div>
     </section>
 </template>
-
-<script>
-import svc from "./model/service";
-import APIKeyItem from "./APIKeyItem";
-import LoadingSpan from "components/LoadingSpan";
-import { getGalaxyInstance } from "app";
-
-export default {
-    components: {
-        APIKeyItem,
-        LoadingSpan,
-    },
-    data() {
-        return {
-            items: [],
-            loading: false,
-            createLoading: false,
-            errorMessage: null,
-        };
-    },
-    computed: {
-        currentUserId() {
-            return getGalaxyInstance().user.id;
-        },
-    },
-    mounted() {
-        this.getAPIKey();
-    },
-    methods: {
-        getAPIKey() {
-            this.loading = true;
-
-            svc.getAPIKey(this.currentUserId)
-                .then((items) => (this.items = items))
-                .catch((err) => (this.errorMessage = err.message))
-                .finally(() => (this.loading = false));
-        },
-        createNewAPIKey() {
-            this.createLoading = true;
-
-            svc.createNewAPIKey(this.currentUserId)
-                .then(() => this.getAPIKey())
-                .catch((err) => (this.errorMessage = err.message))
-                .finally(() => (this.createLoading = false));
-        },
-    },
-};
-</script>
 
 <style scoped>
 .create-button {
