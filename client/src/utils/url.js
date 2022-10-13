@@ -13,3 +13,17 @@ export async function urlData({ url, headers, params }) {
         rethrowSimple(e);
     }
 }
+
+/**
+ * Adds search parameters to url.
+ *
+ * @param {String} original url
+ * @param {Object} params which will be added to the url
+ * @returns
+ */
+export function addSearchParams(url, params) {
+    const placeholder = url.indexOf("?") == -1 ? "?" : "&";
+    const searchParams = new URLSearchParams(params);
+    const searchString = searchParams.toString();
+    return searchString ? `${url}${placeholder}${searchString}` : url;
+}

@@ -2,6 +2,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import { patchRouterPush } from "./router-push";
 
 // these modules are mounted below the masthead.
 import Analysis from "entry/analysis/modules/Analysis";
@@ -59,32 +60,7 @@ import { StorageDashboardRouter } from "components/User/DiskUsage";
 Vue.use(VueRouter);
 
 // patches $router.push() to trigger an event and hide duplication warnings
-const originalPush = VueRouter.prototype.push;
-VueRouter.prototype.push = function push(location, windowManagerTitle = null) {
-    // verify if confirmation is required
-    console.debug("VueRouter - push: ", location);
-    if (this.confirmation) {
-        if (confirm("There are unsaved changes which will be lost.")) {
-            this.confirmation = undefined;
-        } else {
-            return;
-        }
-    }
-    // show location in window manager
-    const Galaxy = getGalaxyInstance();
-    if (windowManagerTitle && Galaxy.frame && Galaxy.frame.active) {
-        Galaxy.frame.add({ title: windowManagerTitle, url: location });
-        return;
-    }
-    // always emit event when a route is pushed
-    this.app.$emit("router-push");
-    // avoid console warning when user clicks to revisit same route
-    return originalPush.call(this, location).catch((err) => {
-        if (err.name !== "NavigationDuplicated") {
-            throw err;
-        }
-    });
-};
+patchRouterPush(VueRouter);
 
 // redirect anon users
 function redirectAnon() {
