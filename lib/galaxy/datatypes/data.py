@@ -453,7 +453,7 @@ class Data(metaclass=DataMeta):
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
-                        mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
+                        mime = trans.app.datatypes_registry.get_mimetype_by_extension(file_path.split(".")[-1])
                     except Exception:
                         mime = "text/plain"
                 self._clean_and_set_mime_type(trans, mime, headers)

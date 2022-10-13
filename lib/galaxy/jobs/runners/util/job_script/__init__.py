@@ -8,7 +8,8 @@ from typing import (
     Dict,
 )
 
-from galaxy.job_execution.setup import JobIO
+from typing_extensions import Protocol
+
 from galaxy.util import (
     RWXR_XR_X,
     unicodify,
@@ -22,7 +23,7 @@ DEFAULT_JOB_FILE_TEMPLATE = Template(resource_string(__name__, "DEFAULT_JOB_FILE
 
 SLOTS_STATEMENT_CLUSTER_DEFAULT = resource_string(__name__, "CLUSTER_SLOTS_STATEMENT.sh")
 
-MEMORY_STATEMENT_DEFAULT = resource_string(__name__, "MEMORY_STATEMENT.sh")
+MEMORY_STATEMENT_DEFAULT_TEMPLATE = Template(resource_string(__name__, "MEMORY_STATEMENT_TEMPLATE.sh"))
 
 SLOTS_STATEMENT_SINGLE = """
 GALAXY_SLOTS="1"
@@ -41,14 +42,13 @@ INTEGRITY_SYNC_COMMAND = "/bin/sync"
 DEFAULT_INTEGRITY_CHECK = True
 DEFAULT_INTEGRITY_COUNT = 35
 DEFAULT_INTEGRITY_SLEEP = 0.25
-REQUIRED_TEMPLATE_PARAMS = ["working_directory", "command", "exit_code_path"]
+REQUIRED_TEMPLATE_PARAMS = ["working_directory", "command"]
 OPTIONAL_TEMPLATE_PARAMS: Dict[str, Any] = {
     "galaxy_lib": None,
     "galaxy_virtual_env": None,
     "headers": "",
     "env_setup_commands": [],
     "slots_statement": SLOTS_STATEMENT_CLUSTER_DEFAULT,
-    "memory_statement": MEMORY_STATEMENT_DEFAULT,
     "instrument_pre_commands": "",
     "instrument_post_commands": "",
     "integrity_injection": INTEGRITY_INJECTION,
@@ -86,11 +86,18 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     if any(param not in kwds for param in REQUIRED_TEMPLATE_PARAMS):
         raise Exception("Failed to create job_script, a required parameter is missing.")
     job_instrumenter = kwds.get("job_instrumenter", None)
+    metadata_directory = kwds.get("metadata_directory", kwds["working_directory"])
     if job_instrumenter:
         del kwds["job_instrumenter"]
-        working_directory = kwds.get("metadata_directory", kwds["working_directory"])
-        kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(working_directory) or ""
-        kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(working_directory) or ""
+        kwds["instrument_pre_commands"] = job_instrumenter.pre_execute_commands(metadata_directory) or ""
+        kwds["instrument_post_commands"] = job_instrumenter.post_execute_commands(metadata_directory) or ""
+    if "memory_statement" not in kwds:
+        kwds["memory_statement"] = MEMORY_STATEMENT_DEFAULT_TEMPLATE.safe_substitute(
+            metadata_directory=metadata_directory
+        )
+
+    # Setup home directory var
+    kwds["home_directory"] = kwds.get("home_directory", os.path.join(kwds["working_directory"], "home"))
 
     template_params = OPTIONAL_TEMPLATE_PARAMS.copy()
     template_params.update(**kwds)
@@ -103,7 +110,13 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
     return template.safe_substitute(template_params)
 
 
-def write_script(path, contents, job_io: JobIO, mode=RWXR_XR_X):
+class DescribesScriptIntegrityChecks(Protocol):
+    check_job_script_integrity: bool
+    check_job_script_integrity_count: int
+    check_job_script_integrity_sleep: float
+
+
+def write_script(path, contents, job_io: DescribesScriptIntegrityChecks, mode=RWXR_XR_X) -> None:
     dir = os.path.dirname(path)
     if not os.path.exists(dir):
         os.makedirs(dir)

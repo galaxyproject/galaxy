@@ -2,6 +2,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import { patchRouterPush } from "./router-push";
 
 // these modules are mounted below the masthead.
 import Analysis from "entry/analysis/modules/Analysis";
@@ -40,11 +41,10 @@ import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import ToolAdvancedSearch from "components/Panels/Common/ToolAdvancedSearch";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
-import ToolsView from "components/ToolsView/ToolsView";
 import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
-import TrsImport from "components/Workflow/TrsImport";
-import TrsSearch from "components/Workflow/TrsSearch";
+import TrsImport from "components/Workflow/Import/TrsImport";
+import TrsSearch from "components/Workflow/Import/TrsSearch";
 import UserInvocations from "components/Workflow/UserInvocations";
 import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
@@ -61,32 +61,7 @@ import { StorageDashboardRouter } from "components/User/DiskUsage";
 Vue.use(VueRouter);
 
 // patches $router.push() to trigger an event and hide duplication warnings
-const originalPush = VueRouter.prototype.push;
-VueRouter.prototype.push = function push(location, windowManagerTitle = null) {
-    // verify if confirmation is required
-    console.debug("VueRouter - push: ", location);
-    if (this.confirmation) {
-        if (confirm("There are unsaved changes which will be lost.")) {
-            this.confirmation = undefined;
-        } else {
-            return;
-        }
-    }
-    // show location in window manager
-    const Galaxy = getGalaxyInstance();
-    if (windowManagerTitle && Galaxy.frame && Galaxy.frame.active) {
-        Galaxy.frame.add({ title: windowManagerTitle, url: location });
-        return;
-    }
-    // always emit event when a route is pushed
-    this.app.$emit("router-push");
-    // avoid console warning when user clicks to revisit same route
-    return originalPush.call(this, location).catch((err) => {
-        if (err.name !== "NavigationDuplicated") {
-            throw err;
-        }
-    });
-};
+patchRouterPush(VueRouter);
 
 // redirect anon users
 function redirectAnon() {
@@ -144,7 +119,7 @@ export function getRouter(Galaxy) {
                         path: "datasets/:datasetId/preview",
                         component: CenterFrame,
                         props: (route) => ({
-                            src: `datasets/${route.params.datasetId}/display/?preview=True`,
+                            src: `/datasets/${route.params.datasetId}/display/?preview=True`,
                         }),
                     },
                     {
@@ -178,8 +153,8 @@ export function getRouter(Galaxy) {
                         path: "histories/rename",
                         component: FormGeneric,
                         props: (route) => ({
-                            url: `history/rename?id=${route.query.id}`,
-                            redirect: "histories/list",
+                            url: `/history/rename?id=${route.query.id}`,
+                            redirect: "/histories/list",
                         }),
                     },
                     {
@@ -195,8 +170,8 @@ export function getRouter(Galaxy) {
                         path: "histories/permissions",
                         component: FormGeneric,
                         props: (route) => ({
-                            url: `history/permissions?id=${route.query.id}`,
-                            redirect: "histories/list",
+                            url: `/history/permissions?id=${route.query.id}`,
+                            redirect: "/histories/list",
                         }),
                     },
                     {
@@ -238,14 +213,14 @@ export function getRouter(Galaxy) {
                         path: "pages/create",
                         component: FormGeneric,
                         props: (route) => {
-                            let url = "page/create";
+                            let url = "/page/create";
                             const invocation_id = route.query.invocation_id;
                             if (invocation_id) {
                                 url += `?invocation_id=${invocation_id}`;
                             }
                             return {
                                 url: url,
-                                redirect: "pages/list",
+                                redirect: "/pages/list",
                                 active_tab: "user",
                             };
                         },
@@ -254,8 +229,8 @@ export function getRouter(Galaxy) {
                         path: "pages/edit",
                         component: FormGeneric,
                         props: (route) => ({
-                            url: `page/edit?id=${route.query.id}`,
-                            redirect: "pages/list",
+                            url: `/page/edit?id=${route.query.id}`,
+                            redirect: "/pages/list",
                             active_tab: "user",
                         }),
                     },
@@ -299,10 +274,6 @@ export function getRouter(Galaxy) {
                                 ...route.query,
                             };
                         },
-                    },
-                    {
-                        path: "tools/view",
-                        component: ToolsView,
                     },
                     {
                         path: "tools/json",
@@ -349,8 +320,8 @@ export function getRouter(Galaxy) {
                         path: "visualizations/edit",
                         component: FormGeneric,
                         props: (route) => ({
-                            url: `visualization/edit?id=${route.query.id}`,
-                            redirect: "visualizations/list",
+                            url: `/visualization/edit?id=${route.query.id}`,
+                            redirect: "/visualizations/list",
                             active_tab: "visualization",
                         }),
                     },
@@ -380,12 +351,12 @@ export function getRouter(Galaxy) {
                         path: "workflows/create",
                         component: FormGeneric,
                         props: {
-                            url: "workflow/create",
-                            redirect: "workflows/edit",
+                            url: "/workflow/create",
+                            redirect: "/workflows/edit",
                             active_tab: "workflow",
                             submitTitle: "Create",
                             submitIcon: "fa-check",
-                            cancelRedirect: "workflows/list",
+                            cancelRedirect: "/workflows/list",
                         },
                     },
                     {

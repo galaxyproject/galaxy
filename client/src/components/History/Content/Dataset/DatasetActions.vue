@@ -136,11 +136,11 @@ export default {
             this.$router.push(this.itemUrls.showDetails);
         },
         onRerun() {
-            this.$router.push(`/root?job_id=${this.item.creating_job}`);
+            this.$router.push(`/root?job_id=${this.item.creating_job}`, { force: true });
         },
         onVisualize() {
             const title = `Visualization of ${this.item.name || ""}`;
-            this.$router.push(this.itemUrls.visualize, title);
+            this.$router.push(this.itemUrls.visualize, { title });
         },
         onHighlight() {
             this.$emit("toggleHighlights");

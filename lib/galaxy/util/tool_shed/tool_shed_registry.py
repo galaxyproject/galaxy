@@ -75,3 +75,17 @@ class Registry:
                 return self.tool_sheds_auth[shed_name]
         log.debug(f"Invalid url '{str(url)}' received by tool shed registry's url_auth method.")
         return None
+
+    def get_tool_shed_url(self, tool_shed: str) -> Optional[str]:
+        """
+        The value of tool_shed is something like: toolshed.g2.bx.psu.edu.  We need the URL to this tool shed, which is
+        something like: http://toolshed.g2.bx.psu.edu/
+        """
+        cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(tool_shed)
+        for shed_url in self.tool_sheds.values():
+            if shed_url.find(cleaned_tool_shed) >= 0:
+                if shed_url.endswith("/"):
+                    shed_url = shed_url.rstrip("/")
+                return shed_url
+        # The tool shed from which the repository was originally installed must no longer be configured in tool_sheds_conf.xml.
+        return None

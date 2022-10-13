@@ -361,7 +361,7 @@ class BaseInputTerminal extends Terminal {
                 false,
                 `Effective output data type(s) [${invalidDatatypes.join(
                     ", "
-                )}] unknown. This tool cannot be executed on this Galaxy Server at this moment, please contact the Administrator.`
+                )}] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator.`
             );
         }
         return new ConnectionAcceptable(

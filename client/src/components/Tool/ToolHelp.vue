@@ -1,5 +1,5 @@
 <template>
-    <div class="form-help form-text mt-4" v-html="formattedContent" />
+    <div class="form-help form-text" v-html="formattedContent" />
 </template>
 
 <script>

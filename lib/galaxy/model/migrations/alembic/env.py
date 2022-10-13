@@ -74,8 +74,12 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
 
 def _process_cmd_current(urls: Dict[str, str]) -> bool:
     if config.cmd_opts.cmd[0].__name__ == "current":  # type: ignore[union-attr]
+        # Run command for each url only if urls are different; otherwise run once.
+        are_urls_equal = len(set(urls.values())) == 1
         for url in urls.values():
             _configure_and_run_migrations_online(url)
+            if are_urls_equal:
+                break
         return True
     return False
 

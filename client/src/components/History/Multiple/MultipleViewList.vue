@@ -31,6 +31,7 @@
 </template>
 
 <script>
+import { mapActions, mapGetters } from "vuex";
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem";
 import SelectorModal from "components/History/Modals/SelectorModal";
@@ -61,26 +62,32 @@ export default {
     data() {
         return {
             MultipleViewItem,
-            selectedHistories: [],
         };
     },
+    computed: {
+        ...mapGetters("history", ["getPinnedHistories"]),
+        selectedHistories() {
+            return this.getPinnedHistories();
+        },
+    },
     created() {
-        const firstHistory = this.histories[0];
-        this.selectedHistories = [{ id: firstHistory.id }];
+        if (!this.selectedHistories.length) {
+            const firstHistory = this.histories[0];
+            this.pinHistory(firstHistory.id);
+        }
     },
     methods: {
+        ...mapActions("history", ["pinHistory", "unpinHistory"]),
         addHistoriesToList(histories) {
             histories.forEach((history) => {
                 const historyExists = this.selectedHistories.find((h) => h.id == history.id);
                 if (!historyExists) {
-                    this.selectedHistories.push({ id: history.id });
+                    this.pinHistory(history.id);
                 }
             });
         },
         removeHistoryFromList(history) {
-            this.selectedHistories = this.selectedHistories.filter((item) => {
-                return item.id !== history.id;
-            });
+            this.unpinHistory(history.id);
         },
     },
 };
@@ -93,5 +100,14 @@ export default {
     .history-picker {
         border: dotted lightgray;
     }
+
+    background-image: linear-gradient(to right, white, white), linear-gradient(to right, white, white),
+        linear-gradient(to right, rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0)),
+        linear-gradient(to left, rgba(0, 0, 0, 0.25), rgba(255, 255, 255, 0));
+    background-position: left center, right center, left center, right center;
+    background-repeat: no-repeat;
+    background-color: white;
+    background-size: 20px 100%, 20px 100%, 10px 100%, 10px 100%;
+    background-attachment: local, local, scroll, scroll;
 }
 </style>

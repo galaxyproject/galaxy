@@ -100,7 +100,7 @@ export default {
     },
     methods: {
         getWorkflow() {
-            const url = `api/workflows/${this.id}`;
+            const url = `/api/workflows/${this.id}`;
             urlData({ url })
                 .then((workflow) => {
                     this.workflow = workflow;

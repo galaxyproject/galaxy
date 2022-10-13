@@ -1,7 +1,6 @@
 <template>
     <div>
         <b-link
-            id="workflow-dropdown"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
             aria-haspopup="true"
@@ -23,7 +22,11 @@
             icon="link" />
         <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
-            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlEdit)">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item"
+                @keypress="$router.push(urlEdit)"
+                @click.prevent="$router.push(urlEdit)">
                 <span class="fa fa-edit fa-fw mr-1" />
                 <span v-localize>Edit</span>
             </a>
@@ -31,7 +34,11 @@
                 <span class="fa fa-copy fa-fw mr-1" />
                 <span v-localize>Copy</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlInvocations)">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item"
+                @keypress="$router.push(urlInvocations)"
+                @click.prevent="$router.push(urlInvocations)">
                 <span class="fa fa-list fa-fw mr-1" />
                 <span v-localize>Invocations</span>
             </a>
@@ -43,7 +50,11 @@
                 <span class="fa fa-signature fa-fw mr-1" />
                 <span v-localize>Rename</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" @click.prevent="$router.push(urlShare)">
+            <a
+                v-if="!readOnly"
+                class="dropdown-item"
+                @keypress="$router.push(urlShare)"
+                @click.prevent="$router.push(urlShare)">
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span v-localize>Share</span>
             </a>
@@ -67,10 +78,10 @@
     </div>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { safePath } from "utils/redirect";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 
@@ -86,24 +97,26 @@ export default {
             return `/workflows/edit?id=${this.workflow.id}`;
         },
         urlDownload() {
-            return `${getAppRoot()}api/workflows/${this.workflow.id}/download?format=json-download`;
+            return safePath(`/api/workflows/${this.workflow.id}/download?format=json-download`);
         },
         urlShare() {
             return `/workflows/sharing?id=${this.workflow.id}`;
         },
         urlExport() {
-            return `${getAppRoot()}workflows/export?id=${this.workflow.id}`;
+            return safePath(`/workflows/export?id=${this.workflow.id}`);
         },
         urlView() {
-            return `${getAppRoot()}workflow/display_by_id?id=${this.workflow.id}`;
+            return safePath(`/workflow/display_by_id?id=${this.workflow.id}`);
         },
         urlInvocations() {
             return `/workflows/${this.workflow.id}/invocations`;
         },
         urlViewShared() {
-            return `${getAppRoot()}workflow/display_by_username_and_slug?username=${
-                this.workflow.owner
-            }&slug=${encodeURIComponent(this.workflow.slug)}`;
+            return safePath(
+                `/workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${encodeURIComponent(
+                    this.workflow.slug
+                )}`
+            );
         },
         readOnly() {
             return !!this.workflow.shared;
@@ -143,8 +156,7 @@ export default {
         },
     },
     created() {
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
     },
     methods: {
         onCopy: function () {

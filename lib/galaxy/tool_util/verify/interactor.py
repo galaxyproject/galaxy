@@ -1362,7 +1362,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         expected = testdef.num_outputs
         actual = len(data_list) + len(data_collection_list)
         if expected != actual:
-            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
+            message = f"Incorrect number of outputs - expected {expected}, found {actual} (dataset(s): {','.join(data_list.keys())} collection(s): {' '.join(data_collection_list.keys())})"
             error = AssertionError(message)
             register_exception(error)
 

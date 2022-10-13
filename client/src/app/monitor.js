@@ -19,7 +19,7 @@ if (!window.Galaxy) {
             if (!config.testBuild === true) {
                 console.warn("accessing (get) window.Galaxy", serverPath());
             }
-            return getGalaxyInstance() || galaxyStub;
+            return (getGalaxyInstance && getGalaxyInstance()) || galaxyStub;
         },
         set: function (newValue) {
             console.warn("accessing (set) window.Galaxy", serverPath());

@@ -2,7 +2,7 @@
     <div class="history-size my-1 d-flex justify-content-between">
         <b-button
             v-b-tooltip.hover
-            title="Access Dashboard"
+            title="History Size"
             variant="link"
             size="sm"
             class="rounded-0 text-decoration-none"

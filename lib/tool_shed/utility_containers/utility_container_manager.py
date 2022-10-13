@@ -1,11 +1,15 @@
 import logging
 
 from galaxy import util
-from tool_shed.util import (
-    common_util,
-    container_util,
-    repository_util,
+from galaxy.tool_shed.util.container_util import (
+    generate_repository_dependencies_key_for_repository,
+    get_components_from_key,
 )
+from galaxy.tool_shed.util.repository_util import (
+    extract_components_from_tuple,
+    get_tool_shed_repository_by_id,
+)
+from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 
 log = logging.getLogger(__name__)
 
@@ -648,7 +652,7 @@ class UtilityContainerManager:
             tool_shed_repository_id = None
             installation_status = "unknown"
         if tool_shed_repository_id:
-            tool_shed_repository = repository_util.get_tool_shed_repository_by_id(
+            tool_shed_repository = get_tool_shed_repository_by_id(
                 self.app, self.app.security.encode_id(tool_shed_repository_id)
             )
             if tool_shed_repository:
@@ -668,8 +672,8 @@ class UtilityContainerManager:
     def handle_repository_dependencies_container_entry(
         self, repository_dependencies_folder, rd_key, rd_value, folder_id, repository_dependency_id, folder_keys
     ):
-        repository_components_tuple = container_util.get_components_from_key(rd_key)
-        components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
+        repository_components_tuple = get_components_from_key(rd_key)
+        components_list = extract_components_from_tuple(repository_components_tuple)
         toolshed, repository_name, repository_owner, changeset_revision = components_list[0:4]
         # For backward compatibility to the 12/20/12 Galaxy release.
         if len(components_list) == 4:
@@ -732,7 +736,7 @@ class UtilityContainerManager:
                     changeset_revision,
                     prior_installation_required,
                     only_if_compiling_contained_td,
-                ) = common_util.parse_repository_dependency_tuple(repository_dependency)
+                ) = parse_repository_dependency_tuple(repository_dependency)
                 repository_dependency_id += 1
                 repository_dependency = RepositoryDependency(
                     id=repository_dependency_id,
@@ -757,8 +761,8 @@ class UtilityContainerManager:
             changeset_revision,
             prior_installation_required,
             only_if_compiling_contained_td,
-        ) = common_util.parse_repository_dependency_tuple(repository_dependency)
-        key = container_util.generate_repository_dependencies_key_for_repository(
+        ) = parse_repository_dependency_tuple(repository_dependency)
+        key = generate_repository_dependencies_key_for_repository(
             toolshed,
             repository_name,
             repository_owner,
@@ -780,8 +784,8 @@ class UtilityContainerManager:
         only_if_compiling_contained_td,
         key,
     ):
-        repository_components_tuple = container_util.get_components_from_key(key)
-        components_list = repository_util.extract_components_from_tuple(repository_components_tuple)
+        repository_components_tuple = get_components_from_key(key)
+        components_list = extract_components_from_tuple(repository_components_tuple)
         toolshed, key_name, key_owner, key_changeset_revision = components_list[0:4]
         # For backward compatibility to the 12/20/12 Galaxy release.
         if len(components_list) == 4:

@@ -27,21 +27,25 @@
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                     @input="onAnnotation" />
-                <FormDisplay
-                    :id="id"
-                    :inputs="inputs"
-                    :errors="errors"
-                    text-enable="Set in Advance"
-                    text-disable="Set at Runtime"
-                    @onChange="onChange" />
-                <FormSection
-                    :id="nodeId"
-                    :node-inputs="nodeInputs"
-                    :node-outputs="nodeOutputs"
-                    :node-active-outputs="nodeActiveOutputs"
-                    :datatypes="datatypes"
-                    :post-job-actions="postJobActions"
-                    @onChange="onChangePostJobActions" />
+                <ToolCardSection title="Tool Parameters">
+                    <FormDisplay
+                        :id="id"
+                        :inputs="inputs"
+                        :errors="errors"
+                        text-enable="Set in Advance"
+                        text-disable="Set at Runtime"
+                        @onChange="onChange" />
+                </ToolCardSection>
+                <ToolCardSection title="Additional Options">
+                    <FormSection
+                        :id="nodeId"
+                        :node-inputs="nodeInputs"
+                        :node-outputs="nodeOutputs"
+                        :node-active-outputs="nodeActiveOutputs"
+                        :datatypes="datatypes"
+                        :post-job-actions="postJobActions"
+                        @onChange="onChangePostJobActions" />
+                </ToolCardSection>
             </template>
         </ToolCard>
     </CurrentUser>
@@ -51,6 +55,7 @@
 import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import ToolCard from "components/Tool/ToolCard";
+import ToolCardSection from "components/Tool/ToolCardSection";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
@@ -61,6 +66,7 @@ export default {
         CurrentUser,
         FormDisplay,
         ToolCard,
+        ToolCardSection,
         FormElement,
         FormSection,
     },

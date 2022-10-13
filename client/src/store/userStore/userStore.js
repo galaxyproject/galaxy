@@ -1,4 +1,4 @@
-import { getCurrentUser } from "./queries";
+import { addFavoriteTool, removeFavoriteTool, getCurrentUser } from "./queries";
 import User from "./User";
 
 const state = {
@@ -19,6 +19,12 @@ const getters = {
 const mutations = {
     setCurrentUser(state, user) {
         state.currentUser = user;
+    },
+    setFavoriteTools(state, tools) {
+        const favoritesJson = state.currentUser.preferences.favorites;
+        const favorites = favoritesJson ? JSON.parse(favoritesJson) : { tools: [] };
+        favorites.tools = tools;
+        state.currentUser.preferences.favorites = JSON.stringify(favorites);
     },
 };
 
@@ -44,6 +50,14 @@ const actions = {
         commit("setCurrentUser", user);
         dispatch("history/loadCurrentHistory", user, { root: true });
         dispatch("history/loadHistories", user, { root: true });
+    },
+    async addFavoriteTool({ commit, state }, toolId) {
+        const tools = await addFavoriteTool(state.currentUser.id, toolId);
+        commit("setFavoriteTools", tools);
+    },
+    async removeFavoriteTool({ commit, state }, toolId) {
+        const tools = await removeFavoriteTool(state.currentUser.id, toolId);
+        commit("setFavoriteTools", tools);
     },
 };
 

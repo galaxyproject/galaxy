@@ -3,7 +3,7 @@
         <ToolForm v-if="isTool && !isUpload" v-bind="toolParams" />
         <WorkflowRun v-else-if="isWorkflow" v-bind="workflowParams" />
         <div v-else-if="isController" :src="controllerParams" />
-        <CenterFrame v-else src="welcome" />
+        <CenterFrame v-else src="/welcome" />
     </div>
 </template>
 

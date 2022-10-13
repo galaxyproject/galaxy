@@ -14,10 +14,10 @@
                     </b-button>
                     <b-button
                         v-else
+                        v-b-modal:copy-history-modal
                         size="sm"
                         variant="outline-info"
-                        title="Import this history"
-                        v-b-modal:copy-history-modal>
+                        title="Import this history">
                         Import this history
                     </b-button>
                 </div>
@@ -29,10 +29,10 @@
                     @view-collection="onViewCollection" />
                 <HistoryPanel
                     v-else
-                    v-on="handlers"
                     :history="history"
                     :writable="user.id == history.user_id"
                     :show-controls="false"
+                    v-on="handlers"
                     @view-collection="onViewCollection" />
                 <CopyModal id="copy-history-modal" :history="history" />
             </div>

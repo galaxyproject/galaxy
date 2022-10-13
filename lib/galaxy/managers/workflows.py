@@ -1268,10 +1268,11 @@ class WorkflowContentsManager(UsesAnnotations):
                         step_data_output["collection_type"] = collection_type
         return steps
 
-    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, internal=False):
+    def _workflow_to_dict_export(self, trans, stored=None, workflow=None, internal=False, allow_upgrade=False):
         """Export the workflow contents to a dictionary ready for JSON-ification and export.
 
         If internal, use content_ids instead subworkflow definitions.
+        If `allow_upgrade`, the workflow and sub-workflows might use updated tool versions when refactoring.
         """
         annotation_str = ""
         tag_str = ""
@@ -1312,7 +1313,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
             # Get user annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
-            content_id = module.get_content_id()
+            content_id = module.get_content_id() if allow_upgrade else step.content_id
             # Export differences for backward compatibility
             tool_state = module.get_export_state()
             # Step info
@@ -1322,7 +1323,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "content_id": content_id,
                 "tool_id": content_id,  # For workflows exported to older Galaxies,
                 # eliminate after a few years...
-                "tool_version": step.tool_version,
+                "tool_version": module.get_version() if allow_upgrade else step.tool_version,
                 "name": module.get_name(),
                 "tool_state": json.dumps(tool_state),
                 "errors": module.get_errors(),
@@ -1760,7 +1761,9 @@ class WorkflowContentsManager(UsesAnnotations):
     def do_refactor(self, trans, stored_workflow, refactor_request):
         """Apply supplied actions to stored_workflow.latest_workflow to build a new version."""
         workflow = stored_workflow.latest_workflow
-        as_dict = self._workflow_to_dict_export(trans, stored_workflow, workflow=workflow, internal=True)
+        as_dict = self._workflow_to_dict_export(
+            trans, stored_workflow, workflow=workflow, internal=True, allow_upgrade=True
+        )
         raw_workflow_description = self.normalize_workflow_format(trans, as_dict)
         workflow_update_options = WorkflowUpdateOptions(
             fill_defaults=False,

@@ -28,6 +28,7 @@ library.add(faDownload, faSpinner);
 import ConfigProvider from "components/providers/ConfigProvider";
 import { Toast } from "ui/toast";
 import axios from "axios";
+import { safePath } from "utils/redirect";
 export default {
     components: {
         ConfigProvider,
@@ -67,7 +68,7 @@ export default {
         onDownload(config) {
             if (!config.enable_celery_tasks) {
                 console.log("celery tasks not enabled - setting href to fallback URL.");
-                window.location.assign(this.fallbackUrl);
+                window.location.assign(safePath(this.fallbackUrl));
                 return;
             }
             this.waiting = true;

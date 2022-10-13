@@ -26,6 +26,18 @@ CONFIG_DIR_NAME = "config"
 GXY_CONFIG_PREFIX = "GALAXY_CONFIG_"
 TSI_CONFIG_PREFIX = "GALAXY_INSTALL_CONFIG_"
 
+# Update this dict with tags for each new release.
+# Note: the key should NOT be a prefix of an existing revision hash in alembic/versions_gxy/.
+# For example, if we have a hash 231xxxxxxxxx and use 231 as the key for release 23.1,
+# then using 231 as a partial revision identifier like `sh manage_db.sh upgrade 231`
+# will map to release 23.1 instead of revision 231xxxxxxxxx.
+REVISION_TAGS = {
+    "release_22.01": "base",
+    "22.01": "base",
+    "release_22.05": "186d4835587b",
+    "22.05": "186d4835587b",
+}
+
 
 class DbScript:
     """
@@ -94,6 +106,8 @@ class DbScript:
         # Relative revision identifier requires a branch label
         if rev.startswith("+") or rev.startswith("-"):
             return f"gxy@{rev}"
+        # Check if it's a tag, leave unchanged if not
+        rev = REVISION_TAGS.get(rev, rev)
         return rev
 
 
@@ -114,7 +128,7 @@ class ParserBuilder:
             "Upgrade to a later version",
             parents=[self._sql_arg_parser],
         )
-        parser.add_argument("revision", help="Revision identifier", nargs="?")
+        parser.add_argument("revision", help="Revision identifier or release tag", nargs="?")
 
     def add_downgrade_command(self):
         parser = self._add_parser(
@@ -123,7 +137,7 @@ class ParserBuilder:
             "Revert to a previous version",
             parents=[self._sql_arg_parser],
         )
-        parser.add_argument("revision", help="Revision identifier")
+        parser.add_argument("revision", help="Revision identifier or release tag")
 
     def add_version_command(self):
         self._add_parser(
@@ -245,7 +259,7 @@ class Command:
         try:
             getattr(dbscript, command)(args)
         except alembic.util.exc.CommandError as e:
-            if args.raiseerr:
+            if hasattr(args, "raiseerr") and args.raiseerr:
                 raise
             else:
                 log.error(e)

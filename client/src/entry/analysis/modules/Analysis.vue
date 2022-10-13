@@ -9,7 +9,7 @@
             <div class="center-container">
                 <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
                 <div v-show="!showCenter" class="center-panel" style="display: block">
-                    <router-view :key="$route.fullPath" />
+                    <router-view class="h-100" :key="$route.fullPath" />
                 </div>
             </div>
         </div>

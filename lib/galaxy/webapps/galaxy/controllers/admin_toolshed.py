@@ -92,7 +92,12 @@ class AdminToolshed(AdminGalaxy):
         if "operation" in kwd:
             operation = kwd.pop("operation").lower()
             if operation == "update tool shed status":
-                message, status = repository_util.check_for_updates(trans.app, trans.install_model, kwd.get("id"))
+                repository_id = kwd.get("id")
+                if repository_id:
+                    repository_id = trans.security.decode_id(repository_id)
+                message, status = repository_util.check_for_updates(
+                    trans.app.tool_shed_registry, trans.install_model, repository_id
+                )
         if message and status:
             kwd["message"] = util.sanitize_text(message)
             kwd["status"] = "success" if status in ["ok", "done", "success"] else "error"
