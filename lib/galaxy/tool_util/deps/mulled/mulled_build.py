@@ -290,13 +290,23 @@ def mull_targets(
     verbose = "--verbose" if verbose else "--quiet"
     conda_bin = "conda"
     if use_mamba:
-        constraint = "" if mamba_version is None else f"={mamba_version}"
-        involucro_args.extend(["-set", f"PREINSTALL=conda install {verbose} --yes mamba{constraint}"])
         conda_bin = "mamba"
-    else:
-        if conda_version is not None:
-            involucro_args.extend(["-set", f"PREINSTALL=conda install {verbose} --yes conda={conda_version}"])
+        if mamba_version is None:
+            mamba_version = ""
     involucro_args.extend(["-set", "CONDA_BIN=%s" % conda_bin])
+    if conda_version is not None or mamba_version is not None:
+        mamba_test = "true"
+        specs = []
+        if conda_version is not None:
+            specs.append(f"conda={conda_version}")
+        if mamba_version is not None:
+            specs.append(f"mamba={mamba_version}")
+            if mamba_version == "" and not specs:
+                # If nothing but mamba without a specific version is requested,
+                # then only run conda install if mamba is not already installed.
+                mamba_test = f"[ '[]' = \"$( conda list --json --full-name mamba )\" ]"
+        conda_install = f"""conda install {verbose} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
+        involucro_args.extend(["-set", f"PREINSTALL=if {mamba_test} ; then {conda_install} ; fi"]}
 
     involucro_args.append(command)
     if test_files:
