@@ -123,7 +123,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
     def test_0025_install_freebayes_repository(self):
         """Install freebayes with blank tool panel section, without tool dependencies but with repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             freebayes_repository_name,
             common.test_user_1_name,
             category_name,
@@ -139,8 +139,12 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        self.display_installed_repository_manage_page(installed_freebayes_repository)
-        self.display_installed_repository_manage_page(installed_filtering_repository)
+        assert self.get_installed_repository_for(
+            common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
+        )
+        assert self.get_installed_repository_for(
+            common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
+        )
         self.deactivate_repository(installed_filtering_repository)
         self.test_db_util.ga_refresh(installed_filtering_repository)
         self._assert_has_missing_dependency(installed_freebayes_repository, filtering_repository_name)
@@ -171,9 +175,16 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        self.display_installed_repository_manage_page(installed_freebayes_repository)
-        self.display_installed_repository_manage_page(installed_filtering_repository)
+        assert self.get_installed_repository_for(
+            common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
+        )
+        assert self.get_installed_repository_for(
+            common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
+        )
         self.deactivate_repository(installed_freebayes_repository)
+        assert not self.get_installed_repository_for(
+            common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
+        )
         self.test_db_util.ga_refresh(installed_freebayes_repository)
         self._assert_has_missing_dependency(installed_filtering_repository, freebayes_repository_name)
         self.check_galaxy_repository_db_status("freebayes_0040", "user1", "Deactivated")
@@ -186,9 +197,16 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        self.display_installed_repository_manage_page(installed_freebayes_repository)
-        self.display_installed_repository_manage_page(installed_filtering_repository)
+        assert self.get_installed_repository_for(
+            common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
+        )
         self.deactivate_repository(installed_filtering_repository)
+        assert not self.get_installed_repository_for(
+            common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
+        )
+        assert not self.get_installed_repository_for(
+            common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
+        )
         self.test_db_util.ga_refresh(installed_filtering_repository)
         self._assert_has_missing_dependency(installed_freebayes_repository, filtering_repository_name)
         self.check_galaxy_repository_db_status(filtering_repository_name, common.test_user_1_name, "Deactivated")

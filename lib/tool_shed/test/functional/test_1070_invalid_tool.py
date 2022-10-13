@@ -68,7 +68,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
 
     def test_0015_install_freebayes_repository(self):
         """Install the test repository without installing tool dependencies."""
-        self.install_repository(
+        self._install_repository(
             repository_name,
             common.test_user_1_name,
             category_name,
@@ -78,13 +78,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        strings_displayed = [
-            "bismark_0070",
-            "Galaxy's bismark wrapper",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        assert self.get_installed_repository_for(
+            common.test_user_1, repository_name, installed_repository.installed_changeset_revision
+        )
         self.update_installed_repository_api(installed_repository, verify_no_updates=True)
         self._assert_repo_has_invalid_tool_in_file(installed_repository, "bismark_bowtie_wrapper.xml")

@@ -136,7 +136,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["column_maker_0150", self.get_repository_tip(column_repository)]
-        self.install_repository(
+        self._install_repository(
             column_repository_name,
             common.test_user_1_name,
             category_name,

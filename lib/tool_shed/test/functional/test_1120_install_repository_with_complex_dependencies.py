@@ -258,7 +258,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         preview_strings_displayed = [tool_repository.name, self.get_repository_tip(tool_repository)]
-        self.install_repository(
+        self._install_repository(
             bwa_base_repository_name,
             common.test_user_1_name,
             category_name,
@@ -274,23 +274,10 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
         tool_repository = self.test_db_util.get_installed_repository_by_name_owner(
             bwa_package_repository_name, common.test_user_1_name
         )
-        strings_displayed = ["bwa_base_repository_0100", "user1", base_repository.installed_changeset_revision]
-        strings_displayed.extend(["package_bwa_0_5_9_0100", "user1", tool_repository.installed_changeset_revision])
-        strings_displayed.append(self.url.replace("http://", ""))
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed, strings_not_displayed=[])
-        strings_displayed = ["package_bwa_0_5_9_0100", "user1", tool_repository.installed_changeset_revision]
-        strings_not_displayed = ["Missing tool dependencies"]
-        self.display_installed_repository_manage_page(
-            tool_repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        assert self.get_installed_repository_for(
+            common.test_user_1, "bwa_base_repository_0100", base_repository.installed_changeset_revision
         )
-        strings_displayed = [
-            "bwa_base_repository_0100",
-            "user1",
-            "package_bwa_0_5_9_0100",
-            base_repository.installed_changeset_revision,
-            tool_repository.installed_changeset_revision,
-        ]
-        strings_not_displayed = ["Missing tool dependencies"]
-        self.display_installed_repository_manage_page(
-            base_repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        assert self.get_installed_repository_for(
+            common.test_user_1, "package_bwa_0_5_9_0100", tool_repository.installed_changeset_revision
         )
+        self._assert_has_installed_repository_dependency(base_repository, "package_bwa_0_5_9_0100")

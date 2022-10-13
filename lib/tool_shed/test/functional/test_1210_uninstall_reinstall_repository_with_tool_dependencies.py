@@ -75,7 +75,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
                 uncompress_file=False,
                 remove_repo_files_not_in_tar=False,
                 commit_message="Uploaded malformed tool dependency XML.",
-                strings_displayed=["Exception attempting to parse", "not well-formed"],
+                strings_displayed=["Exception attempting to parse", "invalid element name"],
                 strings_not_displayed=[],
             )
             self.upload_file(
@@ -106,23 +106,13 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0010_install_freebayes_repository(self):
         """Install the freebayes repository into the Galaxy instance."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             "freebayes_0010",
             common.test_user_1_name,
             "Test 0010 Repository With Tool Dependencies",
             new_tool_panel_section_label="test_1210",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "freebayes_0010", common.test_user_1_name
-        )
-        strings_displayed = [
-            "freebayes_0010",
-            "Galaxy's freebayes tool",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("freebayes_0010")
 
     def test_0015_uninstall_freebayes_repository(self):
         """Uninstall the freebayes repository."""
@@ -130,8 +120,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             "freebayes_0010", common.test_user_1_name
         )
         self.uninstall_repository(installed_repository)
-        strings_not_displayed = [installed_repository.name, installed_repository.installed_changeset_revision]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names("freebayes_0010")
 
     def test_0020_reinstall_freebayes_repository(self):
         """Reinstall the freebayes repository."""
@@ -139,15 +128,9 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             "freebayes_0010", common.test_user_1_name
         )
         self.reinstall_repository(installed_repository)
-        strings_displayed = [
-            "freebayes_0010",
-            "Galaxy's freebayes tool",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("freebayes_0010")
         self._assert_has_valid_tool_with_name("FreeBayes")
+        self._assert_repo_has_tool_with_id(installed_repository, "freebayes")
 
     def test_0025_deactivate_freebayes_repository(self):
         """Deactivate the freebayes repository without removing it from disk."""
@@ -155,8 +138,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             "freebayes_0010", common.test_user_1_name
         )
         self.deactivate_repository(installed_repository)
-        strings_not_displayed = [installed_repository.name, installed_repository.installed_changeset_revision]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names("freebayes_0010")
 
     def test_0030_reactivate_freebayes_repository(self):
         """Reactivate the freebayes repository and verify that it now shows up in the list of installed repositories."""
@@ -164,12 +146,6 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             "freebayes_0010", common.test_user_1_name
         )
         self.reactivate_repository(installed_repository)
-        strings_displayed = [
-            "freebayes_0010",
-            "Galaxy's freebayes tool",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("freebayes_0010")
         self._assert_has_valid_tool_with_name("FreeBayes")
+        self._assert_repo_has_tool_with_id(installed_repository, "freebayes")

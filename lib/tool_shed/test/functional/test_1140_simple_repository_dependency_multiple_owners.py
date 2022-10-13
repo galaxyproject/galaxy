@@ -175,7 +175,7 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         Install blastxml_to_top_descr_0120 to Galaxy, with repository dependencies, so that the datatypes repository is also installed.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             name="blastxml_to_top_descr_0120",
             owner=common.test_user_1_name,
             category_name="Test 0120",
@@ -194,12 +194,5 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         tool_repository = self.test_db_util.get_installed_repository_by_name_owner(
             tool_repository_name, common.test_user_1_name
         )
-        datatypes_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            datatypes_repository_name, common.test_user_2_name
-        )
         self._assert_has_valid_tool_with_name("BLAST top hit")
-        strings_displayed = ["Installed repository dependencies", "user1", "blast_datatypes_0120"]
-        strings_displayed.extend(
-            ["Valid tools", "BLAST top hit", "Make a table", datatypes_repository.installed_changeset_revision]
-        )
-        self.display_installed_repository_manage_page(tool_repository, strings_displayed=strings_displayed)
+        self._assert_repo_has_tool_with_id(tool_repository, "blastxml_to_top_descr")

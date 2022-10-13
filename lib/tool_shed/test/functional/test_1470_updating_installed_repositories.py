@@ -64,7 +64,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         This is step 1 - Install a repository into Galaxy.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             repository_name,
             common.test_user_1_name,
             category_name,
@@ -72,17 +72,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
             install_repository_dependencies=False,
             new_tool_panel_section_label="Filtering",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
-        strings_displayed = [
-            "filtering_1470",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-            installed_repository.changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("filtering_1470")
 
     def test_0015_update_repository(self):
         """Upload a readme file to the filtering_1470 repository.

@@ -175,7 +175,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
             matplotlib_repository_name, common.test_user_1_name
         )
         preview_strings_displayed = ["package_matplotlib_1_2_0170", self.get_repository_tip(matplotlib_repository)]
-        self.install_repository(
+        self._install_repository(
             matplotlib_repository_name,
             common.test_user_1_name,
             category_name,

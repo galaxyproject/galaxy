@@ -62,15 +62,12 @@ class Folder:
                 self.repository_dependencies.remove(contained_repository_dependency)
 
     def to_dict(self):
-        log.info(self.invalid_repository_dependencies)
-        log.info(self.repository_dependencies)
-        log.info(self.folders)
         folders = []
         if self.folders:
             for folder in self.folders:
                 folders.append(folder.to_dict())
         repository_dependencies = []
-        for rd in (self.repository_dependencies or []):
+        for rd in self.repository_dependencies or []:
             repository_dependencies.append(rd.to_dict())
         return {
             "description": self.description,

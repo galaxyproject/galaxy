@@ -120,7 +120,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     def test_0020_install_convert_repository(self):
         """Install convert_chars without repository dependencies into convert_chars tool panel section."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             convert_repository_name,
             common.test_user_1_name,
             category_name,
@@ -134,30 +134,20 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        browse_strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-        ]
-        strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-        ]
+        assert self.get_installed_repository_for(
+            common.test_user_1, "convert_chars_0080", installed_convert_repository.installed_changeset_revision
+        )
+        self._assert_has_installed_repository_dependency(
+            installed_convert_repository, "column_maker_0080", installed_column_repository.installed_changeset_revision
+        )
         # installed_convert_repository has required_repositories and the following string
         # is included when not installing via the API. This distrubs me but we've not installed
         # not from the API for a long time so I'm just dropping the check. -John
         # "Missing repository dependencies",
-        self.display_galaxy_browse_repositories_page(strings_displayed=browse_strings_displayed)
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
 
     def test_0025_install_column_repository(self):
         """Install column maker with repository dependencies into column_maker tool panel section."""
-        self.install_repository(
+        self._install_repository(
             column_repository_name,
             common.test_user_1_name,
             category_name,
@@ -170,26 +160,15 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        browse_strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            "Add column",
-            installed_column_repository.installed_changeset_revision,
-        ]
-        strings_displayed = [
-            "column_maker_0080",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=browse_strings_displayed)
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
+        assert self.get_installed_repository_for(
+            common.test_user_1, "convert_chars_0080", installed_convert_repository.installed_changeset_revision
+        )
+        assert self.get_installed_repository_for(
+            common.test_user_1, "column_maker_0080", installed_column_repository.installed_changeset_revision
+        )
+        self._assert_has_installed_repository_dependency(
+            installed_column_repository, "convert_chars_0080", installed_convert_repository.installed_changeset_revision
+        )
 
     def test_0030_deactivate_convert_repository(self):
         """Deactivate convert_chars, verify that column_maker is installed and missing repository dependencies."""
@@ -200,17 +179,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_convert_repository)
-        strings_displayed = [
-            "column_maker_0080",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-            "Missing repository dependencies",
-            "Deactivated",
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
+        self._assert_has_missing_dependency(installed_column_repository, "convert_chars_0080")
 
     def test_0035_reactivate_convert_repository(self):
         """Reactivate convert_chars, both convert_chars and column_maker should now show as installed."""
@@ -221,18 +190,9 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_convert_repository)
-        strings_displayed = [
-            "convert_chars_0080",
-            "Compute",
-            "an expression on every row",
-            "1.1.0",
-            "column_maker_0080",
-            "Installed repository dependencies",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            installed_convert_repository.installed_changeset_revision,
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repository_dependency(
+            installed_column_repository, "convert_chars_0080", installed_convert_repository.installed_changeset_revision
+        )
 
     def test_0040_deactivate_column_repository(self):
         """Deactivate column_maker, verify that convert_chars is installed and missing repository dependencies."""
@@ -243,55 +203,23 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_column_repository)
-        strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-            "Missing repository dependencies",
-            "Deactivated",
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_missing_dependency(installed_convert_repository, "column_maker_0080")
 
     def test_0045_deactivate_convert_repository(self):
         """Deactivate convert_chars, verify that both convert_chars and column_maker are deactivated."""
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            column_repository_name, common.test_user_1_name
-        )
         self.deactivate_repository(installed_convert_repository)
-        strings_not_displayed = [
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names("column_maker_0080", "convert_chars_0080")
 
     def test_0050_reactivate_column_repository(self):
         """Reactivate column_maker. This should not automatically reactivate convert_chars, so column_maker should be displayed as installed but missing repository dependencies."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            convert_repository_name, common.test_user_1_name
-        )
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_column_repository)
-        strings_displayed = [
-            "column_maker_0080",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-            "Missing repository dependencies",
-            "Deactivated",
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
+        self._assert_has_missing_dependency(installed_column_repository, "convert_chars_0080")
 
     def test_0055_reactivate_convert_repository(self):
         """Activate convert_chars. Both convert_chars and column_maker should now show as installed."""
@@ -302,26 +230,9 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_convert_repository)
-        strings_displayed = [
-            "column_maker_0080",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
-        strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("column_maker_0080", "convert_chars_0080")
+        self._assert_is_not_missing_dependency(installed_column_repository, "convert_chars_0080")
+        self._assert_is_not_missing_dependency(installed_convert_repository, "column_maker_0080")
 
     def test_0060_uninstall_column_repository(self):
         """Uninstall column_maker. Verify that convert_chars is installed and missing repository dependencies."""
@@ -332,18 +243,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.uninstall_repository(installed_column_repository)
-        strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-            "Missing repository dependencies",
-            "Uninstalled",
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
-        self.test_db_util.install_session.refresh(installed_column_repository)
+        self._assert_has_missing_dependency(installed_convert_repository, "column_maker_0080")
 
     def test_0065_reinstall_column_repository(self):
         """Reinstall column_maker without repository dependencies, verify both convert_chars and column_maker are installed."""
@@ -354,26 +254,9 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.reinstall_repository(installed_column_repository, install_repository_dependencies=False)
-        strings_displayed = [
-            "column_maker_0080",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
-        strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("column_maker_0080", "convert_chars_0080")
+        self._assert_is_not_missing_dependency(installed_column_repository, "convert_chars_0080")
+        self._assert_is_not_missing_dependency(installed_convert_repository, "column_maker_0080")
 
     def test_0070_uninstall_convert_repository(self):
         """Uninstall convert_chars, verify column_maker installed but missing repository dependencies."""
@@ -384,40 +267,15 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_convert_repository)
-        strings_displayed = [
-            "column_maker_0080",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-            "Missing repository dependencies",
-            "Deactivated",
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
-        self.test_db_util.install_session.refresh(installed_convert_repository)
+        self._assert_has_missing_dependency(installed_column_repository, "convert_chars_0080")
 
     def test_0075_uninstall_column_repository(self):
         """Uninstall column_maker, verify that both convert_chars and column_maker are uninstalled."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            convert_repository_name, common.test_user_1_name
-        )
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_column_repository)
-        strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-            "Missing repository dependencies",
-            "Activate or reinstall repository",
-            "Deactivated",
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_no_installed_repos_with_names("column_maker_0080", "convert_chars_0080")
 
     def test_0080_reinstall_convert_repository(self):
         """Reinstall convert_chars with repository dependencies, verify that this installs both convert_chars and column_maker."""
@@ -428,23 +286,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         self.reinstall_repository(installed_convert_repository, install_repository_dependencies=True, no_changes=False)
-        strings_displayed = [
-            "column_maker_0080",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-            "convert_chars_0080",
-            installed_convert_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
-        strings_displayed = [
-            "convert_chars_0080",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_0080",
-            installed_column_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("column_maker_0080", "convert_chars_0080")
+        self._assert_is_not_missing_dependency(installed_column_repository, "convert_chars_0080")
+        self._assert_is_not_missing_dependency(installed_convert_repository, "column_maker_0080")

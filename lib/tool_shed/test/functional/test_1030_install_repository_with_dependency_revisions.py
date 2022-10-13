@@ -171,7 +171,7 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
     def test_0015_install_emboss_repository(self):
         """Install the emboss repository without installing tool dependencies."""
         global running_standalone
-        self.install_repository(
+        self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
             "Test 0030 Repository Dependency Revisions",
@@ -181,7 +181,9 @@ class RepositoryWithDependencyRevisions(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        self.get_installed_repository_for(common.test_user_1, emboss_repository_name, installed_repository.installed_changeset_revision)
+        assert self.get_installed_repository_for(
+            common.test_user_1, emboss_repository_name, installed_repository.installed_changeset_revision
+        )
         self._assert_repo_has_tool_with_id(installed_repository, "EMBOSS: antigenic1")
         self._assert_has_valid_tool_with_name("antigenic")
         self.update_installed_repository_api(installed_repository, verify_no_updates=True)

@@ -152,24 +152,13 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
         """Install the emboss repository into the Galaxy instance."""
         global running_standalone
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        strings_displayed = ["Handle", "Never installed", "tool dependencies", "emboss", "5.0.0", "package"]
-        self.install_repository(
+        self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
             "Test 0030 Repository Dependency Revisions",
             new_tool_panel_section_label="test_1210",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        strings_displayed = [
-            "emboss_0030",
-            "Galaxy wrappers for Emboss version 5.0.0 tools",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names(emboss_repository_name)
 
     def test_0015_uninstall_emboss_repository(self):
         """Uninstall the emboss repository."""
@@ -177,8 +166,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             emboss_repository_name, common.test_user_1_name
         )
         self.uninstall_repository(installed_repository)
-        strings_not_displayed = [installed_repository.installed_changeset_revision]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names(emboss_repository_name)
 
     def test_0020_reinstall_emboss_repository(self):
         """Reinstall the emboss repository."""
@@ -186,14 +174,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             emboss_repository_name, common.test_user_1_name
         )
         self.reinstall_repository(installed_repository)
-        strings_displayed = [
-            "emboss_0030",
-            "Galaxy wrappers for Emboss version 5.0.0 tools",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names(emboss_repository_name)
         self._assert_has_valid_tool_with_name("emboss")
 
     def test_0025_deactivate_emboss_repository(self):
@@ -202,8 +183,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             emboss_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_repository)
-        strings_not_displayed = [installed_repository.installed_changeset_revision]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names(emboss_repository_name)
 
     def test_0030_reactivate_emboss_repository(self):
         """Reactivate the emboss repository and verify that it now shows up in the list of installed repositories."""
@@ -211,12 +191,6 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             emboss_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_repository)
-        strings_displayed = [
-            "emboss_0030",
-            "Galaxy wrappers for Emboss version 5.0.0 tools",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names(emboss_repository_name)
         self._assert_has_valid_tool_with_name("emboss")
+        self._assert_repo_has_tool_with_id(installed_repository, "EMBOSS: antigenic1")

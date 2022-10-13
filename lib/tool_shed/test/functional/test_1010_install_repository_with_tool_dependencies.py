@@ -122,7 +122,7 @@ class ToolWithToolDependencies(ShedTwillTestCase):
 
     def test_0015_install_freebayes_repository(self):
         """Install the freebayes repository without installing tool dependencies."""
-        self.install_repository(
+        self._install_repository(
             repository_name,
             common.test_user_1_name,
             category_name,
@@ -132,7 +132,9 @@ class ToolWithToolDependencies(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        self.get_installed_repository_for(common.test_user_1, repository_name, installed_repository.installed_changeset_revision)
+        assert self.get_installed_repository_for(
+            common.test_user_1, repository_name, installed_repository.installed_changeset_revision
+        )
         self._assert_has_valid_tool_with_name("FreeBayes")
         self._assert_repo_has_tool_with_id(installed_repository, "freebayes")
 
