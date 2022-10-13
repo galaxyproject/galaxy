@@ -34,7 +34,7 @@ def test_get_from_env__empty_prefix_ignored(monkeypatch):
     monkeypatch.setenv("a", "a-without-prefix-is-set")
     assert os.getenv("a") == "a-without-prefix-is-set"
 
-    assert get_from_env("a", ["", None], "a-default") == "a-default"
+    assert get_from_env("a", ["", None], "a-default") == "a-default"  # type: ignore[list-item]
 
 
 @pytest.fixture
