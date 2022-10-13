@@ -89,8 +89,8 @@ describe("FormSelect", () => {
         });
 
         const multiselect = wrapper.findComponent(Multiselect);
-        // Manually trigger selection of the second item in optarray in the multiselect
-        multiselect.vm.select(wrapper.vm.optArray[1]);
+        // Manually trigger selection of the second item in formattedOptions in the multiselect
+        multiselect.vm.select(wrapper.vm.formattedOptions[1]);
         expect(wrapper.emitted().input).toEqual([["2"]]);
     });
 });
@@ -176,9 +176,9 @@ describe("FormSelect", () => {
 
         expect(wrapper.vm.currentValue).toStrictEqual(undefined);
         const multiselect = wrapper.findComponent(Multiselect);
-        multiselect.vm.select(wrapper.vm.optArray[1]);
+        multiselect.vm.select(wrapper.vm.formattedOptions[1]);
         expect(wrapper.emitted().input).toEqual([[["2"]]]);
-        multiselect.vm.select(wrapper.vm.optArray[2]);
+        multiselect.vm.select(wrapper.vm.formattedOptions[2]);
         expect(wrapper.emitted().input).toEqual([[["2"]], [["3"]]]);
     });
     it("Changes value after new selection is made", async () => {
