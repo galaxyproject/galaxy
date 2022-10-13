@@ -4,12 +4,12 @@ from galaxy.celery import (
     GalaxyCelery,
     TASKS_MODULES,
 )
-from galaxy.config import Configuration
+from galaxy.config import GalaxyAppConfiguration
 
 
 def test_default_configuration():
     conf = celery_app.conf
-    galaxy_conf = Configuration()
+    galaxy_conf = GalaxyAppConfiguration(override_tempdir=False)
 
     assert conf.task_default_queue == DEFAULT_TASK_QUEUE
     assert conf.include == TASKS_MODULES
