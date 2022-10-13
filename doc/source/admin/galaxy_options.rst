@@ -4771,7 +4771,8 @@
     `foo` is the function name of the task defined in the
     galaxy.celery.tasks module.
     The `broker_url` option, if unset, defaults to the value of
-    `amqp_internal_connection`.
+    `amqp_internal_connection`. The `result_backend` option must be
+    set if the `enable_celery_tasks` option is set.
     For details, see Celery documentation at
     https://docs.celeryq.dev/en/stable/userguide/configuration.html.
 :Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``

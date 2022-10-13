@@ -383,14 +383,10 @@ class BaseJobRunner:
         if not self.app.config.enable_celery_tasks:
             raise ConfigurationError("Can't request celery metadata without enabling celery tasks")
         celery_conf = self.app.config.celery_conf
-        if not celery_conf:
+        if not celery_conf and not celery_conf["result_backend"]:
             raise ConfigurationError(
                 "Celery backend not set. Please set `result_backend` on the `celery_conf` config option."
             )
-        else:
-            result_backend = celery_conf.get("result_backend", None)
-            if result_backend != "rpc://localhost":
-                raise ConfigurationError(f"Wrong celery backend: {result_backend}")
 
     def _handle_metadata_externally(self, job_wrapper: "MinimalJobWrapper", resolve_requirements: bool = False):
         """
