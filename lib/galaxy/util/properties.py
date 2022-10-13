@@ -31,6 +31,22 @@ from galaxy.util.path import (
 )
 
 
+def get_from_env(key: str, prefixes: Iterable[str], default: Optional[str] = None):
+    """
+    Return first available value for prefix+key set in the environment, or default.
+    An empty prefix is ignored.
+
+    Useful when we need to check against multiple prefixes sequentially,
+    returning the first available value.
+    """
+    for prefix in prefixes:
+        if prefix:
+            value = os.getenv(f"{prefix}{key}")
+            if value:
+                return value
+    return default
+
+
 def find_config_file(names, exts=None, dirs=None, include_samples=False):
     """Locate a config file in multiple directories, with multiple extensions.
 
