@@ -1,8 +1,41 @@
+<script setup>
+import { ref } from "vue";
+import svc from "./model/service";
+import { getGalaxyInstance } from "app";
+import UtcDate from "components/UtcDate";
+import CopyToClipboard from "components/CopyToClipboard";
+
+defineProps({
+    item: {
+        type: Object,
+        required: true,
+    },
+});
+
+const emit = defineEmits(["getAPIKey"]);
+
+const currentUserId = getGalaxyInstance().user.id;
+
+const modal = ref(null);
+const hover = ref(false);
+const errorMessage = ref(null);
+
+const toggleDeleteModal = () => {
+    modal.value.toggle();
+};
+const deleteKey = () => {
+    svc.deleteAPIKey(currentUserId)
+        .then(() => emit("getAPIKey"))
+        .catch((err) => (errorMessage.value = err.message));
+};
+</script>
+
 <template>
-    <b-card title="Galaxy API key">
-        <div class="d-flex justify-content-between">
-            <div>
+    <b-card title="Current API key">
+        <div class="d-flex justify-content-between w-100">
+            <div class="w-100">
                 <b-input-group
+                    class="w-100"
                     @blur="hover = false"
                     @focus="hover = true"
                     @mouseover="hover = true"
@@ -26,19 +59,15 @@
                                 :text="item.key"
                                 title="Copy key" />
                         </b-input-group-text>
+                        <b-button title="Delete api key" @click="toggleDeleteModal">
+                            <icon icon="trash" />
+                        </b-button>
                     </b-input-group-append>
                 </b-input-group>
                 <span class="small text-black-50">
                     created on
                     <UtcDate class="text-black-50 small" :date="item.create_time" mode="pretty" />
                 </span>
-            </div>
-
-            <div class="h-100 ml-2">
-                <b-button class="h-100" size="small" variant="outline-danger" @click="toggleDeleteModal">
-                    <icon icon="trash" />
-                    <span v-localize>Delete</span>
-                </b-button>
             </div>
         </div>
 
@@ -47,43 +76,3 @@
         </b-modal>
     </b-card>
 </template>
-
-<script>
-import { mapGetters } from "vuex";
-import svc from "./model/service";
-import UtcDate from "components/UtcDate";
-import CopyToClipboard from "components/CopyToClipboard";
-
-export default {
-    components: {
-        UtcDate,
-        CopyToClipboard,
-    },
-    props: {
-        item: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            hover: false,
-            type: "password",
-            showModal: false,
-        };
-    },
-    computed: {
-        ...mapGetters("user", ["currentUser"]),
-    },
-    methods: {
-        toggleDeleteModal() {
-            this.$refs.modal.toggle();
-        },
-        deleteKey() {
-            svc.deleteAPIKey(this.currentUser.id)
-                .then(() => this.$emit("getAPIKey"))
-                .catch((err) => (this.errorMessage = err.message));
-        },
-    },
-};
-</script>
