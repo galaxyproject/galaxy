@@ -29,9 +29,7 @@
                 v-model="currentValue"
                 :max="attrs.max"
                 :min="attrs.min"
-                :type="type"
-                v-model="currentValue"
-                :id="id" />
+                :type="type" />
             <FormSelect
                 v-else-if="type == 'select'"
                 v-model="currentValue"
