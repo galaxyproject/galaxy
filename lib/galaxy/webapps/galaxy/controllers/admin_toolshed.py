@@ -197,44 +197,6 @@ class AdminToolshed(AdminGalaxy):
                     return open(path_to_file, "rb")
         return None
 
-    @web.expose
-    @web.require_admin
-    @legacy_tool_shed_endpoint
-    def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
-        message = escape(kwd.get("message", ""))
-        status = kwd.get("status", "done")
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        repository_metadata = repository.metadata_
-        shed_config_dict = repository.get_shed_config_dict(trans.app)
-        tool_metadata = {}
-        tool_lineage = []
-        tool = None
-        if "tools" in repository_metadata:
-            for tool_metadata_dict in repository_metadata["tools"]:
-                if tool_metadata_dict["id"] == tool_id:
-                    tool_metadata = tool_metadata_dict
-                    tool_config = tool_metadata["tool_config"]
-                    if shed_config_dict and shed_config_dict.get("tool_path"):
-                        tool_config = os.path.join(shed_config_dict.get("tool_path"), tool_config)
-                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata["guid"], exact=True)
-                    if not tool:
-                        tool = trans.app.toolbox.load_tool(os.path.abspath(tool_config), guid=tool_metadata["guid"])
-                        if tool:
-                            tool._lineage = trans.app.toolbox._lineage_map.register(tool)
-                    if tool:
-                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
-                    break
-        return trans.fill_template(
-            "/admin/tool_shed_repository/view_tool_metadata.mako",
-            repository=repository,
-            repository_metadata=repository_metadata,
-            tool=tool,
-            tool_metadata=tool_metadata,
-            tool_lineage=tool_lineage,
-            message=message,
-            status=status,
-        )
-
     @web.json
     @web.require_admin
     @web.do_not_cache
