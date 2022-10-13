@@ -328,6 +328,63 @@ class AdminToolshed(AdminGalaxy):
     @web.json
     @web.require_admin
     @legacy_tool_shed_endpoint
+    def manage_repository_json(self, trans, **kwd):
+        repository_id = kwd.get("id", None)
+        if repository_id is None:
+            return trans.show_error_message("Missing required encoded repository id.")
+        if repository_id and isinstance(repository_id, list):
+            # FIXME: This is a hack that avoids unhandled and duplicate url parameters leaking in.
+            # This should be handled somewhere in the grids system, but given the legacy status
+            # this should be OK.
+            repository_id = [r for r in repository_id if "=" not in r][0]  # This method only work for a single repo id
+        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
+        if repository is None:
+            return trans.show_error_message("Invalid repository specified.")
+        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
+        name = str(repository.name)
+        description = kwd.get("description", repository.description)
+        _, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)
+        if relative_install_dir:
+            repo_files_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir, name))
+        else:
+            repo_files_dir = None
+        if repository.in_error_state:
+            message = "This repository is not installed correctly (see the <b>Repository installation error</b> below).  Choose "
+            message += "<b>Reset to install</b> from the <b>Repository Actions</b> menu, correct problems if necessary and try "
+            message += "installing the repository again."
+            status = "error"
+        elif repository.can_install:
+            message = "This repository is not installed.  You can install it by choosing  <b>Install</b> from the <b>Repository Actions</b> menu."
+            status = "error"
+        elif kwd.get("edit_repository_button", False):
+            if description != repository.description:
+                repository.description = description
+                trans.install_model.context.add(repository)
+                trans.install_model.context.flush()
+            message = "The repository information has been updated."
+        dd = dependency_display.DependencyDisplayer(trans.app)
+        containers_dict = dd.populate_containers_dict_from_repository_metadata(
+            tool_shed_url=tool_shed_url,
+            tool_path=tool_path,
+            repository=repository,
+            reinstalling=False,
+            required_repo_info_dicts=None,
+        )
+        view = views.DependencyResolversView(self.app)
+        tool_requirements_d = suc.get_requirements_from_repository(repository)
+        requirements_status = view.get_requirements_status(tool_requirements_d, repository.installed_tool_dependencies)
+        log.info(f"containers_dict is {containers_dict}")
+        management_dict = {
+            "requirements": requirements_status,
+        }
+        missing_repo_dependencies = containers_dict.get("missing_repository_dependencies", None)
+        if missing_repo_dependencies:
+            management_dict["missing_repository_dependencies"] = missing_repo_dependencies.to_dict()
+        return management_dict
+
+    @web.json
+    @web.require_admin
+    @legacy_tool_shed_endpoint
     def reinstall_repository(self, trans, **kwd):
         """
         Reinstall a tool shed repository that has been previously uninstalled, making sure to handle all repository

@@ -132,15 +132,9 @@ class ToolWithToolDependencies(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        strings_displayed = [
-            "freebayes_0010",
-            "Galaxy's freebayes tool",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self.get_installed_repository_for(common.test_user_1, repository_name, installed_repository.installed_changeset_revision)
         self._assert_has_valid_tool_with_name("FreeBayes")
+        self._assert_repo_has_tool_with_id(installed_repository, "freebayes")
 
     def test_0020_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

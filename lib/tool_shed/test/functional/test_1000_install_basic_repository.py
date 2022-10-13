@@ -110,37 +110,25 @@ class BasicToolShedFeatures(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repo_name, common.test_user_1_name
         )
-        strings_displayed = [
-            repo_name,
-            repo_description,
-            common.test_user_1_name,
-            self.url.replace("http://", ""),
-            str(installed_repository.installed_changeset_revision),
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        changeset = str(installed_repository.installed_changeset_revision)
+        self.get_installed_repository_for(common.test_user_1, repo_name, changeset)
         self._assert_has_valid_tool_with_name("Filter1")
+        self._assert_repo_has_tool_with_id(installed_repository, "Filter1")
 
     def test_0030_install_filtering_repository_again(self):
         """Attempt to install the already installed filtering repository."""
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repo_name, common.test_user_1_name
         )
-        # The page displayed after installation is the ajaxian "Montior installing tool shed repositories" page.  Since the filter
-        # repository was already installed, nothing will be in the process of being installed, so the grid will not display 'filtering_0000'.
+        # Just make sure the repo is still installed, used to monitoring tests but we've
+        # removed that page.
         self.install_repository(
             repo_name,
             common.test_user_1_name,
             "Test 0000 Basic Repository Features 1",
         )
-        strings_displayed = [
-            repo_name,
-            repo_description,
-            "user1",
-            self.url.replace("http://", ""),
-            str(installed_repository.installed_changeset_revision),
-        ]
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        changeset = str(installed_repository.installed_changeset_revision)
+        self.get_installed_repository_for(common.test_user_1, repo_name, changeset)
 
     def test_0035_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

@@ -346,9 +346,11 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             "freebayes_0050",
             "bismark_0050",
         ]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(strings_displayed)
+        self._assert_has_no_installed_repos_with_names(strings_not_displayed)
+        #self.display_galaxy_browse_repositories_page(
+        #    strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
+        #)
         self.verify_installed_repositories(installed_repositories=installed_repositories)
 
     def test_0060_install_emboss_repository(self):
