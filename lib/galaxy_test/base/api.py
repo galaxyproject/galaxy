@@ -14,6 +14,7 @@ from urllib.parse import (
 import pytest
 import requests
 
+from galaxy.util.properties import get_from_env
 from .api_asserts import (
     assert_error_code_is,
     assert_has_keys,
@@ -31,15 +32,8 @@ from .api_util import (
 from .interactor import TestCaseGalaxyInteractor as BaseInteractor
 
 CONFIG_PREFIXES = ["GALAXY_TEST_CONFIG_", "GALAXY_CONFIG_OVERRIDE_", "GALAXY_CONFIG_"]
-DEFAULT_CELERY_BROKER = "memory://"
-DEFAULT_CELERY_BACKEND = "rpc://localhost"
-for prefix in CONFIG_PREFIXES:
-    CELERY_BROKER = os.environ.get(f"{prefix}CELERY_BROKER", DEFAULT_CELERY_BROKER)
-    if CELERY_BROKER != DEFAULT_CELERY_BROKER:
-        break
-    CELERY_BACKEND = os.environ.get(f"{prefix}CELERY_BACKEND", DEFAULT_CELERY_BACKEND)
-    if CELERY_BACKEND != DEFAULT_CELERY_BACKEND:
-        break
+CELERY_BROKER = get_from_env("CELERY_BROKER", CONFIG_PREFIXES, "memory://")
+CELERY_BACKEND = get_from_env("CELERY_BACKEND", CONFIG_PREFIXES, "rpc://localhost")
 
 
 @pytest.fixture(scope="session")
