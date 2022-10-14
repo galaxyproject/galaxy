@@ -1547,6 +1547,42 @@ class BaseWorkflowPopulator(BasePopulator):
         api_asserts.assert_status_code_is_ok(create_response)
         return create_response.json()
 
+    def get_biocompute_object(self, invocation_id):
+        bco_response = self._get(f"invocations/{invocation_id}/biocompute")
+        bco_response.raise_for_status()
+        return bco_response.json()
+
+    def validate_biocompute_object(
+        self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
+    ):
+        # TODO: actually use jsonref and jsonschema to validate this someday
+        api_asserts.assert_has_keys(
+            bco,
+            "object_id",
+            "spec_version",
+            "etag",
+            "provenance_domain",
+            "usability_domain",
+            "description_domain",
+            "execution_domain",
+            "parametric_domain",
+            "io_domain",
+            "error_domain",
+        )
+        assert bco["spec_version"] == expected_schema_version
+        api_asserts.assert_has_keys(bco["description_domain"], "keywords", "xref", "platform", "pipeline_steps")
+        api_asserts.assert_has_keys(
+            bco["execution_domain"],
+            "script",
+            "script_driver",
+            "software_prerequisites",
+            "external_data_endpoints",
+            "environment_variables",
+        )
+        for p in bco["parametric_domain"]:
+            api_asserts.assert_has_keys(p, "param", "value", "step")
+        api_asserts.assert_has_keys(bco["io_domain"], "input_subdomain", "output_subdomain")
+
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/invocations"
         invocation_response = self._post(url, data=request)
