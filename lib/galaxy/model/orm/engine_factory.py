@@ -4,6 +4,7 @@ import os
 import threading
 import time
 from multiprocessing.util import register_after_fork
+from typing import Dict
 
 from sqlalchemy import (
     create_engine,
@@ -99,6 +100,7 @@ def build_engine(
                 except AttributeError:
                     pass
 
+    engine_options = engine_options or {}
     engine_options = set_sqlite_connect_args(engine_options, url)
     engine = create_engine(url, **engine_options)
 
@@ -122,14 +124,13 @@ def build_engine(
     return engine
 
 
-def set_sqlite_connect_args(engine_options, url):
+def set_sqlite_connect_args(engine_options: Dict, url: str):
     """
     Add or update `connect_args` in `engine_options` if db is sqlite.
     Set check_same_thread to False for sqlite, handled by request-specific session.
     See https://fastapi.tiangolo.com/tutorial/sql-databases/#note
     """
-    if url and url.startswith("sqlite://"):
-        engine_options = engine_options or {}
+    if url.startswith("sqlite://"):
         connect_args = engine_options.setdefault("connect_args", {})
         connect_args["check_same_thread"] = False
     return engine_options

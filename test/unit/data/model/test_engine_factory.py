@@ -5,11 +5,6 @@ NON_SQLITE_URL = "foo://foo.db"
 
 
 class TestSetSqliteConnectArgs:
-    def test_engine_options_none(self):
-        engine_options = None
-        updated = set_sqlite_connect_args(engine_options, SQLITE_URL)
-        assert updated == {"connect_args": {"check_same_thread": False}}
-
     def test_engine_options_empty(self):
         engine_options = {}  # type: ignore[var-annotated]
         updated = set_sqlite_connect_args(engine_options, SQLITE_URL)
