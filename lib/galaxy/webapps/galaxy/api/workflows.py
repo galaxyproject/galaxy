@@ -606,13 +606,10 @@ class WorkflowsAPIController(
             'tool_sequence' - comma separated sequence of tool ids
             'remote_model_url' - (optional) path to the deep learning model
         """
-        log = logging.getLogger(__name__)
         remote_model_url = payload.get("remote_model_url", trans.app.config.tool_recommendation_model_path)
         tool_sequence = payload.get("tool_sequence", "")
-        log.info(f"{tool_sequence} and {remote_model_url}")
-        print(remote_model_url, tool_sequence)
-        '''if "tool_sequence" not in payload or remote_model_url is None:
-            return'''
+        if "tool_sequence" not in payload or remote_model_url is None:
+            return
         tool_sequence, recommended_tools = self.tool_recommendations.get_predictions(
             trans, tool_sequence, remote_model_url
         )
