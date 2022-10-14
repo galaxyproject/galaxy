@@ -64,15 +64,8 @@ class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, Us
     def test_export_bco_basic(self):
         bco_path = self._export_invocation_to_format(extension="bco.json", to_uri=False)
         with open(bco_path) as f:
-            bco_json = json.load(f)
-        assert bco_json["spec_version"] == "https://w3id.org/ieee/ieee-2791-schema/2791object.json"
-        assert bco_json["object_id"]
-        assert bco_json["description_domain"]
-        assert bco_json["execution_domain"]
-        assert bco_json["extension_domain"]
-        assert bco_json["io_domain"]
-        assert bco_json["parametric_domain"]
-        assert bco_json["provenance_domain"]
+            bco = json.load(f)
+        self.workflow_populator.validate_biocompute_object(bco)
 
     def _export_invocation_to_format(self, extension: str, to_uri: bool):
         with self.dataset_populator.test_history() as history_id:

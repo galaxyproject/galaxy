@@ -97,6 +97,7 @@ from galaxy.util import (
     galaxy_root_path,
 )
 from galaxy.util.resources import resource_string
+from galaxy_test.base.json_schema_utils import JsonSchemaValidator
 from . import api_asserts
 from .api import ApiTestInteractor
 from .api_util import random_name
@@ -1555,33 +1556,7 @@ class BaseWorkflowPopulator(BasePopulator):
     def validate_biocompute_object(
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
-        # TODO: actually use jsonref and jsonschema to validate this someday
-        api_asserts.assert_has_keys(
-            bco,
-            "object_id",
-            "spec_version",
-            "etag",
-            "provenance_domain",
-            "usability_domain",
-            "description_domain",
-            "execution_domain",
-            "parametric_domain",
-            "io_domain",
-            "error_domain",
-        )
-        assert bco["spec_version"] == expected_schema_version
-        api_asserts.assert_has_keys(bco["description_domain"], "keywords", "xref", "platform", "pipeline_steps")
-        api_asserts.assert_has_keys(
-            bco["execution_domain"],
-            "script",
-            "script_driver",
-            "software_prerequisites",
-            "external_data_endpoints",
-            "environment_variables",
-        )
-        for p in bco["parametric_domain"]:
-            api_asserts.assert_has_keys(p, "param", "value", "step")
-        api_asserts.assert_has_keys(bco["io_domain"], "input_subdomain", "output_subdomain")
+        JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
 
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/invocations"
