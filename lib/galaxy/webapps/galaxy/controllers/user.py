@@ -29,7 +29,6 @@ from galaxy.web import (
 )
 from galaxy.webapps.base.controller import (
     BaseUIController,
-    CreatesApiKeysMixin,
     UsesFormDefinitionsMixin,
 )
 from ..api import depends
@@ -41,7 +40,7 @@ def _filtered_registration_params_dict(payload):
     return {k: v for (k, v) in payload.items() if k in ["email", "username", "password", "confirm", "subscribe"]}
 
 
-class User(BaseUIController, UsesFormDefinitionsMixin, CreatesApiKeysMixin):
+class User(BaseUIController, UsesFormDefinitionsMixin):
     user_manager: users.UserManager = depends(users.UserManager)
     installed_len_files = None
 

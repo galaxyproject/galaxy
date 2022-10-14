@@ -52,6 +52,7 @@ import VisualizationsList from "components/Visualizations/Index";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
+import { APIKey } from "components/User/APIKey";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
@@ -285,6 +286,11 @@ export function getRouter(Galaxy) {
                             enableQuotas: Galaxy.config.enable_quotas,
                             userId: Galaxy.user.id,
                         },
+                        redirect: redirectAnon(),
+                    },
+                    {
+                        path: "user/api_key",
+                        component: APIKey,
                         redirect: redirectAnon(),
                     },
                     {

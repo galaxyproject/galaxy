@@ -9533,6 +9533,7 @@ class APIKeys(Base, RepresentById):
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
+    deleted = Column(Boolean, index=True, default=False)
 
 
 def copy_list(lst, *args, **kwds):

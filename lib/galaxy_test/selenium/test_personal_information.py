@@ -1,4 +1,4 @@
-from .framework import (
+from galaxy_test.selenium.framework import (
     selenium_test,
     SeleniumTestCase,
 )
@@ -13,20 +13,21 @@ class ManageInformationTestCase(SeleniumTestCase):
         'Not available.'
         """
         self.login()
-        assert self.get_api_key() == "Not available."
-        api_key = self.get_api_key()
+        # There is no API key defined initially
+        assert not self.get_api_key()
         self.navigate_to_user_preferences()
         self.components.preferences.manage_api_key.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        api_key_input = self.components.preferences.api_key_input.wait_for_visible()
-        # Assert that what's rendered on screen is what the API is returning
-        assert api_key_input.get_property("value") == api_key
+        # When there is no API key the create button is visible
         self.components.preferences.get_new_key.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_TRANSITION)
-        new_api_key = self.get_api_key()
         api_key_input = self.components.preferences.api_key_input.wait_for_visible()
-        # And assert that this has now changed, and still renders correctly
-        assert new_api_key == api_key_input.get_property("value")
+        new_api_key = self.get_api_key()
+        input_value = api_key_input.get_property("value")
+        self.assertEqual(new_api_key, input_value)
+        # Hover the input to view the key
+        self.action_chains().move_to_element(api_key_input).perform()
+        hover_value = api_key_input.get_property("value")
+        self.assertEqual(new_api_key, hover_value)
 
     @selenium_test
     def test_change_email(self):

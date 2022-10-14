@@ -12,7 +12,6 @@ from typing import Optional
 from markupsafe import escape
 from sqlalchemy import (
     and_,
-    desc,
     exc,
     func,
     true,
@@ -26,7 +25,6 @@ from galaxy import (
     util,
 )
 from galaxy.managers import (
-    api_keys,
     base,
     deletable,
 )
@@ -66,7 +64,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     #   most of which it may be unneccessary to have here
 
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
-    # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
     def __init__(self, app: BasicSharedApp):
         self.model_class = app.model.User
@@ -358,15 +355,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # TODO: trans
         return trans.user
 
-    # ---- api keys
-    def create_api_key(self, user: model.User) -> str:
-        """
-        Create and return an API key for `user`.
-        """
-        # TODO: seems like this should return the model
-        # Also TODO: seems unused? drop and see what happens? -John
-        return api_keys.ApiKeyManager(self.app).create_api_key(user)
-
     def user_can_do_run_as(self, user) -> bool:
         run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
         if not run_as_users:
@@ -375,28 +363,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Can do if explicitly in list or master_api_key supplied.
         can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
         return can_do_run_as
-
-    # TODO: possibly move to ApiKeyManager
-    def valid_api_key(self, user):
-        """
-        Return this most recent APIKey for this user or None if none have been created.
-        """
-        query = self.session().query(model.APIKeys).filter_by(user=user).order_by(desc(model.APIKeys.create_time))
-        all = query.all()
-        if len(all):
-            return all[0]
-        return None
-
-    # TODO: possibly move to ApiKeyManager
-    def get_or_create_valid_api_key(self, user):
-        """
-        Return this most recent APIKey for this user or create one if none have been
-        created.
-        """
-        existing = self.valid_api_key(user)
-        if existing:
-            return existing
-        return self.create_api_key(self, user)
 
     # ---- preferences
     def preferences(self, user):

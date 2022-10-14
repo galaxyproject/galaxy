@@ -280,10 +280,7 @@ class NavigatesGalaxy(HasDriver):
         response = requests.get(
             full_url, data=data, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT
         )
-        if raw:
-            return response
-        else:
-            return response.json()
+        return self._handle_response(response, raw)
 
     def api_post(self, endpoint, data=None):
         data = data or {}
@@ -298,10 +295,13 @@ class NavigatesGalaxy(HasDriver):
         response = requests.delete(
             full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT
         )
+        return self._handle_response(response, raw)
+
+    def _handle_response(self, response: requests.Response, raw: bool = False):
         if raw:
             return response
         else:
-            return response.json()
+            return response.json() if response.content else None
 
     def get_galaxy_session(self):
         for cookie in self.driver.get_cookies():
@@ -515,9 +515,9 @@ class NavigatesGalaxy(HasDriver):
         return self.api_get("users/current")
 
     def get_api_key(self, force=False):
-        # If force is false, use the form inputs API and allow the key to be absent.
         if not force:
-            return self.api_get(f"users/{self.get_user_id()}/api_key/inputs")["inputs"][0]["value"]
+            response = self.api_get(f"users/{self.get_user_id()}/api_key/detailed")
+            return response["key"] if response else None
         else:
             return self.api_post(f"users/{self.get_user_id()}/api_key")
 
