@@ -21,7 +21,6 @@ from galaxy.util.tool_shed import (
 )
 from galaxy.web.form_builder import CheckboxField
 from tool_shed.galaxy_install import dependency_display
-from tool_shed.galaxy_install.grids import admin_toolshed_grids
 from tool_shed.util import (
     repository_util,
     shed_util_common as suc,
@@ -44,9 +43,6 @@ def legacy_tool_shed_endpoint(func):
 
 
 class AdminToolshed(AdminGalaxy):
-
-    installed_repository_grid = admin_toolshed_grids.InstalledRepositoryGrid()
-
     @web.expose
     @web.require_admin
     @legacy_tool_shed_endpoint
@@ -82,26 +78,6 @@ class AdminToolshed(AdminGalaxy):
                 status=status,
             )
         )
-
-    @web.legacy_expose_api
-    @web.require_admin
-    @legacy_tool_shed_endpoint
-    def browse_repositories(self, trans, **kwd):
-        message = kwd.get("message", "")
-        status = kwd.get("status", "")
-        if "operation" in kwd:
-            operation = kwd.pop("operation").lower()
-            if operation == "update tool shed status":
-                repository_id = kwd.get("id")
-                if repository_id:
-                    repository_id = trans.security.decode_id(repository_id)
-                message, status = repository_util.check_for_updates(
-                    trans.app.tool_shed_registry, trans.install_model, repository_id
-                )
-        if message and status:
-            kwd["message"] = util.sanitize_text(message)
-            kwd["status"] = "success" if status in ["ok", "done", "success"] else "error"
-        return self.installed_repository_grid(trans, **kwd)
 
     @web.expose
     @web.require_admin
