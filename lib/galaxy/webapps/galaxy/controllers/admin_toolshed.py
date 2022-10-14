@@ -180,39 +180,6 @@ class AdminToolshed(AdminGalaxy):
     def get_file_contents(self, trans, file_path, repository_id):
         return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin=True)
 
-    @web.expose
-    @web.require_admin
-    @legacy_tool_shed_endpoint
-    def get_tool_dependencies(self, trans, repository_id, repository_name, repository_owner, changeset_revision):
-        """
-        Send a request to the appropriate tool shed to retrieve the dictionary of tool dependencies defined for
-        the received repository name, owner and changeset revision.  The received repository_id is the encoded id
-        of the installed tool shed repository in Galaxy.  We need it so that we can derive the tool shed from which
-        it was installed.
-        """
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
-        if tool_shed_url is None or repository_name is None or repository_owner is None or changeset_revision is None:
-            message = (
-                "Unable to retrieve tool dependencies from the Tool Shed because one or more of the following required "
-            )
-            message += (
-                "parameters is None: tool_shed_url: %s, repository_name: %s, repository_owner: %s, changeset_revision: %s "
-                % (str(tool_shed_url), str(repository_name), str(repository_owner), str(changeset_revision))
-            )
-            raise Exception(message)
-        params = dict(name=repository_name, owner=repository_owner, changeset_revision=changeset_revision)
-        pathspec = ["repository", "get_tool_dependencies"]
-        raw_text = util.url_get(
-            tool_shed_url, auth=self.app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-        )
-        if len(raw_text) > 2:
-            encoded_text = json.loads(raw_text)
-            text = encoding_util.tool_shed_decode(encoded_text)
-        else:
-            text = ""
-        return text
-
     def _get_updated_repository_information(
         self, trans, repository_id, repository_name, repository_owner, changeset_revision
     ):
