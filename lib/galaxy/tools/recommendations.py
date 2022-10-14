@@ -7,7 +7,6 @@ import os
 import h5py
 import numpy as np
 import requests
-
 import yaml
 
 from galaxy.tools.parameters import populate_state
@@ -54,7 +53,9 @@ class ToolRecommendations:
                 self.dropout2 = Dropout(rate)
 
             def call(self, inputs, training):
-                attn_output, attention_scores = self.att(inputs, inputs, inputs, return_attention_scores=True, training=training)
+                attn_output, attention_scores = self.att(
+                    inputs, inputs, inputs, return_attention_scores=True, training=training
+                )
                 attn_output = self.dropout1(attn_output, training=training)
                 out1 = self.layernorm1(inputs + attn_output)
                 ffn_output = self.ffn(out1)
@@ -69,6 +70,7 @@ class ToolRecommendations:
 
             def call(self, x):
                 import tensorflow as tf
+
                 maxlen = tf.shape(x)[-1]
                 positions = tf.range(start=0, limit=maxlen, delta=1)
                 positions = self.pos_emb(positions)
@@ -188,7 +190,9 @@ class ToolRecommendations:
         if last_tool_name in self.model_data_dictionary:
             last_tool_name_id = self.model_data_dictionary[last_tool_name]
             if last_tool_name_id in self.compatible_tools:
-                last_compatible_tools = [self.reverse_dictionary[t_id] for t_id in self.compatible_tools[last_tool_name_id]]
+                last_compatible_tools = [
+                    self.reverse_dictionary[t_id] for t_id in self.compatible_tools[last_tool_name_id]
+                ]
 
         prediction_data["is_deprecated"] = False
         # get the list of datatype extensions of the last tool of the tool sequence
@@ -245,7 +249,9 @@ class ToolRecommendations:
         """
         t_intersect = list(set(predictions).intersection(set(base_tools)))
         t_diff = list(set(predictions).difference(set(base_tools)))
-        t_intersect, u_intersect = self.__sort_by_usage(t_intersect, self.tool_weights_sorted, self.model_data_dictionary)
+        t_intersect, u_intersect = self.__sort_by_usage(
+            t_intersect, self.tool_weights_sorted, self.model_data_dictionary
+        )
         t_diff, u_diff = self.__sort_by_usage(t_diff, self.tool_weights_sorted, self.model_data_dictionary)
         t_intersect.extend(t_diff)
         u_intersect.extend(u_diff)
@@ -310,6 +316,7 @@ class ToolRecommendations:
             # predict next tools for a test path
             try:
                 import tensorflow as tf
+
                 sample = tf.convert_to_tensor(sample, dtype=tf.int64)
                 prediction, _ = self.loaded_model(sample, training=False)
             except Exception as e:
