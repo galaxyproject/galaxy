@@ -25,7 +25,7 @@ from .framework import (
 )
 
 
-class WorkflowEditorTestCase(SeleniumTestCase, RunsWorkflows):
+class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
 
     ensure_registered = True
 

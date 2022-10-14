@@ -7,6 +7,7 @@ testing configuration.
 import os
 from typing import (
     ClassVar,
+    Iterator,
     Optional,
     TYPE_CHECKING,
 )
@@ -181,7 +182,7 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
     @pytest.fixture
-    def history_id(self):
+    def history_id(self) -> Iterator[str]:
         assert self.dataset_populator
         with self.dataset_populator.test_history() as history_id:
             yield history_id

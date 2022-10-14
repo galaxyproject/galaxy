@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class HistoryExportTestCase(SeleniumTestCase):
+class TestHistoryExport(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test

@@ -13,7 +13,7 @@ category_name = "Test 0010 Repository With Tool Dependencies"
 log = logging.getLogger(__name__)
 
 
-class ToolWithToolDependencies(ShedTwillTestCase):
+class TestToolWithToolDependencies(ShedTwillTestCase):
     """Test installing a repository with tool dependencies."""
 
     def test_0000_initiate_users(self):

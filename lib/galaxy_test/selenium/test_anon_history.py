@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class AnonymousHistoriesTestCase(SeleniumTestCase):
+class TestAnonymousHistories(SeleniumTestCase):
     @selenium_test
     def test_anon_history_landing(self):
         self.home()

@@ -7,7 +7,7 @@ from ._framework import ApiTestCase
 HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 
 
-class DatatypesApiTestCase(ApiTestCase):
+class TestDatatypesApi(ApiTestCase):
     def test_index(self):
         datatypes = self._index_datatypes()
         for common_type in ["tabular", "fasta"]:

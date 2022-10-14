@@ -34,7 +34,7 @@ COMPOSITE_DATA_FETCH_REQUEST_1 = {
 }
 
 
-class DatasetsApiTestCase(ApiTestCase):
+class TestDatasetsApi(ApiTestCase):
     history_id: str
 
     def setUp(self):

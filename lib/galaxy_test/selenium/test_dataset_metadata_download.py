@@ -7,7 +7,7 @@ from .framework import (
 FIRST_HID = 1
 
 
-class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
     ensure_registered = True
 
     @selenium_test

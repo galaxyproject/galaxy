@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class CollectionEditTestCase(SeleniumTestCase):
+class TestCollectionEdit(SeleniumTestCase):
 
     ensure_registered = True
 

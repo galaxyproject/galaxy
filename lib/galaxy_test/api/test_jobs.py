@@ -22,7 +22,9 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class JobsApiTestCase(ApiTestCase, TestsTools):
+class TestJobsApi(ApiTestCase, TestsTools):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)

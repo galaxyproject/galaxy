@@ -124,7 +124,9 @@ class TestsTools:
             return create_response
 
 
-class ToolsTestCase(ApiTestCase, TestsTools):
+class TestToolsApi(ApiTestCase, TestsTools):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

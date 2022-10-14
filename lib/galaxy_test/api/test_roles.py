@@ -1,3 +1,9 @@
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
+
 from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import (
     assert_error_code_is,
@@ -8,7 +14,9 @@ from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 
-class RolesApiTestCase(ApiTestCase):
+class TestRolesApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -20,7 +28,7 @@ class RolesApiTestCase(ApiTestCase):
             assert isinstance(as_list, list)
             assert len(as_list) > 0
             for role in as_list:
-                RolesApiTestCase.check_role_dict(role)
+                self.check_role_dict(role)
 
         user_role_id = self.dataset_populator.user_private_role_id()
         with self._different_user():
@@ -46,7 +54,7 @@ class RolesApiTestCase(ApiTestCase):
         role_response = self._get(f"roles/{user_role_id}")
         assert_status_code_is(role_response, 200)
         role = role_response.json()
-        RolesApiTestCase.check_role_dict(role, assert_id=user_role_id)
+        self.check_role_dict(role, assert_id=user_role_id)
 
     def test_create_invalid_params(self):
         # In theory these low-level validation test cases could be handled in more
@@ -100,7 +108,7 @@ class RolesApiTestCase(ApiTestCase):
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
         role = response.json()
-        RolesApiTestCase.check_role_dict(role)
+        self.check_role_dict(role)
 
         assert role["name"] == name
         assert role["description"] == description
@@ -135,7 +143,7 @@ class RolesApiTestCase(ApiTestCase):
         assert "administrator" in response_err["err_msg"]
 
     @staticmethod
-    def check_role_dict(role_dict, assert_id=None):
+    def check_role_dict(role_dict: Dict[str, Any], assert_id: Optional[str] = None):
         assert_has_keys(role_dict, "id", "name", "model_class", "url")
         assert role_dict["model_class"] == "Role"
         if assert_id is not None:

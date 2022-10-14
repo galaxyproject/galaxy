@@ -5,7 +5,7 @@ from .framework import (
 )
 
 
-class PagesTestCase(SeleniumTestCase):
+class TestPages(SeleniumTestCase):
 
     ensure_registered = True
 

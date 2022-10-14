@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class WorkflowSharingRedirectTestCase(SeleniumTestCase):
+class TestWorkflowSharingRedirect(SeleniumTestCase):
 
     ensure_registered = True
 
@@ -36,7 +36,7 @@ class WorkflowSharingRedirectTestCase(SeleniumTestCase):
         self.wait_for_logged_in()
 
 
-class WorkflowSharingTestCase(SeleniumTestCase, UsesWorkflowAssertions):
+class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
     @selenium_test
     def test_sharing_workflow_by_email(self):
         _, user2_email = self.setup_two_users_with_one_shared_workflow(screenshot=True)

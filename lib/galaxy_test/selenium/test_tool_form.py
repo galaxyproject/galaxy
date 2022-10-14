@@ -20,7 +20,7 @@ from .framework import (
 )
 
 
-class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
@@ -176,7 +176,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_form_execute()
 
 
-class LoggedInToolFormTestCase(SeleniumTestCase):
+class TestLoggedInToolForm(SeleniumTestCase):
 
     ensure_registered = True
 

@@ -8,7 +8,7 @@ from .framework import (
 NEW_HISTORY_NAME = "New History Name"
 
 
-class HistoryPanelTestCase(SeleniumTestCase):
+class TestHistoryPanel(SeleniumTestCase):
 
     ensure_registered = True
 

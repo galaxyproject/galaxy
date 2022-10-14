@@ -1,7 +1,7 @@
 from ._framework import ApiTestCase
 
 
-class WebhooksApiTestCase(ApiTestCase):
+class TestWebhooksApi(ApiTestCase):
     def setUp(self):
         super().setUp()
 

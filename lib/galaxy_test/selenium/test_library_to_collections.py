@@ -5,7 +5,7 @@ from .framework import (
 )
 
 
-class LibraryToCollectionsTestCase(SeleniumTestCase, UsesLibraryAssertions):
+class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
 
     requires_admin = True
 

@@ -7,7 +7,7 @@ from .framework import (
 )
 
 
-class DataSourceTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
 
     ensure_registered = True
 

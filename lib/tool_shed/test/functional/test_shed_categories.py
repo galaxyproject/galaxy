@@ -2,7 +2,7 @@ from galaxy_test.base.api_util import random_name
 from ..base.api import ShedApiTestCase
 
 
-class ShedCategoriesApiTestCase(ShedApiTestCase):
+class TestShedCategoriesApi(ShedApiTestCase):
     def test_create_requires_name(self):
         body = {}
         response = self.admin_api_interactor.post("categories", json=body)

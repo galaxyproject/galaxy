@@ -5,7 +5,7 @@ from .framework import (
 )
 
 
-class CustomBuildsTestcase(SharedStateSeleniumTestCase):
+class TestCustomBuilds(SharedStateSeleniumTestCase):
     @selenium_test
     def test_build_add(self):
         self._login()
@@ -82,10 +82,10 @@ class CustomBuildsTestcase(SharedStateSeleniumTestCase):
         self.components.masthead.custom_builds.wait_for_and_click()
 
     def setup_shared_state(self):
-        CustomBuildsTestcase.user_email = self._get_random_email()
+        TestCustomBuilds.user_email = self._get_random_email()
         self.register(self.user_email)
 
-        CustomBuildsTestcase.build_name1 = self._get_random_name()
-        CustomBuildsTestcase.build_name2 = self._get_random_name()
-        CustomBuildsTestcase.build_key1 = self._get_random_name(len=5)
-        CustomBuildsTestcase.build_key2 = self._get_random_name(len=5)
+        TestCustomBuilds.build_name1 = self._get_random_name()
+        TestCustomBuilds.build_name2 = self._get_random_name()
+        TestCustomBuilds.build_key1 = self._get_random_name(len=5)
+        TestCustomBuilds.build_key2 = self._get_random_name(len=5)

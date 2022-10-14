@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class HistoryOptionsTestCase(SeleniumTestCase):
+class TestHistoryOptions(SeleniumTestCase):
     @selenium_test
     def test_options(self):
         self.register()

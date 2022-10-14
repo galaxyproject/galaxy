@@ -7,7 +7,7 @@ from .framework import (
 )
 
 
-class HistoryGridTestCase(SharedStateSeleniumTestCase):
+class TestHistoryGrid(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()
@@ -165,17 +165,17 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         tag2 = self._get_random_name(len=5)
         tag3 = self._get_random_name(len=5)
 
-        HistoryGridTestCase.user1_email = self._get_random_email("test1")
-        HistoryGridTestCase.user2_email = self._get_random_email("test2")
-        HistoryGridTestCase.history1_name = self._get_random_name()
-        HistoryGridTestCase.history2_name = self._get_random_name()
-        HistoryGridTestCase.history3_name = self._get_random_name()
-        HistoryGridTestCase.history4_name = self._get_random_name()
-        HistoryGridTestCase.history1_tags = [tag1, tag2]
-        HistoryGridTestCase.history2_tags = [tag3]
-        HistoryGridTestCase.history3_tags = [tag1]
-        HistoryGridTestCase.history3_annot = self._get_random_name()
-        HistoryGridTestCase.all_histories = [self.history1_name, self.history2_name, self.history3_name]
+        TestHistoryGrid.user1_email = self._get_random_email("test1")
+        TestHistoryGrid.user2_email = self._get_random_email("test2")
+        TestHistoryGrid.history1_name = self._get_random_name()
+        TestHistoryGrid.history2_name = self._get_random_name()
+        TestHistoryGrid.history3_name = self._get_random_name()
+        TestHistoryGrid.history4_name = self._get_random_name()
+        TestHistoryGrid.history1_tags = [tag1, tag2]
+        TestHistoryGrid.history2_tags = [tag3]
+        TestHistoryGrid.history3_tags = [tag1]
+        TestHistoryGrid.history3_annot = self._get_random_name()
+        TestHistoryGrid.all_histories = [self.history1_name, self.history2_name, self.history3_name]
 
         self.register(self.user1_email)
         self.create_history(self.history1_name)

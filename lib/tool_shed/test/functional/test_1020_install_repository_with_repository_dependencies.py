@@ -12,7 +12,7 @@ emboss_repository_description = "Galaxy wrappers for Emboss version 5.0.0 tools 
 emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 tools for test 0020"
 
 
-class ToolWithRepositoryDependencies(ShedTwillTestCase):
+class TestToolWithRepositoryDependencies(ShedTwillTestCase):
     """Test installing a repository with repository dependencies."""
 
     def test_0000_initiate_users(self):

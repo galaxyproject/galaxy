@@ -7,7 +7,9 @@ from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.populators import DatasetPopulator
 
 
-class GroupRolesApiTestCase(ApiTestCase):
+class TestGroupRolesApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

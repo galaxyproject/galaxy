@@ -13,7 +13,7 @@ from galaxy_test.base.populators import (
 from .test_workflows import BaseWorkflowsApiTestCase
 
 
-class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
+class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
     history_id: str
 
     def setUp(self):
@@ -581,14 +581,14 @@ test_data:
         self._assert_status_code_is(prov_response, 200)
         return prov_response.json()["job_id"]
 
-    def __cat_job_id(self, history_id):
+    def __cat_job_id(self, history_id: str):
         data = dict(history_id=history_id, tool_id="cat1")
         jobs_response = self._get("jobs", data=data)
         self._assert_status_code_is(jobs_response, 200)
         cat1_job_id = jobs_response.json()[0]["id"]
         return cat1_job_id
 
-    def _run_tool_get_collection_and_job_id(self, history_id, tool_id, inputs):
+    def _run_tool_get_collection_and_job_id(self, history_id: str, tool_id, inputs):
         run_output1 = self.dataset_populator.run_tool(
             tool_id=tool_id,
             inputs=inputs,

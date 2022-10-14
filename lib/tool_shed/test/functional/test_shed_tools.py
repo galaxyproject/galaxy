@@ -1,7 +1,7 @@
 from ..base.api import ShedApiTestCase
 
 
-class ShedToolsApiTestCase(ShedApiTestCase):
+class TestShedToolsApi(ShedApiTestCase):
     def test_tool_search(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="toolsearch")

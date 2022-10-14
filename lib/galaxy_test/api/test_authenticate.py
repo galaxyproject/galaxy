@@ -9,7 +9,7 @@ TEST_USER_EMAIL = "auth_user_test@bx.psu.edu"
 TEST_USER_PASSWORD = "testpassword1"
 
 
-class AuthenticationApiTestCase(ApiTestCase):
+class TestAuthenticateApi(ApiTestCase):
     def test_auth(self):
         self._setup_user(TEST_USER_EMAIL, TEST_USER_PASSWORD)
         baseauth_url = self._api_url("authenticate/baseauth", use_key=False)

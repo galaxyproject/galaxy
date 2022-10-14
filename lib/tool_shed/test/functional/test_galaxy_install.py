@@ -1,7 +1,7 @@
 from ..base.api import ShedApiTestCase
 
 
-class ShedGalaxyInstallApiTestCase(ShedApiTestCase):
+class TestShedGalaxyInstallApi(ShedApiTestCase):
     def test_install_simple_tool(self):
         populator = self.populator
         repository = populator.setup_column_maker_repo(prefix="repoformetadata")

@@ -53,10 +53,8 @@ The main test types are as follows:
    located in lib/tool_shed/test.
 
 Python testing is mostly done via pytest. Specific tests can be selected
-using the pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
-
-The spots these selectors can be used is described in the above usage documentation
-as ``test_path``.  A few examples are shown below.
+using the syntax described at https://docs.pytest.org/en/latest/how-to/usage.html .
+A few examples are shown below.
 
 Run all API tests:
     ./run_tests.sh -api
@@ -64,16 +62,16 @@ Run all API tests:
 The same test as above can be run using pytest directly as follows:
     pytest lib/galaxy_test/api
 
-However when using pytest directly output options defined in this
+However, when using pytest directly, output options defined in this
 file aren't respected and a new Galaxy instance will be created for each
-TestCase class (this scripts optimizes it so all tests can share a Galaxy
+Test class (this scripts optimizes it so all tests can share a Galaxy
 instance).
 
 Run a full class of API tests:
-    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::TestToolsApi
 
 Run a specific API test:
-    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase::test_map_over_with_output_format_actions
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::TestToolsApi::test_map_over_with_output_format_actions
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
@@ -81,14 +79,14 @@ Run all selenium tests (Under Linux using Docker):
     GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
 
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
-    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::RegistrationTestCase::test_reregister_username_fails
+    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::TestRegistration::test_reregister_username_fails
 
 Run a selenium test against a running server while watching client (fastest iterating on client tests):
     ./run.sh & # run Galaxy on 8080
     make client-watch & # watch for client changes
     export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
-    pytest lib/galaxy_test/selenium/test_workflow_editor.py::WorkflowEditorTestCase::test_data_input
+    pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
 
 Note About Selenium Tests:
 
@@ -99,7 +97,7 @@ the PATH.
 More information on geckodriver can be found at
 https://github.com/mozilla/geckodriver and more information on
 chromedriver can be found at
-https://sites.google.com/a/chromium.org/chromedriver/.
+https://sites.google.com/chromium.org/driver/ .
 
 By default Galaxy will check the PATH for these and pick
 whichever it finds. This can be overridden by setting

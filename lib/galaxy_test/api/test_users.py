@@ -16,7 +16,7 @@ TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 
 
-class UsersApiTestCase(ApiTestCase):
+class TestUsersApi(ApiTestCase):
     def test_index(self):
         self._setup_user(TEST_USER_EMAIL)
         all_users_response = self._get("users", admin=True)

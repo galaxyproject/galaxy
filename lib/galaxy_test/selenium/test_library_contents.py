@@ -8,7 +8,7 @@ from .framework import (
 )
 
 
-class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
+class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
 
     requires_admin = True
 

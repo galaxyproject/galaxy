@@ -5,7 +5,7 @@ from .framework import (
 )
 
 
-class LibraryLandingTestCase(SeleniumTestCase):
+class TestLibraryLanding(SeleniumTestCase):
 
     requires_admin = True
 

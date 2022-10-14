@@ -4,7 +4,7 @@ from galaxy_test.selenium.framework import (
 )
 
 
-class ManageInformationTestCase(SeleniumTestCase):
+class TestManageInformation(SeleniumTestCase):
     @selenium_test
     def test_api_key(self):
         """
@@ -138,7 +138,7 @@ class ManageInformationTestCase(SeleniumTestCase):
         return address_form.find_element(self.by.CSS_SELECTOR, f"[data-label='{input_field_label}'] > input")
 
 
-class DeleteCurrentAccountTestCase(SeleniumTestCase):
+class TestDeleteCurrentAccount(SeleniumTestCase):
     @selenium_test
     def test_delete_account(self):
         email = self._get_random_email()
