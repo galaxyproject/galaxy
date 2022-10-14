@@ -18,6 +18,12 @@ class AuthProvider(metaclass=abc.ABCMeta):
         """
         Check that the user credentials are correct.
 
+        Besides checking password, it is possible to perform custom checks
+        like filtering client remote IP address using request argument. We can
+        get the remote IP address of the client using request.remote_addr and
+        check if the IP is in whitelisted IPs and deny the authentication if
+        it is not.
+
         NOTE: Used within auto-registration to check it is ok to register this
         user.
 
@@ -29,6 +35,8 @@ class AuthProvider(metaclass=abc.ABCMeta):
         :type   password: str
         :param  options: options provided in auth_config_file
         :type   options: dict
+        :param  request: HTTP request object
+        :type   request: GalaxyWebTransaction.request
         :returns:   True: accept user, False: reject user and None: reject user
             and don't try any other providers.  str, str are the email and
             username to register with if accepting. The optional dict may
@@ -42,6 +50,12 @@ class AuthProvider(metaclass=abc.ABCMeta):
         Same as authenticate() method, except an User object is provided instead
         of a username.
 
+        Besides checking password, it is possible to perform custom checks
+        like filtering client remote IP address using request argument. We can
+        get the remote IP address of the client using request.remote_addr and
+        check if the IP is in whitelisted IPs and deny the authentication if
+        it is not.
+
         NOTE: used on normal login to check authentication and update user
         details if required.
 
@@ -51,6 +65,8 @@ class AuthProvider(metaclass=abc.ABCMeta):
         :type   password: str
         :param  options: options provided in auth_config_file
         :type   options: dict
+        :param  request: HTTP request object
+        :type   request: GalaxyWebTransaction.request
         :returns:   True: accept user, False: reject user and None: reject user
             and don't try any other providers
         :rtype:     bool
