@@ -104,14 +104,14 @@ class AdminToolshed(AdminGalaxy):
                     )
                 else:
                     # The uninstalled repository has updates available in the tool shed.
-                    updated_repo_info_dict = self.get_updated_repository_information(
+                    updated_repo_info_dict = self._get_updated_repository_information(
                         trans=trans,
                         repository_id=trans.security.encode_id(repository.id),
                         repository_name=repository.name,
                         repository_owner=repository.owner,
                         changeset_revision=current_changeset_revision,
                     )
-                    json_repo_info_dict = json.dumps(updated_repo_info_dict)
+                    json_repo_info_dict = updated_repo_info_dict
                     encoded_repo_info_dict = encoding_util.tool_shed_encode(json_repo_info_dict)
                     kwd["latest_changeset_revision"] = current_changeset_revision
                     kwd["latest_ctx_rev"] = current_ctx_rev
@@ -213,10 +213,7 @@ class AdminToolshed(AdminGalaxy):
             text = ""
         return text
 
-    @web.expose
-    @web.require_admin
-    @legacy_tool_shed_endpoint
-    def get_updated_repository_information(
+    def _get_updated_repository_information(
         self, trans, repository_id, repository_name, repository_owner, changeset_revision
     ):
         """
