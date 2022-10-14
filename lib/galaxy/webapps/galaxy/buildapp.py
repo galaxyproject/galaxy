@@ -576,13 +576,6 @@ def populate_api_routes(webapp, app):
         controller="workflows",
         conditions=dict(method=["POST"]),
     )
-    webapp.mapper.connect(
-        "undelete_workflow",
-        "/api/workflows/{id}/undelete",
-        action="undelete",
-        controller="workflows",
-        conditions=dict(method=["POST"]),
-    )
 
     webapp.mapper.resource_with_deleted("user", "users", path_prefix="/api")
     webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")

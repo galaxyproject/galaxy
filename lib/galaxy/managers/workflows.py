@@ -486,7 +486,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             if self.check_security(trans, inv, check_ownership=True, check_accessible=False)
         ]
         return invocations, total_matches
-    
+
     def delete(self, stored_workflow, flush=True):
         """Mark the given workflow deleted."""
         super().delete(stored_workflow, flush=flush)

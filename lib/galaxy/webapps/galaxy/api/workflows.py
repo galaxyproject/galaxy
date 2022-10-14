@@ -458,33 +458,6 @@ class WorkflowsAPIController(
             return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
-    def delete(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        DELETE /api/workflows/{encoded_workflow_id}
-        Delete a specified workflow
-        """
-        workflow_to_delete = self.__get_stored_workflow(trans, id, **kwd)
-        if workflow_to_delete.user != trans.user and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException()
-        self.workflow_manager.delete(workflow_to_delete)
-        return self.workflow_contents_manager.workflow_to_dict(trans, workflow_to_delete, style="instance")
-
-    @expose_api
-    def undelete(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        POST /api/workflows/{encoded_workflow_id}/undelete
-        Undelete the workflow with the given ``id``
-
-        :param id: the encoded id of the user to be undeleted
-        :type  id: str
-        """
-        workflow_to_undelete = self.__get_stored_workflow(trans, id, **kwd)
-        if workflow_to_undelete.user != trans.user and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException()
-        self.workflow_manager.undelete(workflow_to_undelete)
-        return self.workflow_contents_manager.workflow_to_dict(trans, workflow_to_undelete, style="instance")
-
-    @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):
         """
         POST /api/workflows/upload
@@ -1419,7 +1392,7 @@ class FastAPIWorkflows:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-        payload: WriteInvocationStoreToPayload = Body(...),
+        payload: WriteStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(
             trans,
@@ -1427,6 +1400,36 @@ class FastAPIWorkflows:
             payload,
         )
         return rval
+
+    @router.delete(
+        "/api/workflows/{workflow_id}",
+        summary="Add the deleted flag to a workflow.",
+    )
+    def delete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam
+    ):
+        workflow_to_delete = self.service._workflows_manager.get_stored_workflow(trans, workflow_id)
+        if workflow_to_delete.user != trans.user and not trans.user_is_admin:
+            raise exceptions.InsufficientPermissionsException()
+        self.service._workflows_manager.delete(workflow_to_delete)
+        return self.service._workflow_contents_manager.workflow_to_dict(trans, workflow_to_delete, style="instance")
+
+    @router.post(
+        "/api/workflows/{workflow_id}/undelete",
+        summary="Remove the deleted flag from a workflow.",
+    )
+    def undelete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam
+    ):
+        workflow_to_undelete = self.service._workflows_manager.get_stored_workflow(trans, workflow_id)
+        if workflow_to_undelete.user != trans.user and not trans.user_is_admin:
+            raise exceptions.InsufficientPermissionsException()
+        self.service._workflows_manager.undelete(workflow_to_undelete)
+        return self.service._workflow_contents_manager.workflow_to_dict(trans, workflow_to_undelete, style="instance")
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(
