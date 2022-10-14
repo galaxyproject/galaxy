@@ -102,8 +102,6 @@ class ToolRecommendations:
         self.__collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
         if self.model_ok is None:
             self.__set_model(trans, remote_model_url)
-        log.info(f"Is self.model_ok: {self.model_ok}")
-        log.info(f"tool_sequence: {tool_sequence}")
         recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
         return tool_sequence, recommended_tools
 
@@ -205,8 +203,6 @@ class ToolRecommendations:
         _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
         prediction_data["o_extensions"] = list(set(last_output_extensions))
         t_ids_scores = zip(tool_ids, tool_scores)
-        log.info(f"Last compatible tool for: {last_tool_name} are {last_compatible_tools}")
-        log.info(f"Deprecated tools: {self.deprecated_tools}")
         # form the payload of the predicted tools to be shown
         for child, score in t_ids_scores:
             c_dict = dict()
@@ -258,14 +254,10 @@ class ToolRecommendations:
         final_pred = list()
         t_intersect = list(set(predictions).intersection(set(base_tools)))
         t_diff = list(set(predictions).difference(set(base_tools)))
-        log.info(f"Intersection: {t_intersect}")
-        log.info(f"Difference: {t_diff}")
         t_intersect, u_intersect = self.__sort_by_usage(t_intersect, self.tool_weights_sorted, self.model_data_dictionary)
         t_diff, u_diff = self.__sort_by_usage(t_diff, self.tool_weights_sorted, self.model_data_dictionary)
         t_intersect.extend(t_diff)
         u_intersect.extend(u_diff)
-        log.info(f"Final predicted tools: {t_intersect}")
-
         return t_intersect, u_intersect
 
     def __sort_by_usage(self, t_list, class_weights, d_dict):
@@ -288,8 +280,6 @@ class ToolRecommendations:
         topk_prediction_pos = prediction_pos[-topk:]
         # get tool ids
         pred_tool_names = [self.reverse_dictionary[str(tool_pos)] for tool_pos in topk_prediction_pos]
-        log.info(f"Predicted tool names: {pred_tool_names}")
-        log.info(f"Standard connection tools for {last_tool_name} tool: {base_tools[last_tool_name]}")
         if last_tool_name in base_tools:
             last_base_tools = base_tools[last_tool_name]
             if type(last_base_tools).__name__ == "str":
@@ -297,7 +287,6 @@ class ToolRecommendations:
                 last_base_tools = last_base_tools.split(",")
         # get predicted tools
         sorted_c_t, sorted_c_v = self.__get_predicted_tools(last_base_tools, pred_tool_names, topk)
-        log.info(f"Predicted tools: {sorted_c_t}")
         return sorted_c_t, sorted_c_v
 
     def __compute_tool_prediction(self, trans, tool_sequence):
@@ -312,10 +301,7 @@ class ToolRecommendations:
         prediction_data["name"] = ",".join(tool_sequence)
         prediction_data["children"] = list()
         last_tool_name = tool_sequence[-1]
-        log.info(f"prediction_data: {prediction_data}")
-        log.info(f"last_tool_name: {last_tool_name}")
         # do prediction only if the last is present in the collections of tools
-        log.info(f"self.model_data_dictionary: {self.model_data_dictionary}")
         if last_tool_name in self.model_data_dictionary:
             sample = np.zeros(self.max_seq_len)
             # get tool names without slashes and create a sequence vector
@@ -333,11 +319,8 @@ class ToolRecommendations:
             # predict next tools for a test path
             try:
                 import tensorflow as tf
-                log.info(f"tool_sequence: {tool_sequence}")
-                log.info(f"sample: {sample}")
                 sample = tf.convert_to_tensor(sample, dtype=tf.int64)
                 prediction, _ = self.loaded_model(sample, training=False)
-                log.info(f"Prediction: {prediction}")
             except Exception as e:
                 log.exception(e)
                 return prediction_data
@@ -351,8 +334,5 @@ class ToolRecommendations:
             # remove duplicates if any
             pub_t = list(dict.fromkeys(pub_t))
             pub_v = list(dict.fromkeys(pub_v))
-            log.info(f"Prediction pub_t: {pub_t}")
-            log.info(f"Prediction pub_v: {pub_v}")
             prediction_data = self.__filter_tool_predictions(trans, prediction_data, pub_t, pub_v, last_tool_name)
-            log.info(f"Prediction data: {prediction_data}")
         return prediction_data
