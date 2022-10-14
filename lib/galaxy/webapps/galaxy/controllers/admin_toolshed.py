@@ -173,13 +173,6 @@ class AdminToolshed(AdminGalaxy):
                     return open(path_to_file, "rb")
         return None
 
-    @web.json
-    @web.require_admin
-    @web.do_not_cache
-    @legacy_tool_shed_endpoint
-    def get_file_contents(self, trans, file_path, repository_id):
-        return suc.get_repository_file_contents(trans.app, file_path, repository_id, is_admin=True)
-
     def _get_updated_repository_information(
         self, trans, repository_id, repository_name, repository_owner, changeset_revision
     ):
