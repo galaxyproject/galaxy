@@ -11,7 +11,7 @@ class TestSetSqliteConnectArgs:
         assert updated == {"connect_args": {"check_same_thread": False}}
 
     def test_engine_options_empty(self):
-        engine_options = {}
+        engine_options = {}  # type: ignore[var-annotated]
         updated = set_sqlite_connect_args(engine_options, SQLITE_URL)
         assert updated == {"connect_args": {"check_same_thread": False}}
 
