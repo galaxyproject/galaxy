@@ -166,7 +166,6 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         query = query.options(latest_workflow_load)
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
-        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
@@ -194,6 +193,9 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                     elif key == "is":
                         if q == "published":
                             query = query.filter(model.StoredWorkflow.published == true())
+                        elif q == "deleted":
+                            query = query.filter(model.StoredWorkflow.deleted == true())
+                            show_deleted = true
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
@@ -213,6 +215,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             term,
                         )
                     )
+        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if include_total_count:
             total_matches = query.count()
         else:
