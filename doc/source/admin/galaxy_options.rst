@@ -57,10 +57,19 @@
 
 :Description:
     By default, Galaxy uses a SQLite database at
-    '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
+    '<data_dir>/universe.sqlite'. You may use a SQLAlchemy connection
     string to specify an external database instead.
     Sample default
     'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+    You may specify additional options that will be passed to the
+    SQLAlchemy database engine by using the prefix
+    "database_engine_option_". For some of these options, default
+    values are provided (e.g. see database_engine_option_pool_size,
+    etc.).
+    The same applies to `install_database_connection`, for which you
+    should use the "install_database_engine_option_" prefix.
+    For more options, please check SQLAlchemy's documentation at
+    https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
 :Default: ``None``
 :Type: str
 
@@ -590,22 +599,6 @@
     <config_dir>.
 :Default: ``tool_sheds_conf.xml``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``load_tool_shed_datatypes``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    This option controls whether legacy datatypes are loaded from
-    installed tool shed repositories. We're are in the process of
-    disabling Tool Shed datatypes. This option with a default of true
-    will be added in 22.01, we will disable the datatypes on the big
-    public servers during that release. This option will be switched
-    to False by default in 22.05 and this broken functionality will be
-    removed all together during some future release.
-:Default: ``true``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~
