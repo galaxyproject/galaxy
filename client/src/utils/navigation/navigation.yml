@@ -173,6 +173,7 @@ history_panel:
       name: '${_} .name'
       blurb: '${_} .not-loading .blurb .value'
       dbkey: '${_} .not-loading .dbkey .value'
+      datatype: '${_} .not-loading .datatype .value'
       info: '${_} .not-loading .info .value'
       peek: '${_} .not-loading .dataset-peek'
       toolhelp_title: '${_} .toolhelp strong'
@@ -308,10 +309,14 @@ edit_collection_attributes:
     database_genome_tab:
       type: xpath
       selector: '//a[contains(text(), "Database/Build")]'
-    database_value:
+    datatypes_tab:
       type: xpath
-      selector: '//span[contains(text(), "${dbkey}")]'
-    save_btn: '.save-collection-edit'
+      selector: '//a[contains(text(), "Datatypes")]'
+    data_value:
+      type: xpath
+      selector: '//span[contains(text(), "${data_change}")]'
+    save_dbkey_btn: '.save-dbkey-edit'
+    save_datatype_btn: '.save-datatype-edit'
 
 tool_panel:
   selectors:

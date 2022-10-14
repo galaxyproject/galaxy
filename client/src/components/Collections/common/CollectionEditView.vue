@@ -29,6 +29,23 @@
                     <suitable-converters-tab :suitable-converters="item" @clicked-convert="clickedConvert" />
                 </b-tab>
             </SuitableConvertersProvider>
+            <ConfigProvider v-slot="{ config }">
+                <b-tab v-if="config.enable_celery_tasks">
+                    <template v-slot:title>
+                        <font-awesome-icon icon="database" /> &nbsp; {{ l("Datatypes") }}
+                    </template>
+                    <datatypes-provider v-slot="{ item, loading }">
+                        <div v-if="loading"><loading-span :message="loadingString" /></div>
+                        <div v-else>
+                            <change-datatype-tab
+                                v-if="item && datatypeFromElements"
+                                :datatype-from-elements="datatypeFromElements"
+                                :datatypes="item"
+                                @clicked-save="clickedDatatypeChange" />
+                        </div>
+                    </datatypes-provider>
+                </b-tab>
+            </ConfigProvider>
         </b-tabs>
     </div>
 </template>
@@ -41,10 +58,13 @@ import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import DatabaseEditTab from "./DatabaseEditTab";
 import SuitableConvertersTab from "./SuitableConvertersTab";
-import { DbKeyProvider, SuitableConvertersProvider } from "../../providers";
+import { DbKeyProvider, SuitableConvertersProvider, DatatypesProvider } from "../../providers";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase, faTable, faBars, faUser, faCog } from "@fortawesome/free-solid-svg-icons";
+import ConfigProvider from "components/providers/ConfigProvider";
+import ChangeDatatypeTab from "./ChangeDatatypeTab";
+import LoadingSpan from "../../LoadingSpan.vue";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 
@@ -56,6 +76,10 @@ export default {
         FontAwesomeIcon,
         DbKeyProvider,
         SuitableConvertersProvider,
+        ConfigProvider,
+        ChangeDatatypeTab,
+        DatatypesProvider,
+        LoadingSpan,
     },
     props: {
         collection_id: {
@@ -65,15 +89,19 @@ export default {
     },
     data: function () {
         return {
-            attributes_data: {},
+            attributesData: {},
             errorMessage: null,
             jobError: null,
             noQuotaIncrease: true,
+            loadingString: "Loading Datatypes",
         };
     },
     computed: {
         databaseKeyFromElements: function () {
-            return this.attributes_data.dbkey;
+            return this.attributesData.dbkey;
+        },
+        datatypeFromElements: function () {
+            return this.attributesData.extension;
         },
         newCollectionInfoMessage: function () {
             let newCollectionMessage = "This will create a new collection in your History.";
@@ -81,6 +109,9 @@ export default {
                 newCollectionMessage += " Your quota usage will not increase.";
             }
             return newCollectionMessage;
+        },
+        historyId: function () {
+            return this.$store.getters["history/currentHistoryId"];
         },
     },
     created() {
@@ -93,7 +124,7 @@ export default {
                 await this.$store.dispatch("fetchCollectionAttributes", this.collection_id);
                 attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
             }
-            this.attributes_data = attributesGet;
+            this.attributesData = attributesGet;
         },
         clickedSave: function (attribute, newValue) {
             const url = prependPath(`/api/dataset_collections/${this.collection_id}/copy`);
@@ -116,6 +147,23 @@ export default {
                 target_type: selectedConverter.target_type,
             };
             axios.post(url, data).catch(this.handleError);
+        },
+        clickedDatatypeChange: function (selectedDatatype) {
+            const url = prependPath(`/api/histories/${this.historyId}/contents/bulk`);
+            const data = {
+                operation: "change_datatype",
+                items: [
+                    {
+                        history_content_type: "dataset_collection",
+                        id: this.collection_id,
+                    },
+                ],
+                params: {
+                    type: "change_datatype",
+                    datatype: selectedDatatype.id,
+                },
+            };
+            axios.put(url, data).catch(this.handleError);
         },
         handleError: function (err) {
             this.errorMessage = errorMessageAsString(err, "History import failed.");

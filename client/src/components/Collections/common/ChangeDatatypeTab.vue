@@ -1,27 +1,27 @@
 <template>
     <div>
         <div>
-            <h4 class="float-left">Change Database/Build of all elements in collection</h4>
+            <h4 class="float-left">Change Datatype/Extension of all elements in collection</h4>
             <div class="text-right">
                 <button
-                    class="save-dbkey-edit btn btn-primary"
-                    :disabled="selectedGenome.id == databaseKeyFromElements"
+                    class="save-datatype-edit btn btn-primary"
+                    :disabled="selectedDatatype.id == currentDatatype"
                     @click="clickedSave">
                     {{ l("Save") }}
                 </button>
             </div>
         </div>
-        <b>{{ l("Database/Build") }}: </b>
+        <b>{{ l("New Type") }}: </b>
         <multiselect
-            class="database-dropdown"
-            v-model="selectedGenome"
+            class="datatype-dropdown"
+            v-model="selectedDatatype"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"
-            :options="genomes"
+            :options="datatypes"
             :searchable="true"
             :allow-empty="false">
-            {{ selectedGenome.text }}
+            {{ selectedDatatype.text }}
         </multiselect>
     </div>
 </template>
@@ -31,27 +31,29 @@ import Multiselect from "vue-multiselect";
 export default {
     components: { Multiselect },
     props: {
-        genomes: {
+        datatypes: {
             type: Array,
             required: true,
         },
-        databaseKeyFromElements: {
+        datatypeFromElements: {
             type: String,
             required: true,
         },
     },
     data: function () {
         return {
-            selectedGenome: {},
+            selectedDatatype: {},
+            currentDatatype: "",
         };
     },
     created() {
-        this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
+        this.selectedDatatype = this.datatypes.find((element) => element.id == this.datatypeFromElements);
+        this.currentDatatype = this.datatypeFromElements;
     },
     methods: {
         clickedSave: function () {
-            this.$emit("clicked-save", "dbkey", this.selectedGenome);
-            this.selectedGenome = this.genomes.find((element) => element.id == this.databaseKeyFromElements);
+            this.$emit("clicked-save", this.selectedDatatype);
+            this.currentDatatype = this.selectedDatatype.id;
         },
     },
 };
