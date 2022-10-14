@@ -37,6 +37,69 @@ To configure one or more authentication plugins, simply copy ``config/auth_conf.
 The provided sample configuration file has numerous commented out examples and serves as the most up-to-date source
 of documentation on configuring these plugins.
 
+It is relatively straight-forward to add a custom authenticator to the framework. In this example, we will demonstrate 
+a new authenticator based on LDAP authenticator that performs custom checks besides password verification for 
+authenticating a user to Galaxy instance. First, we will create authenticator source file in directory 
+`lib/galaxy/auth/providers/ldap_custom.py` with following content
+
+```
+import logging
+import ipaddress
+
+from ..providers.ldap_ad import LDAP
+
+log = logging.getLogger(__name__)
+
+
+class LDAPCustom(LDAP):
+    """
+    Attempts to authenticate users against an LDAP server.
+    """
+
+    plugin_type = "ldap_custom"
+
+    def __init__(self):
+        super().__init__()
+
+    def authenticate(self, email, username, password, options, request):
+        """
+        See abstract method documentation.
+        """
+        if options.get("continue-on-failure", "False") == "False":
+            failure_mode = None  # reject and do not continue
+        else:
+            failure_mode = False  # reject but continue
+        # Check if user's remote IP is declared in whitelisted IPs
+        if "white-listed-ips" in options:
+            user_remote_ip = request.remote_addr
+            # Get all white listed IPs from the config file
+            white_listed_ips = options.get("white-listed-ips")
+            # Convert them into a list
+            white_listed_ips = white_listed_ips.split(' ')
+            # Convert user remote IP into IPv4Network object
+            user_remote_ip_obj = ipaddress.IPv4Network(user_remote_ip)
+            white_listed_ip_objs = [ipaddress.IPv4Network(ip) for ip in white_listed_ip_objs]
+            # Make sure white_listed_ip_objs is not empty
+            if white_listed_ip_objs:
+                # Effectively we are checking if remote ip network subnet
+                # is subset of allowed subnets. If at least one subnet matches,
+                # we allow user to authenticate
+                allowed = any([user_remote_ip_obj.subnet_of(sn) for sn in white_listed_ip_objs])
+                if not allowed:
+                    log.info("LDAP authentication: User remote IP is not listed in whitelisted IPs")
+                    return failure_mode, "", ""
+        return super().authenticate(email, username, password, options, request)
+
+__all__ = ("LDAPCustom",)
+
+```
+
+In this simple custom LDAP authenticator, we are verifying the remote IP address of the client is declared in the whitelisted 
+IP addresses. The so-called `white-listed-ips` can be provided within the `auth_config.xml` file. However this can be done in 
+many ways depending on the deployments like getting white listed IPs from LDAP query or simply reading it from a file on the 
+file system. This list of IP addresses can be a global whitelist or IP addresses per user. In order to use this authenticator, 
+we need to declare it in the `auth_config.xml` file as `<type>ldap_custom</type>`.
+
 ## Remote User Authentication
 
 If Galaxy is deployed with either nginx or Apache serving as a front-end proxy for Galaxy requests, they can be configured
