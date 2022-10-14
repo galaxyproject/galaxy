@@ -76,8 +76,8 @@ def test_open_recipe_file():
 
 @external_dependency_management
 def test_get_alternative_versions():
-    versions = get_alternative_versions("recipes/bamtools", "meta.yaml")
-    assert versions == ["recipes/bamtools/2.3.0/meta.yaml"]
+    versions = get_alternative_versions("recipes/bioblend", "meta.yaml")
+    assert versions == ["recipes/bioblend/0.7.0/meta.yaml"]
 
 
 @external_dependency_management
