@@ -99,14 +99,8 @@ def build_engine(
                 except AttributeError:
                     pass
 
-    # Set check_same_thread to False for sqlite, handled by request-specific session
-    # See https://fastapi.tiangolo.com/tutorial/sql-databases/#note
-    connect_args = {}
-    if "sqlite://" in url:
-        connect_args["check_same_thread"] = False
-    # Create the database engine
-    engine_options = engine_options or {}
-    engine = create_engine(url, connect_args=connect_args, **engine_options)
+    engine_options = set_sqlite_connect_args(engine_options, url)
+    engine = create_engine(url, **engine_options)
 
     # Prevent sharing connection across fork: https://docs.sqlalchemy.org/en/14/core/pooling.html#using-connection-pools-with-multiprocessing-or-os-fork
     register_after_fork(engine, lambda e: e.dispose())
@@ -126,3 +120,16 @@ def build_engine(
             )
 
     return engine
+
+
+def set_sqlite_connect_args(engine_options, url):
+    """
+    Add or update `connect_args` in `engine_options` if db is sqlite.
+    Set check_same_thread to False for sqlite, handled by request-specific session.
+    See https://fastapi.tiangolo.com/tutorial/sql-databases/#note
+    """
+    if url and url.startswith("sqlite://"):
+        engine_options = engine_options or {}
+        connect_args = engine_options.setdefault("connect_args", {})
+        connect_args["check_same_thread"] = False
+    return engine_options
