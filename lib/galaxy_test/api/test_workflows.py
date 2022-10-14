@@ -21,7 +21,7 @@ from requests import (
     delete,
     get,
     post,
-    put
+    put,
 )
 
 from galaxy.exceptions import error_codes

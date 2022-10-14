@@ -42,8 +42,10 @@ from galaxy import (
     util,
 )
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.managers import deletable
-from galaxy.managers import sharable
+from galaxy.managers import (
+    deletable,
+    sharable,
+)
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class

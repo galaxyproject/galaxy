@@ -1408,7 +1408,7 @@ class FastAPIWorkflows:
     def delete_workflow(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
         workflow_to_delete = self.service._workflows_manager.get_stored_workflow(trans, workflow_id)
         if workflow_to_delete.user != trans.user and not trans.user_is_admin:
@@ -1423,7 +1423,7 @@ class FastAPIWorkflows:
     def undelete_workflow(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
         workflow_to_undelete = self.service._workflows_manager.get_stored_workflow(trans, workflow_id)
         if workflow_to_undelete.user != trans.user and not trans.user_is_admin:
