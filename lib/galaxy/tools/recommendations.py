@@ -46,14 +46,8 @@ class ToolRecommendations:
         class TransformerBlock(Layer):
             def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
                 super(TransformerBlock, self).__init__()
-                self.att = MultiHeadAttention(num_heads=num_heads,
-                    key_dim=embed_dim,
-                    dropout=rate,
-                )
-                self.ffn = Sequential(
-                    [Dense(ff_dim, activation="relu"),
-                    Dense(embed_dim),]
-                )
+                self.att = MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim, dropout=rate)
+                self.ffn = Sequential([Dense(ff_dim, activation="relu"), Dense(embed_dim)])
                 self.layernorm1 = LayerNormalization(epsilon=1e-6)
                 self.layernorm2 = LayerNormalization(epsilon=1e-6)
                 self.dropout1 = Dropout(rate)
@@ -66,7 +60,6 @@ class ToolRecommendations:
                 ffn_output = self.ffn(out1)
                 ffn_output = self.dropout2(ffn_output, training=training)
                 return self.layernorm2(out1 + ffn_output), attention_scores
-
 
         class TokenAndPositionEmbedding(Layer):
             def __init__(self, maxlen, vocab_size, embed_dim):
@@ -109,7 +102,6 @@ class ToolRecommendations:
         """
         Create model and associated dictionaries for recommendations
         """
-        #import tensorflow as tf
         self.tool_recommendation_model_path = self.__download_model(remote_model_url)
         model_file = h5py.File(self.tool_recommendation_model_path, "r")
         self.reverse_dictionary = json.loads(model_file["reverse_dict"][()].decode("utf-8"))
@@ -251,7 +243,6 @@ class ToolRecommendations:
         """
         Get predicted tools. If predicted tools are less in number, combine them with published tools
         """
-        final_pred = list()
         t_intersect = list(set(predictions).intersection(set(base_tools)))
         t_diff = list(set(predictions).difference(set(base_tools)))
         t_intersect, u_intersect = self.__sort_by_usage(t_intersect, self.tool_weights_sorted, self.model_data_dictionary)
