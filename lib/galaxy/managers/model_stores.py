@@ -14,6 +14,7 @@ from galaxy.model.store import (
 )
 from galaxy.schema.schema import HistoryContentType
 from galaxy.schema.tasks import (
+    BcoGenerationTaskParametersMixin,
     GenerateHistoryContentDownload,
     GenerateHistoryDownload,
     GenerateInvocationDownload,
@@ -24,6 +25,7 @@ from galaxy.schema.tasks import (
     WriteInvocationTo,
 )
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.version import VERSION
 from galaxy.web.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
@@ -99,9 +101,12 @@ class ModelStoreManager:
         with storage_context(
             request.short_term_storage_request_id, self._short_term_storage_monitor
         ) as short_term_storage_target:
-            with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-                short_term_storage_target.path
-            ) as export_store:
+            with model.store.get_export_store_factory(
+                self._app,
+                model_store_format,
+                export_files=export_files,
+                bco_export_options=self._bco_export_options(request),
+            )(short_term_storage_target.path) as export_store:
                 invocation = self._sa_session.query(model.WorkflowInvocation).get(request.invocation_id)
                 export_store.export_workflow_invocation(
                     invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
@@ -111,13 +116,27 @@ class ModelStoreManager:
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
-        with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-            target_uri
-        ) as export_store:
+        with model.store.get_export_store_factory(
+            self._app,
+            model_store_format,
+            export_files=export_files,
+            bco_export_options=self._bco_export_options(request),
+        )(target_uri) as export_store:
             invocation = self._sa_session.query(model.WorkflowInvocation).get(request.invocation_id)
             export_store.export_workflow_invocation(
                 invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
             )
+
+    def _bco_export_options(self, request: BcoGenerationTaskParametersMixin):
+        return model.store.BcoExportOptions(
+            galaxy_url=request.galaxy_url,
+            galaxy_version=VERSION,
+            merge_history_metadata=request.bco_merge_history_metadata,
+            override_environment_variables=request.bco_override_environment_variables,
+            override_empirical_error=request.bco_override_empirical_error,
+            override_algorithmic_error=request.bco_override_algorithmic_error,
+            override_xref=request.bco_override_xref,
+        )
 
     def write_history_content_to(self, request: WriteHistoryContentTo):
         model_store_format = request.model_store_format

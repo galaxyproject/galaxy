@@ -1902,9 +1902,6 @@ outer_input:
                 "workflow_step_label"
             ] == "random_lines"
 
-            bco = self.workflow_populator.get_biocompute_object(invocation_id)
-            self.workflow_populator.validate_biocompute_object(bco)
-
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
         with self.dataset_populator.test_history() as history_id:

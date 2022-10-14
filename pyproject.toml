@@ -77,7 +77,7 @@ pebble = "*"
 psutil = "*"
 pulsar-galaxy-lib = ">=0.14.13"
 pycryptodome = "*"
-pydantic = "*"
+pydantic = {version = "*", extras = ["email"]}
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
