@@ -9,7 +9,7 @@
             <url>/</url>
         </entry_point>
     </entry_points>
-    <command><![CDATA[
+    <command use_shared_home="true"><![CDATA[
 
         mkdir -p /srv/shiny-server/data/ &&
         cp '$infile' /srv/shiny-server/data/inputdata.txt &&
