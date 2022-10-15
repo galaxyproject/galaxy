@@ -47,41 +47,22 @@ def legacy_tool_shed_endpoint(func):
 
 
 class AdminToolshed(AdminGalaxy):
-    @web.expose
+    @web.json
     @web.require_admin
     @legacy_tool_shed_endpoint
     def activate_repository(self, trans, **kwd):
         """Activate a repository that was deactivated but not uninstalled."""
+        return self._activate_repository(trans, **kwd)
+
+    def _activate_repository(self, trans, **kwd):
         repository_id = kwd["id"]
         repository = get_installed_tool_shed_repository(trans.app, repository_id)
         try:
             trans.app.installed_repository_manager.activate_repository(repository)
-            message = f"The <b>{escape(repository.name)}</b> repository has been activated."
-            status = "done"
         except Exception as e:
             error_message = f"Error activating repository {escape(repository.name)}: {unicodify(e)}"
             log.exception(error_message)
-            message = (
-                '%s.<br/>You may be able to resolve this by uninstalling and then reinstalling the repository.  Click <a href="%s">here</a> to uninstall the repository.'
-                % (
-                    error_message,
-                    web.url_for(
-                        controller="admin_toolshed",
-                        action="deactivate_or_uninstall_repository",
-                        id=trans.security.encode_id(repository.id),
-                    ),
-                )
-            )
-            status = "error"
-        return trans.response.send_redirect(
-            web.url_for(
-                controller="admin_toolshed",
-                action="manage_repository_json",
-                id=repository_id,
-                message=message,
-                status=status,
-            )
-        )
+        return self._manage_repository_json(trans, id=repository_id)
 
     @web.expose
     @web.require_admin
@@ -90,56 +71,9 @@ class AdminToolshed(AdminGalaxy):
         repository_id = kwd["id"]
         repository = get_installed_tool_shed_repository(trans.app, repository_id)
         if repository.uninstalled:
-            # Since we're reinstalling the repository we need to find the latest changeset revision to which it can
-            # be updated so that we can reset the metadata if necessary.  This will ensure that information about
-            # repository dependencies and tool dependencies will be current.  Only allow selecting a different section
-            # in the tool panel if the repository was uninstalled and it contained tools that should be displayed in
-            # the tool panel.
-            update_to_changeset = trans.app.update_repository_manager.get_update_to_changeset_revision_and_ctx_rev(
-                repository
-            )
-            current_changeset_revision = update_to_changeset.changeset_revision
-            current_ctx_rev = update_to_changeset.ctx_rev
-            if current_changeset_revision and current_ctx_rev:
-                if current_ctx_rev == repository.ctx_rev:
-                    # The uninstalled repository is current.
-                    return trans.response.send_redirect(
-                        web.url_for(controller="admin_toolshed", action="reselect_tool_panel_section", **kwd)
-                    )
-                else:
-                    # The uninstalled repository has updates available in the tool shed.
-                    updated_repo_info_dict = self._get_updated_repository_information(
-                        trans=trans,
-                        repository_id=trans.security.encode_id(repository.id),
-                        repository_name=repository.name,
-                        repository_owner=repository.owner,
-                        changeset_revision=current_changeset_revision,
-                    )
-                    json_repo_info_dict = updated_repo_info_dict
-                    encoded_repo_info_dict = encoding_util.tool_shed_encode(json_repo_info_dict)
-                    kwd["latest_changeset_revision"] = current_changeset_revision
-                    kwd["latest_ctx_rev"] = current_ctx_rev
-                    kwd["updated_repo_info_dict"] = encoded_repo_info_dict
-                    return trans.response.send_redirect(
-                        web.url_for(controller="admin_toolshed", action="reselect_tool_panel_section", **kwd)
-                    )
-            else:
-                message = f"Unable to get latest revision for repository <b>{escape(str(repository.name))}</b> from "
-                message += "the Tool Shed, so repository re-installation is not possible at this time."
-                status = "error"
-                return trans.response.send_redirect(
-                    web.url_for(
-                        controller="admin_toolshed",
-                        action="manage_repository_json",
-                        id=repository_id,
-                        message=message,
-                        status=status,
-                    )
-                )
+            raise Exception("Cannot restore uninstalled repositories, just re-install.")
         else:
-            return trans.response.send_redirect(
-                web.url_for(controller="admin_toolshed", action="activate_repository", **kwd)
-            )
+            return self._activate_repository(trans, **kwd)
 
     @web.expose
     def display_image_in_repository(self, trans, **kwd):
@@ -161,9 +95,7 @@ class AdminToolshed(AdminGalaxy):
             if repository:
                 repo_files_dir = repository.repo_files_directory(trans.app)
                 # The following line sometimes returns None.  TODO: Figure out why.
-                path_to_file = get_absolute_path_to_file_in_repository(
-                    repo_files_dir, relative_path_to_image_file
-                )
+                path_to_file = get_absolute_path_to_file_in_repository(repo_files_dir, relative_path_to_image_file)
                 if path_to_file and os.path.exists(path_to_file):
                     file_name = os.path.basename(relative_path_to_image_file)
                     try:
@@ -205,6 +137,9 @@ class AdminToolshed(AdminGalaxy):
     @web.require_admin
     @legacy_tool_shed_endpoint
     def manage_repository_json(self, trans, **kwd):
+        return self._manage_repository_json(trans, **kwd)
+
+    def _manage_repository_json(self, trans, **kwd):
         repository_id = kwd.get("id", None)
         if repository_id is None:
             return trans.show_error_message("Missing required encoded repository id.")
