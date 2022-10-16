@@ -1,5 +1,5 @@
 <template>
-    <Published :details="workflow">
+    <Published :item="workflow" @set-rating="onSetRating">
         <template v-slot>
             <WorkflowDisplay :args="{ workflow_id: id }" :workflow="workflow" :expanded="true" />
         </template>
@@ -29,9 +29,16 @@ export default {
     },
     created() {
         const url = `/api/workflows/${this.id}`;
+        const query = this.$route.query;
         urlData({ url }).then((data) => {
-            this.workflow = data;
+            this.workflow = { ...data, ...query };
         });
+    },
+    methods: {
+        onSetRating(newRating) {
+            const url = `/workflow/rate_async?id=${this.id}&rating=${newRating}`;
+            urlData({ url });
+        },
     },
 };
 </script>

@@ -752,7 +752,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # Rate history.
         self.rate_item(trans.sa_session, trans.get_user(), history, rating)
         return self.get_ave_item_rating_data(trans.sa_session, history)
-        # TODO: used in display_base.mako
 
     @web.expose
     @web.json
