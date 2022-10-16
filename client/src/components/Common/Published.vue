@@ -11,11 +11,11 @@
             <div class="m-3">
                 <div v-if="modelTitle">
                     <h4>About this {{ modelTitle }}</h4>
-                    <h3>{{ details.title }}</h3>
+                    <h3>{{ details.title || details.name }}</h3>
+                    <StatelessTags v-if="details.tags" class="tags mt-2" :value="details.tags" :disabled="true" />
                     <br />
                     <h4>Author</h4>
                     <div>{{ owner }}</div>
-                    <br />
                     <hr />
                     <h4>Related Pages</h4>
                     <div>
@@ -32,10 +32,12 @@
 </template>
 
 <script>
+import { StatelessTags } from "components/Tags";
 import LoadingSpan from "components/LoadingSpan";
 export default {
     components: {
         LoadingSpan,
+        StatelessTags,
     },
     props: {
         details: {
