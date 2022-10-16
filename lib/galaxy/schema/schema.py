@@ -3014,11 +3014,6 @@ class SharingStatus(Model):
         title="Importable",
         description="Whether this resource can be published using a link.",
     )
-    username: Optional[str] = Field(
-        None,
-        title="Username",
-        description="The owner's username.",
-    )
     published: bool = Field(
         ...,
         title="Published",
@@ -3028,6 +3023,16 @@ class SharingStatus(Model):
         [],
         title="Users shared with",
         description="The list of encoded ids for users the resource has been shared.",
+    )
+    userhash: Optional[str] = Field(
+        None,
+        title="Hash",
+        description="The encoded email of the user.",
+    )
+    username: Optional[str] = Field(
+        None,
+        title="Username",
+        description="The owner's username.",
     )
     username_and_slug: Optional[str] = Field(
         None,

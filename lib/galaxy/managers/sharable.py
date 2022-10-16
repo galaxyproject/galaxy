@@ -24,8 +24,8 @@ from sqlalchemy import (
     func,
     true,
 )
-
 from galaxy import exceptions
+from galaxy.web.framework.helpers import md5
 from galaxy.managers import (
     annotatable,
     base,
@@ -394,8 +394,8 @@ class SharableModelSerializer(
         self.serializers.update(
             {
                 "id": self.serialize_id,
-                "email": self.serialize_email,
                 "title": self.serialize_title,
+                "userhash": self.serialize_userhash,
                 "username": self.serialize_username,
                 "username_and_slug": self.serialize_username_and_slug,
                 "users_shared_with": self.serialize_users_shared_with,
@@ -404,10 +404,10 @@ class SharableModelSerializer(
         # these use the default serializer but must still be white-listed
         self.serializable_keyset.update(["importable", "published", "slug"])
 
-    def serialize_email(self, item, key, **context):
+    def serialize_userhash(self, item, key, **context):
         if not (item.user and item.user.email):
             return None
-        return item.user.email
+        return md5(item.user.email)
 
     def serialize_title(self, item, key, **context):
         if hasattr(item, "title"):
