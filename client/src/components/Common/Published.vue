@@ -12,6 +12,7 @@
                 <div v-if="modelTitle">
                     <h1 class="h-sm">About this {{ modelTitle }}</h1>
                     <h2 class="h-md">{{ item.title || item.name }}</h2>
+                    <img class="float-right" :src="gravatarSource" alt="user avatar" />
                     <StatelessTags v-if="item.tags" class="tags mt-2" :value="item.tags" :disabled="true" />
                     <br />
                     <h2 class="h-sm">Author</h2>
@@ -57,6 +58,9 @@ export default {
     computed: {
         aveItemRating() {
             return Number(this.item.ave_item_rating);
+        },
+        gravatarSource() {
+            return `https://secure.gravatar.com/avatar/${this.item.email_hash}?d=identicon`;
         },
         hasRatingData() {
             return this.item.num_ratings !== undefined;

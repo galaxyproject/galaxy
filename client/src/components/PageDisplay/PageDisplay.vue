@@ -66,7 +66,7 @@ export default {
             window.location = safePath(this.editUrl);
         },
         onSetRating(newRating) {
-            const url = `/page/rate_async?id=${this.id}&rating=${newRating}`;
+            const url = `/page/rate_async?id=${this.pageId}&rating=${newRating}`;
             urlData({ url });
         },
         stsUrl(config) {

@@ -149,6 +149,7 @@ from galaxy.util.form_builder import (
 from galaxy.util.hash_util import new_insecure_hash
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.web.framework.helpers import md5
 
 log = logging.getLogger(__name__)
 
@@ -8892,6 +8893,7 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
         "importable",
         "deleted",
         "username",
+        "email_hash",
     ]
 
     def to_dict(self, view="element"):
@@ -8906,6 +8908,11 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
     @property
     def username(self):
         return self.user.username
+
+    # email needed for hash generation
+    @property
+    def email_hash(self):
+        return md5(self.user.email)
 
 
 class PageRevision(Base, Dictifiable, RepresentById):

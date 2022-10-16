@@ -3024,10 +3024,10 @@ class SharingStatus(Model):
         title="Users shared with",
         description="The list of encoded ids for users the resource has been shared.",
     )
-    userhash: Optional[str] = Field(
+    email_hash: Optional[str] = Field(
         None,
-        title="Hash",
-        description="The encoded email of the user.",
+        title="Encoded Email",
+        description="Encoded owner email.",
     )
     username: Optional[str] = Field(
         None,
@@ -3203,6 +3203,11 @@ class PageSummary(PageSummaryBase):
         ...,  # Required
         title="Username",
         description="The name of the user owning this Page.",
+    )
+    email_hash: str = Field(
+        ...,  # Required
+        title="Encoded email",
+        description="The encoded email of the user",
     )
     published: bool = Field(
         ...,  # Required

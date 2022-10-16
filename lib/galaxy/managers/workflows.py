@@ -80,6 +80,7 @@ from galaxy.util.search import (
     RawTextTerm,
 )
 from galaxy.web import url_for
+from galaxy.web.framework.helpers import md5
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
     is_tool_module_type,
@@ -1480,6 +1481,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["name"] = workflow.name
         item["url"] = url_for("workflow", id=item["id"])
         item["owner"] = stored.user.username
+        item["email_hash"] = md5(stored.user.email)
         item["slug"] = stored.slug
         inputs = {}
         for step in workflow.input_steps:

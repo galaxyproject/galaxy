@@ -440,6 +440,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "detailed",
             [
                 "contents_url",
+                "email_hash",
                 "empty",
                 "size",
                 "user_id",
