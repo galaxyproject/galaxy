@@ -8836,7 +8836,7 @@ class CloudAuthz(Base, _HasTable):
         )
 
 
-class Page(Base, Dictifiable, RepresentById):
+class Page(Base, HasTags, Dictifiable, RepresentById):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -8942,7 +8942,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page = relationship("Page", back_populates="users_shared_with")
 
 
-class Visualization(Base, RepresentById):
+class Visualization(Base, HasTags, RepresentById):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),
