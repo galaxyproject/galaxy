@@ -394,6 +394,7 @@ class SharableModelSerializer(
         self.serializers.update(
             {
                 "id": self.serialize_id,
+                "email": self.serialize_email,
                 "title": self.serialize_title,
                 "username": self.serialize_username,
                 "username_and_slug": self.serialize_username_and_slug,
@@ -402,6 +403,11 @@ class SharableModelSerializer(
         )
         # these use the default serializer but must still be white-listed
         self.serializable_keyset.update(["importable", "published", "slug"])
+
+    def serialize_email(self, item, key, **context):
+        if not (item.user and item.user.email):
+            return None
+        return item.user.email
 
     def serialize_title(self, item, key, **context):
         if hasattr(item, "title"):
