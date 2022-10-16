@@ -21,11 +21,11 @@ from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
 )
-from galaxy.job_execution.setup import JobIO
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners.util import runner_states
 from galaxy.jobs.runners.util.env import env_to_statement
 from galaxy.jobs.runners.util.job_script import (
+    DescribesScriptIntegrityChecks,
     job_script,
     write_script,
 )
@@ -278,7 +278,7 @@ class BaseJobRunner:
         return True
 
     # Runners must override the job handling methods
-    def queue_job(self, job_wrapper):
+    def queue_job(self, job_wrapper: "MinimalJobWrapper") -> None:
         raise NotImplementedError()
 
     def stop_job(self, job_wrapper):
@@ -474,7 +474,7 @@ class BaseJobRunner:
         options.update(**kwds)
         return job_script(**options)
 
-    def write_executable_script(self, path: str, contents: str, job_io: JobIO):
+    def write_executable_script(self, path: str, contents: str, job_io: DescribesScriptIntegrityChecks) -> None:
         write_script(path, contents, job_io)
 
     def _find_container(

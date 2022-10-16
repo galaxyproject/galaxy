@@ -12,6 +12,7 @@ from galaxy import util
 from galaxy.job_execution.output_collect import default_exit_code_file
 from galaxy.jobs.runners.util.job_script import (
     INTEGRITY_INJECTION,
+    ScriptIntegrityChecks,
     write_script,
 )
 from galaxy.tool_util.deps.container_classes import (
@@ -141,7 +142,7 @@ def build_command(
         relocate_contents = (
             "from galaxy_ext.cwl.handle_outputs import relocate_dynamic_outputs; relocate_dynamic_outputs()"
         )
-        write_script(relocate_script_file, relocate_contents, job_wrapper.job_io)
+        write_script(relocate_script_file, relocate_contents, ScriptIntegrityChecks(check_job_script_integrity=False))
         commands_builder.append_command(SETUP_GALAXY_FOR_METADATA)
         commands_builder.append_command(f"python '{relocate_script_file}'")
 
