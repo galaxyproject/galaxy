@@ -75,7 +75,7 @@ Parsley = "*"
 Paste = "*"
 pebble = "*"
 psutil = "*"
-pulsar-galaxy-lib = ">=0.14.13"
+pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
 pydantic = {version = "*", extras = ["email"]}
 PyJWT = "*"

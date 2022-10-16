@@ -11,15 +11,15 @@ from galaxy_test.base.populators import (
     wait_on,
 )
 from galaxy_test.driver import integration_util
+from .test_coexecution import (
+    CONTAINERIZED_TEMPLATE,
+    job_config,
+    set_infrastucture_url,
+)
 from .test_containerized_jobs import (
     ContainerizedIntegrationTestCase,
     disable_dependency_resolution,
     DOCKERIZED_JOB_CONFIG_FILE,
-)
-from .test_kubernetes_staging import (
-    CONTAINERIZED_TEMPLATE,
-    job_config,
-    set_infrastucture_url,
 )
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))

@@ -12,6 +12,7 @@ rabbitmq installed via Homebrew, and if a fixed port is set for the test.
 
 """
 import os
+import platform
 import random
 import string
 import tempfile
@@ -34,9 +35,7 @@ from .test_kubernetes_runner import KubernetesDatasetPopulator
 from .test_local_job_cancellation import CancelsJob
 
 TOOL_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, "tools"))
-GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST = os.environ.get(
-    "GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST", "host.docker.internal"
-)
+GALAXY_TEST_INFRASTRUCTURE_HOST = os.environ.get("GALAXY_TEST_INFRASTRUCTURE_HOST", "_PLATFORM_AUTO_")
 AMQP_URL = integration_util.AMQP_URL
 GALAXY_TEST_KUBERNETES_NAMESPACE = os.environ.get("GALAXY_TEST_K8S_NAMESPACE", "default")
 
@@ -121,10 +120,85 @@ def job_config(template_str, jobs_directory):
     return job_conf.name
 
 
-@integration_util.skip_unless_kubernetes()
+TES_CONTAINERIZED_TEMPLATE = """
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  pulsar_tes:
+    load: galaxy.jobs.runners.pulsar:PulsarTesJobRunner
+    amqp_url: ${amqp_url}
+
+execution:
+  default: pulsar_tes_environment
+  environments:
+    pulsar_tes_environment:
+      runner: pulsar_tes
+      tes_url: ${tes_url}
+      docker_enabled: true
+      docker_default_container_id: busybox:ubuntu-14.04
+      pulsar_app_config:
+        message_queue_url: '${container_amqp_url}'
+      env:
+        - name: SOME_ENV_VAR
+          value: '42'
+    local_environment:
+      runner: local
+tools:
+  - id: __DATA_FETCH__
+    environment: local_environment
+"""
+
+
+TES_DEPENDENCY_RESOLUTION_TEMPLATE = """
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  pulsar_tes:
+    load: galaxy.jobs.runners.pulsar:PulsarTesJobRunner
+    amqp_url: ${amqp_url}
+
+execution:
+  default: pulsar_tes_environment
+  environments:
+    pulsar_tes_environment:
+      tes_url: ${tes_url}
+      runner: pulsar_tes
+      pulsar_app_config:
+        message_queue_url: '${container_amqp_url}'
+      env:
+        - name: SOME_ENV_VAR
+          value: '42'
+    local_environment:
+      runner: local
+tools:
+  - id: __DATA_FETCH__
+    environment: local_environment
+"""
+
+
+def tes_job_config(template_str, jobs_directory):
+    job_conf_template = string.Template(template_str)
+    container_amqp_url = to_infrastructure_uri(AMQP_URL)
+    instance_id = "".join(random.choice(string.ascii_lowercase) for i in range(8))
+    tes_url = os.environ.get("FUNNEL_SERVER_TARGET")
+    job_conf_str = job_conf_template.substitute(
+        jobs_directory=jobs_directory,
+        tool_directory=TOOL_DIR,
+        instance_id=instance_id,
+        tes_url=tes_url,
+        amqp_url=AMQP_URL,
+        container_amqp_url=container_amqp_url,
+    )
+    with tempfile.NamedTemporaryFile(suffix="_tes_integration_job_conf.yml", mode="w", delete=False) as job_conf:
+        job_conf.write(job_conf_str)
+    return job_conf.name
+
+
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
-class TestKubernetesStaging(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
+class TestCoexecution(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
     def setUp(self):
         super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
@@ -137,7 +211,8 @@ class TestKubernetesStaging(BaseJobEnvironmentIntegrationTestCase, MulledJobTest
         super().setUpClass()
 
 
-class TestKubernetesStagingContainerIntegration(CancelsJob, TestKubernetesStaging):
+@integration_util.skip_unless_kubernetes()
+class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
@@ -189,7 +264,8 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestKubernetesStagin
         return active
 
 
-class TestKubernetesDependencyResolutionIntegration(TestKubernetesStaging):
+@integration_util.skip_unless_kubernetes()
+class TestKubernetesDependencyResolutionIntegration(TestCoexecution):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["jobs_directory"] = cls.jobs_directory
@@ -208,21 +284,66 @@ class TestKubernetesDependencyResolutionIntegration(TestKubernetesStaging):
         assert "0.7.15-r1140" in output
 
 
+@integration_util.skip_unless_environ("FUNNEL_SERVER_TARGET")
+class TestTesCoexecutionContainerIntegration(TestCoexecution):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["jobs_directory"] = cls.jobs_directory
+        config["file_path"] = cls.jobs_directory
+        config["job_config_file"] = tes_job_config(TES_CONTAINERIZED_TEMPLATE, cls.jobs_directory)
+
+        config["default_job_shell"] = "/bin/sh"
+        # Disable tool dependency resolution.
+        config["tool_dependency_dir"] = "none"
+        set_infrastucture_url(config)
+
+
+@integration_util.skip_unless_environ("FUNNEL_SERVER_TARGET")
+class TestTesDependencyResolutionIntegration(TestCoexecution):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["jobs_directory"] = cls.jobs_directory
+        config["file_path"] = cls.jobs_directory
+        config["job_config_file"] = tes_job_config(TES_DEPENDENCY_RESOLUTION_TEMPLATE, cls.jobs_directory)
+
+        config["default_job_shell"] = "/bin/sh"
+        # Disable tool dependency resolution.
+        config["tool_dependency_dir"] = "none"
+        set_infrastucture_url(config)
+
+    def test_mulled_simple(self):
+        self.dataset_populator.run_tool("mulled_example_simple", {}, self.history_id)
+        self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
+        output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
+        assert "0.7.15-r1140" in output
+
+
 def set_infrastucture_url(config):
-    infrastructure_url = f"http://{GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST}:$GALAXY_WEB_PORT"
+    hostname = to_infrastructure_uri("0.0.0.0")
+    infrastructure_url = f"http://{hostname}:$GALAXY_WEB_PORT"
     config["galaxy_infrastructure_url"] = infrastructure_url
 
 
-def to_infrastructure_uri(uri):
+def to_infrastructure_uri(uri: str) -> str:
     # remap MQ or file server URI hostnames for in-container versions, this is sloppy
     # should actually parse the URI and rebuild with correct host
-    # similar code found in Pulsar integration_tests.py.
+    # Copied from Pulsar's integraiton tests.
+    infrastructure_host = os.environ.get("GALAXY_TEST_INFRASTRUCTURE_HOST")
+    if infrastructure_host == "_PLATFORM_AUTO_":
+        system = platform.system()
+        if system in ["Darwin", "Windows"]:
+            # assume Docker Desktop is installed and use its domain
+            infrastructure_host = "host.docker.internal"
+        else:
+            # native linux Docker sometimes sets up
+            infrastructure_host = "172.17.0.1"
+
     infrastructure_uri = uri
-    if GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST:
+    if infrastructure_host:
         if "0.0.0.0" in infrastructure_uri:
-            infrastructure_uri = infrastructure_uri.replace("0.0.0.0", GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST)
+            infrastructure_uri = infrastructure_uri.replace("0.0.0.0", infrastructure_host)
         elif "localhost" in infrastructure_uri:
-            infrastructure_uri = infrastructure_uri.replace("localhost", GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST)
+            infrastructure_uri = infrastructure_uri.replace("localhost", infrastructure_host)
         elif "127.0.0.1" in infrastructure_uri:
-            infrastructure_uri = infrastructure_uri.replace("127.0.0.1", GALAXY_TEST_KUBERNETES_INFRASTRUCTURE_HOST)
+            infrastructure_uri = infrastructure_uri.replace("127.0.0.1", infrastructure_host)
     return infrastructure_uri

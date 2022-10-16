@@ -91,6 +91,13 @@ def skip_if_github_workflow():
     return pytest.mark.skip("This test is skipped for Github actions.")
 
 
+def skip_unless_environ(env_var):
+    if os.environ.get(env_var):
+        return _identity
+
+    return pytest.mark.skip(f"{env_var} must be set for this test")
+
+
 class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     """Unit test case with utilities for spinning up Galaxy."""
 

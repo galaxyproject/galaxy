@@ -510,6 +510,8 @@ def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=
         prefix = f"{prefix}/"
     for _ in range(sleep_tries):
         # directly test the app, not the proxy
+        if port and isinstance(port, str):
+            port = int(port)
         conn = http.client.HTTPConnection(host, port)
         try:
             conn.request("GET", prefix)
@@ -525,7 +527,7 @@ def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=
         raise Exception(message)
 
 
-def attempt_port(port):
+def attempt_port(port: int) -> Optional[int]:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind(("", port))
@@ -535,9 +537,9 @@ def attempt_port(port):
         return None
 
 
-def attempt_ports(port=None, set_galaxy_web_port=True):
+def attempt_ports(port=None, set_galaxy_web_port=True) -> str:
     if port is not None:
-        if not attempt_port(port):
+        if not attempt_port(int(port)):
             raise Exception(f"An existing process seems bound to specified test server port [{port}]")
         return port
     else:
