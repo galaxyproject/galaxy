@@ -5,7 +5,9 @@
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
             :title="title"
             @mouseover="hover = true"
-            @mouseleave="hover = false">
+            @mouseleave="hover = false"
+            @focus="hover = true"
+            @blur="hover = false">
             <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
                     {{ name }}
@@ -15,7 +17,7 @@
         </div>
         <transition name="slide">
             <div v-if="opened">
-                <template v-for="[key, el] in category.elems.entries()">
+                <template v-for="[key, el] in sortedElements">
                     <ToolPanelLabel v-if="category.text" :key="key" :definition="el" />
                     <tool
                         v-else
@@ -50,6 +52,8 @@ import Tool from "./Tool";
 import ToolPanelLabel from "./ToolPanelLabel";
 import ariaAlert from "utils/ariaAlert";
 import ToolPanelLinks from "./ToolPanelLinks";
+
+import { useConfig } from "composables/useConfig";
 
 export default {
     name: "ToolSection",
@@ -94,6 +98,13 @@ export default {
             default: false,
         },
     },
+    setup() {
+        const { config, isLoaded } = useConfig();
+        return {
+            config,
+            isLoaded,
+        };
+    },
     data() {
         return {
             opened: this.expanded || this.checkFilter(),
@@ -115,6 +126,23 @@ export default {
         },
         links() {
             return this.category.links || {};
+        },
+        sortedElements() {
+            // If this.config.sortTools is true, sort the tools alphabetically
+            // When administrators have manually inserted labels we respect
+            // the order set and hope for the best from the integrated
+            // panel.
+            if (
+                this.isLoaded &&
+                this.config.toolbox_auto_sort === true &&
+                !this.category.elems.some((el) => el.text !== undefined && el.text !== "")
+            ) {
+                return Object.entries(
+                    [...this.category.elems].sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase())
+                );
+            } else {
+                return Object.entries(this.category.elems);
+            }
         },
     },
     watch: {

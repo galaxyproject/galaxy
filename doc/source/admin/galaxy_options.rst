@@ -4665,6 +4665,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``toolbox_auto_sort``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If true, the toolbox will be sorted by tool id when the toolbox is
+    loaded. This is useful for ensuring that tools are always
+    displayed in the same order in the UI.  If false, the order of
+    tools in the toolbox will be preserved as they are loaded from the
+    tool config files.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~
 ``tool_filters``
 ~~~~~~~~~~~~~~~~

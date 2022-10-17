@@ -2353,6 +2353,13 @@ galaxy:
   # if running many handlers.
   #cache_user_job_count: false
 
+  # If true, the toolbox will be sorted by tool id when the toolbox is
+  # loaded. This is useful for ensuring that tools are always displayed
+  # in the same order in the UI.  If false, the order of tools in the
+  # toolbox will be preserved as they are loaded from the tool config
+  # files.
+  #toolbox_auto_sort: true
+
   # Define toolbox filters
   # (https://galaxyproject.org/user-defined-toolbox-filters/) that
   # admins may use to restrict the tools to display.

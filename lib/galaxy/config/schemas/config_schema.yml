@@ -3407,6 +3407,17 @@ mapping:
           greater possibility that jobs will be dispatched past the configured limits
           if running many handlers.
 
+      toolbox_auto_sort:
+        type: bool
+        default: true
+        required: false
+        reloadable: true
+        desc: |
+          If true, the toolbox will be sorted by tool id when the toolbox is loaded.
+          This is useful for ensuring that tools are always displayed in the same
+          order in the UI.  If false, the order of tools in the toolbox will be
+          preserved as they are loaded from the tool config files.
+
       tool_filters:
         type: str
         required: false

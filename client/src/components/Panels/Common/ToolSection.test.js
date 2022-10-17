@@ -2,6 +2,16 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import ToolSection from "./ToolSection";
 
+import { useConfig } from "composables/useConfig";
+
+jest.mock("composables/useConfig");
+useConfig.mockReturnValue({
+    config: {
+        toolbox_auto_sort: true,
+    },
+    isLoaded: true,
+});
+
 const localVue = getLocalVue();
 
 describe("ToolSection", () => {
