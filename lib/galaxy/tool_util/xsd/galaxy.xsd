@@ -6808,6 +6808,16 @@ and ``bibtex`` are the only supported options.</xs:documentation>
           <xs:documentation xml:lang="en">Minimum Memory of the GPU in mebibytes, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
+      <xs:enumeration value="cuda_device_count_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum CUDA device count, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cuda_device_count_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum CUDA device count, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
     </xs:restriction>
   </xs:simpleType>
   <xs:simpleType name="ContainerType">
