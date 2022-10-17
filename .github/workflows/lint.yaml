@@ -24,7 +24,7 @@ jobs:
         python-version: ['3.7', '3.10']
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get full Python version
@@ -50,4 +50,4 @@ jobs:
       - name: Run mypy checks
         run: tox -e mypy
       - uses: psf/black@stable
-      - uses: jamescurtin/isort-action@master
+      - uses: isort/isort-action@master
