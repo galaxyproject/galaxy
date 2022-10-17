@@ -25,7 +25,7 @@ class DependencyDisplayer:
     def __init__(self, app):
         self.app = app
 
-    def add_installation_directories_to_tool_dependencies(self, tool_dependencies):
+    def _add_installation_directories_to_tool_dependencies(self, tool_dependencies):
         """
         Determine the path to the installation directory for each of the received
         tool dependencies.  This path will be displayed within the tool dependencies
@@ -172,7 +172,7 @@ class DependencyDisplayer:
                         for env_requirements_dict in requirements_dict:
                             name = env_requirements_dict["name"]
                             type = env_requirements_dict["type"]
-                            if self.tool_dependency_is_orphan(type, name, None, tools):
+                            if self._tool_dependency_is_orphan(type, name, None, tools):
                                 if not has_orphan_set_environment_dependencies:
                                     has_orphan_set_environment_dependencies = True
                                 set_environment_orphans_str += f"<b>* name:</b> {name}, <b>type:</b> {type}<br/>"
@@ -181,7 +181,7 @@ class DependencyDisplayer:
                         name = requirements_dict["name"]
                         type = requirements_dict["type"]
                         version = requirements_dict["version"]
-                        if self.tool_dependency_is_orphan(type, name, version, tools):
+                        if self._tool_dependency_is_orphan(type, name, version, tools):
                             if not has_orphan_package_dependencies:
                                 has_orphan_package_dependencies = True
                             package_orphans_str += (
@@ -203,7 +203,7 @@ class DependencyDisplayer:
             message += set_environment_orphans_str
         return message
 
-    def get_installed_and_missing_tool_dependencies_for_installed_repository(self, repository, all_tool_dependencies):
+    def _get_installed_and_missing_tool_dependencies_for_installed_repository(self, repository, all_tool_dependencies):
         """
         Return the lists of installed tool dependencies and missing tool dependencies for a Tool Shed
         repository that has been installed into Galaxy.
@@ -263,7 +263,7 @@ class DependencyDisplayer:
             missing_tool_dependencies = None
         return tool_dependencies, missing_tool_dependencies
 
-    def merge_missing_repository_dependencies_to_installed_container(self, containers_dict):
+    def _merge_missing_repository_dependencies_to_installed_container(self, containers_dict):
         """
         Merge the list of missing repository dependencies into the list of installed
         repository dependencies.
@@ -295,7 +295,7 @@ class DependencyDisplayer:
         containers_dict["missing_repository_dependencies"] = None
         return containers_dict
 
-    def merge_missing_tool_dependencies_to_installed_container(self, containers_dict):
+    def _merge_missing_tool_dependencies_to_installed_container(self, containers_dict):
         """
         Merge the list of missing tool dependencies into the list of installed tool
         dependencies.
@@ -343,7 +343,7 @@ class DependencyDisplayer:
         or for an installed repository that is being updated and the updates include newly
         defined repository (and possibly tool) dependencies.
         """
-        installed_tool_dependencies, missing_tool_dependencies = self.populate_tool_dependencies_dicts(
+        installed_tool_dependencies, missing_tool_dependencies = self._populate_tool_dependencies_dicts(
             tool_shed_url=tool_shed_url,
             tool_path=tool_path,
             repository_installed_tool_dependencies=installed_tool_dependencies,
@@ -372,9 +372,9 @@ class DependencyDisplayer:
             # the missing_repository_dependencies container contents to the installed_repository_dependencies
             # container.  When updating an installed repository, merging will result in losing newly defined
             # dependencies included in the updates.
-            containers_dict = self.merge_missing_repository_dependencies_to_installed_container(containers_dict)
+            containers_dict = self._merge_missing_repository_dependencies_to_installed_container(containers_dict)
             # Merge the missing_tool_dependencies container contents to the installed_tool_dependencies container.
-            containers_dict = self.merge_missing_tool_dependencies_to_installed_container(containers_dict)
+            containers_dict = self._merge_missing_tool_dependencies_to_installed_container(containers_dict)
         return containers_dict
 
     def populate_containers_dict_from_repository_metadata(
@@ -433,11 +433,11 @@ class DependencyDisplayer:
             (
                 repository_installed_tool_dependencies,
                 repository_missing_tool_dependencies,
-            ) = self.get_installed_and_missing_tool_dependencies_for_installed_repository(
+            ) = self._get_installed_and_missing_tool_dependencies_for_installed_repository(
                 repository, repository_tool_dependencies
             )
             if reinstalling:
-                installed_tool_dependencies, missing_tool_dependencies = self.populate_tool_dependencies_dicts(
+                installed_tool_dependencies, missing_tool_dependencies = self._populate_tool_dependencies_dicts(
                     tool_shed_url,
                     tool_path,
                     repository_installed_tool_dependencies,
@@ -485,7 +485,7 @@ class DependencyDisplayer:
             )
         return containers_dict
 
-    def populate_tool_dependencies_dicts(
+    def _populate_tool_dependencies_dicts(
         self,
         tool_shed_url,
         tool_path,
@@ -503,14 +503,14 @@ class DependencyDisplayer:
             repository_installed_tool_dependencies = {}
         else:
             # Add the install_dir attribute to the tool_dependencies.
-            repository_installed_tool_dependencies = self.add_installation_directories_to_tool_dependencies(
+            repository_installed_tool_dependencies = self._add_installation_directories_to_tool_dependencies(
                 repository_installed_tool_dependencies
             )
         if repository_missing_tool_dependencies is None:
             repository_missing_tool_dependencies = {}
         else:
             # Add the install_dir attribute to the tool_dependencies.
-            repository_missing_tool_dependencies = self.add_installation_directories_to_tool_dependencies(
+            repository_missing_tool_dependencies = self._add_installation_directories_to_tool_dependencies(
                 repository_missing_tool_dependencies
             )
         if required_repo_info_dicts:
@@ -528,7 +528,7 @@ class DependencyDisplayer:
                     ) = get_repo_info_tuple_contents(repo_info_tuple)
                     if tool_dependencies:
                         # Add the install_dir attribute to the tool_dependencies.
-                        tool_dependencies = self.add_installation_directories_to_tool_dependencies(tool_dependencies)
+                        tool_dependencies = self._add_installation_directories_to_tool_dependencies(tool_dependencies)
                         # The required_repository may have been installed with a different changeset revision.
                         (
                             required_repository,
@@ -540,13 +540,13 @@ class DependencyDisplayer:
                             (
                                 required_repository_installed_tool_dependencies,
                                 required_repository_missing_tool_dependencies,
-                            ) = self.get_installed_and_missing_tool_dependencies_for_installed_repository(
+                            ) = self._get_installed_and_missing_tool_dependencies_for_installed_repository(
                                 required_repository, tool_dependencies
                             )
                             if required_repository_installed_tool_dependencies:
                                 # Add the install_dir attribute to the tool_dependencies.
                                 required_repository_installed_tool_dependencies = (
-                                    self.add_installation_directories_to_tool_dependencies(
+                                    self._add_installation_directories_to_tool_dependencies(
                                         required_repository_installed_tool_dependencies
                                     )
                                 )
@@ -556,7 +556,7 @@ class DependencyDisplayer:
                             if required_repository_missing_tool_dependencies:
                                 # Add the install_dir attribute to the tool_dependencies.
                                 required_repository_missing_tool_dependencies = (
-                                    self.add_installation_directories_to_tool_dependencies(
+                                    self._add_installation_directories_to_tool_dependencies(
                                         required_repository_missing_tool_dependencies
                                     )
                                 )
@@ -569,7 +569,7 @@ class DependencyDisplayer:
             missing_tool_dependencies = repository_missing_tool_dependencies
         return installed_tool_dependencies, missing_tool_dependencies
 
-    def tool_dependency_is_orphan(self, type, name, version, tools):
+    def _tool_dependency_is_orphan(self, type, name, version, tools):
         """
         Determine if the combination of the received type, name and version is defined in the <requirement>
         tag for at least one tool in the received list of tools.  If not, the tool dependency defined by the
