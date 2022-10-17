@@ -11,13 +11,10 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
 
     def build_repository_containers(
         self,
-        repository,
         missing_repository_dependencies,
         missing_tool_dependencies,
         repository_dependencies,
         tool_dependencies,
-        new_install=False,
-        reinstalling=False,
     ):
         """
         Return a dictionary of containers for the received repository's dependencies and readme files for
@@ -34,10 +31,7 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
             folder_id = 0
             # Installed repository dependencies container.
             if repository_dependencies:
-                if new_install:
-                    label = "Repository dependencies"
-                else:
-                    label = "Installed repository dependencies"
+                label = "Installed repository dependencies"
                 folder_id, repository_dependencies_root_folder = self.build_repository_dependencies_folder(
                     folder_id=folder_id, repository_dependencies=repository_dependencies, label=label, installed=True
                 )
@@ -53,18 +47,15 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                 containers_dict["missing_repository_dependencies"] = missing_repository_dependencies_root_folder
             # Installed tool dependencies container.
             if tool_dependencies:
-                if new_install:
-                    label = "Tool dependencies"
-                else:
-                    label = "Installed tool dependencies"
+                label = "Installed tool dependencies"
                 # We only want to display the Status column if the tool_dependency is missing.
                 folder_id, tool_dependencies_root_folder = self.build_tool_dependencies_folder(
                     folder_id,
                     tool_dependencies,
                     label=label,
                     missing=False,
-                    new_install=new_install,
-                    reinstalling=reinstalling,
+                    new_install=False,
+                    reinstalling=False,
                 )
                 containers_dict["tool_dependencies"] = tool_dependencies_root_folder
             # Missing tool dependencies container.
@@ -75,8 +66,8 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                     missing_tool_dependencies,
                     label="Missing tool dependencies",
                     missing=True,
-                    new_install=new_install,
-                    reinstalling=reinstalling,
+                    new_install=False,
+                    reinstalling=False,
                 )
                 containers_dict["missing_tool_dependencies"] = missing_tool_dependencies_root_folder
         except Exception as e:

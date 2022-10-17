@@ -289,13 +289,10 @@ class DependencyDisplayer:
             missing_tool_dependencies = repository_missing_tool_dependencies
             gucm = GalaxyUtilityContainerManager(self.app)
             containers_dict = gucm.build_repository_containers(
-                repository=repository,
                 missing_repository_dependencies=missing_repository_dependencies,
                 missing_tool_dependencies=missing_tool_dependencies,
                 repository_dependencies=installed_repository_dependencies,
                 tool_dependencies=installed_tool_dependencies,
-                new_install=False,
-                reinstalling=False,
             )
         else:
             containers_dict = dict(
