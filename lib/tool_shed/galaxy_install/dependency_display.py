@@ -3,20 +3,12 @@ import logging
 import os
 
 from galaxy import util
-from galaxy.tool_shed.util.common_util import (
-    get_tool_shed_url_from_tool_shed_registry,
-    parse_repository_dependency_tuple,
-)
-from galaxy.tool_shed.util.repository_util import (
-    get_repo_info_tuple_contents,
-    repository_was_previously_installed,
-)
+from galaxy.tool_shed.util.common_util import parse_repository_dependency_tuple
 from galaxy.tool_shed.util.tool_dependency_util import (
     get_tool_dependency_by_name_type_repository,
     get_tool_dependency_by_name_version_type_repository,
 )
 from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
-from tool_shed.util.readme_util import build_readme_files_dict
 
 log = logging.getLogger(__name__)
 
@@ -264,7 +256,7 @@ class DependencyDisplayer:
         return tool_dependencies, missing_tool_dependencies
 
     def populate_containers_dict_from_repository_metadata(
-        self, tool_shed_url, tool_path, repository, reinstalling=False, required_repo_info_dicts=None
+        self, repository
     ):
         """
         Retrieve necessary information from the received repository's metadata to populate the
@@ -276,33 +268,6 @@ class DependencyDisplayer:
         if metadata:
             # Handle invalid tools.
             invalid_tools = metadata.get("invalid_tools", None)
-            # Handle README files.
-            if repository.has_readme_files:
-                if reinstalling or repository.status not in [
-                    self.app.install_model.ToolShedRepository.installation_status.DEACTIVATED,
-                    self.app.install_model.ToolShedRepository.installation_status.INSTALLED,
-                ]:
-                    # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
-                    tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
-                    params = dict(
-                        name=str(repository.name),
-                        owner=str(repository.owner),
-                        changeset_revision=str(repository.installed_changeset_revision),
-                    )
-                    pathspec = ["repository", "get_readme_files"]
-                    raw_text = util.url_get(
-                        tool_shed_url,
-                        auth=self.app.tool_shed_registry.url_auth(tool_shed_url),
-                        pathspec=pathspec,
-                        params=params,
-                    )
-                    readme_files_dict = json.loads(raw_text)
-                else:
-                    readme_files_dict = build_readme_files_dict(
-                        self.app, repository, repository.changeset_revision, repository.metadata_, tool_path
-                    )
-            else:
-                readme_files_dict = None
             # Handle repository dependencies.
             (
                 installed_repository_dependencies,
@@ -322,17 +287,8 @@ class DependencyDisplayer:
             ) = self._get_installed_and_missing_tool_dependencies_for_installed_repository(
                 repository, repository_tool_dependencies
             )
-            if reinstalling:
-                installed_tool_dependencies, missing_tool_dependencies = self._populate_tool_dependencies_dicts(
-                    tool_shed_url,
-                    tool_path,
-                    repository_installed_tool_dependencies,
-                    repository_missing_tool_dependencies,
-                    required_repo_info_dicts,
-                )
-            else:
-                installed_tool_dependencies = repository_installed_tool_dependencies
-                missing_tool_dependencies = repository_missing_tool_dependencies
+            installed_tool_dependencies = repository_installed_tool_dependencies
+            missing_tool_dependencies = repository_missing_tool_dependencies
             # Handle valid tools.
             valid_tools = metadata.get("tools", None)
             # Handle Data Managers
@@ -349,7 +305,7 @@ class DependencyDisplayer:
                 invalid_tools=invalid_tools,
                 missing_repository_dependencies=missing_repository_dependencies,
                 missing_tool_dependencies=missing_tool_dependencies,
-                readme_files_dict=readme_files_dict,
+                readme_files_dict=None,
                 repository_dependencies=installed_repository_dependencies,
                 tool_dependencies=installed_tool_dependencies,
                 valid_tools=valid_tools,
@@ -357,17 +313,11 @@ class DependencyDisplayer:
                 invalid_data_managers=invalid_data_managers,
                 data_managers_errors=data_managers_errors,
                 new_install=False,
-                reinstalling=reinstalling,
+                reinstalling=False,
             )
         else:
             containers_dict = dict(
-                datatypes=None,
-                invalid_tools=None,
-                readme_files_dict=None,
                 repository_dependencies=None,
-                tool_dependencies=None,
-                valid_tools=None,
-                workflows=None,
             )
         return containers_dict
 

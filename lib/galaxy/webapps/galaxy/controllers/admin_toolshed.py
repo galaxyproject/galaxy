@@ -170,11 +170,7 @@ class AdminToolshed(AdminGalaxy):
             message = "The repository information has been updated."
         dd = dependency_display.DependencyDisplayer(trans.app)
         containers_dict = dd.populate_containers_dict_from_repository_metadata(
-            tool_shed_url=tool_shed_url,
-            tool_path=tool_path,
             repository=repository,
-            reinstalling=False,
-            required_repo_info_dicts=None,
         )
         view = views.DependencyResolversView(self.app)
         tool_requirements_d = suc.get_requirements_from_repository(repository)

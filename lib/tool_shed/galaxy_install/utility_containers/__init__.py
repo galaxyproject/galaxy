@@ -30,17 +30,8 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         display during installation to Galaxy.
         """
         containers_dict = dict(
-            datatypes=None,
-            invalid_tools=None,
-            missing_tool_dependencies=None,
-            readme_files=None,
             repository_dependencies=None,
             missing_repository_dependencies=None,
-            tool_dependencies=None,
-            valid_tools=None,
-            workflows=None,
-            valid_data_managers=None,
-            invalid_data_managers=None,
         )
         # Some of the tool dependency folders will include links to display tool dependency information, and
         # some of these links require the repository id.  However we need to be careful because sometimes the
