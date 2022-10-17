@@ -12,9 +12,7 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
     def build_repository_containers(
         self,
         missing_repository_dependencies,
-        missing_tool_dependencies,
         repository_dependencies,
-        tool_dependencies,
     ):
         """
         Return a dictionary of containers for the received repository's dependencies and readme files for
@@ -45,31 +43,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                     installed=False,
                 )
                 containers_dict["missing_repository_dependencies"] = missing_repository_dependencies_root_folder
-            # Installed tool dependencies container.
-            if tool_dependencies:
-                label = "Installed tool dependencies"
-                # We only want to display the Status column if the tool_dependency is missing.
-                folder_id, tool_dependencies_root_folder = self.build_tool_dependencies_folder(
-                    folder_id,
-                    tool_dependencies,
-                    label=label,
-                    missing=False,
-                    new_install=False,
-                    reinstalling=False,
-                )
-                containers_dict["tool_dependencies"] = tool_dependencies_root_folder
-            # Missing tool dependencies container.
-            if missing_tool_dependencies:
-                # We only want to display the Status column if the tool_dependency is missing.
-                folder_id, missing_tool_dependencies_root_folder = self.build_tool_dependencies_folder(
-                    folder_id,
-                    missing_tool_dependencies,
-                    label="Missing tool dependencies",
-                    missing=True,
-                    new_install=False,
-                    reinstalling=False,
-                )
-                containers_dict["missing_tool_dependencies"] = missing_tool_dependencies_root_folder
         except Exception as e:
             log.debug(f"Exception in build_repository_containers: {str(e)}")
         return containers_dict

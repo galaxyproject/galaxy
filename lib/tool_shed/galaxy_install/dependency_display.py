@@ -1,13 +1,8 @@
-import json
 import logging
 import os
 
 from galaxy import util
 from galaxy.tool_shed.util.common_util import parse_repository_dependency_tuple
-from galaxy.tool_shed.util.tool_dependency_util import (
-    get_tool_dependency_by_name_type_repository,
-    get_tool_dependency_by_name_version_type_repository,
-)
 from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
 
 log = logging.getLogger(__name__)
@@ -195,66 +190,6 @@ class DependencyDisplayer:
             message += set_environment_orphans_str
         return message
 
-    def _get_installed_and_missing_tool_dependencies_for_installed_repository(self, repository, all_tool_dependencies):
-        """
-        Return the lists of installed tool dependencies and missing tool dependencies for a Tool Shed
-        repository that has been installed into Galaxy.
-        """
-        if all_tool_dependencies:
-            tool_dependencies = {}
-            missing_tool_dependencies = {}
-            for td_key, val in all_tool_dependencies.items():
-                if td_key in ["set_environment"]:
-                    for index, td_info_dict in enumerate(val):
-                        name = td_info_dict["name"]
-                        version = None
-                        type = td_info_dict["type"]
-                        tool_dependency = get_tool_dependency_by_name_type_repository(
-                            self.app, repository, name, type
-                        )
-                        if tool_dependency:
-                            td_info_dict["repository_id"] = repository.id
-                            td_info_dict["tool_dependency_id"] = tool_dependency.id
-                            if tool_dependency.status:
-                                tool_dependency_status = str(tool_dependency.status)
-                            else:
-                                tool_dependency_status = "Never installed"
-                            td_info_dict["status"] = tool_dependency_status
-                            val[index] = td_info_dict
-                            if (
-                                tool_dependency.status
-                                == self.app.install_model.ToolDependency.installation_status.INSTALLED
-                            ):
-                                tool_dependencies[td_key] = val
-                            else:
-                                missing_tool_dependencies[td_key] = val
-                else:
-                    name = val["name"]
-                    version = val["version"]
-                    type = val["type"]
-                    tool_dependency = get_tool_dependency_by_name_version_type_repository(
-                        self.app, repository, name, version, type
-                    )
-                    if tool_dependency:
-                        val["repository_id"] = repository.id
-                        val["tool_dependency_id"] = tool_dependency.id
-                        if tool_dependency.status:
-                            tool_dependency_status = str(tool_dependency.status)
-                        else:
-                            tool_dependency_status = "Never installed"
-                        val["status"] = tool_dependency_status
-                        if (
-                            tool_dependency.status
-                            == self.app.install_model.ToolDependency.installation_status.INSTALLED
-                        ):
-                            tool_dependencies[td_key] = val
-                        else:
-                            missing_tool_dependencies[td_key] = val
-        else:
-            tool_dependencies = None
-            missing_tool_dependencies = None
-        return tool_dependencies, missing_tool_dependencies
-
     def populate_containers_dict_from_repository_metadata(
         self, repository
     ):
@@ -279,20 +214,10 @@ class DependencyDisplayer:
                 if repository_tool_dependencies is None:
                     repository_tool_dependencies = {}
                 repository_tool_dependencies.update(repository_invalid_tool_dependencies)
-            (
-                repository_installed_tool_dependencies,
-                repository_missing_tool_dependencies,
-            ) = self._get_installed_and_missing_tool_dependencies_for_installed_repository(
-                repository, repository_tool_dependencies
-            )
-            installed_tool_dependencies = repository_installed_tool_dependencies
-            missing_tool_dependencies = repository_missing_tool_dependencies
             gucm = GalaxyUtilityContainerManager(self.app)
             containers_dict = gucm.build_repository_containers(
                 missing_repository_dependencies=missing_repository_dependencies,
-                missing_tool_dependencies=missing_tool_dependencies,
                 repository_dependencies=installed_repository_dependencies,
-                tool_dependencies=installed_tool_dependencies,
             )
         else:
             containers_dict = dict(
