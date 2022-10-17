@@ -2,10 +2,12 @@ import logging
 import os
 import subprocess
 import time
+from dataclasses import dataclass
 from string import Template
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 from typing_extensions import Protocol
@@ -112,11 +114,20 @@ def job_script(template=DEFAULT_JOB_FILE_TEMPLATE, **kwds):
 
 class DescribesScriptIntegrityChecks(Protocol):
     check_job_script_integrity: bool
-    check_job_script_integrity_count: int
-    check_job_script_integrity_sleep: float
+    check_job_script_integrity_count: Optional[int]
+    check_job_script_integrity_sleep: Optional[float]
 
 
-def write_script(path, contents, job_io: DescribesScriptIntegrityChecks, mode=RWXR_XR_X) -> None:
+@dataclass
+class ScriptIntegrityChecks:
+    """Minimal class implementing the DescribesScriptIntegrityChecks protocol"""
+
+    check_job_script_integrity: bool
+    check_job_script_integrity_count: Optional[int] = None
+    check_job_script_integrity_sleep: Optional[float] = None
+
+
+def write_script(path: str, contents, job_io: DescribesScriptIntegrityChecks, mode: int = RWXR_XR_X) -> None:
     dir = os.path.dirname(path)
     if not os.path.exists(dir):
         os.makedirs(dir)
@@ -125,10 +136,14 @@ def write_script(path, contents, job_io: DescribesScriptIntegrityChecks, mode=RW
         f.write(unicodify(contents))
     os.chmod(path, mode)
     if job_io.check_job_script_integrity:
+        assert job_io.check_job_script_integrity_count is not None
+        assert job_io.check_job_script_integrity_sleep is not None
         _handle_script_integrity(path, job_io.check_job_script_integrity_count, job_io.check_job_script_integrity_sleep)
 
 
-def _handle_script_integrity(path, check_job_script_integrity_count, check_job_script_integrity_sleep):
+def _handle_script_integrity(
+    path: str, check_job_script_integrity_count: int, check_job_script_integrity_sleep: float
+) -> None:
 
     script_integrity_verified = False
     for _ in range(check_job_script_integrity_count):
