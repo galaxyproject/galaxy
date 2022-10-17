@@ -3,40 +3,27 @@ import logging
 import os
 from functools import wraps
 
-import tool_shed.repository_types.util as rt_util
 from galaxy import (
     util,
     web,
 )
 from galaxy.exceptions import ConfigDoesNotAllowException
-from galaxy.tool_shed.galaxy_install import install_manager
-from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
-from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tool_shed.util.repository_util import (
-    create_or_update_tool_shed_repository,
     get_absolute_path_to_file_in_repository,
     get_installed_tool_shed_repository,
     get_tool_shed_repository_by_id,
 )
 from galaxy.tool_shed.util.shed_util_common import (
-    clean_dependency_relationships,
-    get_ctx_rev,
     get_tool_panel_config_tool_path_install_dir,
-    have_shed_tool_conf_for_install,
 )
 from galaxy.tool_util.deps import views
 from galaxy.util import unicodify
 from galaxy.util.tool_shed import (
     common_util,
-    encoding_util,
 )
-from galaxy.web.form_builder import CheckboxField
-from tool_shed.util.repository_util import create_repo_info_dict
 from tool_shed.util.shed_util_common import (
-    get_repository_type_from_tool_shed,
     get_requirements_from_repository,
-    get_tool_dependency_definition_metadata_from_tool_shed,
 )
 from tool_shed.util.web_util import escape
 from .admin import AdminGalaxy
@@ -194,180 +181,3 @@ class AdminToolshed(AdminGalaxy):
         if repository_dependencies:
             management_dict["repository_dependencies"] = repository_dependencies.to_dict()
         return management_dict
-
-    @web.json
-    @web.require_admin
-    @legacy_tool_shed_endpoint
-    def reinstall_repository(self, trans, **kwd):
-        """
-        Reinstall a tool shed repository that has been previously uninstalled, making sure to handle all repository
-        and tool dependencies of the repository.
-        """
-        try:
-            rdim = repository_dependency_manager.RepositoryDependencyInstallManager(trans.app)
-            message = escape(kwd.get("message", ""))
-            status = kwd.get("status", "done")
-            repository_id = kwd["id"]
-            tool_shed_repository = get_installed_tool_shed_repository(trans.app, repository_id)
-            no_changes = kwd.get("no_changes", "")
-            no_changes_checked = CheckboxField.is_checked(no_changes)
-            install_repository_dependencies = CheckboxField.is_checked(kwd.get("install_repository_dependencies", ""))
-            install_tool_dependencies = CheckboxField.is_checked(kwd.get("install_tool_dependencies", ""))
-            install_resolver_dependencies = CheckboxField.is_checked(kwd.get("install_resolver_dependencies", ""))
-            if not have_shed_tool_conf_for_install(trans.app):
-                raise Exception("No valid shed tool configuration file available, please configure one")
-            shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir(
-                trans.app, tool_shed_repository
-            )
-            repository_clone_url = common_util.generate_clone_url_for_installed_repository(
-                trans.app, tool_shed_repository
-            )
-            tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(
-                trans.app, tool_shed_repository.tool_shed
-            )
-            tool_section = None
-            tool_panel_section_id = kwd.get("tool_panel_section_id", "")
-            new_tool_panel_section_label = kwd.get("new_tool_panel_section_label", "")
-            tool_panel_section_key = None
-            tool_panel_section_keys = []
-            metadata = tool_shed_repository.metadata_
-            # Keep track of tool dependencies defined for the current repository or those defined for any of
-            # its repository dependencies.
-            includes_tool_dependencies = tool_shed_repository.includes_tool_dependencies
-            if tool_shed_repository.includes_tools_for_display_in_tool_panel:
-                tpm = tool_panel_manager.ToolPanelManager(trans.app)
-                # Handle the selected tool panel location for loading tools included in the tool shed repository.
-                tool_section, tool_panel_section_key = tpm.handle_tool_panel_selection(
-                    toolbox=trans.app.toolbox,
-                    metadata=metadata,
-                    no_changes_checked=no_changes_checked,
-                    tool_panel_section_id=tool_panel_section_id,
-                    new_tool_panel_section_label=new_tool_panel_section_label,
-                )
-                if tool_section is not None:
-                    # Just in case the tool_section.id differs from tool_panel_section_id, which it shouldn't...
-                    tool_panel_section_id = str(tool_section.id)
-            if tool_shed_repository.status == trans.install_model.ToolShedRepository.installation_status.UNINSTALLED:
-                repository_type = get_repository_type_from_tool_shed(
-                    trans.app, tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner
-                )
-                if repository_type == rt_util.TOOL_DEPENDENCY_DEFINITION:
-                    # Repositories of type tool_dependency_definition must get the latest
-                    # metadata from the Tool Shed since they have only a single installable
-                    # revision.
-                    raw_text = get_tool_dependency_definition_metadata_from_tool_shed(
-                        trans.app, tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner
-                    )
-                    new_meta = json.loads(raw_text)
-                    # Clean up old repository dependency and tool dependency relationships.
-                    clean_dependency_relationships(trans, new_meta, tool_shed_repository, tool_shed_url)
-                # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall
-                # so the repository_installation_updater will function.
-                tool_shed_repository = create_or_update_tool_shed_repository(
-                    app=trans.app,
-                    name=tool_shed_repository.name,
-                    description=tool_shed_repository.description,
-                    installed_changeset_revision=tool_shed_repository.installed_changeset_revision,
-                    ctx_rev=tool_shed_repository.ctx_rev,
-                    repository_clone_url=repository_clone_url,
-                    status=trans.install_model.ToolShedRepository.installation_status.NEW,
-                    metadata_dict=metadata,
-                    current_changeset_revision=tool_shed_repository.changeset_revision,
-                    owner=tool_shed_repository.owner,
-                    dist_to_shed=tool_shed_repository.dist_to_shed,
-                )
-            ctx_rev = get_ctx_rev(
-                trans.app,
-                tool_shed_url,
-                tool_shed_repository.name,
-                tool_shed_repository.owner,
-                tool_shed_repository.installed_changeset_revision,
-            )
-            repo_info_dicts = []
-            repo_info_dict = kwd.get("repo_info_dict", None)
-            if repo_info_dict:
-                if isinstance(repo_info_dict, str):
-                    repo_info_dict = encoding_util.tool_shed_decode(repo_info_dict)
-            else:
-                # Entering this else block occurs only if the tool_shed_repository does not include any valid tools.
-                if install_repository_dependencies:
-                    repository_dependencies = rdim.get_repository_dependencies_for_installed_tool_shed_repository(
-                        trans.app, tool_shed_repository
-                    )
-                else:
-                    repository_dependencies = None
-                if metadata:
-                    tool_dependencies = metadata.get("tool_dependencies", None)
-                else:
-                    tool_dependencies = None
-                repo_info_dict = create_repo_info_dict(
-                    trans.app,
-                    repository_clone_url=repository_clone_url,
-                    changeset_revision=tool_shed_repository.changeset_revision,
-                    ctx_rev=ctx_rev,
-                    repository_owner=tool_shed_repository.owner,
-                    repository_name=tool_shed_repository.name,
-                    tool_dependencies=tool_dependencies,
-                    repository_dependencies=repository_dependencies,
-                )
-            if repo_info_dict not in repo_info_dicts:
-                repo_info_dicts.append(repo_info_dict)
-            # Make sure all tool_shed_repository records exist.
-            (
-                created_or_updated_tool_shed_repositories,
-                tool_panel_section_keys,
-                repo_info_dicts,
-                filtered_repo_info_dicts,
-            ) = rdim.create_repository_dependency_objects(
-                tool_path=tool_path,
-                tool_shed_url=tool_shed_url,
-                repo_info_dicts=repo_info_dicts,
-                install_repository_dependencies=install_repository_dependencies,
-                no_changes_checked=no_changes_checked,
-                tool_panel_section_id=tool_panel_section_id,
-            )
-            # Default the selected tool panel location for loading tools included in each newly installed required
-            # tool shed repository to the location selected for the repository selected for re-installation.
-            for index, tps_key in enumerate(tool_panel_section_keys):
-                if tps_key is None:
-                    tool_panel_section_keys[index] = tool_panel_section_key
-            encoded_repository_ids = [trans.security.encode_id(r.id) for r in created_or_updated_tool_shed_repositories]
-            new_kwd = dict(
-                includes_tool_dependencies=includes_tool_dependencies,
-                includes_tools=tool_shed_repository.includes_tools,
-                includes_tools_for_display_in_tool_panel=tool_shed_repository.includes_tools_for_display_in_tool_panel,
-                install_tool_dependencies=install_tool_dependencies,
-                install_resolver_dependencies=install_resolver_dependencies,
-                repo_info_dicts=filtered_repo_info_dicts,
-                message=message,
-                new_tool_panel_section_label=new_tool_panel_section_label,
-                shed_tool_conf=shed_tool_conf,
-                status=status,
-                tool_panel_section_id=tool_panel_section_id,
-                tool_path=tool_path,
-                tool_panel_section_keys=tool_panel_section_keys,
-                tool_shed_repository_ids=encoded_repository_ids,
-                tool_shed_url=tool_shed_url,
-            )
-            encoded_kwd = encoding_util.tool_shed_encode(new_kwd)
-            tsr_ids = [trans.security.encode_id(r.id) for r in created_or_updated_tool_shed_repositories]
-            reinstalling = True
-            decoded_kwd = encoding_util.tool_shed_decode(encoded_kwd) if encoded_kwd else {}
-            decoded_kwd["install_resolver_dependencies"] = install_resolver_dependencies
-            decoded_kwd["install_tool_dependencies"] = install_tool_dependencies
-            if not tsr_ids:
-                return []
-            irm = install_manager.InstallRepositoryManager(trans.app)
-            try:
-                tool_shed_repositories = irm.install_repositories(
-                    tsr_ids=tsr_ids,
-                    decoded_kwd=decoded_kwd,
-                    reinstalling=reinstalling,
-                )
-                tsr_ids_for_monitoring = [trans.security.encode_id(tsr.id) for tsr in tool_shed_repositories]
-                return tsr_ids_for_monitoring
-            except install_manager.RepositoriesInstalledException as e:
-                return self.message_exception(trans, unicodify(e))
-        except Exception:
-            log.exception("Problem you know in here somewhere...")
-            raise
