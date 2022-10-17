@@ -287,16 +287,6 @@ class DependencyDisplayer:
             )
             installed_tool_dependencies = repository_installed_tool_dependencies
             missing_tool_dependencies = repository_missing_tool_dependencies
-            # Handle valid tools.
-            valid_tools = metadata.get("tools", None)
-            # Handle Data Managers
-            valid_data_managers = None
-            invalid_data_managers = None
-            data_managers_errors = None
-            if "data_manager" in metadata:
-                valid_data_managers = metadata["data_manager"].get("data_managers", None)
-                invalid_data_managers = metadata["data_manager"].get("invalid_data_managers", None)
-                data_managers_errors = metadata["data_manager"].get("messages", None)
             gucm = GalaxyUtilityContainerManager(self.app)
             containers_dict = gucm.build_repository_containers(
                 repository=repository,
@@ -304,10 +294,6 @@ class DependencyDisplayer:
                 missing_tool_dependencies=missing_tool_dependencies,
                 repository_dependencies=installed_repository_dependencies,
                 tool_dependencies=installed_tool_dependencies,
-                valid_tools=valid_tools,
-                valid_data_managers=valid_data_managers,
-                invalid_data_managers=invalid_data_managers,
-                data_managers_errors=data_managers_errors,
                 new_install=False,
                 reinstalling=False,
             )
