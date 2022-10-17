@@ -2,8 +2,8 @@ import logging
 import os
 
 from galaxy import util
-from galaxy.tool_shed.util.common_util import parse_repository_dependency_tuple
 from galaxy.tool_shed.util import utility_container_manager
+from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 
 log = logging.getLogger(__name__)
 
@@ -63,9 +63,7 @@ class DependencyDisplayer:
                             prior_installation_required,
                             only_if_compiling_contained_td,
                             error,
-                        ) = parse_repository_dependency_tuple(
-                            repository_dependency_tup, contains_error=True
-                        )
+                        ) = parse_repository_dependency_tuple(repository_dependency_tup, contains_error=True)
                         if error:
                             message += f"{error}  "
             else:
@@ -190,9 +188,7 @@ class DependencyDisplayer:
             message += set_environment_orphans_str
         return message
 
-    def populate_containers_dict_from_repository_metadata(
-        self, repository
-    ):
+    def populate_containers_dict_from_repository_metadata(self, repository):
         """
         Retrieve necessary information from the received repository's metadata to populate the
         containers_dict for display.  This method is called only from Galaxy (not the tool shed)

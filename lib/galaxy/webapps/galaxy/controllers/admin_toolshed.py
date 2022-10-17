@@ -25,7 +25,7 @@ from galaxy.util.tool_shed import (
     encoding_util,
 )
 from galaxy.web.form_builder import CheckboxField
-from tool_shed.galaxy_install import dependency_display
+from galaxy.tool_shed.util import dependency_display
 from tool_shed.util import shed_util_common as suc
 from tool_shed.util.repository_util import create_repo_info_dict
 from tool_shed.util.web_util import escape
