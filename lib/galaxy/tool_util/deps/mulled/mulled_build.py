@@ -305,7 +305,7 @@ def mull_targets(
                 # If nothing but mamba without a specific version is requested,
                 # then only run conda install if mamba is not already installed.
                 mamba_test = "[ '[]' = \"$( conda list --json --full-name mamba )\" ]"
-        conda_install = f"""conda install {verbose} -c conda-forge --yes {" ".join(f"'{spec}'" for spec in specs)}"""
+        conda_install = f"""conda install {verbose} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
         involucro_args.extend(["-set", f"PREINSTALL=if {mamba_test} ; then {conda_install} ; fi"])
 
     involucro_args.append(command)
