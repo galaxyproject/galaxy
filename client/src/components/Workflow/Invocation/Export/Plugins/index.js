@@ -1,5 +1,5 @@
 import { DEFAULT_FILE_EXPORT_PLUGIN } from "./DefaultFileExportPlugin";
-import { BIO_COMPUTE_OBJ_EXPORT_PLUGIN } from "./BioComputeObjectExportPlugin";
+import { BIO_COMPUTE_OBJ_EXPORT_PLUGIN } from "./BioComputeObject/BioComputeObjectExportPlugin";
 import { RO_CRATE_EXPORT_PLUGIN } from "./ROCrateExportPlugin";
 
 const AVAILABLE_INVOCATION_EXPORT_PLUGINS = [
