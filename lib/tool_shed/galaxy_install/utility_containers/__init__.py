@@ -1,5 +1,4 @@
 import logging
-import threading
 
 from tool_shed.utility_containers import utility_container_manager
 
@@ -50,8 +49,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
             changeset_revision = repository.changeset_revision
         else:
             changeset_revision = None
-        lock = threading.Lock()
-        lock.acquire(True)
         try:
             folder_id = 0
             # Invalid tools container.
@@ -133,6 +130,4 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
                 containers_dict["invalid_data_managers"] = invalid_data_managers_root_folder
         except Exception as e:
             log.debug(f"Exception in build_repository_containers: {str(e)}")
-        finally:
-            lock.release()
         return containers_dict
