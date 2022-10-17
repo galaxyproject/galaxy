@@ -38,9 +38,20 @@ class ToolRecommendations:
         self.model_ok = None
 
     def create_transformer_model(self, vocab_size):
-        from tensorflow.keras.layers import MultiHeadAttention, LayerNormalization, Dropout, Layer
-        from tensorflow.keras.layers import Embedding, Input, GlobalAveragePooling1D, Dense
-        from tensorflow.keras.models import Sequential, Model
+        from tensorflow.keras.layers import (
+            Dense,
+            Dropout,
+            Embedding,
+            GlobalAveragePooling1D,
+            Input,
+            Layer,
+            LayerNormalization,
+            MultiHeadAttention
+        )
+        from tensorflow.keras.models import (
+            Model,
+            Sequential
+        )
 
         class TransformerBlock(Layer):
             def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
