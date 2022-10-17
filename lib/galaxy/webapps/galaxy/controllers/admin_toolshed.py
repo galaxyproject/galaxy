@@ -14,18 +14,10 @@ from galaxy.tool_shed.util.repository_util import (
     get_installed_tool_shed_repository,
     get_tool_shed_repository_by_id,
 )
-from galaxy.tool_shed.util.shed_util_common import (
-    get_tool_panel_config_tool_path_install_dir,
-)
-from galaxy.tool_util.deps import views
 from galaxy.util import unicodify
 from galaxy.util.tool_shed import (
     common_util,
 )
-from tool_shed.util.shed_util_common import (
-    get_requirements_from_repository,
-)
-from tool_shed.util.web_util import escape
 from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)
@@ -56,7 +48,7 @@ class AdminToolshed(AdminGalaxy):
         try:
             trans.app.installed_repository_manager.activate_repository(repository)
         except Exception as e:
-            error_message = f"Error activating repository {escape(repository.name)}: {unicodify(e)}"
+            error_message = f"Error activating repository {repository.name}: {unicodify(e)}"
             log.exception(error_message)
         return self._manage_repository_json(trans, id=repository_id)
 
@@ -167,12 +159,8 @@ class AdminToolshed(AdminGalaxy):
         containers_dict = dd.populate_containers_dict_from_repository_metadata(
             repository=repository,
         )
-        view = views.DependencyResolversView(self.app)
-        tool_requirements_d = get_requirements_from_repository(repository)
-        requirements_status = view.get_requirements_status(tool_requirements_d, repository.installed_tool_dependencies)
         management_dict = {
             "status": status,
-            "requirements": requirements_status,
         }
         missing_repo_dependencies = containers_dict.get("missing_repository_dependencies", None)
         if missing_repo_dependencies:
