@@ -3,11 +3,11 @@ import threading
 
 from galaxy import util
 from galaxy.tool_shed.util import utility_container_manager
-from galaxy.tool_shed.util.common_util import parse_repository_dependency_tuple
 from galaxy.tool_shed.util.container_util import (
     generate_repository_dependencies_key_for_repository,
     STRSEP,
 )
+from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 from tool_shed.util.readme_util import build_readme_files_dict
 
 log = logging.getLogger(__name__)
@@ -301,9 +301,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                 # Readme files container.
                 if metadata:
                     if "readme_files" not in exclude and "readme_files" in metadata:
-                        readme_files_dict = build_readme_files_dict(
-                            self.app, repository, changeset_revision, metadata
-                        )
+                        readme_files_dict = build_readme_files_dict(self.app, repository, changeset_revision, metadata)
                         folder_id, readme_files_root_folder = self.build_readme_files_folder(
                             folder_id, readme_files_dict
                         )
