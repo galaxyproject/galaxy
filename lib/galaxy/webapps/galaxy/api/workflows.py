@@ -42,8 +42,8 @@ from galaxy.managers.jobs import (
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
-    WorkflowCreateOptions,
     WorkflowContentsManager,
+    WorkflowCreateOptions,
     WorkflowsManager,
     WorkflowUpdateOptions,
 )
