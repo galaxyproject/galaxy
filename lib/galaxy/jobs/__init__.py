@@ -298,11 +298,11 @@ class JobConfiguration(ConfiguresHandlers):
 
     runner_plugins: List[dict]
     handlers: dict
-    handler_runner_plugins: Dict[str, List[str]]
+    handler_runner_plugins: Dict[str, str]
     tools: Dict[str, list]
     tool_classes: Dict[str, list]
     resource_groups: Dict[str, list]
-    destinations: Dict[str, list]
+    destinations: Dict[str, tuple]
     resource_parameters: Dict[str, Any]
     DEFAULT_BASE_HANDLER_POOLS = ("job-handlers",)
 
@@ -332,7 +332,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.handler_max_grab = None
         self.handler_ready_window_size = JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE
         self.destinations = {}
-        self.default_destination_id = 'local'
+        self.default_destination_id = None
         self.tools = {}
         self.tool_classes = {}
         self.resource_groups = {}
@@ -601,10 +601,11 @@ class JobConfiguration(ConfiguresHandlers):
             self._set_default_handler_assignment_methods()
         else:
             self.app.application_stack.init_job_handling(self)
+        self.handler_ready_window_size = JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE
         # Set the destination
         self.default_destination_id = "local"
-        self.destinations['local'] = [JobDestination(id='local', runner='local')]
-        log.debug('Done loading job configuration')
+        self.destinations["local"] = [JobDestination(id="local", runner="local")]
+        log.debug("Done loading job configuration")
 
     def get_tool_resource_xml(self, tool_id, tool_type):
         """Given a tool id, return XML elements describing parameters to
@@ -646,9 +647,8 @@ class JobConfiguration(ConfiguresHandlers):
     @staticmethod
     def get_params(config, parent):
         rval = {}
-        for param in parent.findall('param'):
-            key = param.get('id')
-            param_value: Union[str, List[Any]] = []
+        for param in parent.findall("param"):
+            key = param.get("id")
             if key in ["container", "container_override"]:
                 containers = map(requirements.container_from_element, param.findall("container"))
                 param_value = list(map(lambda c: c.to_dict(), containers))
@@ -996,9 +996,6 @@ class MinimalJobWrapper(HasResourceParameters):
         # the path rewriter needs destination params, so it cannot be set up until after the destination has been
         # resolved
         self._job_io = None
-        self._dataset_path_rewriter = None
-        self.output_paths: List[DatasetPath] = None  # type: ignore[assignment]
-        self.output_hdas_and_paths: Dict[str, Union[List, Tuple]] = None  # type: ignore[assignment]
         self.tool_provided_job_metadata = None
         self.params = None
         if job.params:

@@ -9,7 +9,7 @@ from typing import (
     Any,
     Dict,
     NamedTuple,
-    Optional
+    Optional,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException

@@ -1,10 +1,8 @@
 import json
-
-import packaging.version
 from typing import (
     Any,
     Dict,
-    List
+    List,
 )
 
 import packaging.version
