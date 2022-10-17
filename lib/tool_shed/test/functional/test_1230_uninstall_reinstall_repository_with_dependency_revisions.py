@@ -173,7 +173,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(installed_repository)
+        self.reinstall_repository_api(installed_repository)
         self._assert_has_installed_repos_with_names(emboss_repository_name)
         self._assert_has_valid_tool_with_name("emboss")
 

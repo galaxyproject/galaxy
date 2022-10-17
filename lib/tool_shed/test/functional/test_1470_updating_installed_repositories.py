@@ -125,7 +125,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(installed_repository)
+        self.reinstall_repository_api(installed_repository)
 
     def test_0035_verify_absence_of_ghosts(self):
         """Check the count of repositories in the database named filtering_1470 and owned by user1.
