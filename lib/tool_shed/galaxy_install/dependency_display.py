@@ -1,16 +1,22 @@
 import json
 import logging
 import os
-import threading
 
 from galaxy import util
-from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
-from tool_shed.util import (
-    common_util,
-    readme_util,
-    repository_util,
-    tool_dependency_util,
+from galaxy.tool_shed.util.common_util import (
+    get_tool_shed_url_from_tool_shed_registry,
+    parse_repository_dependency_tuple,
 )
+from galaxy.tool_shed.util.repository_util import (
+    get_repo_info_tuple_contents,
+    repository_was_previously_installed,
+)
+from galaxy.tool_shed.util.tool_dependency_util import (
+    get_tool_dependency_by_name_type_repository,
+    get_tool_dependency_by_name_version_type_repository,
+)
+from tool_shed.galaxy_install.utility_containers import GalaxyUtilityContainerManager
+from tool_shed.util.readme_util import build_readme_files_dict
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +76,7 @@ class DependencyDisplayer:
                             prior_installation_required,
                             only_if_compiling_contained_td,
                             error,
-                        ) = common_util.parse_repository_dependency_tuple(
+                        ) = parse_repository_dependency_tuple(
                             repository_dependency_tup, contains_error=True
                         )
                         if error:
@@ -103,7 +109,7 @@ class DependencyDisplayer:
                                 changeset_revision,
                                 pir,
                                 oicct,
-                            ) = common_util.parse_repository_dependency_tuple(rd_tup)
+                            ) = parse_repository_dependency_tuple(rd_tup)
                             if util.asbool(pir):
                                 pir_str = "True"
                             else:
@@ -211,7 +217,7 @@ class DependencyDisplayer:
                         name = td_info_dict["name"]
                         version = None
                         type = td_info_dict["type"]
-                        tool_dependency = tool_dependency_util.get_tool_dependency_by_name_type_repository(
+                        tool_dependency = get_tool_dependency_by_name_type_repository(
                             self.app, repository, name, type
                         )
                         if tool_dependency:
@@ -234,7 +240,7 @@ class DependencyDisplayer:
                     name = val["name"]
                     version = val["version"]
                     type = val["type"]
-                    tool_dependency = tool_dependency_util.get_tool_dependency_by_name_version_type_repository(
+                    tool_dependency = get_tool_dependency_by_name_version_type_repository(
                         self.app, repository, name, version, type
                     )
                     if tool_dependency:
@@ -391,7 +397,7 @@ class DependencyDisplayer:
                     self.app.install_model.ToolShedRepository.installation_status.INSTALLED,
                 ]:
                     # Since we're reinstalling, we need to send a request to the tool shed to get the README files.
-                    tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
+                    tool_shed_url = get_tool_shed_url_from_tool_shed_registry(self.app, tool_shed_url)
                     params = dict(
                         name=str(repository.name),
                         owner=str(repository.owner),
@@ -406,7 +412,7 @@ class DependencyDisplayer:
                     )
                     readme_files_dict = json.loads(raw_text)
                 else:
-                    readme_files_dict = readme_util.build_readme_files_dict(
+                    readme_files_dict = build_readme_files_dict(
                         self.app, repository, repository.changeset_revision, repository.metadata_, tool_path
                     )
             else:
@@ -519,7 +525,7 @@ class DependencyDisplayer:
                         repository_owner,
                         repository_dependencies,
                         tool_dependencies,
-                    ) = repository_util.get_repo_info_tuple_contents(repo_info_tuple)
+                    ) = get_repo_info_tuple_contents(repo_info_tuple)
                     if tool_dependencies:
                         # Add the install_dir attribute to the tool_dependencies.
                         tool_dependencies = self.add_installation_directories_to_tool_dependencies(tool_dependencies)
@@ -527,7 +533,7 @@ class DependencyDisplayer:
                         (
                             required_repository,
                             installed_changeset_revision,
-                        ) = repository_util.repository_was_previously_installed(
+                        ) = repository_was_previously_installed(
                             self.app, tool_shed_url, name, repo_info_tuple, from_tip=False
                         )
                         if required_repository:
