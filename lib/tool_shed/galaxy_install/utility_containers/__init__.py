@@ -14,7 +14,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         repository,
         missing_repository_dependencies,
         missing_tool_dependencies,
-        readme_files_dict,
         repository_dependencies,
         tool_dependencies,
         valid_tools,
@@ -41,10 +40,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
             changeset_revision = None
         try:
             folder_id = 0
-            # Readme files container.
-            if readme_files_dict:
-                folder_id, readme_files_root_folder = self.build_readme_files_folder(folder_id, readme_files_dict)
-                containers_dict["readme_files"] = readme_files_root_folder
             # Installed repository dependencies container.
             if repository_dependencies:
                 if new_install:

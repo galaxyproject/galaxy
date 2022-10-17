@@ -302,7 +302,6 @@ class DependencyDisplayer:
                 repository=repository,
                 missing_repository_dependencies=missing_repository_dependencies,
                 missing_tool_dependencies=missing_tool_dependencies,
-                readme_files_dict=None,
                 repository_dependencies=installed_repository_dependencies,
                 tool_dependencies=installed_tool_dependencies,
                 valid_tools=valid_tools,
