@@ -2,11 +2,12 @@ import logging
 import threading
 
 from galaxy import util
-from tool_shed.util import (
-    common_util,
-    container_util,
-    readme_util,
+from galaxy.tool_shed.util.common_util import parse_repository_dependency_tuple
+from galaxy.tool_shed.util.container_util import (
+    generate_repository_dependencies_key_for_repository,
+    STRSEP,
 )
+from tool_shed.util.readme_util import build_readme_files_dict
 from . import utility_container_manager
 
 log = logging.getLogger(__name__)
@@ -166,8 +167,8 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                     prior_installation_required,
                     only_if_compiling_contained_td,
                     error,
-                ) = common_util.parse_repository_dependency_tuple(invalid_repository_dependency, contains_error=True)
-                key = container_util.generate_repository_dependencies_key_for_repository(
+                ) = parse_repository_dependency_tuple(invalid_repository_dependency, contains_error=True)
+                key = generate_repository_dependencies_key_for_repository(
                     toolshed,
                     name,
                     owner,
@@ -300,7 +301,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                 # Readme files container.
                 if metadata:
                     if "readme_files" not in exclude and "readme_files" in metadata:
-                        readme_files_dict = readme_util.build_readme_files_dict(
+                        readme_files_dict = build_readme_files_dict(
                             self.app, repository, changeset_revision, metadata
                         )
                         folder_id, readme_files_root_folder = self.build_readme_files_folder(
@@ -363,4 +364,4 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
         return containers_dict
 
     def generate_tool_dependencies_key(self, name, version, type):
-        return f"{str(name)}{container_util.STRSEP}{str(version)}{container_util.STRSEP}{str(type)}"
+        return f"{str(name)}{STRSEP}{str(version)}{STRSEP}{str(type)}"
