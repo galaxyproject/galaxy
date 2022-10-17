@@ -274,11 +274,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return provided_key.user
 
     def check_bootstrap_admin_api_key(self, api_key):
-        bootstrap_admin_api_key = getattr(self.app.config, "bootstrap_admin_api_key", None)
-        if not bootstrap_admin_api_key:
+        if not self.app.config.bootstrap_admin_api_key:
             return False
         # Hash keys to make them the same size, so we can do safe comparison.
-        bootstrap_hash = hashlib.sha256(util.smart_str(bootstrap_admin_api_key)).hexdigest()
+        bootstrap_hash = hashlib.sha256(util.smart_str(self.app.config.bootstrap_admin_api_key)).hexdigest()
         provided_hash = hashlib.sha256(util.smart_str(api_key)).hexdigest()
         return util.safe_str_cmp(bootstrap_hash, provided_hash)
 
