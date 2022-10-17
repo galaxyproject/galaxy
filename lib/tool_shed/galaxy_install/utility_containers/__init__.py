@@ -1,6 +1,6 @@
 import logging
 
-from tool_shed.utility_containers import utility_container_manager
+from galaxy.tool_shed.util import utility_container_manager
 
 log = logging.getLogger(__name__)
 
