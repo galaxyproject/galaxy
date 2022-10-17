@@ -160,10 +160,8 @@ class AdminToolshed(AdminGalaxy):
         repository = get_installed_tool_shed_repository(trans.app, repository_id)
         if repository is None:
             return trans.show_error_message("Invalid repository specified.")
-        tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
         description = kwd.get("description", repository.description)
         status = "ok"
-        _, tool_path, _ = get_tool_panel_config_tool_path_install_dir(trans.app, repository)
         if repository.in_error_state:
             message = "This repository is not installed correctly (see the <b>Repository installation error</b> below).  Choose "
             message += "<b>Reset to install</b> from the <b>Repository Actions</b> menu, correct problems if necessary and try "
