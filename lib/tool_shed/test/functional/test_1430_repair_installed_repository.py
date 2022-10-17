@@ -124,7 +124,7 @@ class TestRepairRepository(ShedTwillTestCase):
         the repositories in a specified section of the tool panel.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             "column_1430",
             common.test_user_1_name,
             category_name,
@@ -141,14 +141,5 @@ class TestRepairRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             "filter_1430", common.test_user_1_name
         )
-        strings_displayed = ["Uninstalling this repository will result in the following"]
-        strings_not_displayed = []
-        self.uninstall_repository(
-            installed_repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
-        strings_not_displayed = [
-            "filter_1430",
-            "Galaxy's filter tool for test 1430",
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self.uninstall_repository(installed_repository)
+        self._assert_has_no_installed_repos_with_names("filter_1430")

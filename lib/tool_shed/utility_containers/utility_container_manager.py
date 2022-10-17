@@ -61,6 +61,20 @@ class Folder:
             if contained_repository_dependency.listify == listified_repository_dependency:
                 self.repository_dependencies.remove(contained_repository_dependency)
 
+    def to_dict(self):
+        folders = []
+        if self.folders:
+            for folder in self.folders:
+                folders.append(folder.to_dict())
+        repository_dependencies = []
+        for rd in self.repository_dependencies or []:
+            repository_dependencies.append(rd.to_dict())
+        return {
+            "description": self.description,
+            "folders": folders,
+            "repository_dependencies": repository_dependencies,
+        }
+
 
 class DataManager:
     """Data Manager object"""
@@ -143,6 +157,14 @@ class RepositoryDependency:
             self.prior_installation_required,
             self.only_if_compiling_contained_td,
         ]
+
+    def to_dict(self):
+        return {
+            "toolshed": self.toolshed,
+            "repository_name": self.repository_name,
+            "repository_owner": self.repository_owner,
+            "changeset_revision": self.changeset_revision,
+        }
 
 
 class Tool:

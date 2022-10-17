@@ -163,37 +163,31 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=["Test 0030 Repository Dependency Revisions"])
         category = self.populator.get_category_with_name("Test 0030 Repository Dependency Revisions")
-        self.browse_category(category, strings_displayed=["emboss_0030"])
+        self.browse_category(category, strings_displayed=[emboss_repository_name])
         self.preview_repository_in_tool_shed(
-            "emboss_0030", common.test_user_1_name, strings_displayed=["emboss_0030", "Valid tools"]
+            emboss_repository_name, common.test_user_1_name, strings_displayed=[emboss_repository_name, "Valid tools"]
         )
 
     def test_0015_install_emboss_repository(self):
         """Install the emboss repository without installing tool dependencies."""
         global running_standalone
-        self.install_repository(
-            "emboss_0030",
+        self._install_repository(
+            emboss_repository_name,
             common.test_user_1_name,
             "Test 0030 Repository Dependency Revisions",
             install_tool_dependencies=False,
             new_tool_panel_section_label="test_1030",
         )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "emboss_0030", common.test_user_1_name
+            emboss_repository_name, common.test_user_1_name
         )
-        strings_displayed = [
-            "emboss_0030",
-            "Galaxy wrappers for Emboss version 5.0.0 tools for test 0030",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "antigenic"])
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
+        assert self.get_installed_repository_for(
+            common.test_user_1, emboss_repository_name, installed_repository.installed_changeset_revision
+        )
+        self._assert_repo_has_tool_with_id(installed_repository, "EMBOSS: antigenic1")
+        self._assert_has_valid_tool_with_name("antigenic")
         self.update_installed_repository_api(installed_repository, verify_no_updates=True)
 
     def test_0025_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""
-        self.verify_installed_repository_metadata_unchanged("emboss_0030", common.test_user_1_name)
+        self.verify_installed_repository_metadata_unchanged(emboss_repository_name, common.test_user_1_name)

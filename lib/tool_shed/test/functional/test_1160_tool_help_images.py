@@ -67,7 +67,6 @@ class TestToolHelpImages(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         # Get the repository tip.
         changeset_revision = self.get_repository_tip(repository)
-        self.display_manage_repository_page(repository)
         # Generate the image path.
         image_path = f'src="/repository/static/images/{repository.id}/count_modes.png"'
         # The repository uploaded in this test should only have one metadata revision, with one tool defined, which

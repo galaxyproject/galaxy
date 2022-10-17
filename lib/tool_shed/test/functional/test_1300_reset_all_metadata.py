@@ -517,11 +517,11 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
     def test_9900_install_all_missing_repositories(self):
         """Call the install_repository method to ensure that all required repositories are installed."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository("filtering_0000", common.test_user_1_name, category_0000_name)
-        self.install_repository("freebayes_0010", common.test_user_1_name, category_0010_name)
-        self.install_repository("emboss_0020", common.test_user_1_name, category_0020_name)
-        self.install_repository("emboss_5_0030", common.test_user_1_name, category_0030_name)
-        self.install_repository("freebayes_0050", common.test_user_1_name, category_0050_name)
+        self._install_repository("filtering_0000", common.test_user_1_name, category_0000_name)
+        self._install_repository("freebayes_0010", common.test_user_1_name, category_0010_name)
+        self._install_repository("emboss_0020", common.test_user_1_name, category_0020_name)
+        self._install_repository("emboss_5_0030", common.test_user_1_name, category_0030_name)
+        self._install_repository("freebayes_0050", common.test_user_1_name, category_0050_name)
 
     def test_9905_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""

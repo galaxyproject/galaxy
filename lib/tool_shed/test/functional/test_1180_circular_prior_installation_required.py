@@ -217,7 +217,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["filtering_0160", self.get_repository_tip(filter_repository)]
-        self.install_repository(
+        self._install_repository(
             filter_repository_name,
             common.test_user_1_name,
             category_name,
@@ -266,17 +266,9 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             filter_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(filter_repository)
-        strings_displayed = [
-            "filtering_0160",
-            "Galaxy's filtering tool for test 0160",
-            "user1",
-            self.url.replace("http://", ""),
-            filter_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "Filter1"])
-        self.display_installed_repository_manage_page(filter_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(filter_repository)
+        self._assert_has_installed_repos_with_names("filtering_0160")
+        self._assert_has_valid_tool_with_name("Filter1")
+        self._assert_repo_has_tool_with_id(filter_repository, "Filter1")
 
     def test_0050_verify_reinstallation_order(self):
         """Verify that convert_chars_0160 and column_maker_0160 were reinstalled before filtering_0160."""

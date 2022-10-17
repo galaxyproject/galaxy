@@ -104,7 +104,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     def test_0020_install_repositories(self):
         """Install column_maker into column_maker tool panel section and install repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             column_repository_name,
             common.test_user_1_name,
             category_name,
@@ -115,29 +115,8 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        browse_strings_displayed = [
-            "convert_chars_1085",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_1085",
-            "Add column",
-            installed_column_repository.installed_changeset_revision,
-        ]
-        strings_displayed = [
-            "convert_chars_1085",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_1085",
-            installed_column_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=browse_strings_displayed)
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("convert_chars_1085", "column_maker_1085")
+        self._assert_is_not_missing_dependency(installed_convert_repository, "column_maker_1085")
 
     def test_0025_uninstall_column_repository(self):
         """uninstall column_maker, verify same section"""
@@ -168,13 +147,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             new_tool_panel_section_label="new_column_maker",
             no_changes=False,
         )
-        strings_displayed = [
-            "column_maker_1085",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("column_maker_1085")
 
     def test_0040_reinstall_convert_repository(self):
         """reinstall convert_chars into new section 'new_convert_chars' (no_changes = false), no dependencies"""
@@ -188,13 +161,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             new_tool_panel_section_label="new_convert_chars",
             no_changes=False,
         )
-        strings_displayed = [
-            "convert_chars_1085",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("convert_chars_1085")
 
     # The following check fails somewhere around 5% of the time maybe on Jenkins.
     # https://jenkins.galaxyproject.org/job/docker-toolshed/5578/

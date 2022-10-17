@@ -76,7 +76,7 @@ class AdminToolshed(AdminGalaxy):
         return trans.response.send_redirect(
             web.url_for(
                 controller="admin_toolshed",
-                action="manage_repository",
+                action="manage_repository_json",
                 id=repository_id,
                 message=message,
                 status=status,
@@ -150,7 +150,7 @@ class AdminToolshed(AdminGalaxy):
                 return trans.response.send_redirect(
                     web.url_for(
                         controller="admin_toolshed",
-                        action="manage_repository",
+                        action="manage_repository_json",
                         id=repository_id,
                         message=message,
                         status=status,
@@ -196,44 +196,6 @@ class AdminToolshed(AdminGalaxy):
                             trans.response.set_content_type(mimetype)
                     return open(path_to_file, "rb")
         return None
-
-    @web.expose
-    @web.require_admin
-    @legacy_tool_shed_endpoint
-    def view_tool_metadata(self, trans, repository_id, tool_id, **kwd):
-        message = escape(kwd.get("message", ""))
-        status = kwd.get("status", "done")
-        repository = repository_util.get_installed_tool_shed_repository(trans.app, repository_id)
-        repository_metadata = repository.metadata_
-        shed_config_dict = repository.get_shed_config_dict(trans.app)
-        tool_metadata = {}
-        tool_lineage = []
-        tool = None
-        if "tools" in repository_metadata:
-            for tool_metadata_dict in repository_metadata["tools"]:
-                if tool_metadata_dict["id"] == tool_id:
-                    tool_metadata = tool_metadata_dict
-                    tool_config = tool_metadata["tool_config"]
-                    if shed_config_dict and shed_config_dict.get("tool_path"):
-                        tool_config = os.path.join(shed_config_dict.get("tool_path"), tool_config)
-                    tool = trans.app.toolbox.get_tool(tool_id=tool_metadata["guid"], exact=True)
-                    if not tool:
-                        tool = trans.app.toolbox.load_tool(os.path.abspath(tool_config), guid=tool_metadata["guid"])
-                        if tool:
-                            tool._lineage = trans.app.toolbox._lineage_map.register(tool)
-                    if tool:
-                        tool_lineage = tool.lineage.get_version_ids(reverse=True)
-                    break
-        return trans.fill_template(
-            "/admin/tool_shed_repository/view_tool_metadata.mako",
-            repository=repository,
-            repository_metadata=repository_metadata,
-            tool=tool,
-            tool_metadata=tool_metadata,
-            tool_lineage=tool_lineage,
-            message=message,
-            status=status,
-        )
 
     @web.json
     @web.require_admin
@@ -302,12 +264,10 @@ class AdminToolshed(AdminGalaxy):
         repo_information_dict = json.loads(raw_text)
         return repo_information_dict
 
-    @web.expose
+    @web.json
     @web.require_admin
     @legacy_tool_shed_endpoint
-    def manage_repository(self, trans, **kwd):
-        message = escape(kwd.get("message", ""))
-        status = kwd.get("status", "done")
+    def manage_repository_json(self, trans, **kwd):
         repository_id = kwd.get("id", None)
         if repository_id is None:
             return trans.show_error_message("Missing required encoded repository id.")
@@ -320,13 +280,9 @@ class AdminToolshed(AdminGalaxy):
         if repository is None:
             return trans.show_error_message("Invalid repository specified.")
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
-        name = str(repository.name)
         description = kwd.get("description", repository.description)
-        _, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)
-        if relative_install_dir:
-            repo_files_dir = os.path.abspath(os.path.join(tool_path, relative_install_dir, name))
-        else:
-            repo_files_dir = None
+        status = "ok"
+        _, tool_path, _ = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)
         if repository.in_error_state:
             message = "This repository is not installed correctly (see the <b>Repository installation error</b> below).  Choose "
             message += "<b>Reset to install</b> from the <b>Repository Actions</b> menu, correct problems if necessary and try "
@@ -352,16 +308,17 @@ class AdminToolshed(AdminGalaxy):
         view = views.DependencyResolversView(self.app)
         tool_requirements_d = suc.get_requirements_from_repository(repository)
         requirements_status = view.get_requirements_status(tool_requirements_d, repository.installed_tool_dependencies)
-        return trans.fill_template(
-            "/admin/tool_shed_repository/manage_repository.mako",
-            repository=repository,
-            description=description,
-            repo_files_dir=repo_files_dir,
-            containers_dict=containers_dict,
-            requirements_status=requirements_status,
-            message=message,
-            status=status,
-        )
+        management_dict = {
+            "status": status,
+            "requirements": requirements_status,
+        }
+        missing_repo_dependencies = containers_dict.get("missing_repository_dependencies", None)
+        if missing_repo_dependencies:
+            management_dict["missing_repository_dependencies"] = missing_repo_dependencies.to_dict()
+        repository_dependencies = containers_dict.get("repository_dependencies", None)
+        if repository_dependencies:
+            management_dict["repository_dependencies"] = repository_dependencies.to_dict()
+        return management_dict
 
     @web.json
     @web.require_admin

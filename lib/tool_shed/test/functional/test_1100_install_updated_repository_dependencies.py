@@ -78,7 +78,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     def test_0015_install_and_uninstall_column_repository(self):
         """Install and uninstall the column_maker repository."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             column_repository_name,
             common.test_user_1_name,
             category_name,
@@ -131,4 +131,4 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         self.visit_galaxy_url(url, params)
         self.check_for_strings(strings_displayed)
         strings_not_displayed = ["column_maker_1087"]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names(strings_not_displayed)

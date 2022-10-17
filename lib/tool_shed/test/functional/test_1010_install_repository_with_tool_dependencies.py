@@ -122,7 +122,7 @@ class TestToolWithToolDependencies(ShedTwillTestCase):
 
     def test_0015_install_freebayes_repository(self):
         """Install the freebayes repository without installing tool dependencies."""
-        self.install_repository(
+        self._install_repository(
             repository_name,
             common.test_user_1_name,
             category_name,
@@ -132,17 +132,11 @@ class TestToolWithToolDependencies(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        strings_displayed = [
-            "freebayes_0010",
-            "Galaxy's freebayes tool",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "FreeBayes"])
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
+        assert self.get_installed_repository_for(
+            common.test_user_1, repository_name, installed_repository.installed_changeset_revision
+        )
+        self._assert_has_valid_tool_with_name("FreeBayes")
+        self._assert_repo_has_tool_with_id(installed_repository, "freebayes")
 
     def test_0020_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

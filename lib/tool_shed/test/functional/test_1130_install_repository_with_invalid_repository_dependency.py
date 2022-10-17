@@ -175,7 +175,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             self.get_repository_tip(repository),
             "Ignoring repository dependency definition",
         ]
-        self.install_repository(
+        self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
             category_name,
@@ -186,8 +186,5 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        self.display_installed_repository_manage_page(
-            installed_repository=installed_repository,
-            strings_displayed=[],
-            strings_not_displayed=["Repository dependencies"],
-        )
+        json = self.display_installed_repository_manage_json(installed_repository)
+        assert "repository_dependencies" not in json

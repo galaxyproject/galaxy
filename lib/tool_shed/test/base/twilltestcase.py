@@ -31,6 +31,7 @@ from galaxy.util import (
 )
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.api_util import get_admin_api_key
+from galaxy_test.base.populators import wait_on_assertion
 from tool_shed.util import (
     hg_util,
     hgweb_config,
@@ -46,10 +47,7 @@ from . import (
     common,
     test_db_util,
 )
-from .api import (
-    ShedBaseTestCase,
-    ShedGalaxyInteractorApi,
-)
+from .api import ShedApiTestCase
 
 # Set a 10 minute timeout for repository installation.
 repository_installation_timeout = 600
@@ -58,7 +56,7 @@ log = logging.getLogger(__name__)
 tc.options["equiv_refresh_interval"] = 0
 
 
-class ShedTwillTestCase(ShedBaseTestCase):
+class ShedTwillTestCase(ShedApiTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     def setUp(self):
@@ -570,11 +568,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         strings_not_displayed: List[str] = []
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_galaxy_browse_repositories_page(self, strings_displayed=None, strings_not_displayed=None):
-        url = "/admin_toolshed/browse_repositories"
-        self.visit_galaxy_url(url)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-
     def display_installed_jobs_list_page(
         self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None
     ):
@@ -593,19 +586,12 @@ class ShedTwillTestCase(ShedBaseTestCase):
             self.visit_galaxy_url("/data_manager/jobs_list", params=params)
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def display_installed_repository_manage_page(
-        self, installed_repository, strings_displayed=None, strings_not_displayed=None
-    ):
-        if strings_displayed is None:
-            strings_displayed = []
-        if strings_not_displayed is None:
-            strings_not_displayed = []
+    def display_installed_repository_manage_json(self, installed_repository):
         params = {"id": self.security.encode_id(installed_repository.id)}
-        self.visit_galaxy_url("/admin_toolshed/manage_repository", params=params)
-        strings_displayed.append(str(installed_repository.installed_changeset_revision))
-        # Every place Galaxy's XXXX tool appears in attribute - need to quote.
-        strings_displayed = [x.replace("'", "&#39;") for x in strings_displayed]
-        self.check_for_strings(strings_displayed, strings_not_displayed)
+        self.visit_galaxy_url("/admin_toolshed/manage_repository_json", params=params)
+        import json
+
+        return json.loads(self.last_page())
 
     def display_manage_repository_page(
         self, repository: Repository, changeset_revision=None, strings_displayed=None, strings_not_displayed=None
@@ -1031,7 +1017,7 @@ class ShedTwillTestCase(ShedBaseTestCase):
         tc.submit("user_access_button")
         self.check_for_strings(post_submit_strings_displayed, post_submit_strings_not_displayed)
 
-    def install_repository(
+    def _install_repository(
         self,
         name: str,
         owner: str,
@@ -1049,7 +1035,6 @@ class ShedTwillTestCase(ShedBaseTestCase):
         self.preview_repository_in_tool_shed(name, owner, strings_displayed=preview_strings_displayed)
         repository = self._get_repository_by_name_and_owner(name, owner)
         assert repository
-        galaxy_interactor = ShedGalaxyInteractorApi(self.galaxy_url)
         # repository_id = repository.id
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip(repository)
@@ -1064,7 +1049,7 @@ class ShedTwillTestCase(ShedBaseTestCase):
         }
         if new_tool_panel_section_label:
             payload["new_tool_panel_section_label"] = new_tool_panel_section_label
-        create_response = galaxy_interactor._post(
+        create_response = self.galaxy_interactor._post(
             "tool_shed_repositories/new/install_repository_revision", data=payload, admin=True
         )
         assert_status_code_is_ok(create_response)
@@ -1360,6 +1345,7 @@ class ShedTwillTestCase(ShedBaseTestCase):
             assert "message" in response_dict
             message = response_dict["message"]
             assert "The status has not changed in the tool shed for repository" in message, str(response_dict)
+        return response_dict
 
     def update_tool_shed_status(self):
         api_key = get_admin_api_key()
@@ -1542,21 +1528,110 @@ class ShedTwillTestCase(ShedBaseTestCase):
         # or we know that the repository was not correctly installed!
         assert found, f"No entry for {required_data_table_entry} in {self.shed_tool_data_table_conf}."
 
-    def verify_tool_metadata_for_installed_repository(
-        self, installed_repository, strings_displayed=None, strings_not_displayed=None
-    ):
-        if strings_displayed is None:
-            strings_displayed = []
-        if strings_not_displayed is None:
-            strings_not_displayed = []
-        repository_id = self.security.encode_id(installed_repository.id)
-        for tool in installed_repository.metadata_["tools"]:
-            strings = list(strings_displayed)
-            strings.extend([tool["id"], tool["description"], tool["version"], tool["guid"], tool["name"]])
-            params = dict(repository_id=repository_id, tool_id=tool["id"])
-            url = "/admin_toolshed/view_tool_metadata"
-            self.visit_galaxy_url(url, params)
-            self.check_for_strings(strings, strings_not_displayed)
+    def _assert_has_installed_repos_with_names(self, *names):
+        for name in names:
+            assert self.get_installed_repository_for(name=name)
+
+    def _assert_has_no_installed_repos_with_names(self, *names):
+        for name in names:
+            assert not self.get_installed_repository_for(name=name)
+
+    def _assert_has_missing_dependency(
+        self, installed_repository: galaxy_model.ToolShedRepository, repository_name: str
+    ) -> None:
+        json = self.display_installed_repository_manage_json(installed_repository)
+        assert (
+            "missing_repository_dependencies" in json
+        ), f"Expecting missing dependency {repository_name} but no missing dependencies found."
+        missing_repository_dependencies = json["missing_repository_dependencies"]
+        folder = missing_repository_dependencies["folders"][0]
+        assert "repository_dependencies" in folder
+        rds = folder["repository_dependencies"]
+        found_missing_repository_dependency = False
+        missing_repos = set()
+        for rd in rds:
+            missing_repos.add(rd["repository_name"])
+            if rd["repository_name"] == repository_name:
+                found_missing_repository_dependency = True
+        assert (
+            found_missing_repository_dependency
+        ), f"Expecting missing dependency {repository_name} but the missing repositories were {missing_repos}."
+
+    def _assert_has_installed_repository_dependency(
+        self,
+        installed_repository: galaxy_model.ToolShedRepository,
+        repository_name: str,
+        changeset: Optional[str] = None,
+    ) -> None:
+        json = self.display_installed_repository_manage_json(installed_repository)
+        assert "repository_dependencies" in json, (
+            "No repository dependencies were defined in %s." % installed_repository.name
+        )
+        repository_dependencies = json["repository_dependencies"]
+        found = False
+        for folder in repository_dependencies.get("folders"):
+            for rd in folder["repository_dependencies"]:
+                if rd["repository_name"] != repository_name:
+                    continue
+                if changeset and rd["changeset_revision"] != changeset:
+                    continue
+                found = True
+                break
+        assert found, f"Failed to find target repository dependency in {json}"
+
+    def _assert_is_not_missing_dependency(
+        self, installed_repository: galaxy_model.ToolShedRepository, repository_name: str
+    ) -> None:
+        json = self.display_installed_repository_manage_json(installed_repository)
+        if "missing_repository_dependencies" not in json:
+            return
+
+        missing_repository_dependencies = json["missing_repository_dependencies"]
+        folder = missing_repository_dependencies["folders"][0]
+        assert "repository_dependencies" in folder
+        rds = folder["repository_dependencies"]
+        found_missing_repository_dependency = False
+        for rd in rds:
+            if rd["repository_name"] == repository_name:
+                found_missing_repository_dependency = True
+        assert not found_missing_repository_dependency
+
+    def _assert_has_valid_tool_with_name(self, tool_name: str) -> None:
+        def assert_has():
+            response = self.galaxy_interactor._get("tools?in_panel=false")
+            response.raise_for_status()
+            tool_list = response.json()
+            tool_list = [t for t in tool_list if t["name"] == tool_name]
+            assert tool_list
+
+        # May need to wait on toolbox reload.
+        wait_on_assertion(assert_has, f"toolbox to contain {tool_name}", 10)
+
+    def _assert_repo_has_tool_with_id(
+        self, installed_repository: galaxy_model.ToolShedRepository, tool_id: str
+    ) -> None:
+        assert "tools" in installed_repository.metadata_, (
+            "No valid tools were defined in %s." % installed_repository.name
+        )
+        tools = installed_repository.metadata_["tools"]
+        found_it = False
+        for tool in tools:
+            if "id" not in tool:
+                continue
+            if tool["id"] == tool_id:
+                found_it = True
+                break
+        assert found_it, f"Did not find valid tool with name {tool_id} in {tools}"
+
+    def _assert_repo_has_invalid_tool_in_file(
+        self, installed_repository: galaxy_model.ToolShedRepository, name: str
+    ) -> None:
+        assert "invalid_tools" in installed_repository.metadata_, (
+            "No invalid tools were defined in %s." % installed_repository.name
+        )
+        invalid_tools = installed_repository.metadata_["invalid_tools"]
+        found_it = name in invalid_tools
+        assert found_it, f"Did not find invalid tool file {name} in {invalid_tools}"
 
     def verify_unchanged_repository_metadata(self, repository: Repository):
         old_metadata = dict()

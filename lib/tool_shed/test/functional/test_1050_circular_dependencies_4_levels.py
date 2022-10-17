@@ -326,7 +326,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
     def test_0055_install_column_repository(self):
         """Install column_maker with repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             column_repository_name,
             common.test_user_1_name,
             category_name,
@@ -346,15 +346,14 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             "freebayes_0050",
             "bismark_0050",
         ]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories=installed_repositories)
 
     def test_0060_install_emboss_repository(self):
         """Install emboss_5 with repository dependencies."""
         global running_standalone
-        self.install_repository(
+        self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,
             category_name,
@@ -376,9 +375,8 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             "bismark_0050",
         ]
         strings_not_displayed = ["filtering_0050", "freebayes_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)
 
     def test_0065_deactivate_bismark_repository(self):
@@ -396,9 +394,8 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         ]
         strings_displayed = ["emboss_0050", "column_maker_0050", "convert_chars_0050"]
         strings_not_displayed = ["bismark", "filtering_0050", "freebayes_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)
 
     def test_0070_uninstall_emboss_repository(self):
@@ -407,8 +404,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             emboss_repository_name, common.test_user_1_name
         )
         self.uninstall_repository(repository)
-        strings_not_displayed = [repository.name, repository.installed_changeset_revision]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names(repository.name)
         self.test_db_util.ga_refresh(repository)
         self.check_galaxy_repository_tool_panel_section(repository, "emboss_5_0050")
         # Now we have bismark, column_maker, and convert_chars installed, filtering and freebayes never installed,
@@ -419,15 +415,14 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         ]
         strings_displayed = ["column_maker_0050", "convert_chars_0050"]
         strings_not_displayed = ["emboss_0050", "filtering_0050", "freebayes_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)
 
     def test_0075_install_freebayes_repository(self):
         """Install freebayes with repository dependencies. This should also automatically reactivate bismark and reinstall emboss_5."""
         strings_displayed = ["Handle", "tool dependencies", "freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18"]
-        self.install_repository(
+        self._install_repository(
             freebayes_repository_name,
             common.test_user_1_name,
             category_name,
@@ -435,18 +430,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             install_repository_dependencies=True,
             new_tool_panel_section_label="freebayes",
         )
-        emboss_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
-        bismark_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            bismark_repository_name, common.test_user_1_name
-        )
-        strings_displayed = [
-            "emboss_0050",
-            emboss_repository.installed_changeset_revision,
-            bismark_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("emboss_0050")
         # Installing freebayes should automatically reinstall emboss and reactivate bismark.
         # Now column_maker, convert_chars, emboss, freebayes, and bismark should be installed.
         installed_repositories = [
@@ -464,7 +448,6 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             "freebayes_0050",
         ]
         strings_not_displayed = ["filtering_0050"]
-        self.display_galaxy_browse_repositories_page(
-            strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
+        self._assert_has_installed_repos_with_names(*strings_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self.verify_installed_repositories(installed_repositories)
