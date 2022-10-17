@@ -95,7 +95,6 @@
   </section>
   <section id="fetchAlignSeq" name="Fetch Alignments/Sequences">
     <tool file="maf/interval2maf_pairwise.xml" />
-    <tool file="maf/interval2maf.xml" />
     <tool file="maf/maf_split_by_species.xml" />
     <tool file="maf/interval_maf_to_merged_fasta.xml" />
     <tool file="maf/genebed_maf_to_fasta.xml" />
