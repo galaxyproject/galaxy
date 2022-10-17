@@ -48,7 +48,10 @@ class ToolRecommendations:
             LayerNormalization,
             MultiHeadAttention,
         )
-        from tensorflow.keras.models import Model, Sequential
+        from tensorflow.keras.models import (
+            Model,
+            Sequential,
+        )
 
         class TransformerBlock(Layer):
             def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
