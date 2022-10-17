@@ -17,6 +17,7 @@ from queue import (
 
 import galaxy.jobs
 from galaxy import model
+from galaxy.exceptions import ConfigurationError
 from galaxy.job_execution.output_collect import (
     default_exit_code_file,
     read_exit_code_from,
@@ -378,6 +379,15 @@ class BaseJobRunner:
         #      yield (dataset_assoc, dataset_assoc.dataset)
         #  I don't understand the reworking it backwards.  -John
 
+    def _verify_celery_config(self):
+        if not self.app.config.enable_celery_tasks:
+            raise ConfigurationError("Can't request celery metadata without enabling celery tasks")
+        celery_conf = self.app.config.celery_conf
+        if not celery_conf and not celery_conf["result_backend"]:
+            raise ConfigurationError(
+                "Celery backend not set. Please set `result_backend` on the `celery_conf` config option."
+            )
+
     def _handle_metadata_externally(self, job_wrapper: "MinimalJobWrapper", resolve_requirements: bool = False):
         """
         Set metadata externally. Used by the Pulsar job runner where this
@@ -396,10 +406,7 @@ class BaseJobRunner:
             )
             metadata_strategy = job_wrapper.metadata_strategy
             if "celery" in metadata_strategy:
-                if not self.app.config.enable_celery_tasks:
-                    raise Exception("CONFIG ERROR, can't request celery metadata without enabling celery tasks")
-                if not self.app.config.celery_backend == "rpc://localhost":
-                    raise Exception(f"Boo, wrong celery backend {self.app.config.celery_backend}")
+                self._verify_celery_config()
                 from galaxy.celery.tasks import set_job_metadata
 
                 # We're synchronously waiting for a task here. This means we have to have a result backend.

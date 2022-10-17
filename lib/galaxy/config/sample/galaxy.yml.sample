@@ -2400,16 +2400,24 @@ galaxy:
   # commented out line below).
   #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
+  # Configuration options passed to Celery.
+  # To refer to a task by name, use the template `galaxy.foo` where
+  # `foo` is the function name of the task defined in the
+  # galaxy.celery.tasks module.
+  # The `broker_url` option, if unset, defaults to the value of
+  # `amqp_internal_connection`. The `result_backend` option must be set
+  # if the `enable_celery_tasks` option is set.
+  # For details, see Celery documentation at
+  # https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+  #celery_conf:
+    task_routes:
+      galaxy.fetch_data: galaxy.external
+      galaxy.set_job_metadata: galaxy.external
+
   # Offload long-running tasks to a Celery task queue. Activate this
   # only if you have setup a Celery worker for Galaxy. For details, see
   # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
-
-  # Celery broker (if unset falls back to amqp_internal_connection).
-  #celery_broker: null
-
-  # If set, it will be the results backend for Celery.
-  #celery_backend: null
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific

@@ -41,8 +41,8 @@ class UsesCeleryTasks:
     def handle_galaxy_config_kwds(cls, config):
         config["enable_celery_tasks"] = True
         config["metadata_strategy"] = f'{config.get("metadata_strategy", "directory")}_celery'
-        config["celery_broker"] = CELERY_BROKER
-        config["celery_backend"] = CELERY_BACKEND
+        config.update({"celery_conf": {"broker_url": CELERY_BROKER}})
+        config.update({"celery_conf": {"result_backend": CELERY_BACKEND}})
 
     @pytest.fixture(autouse=True, scope="session")
     def _request_celery_app(self, celery_session_app, celery_config):

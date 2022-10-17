@@ -792,7 +792,7 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     if "interactivetools_proxy_host" not in galaxy_config:
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
     # Can't use in-memory celery broker, just fall back to sqlalchemy
-    galaxy_config.pop("celery_broker", None)
+    galaxy_config.update({"celery_conf": {"broker_url": None}})
     config = {
         "gravity": {
             "gunicorn": {"bind": f"localhost:{port}", "preload": "false"},
