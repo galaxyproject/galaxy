@@ -38,9 +38,9 @@ The provided sample configuration file has numerous commented out examples and s
 of documentation on configuring these plugins.
 
 It is relatively straight-forward to add a custom authenticator to the framework. In this example, we will demonstrate 
-a new authenticator based on LDAP authenticator that performs custom checks besides password verification for 
-authenticating a user to Galaxy instance. First, we will create authenticator source file in directory 
-`lib/galaxy/auth/providers/ldap_custom.py` with following content
+a new authenticator based on the LDAP authenticator that performs custom checks besides password verification for 
+authenticating a user on the Galaxy instance. First, we will create an authenticator source file
+`lib/galaxy/auth/providers/ldap_custom.py` with the following content:
 
 ```
 import logging
@@ -76,15 +76,15 @@ class LDAPCustom(LDAP):
             white_listed_ips = options.get("white-listed-ips")
             # Convert them into a list
             white_listed_ips = white_listed_ips.split(' ')
-            # Convert user remote IP into IPv4Network object
-            user_remote_ip_obj = ipaddress.IPv4Network(user_remote_ip)
+            # Convert user remote IP into IPv4Address object
+            user_remote_ip_obj = ipaddress.IPv4Address(user_remote_ip)
             white_listed_ip_objs = [ipaddress.IPv4Network(ip) for ip in white_listed_ip_objs]
             # Make sure white_listed_ip_objs is not empty
             if white_listed_ip_objs:
                 # Effectively we are checking if remote ip network subnet
                 # is subset of allowed subnets. If at least one subnet matches,
                 # we allow user to authenticate
-                allowed = any([user_remote_ip_obj.subnet_of(sn) for sn in white_listed_ip_objs])
+                allowed = any(user_remote_ip_obj in sn for sn in white_listed_ip_objs)
                 if not allowed:
                     log.info("LDAP authentication: User remote IP is not listed in whitelisted IPs")
                     return failure_mode, "", ""
