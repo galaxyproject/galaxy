@@ -4,7 +4,7 @@ from ..base.twilltestcase import (
 )
 
 
-class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
+class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     """Test uninstalling and reinstalling a basic repository."""
 
     def test_0000_initiate_users(self):

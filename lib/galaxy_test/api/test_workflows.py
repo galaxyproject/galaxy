@@ -165,6 +165,7 @@ input1:
 
 class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
     # TODO: Find a new file for this class.
+    dataset_populator: DatasetPopulator
 
     def setUp(self):
         super().setUp()
@@ -278,7 +279,7 @@ input1:
             assert details_dataset_new_col["metadata_startCol"] == 3
 
 
-class WorkflowsSharingApiTestCase(ApiTestCase, SharingApiTests):
+class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
 
     api_name = "workflows"
 
@@ -308,7 +309,9 @@ class WorkflowsSharingApiTestCase(ApiTestCase, SharingApiTests):
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
+class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
+    dataset_populator: DatasetPopulator
+
     def test_show_valid(self):
         workflow_id = self.workflow_populator.simple_workflow("dummy")
         workflow_id = self.workflow_populator.simple_workflow("test_regular")
@@ -3699,7 +3702,7 @@ outer_input:
 
     def test_workflow_stability(self):
         # Run this index stability test with following command:
-        #   ./run_tests.sh test/api/test_workflows.py:WorkflowsApiTestCase.test_workflow_stability
+        #   ./run_tests.sh test/api/test_workflows.py:TestWorkflowsApi.test_workflow_stability
         num_tests = 1
         for workflow_file in ["test_workflow_topoambigouity", "test_workflow_topoambigouity_auto_laidout"]:
             workflow = self.workflow_populator.load_workflow_from_resource(workflow_file)
@@ -5585,7 +5588,7 @@ input_c:
         return invocation_ids
 
 
-class AdminWorkflowsApiTestCase(BaseWorkflowsApiTestCase):
+class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
 
     require_admin_user = True
 

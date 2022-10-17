@@ -13,7 +13,7 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class FolderContentsApiTestCase(ApiTestCase):
+class TestFolderContentsApi(ApiTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -338,7 +338,7 @@ class FolderContentsApiTestCase(ApiTestCase):
         assert len(contents) == expected_contents_count, "Expected number of contents doesn't match"
         return index_response
 
-    def _create_folder_in_library(self, name: str) -> Any:
+    def _create_folder_in_library(self, name: str) -> str:
         root_folder_id = self.library["root_folder_id"]
         return self._create_subfolder_in(root_folder_id, name)
 

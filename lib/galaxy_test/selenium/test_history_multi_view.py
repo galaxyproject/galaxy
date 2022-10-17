@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class HistoryMultiViewTestCase(SeleniumTestCase):
+class TestHistoryMultiView(SeleniumTestCase):
 
     ensure_registered = True
 

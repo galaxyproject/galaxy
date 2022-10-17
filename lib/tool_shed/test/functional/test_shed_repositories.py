@@ -5,7 +5,7 @@ from ..base.api import ShedApiTestCase
 COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
 
 
-class ShedRepositoriesApiTestCase(ShedApiTestCase):
+class TestShedRepositoriesApi(ShedApiTestCase):
     def test_create(self):
         populator = self.populator
         category_id = populator.new_category(prefix="testcreate").id

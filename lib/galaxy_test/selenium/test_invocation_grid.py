@@ -7,7 +7,7 @@ from .framework import (
 )
 
 
-class InvocationGridSeleniumTestCase(SeleniumTestCase, TestsGalaxyPagers):
+class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
 
     ensure_registered = True
 

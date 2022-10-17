@@ -22,7 +22,7 @@ TEST_DBKEY_TEXT = "Honeybee (Apis mellifera): apiMel3 (apiMel3)"
 FIRST_HID = 1
 
 
-class HistoryDatasetStateTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
     ensure_registered = True
 
     @selenium_test

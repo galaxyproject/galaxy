@@ -4,7 +4,7 @@ from ..base.twilltestcase import (
 )
 
 
-class BasicToolShedFeatures(ShedTwillTestCase):
+class TestBasicToolShedFeatures(ShedTwillTestCase):
     """Test installing a basic repository."""
 
     def test_0000_initiate_users(self):

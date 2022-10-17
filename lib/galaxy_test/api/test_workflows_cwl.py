@@ -3,7 +3,7 @@ from galaxy_test.api.test_workflows import BaseWorkflowsApiTestCase
 from galaxy_test.base.populators import CwlPopulator
 
 
-class BaseCwlWorkflowTestCase(BaseWorkflowsApiTestCase):
+class BaseCwlWorkflowsApiTestCase(BaseWorkflowsApiTestCase):
     allow_path_paste = True
     require_admin_user = True
 

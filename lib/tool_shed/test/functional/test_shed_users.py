@@ -11,7 +11,7 @@ from ..base.api import (
 from ..base.api_util import get_admin_api_key
 
 
-class ShedUsersApiTestCase(ShedApiTestCase):
+class TestShedUsersApi(ShedApiTestCase):
     def test_create_requires_admin(self):
         url = urljoin(self.url, "api/users")
         response = post(url)

@@ -16,7 +16,7 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 running_standalone = False
 
 
-class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
+class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     """Test uninstalling and reinstalling a repository with repository dependency revisions."""
 
     def test_0000_initiate_users(self):

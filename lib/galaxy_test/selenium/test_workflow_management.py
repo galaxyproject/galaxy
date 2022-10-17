@@ -10,7 +10,7 @@ from .framework import (
 )
 
 
-class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAssertions):
+class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAssertions):
 
     ensure_registered = True
 

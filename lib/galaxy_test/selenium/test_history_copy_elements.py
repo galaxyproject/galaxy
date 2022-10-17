@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class HistoryCopyElementsTestCase(SeleniumTestCase):
+class TestHistoryCopyElements(SeleniumTestCase):
 
     ensure_registered = True
 

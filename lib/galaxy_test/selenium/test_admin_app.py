@@ -5,7 +5,7 @@ from .framework import (
 )
 
 
-class AdminAppTestCase(SeleniumTestCase):
+class TestAdminApp(SeleniumTestCase):
 
     requires_admin = True
 

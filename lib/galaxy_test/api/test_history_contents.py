@@ -23,7 +23,9 @@ TEST_HASH_VALUE = "moocowpretendthisisahas"
 
 
 # TODO: Test anonymous access.
-class HistoryContentsApiTestCase(ApiTestCase):
+class TestHistoryContentsApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -900,7 +902,7 @@ class HistoryContentsApiTestCase(ApiTestCase):
         assert sorted(collection["elements_datatypes"]) == sorted(expected_datatypes)
 
 
-class HistoryContentsApiNearTestCase(ApiTestCase):
+class TestHistoryContentsApiNear(ApiTestCase):
     """
     Test the /api/histories/{history_id}/contents/{direction}/{hid}/{limit} endpoint.
     """
@@ -1013,7 +1015,7 @@ class HistoryContentsApiNearTestCase(ApiTestCase):
             assert result[0]["hid"] == 8  # hid + 1
 
 
-class HistoryContentsApiBulkOperationTestCase(ApiTestCase):
+class TestHistoryContentsApiBulkOperation(ApiTestCase):
     """
     Test the `/api/histories/{history_id}/contents/bulk` endpoint and the new
     `count` special view for `/api/histories/{history_id}/contents?v=dev`

@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class NavigatesGalaxySeleniumTestCase(SeleniumTestCase):
+class TestNavigatesGalaxySelenium(SeleniumTestCase):
     """Test the Selenium test framework itself.
 
     Unlike the others test cases in this module, this test case tests the

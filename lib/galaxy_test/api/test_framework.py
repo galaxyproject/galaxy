@@ -3,7 +3,7 @@
 from ._framework import ApiTestCase
 
 
-class ApiFrameworkTestCase(ApiTestCase):
+class TestApiFramework(ApiTestCase):
     def test_default_xframe_options(self):
         get_response = self._get("licenses")
         assert get_response.headers["x-frame-options"] == "SAMEORIGIN"

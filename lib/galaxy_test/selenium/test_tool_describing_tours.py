@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class ToolDescribingToursTestCase(SeleniumTestCase):
+class TestToolDescribingTours(SeleniumTestCase):
     def setUp(self):
         super().setUp()
         self.home()

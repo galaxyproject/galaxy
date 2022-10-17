@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class SignOutTestCase(SeleniumTestCase):
+class TestSignOut(SeleniumTestCase):
     @selenium_test
     def test_sign_out(self):
         email = self._get_random_email()

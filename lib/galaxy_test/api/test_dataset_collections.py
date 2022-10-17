@@ -11,7 +11,7 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class DatasetCollectionApiTestCase(ApiTestCase):
+class TestDatasetCollectionsApi(ApiTestCase):
     history_id: str
 
     def setUp(self):

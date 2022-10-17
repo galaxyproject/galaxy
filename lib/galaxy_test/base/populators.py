@@ -459,7 +459,7 @@ class BaseDatasetPopulator(BasePopulator):
         outputs = fetch_response.json()["outputs"]
         return outputs
 
-    def fetch_hda(self, history_id, item: Dict[str, Any], wait: bool = True) -> Dict[str, Any]:
+    def fetch_hda(self, history_id: str, item: Dict[str, Any], wait: bool = True) -> Dict[str, Any]:
         hdas = self.fetch_hdas(history_id, [item], wait=wait)
         assert len(hdas) == 1
         return hdas[0]
@@ -2424,7 +2424,7 @@ class BaseDatasetCollectionPopulator:
             history_id=history_id, collection=pairs, collection_type="list:paired", name=name
         )
 
-    def nested_collection_identifiers(self, history_id, collection_type):
+    def nested_collection_identifiers(self, history_id: str, collection_type):
         rank_types = list(reversed(collection_type.split(":")))
         assert len(rank_types) > 0
         rank_type_0 = rank_types[0]
@@ -2485,7 +2485,7 @@ class BaseDatasetCollectionPopulator:
             ],
         )
 
-    def create_list_of_list_in_history(self, history_id, **kwds):
+    def create_list_of_list_in_history(self, history_id: str, **kwds):
         # create_nested_collection will generate nested collection from just datasets,
         # this function uses recursive generation of history hdcas.
         collection_type = kwds.pop("collection_type", "list:list")
@@ -2503,34 +2503,34 @@ class BaseDatasetCollectionPopulator:
             list = response.json()
         return response
 
-    def create_pair_in_history(self, history_id, wait=False, **kwds):
+    def create_pair_in_history(self, history_id: str, wait: bool = False, **kwds):
         payload = self.create_pair_payload(history_id, instance_type="history", **kwds)
         return self.__create(payload, wait=wait)
 
-    def create_list_in_history(self, history_id, wait=False, **kwds):
+    def create_list_in_history(self, history_id: str, wait: bool = False, **kwds):
         payload = self.create_list_payload(history_id, instance_type="history", **kwds)
         return self.__create(payload, wait=wait)
 
-    def upload_collection(self, history_id, collection_type, elements, wait=False, **kwds):
+    def upload_collection(self, history_id: str, collection_type, elements, wait: bool = False, **kwds):
         payload = self.__create_payload_fetch(history_id, collection_type, contents=elements, **kwds)
         return self.__create(payload, wait=wait)
 
-    def create_list_payload(self, history_id, **kwds):
+    def create_list_payload(self, history_id: str, **kwds):
         return self.__create_payload(history_id, identifiers_func=self.list_identifiers, collection_type="list", **kwds)
 
-    def create_pair_payload(self, history_id, **kwds):
+    def create_pair_payload(self, history_id: str, **kwds):
         return self.__create_payload(
             history_id, identifiers_func=self.pair_identifiers, collection_type="paired", **kwds
         )
 
-    def __create_payload(self, *args, **kwds):
+    def __create_payload(self, history_id: str, *args, **kwds):
         direct_upload = kwds.pop("direct_upload", True)
         if direct_upload:
-            return self.__create_payload_fetch(*args, **kwds)
+            return self.__create_payload_fetch(history_id, *args, **kwds)
         else:
-            return self.__create_payload_collection(*args, **kwds)
+            return self.__create_payload_collection(history_id, *args, **kwds)
 
-    def __create_payload_fetch(self, history_id, collection_type, **kwds):
+    def __create_payload_fetch(self, history_id: str, collection_type, **kwds):
         contents = None
         if "contents" in kwds:
             contents = kwds["contents"]
@@ -2601,7 +2601,7 @@ class BaseDatasetCollectionPopulator:
         )
         return dataset_collection
 
-    def __create_payload_collection(self, history_id, identifiers_func, collection_type, **kwds):
+    def __create_payload_collection(self, history_id: str, identifiers_func, collection_type, **kwds):
         contents = None
         if "contents" in kwds:
             contents = kwds["contents"]
@@ -2616,7 +2616,7 @@ class BaseDatasetCollectionPopulator:
         payload = dict(history_id=history_id, collection_type=collection_type, **kwds)
         return payload
 
-    def pair_identifiers(self, history_id, contents=None):
+    def pair_identifiers(self, history_id: str, contents=None):
         hda1, hda2 = self.__datasets(history_id, count=2, contents=contents)
 
         element_identifiers = [
@@ -2625,7 +2625,7 @@ class BaseDatasetCollectionPopulator:
         ]
         return element_identifiers
 
-    def list_identifiers(self, history_id, contents=None):
+    def list_identifiers(self, history_id: str, contents=None):
         count = 3 if contents is None else len(contents)
         # Contents can be a list of strings (with name auto-assigned here) or a list of
         # 2-tuples of form (name, dataset_content).
@@ -2653,7 +2653,7 @@ class BaseDatasetCollectionPopulator:
         else:
             return self.dataset_populator.fetch(payload, wait=wait)
 
-    def __datasets(self, history_id, count, contents=None):
+    def __datasets(self, history_id: str, count: int, contents=None):
         datasets = []
         for i in range(count):
             new_kwds = {}

@@ -10,7 +10,7 @@ from .framework import (
 )
 
 
-class HistoryPanelCollectionsTestCase(SeleniumTestCase):
+class TestHistoryPanelCollections(SeleniumTestCase):
 
     ensure_registered = True
 

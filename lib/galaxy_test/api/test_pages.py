@@ -21,7 +21,9 @@ from galaxy_test.base.populators import (
 )
 
 
-class BasePageApiTestCase(ApiTestCase):
+class BasePagesApiTestCase(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -41,7 +43,7 @@ class BasePageApiTestCase(ApiTestCase):
         return self.dataset_populator.new_page_payload(**kwds)
 
 
-class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
+class TestPagesApi(BasePagesApiTestCase, SharingApiTests):
 
     api_name = "pages"
 
