@@ -3,8 +3,14 @@ import { ref, reactive, inject } from "vue";
 import { BModal } from "bootstrap-vue";
 import axios from "axios";
 import { Toast } from "ui/toast";
+import { safePath } from "utils/redirect";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+library.add(faSpinner);
 
 const sendBCOModal = ref(null);
+const generatingBCO = ref(false);
 
 const form = reactive({
     fetch: "",
@@ -35,17 +41,44 @@ function handleError(err) {
     Toast.error(`Failed to send BCO. ${err}`);
 }
 
-/**
- * TODO: replace with `prepare_download` endpoint when https://github.com/galaxyproject/galaxy/pull/14620 is ready
- */
 async function generateBcoContent() {
     try {
-        const resp = await axios.get(`/api/invocations/${invocationId}/biocompute/`);
-        return resp.data;
+        generatingBCO.value = true;
+        const data = {
+            model_store_format: "bco.json",
+            include_files: false,
+            include_deleted: false,
+            include_hidden: false,
+        };
+        const response = await axios.post(safePath(`/api/invocations/${invocationId}/prepare_store_download`), data);
+        const storage_request_id = response.data.storage_request_id;
+        const pollUrl = safePath(`/api/short_term_storage/${storage_request_id}/ready`);
+        const resultUrl = safePath(`/api/short_term_storage/${storage_request_id}`);
+        let pollingResponse = await axios.get(pollUrl);
+        let maxRetries = 120;
+        while (!pollingResponse.data && maxRetries) {
+            await wait();
+            pollingResponse = await axios.get(pollUrl);
+            maxRetries -= 1;
+        }
+        if (!pollingResponse.data) {
+            throw "Timeout waiting for BioCompute Object export result!";
+        } else {
+            const resultResponse = await axios.get(resultUrl);
+            return resultResponse.data;
+        }
     } catch (err) {
         handleError(err);
+    } finally {
+        generatingBCO.value = false;
     }
 }
+
+const wait = function (ms = 2000) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+};
 
 async function sendBco(bcoContent) {
     const bcoData = {
@@ -72,8 +105,8 @@ async function sendBco(bcoContent) {
 }
 
 async function submitForm() {
-    hideModal();
     const bcoContent = await generateBcoContent();
+    hideModal();
     await sendBco(bcoContent);
     resetForm();
 }
@@ -140,7 +173,11 @@ defineExpose({ showModal });
                     </label>
                 </div>
                 <div class="form-group">
-                    <button class="btn btn-primary">{{ "Submit" | localize }}</button>
+                    <div v-if="generatingBCO">
+                        <font-awesome-icon icon="spinner" spin />
+                        Generating BCO please wait...
+                    </div>
+                    <button v-else class="btn btn-primary">{{ "Submit" | localize }}</button>
                 </div>
             </form>
         </div>
