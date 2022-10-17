@@ -19,7 +19,7 @@ class AuthProvider(metaclass=abc.ABCMeta):
         Check that the user credentials are correct.
 
         Besides checking password, it is possible to perform custom checks
-        like filtering client remote IP address using request argument. We can
+        like filtering client remote IP address using the request argument. We can
         get the remote IP address of the client using request.remote_addr and
         check if the IP is in whitelisted IPs and deny the authentication if
         it is not.
@@ -51,7 +51,7 @@ class AuthProvider(metaclass=abc.ABCMeta):
         of a username.
 
         Besides checking password, it is possible to perform custom checks
-        like filtering client remote IP address using request argument. We can
+        like filtering client remote IP address using the request argument. We can
         get the remote IP address of the client using request.remote_addr and
         check if the IP is in whitelisted IPs and deny the authentication if
         it is not.
