@@ -12,7 +12,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
     def build_repository_containers(
         self,
         repository,
-        invalid_tools,
         missing_repository_dependencies,
         missing_tool_dependencies,
         readme_files_dict,
@@ -42,12 +41,6 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
             changeset_revision = None
         try:
             folder_id = 0
-            # Invalid tools container.
-            if invalid_tools:
-                folder_id, invalid_tools_root_folder = self.build_invalid_tools_folder(
-                    folder_id, invalid_tools, changeset_revision, repository=repository, label="Invalid tools"
-                )
-                containers_dict["invalid_tools"] = invalid_tools_root_folder
             # Readme files container.
             if readme_files_dict:
                 folder_id, readme_files_root_folder = self.build_readme_files_folder(folder_id, readme_files_dict)

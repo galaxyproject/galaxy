@@ -266,8 +266,6 @@ class DependencyDisplayer:
         """
         metadata = repository.metadata_
         if metadata:
-            # Handle invalid tools.
-            invalid_tools = metadata.get("invalid_tools", None)
             # Handle repository dependencies.
             (
                 installed_repository_dependencies,
@@ -302,7 +300,6 @@ class DependencyDisplayer:
             gucm = GalaxyUtilityContainerManager(self.app)
             containers_dict = gucm.build_repository_containers(
                 repository=repository,
-                invalid_tools=invalid_tools,
                 missing_repository_dependencies=missing_repository_dependencies,
                 missing_tool_dependencies=missing_tool_dependencies,
                 readme_files_dict=None,
