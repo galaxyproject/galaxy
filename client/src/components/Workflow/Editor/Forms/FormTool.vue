@@ -34,6 +34,7 @@
                         :errors="errors"
                         text-enable="Set in Advance"
                         text-disable="Set at Runtime"
+                        :workflow-building-mode="true"
                         @onChange="onChange" />
                 </ToolCardSection>
                 <ToolCardSection title="Additional Options">
