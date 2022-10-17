@@ -75,6 +75,7 @@
                 :collapsed-enable-icon="collapsedEnableIcon"
                 :collapsed-disable-text="collapsedDisableText"
                 :collapsed-disable-icon="collapsedDisableIcon"
+                :workflow-building-mode="workflowBuildingMode"
                 @change="onChange" />
         </div>
     </div>
@@ -137,6 +138,10 @@ export default {
         onChangeForm: {
             type: Function,
             required: true,
+        },
+        workflowBuildingMode: {
+            type: Boolean,
+            default: false,
         },
     },
     methods: {
