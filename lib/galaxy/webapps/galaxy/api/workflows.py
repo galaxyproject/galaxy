@@ -43,6 +43,8 @@ from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
     WorkflowCreateOptions,
+    WorkflowContentsManager,
+    WorkflowsManager,
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
@@ -1240,6 +1242,8 @@ SkipStepCountsQueryParam: bool = Query(
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
     invocations_service: InvocationsService = depends(InvocationsService)
+    workflows_manager: WorkflowsManager = depends(WorkflowsManager)
+    workflow_contents_manager: WorkflowContentsManager = depends(WorkflowContentsManager)
 
     @router.get(
         "/api/workflows",
@@ -1392,7 +1396,7 @@ class FastAPIWorkflows:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-        payload: WriteStoreToPayload = Body(...),
+        payload: WriteInvocationStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(
             trans,
@@ -1410,11 +1414,11 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_delete = self.service._workflows_manager.get_stored_workflow(trans, workflow_id)
+        workflow_to_delete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
         if workflow_to_delete.user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException()
-        self.service._workflows_manager.delete(workflow_to_delete)
-        return self.service._workflow_contents_manager.workflow_to_dict(trans, workflow_to_delete, style="instance")
+        self.workflows_manager.delete(workflow_to_delete)
+        return self.workflow_contents_manager.workflow_to_dict(trans, workflow_to_delete, style="instance")
 
     @router.post(
         "/api/workflows/{workflow_id}/undelete",
@@ -1425,11 +1429,11 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_undelete = self.service._workflows_manager.get_stored_workflow(trans, workflow_id)
+        workflow_to_undelete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
         if workflow_to_undelete.user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException()
-        self.service._workflows_manager.undelete(workflow_to_undelete)
-        return self.service._workflow_contents_manager.workflow_to_dict(trans, workflow_to_undelete, style="instance")
+        self.workflows_manager.undelete(workflow_to_undelete)
+        return self.workflow_contents_manager.workflow_to_dict(trans, workflow_to_undelete, style="instance")
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(
