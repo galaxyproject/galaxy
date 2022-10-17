@@ -12,11 +12,18 @@ from galaxy.exceptions import ConfigDoesNotAllowException
 from galaxy.tool_shed.galaxy_install import install_manager
 from galaxy.tool_shed.galaxy_install.repository_dependencies import repository_dependency_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
+from galaxy.tool_shed.util import dependency_display
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
     get_absolute_path_to_file_in_repository,
     get_installed_tool_shed_repository,
     get_tool_shed_repository_by_id,
+)
+from galaxy.tool_shed.util.shed_util_common import (
+    clean_dependency_relationships,
+    get_ctx_rev,
+    get_tool_panel_config_tool_path_install_dir,
+    have_shed_tool_conf_for_install,
 )
 from galaxy.tool_util.deps import views
 from galaxy.util import unicodify
@@ -25,9 +32,12 @@ from galaxy.util.tool_shed import (
     encoding_util,
 )
 from galaxy.web.form_builder import CheckboxField
-from galaxy.tool_shed.util import dependency_display
-from tool_shed.util import shed_util_common as suc
 from tool_shed.util.repository_util import create_repo_info_dict
+from tool_shed.util.shed_util_common import (
+    get_repository_type_from_tool_shed,
+    get_requirements_from_repository,
+    get_tool_dependency_definition_metadata_from_tool_shed,
+)
 from tool_shed.util.web_util import escape
 from .admin import AdminGalaxy
 
@@ -153,7 +163,7 @@ class AdminToolshed(AdminGalaxy):
         tool_shed_url = common_util.get_tool_shed_url_from_tool_shed_registry(trans.app, str(repository.tool_shed))
         description = kwd.get("description", repository.description)
         status = "ok"
-        _, tool_path, _ = suc.get_tool_panel_config_tool_path_install_dir(trans.app, repository)
+        _, tool_path, _ = get_tool_panel_config_tool_path_install_dir(trans.app, repository)
         if repository.in_error_state:
             message = "This repository is not installed correctly (see the <b>Repository installation error</b> below).  Choose "
             message += "<b>Reset to install</b> from the <b>Repository Actions</b> menu, correct problems if necessary and try "
@@ -173,7 +183,7 @@ class AdminToolshed(AdminGalaxy):
             repository=repository,
         )
         view = views.DependencyResolversView(self.app)
-        tool_requirements_d = suc.get_requirements_from_repository(repository)
+        tool_requirements_d = get_requirements_from_repository(repository)
         requirements_status = view.get_requirements_status(tool_requirements_d, repository.installed_tool_dependencies)
         management_dict = {
             "status": status,
@@ -206,9 +216,9 @@ class AdminToolshed(AdminGalaxy):
             install_repository_dependencies = CheckboxField.is_checked(kwd.get("install_repository_dependencies", ""))
             install_tool_dependencies = CheckboxField.is_checked(kwd.get("install_tool_dependencies", ""))
             install_resolver_dependencies = CheckboxField.is_checked(kwd.get("install_resolver_dependencies", ""))
-            if not suc.have_shed_tool_conf_for_install(trans.app):
+            if not have_shed_tool_conf_for_install(trans.app):
                 raise Exception("No valid shed tool configuration file available, please configure one")
-            shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(
+            shed_tool_conf, tool_path, relative_install_dir = get_tool_panel_config_tool_path_install_dir(
                 trans.app, tool_shed_repository
             )
             repository_clone_url = common_util.generate_clone_url_for_installed_repository(
@@ -240,19 +250,19 @@ class AdminToolshed(AdminGalaxy):
                     # Just in case the tool_section.id differs from tool_panel_section_id, which it shouldn't...
                     tool_panel_section_id = str(tool_section.id)
             if tool_shed_repository.status == trans.install_model.ToolShedRepository.installation_status.UNINSTALLED:
-                repository_type = suc.get_repository_type_from_tool_shed(
+                repository_type = get_repository_type_from_tool_shed(
                     trans.app, tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner
                 )
                 if repository_type == rt_util.TOOL_DEPENDENCY_DEFINITION:
                     # Repositories of type tool_dependency_definition must get the latest
                     # metadata from the Tool Shed since they have only a single installable
                     # revision.
-                    raw_text = suc.get_tool_dependency_definition_metadata_from_tool_shed(
+                    raw_text = get_tool_dependency_definition_metadata_from_tool_shed(
                         trans.app, tool_shed_url, tool_shed_repository.name, tool_shed_repository.owner
                     )
                     new_meta = json.loads(raw_text)
                     # Clean up old repository dependency and tool dependency relationships.
-                    suc.clean_dependency_relationships(trans, new_meta, tool_shed_repository, tool_shed_url)
+                    clean_dependency_relationships(trans, new_meta, tool_shed_repository, tool_shed_url)
                 # The repository's status must be updated from 'Uninstalled' to 'New' when initiating reinstall
                 # so the repository_installation_updater will function.
                 tool_shed_repository = create_or_update_tool_shed_repository(
@@ -268,7 +278,7 @@ class AdminToolshed(AdminGalaxy):
                     owner=tool_shed_repository.owner,
                     dist_to_shed=tool_shed_repository.dist_to_shed,
                 )
-            ctx_rev = suc.get_ctx_rev(
+            ctx_rev = get_ctx_rev(
                 trans.app,
                 tool_shed_url,
                 tool_shed_repository.name,
