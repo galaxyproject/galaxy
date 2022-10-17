@@ -14,8 +14,8 @@ from ..test_datatype_upload import (
     UploadTestDatatypeDataTestCase,
 )
 
-REFRESH_TIME = 30
-CONNECTION_POOL_MONITOR_INTERVAL = 60
+REFRESH_TIME = 3
+CONNECTION_POOL_MONITOR_INTERVAL = 6
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 IRODS_OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_HOST", "localhost")
 IRODS_OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PORT", 1247))
