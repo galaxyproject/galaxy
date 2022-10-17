@@ -3674,7 +3674,7 @@ class FilterFromFileTool(DatabaseOperationTool):
 
 
 class DuplicateFileToCollectionTool(DatabaseOperationTool):
-    tool_type = 'duplicate_file_to_collection'
+    tool_type = "duplicate_file_to_collection"
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]
