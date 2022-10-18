@@ -404,7 +404,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         repository = self.test_db_util.get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(repository)
+        self._uninstall_repository(repository)
         self._assert_has_no_installed_repos_with_names(repository.name)
         self.test_db_util.ga_refresh(repository)
         self.check_galaxy_repository_tool_panel_section(repository, "emboss_5_0050")
