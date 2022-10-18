@@ -112,7 +112,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             install_repository_dependencies=True,
             new_tool_panel_section_label="column_maker",
         )
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         self._assert_has_installed_repos_with_names("convert_chars_1085", "column_maker_1085")
@@ -120,7 +120,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0025_uninstall_column_repository(self):
         """uninstall column_maker, verify same section"""
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self._uninstall_repository(installed_column_repository)
@@ -128,7 +128,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         self.check_galaxy_repository_tool_panel_section(installed_column_repository, "column_maker")
 
     def test_0030_uninstall_convert_repository(self):
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         self._uninstall_repository(installed_convert_repository)
@@ -137,7 +137,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0035_reinstall_column_repository(self):
         """reinstall column_maker into new section 'new_column_maker' (no_changes = false), no dependencies"""
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.reinstall_repository_api(
@@ -150,7 +150,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0040_reinstall_convert_repository(self):
         """reinstall convert_chars into new section 'new_convert_chars' (no_changes = false), no dependencies"""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         self.reinstall_repository_api(
@@ -166,9 +166,9 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     # https://jenkins.galaxyproject.org/job/docker-toolshed/5198/
     # def test_0045_uninstall_and_verify_tool_panel_sections( self ):
     #    '''uninstall both and verify tool panel sections'''
-    #    installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner( convert_repository_name,
+    #    installed_convert_repository = self._get_installed_repository_by_name_owner( convert_repository_name,
     #                                                                                        common.test_user_1_name )
-    #    installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name,
+    #    installed_column_repository = self._get_installed_repository_by_name_owner( column_repository_name,
     #                                                                                        common.test_user_1_name )
     #    self._uninstall_repository( installed_convert_repository )
     #    self._uninstall_repository( installed_column_repository )

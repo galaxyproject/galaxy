@@ -193,12 +193,10 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         prior_installation_required attribute set. Confirm that this resulted in package_numpy_1_7_0170 being installed before
         package_matplotlib_1_2_0170.
         """
-        matplotlib_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        matplotlib_repository = self._get_installed_repository_by_name_owner(
             matplotlib_repository_name, common.test_user_1_name
         )
-        numpy_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            numpy_repository_name, common.test_user_1_name
-        )
+        numpy_repository = self._get_installed_repository_by_name_owner(numpy_repository_name, common.test_user_1_name)
         assert (
             matplotlib_repository.update_time > numpy_repository.update_time
         ), "Error: package_numpy_1_7_0170 shows a later update time than package_matplotlib_1_2_0170"

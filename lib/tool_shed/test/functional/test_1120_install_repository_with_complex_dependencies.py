@@ -269,16 +269,16 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0050_verify_installed_repositories(self):
         """Verify that the installed repositories are displayed properly."""
-        base_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        base_repository = self._get_installed_repository_by_name_owner(
             bwa_base_repository_name, common.test_user_1_name
         )
-        tool_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        tool_repository = self._get_installed_repository_by_name_owner(
             bwa_package_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, "bwa_base_repository_0100", base_repository.installed_changeset_revision
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, "package_bwa_0_5_9_0100", tool_repository.installed_changeset_revision
         )
         self._assert_has_installed_repository_dependency(base_repository, "package_bwa_0_5_9_0100")

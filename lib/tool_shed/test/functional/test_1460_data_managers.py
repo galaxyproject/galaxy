@@ -82,9 +82,7 @@ class TestDataManagers(ShedTwillTestCase):
 
     def test_0030_verify_data_manager_tool(self):
         """Verify that the data_manager_1460 repository is installed and Data Manager tool appears in list in Galaxy."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            data_manager_repository_name, common.test_user_1_name
-        )
+        repository = self._get_installed_repository_by_name_owner(data_manager_repository_name, common.test_user_1_name)
         strings_displayed = ["status", "jobs", data_manager_name]
         self.display_installed_jobs_list_page(
             repository, data_manager_names=data_manager_name, strings_displayed=strings_displayed

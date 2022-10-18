@@ -98,10 +98,10 @@ class TestToolWithRepositoryDependencies(ShedTwillTestCase):
             install_tool_dependencies=False,
             new_tool_panel_section_label="test_1020",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, emboss_repository_name, installed_repository.installed_changeset_revision
         )
         self._assert_has_valid_tool_with_name("antigenic")
@@ -113,14 +113,14 @@ class TestToolWithRepositoryDependencies(ShedTwillTestCase):
 
     def test_0025_deactivate_datatypes_repository(self):
         """Deactivate the emboss_datatypes repository without removing it from disk."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             column_maker_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_repository)
 
     def test_0030_reactivate_datatypes_repository(self):
         """Reactivate the datatypes repository and verify that the datatypes are again present."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             column_maker_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_repository)
