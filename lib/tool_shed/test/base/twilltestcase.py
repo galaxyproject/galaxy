@@ -559,7 +559,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_jobs_list_page(
-        self, installed_repository, data_manager_names=None, strings_displayed=None, strings_not_displayed=None
+        self, installed_repository, data_manager_names=None, strings_displayed=None
     ):
         data_managers = installed_repository.metadata_.get("data_manager", {}).get("data_managers", {})
         if data_manager_names:
@@ -574,7 +574,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         for data_manager_name in data_manager_names:
             params = {"id": data_managers[data_manager_name]["guid"]}
             self.visit_galaxy_url("/data_manager/jobs_list", params=params)
-            self.check_for_strings(strings_displayed, strings_not_displayed)
+            self.check_for_strings(strings_displayed)
 
     def display_installed_repository_manage_json(self, installed_repository):
         params = {"id": self.security.encode_id(installed_repository.id)}
