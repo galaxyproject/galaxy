@@ -242,7 +242,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_column_repository)
+        self._uninstall_repository(installed_column_repository)
         self._assert_has_missing_dependency(installed_convert_repository, "column_maker_0080")
 
     def test_0065_reinstall_column_repository(self):
