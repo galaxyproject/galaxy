@@ -1412,7 +1412,8 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_delete = self.workflows_manager.get_stored_workflow(trans, workflow_id, check_ownership=True)
+        workflow_to_delete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
+        self.workflows_manager.check_security(trans, workflow_to_delete)
         self.workflows_manager.delete(workflow_to_delete)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -1425,7 +1426,8 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_undelete = self.workflows_manager.get_stored_workflow(trans, workflow_id, check_ownership=True)
+        workflow_to_undelete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
+        self.workflows_manager.check_security(trans, workflow_to_undelete)
         self.workflows_manager.undelete(workflow_to_undelete)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
