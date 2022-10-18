@@ -74,9 +74,7 @@ class TestUpdateManager(ShedTwillTestCase):
         self._install_repository(
             repository_name, common.test_user_1_name, category_name, new_tool_panel_section_label="test_1410"
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
         self._assert_has_installed_repos_with_names(repository_name)
         self._assert_has_valid_tool_with_name("Filter")
         self._assert_repo_has_tool_with_id(installed_repository, "Filter1")
@@ -111,9 +109,7 @@ class TestUpdateManager(ShedTwillTestCase):
         """
         # Wait 3 seconds, just to be sure we're past hours_between_check.
         time.sleep(3)
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
         response = self.update_installed_repository(installed_repository)
         assert response["status"] == "ok"
         assert "has been updated" in response["message"]

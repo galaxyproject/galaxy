@@ -139,8 +139,6 @@ class TestRepairRepository(ShedTwillTestCase):
 
         This is step 2 - Uninstall the filter_1430 repository.
         """
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filter_1430", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("filter_1430", common.test_user_1_name)
         self._uninstall_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names("filter_1430")

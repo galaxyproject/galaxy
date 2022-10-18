@@ -147,10 +147,10 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0030_verify_installation_order(self):
         """Verify that convert_chars_0150 was installed before column_maker_0150."""
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         # Column maker was selected for installation, so convert chars should have been installed first, as reflected by the update_time field.

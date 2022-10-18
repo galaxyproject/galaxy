@@ -184,7 +184,7 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             install_repository_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         json = self.display_installed_repository_manage_json(installed_repository)

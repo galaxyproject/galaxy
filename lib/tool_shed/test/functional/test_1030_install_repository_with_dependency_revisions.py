@@ -178,10 +178,10 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
             install_tool_dependencies=False,
             new_tool_panel_section_label="test_1030",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, emboss_repository_name, installed_repository.installed_changeset_revision
         )
         self._assert_repo_has_tool_with_id(installed_repository, "EMBOSS: antigenic1")

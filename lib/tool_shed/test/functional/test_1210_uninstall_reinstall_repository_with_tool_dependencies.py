@@ -116,17 +116,13 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0015_uninstall_freebayes_repository(self):
         """Uninstall the freebayes repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "freebayes_0010", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("freebayes_0010", common.test_user_1_name)
         self._uninstall_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names("freebayes_0010")
 
     def test_0020_reinstall_freebayes_repository(self):
         """Reinstall the freebayes repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "freebayes_0010", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("freebayes_0010", common.test_user_1_name)
         self.reinstall_repository_api(installed_repository)
         self._assert_has_installed_repos_with_names("freebayes_0010")
         self._assert_has_valid_tool_with_name("FreeBayes")
@@ -134,17 +130,13 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0025_deactivate_freebayes_repository(self):
         """Deactivate the freebayes repository without removing it from disk."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "freebayes_0010", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("freebayes_0010", common.test_user_1_name)
         self.deactivate_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names("freebayes_0010")
 
     def test_0030_reactivate_freebayes_repository(self):
         """Reactivate the freebayes repository and verify that it now shows up in the list of installed repositories."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "freebayes_0010", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("freebayes_0010", common.test_user_1_name)
         self.reactivate_repository(installed_repository)
         self._assert_has_installed_repos_with_names("freebayes_0010")
         self._assert_has_valid_tool_with_name("FreeBayes")

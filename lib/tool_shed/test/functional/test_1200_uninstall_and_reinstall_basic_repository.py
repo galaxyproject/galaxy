@@ -88,17 +88,13 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0015_uninstall_filtering_repository(self):
         """Uninstall the filtering repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filtering_0000", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("filtering_0000", common.test_user_1_name)
         self._uninstall_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names("filtering_0000")
 
     def test_0020_reinstall_filtering_repository(self):
         """Reinstall the filtering repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filtering_0000", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("filtering_0000", common.test_user_1_name)
         self.reinstall_repository_api(installed_repository)
         self._assert_has_installed_repos_with_names("filtering_0000")
         self._assert_has_valid_tool_with_name("Filter1")
@@ -106,17 +102,13 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0025_deactivate_filtering_repository(self):
         """Deactivate the filtering repository without removing it from disk."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filtering_0000", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("filtering_0000", common.test_user_1_name)
         self.deactivate_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names("filtering_0000")
 
     def test_0030_reactivate_filtering_repository(self):
         """Reactivate the filtering repository and verify that it now shows up in the list of installed repositories."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filtering_0000", common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner("filtering_0000", common.test_user_1_name)
         self.reactivate_repository(installed_repository)
         self._assert_has_installed_repos_with_names("filtering_0000")
         self._assert_has_valid_tool_with_name("Filter1")

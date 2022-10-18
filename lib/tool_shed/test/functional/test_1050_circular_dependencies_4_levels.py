@@ -382,9 +382,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0065_deactivate_bismark_repository(self):
         """Deactivate bismark and verify things are okay."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            bismark_repository_name, common.test_user_1_name
-        )
+        repository = self._get_installed_repository_by_name_owner(bismark_repository_name, common.test_user_1_name)
         self.deactivate_repository(repository)
         # Now we have emboss, bismark, column_maker, and convert_chars installed, filtering and freebayes never installed.
         installed_repositories = [
@@ -401,9 +399,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0070_uninstall_emboss_repository(self):
         """Uninstall the emboss_5 repository."""
-        repository = self.test_db_util.get_installed_repository_by_name_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        repository = self._get_installed_repository_by_name_owner(emboss_repository_name, common.test_user_1_name)
         self._uninstall_repository(repository)
         self._assert_has_no_installed_repos_with_names(repository.name)
         self.test_db_util.ga_refresh(repository)
