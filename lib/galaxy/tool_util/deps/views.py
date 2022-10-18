@@ -403,7 +403,7 @@ class ContainerResolutionView:
 
     @property
     def _container_resolvers(self):
-        return self._app.container_finder.container_resolvers
+        return self._app.container_finder.default_container_registry.container_resolvers
 
     def _container_resolver(self, index):
         index = int(index)
