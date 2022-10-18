@@ -29,6 +29,8 @@ category_description = (
 class TestUpdateInstalledRepository(ShedTwillTestCase):
     """Verify that the code correctly handles updating an installed repository, then uninstalling and reinstalling."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -63,7 +65,6 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
 
         This is step 1 - Install a repository into Galaxy.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             repository_name,
             common.test_user_1_name,
@@ -101,7 +102,6 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
 
         This is step 3 - In Galaxy, get updates to the repository.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )

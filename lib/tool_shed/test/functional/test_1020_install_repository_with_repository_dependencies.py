@@ -15,11 +15,12 @@ emboss_repository_long_description = "Galaxy wrappers for Emboss version 5.0.0 t
 class TestToolWithRepositoryDependencies(ShedTwillTestCase):
     """Test installing a repository with repository dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0020 category and any missing repositories."""

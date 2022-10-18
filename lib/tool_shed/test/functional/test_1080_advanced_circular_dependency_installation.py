@@ -24,9 +24,10 @@ running_standalone = False
 class TestRepositoryDependencies(ShedTwillTestCase):
     """Testing uninstalling and reinstalling repository dependencies, and setting tool panel sections."""
 
+    requires_galaxy = True
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -119,7 +120,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0020_install_convert_repository(self):
         """Install convert_chars without repository dependencies into convert_chars tool panel section."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             convert_repository_name,
             common.test_user_1_name,
