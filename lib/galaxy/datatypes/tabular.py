@@ -1779,3 +1779,169 @@ class CMAP(TabularData):
             dataset.metadata.column_types = cleaned_column_types
             dataset.metadata.columns = number_of_columns
             dataset.metadata.delimiter = "\t"
+
+
+@build_sniff_from_prefix
+class Psl(Tabular):
+    """Tab delimited data in psl format."""
+
+    edam_format = "format_3007"
+    file_ext = "psl"
+    line_class = "assemblies"
+    data_sources = {"data": "tabix"}
+
+    def __init__(self, **kwd):
+        """Initialize psl datatype"""
+        super().__init__(**kwd)
+        self.column_names = [
+            "matches",
+            "misMatches",
+            "repMatches",
+            "nCount",
+            "qNumInsert",
+            "qBaseInsert",
+            "tNumInsert",
+            "tBaseInsert",
+            "strand",
+            "qName",
+            "qSize",
+            "qStart",
+            "qEnd",
+            "tName",
+            "tSize",
+            "tStart",
+            "tEnd",
+            "blockCount",
+            "blockSizes",
+            "qStarts",
+            "tStarts"
+        ]
+
+    def display_peek(self, dataset):
+        """Returns formated html of peek"""
+        return self.make_html_table(dataset, column_names=self.column_names)
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        PSL lines represent alignments, and are typically generated
+        by BLAT. Each line consists of 21 required fields, and track
+        lines may optionally be used to provide more information.
+
+        Fields are tab-separated, and all 21 are required.
+        Although not part of the formal PSL specification, track lines
+        may be used to further configure sets of features.  Track lines
+        are placed at the beginning of the list of features they are
+        to affect.
+
+        Rules for sniffing as True::
+
+            - There must be 21 columns on each fields line
+            - matches, misMatches repMatches, nCount, qNumInsert,
+              qBaseInsert, tNumInsert, tBaseInsert, strand, qSize, qStart,
+              qEnd, tName, tSize, tStart, tEnd, blockCount, blockSizes,
+              qStarts, tStarts  must be correct
+            - We will only check that up to the first 10 alignments are
+              correctly formatted.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.psl' )
+        >>> Psl().sniff( fname )
+        True
+        >>> fname = get_test_fname( '2.psl' )
+        >>> Psl().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'interval.interval' )
+        >>> Psl().sniff( fname )
+        False
+        >>> fname = get_test_fname( '2.txt' )
+        >>> Psl().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'test_tab2.tabular' )
+        >>> Psl().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.ref.taxonomy' )
+        >>> Psl().sniff( fname )
+        False
+        """
+        count = 0
+        for line in file_prefix.line_iterator():
+            line = line.strip()
+            if not line:
+                break
+            if line:
+                if line.startswith("browser") or line.startswith("track"):
+                    # Skip track lines.
+                    continue
+                items = line.split("\t")
+                if len(items) != 21:
+                    return False
+                # matches
+                if int(items[0]) < 0:
+                    raise Exception("Out of range")
+                # misMatches
+                if int(items[1]) < 0:
+                    raise Exception("Out of range")
+                # repMatches
+                if int(items[2]) < 0:
+                    raise Exception("Out of range")
+                # nCount
+                if int(items[3]) < 0:
+                    raise Exception("Out of range")
+                # qNumInsert
+                if int(items[4]) < 0:
+                    raise Exception("Out of range")
+                # qBaseInsert
+                if int(items[5]) < 0:
+                    raise Exception("Out of range")
+                # tNumInsert
+                if int(items[6]) < 0:
+                    raise Exception("Out of range")
+                # tBaseInsert
+                if int(items[7]) < 0:
+                    raise Exception("Out of range")
+                # strand
+                if items[8] not in ["-", "+", "+-", "-+"]:
+                    raise Exception("Invalid strand")
+                # qSize
+                if int(items[10]) < 0:
+                    raise Exception("Out of range")
+                # qStart
+                if int(items[11]) < 0:
+                    raise Exception("Out of range")
+                # qEnd
+                if int(items[12]) < 0:
+                    raise Exception("Out of range")
+                # tSize
+                if int(items[14]) < 0:
+                    raise Exception("Out of range")
+                # tStart
+                if int(items[15]) < 0:
+                    raise Exception("Out of range")
+                # tEnd
+                if int(items[16]) < 0:
+                    raise Exception("Out of range")
+                # blockCount
+                if int(items[17]) < 0:
+                    raise Exception("Out of range")
+                # blockSizes
+                s = items[18].rstrip(',')
+                s_items = s.split(',')
+                for item in s_items:
+                    if int(item) < 0:
+                        raise Exception("Out of range")
+                # qStarts
+                s = items[19].rstrip(',')
+                s_items = s.split(',')
+                for item in s_items:
+                    if int(item) < 0:
+                        raise Exception("Out of range")
+                # tStarts
+                s = items[20].rstrip(',')
+                s_items = s.split(',')
+                for item in s_items:
+                    if int(item) < 0:
+                        raise Exception("Out of range")
+                count += 1
+                if count == 10:
+                    break
+        if count > 0:
+            return True
