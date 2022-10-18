@@ -412,7 +412,7 @@ class WorkflowsApiTestCase(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
         assert [w for w in workflow_index if w["id"] == workflow_id]
         workflow_url = self._api_url(f"workflows/{workflow_id}", use_key=True)
         delete_response = delete(workflow_url)
-        self._assert_status_code_is(delete_response, 200)
+        self._assert_status_code_is(delete_response, 204)
         workflow_index = self._get("workflows").json()
         assert not [w for w in workflow_index if w["id"] == workflow_id]
         workflow_index = self._get("workflows?show_deleted=true").json()
