@@ -112,6 +112,7 @@ describe("WorkflowDropdown.vue", () => {
             confirmRequest = true;
             global.confirm = jest.fn(() => confirmRequest);
             axiosMock.onDelete("/api/workflows/workflowid123").reply(202, "deleted...");
+            axiosMock.onRestore("/api/workflows/workfrlowid123".reply(204, "restored..."));
         });
 
         afterEach(() => {
@@ -136,6 +137,16 @@ describe("WorkflowDropdown.vue", () => {
             const emitted = wrapper.emitted();
             expect(emitted["onRemove"]).toBeFalsy();
             expect(emitted["onSuccess"]).toBeFalsy();
+        });
+
+        it("should restore previously deleted workflows", async () => {
+            await mountAndDelete();
+            const emitted = wrapper.emitted();
+            expect(emitted["onRemove"][0][0]).toEqual("workflowid123");
+            expect(emitted["onSuccess"][0][0]).toEqual("deleted...");
+            await wrapper.vm.onRestore();
+            expect(emitted["onRestore"][0][0].toEqual("workflowid123"));
+            expect(emitted)["onRestore"].toEqual("restored...");
         });
     });
 });
