@@ -1243,7 +1243,6 @@ class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
     invocations_service: InvocationsService = depends(InvocationsService)
     workflows_manager: WorkflowsManager = depends(WorkflowsManager)
-    workflow_contents_manager: WorkflowContentsManager = depends(WorkflowContentsManager)
 
     @router.get(
         "/api/workflows",
@@ -1418,7 +1417,7 @@ class FastAPIWorkflows:
         if workflow_to_delete.user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException()
         self.workflows_manager.delete(workflow_to_delete)
-        return self.workflow_contents_manager.workflow_to_dict(trans, workflow_to_delete, style="instance")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.post(
         "/api/workflows/{workflow_id}/undelete",
@@ -1433,7 +1432,7 @@ class FastAPIWorkflows:
         if workflow_to_undelete.user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException()
         self.workflows_manager.undelete(workflow_to_undelete)
-        return self.workflow_contents_manager.workflow_to_dict(trans, workflow_to_undelete, style="instance")
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(
