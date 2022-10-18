@@ -800,13 +800,6 @@ class ShedTwillTestCase(ShedApiTestCase):
             os.makedirs(temp_path)
         return temp_path
 
-    def get_datatypes_count(self):
-        params = {"upload_only": False}
-        self.visit_galaxy_url("/api/datatypes", params=params)
-        html = self.last_page()
-        datatypes = loads(html)
-        return len(datatypes)
-
     def get_filename(self, filename, filepath=None):
         if filepath is not None:
             return os.path.abspath(os.path.join(filepath, filename))
