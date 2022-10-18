@@ -410,9 +410,7 @@ class SharableModelSerializer(
             return item.name
 
     def serialize_username(self, item, key, **context):
-        if not (item.user and item.user.username):
-            return None
-        return item.user.username
+        return item.user and item.user.username
 
     def serialize_username_and_slug(self, item, key, **context):
         if not (item.user and item.user.username and item.slug and self.SINGLE_CHAR_ABBR):
