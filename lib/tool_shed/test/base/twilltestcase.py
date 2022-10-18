@@ -111,6 +111,21 @@ class ToolShedInstallationClient:
     def get_tool_names(self) -> List[str]:
         ...
 
+    def get_installed_repository_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> galaxy_model.ToolShedRepository:
+        ...
+
+    def get_installed_repositories_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> List[galaxy_model.ToolShedRepository]:
+        ...
+
+    def get_installed_repository_for(
+        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        ...
+
 
 class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
     """A Galaxy API + Database as a installation target for the tool shed."""
@@ -269,6 +284,23 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         response.raise_for_status()
         tool_list = response.json()
         return [t["name"] for t in tool_list]
+
+    def get_installed_repository_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> galaxy_model.ToolShedRepository:
+        return test_db_util.get_installed_repository_by_name_owner(repository_name, repository_owner)
+
+    def get_installed_repositories_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> List[galaxy_model.ToolShedRepository]:
+        return test_db_util.get_installed_repository_by_name_owner(
+            repository_name, repository_owner, return_multiple=True
+        )
+
+    def get_installed_repository_for(
+        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        return self.testcase.get_installed_repository_for(owner=owner, name=name, changeset=changeset)
 
     def _galaxy_login(self, email="test@bx.psu.edu", password="testuser", username="admin-user"):
         self._galaxy_logout()
@@ -605,7 +637,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.display_manage_repository_page(repository, strings_displayed, strings_not_displayed)
 
     def check_galaxy_repository_db_status(self, repository_name, owner, expected_status):
-        installed_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, owner)
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, owner)
         assert (
             installed_repository.status == expected_status
         ), f"Status in database is {installed_repository.status}, expected {expected_status}"
@@ -1560,14 +1592,14 @@ class ShedTwillTestCase(ShedApiTestCase):
         installed_repositories = installed_repositories or []
         uninstalled_repositories = uninstalled_repositories or []
         for repository_name, repository_owner in installed_repositories:
-            galaxy_repository = test_db_util.get_installed_repository_by_name_owner(repository_name, repository_owner)
+            galaxy_repository = self._get_installed_repository_by_name_owner(repository_name, repository_owner)
             if galaxy_repository:
                 assert (
                     galaxy_repository.status == "Installed"
                 ), f"Repository {repository_name} should be installed, but is {galaxy_repository.status}"
 
     def verify_installed_repository_metadata_unchanged(self, name, owner):
-        installed_repository = test_db_util.get_installed_repository_by_name_owner(name, owner)
+        installed_repository = self._get_installed_repository_by_name_owner(name, owner)
         metadata = installed_repository.metadata_
         self._installation_client.reset_installed_repository_metadata(installed_repository)
         new_metadata = installed_repository.metadata_
@@ -1638,13 +1670,28 @@ class ShedTwillTestCase(ShedApiTestCase):
         # or we know that the repository was not correctly installed!
         assert found, f"No entry for {required_data_table_entry} in {self.shed_tool_data_table_conf}."
 
+    def _get_installed_repository_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> galaxy_model.ToolShedRepository:
+        return self._installation_client.get_installed_repository_by_name_owner(repository_name, repository_owner)
+
+    def _get_installed_repositories_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> List[galaxy_model.ToolShedRepository]:
+        return self._installation_client.get_installed_repositories_by_name_owner(repository_name, repository_owner)
+
+    def _get_installed_repository_for(
+        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
+    ):
+        return self._installation_client.get_installed_repository_for(owner=owner, name=name, changeset=changeset)
+
     def _assert_has_installed_repos_with_names(self, *names):
         for name in names:
-            assert self.get_installed_repository_for(name=name)
+            assert self._get_installed_repository_for(name=name)
 
     def _assert_has_no_installed_repos_with_names(self, *names):
         for name in names:
-            assert not self.get_installed_repository_for(name=name)
+            assert not self._get_installed_repository_for(name=name)
 
     def _assert_has_missing_dependency(
         self, installed_repository: galaxy_model.ToolShedRepository, repository_name: str

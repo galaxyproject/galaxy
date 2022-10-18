@@ -162,7 +162,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0015_uninstall_emboss_repository(self):
         """Uninstall the emboss repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         self._uninstall_repository(installed_repository)
@@ -170,7 +170,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0020_reinstall_emboss_repository(self):
         """Reinstall the emboss repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         self.reinstall_repository_api(installed_repository)
@@ -179,7 +179,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0025_deactivate_emboss_repository(self):
         """Deactivate the emboss repository without removing it from disk."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_repository)
@@ -187,7 +187,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0030_reactivate_emboss_repository(self):
         """Reactivate the emboss repository and verify that it now shows up in the list of installed repositories."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_repository = self._get_installed_repository_by_name_owner(
             emboss_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_repository)

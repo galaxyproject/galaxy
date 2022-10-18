@@ -134,16 +134,16 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
 
     def test_0030_uninstall_filtering_repository(self):
         """Deactivate filtering, verify tool panel section and missing repository dependency."""
-        installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_freebayes_repository = self._get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_filtering_repository = self._get_installed_repository_by_name_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
         )
         self.deactivate_repository(installed_filtering_repository)
@@ -153,7 +153,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
 
     def test_0035_reactivate_filtering_repository(self):
         """Reinstall filtering into 'filtering' tool panel section."""
-        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_filtering_repository = self._get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name
         )
         self.reinstall_repository_api(
@@ -162,27 +162,27 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             install_repository_dependencies=True,
             new_tool_panel_section_label="filtering",
         )
-        installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_freebayes_repository = self._get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name
         )
         self._assert_is_not_missing_dependency(installed_freebayes_repository, filtering_repository_name)
 
     def test_0040_uninstall_freebayes_repository(self):
         """Deactivate freebayes, verify tool panel section and missing repository dependency."""
-        installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_freebayes_repository = self._get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_filtering_repository = self._get_installed_repository_by_name_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
         )
         self.deactivate_repository(installed_freebayes_repository)
-        assert not self.get_installed_repository_for(
+        assert not self._get_installed_repository_for(
             common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
         )
         self.test_db_util.ga_refresh(installed_freebayes_repository)
@@ -191,20 +191,20 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
 
     def test_0045_deactivate_filtering_repository(self):
         """Deactivate filtering, verify tool panel section."""
-        installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_filtering_repository = self._get_installed_repository_by_name_owner(
             filtering_repository_name, common.test_user_1_name
         )
-        installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_freebayes_repository = self._get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
         )
         self.deactivate_repository(installed_filtering_repository)
-        assert not self.get_installed_repository_for(
+        assert not self._get_installed_repository_for(
             common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
         )
-        assert not self.get_installed_repository_for(
+        assert not self._get_installed_repository_for(
             common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
         )
         self.test_db_util.ga_refresh(installed_filtering_repository)
