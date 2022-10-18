@@ -1,4 +1,4 @@
-<tool id="addValue" name="Add column" version="1.0.0">
+<tool id="addValue" name="Add column" version="1.0.1">
   <description>to an existing dataset</description>
   <edam_operations>
     <edam_operation>operation_3096</edam_operation>

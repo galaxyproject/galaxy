@@ -57,7 +57,7 @@
             "tool_errors": null, 
             "tool_id": "addValue", 
             "tool_state": "{\"__page__\": 0, \"__rerun_remap_job_id__\": null, \"__job_resource\": \"{\\\"__current_case__\\\": 0, \\\"__job_resource__select\\\": \\\"no\\\"}\", \"exp\": \"\\\"1\\\"\", \"iterate\": \"\\\"no\\\"\", \"input\": \"{\\\"__class__\\\": \\\"RuntimeValue\\\"}\"}", 
-            "tool_version": "1.0.0", 
+            "tool_version": "1.0.1", 
             "type": "tool", 
             "uuid": "1daceb2a-719c-49a6-881c-5301076de918", 
             "workflow_outputs": []
@@ -94,7 +94,7 @@
             "tool_errors": null, 
             "tool_id": "addValue", 
             "tool_state": "{\"__page__\": 0, \"__rerun_remap_job_id__\": null, \"__job_resource\": \"{\\\"__current_case__\\\": 0, \\\"__job_resource__select\\\": \\\"no\\\"}\", \"exp\": \"\\\"1\\\"\", \"iterate\": \"\\\"no\\\"\", \"input\": \"{\\\"__class__\\\": \\\"RuntimeValue\\\"}\"}", 
-            "tool_version": "1.0.0", 
+            "tool_version": "1.0.1", 
             "type": "tool", 
             "uuid": "f5349127-d008-44b2-a41e-af024de92d2e", 
             "workflow_outputs": []
