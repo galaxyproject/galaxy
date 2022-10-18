@@ -51,9 +51,10 @@ running_standalone = False
 class TestSimplePriorInstallation(ShedTwillTestCase):
     """Test features related to datatype converters."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -214,7 +215,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0030_install_filtering_repository(self):
         """Install the filtering_0160 repository."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         filter_repository = self._get_repository_by_name_and_owner(filter_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["filtering_0160", self.get_repository_tip(filter_repository)]
         self._install_repository(

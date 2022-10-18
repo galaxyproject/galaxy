@@ -18,9 +18,10 @@ category_description = "Test circular dependency features"
 class TestRepositoryDependencies(ShedTwillTestCase):
     """Test installing a repository, then updating it to include repository dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -77,7 +78,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0015_install_and_uninstall_column_repository(self):
         """Install and uninstall the column_maker repository."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             column_repository_name,
             common.test_user_1_name,
@@ -115,7 +115,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0030_reinstall_column_repository(self):
         """Reinstall column_maker and verify it installs repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         strings_not_displayed = ["column_maker_1087"]
         self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
         self._install_repository(

@@ -44,6 +44,8 @@ running_standalone = False
 class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
     """Verify that the "Reset selected metadata" feature works."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -516,7 +518,6 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
 
     def test_9900_install_all_missing_repositories(self):
         """Call the install_repository method to ensure that all required repositories are installed."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository("filtering_0000", common.test_user_1_name, category_0000_name)
         self._install_repository("freebayes_0010", common.test_user_1_name, category_0010_name)
         self._install_repository("emboss_0020", common.test_user_1_name, category_0020_name)
