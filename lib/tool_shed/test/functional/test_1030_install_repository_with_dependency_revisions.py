@@ -19,11 +19,12 @@ running_standalone = False
 class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
     """Test installing a repository with dependency revisions."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0030 category and add repositories to it, if necessary."""
@@ -160,7 +161,6 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
 
     def test_0010_browse_tool_shed(self):
         """Browse the available tool sheds in this Galaxy instance and preview the emboss tool."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=["Test 0030 Repository Dependency Revisions"])
         category = self.populator.get_category_with_name("Test 0030 Repository Dependency Revisions")
         self.browse_category(category, strings_displayed=[emboss_repository_name])

@@ -26,6 +26,8 @@ category_description = "Functional test suite to test the update manager."
 class TestUpdateManager(ShedTwillTestCase):
     """Test the Galaxy update manager."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user.
 
@@ -34,7 +36,6 @@ class TestUpdateManager(ShedTwillTestCase):
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
 
     def test_0005_create_filtering_repository(self):
         """Create and populate the filtering_1410 repository.
@@ -70,7 +71,6 @@ class TestUpdateManager(ShedTwillTestCase):
         We are at step 2 - Install filtering_1410 to Galaxy.
         Install the filtering repository to Galaxy.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             repository_name, common.test_user_1_name, category_name, new_tool_panel_section_label="test_1410"
         )
@@ -111,7 +111,6 @@ class TestUpdateManager(ShedTwillTestCase):
         """
         # Wait 3 seconds, just to be sure we're past hours_between_check.
         time.sleep(3)
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
