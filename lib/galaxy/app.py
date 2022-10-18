@@ -216,6 +216,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     toolbox_search: ToolBoxSearch
     container_finder: containers.ContainerFinder
     install_model: ModelMapping
+    object_store: BaseObjectStore
 
     def __init__(self, fsmon=False, **kwargs) -> None:
         super().__init__()
@@ -743,6 +744,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.tool_shed_repository_cache = None
         self.api_spec = None
         self.legacy_mapper = None
+        self.application_stack.register_postfork_function(self.object_store.start)
         log.info(f"Galaxy app startup finished {startup_timer}")
 
     def _shutdown_queue_worker(self):

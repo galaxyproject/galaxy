@@ -4,6 +4,7 @@ Object Store plugin for the Integrated Rule-Oriented Data System (iRODS)
 import logging
 import os
 import shutil
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -73,6 +74,7 @@ def parse_config_xml(config_xml):
         port = int(c_xml[0].get("port", 0))
         timeout = int(c_xml[0].get("timeout", 30))
         refresh_time = int(c_xml[0].get("refresh_time", 300))
+        connection_pool_monitor_interval = int(c_xml[0].get("connection_pool_monitor_interval", -1))
 
         c_xml = config_xml.findall("cache")
         if not c_xml:
@@ -102,6 +104,7 @@ def parse_config_xml(config_xml):
                 "port": port,
                 "timeout": timeout,
                 "refresh_time": refresh_time,
+                "connection_pool_monitor_interval": connection_pool_monitor_interval,
             },
             "cache": {
                 "size": cache_size,
@@ -133,6 +136,7 @@ class CloudConfigMixin:
                 "port": self.port,
                 "timeout": self.timeout,
                 "refresh_time": self.refresh_time,
+                "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
             },
             "cache": {
                 "size": self.cache_size,
@@ -193,6 +197,9 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         self.refresh_time = connection_dict.get("refresh_time")
         if self.refresh_time is None:
             _config_dict_error("connection->refresh_time")
+        self.connection_pool_monitor_interval = connection_dict.get("connection_pool_monitor_interval")
+        if self.connection_pool_monitor_interval is None:
+            _config_dict_error("connection->connection_pool_monitor_interval")
 
         cache_dict = config_dict["cache"]
         if cache_dict is None:
@@ -227,6 +234,14 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         )
         # Set connection timeout
         self.session.connection_timeout = self.timeout
+
+        if self.connection_pool_monitor_interval != -1:
+            # This Event object is initialized to False
+            # It is set to True in shutdown(), causing
+            # the connection pool monitor thread to return/terminate
+            self.stop_connection_pool_monitor_event = threading.Event()
+            self.connection_pool_monitor_thread = None
+
         log.debug("irods_pt __init__: %s", ipt_timer)
 
     def shutdown(self):
@@ -237,11 +252,57 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
             self.session.cleanup()
         except OSError:
             pass
+
+        if self.connection_pool_monitor_interval != -1:
+            # Set to True so the connection pool monitor thread will return/terminate
+            self.stop_connection_pool_monitor_event.set()
+            if self.connection_pool_monitor_thread is not None:
+                self.connection_pool_monitor_thread.join(5)
+
         log.debug("irods_pt shutdown: %s", ipt_timer)
 
     @classmethod
     def parse_xml(cls, config_xml):
         return parse_config_xml(config_xml)
+
+    def start_connection_pool_monitor(self):
+        self.connection_pool_monitor_thread = threading.Thread(
+            target=self._connection_pool_monitor,
+            args=(),
+            kwargs={
+                "refresh_time": self.refresh_time,
+                "connection_pool_monitor_interval": self.connection_pool_monitor_interval,
+                "stop_connection_pool_monitor_event": self.stop_connection_pool_monitor_event,
+            },
+            name="ConnectionPoolMonitorThread",
+            daemon=True,
+        )
+        self.connection_pool_monitor_thread.start()
+        log.info("Connection pool monitor started")
+
+    def start(self):
+        if self.connection_pool_monitor_interval != -1:
+            self.start_connection_pool_monitor()
+
+    def _connection_pool_monitor(self, *args, **kwargs):
+        refresh_time = kwargs["refresh_time"]
+        connection_pool_monitor_interval = kwargs["connection_pool_monitor_interval"]
+        stop_connection_pool_monitor_event = kwargs["stop_connection_pool_monitor_event"]
+
+        while not stop_connection_pool_monitor_event.is_set():
+            curr_time = datetime.now()
+            idle_connection_set = self.session.pool.idle.copy()
+            for conn in idle_connection_set:
+                # If the connection was created more than 'refresh_time'
+                # seconds ago, release the connection (as its stale)
+                if (curr_time - conn.create_time).total_seconds() > refresh_time:
+                    log.debug(
+                        "Idle connection with id {} was created more than {} seconds ago. Releasing the connection.".format(
+                            id(conn), refresh_time
+                        )
+                    )
+                    self.session.pool.release_connection(conn, True)
+            stop_connection_pool_monitor_event.wait(connection_pool_monitor_interval)
 
     def to_dict(self):
         as_dict = super().to_dict()

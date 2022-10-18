@@ -7,7 +7,7 @@ from galaxy import (
     util,
 )
 from galaxy.app_unittest_utils import tools_support
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser import output_collection_def
 from galaxy.tool_util.provided_metadata import (
     BaseToolProvidedMetadata,
@@ -23,7 +23,7 @@ DEFAULT_EXTRA_NAME = "test1"
 class TestCollectPrimaryDatasets(TestCase, tools_support.UsesTools):
     def setUp(self):
         self.setup_app()
-        object_store = cast(ObjectStore, MockObjectStore())
+        object_store = cast(BaseObjectStore, MockObjectStore())
         self.app.object_store = object_store
         self._init_tool(tools_support.SIMPLE_TOOL_CONTENTS)
         self._setup_test_output()

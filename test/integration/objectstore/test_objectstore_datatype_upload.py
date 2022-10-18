@@ -14,17 +14,27 @@ from ..test_datatype_upload import (
     UploadTestDatatypeDataTestCase,
 )
 
+REFRESH_TIME = 3
+CONNECTION_POOL_MONITOR_INTERVAL = 6
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 IRODS_OBJECT_STORE_HOST = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_HOST", "localhost")
 IRODS_OBJECT_STORE_PORT = int(os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PORT", 1247))
 IRODS_OBJECT_STORE_TIMEOUT = int(os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_TIMEOUT", 30))
-IRODS_OBJECT_STORE_POOLSIZE = int(os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_POOLSIZE", 3))
+IRODS_OBJECT_STORE_REFRESH_TIME = int(
+    os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_REFRESH_TIME", REFRESH_TIME)
+)
+IRODS_OBJECT_STORE_CONNECTION_POOL_MONITOR_INTERVAL = int(
+    os.environ.get(
+        "GALAXY_INTEGRATION_IRODS_OBJECT_STORE_CONNECTION_POOL_MONITOR_INTERVAL", CONNECTION_POOL_MONITOR_INTERVAL
+    )
+)
 IRODS_OBJECT_STORE_USERNAME = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_USERNAME", "rods")
 IRODS_OBJECT_STORE_PASSWORD = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_PASSWORD", "rods")
 IRODS_OBJECT_STORE_RESOURCE = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_RESOURCE", "demoResc")
 IRODS_OBJECT_STORE_ZONE = os.environ.get("GALAXY_INTEGRATION_IRODS_OBJECT_STORE_ZONE", "tempZone")
 # Run test for only the first 10 test files
 TEST_CASES = dict(list(TEST_CASES.items())[0:10])
+SINGLE_TEST_CASE = dict(list(TEST_CASES.items())[0:1])
 DISTRIBUTED_OBJECT_STORE_CONFIG = string.Template(
     """
 <object_store type="distributed">
@@ -56,7 +66,7 @@ DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG = string.Template(
             <auth username="${username}" password="${password}"/>
             <resource name="${resource}"/>
             <zone name="${zone}"/>
-            <connection host="${host}" port="${port}" timeout="${timeout}" poolsize="${poolsize}"/>
+            <connection host="${host}" port="${port}" timeout="${timeout}" refresh_time="${refresh_time}"  connection_pool_monitor_interval="${connection_pool_monitor_interval}"/>
             <cache path="${temp_directory}/object_store_cache" size="1000"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory_irods"/>
             <extra_dir type="temp" path="${temp_directory}/tmp_irods"/>
@@ -70,7 +80,7 @@ IRODS_OBJECT_STORE_CONFIG = string.Template(
     <auth username="${username}" password="${password}"/>
     <resource name="${resource}"/>
     <zone name="${zone}"/>
-    <connection host="${host}" port="${port}" timeout="${timeout}" poolsize="${poolsize}"/>
+    <connection host="${host}" port="${port}" timeout="${timeout}" refresh_time="${refresh_time}" connection_pool_monitor_interval="${connection_pool_monitor_interval}"/>
     <cache path="${temp_directory}/object_store_cache" size="1000"/>
     <extra_dir type="job_work" path="${temp_directory}/job_working_directory_irods"/>
     <extra_dir type="temp" path="${temp_directory}/tmp_irods"/>
@@ -150,12 +160,18 @@ class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
             "host": IRODS_OBJECT_STORE_HOST,
             "port": IRODS_OBJECT_STORE_PORT,
             "timeout": IRODS_OBJECT_STORE_TIMEOUT,
-            "poolsize": IRODS_OBJECT_STORE_POOLSIZE,
+            "refresh_time": IRODS_OBJECT_STORE_REFRESH_TIME,
+            "connection_pool_monitor_interval": IRODS_OBJECT_STORE_CONNECTION_POOL_MONITOR_INTERVAL,
             "username": IRODS_OBJECT_STORE_USERNAME,
             "password": IRODS_OBJECT_STORE_PASSWORD,
             "resource": IRODS_OBJECT_STORE_RESOURCE,
             "zone": IRODS_OBJECT_STORE_ZONE,
         }
+
+
+class IrodsIdleConnectionUploadTestCase(IrodsUploadTestDatatypeDataTestCase):
+
+    object_store_template = IRODS_OBJECT_STORE_CONFIG
 
 
 class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
@@ -175,6 +191,7 @@ class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
 distributed_instance = integration_util.integration_module_instance(UploadTestDosDiskAndDiskTestCase)
 irods_instance = integration_util.integration_module_instance(IrodsUploadTestDatatypeDataTestCase)
 distributed_and_irods_instance = integration_util.integration_module_instance(UploadTestDosIrodsAndDiskTestCase)
+idle_connection_irods_instance = integration_util.integration_module_instance(IrodsIdleConnectionUploadTestCase)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
@@ -190,3 +207,26 @@ def test_upload_datatype_irods(irods_instance, test_data, temp_file):
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_dos_irods_and_disk(distributed_and_irods_instance, test_data, temp_file):
     upload_datatype_helper(distributed_and_irods_instance, test_data, temp_file)
+
+
+@pytest.mark.parametrize("test_data", SINGLE_TEST_CASE.values(), ids=list(SINGLE_TEST_CASE.keys()))
+def test_upload_datatype_irods_idle_connections(idle_connection_irods_instance, test_data, temp_file):
+    # Upload a file to iRods
+    upload_datatype_helper(idle_connection_irods_instance, test_data, temp_file, True)
+
+    # Get Irods object store's connection pool
+    connection_pool = idle_connection_irods_instance._test_driver.app.object_store.session.pool
+
+    # Verify the connection pool has 0 active and 1 idle connections
+    assert len(connection_pool.active) == 0
+    assert len(connection_pool.idle) == 1
+
+    # Wait for the idle connection to turn stale
+    time.sleep(REFRESH_TIME)
+
+    # Wait for the connection pool monitor thread to run and reclaim the stale idle connection
+    time.sleep(CONNECTION_POOL_MONITOR_INTERVAL)
+
+    # Check that the stale idle connection has been reclaimed
+    assert len(connection_pool.active) == 0
+    assert len(connection_pool.idle) == 0

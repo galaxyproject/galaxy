@@ -23,7 +23,10 @@ from galaxy.model.security import (
     HostAgent,
 )
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import (
+    BaseObjectStore,
+    ObjectStore,
+)
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import Vault
@@ -85,7 +88,6 @@ class MinimalApp(BasicSharedApp):
     install_model: ModelMapping
     security_agent: GalaxyRBACAgent
     host_security_agent: HostAgent
-    object_store: ObjectStore
 
 
 class MinimalManagerApp(MinimalApp):
@@ -108,6 +110,7 @@ class MinimalManagerApp(MinimalApp):
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     genomes: "Genomes"
     error_reports: "ErrorReports"
+    object_store: BaseObjectStore
 
     @property
     def is_job_handler(self) -> bool:
