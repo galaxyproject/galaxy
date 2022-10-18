@@ -489,10 +489,6 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         ]
         return invocations, total_matches
 
-    def delete(self, stored_workflow, flush=True):
-        """Mark the given workflow deleted."""
-        super().delete(stored_workflow, flush=flush)
-
 
 CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
 
