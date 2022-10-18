@@ -1301,7 +1301,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         strings_not_displayed: List[str] = []
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def uninstall_repository(self, installed_repository, strings_displayed=None, strings_not_displayed=None):
+    def uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
         encoded_id = self.security.encode_id(installed_repository.id)
         api_key = get_admin_api_key()
         response = requests.delete(
