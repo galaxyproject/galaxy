@@ -209,7 +209,7 @@ class LDAP(AuthProvider):
 
         return failure_mode, params
 
-    def authenticate(self, email, username, password, options):
+    def authenticate(self, email, username, password, options, request):
         """
         See abstract method documentation.
         """
@@ -275,11 +275,11 @@ class LDAP(AuthProvider):
         log.debug("LDAP authentication successful")
         return True
 
-    def authenticate_user(self, user, password, options):
+    def authenticate_user(self, user, password, options, request):
         """
         See abstract method documentation.
         """
-        return self.authenticate(user.email, user.username, password, options)[0]
+        return self.authenticate(user.email, user.username, password, options, request)[0]
 
 
 class ActiveDirectory(LDAP):

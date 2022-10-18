@@ -95,7 +95,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
         if message:
             return None, message
-        message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
+        message, status = trans.app.auth_manager.check_registration_allowed(email, username, password, trans.request)
         if message:
             return None, message
         if subscribe:
@@ -433,7 +433,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             user = self.by_id(self.app.security.decode_id(id))
             if user:
-                message = self.app.auth_manager.check_change_password(user, current)
+                message = self.app.auth_manager.check_change_password(user, current, trans.request)
                 if message:
                     return None, message
                 message = self.__set_password(trans, user, password, confirm)
