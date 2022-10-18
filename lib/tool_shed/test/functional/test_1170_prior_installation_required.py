@@ -38,9 +38,10 @@ running_standalone = False
 class TestSimplePriorInstallation(ShedTwillTestCase):
     """Test features related to datatype converters."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -133,7 +134,6 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0025_install_column_repository(self):
         """Install column_maker_0150."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         preview_strings_displayed = ["column_maker_0150", self.get_repository_tip(column_repository)]
         self._install_repository(

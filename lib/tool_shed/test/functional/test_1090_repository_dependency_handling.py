@@ -22,9 +22,10 @@ log = logging.getLogger(__name__)
 class TestRepositoryDependencies(ShedTwillTestCase):
     """Testing the behavior of repository dependencies with tool panel sections."""
 
+    requires_galaxy = True
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -103,7 +104,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0020_install_repositories(self):
         """Install column_maker into column_maker tool panel section and install repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             column_repository_name,
             common.test_user_1_name,

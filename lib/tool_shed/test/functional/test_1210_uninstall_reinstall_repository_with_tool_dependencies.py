@@ -9,9 +9,10 @@ from ..base.twilltestcase import (
 class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     """Test uninstalling and reinstalling a repository with tool dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -105,7 +106,6 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0010_install_freebayes_repository(self):
         """Install the freebayes repository into the Galaxy instance."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             "freebayes_0010",
             common.test_user_1_name,

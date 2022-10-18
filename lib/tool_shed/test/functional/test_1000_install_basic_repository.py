@@ -10,11 +10,12 @@ repo_description = "Galaxy's filtering tool"
 class TestBasicToolShedFeatures(ShedTwillTestCase):
     """Test installing a basic repository."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0000 category and upload the filtering repository to it, if necessary."""
@@ -83,7 +84,6 @@ class TestBasicToolShedFeatures(ShedTwillTestCase):
 
     def test_0010_browse_tool_sheds(self):
         """Browse the available tool sheds in this Galaxy instance."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(
             url=self.url,
             strings_displayed=["Test 0000 Basic Repository Features 1", "Test 0000 Basic Repository Features 2"],

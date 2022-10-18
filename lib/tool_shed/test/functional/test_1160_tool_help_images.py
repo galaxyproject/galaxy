@@ -23,6 +23,8 @@ category_description = "Test 0140 Tool Help Images"
 class TestToolHelpImages(ShedTwillTestCase):
     """Test features related to tool help images."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)

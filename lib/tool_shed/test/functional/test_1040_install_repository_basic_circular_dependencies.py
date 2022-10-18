@@ -19,6 +19,8 @@ running_standalone = False
 class TestInstallingCircularDependencies(ShedTwillTestCase):
     """Verify that the code correctly handles installing repositories with circular dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -122,7 +124,6 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
 
     def test_0025_install_freebayes_repository(self):
         """Install freebayes with blank tool panel section, without tool dependencies but with repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             freebayes_repository_name,
             common.test_user_1_name,

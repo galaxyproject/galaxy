@@ -25,6 +25,8 @@ running_standalone = False
 class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
     """Test features related to installing repositories with complex repository dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -255,7 +257,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
 
     def test_0045_install_base_repository(self):
         """Verify installation of the repository with complex repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         tool_repository = self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
         preview_strings_displayed = [tool_repository.name, self.get_repository_tip(tool_repository)]
         self._install_repository(

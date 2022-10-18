@@ -19,9 +19,10 @@ running_standalone = False
 class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     """Test uninstalling and reinstalling a repository with repository dependency revisions."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -151,7 +152,6 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0010_install_emboss_repository(self):
         """Install the emboss repository into the Galaxy instance."""
         global running_standalone
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             emboss_repository_name,
             common.test_user_1_name,

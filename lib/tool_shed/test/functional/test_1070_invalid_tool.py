@@ -13,9 +13,10 @@ category_description = "Test 1070 for a repository with an invalid tool."
 class TestFreebayesRepository(ShedTwillTestCase):
     """Test repository with multiple revisions with invalid tools."""
 
+    requires_galaxy = True
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -58,7 +59,6 @@ class TestFreebayesRepository(ShedTwillTestCase):
 
     def test_0010_browse_tool_shed(self):
         """Browse the available tool sheds in this Galaxy instance and preview the bismark repository."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=[category_name])
         category = self.populator.get_category_with_name(category_name)
         self.browse_category(category, strings_displayed=[repository_name])

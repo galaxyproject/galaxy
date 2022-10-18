@@ -30,6 +30,8 @@ running_standalone = False
 
 
 class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user.
 
@@ -174,7 +176,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         We are at step 1, Galaxy side.
         Install blastxml_to_top_descr_0120 to Galaxy, with repository dependencies, so that the datatypes repository is also installed.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             name="blastxml_to_top_descr_0120",
             owner=common.test_user_1_name,

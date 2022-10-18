@@ -30,6 +30,8 @@ data_manager_tar_file = "1460_files/data_manager_files/test_data_manager.tar"
 class TestDataManagers(ShedTwillTestCase):
     """Test installing a repository containing a Data Manager."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
@@ -71,7 +73,6 @@ class TestDataManagers(ShedTwillTestCase):
 
         This is step 3 - Attempt to install the repository into a galaxy instance, verify that it is installed.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             data_manager_repository_name,
             common.test_user_1_name,

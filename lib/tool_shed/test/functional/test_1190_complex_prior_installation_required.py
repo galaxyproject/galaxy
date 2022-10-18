@@ -36,6 +36,8 @@ running_standalone = False
 class TestComplexPriorInstallation(ShedTwillTestCase):
     """Test features related to datatype converters."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -170,7 +172,6 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
 
         This is step 4 - Install package_matplotlib_1_2_0170 with repository dependencies.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         matplotlib_repository = self._get_repository_by_name_and_owner(
             matplotlib_repository_name, common.test_user_1_name
         )

@@ -36,6 +36,8 @@ running_standalone = False
 class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
     """Verify that the code correctly handles circular dependencies down to n levels."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -325,7 +327,6 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0055_install_column_repository(self):
         """Install column_maker with repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             column_repository_name,
             common.test_user_1_name,

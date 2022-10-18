@@ -19,6 +19,8 @@ running_standalone = False
 class TestBasicRepositoryDependencies(ShedTwillTestCase):
     """Testing emboss 5 with repository dependencies."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
@@ -168,7 +170,6 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
 
     def test_0045_install_repository_with_invalid_repository_dependency(self):
         """Install the repository and verify that galaxy detects invalid repository dependencies."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         preview_strings_displayed = [
             "emboss_0110",
