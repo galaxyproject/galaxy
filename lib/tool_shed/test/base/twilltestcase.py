@@ -1330,14 +1330,6 @@ class ShedTwillTestCase(ShedApiTestCase):
             assert "The status has not changed in the tool shed for repository" in message, str(response_dict)
         return response_dict
 
-    def update_tool_shed_status(self):
-        api_key = get_admin_api_key()
-        response = requests.get(
-            f"{self.galaxy_url}/api/tool_shed_repositories/check_for_updates?key={api_key}",
-            timeout=DEFAULT_SOCKET_TIMEOUT,
-        )
-        assert response.status_code != 403, response.content
-
     def upload_file(
         self,
         repository: Repository,
