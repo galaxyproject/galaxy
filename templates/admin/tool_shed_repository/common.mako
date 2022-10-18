@@ -154,26 +154,4 @@
     </div>
 </%def>
 
-<%def name="render_readme_section( containers_dict )">
-    <%
-        class RowCounter( object ):
-            def __init__( self ):
-                self.count = 0
-            def increment( self ):
-                self.count += 1
-            def __str__( self ):
-                return str( self.count )
-
-        readme_files_root_folder = containers_dict.get( 'readme_files', None )
-    %>
-    %if readme_files_root_folder:
-        <p/>
-        <div class="form-row">
-            <% row_counter = RowCounter() %>
-            <table cellspacing="2" cellpadding="2" border="0" width="100%" class="tables container-table">
-                ${render_folder( readme_files_root_folder, 0, parent=None, row_counter=row_counter, is_root_folder=True )}
-            </table>
-        </div>
-    %endif
-</%def>
 
