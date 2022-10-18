@@ -1814,7 +1814,7 @@ class Psl(Tabular):
             "blockCount",
             "blockSizes",
             "qStarts",
-            "tStarts"
+            "tStarts",
         ]
 
     def display_peek(self, dataset):
@@ -1923,20 +1923,20 @@ class Psl(Tabular):
                 if int(items[17]) < 0:
                     raise Exception("Out of range")
                 # blockSizes
-                s = items[18].rstrip(',')
-                s_items = s.split(',')
+                s = items[18].rstrip(",")
+                s_items = s.split(",")
                 for item in s_items:
                     if int(item) < 0:
                         raise Exception("Out of range")
                 # qStarts
-                s = items[19].rstrip(',')
-                s_items = s.split(',')
+                s = items[19].rstrip(",")
+                s_items = s.split(",")
                 for item in s_items:
                     if int(item) < 0:
                         raise Exception("Out of range")
                 # tStarts
-                s = items[20].rstrip(',')
-                s_items = s.split(',')
+                s = items[20].rstrip(",")
+                s_items = s.split(",")
                 for item in s_items:
                     if int(item) < 0:
                         raise Exception("Out of range")
