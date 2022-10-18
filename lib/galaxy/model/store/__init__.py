@@ -2359,9 +2359,10 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                                 )
                                 output_subdomain_items.append(output)
                 step_index = workflow_step.order_index
+                step_name = workflow_step.label or workflow_step.tool_id
                 pipeline_step = PipelineStep(
                     step_number=step_index,
-                    name=workflow_step.label,
+                    name=step_name,
                     description=workflow_step.annotations[0].annotation if workflow_step.annotations else "",
                     version=workflow_step.tool_version,
                     prerequisite=[],
