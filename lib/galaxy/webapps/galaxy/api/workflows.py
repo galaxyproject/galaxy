@@ -1413,9 +1413,7 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_delete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
-        if workflow_to_delete.user != trans.user and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException()
+        workflow_to_delete = self.workflows_manager.get_stored_workflow(trans, workflow_id, check_ownership=True)
         self.workflows_manager.delete(workflow_to_delete)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -1428,9 +1426,7 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_undelete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
-        if workflow_to_undelete.user != trans.user and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException()
+        workflow_to_undelete = self.workflows_manager.get_stored_workflow(trans, workflow_id, check_ownership=True)
         self.workflows_manager.undelete(workflow_to_undelete)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
