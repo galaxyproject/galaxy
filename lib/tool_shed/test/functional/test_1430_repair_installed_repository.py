@@ -37,6 +37,8 @@ In Galaxy:
 class TestRepairRepository(ShedTwillTestCase):
     """Test repairing an installed repository."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
@@ -123,7 +125,6 @@ class TestRepairRepository(ShedTwillTestCase):
         handle repository dependencies so that the filter_1430 repository is also installed. Make sure to install
         the repositories in a specified section of the tool panel.
         """
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             "column_1430",
             common.test_user_1_name,

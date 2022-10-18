@@ -59,6 +59,8 @@ tc.options["equiv_refresh_interval"] = 0
 class ShedTwillTestCase(ShedApiTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
+    requires_galaxy: bool = False
+
     def setUp(self):
         super().setUp()
         # Security helper
@@ -73,6 +75,8 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.tool_data_path = os.environ.get("GALAXY_TEST_TOOL_DATA_PATH")
         self.shed_tool_conf = os.environ.get("GALAXY_TEST_SHED_TOOL_CONF")
         self.test_db_util = test_db_util
+        if self.requires_galaxy:
+            self._galaxy_login(email=common.admin_email, username=common.admin_username)
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
@@ -717,7 +721,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         token = html[(token_quote_start_index + 1) : token_quote_end_index]
         return token
 
-    def galaxy_login(
+    def _galaxy_login(
         self, email="test@bx.psu.edu", password="testuser", username="admin-user", redirect="", logout_first=True
     ):
         if logout_first:

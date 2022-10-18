@@ -7,11 +7,12 @@ from ..base.twilltestcase import (
 class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     """Test uninstalling and reinstalling a basic repository."""
 
+    requires_galaxy = True
+
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0000 category and upload the filtering repository to the tool shed, if necessary."""
@@ -77,7 +78,6 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
 
     def test_0010_install_filtering_repository(self):
         """Install the filtering repository into the Galaxy instance."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             "filtering_0000",
             common.test_user_1_name,
