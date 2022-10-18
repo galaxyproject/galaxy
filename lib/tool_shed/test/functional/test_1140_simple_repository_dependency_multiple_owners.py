@@ -192,8 +192,6 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         are now new datatypes in the registry matching the ones defined in blast_datatypes_0120. Also check that
         blast_datatypes_0120 is labeled as an installed repository dependency of blastxml_to_top_descr_0120.
         """
-        tool_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            tool_repository_name, common.test_user_1_name
-        )
+        tool_repository = self._get_installed_repository_by_name_owner(tool_repository_name, common.test_user_1_name)
         self._assert_has_valid_tool_with_name("BLAST top hit")
         self._assert_repo_has_tool_with_id(tool_repository, "blastxml_to_top_descr")

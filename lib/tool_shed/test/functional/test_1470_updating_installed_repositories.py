@@ -102,9 +102,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
 
         This is step 3 - In Galaxy, get updates to the repository.
         """
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
         self.update_installed_repository(installed_repository)
 
     def test_0025_uninstall_repository(self):
@@ -112,9 +110,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
 
         This is step 4 - In Galaxy, uninstall the repository.
         """
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
         self._uninstall_repository(installed_repository)
 
     def test_0030_reinstall_repository(self):
@@ -122,9 +118,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
 
         This is step 5 - In Galaxy, reinstall the repository.
         """
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
         self.reinstall_repository_api(installed_repository)
 
     def test_0035_verify_absence_of_ghosts(self):
@@ -132,9 +126,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
 
         This is step 6 - Make sure step 5 created no white ghosts.
         """
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name, return_multiple=True
-        )
+        installed_repository = self._get_installed_repositories_by_name_owner(repository_name, common.test_user_1_name)
         assert (
             len(installed_repository) == 1
         ), 'Multiple filtering repositories found in the Galaxy database, possibly indicating a "white ghost" scenario.'

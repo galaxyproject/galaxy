@@ -228,13 +228,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0035_verify_installation_order(self):
         """Verify that convert_chars_0160 and column_maker_0160 were installed before filtering_0160."""
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         # Filtering was selected for installation, so convert chars and column maker should have been installed first.
@@ -247,13 +247,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0040_deactivate_all_repositories(self):
         """Uninstall convert_chars_0160, column_maker_0160, and filtering_0160."""
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(filter_repository)
@@ -262,7 +262,7 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
 
     def test_0045_reactivate_filter_repository(self):
         """Reinstall the filtering_0160 repository."""
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(filter_repository)
@@ -273,13 +273,13 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
     def test_0050_verify_reinstallation_order(self):
         """Verify that convert_chars_0160 and column_maker_0160 were reinstalled before filtering_0160."""
         # Fixme: this test is not covering any important behavior since repositories were only deactivated and not uninstalled.
-        filter_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        filter_repository = self._get_installed_repository_by_name_owner(
             filter_repository_name, common.test_user_1_name
         )
-        column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         # Filtering was selected for reinstallation, so convert chars and column maker should have been installed first.

@@ -107,19 +107,15 @@ class TestBasicToolShedFeatures(ShedTwillTestCase):
             "Test 0000 Basic Repository Features 1",
             new_tool_panel_section_label="test_1000",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repo_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repo_name, common.test_user_1_name)
         changeset = str(installed_repository.installed_changeset_revision)
-        assert self.get_installed_repository_for(common.test_user_1, repo_name, changeset)
+        assert self._get_installed_repository_for(common.test_user_1, repo_name, changeset)
         self._assert_has_valid_tool_with_name("Filter1")
         self._assert_repo_has_tool_with_id(installed_repository, "Filter1")
 
     def test_0030_install_filtering_repository_again(self):
         """Attempt to install the already installed filtering repository."""
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repo_name, common.test_user_1_name
-        )
+        installed_repository = self._get_installed_repository_by_name_owner(repo_name, common.test_user_1_name)
         # Just make sure the repo is still installed, used to monitoring tests but we've
         # removed that page.
         self._install_repository(
@@ -128,7 +124,7 @@ class TestBasicToolShedFeatures(ShedTwillTestCase):
             "Test 0000 Basic Repository Features 1",
         )
         changeset = str(installed_repository.installed_changeset_revision)
-        assert self.get_installed_repository_for(common.test_user_1, repo_name, changeset)
+        assert self._get_installed_repository_for(common.test_user_1, repo_name, changeset)
 
     def test_0035_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""
