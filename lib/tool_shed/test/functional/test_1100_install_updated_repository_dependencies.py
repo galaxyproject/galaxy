@@ -89,7 +89,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_column_repository)
+        self._uninstall_repository(installed_column_repository)
 
     def test_0020_upload_dependency_xml(self):
         """Upload a repository_dependencies.xml file to column_maker that specifies convert_chars."""

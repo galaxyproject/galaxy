@@ -91,7 +91,7 @@ class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             "filtering_0000", common.test_user_1_name
         )
-        self.uninstall_repository(installed_repository)
+        self._uninstall_repository(installed_repository)
         self._assert_has_no_installed_repos_with_names("filtering_0000")
 
     def test_0020_reinstall_filtering_repository(self):

@@ -186,7 +186,7 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
         )
         self._assert_repo_has_tool_with_id(installed_repository, "EMBOSS: antigenic1")
         self._assert_has_valid_tool_with_name("antigenic")
-        self.update_installed_repository_api(installed_repository, verify_no_updates=True)
+        self.update_installed_repository(installed_repository, verify_no_updates=True)
 
     def test_0025_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

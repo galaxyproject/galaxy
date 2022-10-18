@@ -105,7 +105,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        self.update_installed_repository_api(installed_repository)
+        self.update_installed_repository(installed_repository)
 
     def test_0025_uninstall_repository(self):
         """Uninstall the filtering_1470 repository.
@@ -115,7 +115,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_repository)
+        self._uninstall_repository(installed_repository)
 
     def test_0030_reinstall_repository(self):
         """Reinstall the filtering_1470 repository.
