@@ -125,7 +125,7 @@ export default {
         readOnly() {
             return !!this.workflow.shared;
         },
-        isDeleted(){
+        isDeleted() {
             return this.workflow.deleted;
         },
         sourceUrl() {
@@ -216,19 +216,17 @@ export default {
         onRestore: function () {
             const id = this.workflow.id;
             const name = this.workflow.name;
-            const confirmationMessage = this.l(`Are you sure you want to restore workflow '${name}'?`);
-            if (window.confirm(confirmationMessage)) {
-                console.log (name + " is restored!")
-                // this.services
-                //     .undeleteWorkflow(id) //what is function called on backend?
-                //     .then((message) => {
-                //         this.$emit("onRestore", id);
-                //         this.$emit("onSuccess", message);
-                //     })
-                //     .catch((error) => {
-                //         this.$emit("onError", error);
-                //     });
-            }
+
+            console.log(name + " is restored!");
+            // this.services
+            //     .undeleteWorkflow(id) //what is function called on backend?
+            //     .then((message) => {
+            //         this.$emit("onRestore", id);
+            //         this.$emit("onSuccess", message);
+            //     })
+            //     .catch((error) => {
+            //         this.$emit("onError", error);
+            //     });
         },
     },
 };
