@@ -299,20 +299,6 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_repository_changelog(repository)
         self.check_string_count_in_page("Repository metadata is associated with this change set.", metadata_count)
 
-    def check_exported_repository_dependency(self, dependency_filename, repository_name, repository_owner):
-        root, error_message = xml_util.parse_xml(dependency_filename)
-        for elem in root.findall("repository"):
-            if "changeset_revision" in elem:
-                raise AssertionError(
-                    "Exported repository %s with owner %s has a dependency with a defined changeset revision."
-                    % (repository_name, repository_owner)
-                )
-            if "toolshed" in elem:
-                raise AssertionError(
-                    "Exported repository %s with owner %s has a dependency with a defined tool shed."
-                    % (repository_name, repository_owner)
-                )
-
     def check_for_valid_tools(self, repository, strings_displayed=None, strings_not_displayed=None):
         if strings_displayed is None:
             strings_displayed = ["Valid tools"]
