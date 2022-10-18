@@ -9,9 +9,9 @@
     <!-- <edam_operations>
     </edam_operations> -->
     <inputs>
-        <param type="dataset" name="input" label="Input Dataset" help="A dataset which will be duplicated."/>
-        <param type="integer" name="number" label="Size of output collection" help="Number of times to duplicate the input dataset."/>
-        <param type="text" name="element_identifier" label="Element identifier" help="Each element in the output collection will be assigned this identifier, with an integer appended." />
+        <param name="input" type="data" label="Input Dataset" help="A dataset which will be duplicated."/>
+        <param name="number" type="integer" value="" label="Size of output collection" help="Number of times to duplicate the input dataset."/>
+        <param name="element_identifier" type="text" label="Element identifier" help="Each element in the output collection will be assigned this identifier, with an integer appended." />
     </inputs>
     <outputs>
         <collection name="output" format_source="input" type_source="input" label="${on_string} (duplicated)" />
