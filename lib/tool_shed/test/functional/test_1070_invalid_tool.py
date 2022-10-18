@@ -75,10 +75,8 @@ class TestFreebayesRepository(ShedTwillTestCase):
             install_tool_dependencies=False,
             new_tool_panel_section_label="test_1070",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
-        assert self.get_installed_repository_for(
+        installed_repository = self._get_installed_repository_by_name_owner(repository_name, common.test_user_1_name)
+        assert self._get_installed_repository_for(
             common.test_user_1, repository_name, installed_repository.installed_changeset_revision
         )
         self.update_installed_repository(installed_repository, verify_no_updates=True)
