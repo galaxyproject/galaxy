@@ -15,9 +15,7 @@ from galaxy.tool_shed.util.repository_util import (
     get_tool_shed_repository_by_id,
 )
 from galaxy.util import unicodify
-from galaxy.util.tool_shed import (
-    common_util,
-)
+from galaxy.util.tool_shed import common_util
 from .admin import AdminGalaxy
 
 log = logging.getLogger(__name__)
