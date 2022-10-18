@@ -10,7 +10,6 @@
         return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
-<%namespace file="/display_common.mako" import="get_class_plural" />
 
 ##
 ## Override methods from base.mako and base_panels.mako
