@@ -33,24 +33,37 @@
                     @onRemove="onRemove"
                     @onUpdate="onUpdate"
                     @onSuccess="onSuccess"
-                    @onError="onError" />
+                    @onError="onError"
+                    @onRestore="onRestore" />
             </template>
             <template v-slot:cell(tags)="row">
-                <Tags :index="row.index" :tags="row.item.tags" @input="onTags" @tag-click="onTagClick" />
+                <Tags
+                    :index="row.index"
+                    :tags="row.item.tags"
+                    @input="onTags"
+                    @tag-click="onTagClick"
+                    :disabled="row.item.deleted" />
             </template>
             <template v-slot:cell(published)="row">
-                <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(filter)" />
+                <SharingIndicators
+                    v-if="!row.item.deleted"
+                    :object="row.item"
+                    @filter="(filter) => appendFilter(filter)" />
+                <div v-else>&#8212;</div>
             </template>
             <template v-slot:cell(show_in_tool_panel)="row">
                 <WorkflowBookmark
+                    v-if="!row.item.deleted"
                     :checked="row.item.show_in_tool_panel"
                     @bookmark="(checked) => bookmarkWorkflow(row.item.id, checked)" />
+                <div v-else>&#8212;</div>
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(execute)="row">
-                <WorkflowRunButton :id="row.item.id" :root="root" />
+                <WorkflowRunButton v-if="!row.item.deleted" :id="row.item.id" :root="root" />
+                <div v-else>&#8212;</div>
             </template>
         </b-table>
         <b-pagination
@@ -232,6 +245,9 @@ export default {
             this.refresh();
         },
         onUpdate: function (id, data) {
+            this.refresh();
+        },
+        onRestore: function (id) {
             this.refresh();
         },
     },
