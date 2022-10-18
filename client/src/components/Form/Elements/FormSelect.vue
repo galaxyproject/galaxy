@@ -70,8 +70,7 @@ export default {
         },
         defaultValue: {
             type: [String, Array],
-            required: false,
-            default: null,
+            required: true,
         },
         options: {
             type: Array,
@@ -103,14 +102,14 @@ export default {
     computed: {
         formattedOptions() {
             const formattedOptions = [];
-            for (let i = 0, len = this.options.length; i < len; i++) {
+            this.options.map((option, i) => {
                 formattedOptions[i] = {
-                    label: this.options[i][0],
-                    value: this.options[i][1],
-                    default: this.options[i][2],
+                    label: option[0],
+                    value: option[1],
+                    default: option[2],
                 };
-            }
-            if (this.multiple == false && this.optional == true) {
+            });
+            if (!this.multiple && this.optional) {
                 formattedOptions.unshift({
                     label: "Nothing selected",
                     value: null,
@@ -165,24 +164,14 @@ export default {
     },
     methods: {
         selectValueMultiple(val) {
-            const selected = [];
             const selectedValues = this.normalizeSelectedValues(val);
-
-            for (let i = 0; i < selectedValues.length; i++) {
-                selected.push(this.formattedOptions.find((option) => option.value == selectedValues[i]));
-            }
-
-            return selected;
+            return this.formattedOptions.filter((option) => selectedValues.indexOf(option.value) > -1);
         },
         selectValueCheckboxes(val) {
-            const selected = [];
             const selectedValues = this.normalizeSelectedValues(val);
-
-            for (let i = 0; i < selectedValues.length; i++) {
-                selected.push(this.formattedOptions.find((option) => option.value == selectedValues[i]).value);
-            }
-
-            return selected;
+            return this.formattedOptions
+                .filter((option) => selectedValues.indexOf(option.value) > -1)
+                .map((option) => option.value);
         },
         selectValueSingle(val) {
             return this.formattedOptions.find((option) => option.value === val).value;
@@ -192,13 +181,7 @@ export default {
         },
         selectDefaultLabelValue() {
             // Try to find a value labeled default in the options
-            for (let i = 0, len = this.formattedOptions.length; i < len; i++) {
-                if (this.formattedOptions[i].default) {
-                    return this.formattedOptions[i];
-                }
-            }
-
-            return this.selectFirstValue();
+            return this.formattedOptions.filter((option) => option.default);
         },
         selectFirstValue() {
             return this.formattedOptions[0];
