@@ -3680,8 +3680,11 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
         hda = incoming["input"]
         number = incoming["number"]
         element_identifier = incoming["element_identifier"]
-        elements = {f"{element_identifier} {n}": hda.copy(copy_tags=hda.tags, flush=False) for n in range(number)}
+        elements = {
+            f"{element_identifier} {n}": hda.copy(copy_tags=hda.tags, flush=False) for n in range(1, number + 1)
+        }
 
+        self._add_datasets_to_history(history, elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=elements, propagate_hda_tags=False
         )

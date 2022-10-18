@@ -2316,12 +2316,13 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
         input_subdomain_items: List[InputSubdomainItem] = []
         output_subdomain_items: List[OutputSubdomainItem] = []
         for step in workflow_invocation.steps:
-            software_prerequisite_tracker.register_step(step.workflow_step)
-            if step.workflow_step.type == "tool":
+            workflow_step = step.workflow_step
+            software_prerequisite_tracker.register_step(workflow_step)
+            if workflow_step.type == "tool":
                 workflow_outputs_list = set()
                 output_list: List[DescriptionDomainUri] = []
                 input_list: List[DescriptionDomainUri] = []
-                for wo in step.workflow_step.workflow_outputs:
+                for wo in workflow_step.workflow_outputs:
                     workflow_outputs_list.add(wo.output_name)
                 for job in step.jobs:
                     for job_input in job.input_datasets:
@@ -2357,11 +2358,11 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                                     ),
                                 )
                                 output_subdomain_items.append(output)
-                workflow_step = step.workflow_step
                 step_index = workflow_step.order_index
+                step_name = workflow_step.label or workflow_step.tool_id
                 pipeline_step = PipelineStep(
                     step_number=step_index,
-                    name=workflow_step.label,
+                    name=step_name,
                     description=workflow_step.annotations[0].annotation if workflow_step.annotations else "",
                     version=workflow_step.tool_version,
                     prerequisite=[],
@@ -2370,20 +2371,20 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                 )
                 pipeline_steps.append(pipeline_step)
 
-            if step.workflow_step.type == "data_input" and step.output_datasets:
+            if workflow_step.type == "data_input" and step.output_datasets:
                 for output_assoc in step.output_datasets:
                     encoded_dataset_id = self.app.security.encode_id(output_assoc.dataset_id)
                     url = get_dataset_url(encoded_dataset_id)
                     input_obj = InputSubdomainItem(
                         uri=Uri(
                             uri=url,
-                            filename=step.workflow_step.label,
-                            access_time=step.workflow_step.update_time.isoformat(),
+                            filename=workflow_step.label,
+                            access_time=workflow_step.update_time.isoformat(),
                         ),
                     )
                     input_subdomain_items.append(input_obj)
 
-            if step.workflow_step.type == "data_collection_input" and step.output_dataset_collections:
+            if workflow_step.type == "data_collection_input" and step.output_dataset_collections:
                 for output_dataset_collection_association in step.output_dataset_collections:
                     encoded_dataset_id = self.app.security.encode_id(
                         output_dataset_collection_association.dataset_collection_id
@@ -2392,8 +2393,8 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
                     input_obj = InputSubdomainItem(
                         uri=Uri(
                             uri=url,
-                            filename=step.workflow_step.label,
-                            access_time=step.workflow_step.update_time.isoformat(),
+                            filename=workflow_step.label,
+                            access_time=workflow_step.update_time.isoformat(),
                         ),
                     )
                     input_subdomain_items.append(input_obj)
