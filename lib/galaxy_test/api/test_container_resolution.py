@@ -1,8 +1,7 @@
 from ._framework import ApiTestCase
 
 
-class ContainerResolversApiTestCase(ApiTestCase):
-
+class ContainerResolutionApiTestCase(ApiTestCase):
     def test_index(self):
         response = self._get("container_resolvers", admin=True)
         assert response.status_code == 200
