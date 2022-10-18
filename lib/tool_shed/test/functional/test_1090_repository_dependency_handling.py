@@ -123,7 +123,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_column_repository)
+        self._uninstall_repository(installed_column_repository)
         self.test_db_util.ga_refresh(installed_column_repository)
         self.check_galaxy_repository_tool_panel_section(installed_column_repository, "column_maker")
 
@@ -131,7 +131,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_convert_repository)
+        self._uninstall_repository(installed_convert_repository)
         self.test_db_util.ga_refresh(installed_convert_repository)
         self.check_galaxy_repository_tool_panel_section(installed_convert_repository, "column_maker")
 
@@ -170,8 +170,8 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     #                                                                                        common.test_user_1_name )
     #    installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner( column_repository_name,
     #                                                                                        common.test_user_1_name )
-    #    self.uninstall_repository( installed_convert_repository )
-    #    self.uninstall_repository( installed_column_repository )
+    #    self._uninstall_repository( installed_convert_repository )
+    #    self._uninstall_repository( installed_column_repository )
     #    self.test_db_util.ga_refresh( installed_convert_repository )
     #    self.test_db_util.ga_refresh( installed_column_repository )
     #    self.check_galaxy_repository_tool_panel_section( installed_column_repository, 'new_column_maker' )

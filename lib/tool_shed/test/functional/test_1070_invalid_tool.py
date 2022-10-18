@@ -81,5 +81,5 @@ class TestFreebayesRepository(ShedTwillTestCase):
         assert self.get_installed_repository_for(
             common.test_user_1, repository_name, installed_repository.installed_changeset_revision
         )
-        self.update_installed_repository_api(installed_repository, verify_no_updates=True)
+        self.update_installed_repository(installed_repository, verify_no_updates=True)
         self._assert_repo_has_invalid_tool_in_file(installed_repository, "bismark_bowtie_wrapper.xml")
