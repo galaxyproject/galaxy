@@ -1,8 +1,8 @@
 <script setup>
 import { watch } from "vue";
 import { BButton } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useTaskMonitor } from "composables/useTaskMonitor";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const { isRunning, isCompleted, hasFailed, requestHasFailed, waitForTask } = useTaskMonitor();
 
@@ -40,12 +40,10 @@ library.add(faCloudUploadAlt, faSpinner, faCheckCircle, faExclamationCircle);
 </script>
 
 <template>
-    <div>
-        <b-button v-b-tooltip.hover.bottom :title="props.title" @click="() => emit('onClick')">
-            <font-awesome-icon v-if="isRunning" icon="spinner" spin />
-            <font-awesome-icon v-else-if="hasFailed || requestHasFailed" icon="exclamation-circle" />
-            <font-awesome-icon v-else-if="isCompleted" icon="check-circle" />
-            <font-awesome-icon v-else icon="cloud-upload-alt" />
-        </b-button>
-    </div>
+    <b-button v-b-tooltip.hover.bottom :title="props.title" @click="() => emit('onClick')">
+        <font-awesome-icon v-if="isRunning" icon="spinner" spin />
+        <font-awesome-icon v-else-if="hasFailed || requestHasFailed" icon="exclamation-circle" />
+        <font-awesome-icon v-else-if="isCompleted" icon="check-circle" />
+        <font-awesome-icon v-else icon="cloud-upload-alt" />
+    </b-button>
 </template>

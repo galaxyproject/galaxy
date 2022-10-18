@@ -5,15 +5,13 @@ import axios from "axios";
 import { Toast } from "ui/toast";
 import { safePath } from "utils/redirect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-library.add(faSpinner);
+import ExternalLink from "components/ExternalLink";
 
 const sendBCOModal = ref(null);
 const generatingBCO = ref(false);
 
 const form = reactive({
-    fetch: "",
+    fetch: "https://biocomputeobject.org",
     authorization: "",
     table: "BCO",
     owner_group: "",
@@ -120,7 +118,9 @@ defineExpose({ showModal });
             <p>
                 To submit to a BCODB you need to already have an authenticated account. Instructions on submitting a BCO
                 from Galaxy are available
-                <a href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/" target="_blank">here</a>.
+                <external-link href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/" target="_blank"
+                    >here</external-link
+                >.
             </p>
             <form @submit.prevent="submitForm">
                 <div class="form-group">
@@ -131,7 +131,7 @@ defineExpose({ showModal });
                             type="text"
                             class="form-control"
                             placeholder="https://biocomputeobject.org"
-                            autocomplete="section-bco"
+                            autocomplete="off"
                             required />
                         BCO DB URL (example: https://biocomputeobject.org)
                     </label>
@@ -143,7 +143,7 @@ defineExpose({ showModal });
                             v-model="form.authorization"
                             type="password"
                             class="form-control"
-                            autocomplete="section-bco"
+                            autocomplete="off"
                             required />
                         User API Key
                     </label>
@@ -167,7 +167,7 @@ defineExpose({ showModal });
                             v-model="form.owner_group"
                             type="text"
                             class="form-control"
-                            autocomplete="section-bco"
+                            autocomplete="off"
                             required />
                         User Name
                     </label>

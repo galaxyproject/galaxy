@@ -1,8 +1,7 @@
 <script setup>
 import { InvocationExportPluginAction } from "./model";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-
 import { ref } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const modal = ref(null);
 
