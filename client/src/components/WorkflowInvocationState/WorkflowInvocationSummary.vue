@@ -13,8 +13,9 @@
             </span>
         </div>
         <div v-else>
-            <span class="fa fa-spinner fa-spin" />
-            <span>Invocation {{ indexStr }}...</span>
+            <b-alert variant="info" show>
+                <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
+            </b-alert>
             <span
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
@@ -55,6 +56,7 @@
 import { getRootFromIndexLink } from "onload";
 import mixin from "components/JobStates/mixin";
 import ProgressBar from "components/ProgressBar";
+import LoadingSpan from "components/LoadingSpan";
 
 import { mapGetters } from "vuex";
 
@@ -63,6 +65,7 @@ const getUrl = (path) => getRootFromIndexLink() + path;
 export default {
     components: {
         ProgressBar,
+        LoadingSpan,
     },
     mixins: [mixin],
     props: {
