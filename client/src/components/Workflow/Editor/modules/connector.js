@@ -172,7 +172,7 @@ class Connector {
             { x: end_x - cp_shift, y: end_y + offset_end },
             { x: end_x, y: end_y + offset_end },
         ];
-        const lineFunction = d3.svg
+        const lineFunction = d3
             .line()
             .x(function (d) {
                 return d.x;
@@ -180,7 +180,7 @@ class Connector {
             .y(function (d) {
                 return d.y;
             })
-            .interpolate("basis");
+            .curve(d3.curveBasis);
         this.svg
             .append("path")
             .attr("class", "ribbon-outer")
