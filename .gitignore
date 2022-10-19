@@ -78,6 +78,7 @@ config/*
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
 !config/plugins
+!config/templates
 static/welcome.html.*
 static/welcome.html
 static/client_build_hash.txt
