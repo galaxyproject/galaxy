@@ -526,14 +526,13 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
 
     def test_9905_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""
-        repository_metadata = dict()
-        repositories = self.test_db_util.get_all_installed_repositories(actually_installed=True)
+        repositories = self.get_all_installed_repositories()
+        repository_metadata = {}
         for repository in repositories:
-            repository_metadata[self.security.encode_id(repository.id)] = repository.metadata_
-        self.reset_metadata_on_selected_installed_repositories(list(repository_metadata.keys()))
-        for repository in repositories:
-            self.test_db_util.ga_refresh(repository)
-            old_metadata = repository_metadata[self.security.encode_id(repository.id)]
+            repository_metadata[repository.id] = repository.metadata_
+        self.reset_metadata_on_installed_repositories(repositories)
+        for repository in self.get_all_installed_repositories():
+            old_metadata = repository_metadata[repository.id]
             # When a repository with tools to be displayed in a tool panel section is deactivated and reinstalled,
             # the tool panel section remains in the repository metadata. However, when the repository's metadata
             # is subsequently reset, the tool panel section is removed from the repository metadata. While this

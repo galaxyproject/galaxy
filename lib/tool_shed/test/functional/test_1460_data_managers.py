@@ -77,16 +77,17 @@ class TestDataManagers(ShedTwillTestCase):
             data_manager_repository_name,
             common.test_user_1_name,
             category_name,
-            install_tool_dependencies=True,
+            install_tool_dependencies=False,
         )
 
     def test_0030_verify_data_manager_tool(self):
         """Verify that the data_manager_1460 repository is installed and Data Manager tool appears in list in Galaxy."""
         repository = self._get_installed_repository_by_name_owner(data_manager_repository_name, common.test_user_1_name)
-        strings_displayed = ["status", "jobs", data_manager_name]
-        self.display_installed_jobs_list_page(
-            repository, data_manager_names=data_manager_name, strings_displayed=strings_displayed
-        )
+        if self.full_stack_galaxy:
+            strings_displayed = ["status", "jobs", data_manager_name]
+            self.display_installed_jobs_list_page(
+                repository, data_manager_names=data_manager_name, strings_displayed=strings_displayed
+            )
 
     def test_0040_verify_data_manager_data_table(self):
         """Verify that the installed repository populated shed_tool_data_table.xml and the sample files."""

@@ -24,7 +24,11 @@ from galaxy.tool_shed.galaxy_install.client import (
 )
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_util.data import ToolDataTableManager
-from galaxy.tool_util.toolbox.base import AbstractToolBox
+from galaxy.tool_util.loader_directory import looks_like_a_tool
+from galaxy.tool_util.toolbox.base import (
+    AbstractToolBox,
+    NullToolTagManager,
+)
 from galaxy.tool_util.toolbox.watcher import (
     get_tool_conf_watcher,
     get_tool_watcher,
@@ -66,6 +70,9 @@ class Config:
     shed_tool_data_table_config: str
     shed_data_manager_config_file: str
 
+    def get(self, key, default):
+        return getattr(self, key, default)
+
 
 class TestTool:
     _macro_paths: List[str] = []
@@ -102,6 +109,12 @@ class TestToolBox(AbstractToolBox):
             installed_changeset_revision=installed_changeset_revision,
             from_cache=True,
         )
+
+    def _looks_like_a_tool(self, path):
+        return looks_like_a_tool(path, enable_beta_formats=False)
+
+    def tool_tag_manager(self):
+        return NullToolTagManager()
 
 
 class Watchers:
@@ -202,6 +215,12 @@ class StandaloneInstallationTarget(InstallationTarget):
             config_filename=self.config.shed_tool_data_table_config,
             other_config_dict=self.config,
         )
+        dependency_dir = target_directory / "_dependencies"
+        dependency_dir.mkdir()
+
+    @property
+    def tool_dependency_dir(self) -> Optional[str]:
+        return None
 
     def reload_toolbox(self):
         self._toolbox = TestToolBox(

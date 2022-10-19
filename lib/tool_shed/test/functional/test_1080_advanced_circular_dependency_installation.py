@@ -135,15 +135,18 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             column_repository_name, common.test_user_1_name
         )
         assert self._get_installed_repository_for(
-            common.test_user_1, "convert_chars_0080", installed_convert_repository.installed_changeset_revision
+            common.test_user_1, convert_repository_name, installed_convert_repository.installed_changeset_revision
         )
-        self._assert_has_installed_repository_dependency(
-            installed_convert_repository, "column_maker_0080", installed_column_repository.installed_changeset_revision
-        )
-        # installed_convert_repository has required_repositories and the following string
-        # is included when not installing via the API. This distrubs me but we've not installed
-        # not from the API for a long time so I'm just dropping the check. -John
-        # "Missing repository dependencies",
+        if self.full_stack_galaxy:
+            # This branch has been broken since we switched from mako to API for installing...
+            self._assert_has_installed_repository_dependency(
+                installed_convert_repository,
+                column_repository_name,
+                installed_column_repository.installed_changeset_revision,
+            )
+        else:
+            # Previous mako had some string checks and such equivalent to this.
+            self._assert_has_missing_dependency(installed_convert_repository, column_repository_name)
 
     def test_0025_install_column_repository(self):
         """Install column maker with repository dependencies into column_maker tool panel section."""

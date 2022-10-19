@@ -147,7 +147,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
             common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
         )
         self.deactivate_repository(installed_filtering_repository)
-        self.test_db_util.ga_refresh(installed_filtering_repository)
+        self._refresh_tool_shed_repository(installed_filtering_repository)
         self._assert_has_missing_dependency(installed_freebayes_repository, filtering_repository_name)
         self.check_galaxy_repository_db_status(filtering_repository_name, common.test_user_1_name, "Deactivated")
 
@@ -185,7 +185,7 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         assert not self._get_installed_repository_for(
             common.test_user_1, freebayes_repository_name, installed_freebayes_repository.installed_changeset_revision
         )
-        self.test_db_util.ga_refresh(installed_freebayes_repository)
+        self._refresh_tool_shed_repository(installed_filtering_repository)
         self._assert_has_missing_dependency(installed_filtering_repository, freebayes_repository_name)
         self.check_galaxy_repository_db_status("freebayes_0040", "user1", "Deactivated")
 
@@ -207,6 +207,6 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         assert not self._get_installed_repository_for(
             common.test_user_1, filtering_repository_name, installed_filtering_repository.installed_changeset_revision
         )
-        self.test_db_util.ga_refresh(installed_filtering_repository)
+        self._refresh_tool_shed_repository(installed_freebayes_repository)
         self._assert_has_missing_dependency(installed_freebayes_repository, filtering_repository_name)
         self.check_galaxy_repository_db_status(filtering_repository_name, common.test_user_1_name, "Deactivated")
