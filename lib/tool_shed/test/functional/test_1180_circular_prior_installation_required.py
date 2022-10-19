@@ -283,8 +283,9 @@ class TestSimplePriorInstallation(ShedTwillTestCase):
             convert_repository_name, common.test_user_1_name
         )
         # Filtering was selected for reinstallation, so convert chars and column maker should have been installed first.
-        for repo in [convert_repository, column_repository, filter_repository]:
-            self.test_db_util.install_session().refresh(repo)
+        if self.full_stack_galaxy:
+            for repo in [convert_repository, column_repository, filter_repository]:
+                self.test_db_util.install_session().refresh(repo)
         assert (
             filter_repository.update_time > convert_repository.update_time
         ), "Prior installed convert_chars_0160 shows a later update time than filtering_0160"

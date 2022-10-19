@@ -263,7 +263,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             bwa_base_repository_name,
             common.test_user_1_name,
             category_name,
-            install_tool_dependencies=True,
             preview_strings_displayed=preview_strings_displayed,
         )
 

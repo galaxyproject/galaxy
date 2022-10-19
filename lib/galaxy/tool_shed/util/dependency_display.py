@@ -2,6 +2,7 @@ import logging
 import os
 
 from galaxy import util
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.util import utility_container_manager
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 
@@ -197,11 +198,12 @@ class DependencyDisplayer:
         """
         metadata = repository.metadata_
         if metadata:
+            irm = InstalledRepositoryManager(self.app)
             # Handle repository dependencies.
             (
                 installed_repository_dependencies,
                 missing_repository_dependencies,
-            ) = self.app.installed_repository_manager.get_installed_and_missing_repository_dependencies(repository)
+            ) = irm.get_installed_and_missing_repository_dependencies(repository)
             # Handle the current repository's tool dependencies.
             repository_tool_dependencies = metadata.get("tool_dependencies", None)
             # Make sure to display missing tool dependencies as well.
@@ -290,3 +292,20 @@ class GalaxyUtilityContainerManager(utility_container_manager.UtilityContainerMa
         except Exception as e:
             log.debug(f"Exception in build_repository_containers: {str(e)}")
         return containers_dict
+
+
+def build_manage_repository_dict(app, status, repository):
+    dd = DependencyDisplayer(app)
+    containers_dict = dd.populate_containers_dict_from_repository_metadata(
+        repository=repository,
+    )
+    management_dict = {
+        "status": status,
+    }
+    missing_repo_dependencies = containers_dict.get("missing_repository_dependencies", None)
+    if missing_repo_dependencies:
+        management_dict["missing_repository_dependencies"] = missing_repo_dependencies.to_dict()
+    repository_dependencies = containers_dict.get("repository_dependencies", None)
+    if repository_dependencies:
+        management_dict["repository_dependencies"] = repository_dependencies.to_dict()
+    return management_dict

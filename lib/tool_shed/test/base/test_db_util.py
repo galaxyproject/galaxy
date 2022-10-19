@@ -1,11 +1,15 @@
 import logging
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from sqlalchemy import (
     and_,
     false,
     true,
 )
+from uvloop import install
 
 import galaxy.model
 import galaxy.model.tool_shed_install
@@ -46,23 +50,21 @@ def get_all_repositories():
     return sa_session().query(model.Repository).all()
 
 
-def get_all_installed_repositories(actually_installed=False):
-    if actually_installed:
-        return (
-            install_session()
-            .query(galaxy.model.tool_shed_install.ToolShedRepository)
-            .filter(
-                and_(
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == false(),
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.status
-                    == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED,
-                )
+def get_all_installed_repositories(session=None) -> List[galaxy.model.tool_shed_install.ToolShedRepository]:
+    if session is None:
+        session = install_session()
+    return list(
+        session.query(galaxy.model.tool_shed_install.ToolShedRepository)
+        .filter(
+            and_(
+                galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == false(),
+                galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
+                galaxy.model.tool_shed_install.ToolShedRepository.table.c.status
+                == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED,
             )
-            .all()
         )
-    else:
-        return install_session().query(galaxy.model.tool_shed_install.ToolShedRepository).all()
+        .all()
+    )
 
 
 def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
@@ -89,15 +91,13 @@ def get_installed_repository_by_id(repository_id):
     )
 
 
-def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False):
-    query = (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(
-            and_(
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
-            )
+def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False, session=None):
+    if session is None:
+        session = install_session()
+    query = session.query(galaxy.model.tool_shed_install.ToolShedRepository).filter(
+        and_(
+            galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
+            galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
         )
     )
     if return_multiple:

@@ -15,6 +15,7 @@ from urllib.request import (
     urlopen,
 )
 
+from galaxy.tool_shed.galaxy_install import installed_repository_manager
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import repository_util
 from galaxy.tool_shed.util.container_util import get_components_from_key
@@ -263,7 +264,8 @@ class RepositoryDependencyInstallManager:
                                 log.info(
                                     f"Reactivating deactivated tool_shed_repository '{str(repository_db_record.name)}'."
                                 )
-                                self.app.installed_repository_manager.activate_repository(repository_db_record)
+                                irm = installed_repository_manager.InstalledRepositoryManager(self.app)
+                                irm.activate_repository(repository_db_record)
                                 # No additional updates to the database record are necessary.
                                 can_update_db_record = False
                             elif repository_db_record.status not in [
