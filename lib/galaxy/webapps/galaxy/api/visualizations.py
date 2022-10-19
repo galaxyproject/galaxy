@@ -190,6 +190,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
             username=visualization.user.username,
             slug=visualization.slug,
         )
+        dictionary["username"] = visualization.user.username
         dictionary["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, visualization)
         # need to encode ids in revisions as well
         encoded_revisions = []

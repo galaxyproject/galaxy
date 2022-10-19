@@ -1,4 +1,3 @@
-<%namespace name="masthead" file="/webapps/galaxy/galaxy.masthead.mako"/>
 <%namespace name="galaxy_client" file="/galaxy_client_app.mako" />
 
 <!DOCTYPE html>
@@ -49,28 +48,16 @@
 
     <body scroll="no" class="full-content">
         <div id="everything">
-
             <div id="background"></div>
-
-            %if self.galaxy_config['master']:
-                <div id="masthead" class="navbar navbar-fixed-top navbar-inverse"></div>
-                ${masthead.load()}
-            %endif
-
             ${self.message_box()}
-
             <div id="columns">
                 ${self.left_panel()}
                 ${self.center_panel()}
                 ${self.right_panel()}
             </div>
-
         </div>
-
         <div id='dd-helper' style="display: none;"></div>
-
         ${self.late_javascripts()}
-
     </body>
 </html>
 

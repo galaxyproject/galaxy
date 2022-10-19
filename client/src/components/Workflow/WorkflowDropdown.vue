@@ -106,7 +106,7 @@ export default {
             return safePath(`/workflows/export?id=${this.workflow.id}`);
         },
         urlView() {
-            return safePath(`/workflow/display_by_id?id=${this.workflow.id}`);
+            return safePath(`/published/workflow?id=${this.workflow.id}`);
         },
         urlInvocations() {
             return `/workflows/${this.workflow.id}/invocations`;

@@ -22,8 +22,8 @@
                 </b-button>
                 <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
                 <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
-                    ><br />
+                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
+                    <br />
                     <small>Created by {{ markdownConfig.username }}</small>
                 </span>
             </div>

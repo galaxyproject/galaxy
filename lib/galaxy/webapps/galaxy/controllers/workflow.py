@@ -217,9 +217,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             operation = kwargs["operation"].lower()
             if operation == "rename":
                 return self.rename(trans, **kwargs)
-            history_ids = util.listify(kwargs.get("id", []))
+            workflow_ids = util.listify(kwargs.get("id", []))
             if operation == "sharing":
-                return self.sharing(trans, id=history_ids)
+                return self.sharing(trans, id=workflow_ids)
         return self.stored_list_grid(trans, **kwargs)
 
     @web.expose
@@ -253,29 +253,24 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         elif format == "json-download":
             return self.export_to_file(trans, encoded_id)
 
-    @web.expose
-    def display_by_id(self, trans, id):
-        """Display workflow based on id."""
-        # Get workflow.
-        stored_workflow = self.get_stored_workflow(trans, id)
-        return self._display(trans, stored_workflow)
-
     def _display(self, trans, stored_workflow):
-        """Diplay workflow as HTML page."""
-
+        """Diplay workflow in client."""
         if stored_workflow is None:
             raise web.httpexceptions.HTTPNotFound()
+
         # Security check raises error if user cannot access workflow.
         self.security_check(trans, stored_workflow, False, True)
+
         # Get data for workflow's steps.
         self.get_stored_workflow_steps(trans, stored_workflow)
+
         # Get annotations.
         stored_workflow.annotation = self.get_item_annotation_str(
             trans.sa_session, stored_workflow.user, stored_workflow
         )
         for step in stored_workflow.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str(trans.sa_session, stored_workflow.user, step)
-        user_is_owner = True if trans.user == stored_workflow.user else False
+
         # Get rating data.
         user_item_rating = 0
         if trans.get_user():
@@ -285,32 +280,20 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             else:
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, stored_workflow)
-        return trans.fill_template_mako(
-            "workflow/display.mako",
-            item=stored_workflow,
-            item_data=stored_workflow.latest_workflow.steps,
-            user_item_rating=user_item_rating,
-            ave_item_rating=ave_item_rating,
-            num_ratings=num_ratings,
-            user_is_owner=user_is_owner,
-        )
 
-    @web.expose
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
+        # Encode page identifier.
+        workflow_id = trans.security.encode_id(stored_workflow.id)
 
-        stored = self.get_stored_workflow(trans, id, False, True)
-        if stored is None:
-            raise web.httpexceptions.HTTPNotFound()
-
-        # Get data for workflow's steps.
-        self.get_stored_workflow_steps(trans, stored)
-        # Get annotations.
-        stored.annotation = self.get_item_annotation_str(trans.sa_session, stored.user, stored)
-        for step in stored.latest_workflow.steps:
-            step.annotation = self.get_item_annotation_str(trans.sa_session, stored.user, step)
-        return trans.fill_template_mako(
-            "/workflow/item_content.mako", item=stored, item_data=stored.latest_workflow.steps
+        # Redirect to client.
+        return trans.response.send_redirect(
+            web.url_for(
+                controller="published",
+                action="workflow",
+                id=workflow_id,
+                user_item_rating=user_item_rating,
+                ave_item_rating=ave_item_rating,
+                num_ratings=num_ratings,
+            )
         )
 
     @web.expose

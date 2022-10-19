@@ -35,7 +35,6 @@ export function circster(options) {
 // Previously wandering around as window.thing = thing in the onload script
 export { show_in_overlay, hide_modal, show_message, show_modal, Modal } from "layout/modal";
 export { make_popupmenu, make_popup_menus } from "ui/popupmenu";
-export { render_embedded_items } from "mvc/embedded-objects";
 export { default as async_save_text } from "utils/async-save-text";
 
 // Previously "chart"

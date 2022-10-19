@@ -193,8 +193,8 @@ export default [
                 path: "form/create_group",
                 component: FormGeneric,
                 props: {
-                    url: "admin/create_group",
-                    redirect: "admin/groups",
+                    url: "/admin/create_group",
+                    redirect: "/admin/groups",
                 },
             },
             {

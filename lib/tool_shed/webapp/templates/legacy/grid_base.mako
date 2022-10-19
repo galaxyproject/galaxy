@@ -7,16 +7,7 @@
         if kwargs.get( 'embedded', False ):
             # No inheritance - using only embeddable content (self.body)
             return None
-        if context.get('use_panels'):
-            if context.get('webapp'):
-                app_name = context.get('webapp')
-            elif context.get('app'):
-                app_name = context.get('app').name
-            else:
-                app_name = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % app_name
-        else:
-            return '/base.mako'
+        return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
 <%namespace file="/display_common.mako" import="get_class_plural" />
@@ -37,11 +28,6 @@
 
 ## render title
 <%def name="title()">${grid.title}</%def>
-
-## render in center panel
-<%def name="center_panel()">
-    ${self.load()}
-</%def>
 
 ## render in body
 <%def name="body()">
