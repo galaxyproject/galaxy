@@ -3,9 +3,8 @@
         <b-button
             v-if="!loading && canDownload(config)"
             v-b-tooltip.hover.bottom
-            class="float-right markdown-pdf-export"
             :title="title"
-            variant="link"
+            :variant="variant"
             role="button"
             @click="onDownload(config)">
             <font-awesome-icon v-if="waiting" icon="spinner" spin />
@@ -44,7 +43,17 @@ export default {
             type: String,
             required: true,
         },
+        postParameters: {
+            type: Object,
+            default: () => {
+                return {};
+            },
+        },
         fallbackUrl: {
+            type: String,
+            default: null,
+        },
+        variant: {
             type: String,
             default: null,
         },
@@ -72,7 +81,7 @@ export default {
                 return;
             }
             this.waiting = true;
-            axios.post(this.downloadEndpoint).then(this.handleInitialize).catch(this.handleError);
+            axios.post(this.downloadEndpoint, this.postParameters).then(this.handleInitialize).catch(this.handleError);
         },
         handleInitialize(response) {
             const storageRequestId = response.data.storage_request_id;
