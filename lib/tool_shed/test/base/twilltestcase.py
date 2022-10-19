@@ -4,6 +4,7 @@ import string
 import tempfile
 import time
 from json import loads
+from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -23,9 +24,22 @@ from mercurial import (
     hg,
     ui,
 )
+from sqlalchemy import and_, false
 
 import galaxy.model.tool_shed_install as galaxy_model
+from galaxy.schema.schema import CheckForUpdatesResponse
 from galaxy.security import idencoding
+from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
+from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
+from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
+    InstalledRepositoryMetadataManager,
+)
+from galaxy.tool_shed.unittest_utils import (
+    StandaloneInstallationTarget,
+    ToolShedTarget,
+)
+from galaxy.tool_shed.util.dependency_display import build_manage_repository_dict
+from galaxy.tool_shed.util.repository_util import check_for_updates
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     smart_str,
@@ -94,7 +108,7 @@ class ToolShedInstallationClient:
     def reactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
         ...
 
-    def reset_metadata_on_selected_installed_repositories(self, repository_ids: List[str]) -> None:
+    def reset_metadata_on_installed_repositories(self, repositories: List[galaxy_model.ToolShedRepository]) -> None:
         ...
 
     def reset_installed_repository_metadata(self, repository: galaxy_model.ToolShedRepository) -> None:
@@ -106,6 +120,14 @@ class ToolShedInstallationClient:
     def update_installed_repository(
         self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
     ) -> Dict[str, Any]:
+        ...
+
+    @property
+    def tool_data_path(self) -> str:
+        ...
+
+    @property
+    def shed_tool_data_table_conf(self) -> str:
         ...
 
     def get_tool_names(self) -> List[str]:
@@ -124,6 +146,9 @@ class ToolShedInstallationClient:
     def get_installed_repository_for(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
+        ...
+
+    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
         ...
 
 
@@ -148,7 +173,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
             galaxy_model.ToolShedRepository.installation_status.UNINSTALLED,
             galaxy_model.ToolShedRepository.installation_status.DEACTIVATED,
         ]:
-            tool_panel_section = self._get_tool_panel_section_from_repository_metadata(metadata)
+            tool_panel_section = _get_tool_panel_section_from_repository_metadata(metadata)
         else:
             tool_panel_section = self._get_tool_panel_section_from_api(metadata)
         assert (
@@ -229,7 +254,10 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         url = "/admin_toolshed/restore_repository"
         self._visit_galaxy_url(url, params=params)
 
-    def reset_metadata_on_selected_installed_repositories(self, repository_ids: List[str]) -> None:
+    def reset_metadata_on_installed_repositories(self, repositories: List[galaxy_model.ToolShedRepository]) -> None:
+        repository_ids = []
+        for repository in repositories:
+            repository_ids.append(self.testcase.security.encode_id(repository.id))
         api_key = get_admin_api_key()
         response = requests.post(
             f"{self.testcase.galaxy_url}/api/tool_shed_repositories/reset_metadata_on_selected_installed_repositories",
@@ -279,6 +307,14 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         )
         assert response.status_code != 403, response.content
 
+    @property
+    def tool_data_path(self):
+        return os.environ.get("GALAXY_TEST_TOOL_DATA_PATH")
+
+    @property
+    def shed_tool_data_table_conf(self):
+        return os.environ.get("TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF")
+
     def get_tool_names(self) -> List[str]:
         response = self.testcase.galaxy_interactor._get("tools?in_panel=false")
         response.raise_for_status()
@@ -301,6 +337,12 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         return self.testcase.get_installed_repository_for(owner=owner, name=name, changeset=changeset)
+
+    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
+        repositories = test_db_util.get_all_installed_repositories()
+        for repository in repositories:
+            test_db_util.ga_refresh(repository)
+        return repositories
 
     def _galaxy_login(self, email="test@bx.psu.edu", password="testuser", username="admin-user"):
         self._galaxy_logout()
@@ -340,24 +382,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         tool_panel_section = tool_dict["panel_section_name"]
         return tool_panel_section
 
-    def _get_tool_panel_section_from_repository_metadata(self, metadata):
-        tool_metadata = metadata["tools"]
-        tool_guid = tool_metadata[0]["guid"]
-        assert "tool_panel_section" in metadata, f"Tool panel section not found in metadata: {metadata}"
-        tool_panel_section_metadata = metadata["tool_panel_section"]
-        # tool_section_dict = dict( tool_config=guids_and_configs[ guid ],
-        #                           id=section_id,
-        #                           name=section_name,
-        #                           version=section_version )
-        # This dict is appended to tool_panel_section_metadata[ tool_guid ]
-        tool_panel_section = tool_panel_section_metadata[tool_guid][0]["name"]
-        return tool_panel_section
-
     def _wait_for_repository_installation(self, repository_ids):
-        final_states = [
-            galaxy_model.ToolShedRepository.installation_status.ERROR,
-            galaxy_model.ToolShedRepository.installation_status.INSTALLED,
-        ]
         # Wait until all repositories are in a final state before returning. This ensures that subsequent tests
         # are running against an installed repository, and not one that is still in the process of installing.
         if repository_ids:
@@ -365,18 +390,7 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
                 galaxy_repository = test_db_util.get_installed_repository_by_id(
                     self.testcase.security.decode_id(repository_id)
                 )
-                timeout_counter = 0
-                while galaxy_repository.status not in final_states:
-                    test_db_util.ga_refresh(galaxy_repository)
-                    timeout_counter = timeout_counter + 1
-                    # This timeout currently defaults to 10 minutes.
-                    if timeout_counter > repository_installation_timeout:
-                        raise AssertionError(
-                            "Repository installation timed out, %d seconds elapsed, repository state is %s."
-                            % (timeout_counter, galaxy_repository.status)
-                        )
-                        break
-                    time.sleep(1)
+                _wait_for_installation(galaxy_repository, test_db_util.ga_refresh)
 
     def _visit_galaxy_url(self, url, params=None, doseq=False, allowed_codes=None):
         if allowed_codes is None:
@@ -385,10 +399,183 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         self.testcase.visit_url(url, params=params, doseq=doseq, allowed_codes=allowed_codes)
 
 
+class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
+    def __init__(self, testcase):
+        self.testcase = testcase
+        self.temp_directory = Path(tempfile.mkdtemp(prefix="toolshedtestinstalltarget"))
+        tool_shed_target = ToolShedTarget(
+            self.testcase.url,
+            "Tool Shed for Testing",
+        )
+        self._installation_target = StandaloneInstallationTarget(self.temp_directory, tool_shed_target=tool_shed_target)
+
+    def setup(self) -> None:
+        pass
+
+    def check_galaxy_repository_tool_panel_section(
+        self, repository: galaxy_model.ToolShedRepository, expected_tool_panel_section: str
+    ) -> None:
+        metadata = repository.metadata_
+        assert "tools" in metadata, f"Tools not found in repository metadata: {metadata}"
+        # TODO: check actual toolbox if tool is already installed...
+        tool_panel_section = _get_tool_panel_section_from_repository_metadata(metadata)
+        assert (
+            tool_panel_section == expected_tool_panel_section
+        ), f"Expected to find tool panel section *{expected_tool_panel_section}*, but instead found *{tool_panel_section}*\nMetadata: {metadata}\n"
+
+    def deactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
+        irm = InstalledRepositoryManager(app=self._installation_target)
+        errors = irm.uninstall_repository(repository=installed_repository, remove_from_disk=False)
+        if errors:
+            raise Exception(
+                f"Attempting to uninstall tool dependencies for repository named {installed_repository.name} resulted in errors: {errors}"
+            )
+
+    def display_installed_jobs_list_page(
+        self, installed_repository: galaxy_model.ToolShedRepository, data_manager_names=None, strings_displayed=None
+    ) -> None:
+        raise NotImplementedError()
+
+    def installed_repository_extended_info(
+        self, installed_repository: galaxy_model.ToolShedRepository
+    ) -> Dict[str, Any]:
+        self._installation_target.install_model.context.refresh(installed_repository)
+        return build_manage_repository_dict(self._installation_target, "ok", installed_repository)
+
+    def install_repository(
+        self,
+        name: str,
+        owner: str,
+        changeset_revision: str,
+        install_tool_dependencies: bool,
+        install_repository_dependencies: bool,
+        new_tool_panel_section_label: Optional[str],
+    ):
+        tool_shed_url = self.testcase.url
+        payload = {
+            "tool_shed_url": tool_shed_url,
+            "name": name,
+            "owner": owner,
+            "changeset_revision": changeset_revision,
+            "install_tool_dependencies": install_tool_dependencies,
+            "install_repository_dependencies": install_repository_dependencies,
+            "install_resolver_dependencies": False,
+        }
+        if new_tool_panel_section_label:
+            payload["new_tool_panel_section_label"] = new_tool_panel_section_label
+        irm = InstallRepositoryManager(app=self._installation_target)
+        installed_tool_shed_repositories = irm.install(str(tool_shed_url), name, owner, changeset_revision, payload)
+        for installed_tool_shed_repository in installed_tool_shed_repositories or []:
+            _wait_for_installation(
+                installed_tool_shed_repository, self._installation_target.install_model.context.refresh
+            )
+
+    def reactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
+        irm = InstalledRepositoryManager(app=self._installation_target)
+        irm.activate_repository(installed_repository)
+
+    def reset_metadata_on_installed_repositories(self, repositories: List[galaxy_model.ToolShedRepository]) -> None:
+        for repository in repositories:
+            irmm = InstalledRepositoryMetadataManager(self._installation_target)
+            irmm.set_repository(repository)
+            irmm.reset_all_metadata_on_installed_repository()
+
+    def reset_installed_repository_metadata(self, repository: galaxy_model.ToolShedRepository) -> None:
+        irmm = InstalledRepositoryMetadataManager(self._installation_target)
+        irmm.set_repository(repository)
+        irmm.reset_all_metadata_on_installed_repository()
+
+    def uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
+        irm = InstalledRepositoryManager(app=self._installation_target)
+        errors = irm.uninstall_repository(repository=installed_repository, remove_from_disk=True)
+        if errors:
+            raise Exception(
+                f"Attempting to uninstall tool dependencies for repository named {installed_repository.name} resulted in errors: {errors}"
+            )
+
+    def update_installed_repository(
+        self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
+    ) -> Dict[str, Any]:
+        message, status = check_for_updates(
+            self._installation_target.tool_shed_registry,
+            self._installation_target.install_model.context,
+            installed_repository.id,
+        )
+        response = CheckForUpdatesResponse(message=message, status=status)
+        response_dict = response.dict()
+        if verify_no_updates:
+            assert "message" in response_dict
+            message = response_dict["message"]
+            assert "The status has not changed in the tool shed for repository" in message, str(response_dict)
+        return response_dict
+
+    def get_installed_repository_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> galaxy_model.ToolShedRepository:
+        return test_db_util.get_installed_repository_by_name_owner(
+            repository_name, repository_owner, session=self._installation_target.install_model.context
+        )
+
+    def get_installed_repositories_by_name_owner(
+        self, repository_name: str, repository_owner: str
+    ) -> List[galaxy_model.ToolShedRepository]:
+        return test_db_util.get_installed_repository_by_name_owner(
+            repository_name,
+            repository_owner,
+            return_multiple=True,
+            session=self._installation_target.install_model.context,
+        )
+
+    def get_installed_repository_for(
+        self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        clause_list = []
+        if name is not None:
+            clause_list.append(galaxy_model.ToolShedRepository.table.c.name == name)
+        if owner is not None:
+            clause_list.append(galaxy_model.ToolShedRepository.table.c.owner == owner)
+        if changeset is not None:
+            clause_list.append(galaxy_model.ToolShedRepository.table.c.changeset_revision == changeset)
+        clause_list.append(galaxy_model.ToolShedRepository.table.c.deleted == false())
+        clause_list.append(galaxy_model.ToolShedRepository.table.c.uninstalled == false())
+
+        query = self._installation_target.install_model.context.query(galaxy_model.ToolShedRepository)
+        if len(clause_list) > 0:
+            query = query.filter(and_(*clause_list))
+        repository = query.one_or_none()
+        if repository:
+            return repository.to_dict()
+        else:
+            return None
+
+    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
+        repositories = test_db_util.get_all_installed_repositories(
+            session=self._installation_target.install_model.context
+        )
+        for repository in repositories:
+            self._installation_target.install_model.context.refresh(repository)
+        return repositories
+
+    @property
+    def shed_tool_data_table_conf(self):
+        return self._installation_target.config.shed_tool_data_table_config
+
+    @property
+    def tool_data_path(self):
+        return self._installation_target.config.tool_data_path
+
+    def get_tool_names(self) -> List[str]:
+        tool_names = []
+        for _, tool in self._installation_target.toolbox.tools():
+            tool_names.append(tool.name)
+        return tool_names
+
+
 class ShedTwillTestCase(ShedApiTestCase):
     """Class of FunctionalTestCase geared toward HTML interactions using the Twill library."""
 
     requires_galaxy: bool = False
+    _installation_client = None
 
     def setUp(self):
         super().setUp()
@@ -399,14 +586,22 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.hgweb_config_manager = hgweb_config.hgweb_config_manager
         self.hgweb_config_manager.hgweb_config_dir = self.hgweb_config_dir
         self.tool_shed_test_tmp_dir = os.environ.get("TOOL_SHED_TEST_TMP_DIR", None)
-        self.shed_tool_data_table_conf = os.environ.get("TOOL_SHED_TEST_TOOL_DATA_TABLE_CONF")
         self.file_dir = os.environ.get("TOOL_SHED_TEST_FILE_DIR", None)
-        self.tool_data_path = os.environ.get("GALAXY_TEST_TOOL_DATA_PATH")
         self.shed_tool_conf = os.environ.get("GALAXY_TEST_SHED_TOOL_CONF")
         self.test_db_util = test_db_util
-        self._installation_client = GalaxyInteractorToolShedInstallationClient(self)
-        if self.requires_galaxy:
-            self._installation_client.setup()
+        if os.environ.get("TOOL_SHED_TEST_INSTALL_CLIENT") == "standalone":
+            # TODO: once nose is out of the way - try to get away without
+            # instantiating the unused Galaxy server here.
+            installation_client_class = StandaloneToolShedInstallationClient
+            full_stack_galaxy = False
+        else:
+            installation_client_class = GalaxyInteractorToolShedInstallationClient
+            full_stack_galaxy = True
+        self.full_stack_galaxy = full_stack_galaxy
+        if self.requires_galaxy and (self.__class__._installation_client is None):
+            self.__class__._installation_client = installation_client_class(self)
+            self.__class__._installation_client.setup()
+        self._installation_client = self.__class__._installation_client
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
@@ -747,6 +942,7 @@ class ShedTwillTestCase(ShedApiTestCase):
     def check_galaxy_repository_tool_panel_section(
         self, repository: galaxy_model.ToolShedRepository, expected_tool_panel_section: str
     ) -> None:
+        assert self._installation_client
         self._installation_client.check_galaxy_repository_tool_panel_section(repository, expected_tool_panel_section)
 
     def clone_repository(self, repository: Repository, destination_path: str) -> None:
@@ -828,6 +1024,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         )
 
     def deactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
+        assert self._installation_client
         self._installation_client.deactivate_repository(installed_repository)
 
     def delete_files_from_repository(
@@ -858,11 +1055,13 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def display_installed_jobs_list_page(self, installed_repository, data_manager_names=None, strings_displayed=None):
+        assert self._installation_client
         self._installation_client.display_installed_jobs_list_page(
             installed_repository, data_manager_names, strings_displayed
         )
 
     def display_installed_repository_manage_json(self, installed_repository):
+        assert self._installation_client
         return self._installation_client.installed_repository_extended_info(installed_repository)
 
     def display_manage_repository_page(
@@ -1049,6 +1248,10 @@ class ShedTwillTestCase(ShedApiTestCase):
         if not os.path.exists(temp_path):
             os.makedirs(temp_path)
         return temp_path
+
+    def get_all_installed_repositories(self) -> List[galaxy_model.ToolShedRepository]:
+        assert self._installation_client
+        return self._installation_client.get_all_installed_repositories()
 
     def get_filename(self, filename, filepath=None):
         if filepath is not None:
@@ -1259,6 +1462,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         # repository_id = repository.id
         if changeset_revision is None:
             changeset_revision = self.get_repository_tip(repository)
+        assert self._installation_client
         self._installation_client.install_repository(
             name,
             owner,
@@ -1398,8 +1602,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         kwd = dict(repository_ids=repository_ids)
         self.submit_form(button="reset_metadata_on_selected_repositories_button", **kwd)
 
-    def reset_metadata_on_selected_installed_repositories(self, repository_ids):
-        self._installation_client.reset_metadata_on_selected_installed_repositories(repository_ids)
+    def reset_metadata_on_installed_repositories(self, repositories):
+        assert self._installation_client
+        self._installation_client.reset_metadata_on_installed_repositories(repositories)
 
     def reset_repository_metadata(self, repository):
         params = {"id": repository.id}
@@ -1490,11 +1695,13 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def _uninstall_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
+        assert self._installation_client
         self._installation_client.uninstall_repository(installed_repository)
 
     def update_installed_repository(
         self, installed_repository: galaxy_model.ToolShedRepository, verify_no_updates: bool = False
     ) -> Dict[str, Any]:
+        assert self._installation_client
         return self._installation_client.update_installed_repository(installed_repository, verify_no_updates=False)
 
     def upload_file(
@@ -1600,7 +1807,9 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def verify_installed_repository_metadata_unchanged(self, name, owner):
         installed_repository = self._get_installed_repository_by_name_owner(name, owner)
+        assert installed_repository
         metadata = installed_repository.metadata_
+        assert self._installation_client
         self._installation_client.reset_installed_repository_metadata(installed_repository)
         new_metadata = installed_repository.metadata_
         assert metadata == new_metadata, f"Metadata for installed repository {name} differs after metadata reset."
@@ -1610,9 +1819,23 @@ class ShedTwillTestCase(ShedApiTestCase):
         metadata = repository.metadata_
         assert "tool_panel_section" not in metadata, f"Tool panel section incorrectly found in metadata: {metadata}"
 
+    @property
+    def shed_tool_data_table_conf(self):
+        return self._installation_client.shed_tool_data_table_conf
+
+    @property
+    def tool_data_path(self):
+        return self._installation_client.tool_data_path
+
     def verify_installed_repository_data_table_entries(self, required_data_table_entries):
         # The value of the received required_data_table_entries will be something like: [ 'sam_fa_indexes' ]
-        data_tables, error_message = xml_util.parse_xml(self.shed_tool_data_table_conf)
+        shed_tool_data_table_conf = self.shed_tool_data_table_conf
+        data_tables, error_message = xml_util.parse_xml(shed_tool_data_table_conf)
+        with open(shed_tool_data_table_conf) as f:
+            shed_tool_data_table_conf_contents = f.read()
+        assert (
+            not error_message
+        ), f"Failed to parse {shed_tool_data_table_conf} properly. File contents [{shed_tool_data_table_conf_contents}]"
         found = False
         # With the tool shed, the "path" attribute that is hard-coded into the tool_data_tble_conf.xml
         # file is ignored.  This is because the tool shed requires the directory location to which this
@@ -1668,21 +1891,32 @@ class ShedTwillTestCase(ShedApiTestCase):
                 break
         # We better have an entry like: <table comment_char="#" name="sam_fa_indexes"> in our parsed data_tables
         # or we know that the repository was not correctly installed!
-        assert found, f"No entry for {required_data_table_entry} in {self.shed_tool_data_table_conf}."
+        if not found:
+            if required_data_table_entry is None:
+                raise AssertionError(
+                    f"No tables found in {shed_tool_data_table_conf}. File contents {shed_tool_data_table_conf_contents}"
+                )
+            else:
+                raise AssertionError(
+                    f"No entry for {required_data_table_entry} in {shed_tool_data_table_conf}. File contents {shed_tool_data_table_conf_contents}"
+                )
 
     def _get_installed_repository_by_name_owner(
         self, repository_name: str, repository_owner: str
     ) -> galaxy_model.ToolShedRepository:
+        assert self._installation_client
         return self._installation_client.get_installed_repository_by_name_owner(repository_name, repository_owner)
 
     def _get_installed_repositories_by_name_owner(
         self, repository_name: str, repository_owner: str
     ) -> List[galaxy_model.ToolShedRepository]:
+        assert self._installation_client
         return self._installation_client.get_installed_repositories_by_name_owner(repository_name, repository_owner)
 
     def _get_installed_repository_for(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
     ):
+        assert self._installation_client
         return self._installation_client.get_installed_repository_for(owner=owner, name=name, changeset=changeset)
 
     def _assert_has_installed_repos_with_names(self, *names):
@@ -1721,8 +1955,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         changeset: Optional[str] = None,
     ) -> None:
         json = self.display_installed_repository_manage_json(installed_repository)
-        assert "repository_dependencies" in json, (
-            "No repository dependencies were defined in %s." % installed_repository.name
+        assert "repository_dependencies" in json, "No repository dependencies were defined in %s. manage json is %s" % (
+            installed_repository.name,
+            json,
         )
         repository_dependencies = json["repository_dependencies"]
         found = False
@@ -1755,6 +1990,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def _assert_has_valid_tool_with_name(self, tool_name: str) -> None:
         def assert_has():
+            assert self._installation_client
             tool_names = self._installation_client.get_tool_names()
             assert tool_name in tool_names
 
@@ -1798,3 +2034,33 @@ class ShedTwillTestCase(ShedApiTestCase):
         # Python's dict comparison recursively compares sorted key => value pairs and returns true if any key or value differs,
         # or if the number of keys differs.
         assert old_metadata == new_metadata, f"Metadata changed after reset on repository {repository.name}."
+
+
+def _wait_for_installation(repository: galaxy_model.ToolShedRepository, refresh):
+    final_states = [
+        galaxy_model.ToolShedRepository.installation_status.ERROR,
+        galaxy_model.ToolShedRepository.installation_status.INSTALLED,
+    ]
+    # Wait until all repositories are in a final state before returning. This ensures that subsequent tests
+    # are running against an installed repository, and not one that is still in the process of installing.
+    timeout_counter = 0
+    while repository.status not in final_states:
+        refresh(repository)
+        timeout_counter = timeout_counter + 1
+        # This timeout currently defaults to 10 minutes.
+        if timeout_counter > repository_installation_timeout:
+            raise AssertionError(
+                "Repository installation timed out, %d seconds elapsed, repository state is %s."
+                % (timeout_counter, repository.status)
+            )
+            break
+        time.sleep(1)
+
+
+def _get_tool_panel_section_from_repository_metadata(metadata):
+    tool_metadata = metadata["tools"]
+    tool_guid = tool_metadata[0]["guid"]
+    assert "tool_panel_section" in metadata, f"Tool panel section not found in metadata: {metadata}"
+    tool_panel_section_metadata = metadata["tool_panel_section"]
+    tool_panel_section = tool_panel_section_metadata[tool_guid][0]["name"]
+    return tool_panel_section
