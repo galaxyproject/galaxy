@@ -21,6 +21,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.7']
+        test-install-client: ['standalone', 'galaxy_api']
     services:
       postgres:
         image: postgres:13
@@ -54,9 +55,11 @@ jobs:
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-toolshed
       - name: Run tests
         run: './run_tests.sh -toolshed'
+        env:
+          TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: Toolshed test results (${{ matrix.python-version }})
+          name: Toolshed test results (${{ matrix.python-version }}, ${{ matrix.test-install-client }})
           path: 'galaxy root/run_toolshed_tests.html'
