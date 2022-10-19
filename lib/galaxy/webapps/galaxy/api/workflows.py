@@ -43,7 +43,6 @@ from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
     WorkflowCreateOptions,
-    WorkflowsManager,
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
