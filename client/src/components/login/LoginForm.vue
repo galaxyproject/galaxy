@@ -18,9 +18,9 @@
                                         <b-form-input v-model="password" name="password" type="password" />
                                         <b-form-text>
                                             Forgot password?
-                                            <a href="javascript:void(0)" role="button" @click="reset"
-                                                >Click here to reset your password.</a
-                                            >
+                                            <a href="javascript:void(0)" role="button" @click="reset">
+                                                Click here to reset your password.
+                                            </a>
                                         </b-form-text>
                                     </b-form-group>
                                     <b-button name="login" type="submit">Login</b-button>
@@ -37,9 +37,9 @@
                                         id="register-toggle"
                                         href="javascript:void(0)"
                                         role="button"
-                                        @click.prevent="toggleLogin"
-                                        >Register here.</a
-                                    >
+                                        @click.prevent="toggleLogin">
+                                        Register here.
+                                    </a>
                                 </span>
                                 <span v-else>
                                     Registration for this Galaxy instance is disabled. Please contact an administrator
@@ -48,29 +48,24 @@
                             </b-card-footer>
                         </b-card>
                     </b-form>
-
                     <b-modal id="duplicateEmail" ref="duplicateEmail" centered title="Duplicate Email" ok-only>
                         <p>
                             There already exists a user with this email. To associate this external login, you must
                             first be logged in as that existing account.
                         </p>
-
                         <p>
                             Reminder: Registration and usage of multiple accounts is tracked and such accounts are
                             subject to termination and data deletion. Connect existing account now to avoid possible
                             loss of data.
                         </p>
-                        -->
                     </b-modal>
                 </div>
             </template>
-
             <template v-else>
                 <new-user-confirmation @setRedirect="setRedirect" />
             </template>
-
             <div v-if="show_welcome_with_login" class="col">
-                <b-embed type="iframe" :src="welcome_url" aspect="1by1" />
+                <b-embed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -80,10 +75,10 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { safePath } from "utils/redirect";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-import NewUserConfirmation from "components/login/NewUserConfirmation.vue";
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
+import NewUserConfirmation from "components/login/NewUserConfirmation";
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 
 Vue.use(BootstrapVue);
 
@@ -124,6 +119,9 @@ export default {
             var urlParams = new URLSearchParams(window.location.search);
             return urlParams.has("confirm") && urlParams.get("confirm") == "true";
         },
+        welcomeUrlWithRoot() {
+            return safePath(this.welcome_url);
+        },
     },
     methods: {
         toggleLogin() {
@@ -133,19 +131,19 @@ export default {
             if (localStorage.getItem("redirect_url")) {
                 this.redirect = localStorage.getItem("redirect_url");
             }
-            const rootUrl = getAppRoot();
             axios
-                .post(`${rootUrl}user/login`, this.$data)
-                .then((response) => {
-                    if (response.data.message && response.data.status) {
-                        alert(response.data.message);
+                .post(safePath(`/user/login`), this.$data)
+                .then(({ data }) => {
+                    if (data.message && data.status) {
+                        this.messageText = data.message;
+                        this.messageVariant = data.status;
                     }
-                    if (response.data.expired_user) {
-                        window.location = `${rootUrl}root/login?expired_user=${response.data.expired_user}`;
-                    } else if (response.data.redirect) {
-                        window.location = encodeURI(response.data.redirect);
+                    if (data.expired_user) {
+                        window.location = safePath(`/root/login?expired_user=${data.expired_user}`);
+                    } else if (data.redirect) {
+                        window.location = encodeURI(data.redirect);
                     } else {
-                        window.location = `${rootUrl}`;
+                        window.location = safePath("/");
                     }
                 })
                 .catch((error) => {
@@ -158,10 +156,9 @@ export default {
             localStorage.setItem("redirect_url", url);
         },
         reset(ev) {
-            const rootUrl = getAppRoot();
             ev.preventDefault();
             axios
-                .post(`${rootUrl}user/reset_password`, { email: this.login })
+                .post(safePath(`/user/reset_password`), { email: this.login })
                 .then((response) => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;
