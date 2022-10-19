@@ -1241,7 +1241,6 @@ SkipStepCountsQueryParam: bool = Query(
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
     invocations_service: InvocationsService = depends(InvocationsService)
-    workflows_manager: WorkflowsManager = depends(WorkflowsManager)
 
     @router.get(
         "/api/workflows",
@@ -1412,9 +1411,7 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_delete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
-        self.workflows_manager.check_security(trans, workflow_to_delete)
-        self.workflows_manager.delete(workflow_to_delete)
+        self.service.delete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.post(
@@ -1426,9 +1423,7 @@ class FastAPIWorkflows:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ):
-        workflow_to_undelete = self.workflows_manager.get_stored_workflow(trans, workflow_id)
-        self.workflows_manager.check_security(trans, workflow_to_undelete)
-        self.workflows_manager.undelete(workflow_to_undelete)
+        self.service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # TODO: remove this endpoint after 23.1 release
