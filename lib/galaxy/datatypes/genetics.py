@@ -789,12 +789,18 @@ class RexpBase(Html):
 
     def get_file_peek(self, filename: str) -> str:
         """
-        can't really peek at a filename - need the extra_files_path and such?
+        Read and return the first `max_lines`.
+        (Can't really peek at a filename - need the extra_files_path and such?)
         """
+        max_lines = 5
         try:
             with open(filename) as f:
-                lines = f.readlines()
-                return "".join(lines[:5])
+                lines = []
+                for line in f:
+                    lines.append(line)
+                    if len(lines) == max_lines:
+                        break
+                return "".join(lines)
         except Exception:
             return "## rexpression get_file_peek: no file found"
 
