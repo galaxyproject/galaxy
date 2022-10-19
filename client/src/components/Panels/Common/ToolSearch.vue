@@ -98,14 +98,16 @@ export default {
                                 for (const key of keys) {
                                     const actualValue = tool[key];
                                     if (actualValue && actualValue.toUpperCase().match(q.toUpperCase())) {
-                                        returnedTools.push(tool.id);
+                                        returnedTools.push({ id: tool.id, key: key });
                                         break;
                                     }
                                 }
                             }
                         }
                     }
-                    this.$emit("onResults", returnedTools);
+                    // sorting results by 'key:name' before 'key:description'
+                    const sortedTools = (returnedTools.sort((a, b) => b.key < a.key ? -1 : 1)).map(a => a.id);
+                    this.$emit("onResults", sortedTools);
                 }
             } else {
                 this.$emit("onResults", null);
@@ -117,7 +119,7 @@ export default {
                     delete this.filterSettings[filter];
                 }
             }
-            this.$router.push({ path: "/tools/advanced_search", query: this.filterSettings });
+            this.$router.push({ path: "/tools/list", query: this.filterSettings });
         },
         onToggle(toggleAdvanced) {
             this.$emit("update:show-advanced", toggleAdvanced);

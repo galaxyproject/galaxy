@@ -34,7 +34,7 @@
                     No tools found for the entered filters.
                 </b-alert>
                 <div v-else>
-                    <ToolAdvancedSearchResults :tools="itemsLoaded" />
+                    <ToolsListTable :tools="itemsLoaded" />
                 </div>
             </div>
             <ScrollToTopButton :offset="offset" @click="scrollToTop" />
@@ -45,13 +45,13 @@
 <script>
 import LoadingSpan from "components/LoadingSpan";
 import { ToolsProvider } from "components/providers/storeProviders";
-import ToolAdvancedSearchResults from "./ToolAdvancedSearchResults";
+import ToolsListTable from "./ToolsListTable";
 import ScrollToTopButton from "./ScrollToTopButton";
 
 export default {
     components: {
         LoadingSpan,
-        ToolAdvancedSearchResults,
+        ToolsListTable,
         ToolsProvider,
         ScrollToTopButton,
     },
@@ -103,7 +103,7 @@ export default {
             this.$el.scrollTop = 0;
         },
         showAllTools() {
-            this.$router.push({ path: "/tools/advanced_search" });
+            this.$router.push({ path: "/tools/list" });
         },
     },
 };
