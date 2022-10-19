@@ -1239,7 +1239,6 @@ SkipStepCountsQueryParam: bool = Query(
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
-    invocations_service: InvocationsService = depends(InvocationsService)
 
     @router.get(
         "/api/workflows",
@@ -1368,6 +1367,35 @@ class FastAPIWorkflows:
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    @router.delete(
+        "/api/workflows/{workflow_id}",
+        summary="Add the deleted flag to a workflow.",
+    )
+    def delete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.delete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/undelete",
+        summary="Remove the deleted flag from a workflow.",
+    )
+    def undelete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.undelete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.cbv
+class FastAPIInvocations:
+    invocations_service: InvocationsService = depends(InvocationsService)
+
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
         summary="Prepare a workflow invocation export-style download.",
@@ -1400,30 +1428,6 @@ class FastAPIWorkflows:
             payload,
         )
         return rval
-
-    @router.delete(
-        "/api/workflows/{workflow_id}",
-        summary="Add the deleted flag to a workflow.",
-    )
-    def delete_workflow(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-    ):
-        self.service.delete(trans, workflow_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.post(
-        "/api/workflows/{workflow_id}/undelete",
-        summary="Remove the deleted flag from a workflow.",
-    )
-    def undelete_workflow(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-    ):
-        self.service.undelete(trans, workflow_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(
