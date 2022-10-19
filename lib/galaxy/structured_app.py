@@ -30,6 +30,7 @@ from galaxy.objectstore import (
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import Vault
+from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.util.dbkeys import GenomeBuilds
@@ -46,7 +47,7 @@ if TYPE_CHECKING:
     from galaxy.managers.histories import HistoryManager
     from galaxy.managers.workflows import WorkflowsManager
     from galaxy.tools import ToolBox
-    from galaxy.tools.cache import ToolShedRepositoryCache
+    from galaxy.tools.cache import ToolCache
     from galaxy.tools.data import ToolDataTableManager
     from galaxy.tools.error_reports import ErrorReports
     from galaxy.visualization.genomes import Genomes
@@ -142,9 +143,9 @@ class StructuredApp(MinimalManagerApp):
     queue_worker: Any  # 'galaxy.queue_worker.GalaxyQueueWorker'
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_data_tables: "ToolDataTableManager"
-    tool_cache: Any  # 'galaxy.tools.cache.ToolCache'
+    tool_cache: "ToolCache"
     tool_shed_registry: ToolShedRegistry
-    tool_shed_repository_cache: Optional["ToolShedRepositoryCache"]
+    tool_shed_repository_cache: Optional[ToolShedRepositoryCache]
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
     interactivetool_manager: Any

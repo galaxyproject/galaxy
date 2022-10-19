@@ -91,6 +91,7 @@ from galaxy.security.vault import (
     Vault,
     VaultFactory,
 )
+from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.update_repository_manager import UpdateRepositoryManager
 from galaxy.tool_util.deps import containers
@@ -98,10 +99,7 @@ from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tools.biotools import get_galaxy_biotools_metadata_source
-from galaxy.tools.cache import (
-    ToolCache,
-    ToolShedRepositoryCache,
-)
+from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.error_reports import ErrorReports
