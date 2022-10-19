@@ -62,7 +62,7 @@
                 </div>
             </template>
             <template v-else>
-                <new-user-confirmation @setRedirect="setRedirect" />
+                <new-user-confirmation :redirect="redirect" @setRedirect="setRedirect" />
             </template>
             <div v-if="show_welcome_with_login" class="col">
                 <b-embed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
@@ -135,8 +135,7 @@ export default {
                 .post(safePath(`/user/login`), this.$data)
                 .then(({ data }) => {
                     if (data.message && data.status) {
-                        this.messageText = data.message;
-                        this.messageVariant = data.status;
+                        alert(data.message);
                     }
                     if (data.expired_user) {
                         window.location = safePath(`/root/login?expired_user=${data.expired_user}`);
