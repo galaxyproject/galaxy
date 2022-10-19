@@ -114,21 +114,16 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         self.check_repository_dependency(column_repository, convert_repository)
 
     def test_0030_reinstall_column_repository(self):
-        """Reinstall column_maker and verify that it now shows repository dependencies."""
+        """Reinstall column_maker and verify it installs repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
-        strings_displayed = [
-            "Handle repository dependencies",
-            "convert_chars_1087",
-            self.get_repository_tip(convert_repository),
-        ]
-        # Due to twill's limitations, only check for strings on the (redirected) reselect tool panel section page, don't actually reinstall.
-        params = dict(id=self.security.encode_id(installed_column_repository.id))
-        url = "/admin_toolshed/restore_repository"
-        self.visit_galaxy_url(url, params)
-        self.check_for_strings(strings_displayed)
         strings_not_displayed = ["column_maker_1087"]
-        self._assert_has_no_installed_repos_with_names(strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names(*strings_not_displayed)
+        self._install_repository(
+            column_repository_name,
+            common.test_user_1_name,
+            category_name,
+            install_tool_dependencies=False,
+            install_repository_dependencies=True,
+            new_tool_panel_section_label="column_maker",
+        )
+        self._assert_has_installed_repos_with_names("column_maker_1087", "convert_chars_1087")
