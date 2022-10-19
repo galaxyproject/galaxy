@@ -389,7 +389,6 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
             (column_repository_name, common.test_user_1_name),
             (emboss_repository_name, common.test_user_1_name),
             (convert_repository_name, common.test_user_1_name),
-            (bismark_repository_name, common.test_user_1_name),
         ]
         strings_displayed = ["emboss_0050", "column_maker_0050", "convert_chars_0050"]
         strings_not_displayed = ["bismark", "filtering_0050", "freebayes_0050"]
@@ -402,7 +401,7 @@ class TestInstallRepositoryCircularDependencies(ShedTwillTestCase):
         repository = self._get_installed_repository_by_name_owner(emboss_repository_name, common.test_user_1_name)
         self._uninstall_repository(repository)
         self._assert_has_no_installed_repos_with_names(repository.name)
-        self.test_db_util.ga_refresh(repository)
+        self._refresh_tool_shed_repository(repository)
         self.check_galaxy_repository_tool_panel_section(repository, "emboss_5_0050")
         # Now we have bismark, column_maker, and convert_chars installed, filtering and freebayes never installed,
         # and emboss uninstalled.
