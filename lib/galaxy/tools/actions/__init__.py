@@ -31,7 +31,6 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -690,9 +689,7 @@ class DefaultToolAction(ToolAction):
             job.info = f"Redirected to: {redirect_url}"
             trans.sa_session.add(job)
             trans.sa_session.flush()
-            trans.response.send_redirect(
-                url_for(controller="tool_runner", action="redirect", redirect_url=redirect_url)
-            )
+            trans.response.send_redirect(redirect_url)
         else:
             if flush_job:
                 # Set HID and add to history.
