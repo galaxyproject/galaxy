@@ -83,7 +83,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
-import { WorkflowInvocationState } from "components/WorkflowInvocationState";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
 import { mapCacheActions } from "vuex-cache";
