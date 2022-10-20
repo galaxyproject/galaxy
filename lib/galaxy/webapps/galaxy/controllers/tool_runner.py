@@ -152,10 +152,3 @@ class ToolRunner(BaseUIController):
         else:
             link = url_for(controller="tool_runner", tool_id=tool.id)
         return trans.response.send_redirect(link)
-
-    @web.expose
-    def redirect(self, trans, redirect_url=None, **kwd):
-        if not redirect_url:
-            return trans.show_error_message("Required URL for redirection missing")
-        trans.log_event(f"Redirecting to: {redirect_url}")
-        return trans.response.send_redirect(redirect_url)
