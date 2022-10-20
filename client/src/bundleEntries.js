@@ -46,7 +46,6 @@ export function chart(options) {
 export { initMasthead } from "components/Masthead/initMasthead";
 export { mountHistory } from "components/History/mount";
 export { mountMakoTags } from "components/Tags";
-export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
 export { mountPageEditor } from "components/PageEditor/mount";
 export { mountPageDisplay } from "components/PageDisplay";
 
