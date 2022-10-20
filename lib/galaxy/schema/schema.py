@@ -31,12 +31,6 @@ from typing_extensions import (
     Literal,
 )
 
-from galaxy.model import (
-    Dataset,
-    DatasetCollection,
-    DatasetInstance,
-    Job,
-)
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -58,6 +52,55 @@ HDCA_MODEL_CLASS_NAME = "HistoryDatasetCollectionAssociation"
 HISTORY_MODEL_CLASS_NAME = "History"
 JOB_MODEL_CLASS_NAME = "Job"
 STORED_WORKFLOW_MODEL_CLASS_NAME = "StoredWorkflow"
+
+
+class DatasetState(str, Enum):
+    NEW = "new"
+    UPLOAD = "upload"
+    QUEUED = "queued"
+    RUNNING = "running"
+    OK = "ok"
+    EMPTY = "empty"
+    ERROR = "error"
+    PAUSED = "paused"
+    SETTING_METADATA = "setting_metadata"
+    FAILED_METADATA = "failed_metadata"
+    # Non-deleted, non-purged datasets that don't have physical files.
+    # These shouldn't have objectstores attached -
+    # 'deferred' can be materialized for jobs using
+    # attached DatasetSource objects but 'discarded'
+    # cannot (e.g. imported histories). These should still
+    # be able to have history contents associated (normal HDAs?)
+    DEFERRED = "deferred"
+    DISCARDED = "discarded"
+
+    @classmethod
+    def values(self):
+        return self.__members__.values()
+
+
+class JobState(str, Enum):
+    NEW = "new"
+    RESUBMITTED = "resubmitted"
+    UPLOAD = "upload"
+    WAITING = "waiting"
+    QUEUED = "queued"
+    RUNNING = "running"
+    OK = "ok"
+    ERROR = "error"
+    FAILED = "failed"
+    PAUSED = "paused"
+    DELETING = "deleting"
+    DELETED = "deleted"
+    DELETED_NEW = "deleted_new"  # now DELETING, remove after 21.0
+    STOPPING = "stop"
+    STOPPED = "stopped"
+
+
+class DatasetCollectionPopulatedState(str, Enum):
+    NEW = "new"  # New dataset collection, unpopulated elements
+    OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
+    FAILED = "failed"  # some problem populating state, won't be populated
 
 
 # Generic and common Field annotations that can be reused across models
@@ -93,7 +136,7 @@ EntityIdField = Field(
     description="The encoded ID of this entity.",
 )
 
-DatasetStateField: Dataset.states = Field(
+DatasetStateField: DatasetState = Field(
     ...,
     title="State",
     description="The current state of this dataset.",
@@ -120,7 +163,7 @@ CollectionTypeField = Field(
     ),
 )
 
-PopulatedStateField: DatasetCollection.populated_states = Field(
+PopulatedStateField: DatasetCollectionPopulatedState = Field(
     ...,
     title="Populated State",
     description=(
@@ -414,7 +457,7 @@ class HDASummary(HistoryItemCommon):
         title="Dataset ID",
         description="The encoded ID of the dataset associated with this item.",
     )
-    state: Dataset.states = DatasetStateField
+    state: DatasetState = DatasetStateField
     extension: str = Field(
         ...,
         title="Extension",
@@ -432,7 +475,7 @@ class HDAInaccessible(HistoryItemBase):
     """History Dataset Association information when the user can not access it."""
 
     accessible: bool = AccessibleField
-    state: Dataset.states = DatasetStateField
+    state: DatasetState = DatasetStateField
 
 
 HdaLddaField = Field(
@@ -442,6 +485,12 @@ HdaLddaField = Field(
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
     deprecated=False,  # TODO Should this field be deprecated in favor of model_class?
 )
+
+
+class DatasetValidatedState(str, Enum):
+    UNKNOWN = "unknown"
+    INVALID = "invalid"
+    OK = "ok"
 
 
 class HDADetailed(HDASummary):
@@ -544,7 +593,7 @@ class HDADetailed(HDASummary):
         title="Visualizations",
         description="The collection of visualizations that can be applied to this dataset.",
     )
-    validated_state: DatasetInstance.validated_states = Field(
+    validated_state: DatasetValidatedState = Field(
         ...,
         title="Validated State",
         description="The state of the datatype validation for this dataset.",
@@ -604,7 +653,7 @@ class DCSummary(Model):
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     collection_type: CollectionType = CollectionTypeField
-    populated_state: DatasetCollection.populated_states = PopulatedStateField
+    populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
 
@@ -614,7 +663,7 @@ class HDAObject(Model):
 
     id: DecodedDatabaseIdField = EntityIdField
     model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
-    state: Dataset.states = DatasetStateField
+    state: DatasetState = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: DecodedDatabaseIdField = HistoryIdField
 
@@ -754,7 +803,7 @@ class HDCASummary(HistoryItemCommon):
         description="This is always `collection` for dataset collections.",
     )
     collection_type: CollectionType = CollectionTypeField
-    populated_state: DatasetCollection.populated_states = PopulatedStateField
+    populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
     element_count: Optional[int] = ElementCountField
     job_source_id: Optional[DecodedDatabaseIdField] = Field(
@@ -955,8 +1004,8 @@ class HistoryActiveContentCounts(Model):
     )
 
 
-HistoryStateCounts = Dict[Dataset.states, int]
-HistoryStateIds = Dict[Dataset.states, List[DecodedDatabaseIdField]]
+HistoryStateCounts = Dict[DatasetState, int]
+HistoryStateIds = Dict[DatasetState, List[DecodedDatabaseIdField]]
 
 
 class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
@@ -991,7 +1040,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
         description="The relative URL in the form of /u/{username}/h/{slug}",
     )
     genome_build: Optional[str] = GenomeBuildField
-    state: Dataset.states = Field(
+    state: DatasetState = Field(
         ...,
         title="State",
         description="The current state of the History based on the states of the datasets it contains.",
@@ -1469,7 +1518,7 @@ class JobBaseModel(Model):
         title="History ID",
         description="The encoded ID of the history associated with this item.",
     )
-    state: Job.states = Field(
+    state: JobState = Field(
         ...,
         title="State",
         description="Current state of the job.",
@@ -1500,8 +1549,8 @@ class JobImportHistoryResponse(JobBaseModel):
 class JobStateSummary(Model):
     id: DecodedDatabaseIdField = EntityIdField
     model: str = ModelClassField("Job")
-    populated_state: DatasetCollection.populated_states = PopulatedStateField
-    states: Dict[Job.states, int] = Field(
+    populated_state: DatasetCollectionPopulatedState = PopulatedStateField
+    states: Dict[JobState, int] = Field(
         {}, title="States", description=("A dictionary of job states and the number of jobs in that state.")
     )
 
@@ -2679,7 +2728,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     date_uploaded: datetime
     is_unrestricted: bool
     is_private: bool
-    state: Dataset.states = DatasetStateField
+    state: DatasetState = DatasetStateField
     file_size: str
     raw_size: int
     ldda_id: DecodedDatabaseIdField

@@ -121,6 +121,12 @@ from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 from galaxy.objectstore import ObjectStore
+from galaxy.schema.schema import (
+    DatasetCollectionPopulatedState,
+    DatasetState,
+    DatasetValidatedState,
+    JobState,
+)
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
@@ -1046,22 +1052,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     _numeric_metric = JobMetricNumeric
     _text_metric = JobMetricText
 
-    class states(str, Enum):
-        NEW = "new"
-        RESUBMITTED = "resubmitted"
-        UPLOAD = "upload"
-        WAITING = "waiting"
-        QUEUED = "queued"
-        RUNNING = "running"
-        OK = "ok"
-        ERROR = "error"
-        FAILED = "failed"
-        PAUSED = "paused"
-        DELETING = "deleting"
-        DELETED = "deleted"
-        DELETED_NEW = "deleted_new"  # now DELETING, remove after 21.0
-        STOPPING = "stop"
-        STOPPED = "stopped"
+    states = JobState
 
     terminal_states = [states.OK, states.ERROR, states.DELETED]
     #: job states where the job hasn't finished and the model may still change
@@ -3406,31 +3397,8 @@ class Dataset(Base, StorableObject, Serializable, _HasTable):
         back_populates="dataset",
     )
 
-    class states(str, Enum):
-        NEW = "new"
-        UPLOAD = "upload"
-        QUEUED = "queued"
-        RUNNING = "running"
-        OK = "ok"
-        EMPTY = "empty"
-        ERROR = "error"
-        PAUSED = "paused"
-        SETTING_METADATA = "setting_metadata"
-        FAILED_METADATA = "failed_metadata"
-        # Non-deleted, non-purged datasets that don't have physical files.
-        # These shouldn't have objectstores attached -
-        # 'deferred' can be materialized for jobs using
-        # attached DatasetSource objects but 'discarded'
-        # cannot (e.g. imported histories). These should still
-        # be able to have history contents associated (normal HDAs?)
-        DEFERRED = "deferred"
-        DISCARDED = "discarded"
-
-        @classmethod
-        def values(self):
-            return self.__members__.values()
-
     # failed_metadata is only valid as DatasetInstance state currently
+    states = DatasetState
 
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
@@ -3821,10 +3789,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     permitted_actions = Dataset.permitted_actions
     purged: bool
 
-    class validated_states(str, Enum):
-        UNKNOWN = "unknown"
-        INVALID = "invalid"
-        OK = "ok"
+    validated_states = DatasetValidatedState
 
     def __init__(
         self,
@@ -5591,10 +5556,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     dict_collection_visible_keys = ["id", "collection_type"]
     dict_element_visible_keys = ["id", "collection_type"]
 
-    class populated_states(str, Enum):
-        NEW = "new"  # New dataset collection, unpopulated elements
-        OK = "ok"  # Collection elements populated (HDAs may or may not have errors)
-        FAILED = "failed"  # some problem populating state, won't be populated
+    populated_states = DatasetCollectionPopulatedState
 
     def __init__(self, id=None, collection_type=None, populated=True, element_count=None):
         self.id = id

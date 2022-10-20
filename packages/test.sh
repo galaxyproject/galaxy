@@ -21,6 +21,7 @@ pip install -r../lib/galaxy/dependencies/pinned-lint-requirements.txt
 # TODO: add selenium in once type issues are cleared up
 PACKAGE_DIRS=(
     util
+    schema
     objectstore
     job_metrics
     config
@@ -38,6 +39,7 @@ PACKAGE_DIRS=(
     test_base
     test_driver
     test_api
+    tool_shed
 )
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
