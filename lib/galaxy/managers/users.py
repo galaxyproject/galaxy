@@ -45,12 +45,6 @@ from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.util.custom_templates import template
 from galaxy.web import url_for
 
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
-
 log = logging.getLogger(__name__)
 
 PASSWORD_RESET_TEMPLATE = """
