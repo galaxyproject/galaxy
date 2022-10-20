@@ -222,12 +222,17 @@ class TestUserManager(BaseTestCase):
         # Leave templates_dir to default
         # Create user request
         # Trap/assert email sent
-        # Assert email content text/html
+        # Assert email content text/html == default
+
+        # Set templates_dir to custom
+        # (No custom template created for text)
+        # Trap/assert email sent
+        # Assert email content text/html == default
 
         # Set templates_dir to custom
         # Create custom template for text
         # Trap/assert email sent
-        # Assert email content text/html
+        # Assert email content text/html == custom
 
 
 # =============================================================================
