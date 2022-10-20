@@ -458,28 +458,6 @@ class WorkflowsAPIController(
             return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
-    def delete(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        DELETE /api/workflows/{encoded_workflow_id}
-        Deletes a specified workflow
-        Author: rpark
-
-        copied from galaxy.web.controllers.workflows.py (delete)
-        """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
-
-        # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException()
-
-        # Mark a workflow as deleted
-        stored_workflow.deleted = True
-        trans.sa_session.flush()
-
-        # TODO: Unsure of response message to let api know that a workflow was successfully deleted
-        return f"Workflow '{stored_workflow.name}' successfully deleted"
-
-    @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):
         """
         POST /api/workflows/upload
@@ -1422,6 +1400,30 @@ class FastAPIWorkflows:
             payload,
         )
         return rval
+
+    @router.delete(
+        "/api/workflows/{workflow_id}",
+        summary="Add the deleted flag to a workflow.",
+    )
+    def delete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.delete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/undelete",
+        summary="Remove the deleted flag from a workflow.",
+    )
+    def undelete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.undelete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(
