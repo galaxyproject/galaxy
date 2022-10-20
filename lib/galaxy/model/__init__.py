@@ -2308,6 +2308,22 @@ class JobImportHistoryArchive(Base, RepresentById):
     history = relationship("History")
 
 
+class StoreExportAssociation(Base, RepresentById):
+    __tablename__ = "store_export_association"
+    __table_args__ = (Index("ix_store_export_object", "object_id", "object_type"),)
+
+    id = Column(Integer, primary_key=True)
+    task_uuid = Column(UUIDType(), index=True, unique=True)
+    create_time = Column(DateTime, default=now)
+    object_type = Column(TrimmedString(32))
+    object_id = Column(Integer)
+    export_metadata = Column(JSONType)
+
+    class object_types(str, Enum):
+        HISTORY = "history"
+        INVOCATION = "invocation"
+
+
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"
 
