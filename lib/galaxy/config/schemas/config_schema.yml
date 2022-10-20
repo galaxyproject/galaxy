@@ -57,7 +57,7 @@ mapping:
         required: false
         default: templates
         desc: |
-          The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to config/templates. Sample templates in the default directory can be copied to <templates_dir> if you wish to customize them. The path is relative to the Galaxy root dir. To use an absolute path begin the path with '/'.
+          The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.
 
       cache_dir:
         type: str
