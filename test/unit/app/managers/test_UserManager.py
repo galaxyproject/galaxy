@@ -218,21 +218,7 @@ class TestUserManager(BaseTestCase):
         )
 
     def test_register_user_activation(self):
-        # Set config.user_activation_on = True
-        # Leave templates_dir to default
-        # Create user request
-        # Trap/assert email sent
-        # Assert email content text/html == default
-
-        # Set templates_dir to custom
-        # (No custom template created for text)
-        # Trap/assert email sent
-        # Assert email content text/html == default
-
-        # Set templates_dir to custom
-        # Create custom template for text
-        # Trap/assert email sent
-        # Assert email content text/html == custom
+        pass
 
 
 # =============================================================================
