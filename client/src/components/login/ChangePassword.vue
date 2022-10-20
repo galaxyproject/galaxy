@@ -1,10 +1,10 @@
 <template>
     <b-form @submit.prevent="submit">
-        <b-alert :show="messageShow" :variant="messageVariant">
-            {{ messageText }}
+        <b-alert :show="messageShow" :variant="variant">
+            {{ message }}
         </b-alert>
         <b-card header="Change your password">
-            <b-form-group v-if="user" label="Current Password">
+            <b-form-group v-if="expiredUser" label="Current Password">
                 <b-form-input v-model="current" type="password" />
             </b-form-group>
             <b-form-group label="New Password"> <b-form-input v-model="password" type="password" /> </b-form-group>
@@ -17,48 +17,60 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
+import { safePath } from "utils/redirect";
 
 Vue.use(BootstrapVue);
 
 export default {
+    props: {
+        token: {
+            type: String,
+            default: null,
+        },
+        expiredUser: {
+            type: String,
+            default: null,
+        },
+        messageText: {
+            type: String,
+            default: null,
+        },
+        messageVariant: {
+            type: String,
+            default: null,
+        },
+    },
     data() {
-        const Galaxy = getGalaxyInstance();
         return {
-            token: Galaxy.params.token,
-            user: Galaxy.params.expired_user,
             password: null,
             confirm: null,
             current: null,
-            messageText: Galaxy.params.message,
-            messageVariant: Galaxy.params.status,
+            message: this.messageText,
+            variant: this.messageVariant,
         };
     },
     computed: {
         messageShow() {
-            return this.messageText != null;
+            return this.message != null;
         },
     },
     methods: {
-        submit: function (ev) {
-            const urlRoot = getAppRoot();
-            ev.preventDefault();
+        submit(ev) {
             axios
-                .post(`${urlRoot}user/change_password`, {
+                .post(safePath(`/user/change_password`), {
                     token: this.token,
-                    id: this.user,
+                    id: this.expiredUser,
                     current: this.current,
                     password: this.password,
                     confirm: this.confirm,
                 })
                 .then((response) => {
-                    window.location = `${urlRoot}`;
+                    window.location = safePath(`/`);
                 })
                 .catch((error) => {
-                    this.messageVariant = "danger";
+                    this.variant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Password change failed for an unknown reason.";
+                    this.message = message || "Password change failed for an unknown reason.";
                 });
         },
     },

@@ -3,7 +3,12 @@
         <div id="center">
             <div class="center-container">
                 <div class="center-panel" style="display: block">
-                    <ChangePassword v-if="hasToken" />
+                    <ChangePassword
+                        v-if="hasToken"
+                        :token="$route.query.token"
+                        :expired-user="$route.query.expired_user"
+                        :message-text="$route.query.message"
+                        :message-variant="$route.query.status" />
                     <LoginIndex
                         v-else
                         :show_welcome_with_login="config.show_welcome_with_login"
@@ -33,8 +38,7 @@ export default {
             return getGalaxyInstance().config;
         },
         hasToken() {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.params.token || Galaxy.params.expired_user;
+            return this.$route.query.token || this.$route.query.expired_user;
         },
     },
 };
