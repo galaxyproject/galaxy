@@ -59,6 +59,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
             :multiple="true"
             :taggable="true"
             @tag="onAddTag"
+            @select="onAddTag"
             @open="onOpen"
             @close="onClose">
             <template v-slot:tag="{ option, search, remove }">
