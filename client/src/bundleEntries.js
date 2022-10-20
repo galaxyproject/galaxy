@@ -43,7 +43,6 @@ export function chart(options) {
     return new Client(options);
 }
 
-export { initMasthead } from "components/Masthead/initMasthead";
 export { mountMakoTags } from "components/Tags";
 
 // Used in common.mako
