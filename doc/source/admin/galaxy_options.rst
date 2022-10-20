@@ -37,6 +37,21 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~
+``templates_dir``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    The directory containing custom templates for Galaxy, such as
+    HTML/text email templates. If undefined, default templates will
+    read from config/templates. These can be copied to <templates_dir>
+    if you wish to customize them.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~
 ``cache_dir``
 ~~~~~~~~~~~~~
@@ -590,22 +605,6 @@
     <config_dir>.
 :Default: ``tool_sheds_conf.xml``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``load_tool_shed_datatypes``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    This option controls whether legacy datatypes are loaded from
-    installed tool shed repositories. We're are in the process of
-    disabling Tool Shed datatypes. This option with a default of true
-    will be added in 22.01, we will disable the datatypes on the big
-    public servers during that release. This option will be switched
-    to False by default in 22.05 and this broken functionality will be
-    removed all together during some future release.
-:Default: ``true``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~

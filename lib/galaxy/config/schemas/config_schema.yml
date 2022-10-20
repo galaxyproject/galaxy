@@ -51,6 +51,14 @@ mapping:
           file_path, etc.). Defaults to `database/` if running Galaxy from source or
           `<config_dir>/data` otherwise.
 
+      templates_dir:
+        type: str
+        path_resolves_to: config_dir
+        required: false
+        default: templates
+        desc: |
+          The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to config/templates. Sample templates in the default directory can be copied to <templates_dir> if you wish to customize them. The path is relative to the Galaxy root dir. To use an absolute path begin the path with '/'.
+
       cache_dir:
         type: str
         default: cache
