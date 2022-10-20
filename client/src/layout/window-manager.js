@@ -32,6 +32,7 @@ export class WindowManager {
         WinBox.new({
             title: options.title || "Window",
             url: boxUrl,
+            index: 850,
             onclose: () => {
                 this.counter--;
             },
