@@ -42,9 +42,9 @@ function openMultiselect() {
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTags, faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
+import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faTags, faCheck, faTimes);
+library.add(faTags, faCheck, faTimes, faPlus);
 </script>
 
 <template>
@@ -64,15 +64,25 @@ library.add(faTags, faCheck, faTimes);
             <template v-slot:tag="{ option, search, remove }">
                 <Tag :option="option" :search="search" :remove="remove" :editable="true"></Tag>
             </template>
+
             <template v-slot:noOptions> Type to add new tag </template>
+
             <template v-slot:caret>
                 <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
                     Add Tags
                     <FontAwesomeIcon icon="fa-tags"></FontAwesomeIcon>
                 </b-button>
             </template>
+
             <template v-slot:option="{ option }">
-                <span>{{ option }} Test</span>
+                <span>{{ option.label ?? option }}</span>
+                <span v-if="value.includes(option)" class="float-right">
+                    <FontAwesomeIcon class="check-icon" icon="fa-check"></FontAwesomeIcon>
+                    <FontAwesomeIcon class="times-icon" icon="fa-times"></FontAwesomeIcon>
+                </span>
+                <span v-else class="float-right">
+                    <FontAwesomeIcon class="plus-icon" icon="fa-plus"></FontAwesomeIcon>
+                </span>
             </template>
         </Multiselect>
         <div v-else class="pl-1 pb-2">
@@ -144,6 +154,46 @@ library.add(faTags, faCheck, faTimes);
 
         .toggle-button {
             padding-left: 0.5rem;
+        }
+
+        .multiselect__option {
+            font-size: $font-size-base;
+            min-height: unset;
+            padding: 0.5rem 1rem;
+
+            .plus-icon {
+                display: none;
+            }
+
+            &::after {
+                display: none;
+            }
+
+            &.multiselect__option--selected {
+                color: $brand-primary;
+
+                .times-icon {
+                    display: none;
+                }
+            }
+
+            &.multiselect__option--highlight {
+                background: $brand-primary;
+                color: $brand-light;
+
+                .times-icon,
+                .plus-icon {
+                    display: inline-block;
+                }
+
+                .check-icon {
+                    display: none;
+                }
+
+                &::after {
+                    display: none;
+                }
+            }
         }
     }
 }
