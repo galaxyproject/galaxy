@@ -45,8 +45,6 @@ export function chart(options) {
 
 export { initMasthead } from "components/Masthead/initMasthead";
 export { mountMakoTags } from "components/Tags";
-export { mountPageEditor } from "components/PageEditor/mount";
-export { mountPageDisplay } from "components/PageDisplay";
 
 // Used in common.mako
 export { default as store } from "storemodern";
