@@ -21,10 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import util
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
@@ -726,7 +723,6 @@ def repository_was_previously_installed(app, tool_shed_url, repository_name, rep
     # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
     # the previous valid changeset revision to see if it was previously installed using one of them.
     params = dict(
-        galaxy_url=web.url_for("/", qualified=True),
         name=repository_name,
         owner=repository_owner,
         changeset_revision=changeset_revision,
