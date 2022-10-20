@@ -158,4 +158,4 @@ class ToolRunner(BaseUIController):
         if not redirect_url:
             return trans.show_error_message("Required URL for redirection missing")
         trans.log_event(f"Redirecting to: {redirect_url}")
-        return trans.fill_template("root/redirect.mako", redirect_url=redirect_url)
+        return trans.response.send_redirect(redirect_url)
