@@ -526,6 +526,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             'contact_email': self.app.config.error_email_to,
             'instance_resource_url': self.app.config.instance_resource_url,
             'custom_message': self.app.config.custom_activation_email_message,
+            'expiry_days': self.app.config.activation_grace_period,
         }
         body = template.render('mail/activation-email.txt', template_context, self.app.config.templates_dir)
         html = template.render('mail/activation-email.html', template_context, self.app.config.templates_dir)

@@ -17,6 +17,8 @@ sent:
 - terms_url                Your T&Cs URL
 - contact_email            Your galaxy's contact email
 - instance_resource_url    Your galaxy's resource website URL
+- custom_message           Your Galaxy config custom_activation_email_message
+- expiry_days              Days until the activation link expires
 
 Template begins here>>>>>>
 Thanks for signing up to use Galaxy!
