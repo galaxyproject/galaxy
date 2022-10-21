@@ -1,6 +1,6 @@
 <template>
   <b-row class="ml-3 mb-1">
-    <i class="pref-icon pt-1 fa fa-lg fa-broadcast-tower" />
+    <i class="pref-icon pt-1 fa fa-lg fa-broadcast-tower"/>
     <div class="pref-content pr-1">
       <a id="beacon-settings" href="javascript:void(0)"
       ><b v-b-modal.modal-beacon v-localize>Manage Beacon</b></a
@@ -63,8 +63,10 @@
         <div v-if="enabled">
           <p>
             If you this setting you can share data by copying VCF/VCF.gz files to a history called
-            <span class="cursive">___BEACON_PICKUP___</span>. The Beacon database is rebuild every day, this means if
-            you disable the option here, of if we remove the history, or data in the history, the variants will disappear
+            <span class="cursive">{{ beaconHistoryName }}</span>. The Beacon database is rebuild every day, this means
+            if
+            you disable the option here, of if we remove the history, or data in the history, the variants will
+            disappear
             from the Beacon in the next 24h.
           </p>
         </div>
@@ -115,6 +117,7 @@ import store from "store"
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+
 Vue.use(BootstrapVue);
 
 export default {
@@ -131,20 +134,20 @@ export default {
   data() {
     return {
       enabled: false,
+      beaconHistoryName: "___BEACON_PICKUP___",
       beaconHistory: {}
     };
   },
   created() {
-      this.getBeaconHistory();
+    this.getBeaconHistory();
   },
   methods: {
     switchHistory: async function (historyId) {
-      // history/switch_to_history?hist_id=
       await store.dispatch("history/setCurrentHistory", historyId);
     },
     getBeaconHistory: function () {
       axios
-          .get(this.root + "api/histories?q=name&qv=___BEACON_PICKUP___")
+          .get(this.root + "api/histories?q=name&qv=" + this.beaconHistoryName)
           .then((response) => {
             if (response.data.length > 0) {
               // always select first match
@@ -152,21 +155,25 @@ export default {
 
             }
           })
-          .catch((error) => {console.log(error.response)});
+          .catch((error) => {
+            console.log(error.response)
+          });
     },
-    async createBeaconHistory() {
+    createBeaconHistory() {
       const annotation = "Variant files will be collected from this history if beacon sharing is activated"
-      await axios
-          .post(this.root + "api/histories", {name: "___BEACON_PICKUP___"})
+      axios
+          .post(this.root + "api/histories", {name: this.beaconHistoryName})
           .then((response) => {
             this.beaconHistory = response.data
             axios.put(`${this.root}api/histories/${this.beaconHistory.id}`, {"annotation": annotation});
           })
-          .catch((error) => {this.errorMessages.push(error.response.data.err_msg), console.log(error.response)});
+          .catch((error) => {
+            this.errorMessages.push(error.response.data.err_msg), console.log(error.response)
+          });
     },
-    async optIn() {
+    optIn() {
       try {
-        await axios.post(`${this.root}api/users/${this.userId}/beacon`, {"enabled": true}).then(
+        axios.post(`${this.root}api/users/${this.userId}/beacon`, {"enabled": true}).then(
             response => {
               // TODO check response
               this.loadSettings();
@@ -179,9 +186,9 @@ export default {
         console.log(e);
       }
     },
-    async optOut() {
+    optOut() {
       try {
-        await axios.post(`${this.root}api/users/${this.userId}/beacon`, {"enabled": false}).then(
+        axios.post(`${this.root}api/users/${this.userId}/beacon`, {"enabled": false}).then(
             response => {
               // TODO check response
               this.loadSettings();
@@ -210,30 +217,9 @@ export default {
 span.bold {
   font-weight: bold;
 }
+
 .pref-icon {
   width: 3rem;
-}
-
-.setting-container {
-  display: flex;
-  flex-flow: row;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.setting-container div.setting-text {
-  width: 100%;
-  margin-bottom: 32px;
-}
-
-.setting-container div.setting-buttons {
-  display: flex;
-  width: 10rem;
-}
-
-.setting-container div.setting-buttons button {
-  margin-left: auto;
-  margin-right: 0;
 }
 
 .gray-box {
