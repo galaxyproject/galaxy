@@ -7,10 +7,7 @@ from typing import (
     Tuple,
 )
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import web
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.workflows import (
     WorkflowContentsManager,
