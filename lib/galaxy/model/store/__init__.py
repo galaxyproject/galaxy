@@ -2201,17 +2201,18 @@ class WriteCrates:
                 )
 
         workflows_directory = self.workflows_directory
-        for filename in os.listdir(workflows_directory):
-            workflow_cls = ComputationalWorkflow if not filename.endswith(".cwl") else WorkflowDescription
-            lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
-            dest_path = os.path.join("workflows", filename)
-            ro_crate.add_workflow(
-                source=os.path.join(workflows_directory, filename),
-                dest_path=dest_path,
-                main=False,
-                cls=workflow_cls,
-                lang=lang,
-            )
+        if os.path.exists(workflows_directory):
+            for filename in os.listdir(workflows_directory):
+                workflow_cls = ComputationalWorkflow if not filename.endswith(".cwl") else WorkflowDescription
+                lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
+                dest_path = os.path.join("workflows", filename)
+                ro_crate.add_workflow(
+                    source=os.path.join(workflows_directory, filename),
+                    dest_path=dest_path,
+                    main=False,
+                    cls=workflow_cls,
+                    lang=lang,
+                )
 
         found_workflow_licenses = set()
         for workflow_invocation in self.included_invocations:
