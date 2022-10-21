@@ -5,7 +5,9 @@
                 <span class="row mb-1">
                     <span class="col">
                         <h4 v-if="hasFilters" class="d-inline-block">Advanced Tool Search Results</h4>
-                        <h4 v-else class="d-inline-block">Consolidated view of {{ itemsLoaded.length }} available tools.</h4>
+                        <h4 v-else class="d-inline-block">
+                            Consolidated view of {{ itemsLoaded.length }} available tools.
+                        </h4>
                     </span>
                 </span>
                 <span v-if="itemsLoaded.length !== 0" class="row">
@@ -19,7 +21,8 @@
                                 >: {{ value }}
                             </div>
                         </b-popover>
-                        Click <a href="javascript:void(0)" @click.stop="showAllTools">here</a> for a consolidated view of all tools in this Galaxy instance. 
+                        Click <a href="javascript:void(0)" @click.stop="showAllTools">here</a> for a consolidated view
+                        of all tools in this Galaxy instance.
                     </span>
                     <span v-else class="col d-inline-block">
                         No filters applied. Please add filters to the menu in the Tool Panel.

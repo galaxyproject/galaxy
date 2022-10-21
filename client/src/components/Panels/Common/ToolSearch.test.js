@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
+import DelayedInput from "components/Common/DelayedInput";
 import ToolSearch from "./ToolSearch";
 const localVue = getLocalVue();
 
@@ -8,6 +9,7 @@ describe("ToolSearch", () => {
         const wrapper = mount(ToolSearch, {
             propsData: {
                 currentPanelView: "default",
+                enableAdvanced: false,
                 showAdvanced: false,
                 toolbox: [],
             },
@@ -17,17 +19,23 @@ describe("ToolSearch", () => {
             },
         });
 
+        expect(wrapper.find("[data-description='toggle advanced search']").exists()).toBe(false);
         expect(wrapper.find("[description='advanced tool filters']").exists()).toBe(false);
-        await wrapper.setProps({ showAdvanced: true });
+        await wrapper.setProps({ enableAdvanced: true, showAdvanced: true });
+        expect(wrapper.find("[data-description='toggle advanced search']").exists()).toBe(true);
         expect(wrapper.find("[description='advanced tool filters']").exists()).toBe(true);
+
         const filterInputs = {
-            "[placeholder='any tool name']": "name-filter",
+            name: "name-filter",
             "[placeholder='any section']": "section-filter",
             "[placeholder='any id']": "id-filter",
             "[placeholder='any help text']": "help-filter",
         };
 
-        // Now add filters in all input fields in the advanced menu
+        // Add name filter (comes from DelayedInput emitting the query prop)
+        wrapper.findComponent(DelayedInput).vm.$emit("change", filterInputs["name"]);
+
+        // Now add remaining filters (other than name) in the advanced menu
         Object.entries(filterInputs).forEach(([selector, value]) => {
             const filterInput = wrapper.find(selector);
             if (filterInput.vm && filterInput.props().type == "text") {
@@ -38,16 +46,10 @@ describe("ToolSearch", () => {
         // Test: values are stored in the filterSettings object
         expect(Object.values(wrapper.vm.filterSettings)).toEqual(Object.values(filterInputs));
 
-        // Test: clearing the filters
-        const clearButton = wrapper.find("[description='clear filters']");
-        expect(Object.values(wrapper.vm.filterSettings).length).toBe(4);
-        await clearButton.trigger("click");
-        expect(Object.values(wrapper.vm.filterSettings).length).toBe(0);
-
-        // Test: keyup.esc (should toggle the view out)
-        const nameField = wrapper.find("[placeholder='any tool name']");
+        // Test: keyup.esc (should toggle the view out) --- doesn't work from name (DelayedInput) field
+        const sectionField = wrapper.find("[placeholder='any section']");
         expect(wrapper.emitted()["update:show-advanced"]).toBeUndefined();
-        await nameField.trigger("keyup.esc");
+        await sectionField.trigger("keyup.esc");
         expect(wrapper.emitted()["update:show-advanced"].length - 1).toBeFalsy();
     });
 });

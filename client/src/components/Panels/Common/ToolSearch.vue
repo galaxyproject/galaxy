@@ -25,7 +25,7 @@
                     <icon icon="search" />
                     <span>{{ "Search" | localize }}</span>
                 </b-button>
-                <b-button size="sm" description="clear filters" @click="onToggle(false)">
+                <b-button size="sm" @click="onToggle(false)">
                     <icon icon="redo" />
                     <span>{{ "Cancel" | localize }}</span>
                 </b-button>
@@ -106,7 +106,7 @@ export default {
                         }
                     }
                     // sorting results by 'key:name' before 'key:description'
-                    const sortedTools = (returnedTools.sort((a, b) => b.key < a.key ? -1 : 1)).map(a => a.id);
+                    const sortedTools = returnedTools.sort((a, b) => (b.key < a.key ? -1 : 1)).map((a) => a.id);
                     this.$emit("onResults", sortedTools);
                 }
             } else {

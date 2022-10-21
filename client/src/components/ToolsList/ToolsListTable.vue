@@ -15,7 +15,9 @@
             <template v-slot:row-details="row">
                 <b-card v-if="row.item.help">
                     <p class="mb-1" v-html="row.item.help" />
-                    <a :href="row.item.link || '#'" target="_blank" @click.stop="onOpen(row.item)">
+                    <a
+                        :href="row.item.target === 'galaxy_main' ? 'javascript:void(0)' : row.item.link"
+                        @click.stop="onOpen(row.item)">
                         Click here to open the tool
                     </a>
                 </b-card>
