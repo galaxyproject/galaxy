@@ -634,13 +634,6 @@ def populate_api_routes(webapp, app):
         action="workflow_dict",
         conditions=dict(method=["GET"]),
     )
-    webapp.mapper.connect(
-        "show_versions",
-        "/api/workflows/{workflow_id}/versions",
-        controller="workflows",
-        action="show_versions",
-        conditions=dict(method=["GET"]),
-    )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
     webapp.mapper.connect(
         "workflow_dict",

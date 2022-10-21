@@ -268,26 +268,6 @@ class WorkflowsAPIController(
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
 
     @expose_api
-    def show_versions(self, trans: GalaxyWebTransaction, workflow_id, **kwds):
-        """
-        GET /api/workflows/{encoded_workflow_id}/versions
-
-        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                          by default.
-        :type   instance:                 boolean
-
-        Lists all versions of this workflow.
-        """
-        instance = util.string_as_bool(kwds.get("instance", "false"))
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(
-            trans, workflow_id, by_stored_id=not instance
-        )
-        return [
-            {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
-            for i, w in enumerate(reversed(stored_workflow.workflows))
-        ]
-
-    @expose_api
     def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         POST /api/workflows
@@ -1205,6 +1185,10 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
+InstanceQueryParam: Optional[bool] = Query(
+    default=False, title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID."
+)
+
 query_tags = [
     IndexQueryTag("name", "The stored workflow's name.", "n"),
     IndexQueryTag(
@@ -1390,6 +1374,18 @@ class FastAPIWorkflows:
     ):
         self.service.undelete(trans, workflow_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/versions",
+        summary="List all versions of a workflow.",
+    )
+    def show_versions(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        instance: Optional[bool] = InstanceQueryParam,
+    ):
+        return self.service.get_versions(trans, workflow_id, instance)
 
 
 @router.cbv
