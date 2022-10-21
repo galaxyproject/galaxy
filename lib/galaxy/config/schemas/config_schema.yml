@@ -3635,7 +3635,7 @@ mapping:
       enable_beacon_integration:
         type: bool
         default: false
-        required: true
+        required: false
         desc: |
           Enables user preferences and api endpoint for the beacon integration.
 
