@@ -14,7 +14,13 @@ from galaxy.model.store import (
     ObjectImportTracker,
     source_to_import_store,
 )
-from galaxy.schema.schema import HistoryContentType
+from galaxy.schema.schema import (
+    ExportHistoryMetadata,
+    ExportHistoryRequestMetadata,
+    ExportHistoryResultMetadata,
+    HistoryContentType,
+    WriteStoreToPayload,
+)
 from galaxy.schema.tasks import (
     BcoGenerationTaskParametersMixin,
     GenerateHistoryContentDownload,
@@ -195,6 +201,16 @@ class ModelStoreManager:
             export_store.export_history(
                 history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
             )
+            if request.export_association_id:
+                export_metadata = ExportHistoryMetadata(
+                    request_data=ExportHistoryRequestMetadata(
+                        history_id=request.history_id,
+                        user_id=request.user.user_id,
+                        payload=WriteStoreToPayload(**request.dict()),
+                    ),
+                    result_data=ExportHistoryResultMetadata(published=False),
+                )
+                self._history_manager.set_export_association_metadata(request.export_association_id, export_metadata)
 
     def import_model_store(self, request: ImportModelStoreTaskRequest):
         import_options = ImportOptions(

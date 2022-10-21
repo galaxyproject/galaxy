@@ -4,6 +4,7 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
+import json
 import logging
 from typing import (
     Any,
@@ -14,6 +15,7 @@ from typing import (
     Set,
     Union,
 )
+from uuid import UUID
 
 from sqlalchemy import (
     and_,
@@ -36,8 +38,10 @@ from galaxy.managers.base import (
     Serializer,
     SortableManager,
 )
+from galaxy.managers.tasks import AsyncTasksManager
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    ExportHistoryMetadata,
     HDABasicInfo,
     ShareHistoryExtra,
 )
@@ -350,18 +354,39 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
+    def create_export_association(self, history_id: int) -> model.JobExportHistoryArchive:
+        export_association = model.JobExportHistoryArchive(history_id=history_id)
+        self.session().add(export_association)
+        self.session().flush()
+        return export_association
+
+    def set_export_association_metadata(self, export_association_id: int, export_metadata: ExportHistoryMetadata):
+        export_association: model.JobExportHistoryArchive = (
+            self.session()
+            .query(model.JobExportHistoryArchive)
+            .filter(model.JobExportHistoryArchive.id == export_association_id)
+            .one()
+        )
+        export_association.export_metadata = export_metadata.json()
+        self.session().flush()
+
 
 class HistoryExportView:
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: MinimalManagerApp, task_manager: AsyncTasksManager):
         self.app = app
+        self.task_manager = task_manager
 
     def get_exports(self, trans, history_id: int):
         history = self._history(trans, history_id)
         matching_exports = history.exports
         return [self.serialize(trans, history_id, e) for e in matching_exports]
 
-    def serialize(self, trans, history_id: int, jeha):
+    def serialize(self, trans, history_id: int, jeha: model.JobExportHistoryArchive) -> dict:
         rval = jeha.to_dict()
+        task_uuid = rval.get("task_uuid")
+        if task_uuid:
+            return self._serialize_as_task(rval, task_uuid)
+        rval["type"] = "job"
         encoded_jeha_id = DecodedDatabaseIdField.encode(jeha.id)
         encoded_history_id = DecodedDatabaseIdField.encode(history_id)
         api_url = trans.url_builder("history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id)
@@ -376,6 +401,24 @@ class HistoryExportView:
         rval["external_download_permanent_url"] = external_permanent_url
         rval = trans.security.encode_all_ids(rval)
         return rval
+
+    def _serialize_as_task(self, export: dict, task_uuid: UUID):
+        export_date = export.get("create_time")
+        history_update_time = export.get("history_update_time")
+        assert history_update_time, "The history must have an update time..."
+        history_has_changed = history_update_time > export_date
+        json_metadata = export.get("export_metadata")
+        export_metadata = json.loads(json_metadata) if json_metadata else None
+        return {
+            "id": DecodedDatabaseIdField.encode(export.get("id")),
+            "type": "task",
+            "ready": self.task_manager.is_successful(task_uuid),
+            "preparing": self.task_manager.is_pending(task_uuid),
+            "up_to_date": not self.task_manager.has_failed(task_uuid) and not history_has_changed,
+            "task_uuid": task_uuid,
+            "create_time": export_date,
+            "export_metadata": export_metadata,
+        }
 
     def get_ready_jeha(self, trans, history_id: int, jeha_id: Union[int, Literal["latest"]] = "latest"):
         history = self._history(trans, history_id)

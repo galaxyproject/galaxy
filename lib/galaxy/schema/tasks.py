@@ -83,6 +83,7 @@ class WriteHistoryContentTo(WriteStoreToPayload):
 class WriteHistoryTo(WriteStoreToPayload):
     history_id: int
     user: RequestUser
+    export_association_id: Optional[int]
 
 
 class ImportModelStoreTaskRequest(BaseModel):

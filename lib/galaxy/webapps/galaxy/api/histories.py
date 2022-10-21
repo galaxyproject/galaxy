@@ -333,7 +333,7 @@ class FastAPIHistories:
         id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> JobExportHistoryArchiveCollection:
         exports = self.service.index_exports(trans, id)
-        return JobExportHistoryArchiveCollection.construct(__root__=exports)
+        return JobExportHistoryArchiveCollection(__root__=exports)
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
         "/api/histories/{id}/exports",

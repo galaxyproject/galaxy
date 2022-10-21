@@ -1378,21 +1378,16 @@ class WriteStoreToPayload(StoreExportPayload):
     )
 
 
-class JobExportHistoryArchiveModel(Model):
-    id: DecodedDatabaseIdField = Field(
+class ExportHistoryArchiveBaseModel(Model):
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
-        description="The encoded database ID of the job that is currently processing a particular request.",
-    )
-    job_id: DecodedDatabaseIdField = Field(
-        ...,
-        title="Job ID",
-        description="The encoded database ID of the job that generated this history export archive.",
+        description="The encoded database ID of export request.",
     )
     ready: bool = Field(
         ...,
         title="Ready",
-        description="Whether the export history job has completed successfully and the archive is ready to download",
+        description="Whether the history export has completed successfully and the archive is ready to download",
     )
     preparing: bool = Field(
         ...,
@@ -1403,6 +1398,15 @@ class JobExportHistoryArchiveModel(Model):
         ...,
         title="Up to Date",
         description="False, if a new export archive should be generated for the corresponding history.",
+    )
+
+
+class JobExportHistoryArchiveModel(ExportHistoryArchiveBaseModel):
+    type: Literal["job"]
+    job_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Job ID",
+        description="The encoded database ID of the job that generated this history export archive.",
     )
     download_url: RelativeUrl = Field(
         ...,
@@ -1421,8 +1425,40 @@ class JobExportHistoryArchiveModel(Model):
     )
 
 
+class ExportHistoryRequestMetadata(Model):
+    history_id: EncodedDatabaseIdField
+    user_id: Optional[EncodedDatabaseIdField]
+    payload: WriteStoreToPayload
+
+
+class ExportHistoryResultMetadata(Model):
+    published: bool
+    # TODO: figure out what else is needed
+
+
+class ExportHistoryMetadata(Model):
+    request_data: ExportHistoryRequestMetadata
+    result_data: ExportHistoryResultMetadata
+
+
+class TaskExportHistoryArchiveModel(ExportHistoryArchiveBaseModel):
+    type: Literal["task"]
+    task_uuid: UUID4 = Field(
+        ...,
+        title="Task ID",
+        description="The identifier of the celery task processing the export.",
+    )
+    create_time: datetime = CreateTimeField
+    export_metadata: Optional[ExportHistoryMetadata]
+
+
+AnyExportHistoryArchiveModel = Annotated[
+    Union[JobExportHistoryArchiveModel, TaskExportHistoryArchiveModel], Field(discriminator="type")
+]
+
+
 class JobExportHistoryArchiveCollection(Model):
-    __root__: List[JobExportHistoryArchiveModel]
+    __root__: List[AnyExportHistoryArchiveModel]
 
 
 class LabelValuePair(Model):

@@ -351,9 +351,19 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField, payload: WriteStoreToPayload
     ) -> AsyncTaskResultSummary:
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
-        request = WriteHistoryTo(user=trans.async_request_user, history_id=history.id, **payload.dict())
+        export_association = self.manager.create_export_association(history_id=history.id)
+        request = WriteHistoryTo(
+            user=trans.async_request_user,
+            history_id=history.id,
+            export_association_id=export_association.id,
+            **payload.dict(),
+        )
         result = write_history_to.delay(request=request)
-        return async_task_summary(result)
+        summary = async_task_summary(result)
+        # TODO: will this race?
+        export_association.task_uuid = summary.id
+        trans.sa_session.flush()
+        return summary
 
     def update(
         self,

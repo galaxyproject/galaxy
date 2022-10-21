@@ -1,0 +1,52 @@
+from typing import List
+
+from pydantic import BaseModel
+from sqlalchemy import (
+    and_,
+    select,
+)
+from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.scoping import scoped_session
+
+from galaxy.exceptions import ObjectNotFound
+from galaxy.model import StoreExportAssociation
+from galaxy.structured_app import MinimalManagerApp
+
+
+class StoreExportTracker:
+    """
+    Manages export-related metadata association of different types of exportable objects
+    to remote file sources or repositories.
+    """
+
+    def __init__(self, app: MinimalManagerApp):
+        self.app = app
+
+    @property
+    def session(self) -> scoped_session:
+        return self.app.model.context
+
+    def create_export_association(
+        self, object_id: int, object_type: StoreExportAssociation.object_types
+    ) -> StoreExportAssociation:
+        export_association = StoreExportAssociation(object_id=object_id, object_type=object_type)
+        self.session.add(export_association)
+        self.session.flush()
+        return export_association
+
+    def set_export_association_metadata(self, export_association_id: int, export_metadata: BaseModel):
+        try:
+            stmt = select(StoreExportAssociation).where(StoreExportAssociation.id == export_association_id)
+            export_association: StoreExportAssociation = self.session.execute(stmt).scalars().one()
+        except NoResultFound:
+            raise ObjectNotFound("Cannot set export metadata. Reason: Export association not found")
+        export_association.export_metadata = export_metadata.json()
+        self.session.flush()
+
+    def get_object_exports(
+        self, object_id: int, object_type: StoreExportAssociation.object_types
+    ) -> List[StoreExportAssociation]:
+        stmt = select(StoreExportAssociation).where(
+            and_(StoreExportAssociation.object_type == object_type, StoreExportAssociation.object_id == object_id)
+        )
+        return self.session.execute(stmt).scalars().all()
