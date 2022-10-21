@@ -368,16 +368,36 @@ def validate_has_readme(ro_crate: ROCrate):
     assert found_readme
 
 
-def validate_crate_directory(crate_directory):
+def open_ro_crate(crate_directory):
     metadata_json_path = crate_directory / "ro-crate-metadata.json"
     with metadata_json_path.open() as f:
         metadata_json = json.load(f)
     validate_crate_metadata(metadata_json)
     crate = ROCrate(crate_directory)
+    return crate
+
+
+def validate_history_crate_directory(crate_directory):
+    crate = open_ro_crate(crate_directory)
+    validate_has_readme(crate)
+
+
+def validate_invocation_crate_directory(crate_directory):
+    crate = open_ro_crate(crate_directory)
     validate_has_pl_galaxy(crate)
     validate_has_mit_license(crate)
     validate_has_readme(crate)
     # print(json.dumps(metadata_json, indent=4))
+
+
+def test_export_history_to_ro_crate(tmp_path):
+    app = _mock_app()
+    u, history, d1, d2, j = _setup_simple_cat_job(app)
+
+    crate_directory = tmp_path / "crate"
+    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+        export_store.export_history(history)
+    validate_history_crate_directory(crate_directory)
 
 
 def test_export_invocation_to_ro_crate(tmp_path):
@@ -387,7 +407,7 @@ def test_export_invocation_to_ro_crate(tmp_path):
     crate_directory = tmp_path / "crate"
     with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
-    validate_crate_directory(crate_directory)
+    validate_invocation_crate_directory(crate_directory)
 
 
 def test_export_invocation_to_ro_crate_archive(tmp_path):
@@ -401,7 +421,7 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
     assert compressed_file.file_type == "zip"
     compressed_file.extract(tmp_path)
     crate_directory = tmp_path / "crate"
-    validate_crate_directory(crate_directory)
+    validate_invocation_crate_directory(crate_directory)
 
 
 def test_finalize_job_state():
