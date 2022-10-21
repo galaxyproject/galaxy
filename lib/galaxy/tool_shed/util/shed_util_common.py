@@ -4,7 +4,6 @@ import re
 from galaxy import util
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -171,13 +170,6 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
     return text
 
 
-def tool_shed_is_this_tool_shed(toolshed_base_url):
-    """Determine if a tool shed is the current tool shed."""
-    cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
-    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(str(url_for("/", qualified=True)))
-    return cleaned_toolshed_base_url == cleaned_tool_shed
-
-
 __all__ = (
     "can_eliminate_repository_dependency",
     "clean_dependency_relationships",
@@ -189,5 +181,4 @@ __all__ = (
     "get_user",
     "have_shed_tool_conf_for_install",
     "set_image_paths",
-    "tool_shed_is_this_tool_shed",
 )

@@ -23,12 +23,12 @@ from galaxy.tool_shed.util.shed_util_common import (
     get_user,
     have_shed_tool_conf_for_install,
     set_image_paths,
-    tool_shed_is_this_tool_shed,
 )
 from galaxy.util import (
     checkers,
     unicodify,
 )
+from galaxy.web import url_for
 from tool_shed.util import (
     basic_util,
     common_util,
@@ -495,6 +495,13 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
             }
             folder_contents.append(node)
     return folder_contents
+
+
+def tool_shed_is_this_tool_shed(toolshed_base_url):
+    """Determine if a tool shed is the current tool shed."""
+    cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
+    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(str(url_for("/", qualified=True)))
+    return cleaned_toolshed_base_url == cleaned_tool_shed
 
 
 __all__ = (
