@@ -17,10 +17,10 @@
     </div>
 </template>
 <script>
-import LoginForm from "components/login/LoginForm.vue";
-import RegisterForm from "components/login/RegisterForm.vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import LoginForm from "components/login/LoginForm";
+import RegisterForm from "components/login/RegisterForm";
 
 Vue.use(BootstrapVue);
 

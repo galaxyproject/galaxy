@@ -52,7 +52,7 @@
                 </b-form>
             </div>
             <div v-if="terms_url" class="col">
-                <b-embed type="iframe" :src="terms_url" aspect="1by1" />
+                <b-embed type="iframe" :src="termsUrlwithRoot" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -62,7 +62,7 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
+import { safePath } from "utils/redirect";
 
 Vue.use(BootstrapVue);
 
@@ -100,32 +100,31 @@ export default {
         showRegistrationWarning() {
             return this.registration_warning_message != null;
         },
+        termsUrlwithRoot() {
+            return safePath(this.terms_url);
+        },
     },
     methods: {
         login() {
-            const rootUrl = getAppRoot();
             // set url to redirect user to 3rd party management after login
             this.$emit("setRedirect", "user/external_ids");
-            window.location = rootUrl + "login";
+            window.location = safePath("/login");
         },
         submit() {
-            const rootUrl = getAppRoot();
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get("custos_token");
-
             axios
-                .post(`${rootUrl}authnz/custos/create_user?token=${token}`)
+                .post(safePath(`/authnz/custos/create_user?token=${token}`))
                 .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     } else {
-                        window.location = rootUrl;
+                        window.location = safePath("/");
                     }
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
                     const message = error.response.data && error.response.data.err_msg;
-
                     this.messageText = message || "Login failed for an unknown reason.";
                 });
         },
