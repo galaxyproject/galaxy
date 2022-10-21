@@ -7,15 +7,15 @@ from typing import (
 
 from galaxy import exceptions
 from galaxy.structured_app import StructuredApp
+from galaxy.tool_util.data._schema import (
+    ToolDataDetails,
+    ToolDataEntryList,
+    ToolDataField,
+)
 from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
     ToolDataTable,
-)
-from galaxy.tools.data._schema import (
-    ToolDataDetails,
-    ToolDataEntryList,
-    ToolDataField,
 )
 
 

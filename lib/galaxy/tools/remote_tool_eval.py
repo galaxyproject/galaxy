@@ -25,7 +25,10 @@ from galaxy.tools import (
     create_tool_from_representation,
     evaluation,
 )
-from galaxy.tools.data import ToolDataTableManager
+from galaxy.tools.data import (
+    from_dict,
+    ToolDataTableManager,
+)
 from galaxy.util.bunch import Bunch
 from galaxy.util.dbkeys import GenomeBuilds
 
@@ -88,7 +91,7 @@ def main(TMPDIR, WORKING_DIRECTORY, IMPORT_STORE_DIRECTORY):
         is_admin_user=lambda _: job_io.user_context.is_admin,
     )
     with open(os.path.join(IMPORT_STORE_DIRECTORY, "tool_data_tables.json")) as data_tables_json:
-        tdtm = ToolDataTableManager.from_dict(json.load(data_tables_json))
+        tdtm = from_dict(json.load(data_tables_json))
     app = ToolApp(
         sa_session=import_store.sa_session,
         tool_app_config=tool_app_config,
