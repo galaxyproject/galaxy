@@ -138,17 +138,6 @@ class WorkflowsAPIController(
         self.tool_recommendations = recommendations.ToolRecommendations()
 
     @expose_api
-    def get_workflow_menu(self, trans: ProvidesUserContext, **kwd):
-        """
-        Get workflows present in the tools panel
-        GET /api/workflows/menu
-        """
-        user = trans.user
-        ids_in_menu = [x.stored_workflow_id for x in user.stored_workflow_menu_entries]
-        workflows = self.get_workflows_list(trans, **kwd)
-        return {"ids_in_menu": ids_in_menu, "workflows": workflows}
-
-    @expose_api
     def set_workflow_menu(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         Save workflow menu to be shown in the tool panel
@@ -186,50 +175,6 @@ class WorkflowsAPIController(
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
-
-    def get_workflows_list(
-        self,
-        trans: ProvidesUserContext,
-        missing_tools=False,
-        show_published=None,
-        show_shared=None,
-        show_hidden=False,
-        show_deleted=False,
-        **kwd,
-    ):
-        """
-        Displays a collection of workflows.
-
-        :param  show_published:      Optional boolean to include published workflows
-                                     If unspecified this behavior depends on whether the request
-                                     is coming from an authenticated session. The default is true
-                                     for annonymous API requests and false otherwise.
-        :type   show_published:      boolean
-        :param  show_hidden:         if True, show hidden workflows
-        :type   show_hidden:         boolean
-        :param  show_deleted:        if True, show deleted workflows
-        :type   show_deleted:        boolean
-        :param  show_shared:         Optional boolean to include shared workflows.
-                                     If unspecified this behavior depends on show_deleted/show_hidden.
-                                     Defaulting to false if show_hidden or show_deleted is true or else
-                                     false.
-        :param  missing_tools:       if True, include a list of missing tools per workflow
-        :type   missing_tools:       boolean
-        """
-        show_published = util.string_as_bool_or_none(show_published)
-        show_hidden = util.string_as_bool(show_hidden)
-        show_deleted = util.string_as_bool(show_deleted)
-        missing_tools = util.string_as_bool(missing_tools)
-        show_shared = util.string_as_bool_or_none(show_shared)
-        payload = WorkflowIndexPayload(
-            show_published=show_published,
-            show_hidden=show_hidden,
-            show_deleted=show_deleted,
-            show_shared=show_shared,
-            missing_tools=missing_tools,
-        )
-        workflows, _ = self.service.index(trans, payload)
-        return workflows
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
@@ -1386,6 +1331,31 @@ class FastAPIWorkflows:
         instance: Optional[bool] = InstanceQueryParam,
     ):
         return self.service.get_versions(trans, workflow_id, instance)
+
+    @router.get(
+        "/api/workflows/menu",
+        summary="Get workflows present in the tools panel.",
+    )
+    def get_workflow_menu(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        show_deleted: Optional[bool] = DeletedQueryParam,
+        show_hidden: Optional[bool] = HiddenQueryParam,
+        missing_tools: Optional[bool] = MissingToolsQueryParam,
+        show_published: Optional[bool] = ShowPublishedQueryParam,
+        show_shared: Optional[bool] = ShowSharedQueryParam,
+    ):
+        payload = WorkflowIndexPayload(
+            show_published=show_published,
+            show_hidden=show_hidden,
+            show_deleted=show_deleted,
+            show_shared=show_shared,
+            missing_tools=missing_tools,
+        )
+        return self.service.get_workflow_menu(
+            trans,
+            payload=payload,
+        )
 
 
 @router.cbv
