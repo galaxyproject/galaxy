@@ -20,7 +20,7 @@
                     @click="$emit('onEdit')">
                     <font-awesome-icon icon="edit" />
                 </b-button>
-                <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
+                <h1 class="float-right align-middle mr-1 mt-2 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light mb-3">
                     <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
                     <br />
@@ -34,7 +34,7 @@
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
-                        <h5>{{ obj.error || "Error" }}</h5>
+                        <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
                 </b-alert>

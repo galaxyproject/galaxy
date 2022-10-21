@@ -3,7 +3,7 @@
         <CurrentUser v-slot="{ user }">
             <div>
                 <b-alert v-if="errorMessage" variant="danger" show>
-                    <h4 class="alert-heading">{{ errorMessageTitle }}</h4>
+                    <h2 class="alert-heading h-sm">{{ errorMessageTitle }}</h2>
                     {{ errorMessage }}
                 </b-alert>
                 <b-container v-if="user">

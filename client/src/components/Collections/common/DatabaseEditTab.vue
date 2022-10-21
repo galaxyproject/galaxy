@@ -1,7 +1,7 @@
 <template>
     <div>
         <div>
-            <h4 class="float-left">Change Database/Build of all elements in collection</h4>
+            <span class="float-left h-sm">Change Database/Build of all elements in collection</span>
             <div class="text-right">
                 <button
                     class="save-dbkey-edit btn btn-primary"

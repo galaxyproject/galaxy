@@ -38,7 +38,7 @@
                                     from User Directory
                                 </a>
                                 <div v-if="library_import_dir || allow_library_path_paste">
-                                    <h5 class="dropdown-header cursor-pointer">Admins only</h5>
+                                    <h2 class="dropdown-header cursor-pointer h-text">Admins only</h2>
                                     <a
                                         v-if="library_import_dir"
                                         class="dropdown-item cursor-pointer"
