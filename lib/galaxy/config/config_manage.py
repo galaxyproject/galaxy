@@ -511,6 +511,7 @@ def _write_option(args, f, key, option_value, as_comment=False):
         comment += "\n".join("\n".join(YAML_COMMENT_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n"
     as_comment_str = "#" if as_comment else ""
     key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
+    key_val_str = key_val_str.replace("\n", f"\n{as_comment_str}")
     lines = f"{comment}{as_comment_str}{key_val_str}"
     lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
     f.write(f"{lines_idented}\n\n")

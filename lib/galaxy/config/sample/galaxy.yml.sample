@@ -2417,9 +2417,9 @@ galaxy:
   # For details, see Celery documentation at
   # https://docs.celeryq.dev/en/stable/userguide/configuration.html.
   #celery_conf:
-    task_routes:
-      galaxy.fetch_data: galaxy.external
-      galaxy.set_job_metadata: galaxy.external
+  #  task_routes:
+  #    galaxy.fetch_data: galaxy.external
+  #    galaxy.set_job_metadata: galaxy.external
 
   # Offload long-running tasks to a Celery task queue. Activate this
   # only if you have setup a Celery worker for Galaxy. For details, see
