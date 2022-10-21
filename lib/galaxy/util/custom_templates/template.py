@@ -1,6 +1,6 @@
 """Render customizable templates e.g. emails with Jinja
 
-Templates are preferentially read from the ``config.templates_dir directory``.
+Templates are preferentially read from the ``templates_dir`` directory.
 If the requested template path cannot be resolved with respect to this
 directory, the default template will be read from ``DEFAULT_TEMPLATES_DIR`` in
 the Galaxy root (config/templates).
