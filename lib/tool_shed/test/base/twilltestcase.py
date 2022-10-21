@@ -1167,39 +1167,39 @@ class ShedTwillTestCase(ShedApiTestCase):
         url = "/admin_toolshed/restore_repository"
         self.visit_galaxy_url(url, params=params)
 
-    def reinstall_repository(
+    def reinstall_repository_api(
         self,
         installed_repository,
         install_repository_dependencies=True,
         install_tool_dependencies=False,
-        no_changes=True,
         new_tool_panel_section_label="",
     ):
-        params = {"id": self.security.encode_id(installed_repository.id)}
-        # Build the url that will simulate a filled-out form being submitted. Due to a limitation in twill, the reselect_tool_panel_section
-        # form doesn't get parsed correctly.
-        encoded_repository_id = self.security.encode_id(installed_repository.id)
-        params = dict(
-            id=encoded_repository_id, no_changes=no_changes, new_tool_panel_section_label=new_tool_panel_section_label
+        name = installed_repository.name
+        owner = installed_repository.owner
+        payload = {
+            "tool_shed_url": self.url,  # wish this used tool_shed.
+            "name": name,
+            "owner": owner,
+            "changeset_revision": installed_repository.installed_changeset_revision,
+            "install_tool_dependencies": install_tool_dependencies,
+            "install_repository_dependencies": install_repository_dependencies,
+            "install_resolver_dependencies": False,
+        }
+        if new_tool_panel_section_label:
+            payload["new_tool_panel_section_label"] = new_tool_panel_section_label
+        create_response = self.galaxy_interactor._post(
+            "tool_shed_repositories/new/install_repository_revision", data=payload, admin=True
         )
-        doseq = False
-        if install_repository_dependencies:
-            params["install_repository_dependencies"] = True
-            doseq = True
-        else:
-            params["install_repository_dependencies"] = False
-        if install_tool_dependencies:
-            params["install_tool_dependencies"] = True
-            doseq = True
-        else:
-            params["install_tool_dependencies"] = False
-        url = "/admin_toolshed/reinstall_repository"
-        self.visit_galaxy_url(url, params=params, doseq=doseq)
-        html = self.last_page()
-        repository_ids = loads(html)
-        # Finally, wait until all repositories are in a final state (either Error or Installed) before returning.
-        if repository_ids:
-            self.wait_for_repository_installation(repository_ids)
+        assert_status_code_is_ok(create_response)
+        create_response_object = create_response.json()
+        if isinstance(create_response_object, dict):
+            assert "status" in create_response_object
+            assert "ok" == create_response_object["status"]  # repo already installed...
+            return
+        assert isinstance(create_response_object, list)
+        repository_ids = [repo["id"] for repo in create_response.json()]
+        log.debug(f"Waiting for the installation of repository IDs: {repository_ids}")
+        self.wait_for_repository_installation(repository_ids)
 
     def repository_is_new(self, repository: Repository) -> bool:
         repo = self.get_hg_repo(self.get_repo_path(repository))

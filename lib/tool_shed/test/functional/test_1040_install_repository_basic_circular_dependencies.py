@@ -155,12 +155,11 @@ class TestInstallingCircularDependencies(ShedTwillTestCase):
         installed_filtering_repository = self.test_db_util.get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(
+        self.reinstall_repository_api(
             installed_filtering_repository,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             new_tool_panel_section_label="filtering",
-            no_changes=False,
         )
         installed_freebayes_repository = self.test_db_util.get_installed_repository_by_name_owner(
             freebayes_repository_name, common.test_user_1_name

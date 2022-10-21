@@ -253,7 +253,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(installed_column_repository, install_repository_dependencies=False)
+        self.reinstall_repository_api(installed_column_repository, install_repository_dependencies=False)
         self._assert_has_installed_repos_with_names("column_maker_0080", "convert_chars_0080")
         self._assert_is_not_missing_dependency(installed_column_repository, "convert_chars_0080")
         self._assert_is_not_missing_dependency(installed_convert_repository, "column_maker_0080")
@@ -285,7 +285,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(installed_convert_repository, install_repository_dependencies=True, no_changes=False)
+        self.reinstall_repository_api(installed_convert_repository, install_repository_dependencies=True)
         self._assert_has_installed_repos_with_names("column_maker_0080", "convert_chars_0080")
         self._assert_is_not_missing_dependency(installed_column_repository, "convert_chars_0080")
         self._assert_is_not_missing_dependency(installed_convert_repository, "column_maker_0080")
