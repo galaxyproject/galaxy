@@ -16,7 +16,7 @@ defineExpose({
 <template>
     <b-modal ref="modal" hide-footer>
         <template v-slot:modal-title>
-            <h2 class="h-md">Markdown Help</h2>
+            <h2 class="mb-0">Markdown Help</h2>
         </template>
         <div>
             <h3>Overview</h3>
