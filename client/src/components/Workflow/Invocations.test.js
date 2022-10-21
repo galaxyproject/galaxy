@@ -1,4 +1,4 @@
-import Invocations from "../Workflow/Invocations";
+import Invocations from "./Invocations";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";

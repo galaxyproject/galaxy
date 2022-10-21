@@ -43,12 +43,7 @@ export function chart(options) {
     return new Client(options);
 }
 
-export { initMasthead } from "components/Masthead/initMasthead";
-export { mountHistory } from "components/History/mount";
 export { mountMakoTags } from "components/Tags";
-export { mountWorkflowEditor } from "components/Workflow/Editor/mount";
-export { mountPageEditor } from "components/PageEditor/mount";
-export { mountPageDisplay } from "components/PageDisplay";
 
 // Used in common.mako
 export { default as store } from "storemodern";
