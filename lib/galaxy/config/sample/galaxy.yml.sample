@@ -161,11 +161,14 @@ gravity:
     # upload_dir:
 
     # Comma-separated string of enabled tusd hooks.
+    # 
     # Leave at the default value to require authorization at upload creation time.
     # This means Galaxy's web process does not need to be running after creating the initial
     # upload request.
+    # 
     # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
     # without the Galaxy web process being available.
+    # 
     # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
     # hooks_enabled_events: pre-create
 
