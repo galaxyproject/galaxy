@@ -3358,7 +3358,7 @@ class PostgresqlArchive(CompressedArchive):
                 with tarfile.open(dataset.file_name, "r") as temptar:
                     pg_version_file = temptar.extractfile("postgresql/db/PG_VERSION")
                     if not pg_version_file:
-                        raise Exception(f"Error setting PostgresqlArchive metadata: PG_VERSION file not found")
+                        raise Exception("Error setting PostgresqlArchive metadata: PG_VERSION file not found")
                     dataset.metadata.version = util.unicodify(pg_version_file.read()).strip()
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, util.unicodify(e))
