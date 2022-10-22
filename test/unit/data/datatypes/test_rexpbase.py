@@ -1,5 +1,3 @@
-import pytest
-
 from galaxy.datatypes.genetics import RexpBase
 
 
