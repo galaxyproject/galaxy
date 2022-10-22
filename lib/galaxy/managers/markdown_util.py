@@ -48,6 +48,7 @@ from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.tasks import GeneratePdfDownload
+from galaxy.util.markdown import literal_via_fence
 from galaxy.util.resources import resource_string
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web.short_term_storage import (
@@ -382,9 +383,8 @@ def ready_galaxy_markdown_for_export(trans, internal_galaxy_markdown):
 
 
 class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
-    def __init__(self, trans, markdown_formatting_helpers):
+    def __init__(self, trans):
         self.trans = trans
-        self.markdown_formatting_helpers = markdown_formatting_helpers
 
     def handle_dataset_display(self, line, hda):
         name = hda.name or ""
@@ -401,7 +401,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         if datatype is None:
             markdown += "*cannot display - cannot format unknown datatype*\n\n"
         else:
-            markdown += datatype.display_as_markdown(hda, self.markdown_formatting_helpers)
+            markdown += datatype.display_as_markdown(hda)
         return (markdown, True)
 
     def _display_dataset_content(self, hda, header="Contents"):
@@ -411,7 +411,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += f"**{header}:** *cannot display - cannot format unknown datatype*\n\n"
         else:
             markdown += f"**{header}:**\n"
-            markdown += datatype.display_as_markdown(hda, self.markdown_formatting_helpers)
+            markdown += datatype.display_as_markdown(hda)
         return markdown
 
     def handle_dataset_as_image(self, line, hda):
@@ -432,21 +432,21 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_history_link(self, line, history):
         if history:
-            content = self.markdown_formatting_helpers.literal_via_fence(history.name)
+            content = literal_via_fence(history.name)
         else:
             content = "*No History available*"
         return (content, True)
 
     def handle_dataset_peek(self, line, hda):
         if hda.peek:
-            content = self.markdown_formatting_helpers.literal_via_fence(hda.peek)
+            content = literal_via_fence(hda.peek)
         else:
             content = "*No Dataset Peek Available*"
         return (content, True)
 
     def handle_dataset_info(self, line, hda):
         if hda.info:
-            content = self.markdown_formatting_helpers.literal_via_fence(hda.info)
+            content = literal_via_fence(hda.info)
         else:
             content = "*No Dataset Info Available*"
         return (content, True)
@@ -532,29 +532,29 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
 
     def handle_generate_galaxy_version(self, line, generate_version):
         if generate_version:
-            content = self.markdown_formatting_helpers.literal_via_fence(generate_version)
+            content = literal_via_fence(generate_version)
         else:
             content = "*No Galaxy Version Available*"
         return (content, True)
 
     def handle_generate_time(self, line, generate_time):
-        content = self.markdown_formatting_helpers.literal_via_fence(generate_time.isoformat())
+        content = literal_via_fence(generate_time.isoformat())
         return (content, True)
 
     def handle_invocation_time(self, line, invocation):
-        content = self.markdown_formatting_helpers.literal_via_fence(invocation.create_time.isoformat())
+        content = literal_via_fence(invocation.create_time.isoformat())
         return (content, True)
 
     def handle_dataset_name(self, line, hda):
         if hda.name:
-            content = self.markdown_formatting_helpers.literal_via_fence(hda.name)
+            content = literal_via_fence(hda.name)
         else:
             content = "*No Dataset Name Available*"
         return (content, True)
 
     def handle_dataset_type(self, line, hda):
         if hda.ext:
-            content = self.markdown_formatting_helpers.literal_via_fence(hda.ext)
+            content = literal_via_fence(hda.ext)
         else:
             content = "*No Dataset Type Available*"
         return (content, True)
@@ -563,26 +563,9 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (line, False)
 
 
-class MarkdownFormatHelpers:
-    """Inject common markdown formatting helpers for per-datatype rendering."""
-
-    @staticmethod
-    def literal_via_fence(content):
-        return "\n%s\n" % "\n".join(f"    {line}" for line in content.splitlines())
-
-    @staticmethod
-    def indicate_data_truncated():
-        return "\n**Warning:** The above data has been truncated to be embedded in this document.\n\n"
-
-    @staticmethod
-    def pre_formatted_contents(markdown):
-        return f"<pre>{markdown}</pre>"
-
-
 def to_basic_markdown(trans, internal_galaxy_markdown: str) -> str:
     """Replace Galaxy Markdown extensions with plain Markdown for PDF/HTML export."""
-    markdown_formatting_helpers = MarkdownFormatHelpers()
-    directive_handler = ToBasicMarkdownDirectiveHandler(trans, markdown_formatting_helpers)
+    directive_handler = ToBasicMarkdownDirectiveHandler(trans)
     plain_markdown = directive_handler.walk(trans, internal_galaxy_markdown)
     return plain_markdown
 

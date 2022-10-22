@@ -484,7 +484,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     )
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        _BamOrSam().set_meta(dataset)
+        _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
     def merge(split_files, output_file):
@@ -3357,6 +3357,8 @@ class PostgresqlArchive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, "r") as temptar:
                     pg_version_file = temptar.extractfile("postgresql/db/PG_VERSION")
+                    if not pg_version_file:
+                        raise Exception("Error setting PostgresqlArchive metadata: PG_VERSION file not found")
                     dataset.metadata.version = util.unicodify(pg_version_file.read()).strip()
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, util.unicodify(e))
