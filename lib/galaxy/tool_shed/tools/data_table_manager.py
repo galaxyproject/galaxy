@@ -4,17 +4,21 @@ import shutil
 from typing import (
     List,
     Union,
+    TYPE_CHECKING,
 )
 
-from galaxy.structured_app import BasicSharedApp
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util import hg_util
 from galaxy.util import etree
 from galaxy.util.tool_shed import xml_util
 
+if TYPE_CHECKING:
+    from galaxy.structured_app import BasicSharedApp
+
 log = logging.getLogger(__name__)
 
-RequiredAppT = Union[BasicSharedApp, InstallationTarget]
+
+RequiredAppT = Union["BasicSharedApp", InstallationTarget]
 
 
 class ShedToolDataTableManager:
