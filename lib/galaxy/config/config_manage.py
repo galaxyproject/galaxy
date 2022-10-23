@@ -509,12 +509,13 @@ def _write_option(args, f, key, option_value, as_comment=False):
         # Wrap and comment desc, replacing whitespaces with a space, except
         # for double newlines which are replaced with a single newline.
         comment += "\n".join("\n".join(YAML_COMMENT_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n"
-    as_comment_str = "#" if as_comment else ""
     key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
-    key_val_str = key_val_str.replace("\n", f"\n{as_comment_str}")
-    lines = f"{comment}{as_comment_str}{key_val_str}"
-    lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
-    f.write(f"{lines_idented}\n\n")
+    if as_comment:
+        # key_val_str can be span multiple lines, e.g. if value is a dict
+        key_val_str = "\n".join(f"#{row}" for row in key_val_str.split("\n"))
+    lines = f"{comment}{key_val_str}"
+    lines_indented = "\n".join(f"  {line}" for line in lines.split("\n"))
+    f.write(f"{lines_indented}\n\n")
 
 
 def _parse_option_value(option_value):
