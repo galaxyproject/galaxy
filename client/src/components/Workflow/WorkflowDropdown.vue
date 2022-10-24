@@ -215,18 +215,15 @@ export default {
         },
         onRestore: function () {
             const id = this.workflow.id;
-            const name = this.workflow.name;
-
-            console.log(name + " is restored!");
-            // this.services
-            //     .undeleteWorkflow(id) //what is function called on backend?
-            //     .then((message) => {
-            //         this.$emit("onRestore", id);
-            //         this.$emit("onSuccess", message);
-            //     })
-            //     .catch((error) => {
-            //         this.$emit("onError", error);
-            //     });
+            this.services
+                .undeleteWorkflow(id)
+                .then((message) => {
+                    this.$emit("onRestore", id);
+                    this.$emit("onSuccess", message);
+                })
+                .catch((error) => {
+                    this.$emit("onError", error);
+                });
         },
     },
 };
