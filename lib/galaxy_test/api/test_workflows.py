@@ -1990,9 +1990,6 @@ test_data:
 """,
                 history_id=history_id,
             )
-            self.workflow_populator.wait_for_invocation_and_jobs(
-                history_id, workflow_id=None, invocation_id=summary.invocation_id
-            )
             invocation_jobs = self.dataset_populator.invocation_jobs(summary.invocation_id)
             assert len(invocation_jobs) == 3
             assert sum(1 for j in invocation_jobs if j["tool_id"] == "param_value_from_file") == 2, invocation_jobs
