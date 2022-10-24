@@ -323,7 +323,7 @@ class LDAP3(LDAP):
             self.ldap_tls = False
         try:
             # Get server address and port
-            server_address, server_port = server_url.split("//")[-1].split(':')
+            server_address, server_port = server_url.split("//")[-1].split(":")
         except ValueError:
             server_address = server_url.split("//")[-1]
             # If port is not specified use standard port numbers based on TLS
@@ -334,20 +334,14 @@ class LDAP3(LDAP):
         # Ensure server_port is integer
         server_port = int(server_port)
         # Create server object
-        self.server = ldap3.Server(
-            server_address, port=server_port, use_ssl=self.ldap_tls,
-            get_info=ldap3.ALL
-        )
+        self.server = ldap3.Server(server_address, port=server_port, use_ssl=self.ldap_tls, get_info=ldap3.ALL)
         # Set auto_bind
-        self.auto_bind = (
-            ldap3.AUTO_BIND_NO_TLS if self.ldap_tls else ldap3.AUTO_BIND_TLS_BEFORE_BIND
-        )
+        self.auto_bind = ldap3.AUTO_BIND_NO_TLS if self.ldap_tls else ldap3.AUTO_BIND_TLS_BEFORE_BIND
 
     def ldap_search(self, email, username, options):
         config_ok, failure_mode = self.check_config(username, email, options)
         if ldap3 is None:
-            raise RuntimeError("Failed to load LDAP3 module: %s",
-                               str(ldap3_import_exc))
+            raise RuntimeError("Failed to load LDAP3 module: %s", str(ldap3_import_exc))
 
         if not config_ok:
             return failure_mode, None
@@ -363,18 +357,15 @@ class LDAP3(LDAP):
                         self.server,
                         user=_get_subs(options, "search-user", params),
                         password=_get_subs(options, "search-password", params),
-                        auto_bind=self.auto_bind
+                        auto_bind=self.auto_bind,
                     )
                 else:
-                    conn = ldap3.Connection(
-                        self.server, auto_bind=self.auto_bind
-                    )
+                    conn = ldap3.Connection(self.server, auto_bind=self.auto_bind)
                 # Use StartTLS if LDAP connection is not over TLS
                 if not self.ldap_tls:
                     conn.start_tls()
                 # setup search
-                attributes = {_.strip().format(**params) for _ in
-                              options["search-fields"].split(",")}
+                attributes = {_.strip().format(**params) for _ in options["search-fields"].split(",")}
                 if "search-memberof-filter" in options:
                     attributes.add("memberOf")
                 conn.search(
@@ -400,8 +391,7 @@ class LDAP3(LDAP):
                 for attr in attributes:
                     if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
                         # keep role names as list
-                        params[self.role_search_option] = [unicodify(_) for _ in
-                                                           attrs[attr]]
+                        params[self.role_search_option] = [unicodify(_) for _ in attrs[attr]]
                     elif attr == "memberOf":
                         params[attr] = [unicodify(_) for _ in attrs[attr]]
                     elif attr in attrs:
@@ -412,8 +402,7 @@ class LDAP3(LDAP):
                 if self.auto_create_roles_or_groups and self.role_search_option not in params:
                     raise ConfigurationError(
                         "Missing or mismatching LDAP parameters for %s. Make sure the %s is "
-                        "included in the 'search-fields'." % (
-                        self.role_search_option, self.role_search_attribute)
+                        "included in the 'search-fields'." % (self.role_search_option, self.role_search_attribute)
                     )
                 params["dn"] = dn
             except Exception:
@@ -430,9 +419,10 @@ class LDAP3(LDAP):
             # Initialise server object
             self.get_server(options, params)
             conn = ldap3.Connection(
-                self.server, user=_get_subs(options, "bind-user", params),
+                self.server,
+                user=_get_subs(options, "bind-user", params),
                 password=_get_subs(options, "bind-password", params),
-                auto_bind=self.auto_bind
+                auto_bind=self.auto_bind,
             )
             # Use StartTLS if LDAP connection is not over TLS
             if not self.ldap_tls:
@@ -454,7 +444,6 @@ class LDAP3(LDAP):
             return False
         log.debug("LDAP3 authentication successful")
         return True
-
 
 
 class ActiveDirectory(LDAP):
