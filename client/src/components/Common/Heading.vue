@@ -72,7 +72,7 @@ h1, h2, h3, h4, h5, h6 {
 .separator {
     display: grid;
     grid-template-columns: 1rem auto 1fr;
-    gap: 0.5rem;
+    gap: 1rem;
     align-items: center;
     margin-bottom: 0.5rem;
 
