@@ -17,7 +17,7 @@ describe("JobInformation/JobOutputs.vue", () => {
         });
         jobOutputsTable = wrapper.find("#job-outputs");
         // header should exist
-        expect(wrapper.find("h3").text()).toBe("my cool title");
+        expect(wrapper.find("h2").text()).toBe("my cool title");
         // table should exist
         expect(jobOutputsTable).toBeTruthy();
         // title should be set
@@ -38,7 +38,7 @@ describe("JobInformation/JobOutputs.vue", () => {
             propsData,
         });
         // no title
-        expect(wrapper.find("h3").exists()).toBeFalsy();
+        expect(wrapper.find("h2").exists()).toBeFalsy();
         jobOutputsTable = wrapper.find("#job-outputs");
         // table should exist
         expect(jobOutputsTable).toBeTruthy();
@@ -74,7 +74,7 @@ describe("JobInformation/JobOutputs.vue", () => {
         });
         // ---- Before all remaining outputs are paginated: ----
         // heading should exist and include count (due to pagination)
-        expect(wrapper.find("h3").text()).toContain("(showing 10 of " + Object.keys(propsData.jobOutputs).length + ")");
+        expect(wrapper.find("h2").text()).toContain("(showing 10 of " + Object.keys(propsData.jobOutputs).length + ")");
         jobOutputsTable = wrapper.find("#job-outputs");
         // table should exist
         expect(jobOutputsTable).toBeTruthy();
@@ -90,6 +90,6 @@ describe("JobInformation/JobOutputs.vue", () => {
         expect(rows.length).toBe(16);
         expect(wrapper.find("#paginate-btn").exists()).toEqual(false);
         // heading reverts to original value of title (as all ouputs are paginated)
-        expect(wrapper.find("h3").text()).toBe("Job Outputs");
+        expect(wrapper.find("h2").text()).toBe("Job Outputs");
     });
 });
