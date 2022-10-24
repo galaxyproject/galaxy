@@ -81,7 +81,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
                     <span>
                         <icon icon="wrench" class="fa-fw" />
-                        <h1 itemprop="name">{{ props.title }}</h1>
+                        <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
                     </span>
                     <span itemprop="description">{{ props.description }}</span>
                     <span>(Galaxy Version {{ props.version }})</span>
@@ -132,16 +132,6 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
-
-.tool-header {
-    h1 {
-        font-size: 1em;
-        line-height: 1em;
-        font-weight: 700;
-        margin: 0;
-        display: inline;
-    }
-}
 
 .underlay::after {
     content: "";
