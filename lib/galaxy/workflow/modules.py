@@ -1938,6 +1938,7 @@ class ToolModule(WorkflowModule):
             message = f"Specified tool [{tool.id}] in workflow is not workflow-compatible."
             raise Exception(message)
         tool_state = step.state
+        tool_inputs = tool.inputs.copy()
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
         if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
@@ -1946,7 +1947,6 @@ class ToolModule(WorkflowModule):
         all_inputs = self.get_all_inputs()
         if step.input_connections_by_name.get("when_source"):
             self.get_conditional_param(all_inputs)
-            tool_inputs = tool.inputs.copy()
             tool_inputs["when_source"] = ConditionalStepWhen(None, {"name": "when_source", "type": "boolean"})
         all_inputs_by_name = {}
         for input_dict in all_inputs:
@@ -2006,6 +2006,12 @@ class ToolModule(WorkflowModule):
                     no_replacement_value=NO_REPLACEMENT,
                     replace_optional_connections=True,
                 )
+            except SkipWorkflowStepEvaluation as we:
+                progress.mark_step_outputs_skipped(invocation_step, we.outputs)
+                skip_execution_state = execution_state.inputs
+                skip_execution_state["when"] = False
+                param_combinations.append(execution_state.inputs)
+                continue
             except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, unicodify(k))

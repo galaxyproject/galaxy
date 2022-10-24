@@ -161,6 +161,8 @@ def execute(
             has_remaining_jobs = True
             break
         else:
+            if execution_slice.param_combination.get("when") is False:
+                continue
             execute_single_job(execution_slice, completed_jobs[i])
             history = execution_slice.history or history
             jobs_executed += 1

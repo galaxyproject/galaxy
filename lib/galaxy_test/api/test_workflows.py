@@ -1959,6 +1959,45 @@ should_run:
             )
             assert len(self.dataset_populator.invocation_jobs(summary.invocation_id)) == 0
 
+    def test_run_workflow_conditional_map_over_expression_tool(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files: collection
+steps:
+- label: param_out
+  tool_id: param_value_from_file
+  in:
+     input1: boolean_input_files
+  state:
+    param_type: boolean
+- label: consume_expression_parameter
+  tool_id: cat1
+  in:
+    input1: boolean_input_files
+  when:
+    source: param_out/boolean_param
+test_data:
+  boolean_input_files:
+    collection_type: list
+    elements:
+      - identifier: true
+        content: true
+      - identifier: false
+        content: false
+""",
+                history_id=history_id,
+            )
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id, workflow_id=None, invocation_id=summary.invocation_id
+            )
+            invocation_jobs = self.dataset_populator.invocation_jobs(summary.invocation_id)
+            assert len(invocation_jobs) == 3
+            assert sum(1 for j in invocation_jobs if j["tool_id"] == "param_value_from_file") == 2, invocation_jobs
+            assert sum(1 for j in invocation_jobs if j["tool_id"] == "cat1") == 1, invocation_jobs
+
     def test_run_subworkflow_simple(self) -> None:
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
