@@ -1995,6 +1995,79 @@ test_data:
             assert sum(1 for j in invocation_jobs if j["tool_id"] == "param_value_from_file") == 2, invocation_jobs
             assert sum(1 for j in invocation_jobs if j["tool_id"] == "cat1") == 1, invocation_jobs
 
+    def test_run_workflow_conditional_map_over_expression_tool_pick_value(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files_1: collection
+  boolean_input_files_2: collection
+steps:
+- label: param_out_1
+  tool_id: param_value_from_file
+  in:
+     input1: boolean_input_files_1
+  state:
+    param_type: boolean
+- label: param_out_2
+  tool_id: param_value_from_file
+  in:
+     input1: boolean_input_files_2
+  state:
+    param_type: boolean
+- label: consume_expression_parameter_1
+  tool_id: cat1
+  in:
+    input1: boolean_input_files_1
+  when:
+    source: param_out_1/boolean_param
+- label: consume_expression_parameter_2
+  tool_id: cat1
+  in:
+    input1: boolean_input_files_2
+  when:
+    source: param_out_2/boolean_param
+- label: pick_value
+  tool_id: pick_value
+  tool_state:
+    style_cond:
+      pick_style: first_or_error
+      type_cond:
+        param_type: data
+        pick_from:
+        - value:
+            __class__: RuntimeValue
+        - value:
+            __class__: RuntimeValue
+  in:
+    style_cond|type_cond|pick_from_0|value:
+      source: consume_expression_parameter_1/out_file1
+    style_cond|type_cond|pick_from_1|value:
+      source: consume_expression_parameter_2/out_file1
+test_data:
+  boolean_input_files_1:
+    collection_type: list
+    elements:
+      - identifier: true
+        content: true
+      - identifier: false
+        content: false
+  boolean_input_files_2:
+    collection_type: list
+    elements:
+      - identifier: false
+        content: false
+      - identifier: true
+        content: true
+""",
+                history_id=history_id,
+            )
+            invocation_jobs = self.dataset_populator.invocation_jobs(summary.invocation_id)
+            assert len(invocation_jobs) == 3
+            assert sum(1 for j in invocation_jobs if j["tool_id"] == "param_value_from_file") == 2, invocation_jobs
+            assert sum(1 for j in invocation_jobs if j["tool_id"] == "cat1") == 1, invocation_jobs
+
     def test_run_subworkflow_simple(self) -> None:
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
