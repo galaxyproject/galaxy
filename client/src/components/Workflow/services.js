@@ -37,6 +37,16 @@ export class Services {
         }
     }
 
+    async undeleteWorkflow(id) {
+        const url = safePath(`/api/workflows/${id}/undelete`);
+        try {
+            const response = await axios.post(url);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
     async updateWorkflow(id, data) {
         const url = safePath(`/api/workflows/${id}`);
         try {

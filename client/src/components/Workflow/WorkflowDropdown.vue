@@ -23,56 +23,60 @@
         <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
-                v-if="!readOnly"
+                v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
                 @keypress="$router.push(urlEdit)"
                 @click.prevent="$router.push(urlEdit)">
                 <span class="fa fa-edit fa-fw mr-1" />
                 <span v-localize>Edit</span>
             </a>
-            <a class="dropdown-item" href="#" @click.prevent="onCopy">
+            <a v-if="!isDeleted" class="dropdown-item" href="#" @click.prevent="onCopy">
                 <span class="fa fa-copy fa-fw mr-1" />
                 <span v-localize>Copy</span>
             </a>
             <a
-                v-if="!readOnly"
+                v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
                 @keypress="$router.push(urlInvocations)"
                 @click.prevent="$router.push(urlInvocations)">
                 <span class="fa fa-list fa-fw mr-1" />
                 <span v-localize>Invocations</span>
             </a>
-            <a class="dropdown-item" :href="urlDownload">
+            <a v-if="!isDeleted" class="dropdown-item" :href="urlDownload">
                 <span class="fa fa-download fa-fw mr-1" />
                 <span v-localize>Download</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" href="#" @click.prevent="onRename">
+            <a v-if="!readOnly && !isDeleted" class="dropdown-item" href="#" @click.prevent="onRename">
                 <span class="fa fa-signature fa-fw mr-1" />
                 <span v-localize>Rename</span>
             </a>
             <a
-                v-if="!readOnly"
+                v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
                 @keypress="$router.push(urlShare)"
                 @click.prevent="$router.push(urlShare)">
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span v-localize>Share</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" :href="urlExport">
+            <a v-if="!readOnly && !isDeleted" class="dropdown-item" :href="urlExport">
                 <span class="fa fa-file-export fa-fw mr-1" />
                 <span v-localize>Export</span>
             </a>
-            <a class="dropdown-item" :href="urlView">
+            <a v-if="!isDeleted" class="dropdown-item" :href="urlView">
                 <span class="fa fa-eye fa-fw mr-1" />
                 <span v-localize>View</span>
             </a>
-            <a v-if="sourceLabel" class="dropdown-item" :href="sourceUrl">
+            <a v-if="sourceLabel && !isDeleted" class="dropdown-item" :href="sourceUrl">
                 <span class="fa fa-globe fa-fw mr-1" />
                 <span v-localize>{{ sourceLabel }}</span>
             </a>
-            <a v-if="!readOnly" class="dropdown-item" href="#" @click.prevent="onDelete">
+            <a v-if="!readOnly && !isDeleted" class="dropdown-item" href="#" @click.prevent="onDelete">
                 <span class="fa fa-trash fa-fw mr-1" />
                 <span v-localize>Delete</span>
+            </a>
+            <a v-if="isDeleted" class="dropdown-item" href="#" @click.prevent="onRestore">
+                <span class="fa fa-trash fa-fw mr-1" />
+                <span v-localize>Restore</span>
             </a>
         </div>
     </div>
@@ -120,6 +124,9 @@ export default {
         },
         readOnly() {
             return !!this.workflow.shared;
+        },
+        isDeleted() {
+            return this.workflow.deleted;
         },
         sourceUrl() {
             if (this.workflow.source_metadata?.url) {
@@ -175,19 +182,15 @@ export default {
         },
         onDelete: function () {
             const id = this.workflow.id;
-            const name = this.workflow.name;
-            const confirmationMessage = this.l(`Are you sure you want to delete workflow '${name}'?`);
-            if (window.confirm(confirmationMessage)) {
-                this.services
-                    .deleteWorkflow(id)
-                    .then((message) => {
-                        this.$emit("onRemove", id);
-                        this.$emit("onSuccess", message);
-                    })
-                    .catch((error) => {
-                        this.$emit("onError", error);
-                    });
-            }
+            this.services
+                .deleteWorkflow(id)
+                .then((message) => {
+                    this.$emit("onRemove", id);
+                    this.$emit("onSuccess", message);
+                })
+                .catch((error) => {
+                    this.$emit("onError", error);
+                });
         },
         onRename: function () {
             const id = this.workflow.id;
@@ -205,6 +208,18 @@ export default {
                         this.$emit("onError", error);
                     });
             }
+        },
+        onRestore: function () {
+            const id = this.workflow.id;
+            this.services
+                .undeleteWorkflow(id)
+                .then((message) => {
+                    this.$emit("onRestore", id);
+                    this.$emit("onSuccess", message);
+                })
+                .catch((error) => {
+                    this.$emit("onError", error);
+                });
         },
     },
 };

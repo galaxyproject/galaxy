@@ -158,7 +158,6 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.workflow_index_rename("fordelete")
         self._assert_showing_n_workflows(1)
         self.workflow_index_click_option("Delete")
-        self.accept_alert()
         self._assert_showing_n_workflows(0)
 
         self.workflow_index_open()
