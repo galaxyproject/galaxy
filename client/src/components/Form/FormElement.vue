@@ -1,5 +1,4 @@
 <script setup>
-import _ from "underscore";
 import FormBoolean from "./Elements/FormBoolean";
 import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
@@ -144,7 +143,7 @@ const elementId = computed(() => `form-element-${props.id}`);
 const hasError = computed(() => Boolean(props.error));
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
 
-const previewText = computed(() => _.escape(this.textValue).replace(/\n/g, "<br>"));
+const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
     const helpArgument = attrs.value["argument"];
     if (helpArgument && !props.help.includes(`(${helpArgument})`)) {
@@ -236,15 +235,59 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
             <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
         </div>
 
-        <div v-if="showPreview" class="ui-form-preview" v-html="previewText" />
+        <div v-if="showPreview" class="ui-form-preview pt-1 pl-2 mt-1">{{ previewText }}</div>
         <span v-if="Boolean(helpText)" class="ui-form-info form-text text-muted" v-html="helpText" />
     </div>
 </template>
 
 <style lang="scss" scoped>
 @import "theme/blue.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 .ui-form-element {
+    margin-top: $margin-v * 0.25;
+    margin-bottom: $margin-v * 0.25;
+    overflow: visible;
+    clear: both;
+
+    .ui-form-title {
+        word-wrap: break-word;
+        font-weight: bold;
+        .icon {
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+    }
+
+    .ui-form-field {
+        position: relative;
+        margin-top: $margin-v * 0.25;
+        .ui-form-wp-source {
+            border-left-width: 10px;
+        }
+
+        .ui-form-wp-target {
+            box-shadow: none;
+            border-top: none;
+            border-bottom: none;
+            border-right: none;
+            border-left-width: 5px;
+            font-style: italic;
+        }
+
+        .ui-form-backdrop {
+            z-index: 10;
+            position: absolute;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            background: $white;
+            display: block;
+            opacity: 0;
+            cursor: default;
+        }
+    }
+
     &:deep(.ui-form-collapsible-icon),
     &:deep(.ui-form-connected-icon) {
         border: none;
