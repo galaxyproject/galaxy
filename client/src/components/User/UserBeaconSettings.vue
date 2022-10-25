@@ -157,7 +157,7 @@ export default {
           });
     },
     createBeaconHistory() {
-      const annotation = "Variant files will be collected from this history if beacon sharing is activated"
+      const annotation = "Variants will be collected from VCF datasets in this history if beacon sharing is activated"
       axios
           .post(this.root + "api/histories", {name: this.beaconHistoryName})
           .then((response) => {
