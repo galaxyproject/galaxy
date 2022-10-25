@@ -5,8 +5,8 @@ Revises: e0e3bb173ee6
 Create Date: 2022-10-24 16:43:39.565871
 
 """
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 
 from galaxy.model.custom_types import JSONType
 from galaxy.model.migrations.util import (
