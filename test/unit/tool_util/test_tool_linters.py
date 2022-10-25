@@ -5,6 +5,7 @@ import pytest
 
 from galaxy.tool_util.lint import (
     lint_tool_source_with,
+    lint_xml_with,
     LintContext,
     XMLLintMessageLine,
     XMLLintMessageXPath,
@@ -22,6 +23,7 @@ from galaxy.tool_util.linters import (
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
+from galaxy.util import parse_xml
 from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter
@@ -755,6 +757,17 @@ XML_ORDER = """
 </tool>
 """
 
+TOOL_WITH_COMMENTS = """
+<tool>
+    <stdio>
+    <!-- This is a comment -->
+    </stdio>
+    <outputs>
+    <!-- This is a comment -->
+    </outputs>
+</tool>
+"""
+
 
 @pytest.fixture()
 def lint_ctx():
@@ -772,6 +785,15 @@ def get_xml_tool_source(xml_string):
         tmp.flush()
         tool_path = tmp.name
         return load_with_references(tool_path)[0]
+
+
+def get_tool_xml_exact(xml_string):
+    """Returns the tool XML as it is, without stripping comments or anything else."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
+        tmp.write(xml_string)
+        tmp.flush()
+        tool_path = tmp.name
+        return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
 
 
 def failed_assert_print(lint_ctx):
@@ -1716,3 +1738,10 @@ def test_linting_cwl_tool(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert len(lint_ctx.warn_messages) == 2
     assert not lint_ctx.error_messages
+
+
+def test_xml_comments_are_ignored(lint_ctx: LintContext):
+    tool_xml = get_tool_xml_exact(TOOL_WITH_COMMENTS)
+    lint_xml_with(lint_ctx, tool_xml)
+    for lint_message in lint_ctx.message_list:
+        assert "Comment" not in lint_message.message
