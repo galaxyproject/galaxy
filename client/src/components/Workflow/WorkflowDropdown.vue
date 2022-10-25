@@ -8,18 +8,15 @@
             <font-awesome-icon icon="caret-down" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
         </b-link>
-        <font-awesome-icon
+        <span
             v-if="sourceType.includes('trs')"
             v-b-tooltip.hover
-            :title="`Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`"
-            icon="check"
-            class="workflow-trs-icon" />
-        <font-awesome-icon
-            v-if="sourceType == 'url'"
-            v-b-tooltip.hover
-            :title="`Imported from ${workflow.source_metadata.url}`"
-            class="workflow-external-link"
-            icon="link" />
+            :title="`Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`">
+            <font-awesome-icon icon="check" class="workflow-trs-icon" />
+        </span>
+        <span v-if="sourceType == 'url'" v-b-tooltip.hover :title="`Imported from ${workflow.source_metadata.url}`">
+            <font-awesome-icon class="workflow-external-link" icon="link" />
+        </span>
         <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
