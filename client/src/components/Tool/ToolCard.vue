@@ -5,7 +5,7 @@ import ToolVersionsButton from "components/Tool/Buttons/ToolVersionsButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
-import ToolCardSection from "./ToolCardSection";
+import Heading from "components/Common/Heading";
 
 import { computed, ref, watch } from "vue";
 import { useCurrentUser } from "composables/user";
@@ -81,7 +81,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
                     <span>
                         <icon icon="wrench" class="fa-fw" />
-                        <h1 itemprop="name">{{ props.title }}</h1>
+                        <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
                     </span>
                     <span itemprop="description">{{ props.description }}</span>
                     <span>(Galaxy Version {{ props.version }})</span>
@@ -114,9 +114,10 @@ const showVersions = computed(() => props.options.versions?.length > 1);
         <slot name="buttons" />
 
         <div>
-            <ToolCardSection title="Help">
+            <div class="mt-2 mb-4">
+                <Heading h2 separator bold size="sm"> Help </Heading>
                 <ToolHelp :content="props.options.help" />
-            </ToolCardSection>
+            </div>
 
             <ToolFooter
                 :id="props.id"
@@ -131,16 +132,6 @@ const showVersions = computed(() => props.options.versions?.length > 1);
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
-
-.tool-header {
-    h1 {
-        font-size: 1em;
-        line-height: 1em;
-        font-weight: 700;
-        margin: 0;
-        display: inline;
-    }
-}
 
 .underlay::after {
     content: "";

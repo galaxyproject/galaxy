@@ -10,14 +10,14 @@
         <div id="right">
             <div class="m-3">
                 <div v-if="modelTitle">
-                    <h4>About this {{ modelTitle }}</h4>
-                    <h3>{{ details.title || details.name }}</h3>
+                    <h1 class="h-sm">About this {{ modelTitle }}</h1>
+                    <h2 class="h-md">{{ details.title || details.name }}</h2>
                     <StatelessTags v-if="details.tags" class="tags mt-2" :value="details.tags" :disabled="true" />
                     <br />
-                    <h4>Author</h4>
+                    <h2 class="h-sm">Author</h2>
                     <div>{{ owner }}</div>
                     <hr />
-                    <h4>Related Pages</h4>
+                    <h2 class="h-sm">Related Pages</h2>
                     <div>
                         <router-link :to="urlAll">All published {{ plural }}.</router-link>
                     </div>

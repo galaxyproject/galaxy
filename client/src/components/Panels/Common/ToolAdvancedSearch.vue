@@ -2,11 +2,7 @@
     <ToolsProvider v-slot="{ loading, result: itemsLoaded }" :filter-settings="filterSettings">
         <section class="overflow-auto h-100" @scroll="onScroll">
             <div class="mb-2">
-                <span class="row mb-1">
-                    <span class="col">
-                        <h4 class="d-inline-block">Advanced Tool Search Results</h4>
-                    </span>
-                </span>
+                <h1 class="h-lg mb-2">Advanced Tool Search Results</h1>
                 <span v-if="itemsLoaded.length !== 0 && hasFilters" class="row">
                     <span class="col d-inline-block">
                         Found {{ itemsLoaded.length }} tools for

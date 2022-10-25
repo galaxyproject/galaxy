@@ -3,7 +3,7 @@
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h4 v-localize class="m-1">Tools</h4>
+                    <h2 v-localize class="m-1 h-sm">Tools</h2>
                     <div class="panel-header-buttons">
                         <panel-view-button
                             v-if="panelViews && Object.keys(panelViews).length > 1"

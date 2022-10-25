@@ -2,7 +2,7 @@
     <div>
         <b-button variant="link" @click="onGoBack">Go back to Libraries</b-button>
         <PermissionsHeader v-if="library" :name="library.name" />
-        <h2 class="text-center">Library permissions</h2>
+        <h1 class="text-center h-lg">Library permissions</h1>
         <PermissionsInputField
             v-if="access_library_role_list"
             :id="library_id"

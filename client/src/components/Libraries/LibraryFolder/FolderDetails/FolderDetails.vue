@@ -27,9 +27,9 @@
                         thead-class="d-none"
                         data-testid="library-table">
                         <template v-slot:table-caption>
-                            <h4>
+                            <h2 class="h-sm">
                                 <b>{{ libraryHeader }}</b>
-                            </h4>
+                            </h2>
                         </template>
                     </b-table-lite>
                 </div>
@@ -43,9 +43,9 @@
                         thead-class="d-none"
                         data-testid="folder-table">
                         <template v-slot:table-caption>
-                            <h4>
+                            <h2 class="h-sm">
                                 <b>{{ folderHeader }}</b>
-                            </h4>
+                            </h2>
                         </template>
                         <template v-slot:cell(value)="row">
                             <div v-if="row.item.name === libraryFieldTitles.create_time_pretty">

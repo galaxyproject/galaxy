@@ -1,7 +1,7 @@
 <template>
-    <div>
+    <div aria-labelledby="interactive-tools-heading">
         <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
-        <h2>Active Interactive Tools</h2>
+        <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
         <b-row class="mb-3">
             <b-col cols="6">
                 <b-input

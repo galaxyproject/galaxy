@@ -3,16 +3,16 @@
         <div class="text-center my-5">
             <div v-if="allSourcesUnlimited">
                 <h2>You've got <b>unlimited</b> disk quota</h2>
-                <h4 v-localize>All your storage sources have unlimited disk space. Enjoy!</h4>
+                <h3 class="h-sm" v-localize>All your storage sources have unlimited disk space. Enjoy!</h3>
             </div>
             <div v-else>
                 <h2>
                     You've got <b> {{ niceTotalQuota }} </b> of total disk quota
                 </h2>
-                <h4 v-localize>
+                <h3 class="h-sm" v-localize>
                     This is the maximum disk space that you can use across all your storage sources. Unlimited storage
                     sources are not taken into account
-                </h4>
+                </h3>
             </div>
         </div>
 
