@@ -102,7 +102,7 @@
             Datasets must fulfill the following conditions in order to be processed
           </p>
           <ul>
-            <li>must be VCF or VCF.bzip format</li>
+            <li>must be VCF or VCF.bgzip format</li>
             <li>must have a human reference assigned to it (e.g. hg19)</li>
             <li>must define at least one sample in a dedicated genotype column</li>
           </ul>
