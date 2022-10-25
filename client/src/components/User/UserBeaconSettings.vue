@@ -62,12 +62,12 @@
 
         <div v-if="enabled">
           <p>
-            If you this setting you can share data by copying VCF/VCF.gz files to a history called
-            <span class="cursive">{{ beaconHistoryName }}</span>. The Beacon database is rebuild every day, this means
-            if
-            you disable the option here, of if we remove the history, or data in the history, the variants will
+            If you enable this setting you can share data by copying VCF/VCF.gz files to a history called
+            <span class="cursive">{{ beaconHistoryName }}</span>. The Beacon database is rebuilt every day, which means
+            that if
+            you disable the option here, or if you remove the history or data in the history, the variants will
             disappear
-            from the Beacon in the next 24h.
+            from the Beacon within the next 24h.
           </p>
         </div>
 
