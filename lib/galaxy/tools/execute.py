@@ -90,7 +90,7 @@ def execute(
         )
     execution_cache = ToolExecutionCache(trans)
 
-    def execute_single_job(execution_slice, completed_job):
+    def execute_single_job(execution_slice, completed_job, skip=False):
         job_timer = tool.app.execution_timer_factory.get_timer(
             "internals.galaxy.tools.execute.job_single", SINGLE_EXECUTION_SUCCESS_MESSAGE
         )
@@ -121,6 +121,7 @@ def execute(
             collection_info,
             job_callback=job_callback,
             flush_job=False,
+            skip=skip,
         )
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
@@ -161,9 +162,8 @@ def execute(
             has_remaining_jobs = True
             break
         else:
-            if execution_slice.param_combination.get("when") is False:
-                continue
-            execute_single_job(execution_slice, completed_jobs[i])
+            skip = execution_slice.param_combination.get("when") is False
+            execute_single_job(execution_slice, completed_jobs[i], skip=skip)
             history = execution_slice.history or history
             jobs_executed += 1
 

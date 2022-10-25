@@ -23,6 +23,7 @@ from galaxy.model import (
 )
 from galaxy.model.dataset_collections.builder import CollectionBuilder
 from galaxy.model.none_like import NoneDataset
+from galaxy.objectstore import ObjectStorePopulator
 from galaxy.tools.parameters import update_dataset_ids
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -367,6 +368,7 @@ class DefaultToolAction(ToolAction):
         collection_info=None,
         job_callback=None,
         flush_job=True,
+        skip=False,
     ):
         """
         Executes a tool, creating job and tool outputs, associating them, and
@@ -506,7 +508,7 @@ class DefaultToolAction(ToolAction):
                     )
             data.copy_tags_to(preserved_tags.values())
 
-            # This may not be neccesary with the new parent/child associations
+            # This may not be necessary with the new parent/child associations
             data.designation = name
             # Copy metadata from one of the inputs if requested.
 
@@ -635,66 +637,77 @@ class DefaultToolAction(ToolAction):
         history.add_pending_items(set_output_hid=set_output_hid)
 
         log.info(add_datasets_timer)
-        job_setup_timer = ExecutionTimer()
-        # Create the job object
-        job, galaxy_session = self._new_job_for_session(trans, tool, history)
-        self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
-        self._record_outputs(job, out_data, output_collections)
-        # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
-        if job_callback:
-            job_callback(job)
-        if job_params:
-            job.params = dumps(job_params)
-        if completed_job:
-            job.set_copied_from_job_id(completed_job.id)
-        trans.sa_session.add(job)
-        # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
-        # This functionality requires tracking jobs in the database.
-        if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
-            # Need to flush here so that referencing outputs by id works
-            session = trans.sa_session()
-            try:
-                session.expire_on_commit = False
-                session.flush()
-            finally:
-                session.expire_on_commit = True
-            self._remap_job_on_rerun(
-                trans=trans,
-                galaxy_session=galaxy_session,
-                rerun_remap_job_id=rerun_remap_job_id,
-                current_job=job,
-                out_data=out_data,
-            )
-        log.info(f"Setup for job {job.log_str()} complete, ready to be enqueued {job_setup_timer}")
-
-        # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
-        # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
-        # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
-        # from being queued.
-        if "REDIRECT_URL" in incoming:
-            # Get the dataset - there should only be 1
-            for name in inp_data.keys():
-                dataset = inp_data[name]
-            redirect_url = tool.parse_redirect_url(dataset, incoming)
-            # GALAXY_URL should be include in the tool params to enable the external application
-            # to send back to the current Galaxy instance
-            GALAXY_URL = incoming.get("GALAXY_URL", None)
-            assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
-            redirect_url += f"&GALAXY_URL={GALAXY_URL}"
-            # Job should not be queued, so set state to ok
-            job.set_state(app.model.Job.states.OK)
-            job.info = f"Redirected to: {redirect_url}"
-            trans.sa_session.add(job)
-            trans.sa_session.flush()
-            trans.response.send_redirect(redirect_url)
+        job = trans.app.model.Job()
+        job.state = "ok"
+        if skip:
+            object_store_populator = ObjectStorePopulator(trans.app, trans.user)
+            for data in out_data.values():
+                object_store_populator.set_object_store_id(data)
+                data.extension = "expression.json"
+                data.state = "ok"
+                with open(data.dataset.file_name, "w") as out:
+                    out.write(json.dumps(None))
         else:
-            if flush_job:
-                # Set HID and add to history.
-                job_flush_timer = ExecutionTimer()
-                trans.sa_session.flush()
-                log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
+            job_setup_timer = ExecutionTimer()
+            # Create the job object
+            job, galaxy_session = self._new_job_for_session(trans, tool, history)
+            self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
+            self._record_outputs(job, out_data, output_collections)
+            # execute immediate post job actions and associate post job actions that are to be executed after the job is complete
+            if job_callback:
+                job_callback(job)
+            if job_params:
+                job.params = dumps(job_params)
+            if completed_job:
+                job.set_copied_from_job_id(completed_job.id)
+            trans.sa_session.add(job)
+            # Remap any outputs if this is a rerun and the user chose to continue dependent jobs
+            # This functionality requires tracking jobs in the database.
+            if app.config.track_jobs_in_database and rerun_remap_job_id is not None:
+                # Need to flush here so that referencing outputs by id works
+                session = trans.sa_session()
+                try:
+                    session.expire_on_commit = False
+                    session.flush()
+                finally:
+                    session.expire_on_commit = True
+                self._remap_job_on_rerun(
+                    trans=trans,
+                    galaxy_session=galaxy_session,
+                    rerun_remap_job_id=rerun_remap_job_id,
+                    current_job=job,
+                    out_data=out_data,
+                )
+            log.info(f"Setup for job {job.log_str()} complete, ready to be enqueued {job_setup_timer}")
 
-            return job, out_data, history
+            # Some tools are not really executable, but jobs are still created for them ( for record keeping ).
+            # Examples include tools that redirect to other applications ( epigraph ).  These special tools must
+            # include something that can be retrieved from the params ( e.g., REDIRECT_URL ) to keep the job
+            # from being queued.
+            if "REDIRECT_URL" in incoming:
+                # Get the dataset - there should only be 1
+                for name in inp_data.keys():
+                    dataset = inp_data[name]
+                redirect_url = tool.parse_redirect_url(dataset, incoming)
+                # GALAXY_URL should be include in the tool params to enable the external application
+                # to send back to the current Galaxy instance
+                GALAXY_URL = incoming.get("GALAXY_URL", None)
+                assert GALAXY_URL is not None, "GALAXY_URL parameter missing in tool config."
+                redirect_url += f"&GALAXY_URL={GALAXY_URL}"
+                # Job should not be queued, so set state to ok
+                job.set_state(app.model.Job.states.OK)
+                job.info = f"Redirected to: {redirect_url}"
+                trans.sa_session.add(job)
+                trans.sa_session.flush()
+                trans.response.send_redirect(redirect_url)
+            else:
+                if flush_job:
+                    # Set HID and add to history.
+                    job_flush_timer = ExecutionTimer()
+                    trans.sa_session.flush()
+                    log.info(f"Flushed transaction for job {job.log_str()} {job_flush_timer}")
+
+        return job, out_data, history
 
     def _remap_job_on_rerun(self, trans, galaxy_session, rerun_remap_job_id, current_job, out_data):
         """
