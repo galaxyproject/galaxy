@@ -13,7 +13,7 @@
           ok-only
           title="Manage Beacon"
           title-tag="h1"
-          @show="loadSettings">
+          @show="onOpenModal">
 
         <!-- Explanation text-->
         <p>
@@ -138,9 +138,6 @@ export default {
       beaconHistory: {}
     };
   },
-  created() {
-    this.getBeaconHistory();
-  },
   methods: {
     switchHistory: async function (historyId) {
       await store.dispatch("history/setCurrentHistory", historyId);
@@ -197,6 +194,10 @@ export default {
       } catch (e) {
         console.log(e);
       }
+    },
+    onOpenModal() {
+      this.loadSettings();
+      this.getBeaconHistory();
     },
     async loadSettings() {
       try {
