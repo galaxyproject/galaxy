@@ -182,19 +182,15 @@ export default {
         },
         onDelete: function () {
             const id = this.workflow.id;
-            const name = this.workflow.name;
-            const confirmationMessage = this.l(`Are you sure you want to delete workflow '${name}'?`);
-            if (window.confirm(confirmationMessage)) {
-                this.services
-                    .deleteWorkflow(id)
-                    .then((message) => {
-                        this.$emit("onRemove", id);
-                        this.$emit("onSuccess", message);
-                    })
-                    .catch((error) => {
-                        this.$emit("onError", error);
-                    });
-            }
+            this.services
+                .deleteWorkflow(id)
+                .then((message) => {
+                    this.$emit("onRemove", id);
+                    this.$emit("onSuccess", message);
+                })
+                .catch((error) => {
+                    this.$emit("onError", error);
+                });
         },
         onRename: function () {
             const id = this.workflow.id;
