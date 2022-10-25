@@ -157,6 +157,8 @@ class AuthnzManager:
             rtv["icon"] = config_xml.find("icon").text
         if config_xml.find("extra_scopes") is not None:
             rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
+        if config_xml.find("pkce_support") is not None:
+            rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
 
         return rtv
 
@@ -178,6 +180,8 @@ class AuthnzManager:
             rtv["ca_bundle"] = config_xml.find("ca_bundle").text
         if config_xml.find("icon") is not None:
             rtv["icon"] = config_xml.find("icon").text
+        if config_xml.find("pkce_support") is not None:
+            rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
         return rtv
 
     def get_allowed_idps(self):
@@ -365,7 +369,7 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def logout(self, provider, trans, post_logout_redirect_url=None):
+    def logout(self, provider, trans, post_user_logout_href=None):
         """
         Log the user out of the identity provider.
 
@@ -373,8 +377,8 @@ class AuthnzManager:
         :param provider: set the name of the identity provider.
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
-        :type post_logout_redirect_url: string
-        :param post_logout_redirect_url: (Optional) URL for identity provider
+        :type post_user_logout_href: string
+        :param post_user_logout_href: (Optional) URL for identity provider
             to redirect to after logging user out.
         :return: a tuple (success boolean, message, redirect URI)
         """
@@ -387,7 +391,7 @@ class AuthnzManager:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 return False, message, None
-            return True, message, backend.logout(trans, post_logout_redirect_url)
+            return True, message, backend.logout(trans, post_user_logout_href)
         except Exception:
             msg = f"An error occurred when logging out from `{provider}` identity provider.  Please contact an administrator for assistance."
             log.exception(msg)
@@ -497,7 +501,7 @@ class AuthnzManager:
         )
         credentials = self.get_cloud_access_credentials(cloudauthz, sa_session, user_id, request)
         log.info(
-            "Writting credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
+            "Writing credentials generated using CloudAuthz with config id `{}` to the following file: `{}`"
             "".format(cloudauthz.id, filename)
         )
         with open(filename, "w") as f:

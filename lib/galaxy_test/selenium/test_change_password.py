@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class ChangePasswordTestCase(SeleniumTestCase):
+class TestChangePassword(SeleniumTestCase):
     @selenium_test
     def test_change_password(self):
         self.home()
@@ -62,7 +62,7 @@ class ChangePasswordTestCase(SeleniumTestCase):
 
     def fill_input_fields(self, current, password, confirm):
         self.sleep_for(self.wait_types.UX_TRANSITION)
-        self.driver.find_element_by_css_selector("input[id='current']").send_keys(current)
-        self.driver.find_element_by_css_selector("input[id='password']").send_keys(password)
-        self.driver.find_element_by_css_selector("input[id='confirm']").send_keys(confirm)
+        self.find_element_by_selector("input[id='current']").send_keys(current)
+        self.find_element_by_selector("input[id='password']").send_keys(password)
+        self.find_element_by_selector("input[id='confirm']").send_keys(confirm)
         self.components.change_user_password.submit.wait_for_and_click()

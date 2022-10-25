@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from galaxy_test.selenium.framework import (
     managed_history,
@@ -9,14 +11,19 @@ from .framework import (
     SeleniumIntegrationTestCase,
 )
 
+if TYPE_CHECKING:
+    from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
-class WorkflowRunTargetNewSeleniumIntegrationTestCase(
-    SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions
-):
+
+class BaseWorkflowRunTargetTestCase(SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions):
+    dataset_populator: "SeleniumSessionDatasetPopulator"
     ensure_registered = True
 
+
+class TestWorkflowRunTargetNewSeleniumIntegration(BaseWorkflowRunTargetTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["simplified_workflow_run_ui_target_history"] = "new"
         config["simplified_workflow_run_ui"] = "prefer"
 
@@ -38,13 +45,10 @@ class WorkflowRunTargetNewSeleniumIntegrationTestCase(
         self.assert_item_summary_includes(2, "2 sequences")
 
 
-class WorkflowRunTargetCurrentSeleniumIntegrationTestCase(
-    SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions
-):
-    ensure_registered = True
-
+class TestWorkflowRunTargetCurrentSeleniumIntegration(BaseWorkflowRunTargetTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["simplified_workflow_run_ui_target_history"] = "current"
         config["simplified_workflow_run_ui"] = "prefer"
 
@@ -65,13 +69,10 @@ class WorkflowRunTargetCurrentSeleniumIntegrationTestCase(
         self.assert_item_summary_includes(2, "2 sequences")
 
 
-class WorkflowRunTargetSelectNewSeleniumIntegrationTestCase(
-    SeleniumIntegrationTestCase, RunsWorkflows, UsesHistoryItemAssertions
-):
-    ensure_registered = True
-
+class TestWorkflowRunTargetSelectNewSeleniumIntegration(BaseWorkflowRunTargetTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["simplified_workflow_run_ui_target_history"] = "prefer_current"
         config["simplified_workflow_run_ui"] = "prefer"
 

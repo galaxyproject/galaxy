@@ -4,7 +4,7 @@
         :options-show="optionsShow"
         :modal-show="modalShow"
         :hide-modal="() => (modalShow = false)"
-        :back-func="load"
+        :back-func="goBack"
         :undo-show="undoShow">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
@@ -329,6 +329,10 @@ export default {
                         this.errorMessage = errorMessage;
                     });
             }
+        },
+        goBack() {
+            // Loading without a record navigates back one level
+            this.load();
         },
         parseItemFileMode(item) {
             const result = {

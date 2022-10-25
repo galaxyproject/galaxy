@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import re
-import shlex
 import subprocess
 import tempfile
 
@@ -28,6 +27,7 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import (
     nice_size,
+    shlex_join,
     string_as_bool,
     unicodify,
 )
@@ -219,7 +219,7 @@ class Ipynb(Json):
                 ofilename = dataset.file_name
                 log.exception(
                     'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.',
-                    " ".join(map(shlex.quote, cmd)),
+                    shlex_join(cmd),
                 )
             return open(ofilename, mode="rb"), headers
 
@@ -1091,3 +1091,290 @@ class Yaml(Text):
             except yaml.YAMLError:
                 return False
             return False
+
+
+@build_sniff_from_prefix
+class BCSLmodel(Text):
+    """BioChemical Space Language model file"""
+
+    file_ext = "bcsl.model"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .bcsl.model format
+        """
+        reg = r"^#! rules|^#! inits|^#! definitions"
+        return re.search(reg, file_prefix.contents_header, re.MULTILINE) is not None
+
+
+@build_sniff_from_prefix
+class BCSLts(Json):
+    """BioChemical Space Language transition system file"""
+
+    file_ext = "bcsl.ts"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .bcsl.ts format
+        """
+        is_bcsl_ts = False
+        if self._looks_like_json(file_prefix):
+            is_bcsl_ts = self._looks_like_bcsl_ts(file_prefix)
+        return is_bcsl_ts
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
+            ts = json.load(open(dataset.file_name, "r"))
+            dataset.peek = lines.format(len(ts["nodes"]), len(ts["edges"]), len(ts["ordering"]), ts["initial"])
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def _looks_like_bcsl_ts(self, file_prefix: FilePrefix):
+        content = open(file_prefix.filename, "r").read()
+        keywords = ['"edges":', '"nodes":', '"ordering":', '"initial":']
+        if all(keyword in content for keyword in keywords):
+            return self._looks_like_json(file_prefix)
+        return False
+
+
+@build_sniff_from_prefix
+class StormSample(Text):
+    """
+    Storm PCTL parameter synthesis result file
+    containing probability function of parameters.
+    """
+
+    file_ext = "storm.sample"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .storm.sample format
+        """
+        keywords = ["Storm-pars", "Result (initial states)"]
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = "Storm-pars sample results."
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+@build_sniff_from_prefix
+class StormCheck(Text):
+    """
+    Storm PCTL model checking result file
+    containing boolean or numerical result.
+    """
+
+    file_ext = "storm.check"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .storm.check format
+        """
+        keywords = ["Storm ", "Result (for initial states)"]
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            with open(dataset.file_name, "r") as result:
+                answer = ""
+                for line in result:
+                    if "Result (for initial states):" in line:
+                        answer = line.split()[-1]
+                        break
+            dataset.peek = "Model checking result: {}".format(answer)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+@build_sniff_from_prefix
+class CTLresult(Text):
+    """CTL model checking result"""
+
+    file_ext = "ctl.result"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .ctl.result format
+        """
+        keywords = ["Result:", "Number of satisfying states:"]
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
+
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            with open(dataset.file_name, "r") as result:
+                answer = ""
+                for line in result:
+                    if "Result:" in line:
+                        answer = line.split()[-1]
+            dataset.peek = "Model checking result: {}".format(answer)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+
+@build_sniff_from_prefix
+class PithyaProperty(Text):
+    """Pithya CTL property format"""
+
+    file_ext = "pithya.property"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .pithya.property format
+        """
+        return re.search(r":\?[a-zA-Z0-9_]+[ ]*=", file_prefix.contents_header) is not None
+
+
+@build_sniff_from_prefix
+class PithyaModel(Text):
+    """Pithya model format"""
+
+    file_ext = "pithya.model"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .pithya.model format
+        """
+        keywords = ["VARS", "EQ", "THRES"]
+        return all(keyword in file_prefix.contents_header for keyword in keywords)
+
+
+@build_sniff_from_prefix
+class PithyaResult(Json):
+    """Pithya result format"""
+
+    file_ext = "pithya.result"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Determines whether the file is in .pithya.result format
+        """
+        is_pithya_result = False
+        if self._looks_like_json(file_prefix):
+            is_pithya_result = self._looks_like_pithya_result(file_prefix)
+        return is_pithya_result
+
+    def _looks_like_pithya_result(self, file_prefix: FilePrefix):
+        content = open(file_prefix.filename, "r").read()
+        keywords = ['"variables":', '"states":', '"parameter_values":', '"results":']
+        if all(keyword in content for keyword in keywords):
+            return self._looks_like_json(file_prefix)
+        return False
+
+
+@build_sniff_from_prefix
+class Castep(Text):
+    """Report on a CASTEP calculation"""
+
+    file_ext = "castep"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """Determines whether the file is a CASTEP log
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.castep')
+        >>> Castep().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.param')
+        >>> Castep().sniff(fname)
+        False
+        """
+        castep_header = [
+            "+-------------------------------------------------+",
+            "|                                                 |",
+            "|      CCC   AA    SSS  TTTTT  EEEEE  PPPP        |",
+            "|     C     A  A  S       T    E      P   P       |",
+            "|     C     AAAA   SS     T    EEE    PPPP        |",
+            "|     C     A  A     S    T    E      P           |",
+            "|      CCC  A  A  SSS     T    EEEEE  P           |",
+            "|                                                 |",
+            "+-------------------------------------------------+",
+        ]
+        handle = file_prefix.string_io()
+        for header_line in castep_header:
+            if handle.readline().strip() != header_line:
+                return False
+        return True
+
+
+@build_sniff_from_prefix
+class Param(Yaml):
+    """CASTEP parameter input file"""
+
+    file_ext = "param"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        Modified version of the normal Yaml sniff that also checks
+        for a valid CASTEP task key-value pair, which is not case
+        sensitive
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.param')
+        >>> Param().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.castep')
+        >>> Param().sniff(fname)
+        False
+        """
+        valid_tasks = [
+            "SINGLEPOINT",
+            "BANDSTRUCTURE",
+            "GEOMETRYOPTIMIZATION",
+            "GEOMETRYOPTIMISATION",
+            "MOLECULARDYNAMICS",
+            "OPTICS",
+            "PHONON",
+            "EFIELD",
+            "PHONON+EFIELD",
+            "TRANSITIONSTATESEARCH",
+            "MAGRES",
+            "ELNES",
+            "ELECTRONICSPECTROSCOPY",
+        ]
+
+        # check it looks like YAML
+        if not super().sniff_prefix(file_prefix):
+            return False
+
+        # check the TASK keyword is present
+        # and that it is set to a valid CASTEP task
+        pattern = re.compile(r"^TASK ?: ?([A-Z\+]*)$", flags=re.IGNORECASE | re.MULTILINE)
+        task = file_prefix.search(pattern)
+        return task and task.group(1).upper() in valid_tasks
+
+
+@build_sniff_from_prefix
+class FormattedDensity(Text):
+    """Final electron density from a CASTEP calculation written to an ASCII file"""
+
+    file_ext = "den_fmt"
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """Determines whether the file contains electron densities in the CASTEP den_fmt format
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('Si.den_fmt')
+        >>> FormattedDensity().sniff(fname)
+        True
+        >>> fname = get_test_fname('Si.param')
+        >>> FormattedDensity().sniff(fname)
+        False
+        """
+        begin_header = "BEGIN header"
+        end_header = 'END header: data is "<a b c> charge" in units of electrons/grid_point * number'
+        grid_points = "of grid_points"
+        handle = file_prefix.string_io()
+        lines = handle.readlines()
+        return lines[0].strip() == begin_header and lines[9].strip() == end_header and lines[10].strip() == grid_points

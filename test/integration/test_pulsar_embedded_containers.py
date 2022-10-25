@@ -18,6 +18,7 @@ class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.Integratio
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
@@ -34,19 +35,19 @@ class BaseEmbeddedPulsarContainerIntegrationTestCase(integration_util.Integratio
         super().setUpClass()
 
 
-class EmbeddedSingularityPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+class TestEmbeddedSingularityPulsarIntegration(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
     # singularity passes $HOME by default
     default_container_home_dir = os.environ.get("HOME", "/")
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_SINGULARITY
     container_type = "singularity"
 
 
-class EmbeddedDockerPulsarIntegrationTestCase(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
+class TestEmbeddedDockerPulsarIntegration(BaseEmbeddedPulsarContainerIntegrationTestCase, MulledJobTestCases):
     job_config_file = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
     container_type = "docker"
 
 
-instance = integration_util.integration_module_instance(EmbeddedSingularityPulsarIntegrationTestCase)
+instance = integration_util.integration_module_instance(TestEmbeddedSingularityPulsarIntegration)
 
 test_tools = integration_util.integration_tool_runner(
     [

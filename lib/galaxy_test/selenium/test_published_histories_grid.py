@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     retry_assertion_during_transitions,
     selenium_test,
@@ -5,7 +7,7 @@ from .framework import (
 )
 
 
-class HistoryGridTestCase(SharedStateSeleniumTestCase):
+class TestHistoryGrid(SharedStateSeleniumTestCase):
     @selenium_test
     def test_history_grid_histories(self):
         self.navigate_to_published_histories_page()
@@ -84,8 +86,8 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
 
         tags = None
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            td = row.find_elements_by_tag_name("td")
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            td = row.find_elements(By.TAG_NAME, "td")
             name = td[0].text
             if name == self.history1_name:
                 tags = td[4]
@@ -95,7 +97,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
             raise AssertionError(f"Failed to find history with name [{self.history1_name}]")
 
         tag_button_selector = "div.tag-name"
-        tag_buttons = tags.find_elements_by_css_selector(tag_button_selector)
+        tag_buttons = tags.find_elements(By.CSS_SELECTOR, tag_button_selector)
         tag_button_text = None
         target_tag_button_text = self.history1_tags[0]
         for tag_button in tag_buttons:
@@ -103,7 +105,7 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
             if tag_button_text == target_tag_button_text:
                 break
 
-        self.assertEqual(tag_button_text, target_tag_button_text)
+        assert tag_button_text == target_tag_button_text
         tag_button.click()
 
         self.assert_grid_histories_are([self.history1_name, self.history3_name], False)
@@ -112,8 +114,8 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         names = []
         grid = self.wait_for_selector("#grid-table-body")
-        for row in grid.find_elements_by_tag_name("tr"):
-            cell = row.find_elements_by_tag_name("td")[0]  # Name
+        for row in grid.find_elements(By.TAG_NAME, "tr"):
+            cell = row.find_elements(By.TAG_NAME, "td")[0]  # Name
             names.append(cell.text)
         return names
 
@@ -137,16 +139,16 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         if not sort_matters:
             actual_histories = set(actual_histories)
             expected_histories = set(expected_histories)
-        self.assertEqual(actual_histories, expected_histories)
+        assert actual_histories == expected_histories
 
     @retry_assertion_during_transitions
     def assert_histories_in_grid(self, expected_histories, present=True):
         actual_histories = self.get_histories()
         intersection = set(actual_histories).intersection(expected_histories)
         if present:
-            self.assertEqual(intersection, set(expected_histories))
+            assert intersection == set(expected_histories)
         else:
-            self.assertEqual(intersection, set())
+            assert intersection == set()
 
     def set_filter(self, selector, value):
         filter_input = self.wait_for_selector_clickable(selector)
@@ -163,17 +165,17 @@ class HistoryGridTestCase(SharedStateSeleniumTestCase):
         tag2 = self._get_random_name(len=5)
         tag3 = self._get_random_name(len=5)
 
-        HistoryGridTestCase.user1_email = self._get_random_email("test1")
-        HistoryGridTestCase.user2_email = self._get_random_email("test2")
-        HistoryGridTestCase.history1_name = self._get_random_name()
-        HistoryGridTestCase.history2_name = self._get_random_name()
-        HistoryGridTestCase.history3_name = self._get_random_name()
-        HistoryGridTestCase.history4_name = self._get_random_name()
-        HistoryGridTestCase.history1_tags = [tag1, tag2]
-        HistoryGridTestCase.history2_tags = [tag3]
-        HistoryGridTestCase.history3_tags = [tag1]
-        HistoryGridTestCase.history3_annot = self._get_random_name()
-        HistoryGridTestCase.all_histories = [self.history1_name, self.history2_name, self.history3_name]
+        TestHistoryGrid.user1_email = self._get_random_email("test1")
+        TestHistoryGrid.user2_email = self._get_random_email("test2")
+        TestHistoryGrid.history1_name = self._get_random_name()
+        TestHistoryGrid.history2_name = self._get_random_name()
+        TestHistoryGrid.history3_name = self._get_random_name()
+        TestHistoryGrid.history4_name = self._get_random_name()
+        TestHistoryGrid.history1_tags = [tag1, tag2]
+        TestHistoryGrid.history2_tags = [tag3]
+        TestHistoryGrid.history3_tags = [tag1]
+        TestHistoryGrid.history3_annot = self._get_random_name()
+        TestHistoryGrid.all_histories = [self.history1_name, self.history2_name, self.history3_name]
 
         self.register(self.user1_email)
         self.create_history(self.history1_name)

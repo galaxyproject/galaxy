@@ -147,7 +147,8 @@ OPTION_ACTIONS = {
     "serve_xss_vulnerable_mimetypes": _ProductionUnsafe(True),
     "use_printdebug": _ProductionUnsafe(True),
     "id_secret": _ProductionUnsafe("USING THE DEFAULT IS NOT SECURE!"),
-    "master_api_key": _ProductionUnsafe("changethis"),
+    "master_api_key": _RenameAction("bootstrap_admin_api_key"),
+    "bootstrap_admin_api_key": _ProductionUnsafe("changethis"),
     "external_service_type_config_file": _DeprecatedAndDroppedAction(),
     "external_service_type_path": _DeprecatedAndDroppedAction(),
     "enable_sequencer_communication": _DeprecatedAndDroppedAction(),
@@ -358,7 +359,7 @@ def _validate(args, app_desc):
         ordered_dump(raw_config, config_p)
 
     def _clean(p, k, v):
-        return k not in ["reloadable", "path_resolves_to", "per_host"]
+        return k not in ["reloadable", "path_resolves_to", "per_host", "deprecated_alias"]
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     with tempfile.NamedTemporaryFile("w", suffix=".yml") as fp:
@@ -508,11 +509,13 @@ def _write_option(args, f, key, option_value, as_comment=False):
         # Wrap and comment desc, replacing whitespaces with a space, except
         # for double newlines which are replaced with a single newline.
         comment += "\n".join("\n".join(YAML_COMMENT_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n"
-    as_comment_str = "#" if as_comment else ""
     key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
-    lines = f"{comment}{as_comment_str}{key_val_str}"
-    lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
-    f.write(f"{lines_idented}\n\n")
+    if as_comment:
+        # key_val_str can be span multiple lines, e.g. if value is a dict
+        key_val_str = "\n".join(f"#{row}" for row in key_val_str.split("\n"))
+    lines = f"{comment}{key_val_str}"
+    lines_indented = "\n".join(f"  {line}" for line in lines.split("\n"))
+    f.write(f"{lines_indented}\n\n")
 
 
 def _parse_option_value(option_value):

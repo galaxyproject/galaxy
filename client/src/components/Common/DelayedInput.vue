@@ -6,15 +6,28 @@
             class="search-query"
             size="sm"
             autocomplete="off"
+            :disabled="includeAdvBtn && showAdvanced"
             :placeholder="placeholder"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
         <b-input-group-append>
             <b-button
+                v-if="includeAdvBtn"
+                size="sm"
+                :pressed="showAdvanced"
+                :variant="showAdvanced ? 'info' : 'secondary'"
+                :title="titleAdvanced | l"
+                data-description="toggle advanced search"
+                @click="onToggle">
+                <icon v-if="showAdvanced" icon="angle-double-up" />
+                <icon v-else icon="angle-double-down" />
+            </b-button>
+            <b-button
                 class="search-clear"
                 size="sm"
                 :title="titleClear | l"
+                :disabled="includeAdvBtn && showAdvanced"
                 data-description="reset query"
                 @click="clearBox">
                 <icon v-if="loading" icon="spinner" spin />
@@ -42,6 +55,14 @@ export default {
             type: Number,
             default: 1000,
         },
+        includeAdvBtn: {
+            type: Boolean,
+            default: false,
+        },
+        showAdvanced: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -49,6 +70,7 @@ export default {
             queryTimer: null,
             queryCurrent: null,
             titleClear: "clear search (esc)",
+            titleAdvanced: "toggle advanced search",
         };
     },
     watch: {
@@ -82,6 +104,9 @@ export default {
         clearBox() {
             this.setQuery("");
             this.$refs.toolInput.focus();
+        },
+        onToggle() {
+            this.$emit("onToggle", !this.showAdvanced);
         },
     },
 };

@@ -1,9 +1,9 @@
 import os
 from abc import abstractmethod
 from typing import Optional
+from urllib.parse import urljoin
 
 import yaml
-from six.moves.urllib.parse import urljoin
 
 from .driver_factory import ConfiguredDriver
 from .navigates_galaxy import NavigatesGalaxy
@@ -12,6 +12,7 @@ from .navigates_galaxy import NavigatesGalaxy
 class GalaxySeleniumContext(NavigatesGalaxy):
     url: str
     target_url_from_selenium: str
+    configured_driver: ConfiguredDriver
 
     def build_url(self, url: str, for_selenium: bool = True) -> str:
         if for_selenium:

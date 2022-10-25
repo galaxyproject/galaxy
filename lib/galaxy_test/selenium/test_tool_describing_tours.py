@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class ToolDescribingToursTestCase(SeleniumTestCase):
+class TestToolDescribingTours(SeleniumTestCase):
     def setUp(self):
         super().setUp()
         self.home()
@@ -70,7 +70,7 @@ class ToolDescribingToursTestCase(SeleniumTestCase):
     def _ensure_tdt_available(self):
         """Skip a test if the webhook TDT doesn't appear."""
         response = self.api_get("webhooks", raw=True)
-        self.assertEqual(response.status_code, 200)
+        assert response.status_code == 200
         data = response.json()
         webhooks = [x["id"] for x in data]
         if "tour_generator" not in webhooks:

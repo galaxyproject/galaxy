@@ -3,10 +3,11 @@
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h4 v-localize class="m-1">Tools</h4>
-                    <div class="panel-header-buttons">
+                    <h4 v-if="!showAdvanced" v-localize class="m-1">Tools</h4>
+                    <h4 v-else v-localize class="m-1">Advanced Tool Search</h4>
+                    <div v-if="!showAdvanced" class="panel-header-buttons">
                         <b-button-group>
-                            <favorites-button v-if="isUser" :query="query" @onFavorites="onQuery" />
+                            <favorites-button :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"
@@ -21,24 +22,27 @@
             <tool-search
                 :current-panel-view="currentPanelView"
                 :placeholder="titleSearchTools"
+                :show-advanced.sync="showAdvanced"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
-            <upload-button />
-            <div v-if="hasResults" class="pb-2">
-                <b-button size="sm" class="w-100" @click="onToggle">
-                    <span :class="buttonIcon" />
-                    <span class="mr-1">{{ buttonText }}</span>
-                </b-button>
-            </div>
-            <div v-else-if="queryTooShort" class="pb-2">
-                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
-            </div>
-            <div v-else-if="queryFinished" class="pb-2">
-                <b-badge class="alert-danger w-100">No results found!</b-badge>
-            </div>
+            <section v-if="!showAdvanced">
+                <upload-button />
+                <div v-if="hasResults" class="pb-2">
+                    <b-button size="sm" class="w-100" @click="onToggle">
+                        <span :class="buttonIcon" />
+                        <span class="mr-1">{{ buttonText }}</span>
+                    </b-button>
+                </div>
+                <div v-else-if="queryTooShort" class="pb-2">
+                    <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+                </div>
+                <div v-else-if="queryFinished" class="pb-2">
+                    <b-badge class="alert-danger w-100">No results found!</b-badge>
+                </div>
+            </section>
         </div>
-        <div class="unified-panel-body">
+        <div v-if="!showAdvanced" class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
@@ -106,6 +110,7 @@ export default {
             queryFilter: null,
             queryPending: false,
             showSections: false,
+            showAdvanced: false,
             buttonText: "",
             buttonIcon: "",
             titleSearchTools: _l("search tools"),
@@ -166,12 +171,10 @@ export default {
                 openGlobalUploadModal();
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
-                const Galaxy = getGalaxyInstance();
                 // encode spaces in tool.id
-                Galaxy.router.push("/", {
-                    tool_id: tool.id.replace(/ /g, "%20"),
-                    version: tool.version,
-                });
+                const toolId = tool.id;
+                const toolVersion = tool.version;
+                this.$router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}`);
             }
         },
         onToggle() {

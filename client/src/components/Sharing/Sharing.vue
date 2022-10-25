@@ -123,7 +123,7 @@
                                                 <span>{{ option.email }}</span>
                                                 <i
                                                     aria-hidden="true"
-                                                    tabindex="1"
+                                                    tabindex="0"
                                                     class="multiselect__tag-icon"
                                                     @click="remove(option)"></i>
                                             </span>

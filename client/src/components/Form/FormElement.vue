@@ -29,6 +29,17 @@
                 v-model="currentValue"
                 :max="attrs.max"
                 :min="attrs.min"
+                :type="type"
+                :workflow-building-mode="workflowBuildingMode" />
+            <FormText
+                v-else-if="type == 'text' || type == 'password'"
+                :id="id"
+                v-model="currentValue"
+                :readonly="attrs.readonly"
+                :placeholder="attrs.placeholder"
+                :color="attrs.color"
+                :style="attrs.style"
+                :datalist="attrs.datalist"
                 :type="type" />
             <FormText
                 v-else-if="type == 'text' || type == 'password'"
@@ -86,7 +97,7 @@ export default {
         },
         type: {
             type: String,
-            default: "text",
+            default: "",
         },
         value: {
             default: null,
@@ -150,6 +161,10 @@ export default {
         connectedDisableIcon: {
             type: String,
             default: "fa fa-arrows-h",
+        },
+        workflowBuildingMode: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {

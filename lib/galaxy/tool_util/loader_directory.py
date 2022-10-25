@@ -188,22 +188,42 @@ def looks_like_a_data_manager_xml(path):
     return looks_like_xml(path=path, regex=DATA_MANAGER_REGEX)
 
 
-def is_a_yaml_with_class(path, classes):
-    """Determine if a file is a valid YAML with a supplied ``class`` entry."""
-    if not _has_extension(path, YAML_EXTENSIONS):
-        return False
+def as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes):
+    """
+    get a dict from yaml file if it contains `class: CLASS`, where CLASS is
+    any string given in CLASSES. must appear in the first 5k and also load
+    properly in total.
+    """
+    with open(path, encoding="utf-8") as f:
+        try:
+            start_contents = f.read(5 * 1024)
+        except UnicodeDecodeError:
+            return False, None
+        if re.search(rf"\nclass:\s+({'|'.join(classes)})\s*\n", start_contents) is None:
+            return False, None
 
     with open(path) as f:
         try:
             as_dict = yaml.safe_load(f)
         except Exception:
-            return False
+            return False, None
 
     if not isinstance(as_dict, dict):
-        return False
+        return False, None
 
     file_class = as_dict.get("class", None)
-    return file_class in classes
+    if file_class not in classes:
+        return False, None
+
+    return True, as_dict
+
+
+def is_a_yaml_with_class(path, classes):
+    """Determine if a file is a valid YAML with a supplied ``class`` entry."""
+    if not _has_extension(path, YAML_EXTENSIONS):
+        return False
+    is_yaml, as_dict = as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes)
+    return is_yaml
 
 
 def looks_like_a_tool_yaml(path):
@@ -216,17 +236,8 @@ def looks_like_a_cwl_artifact(path, classes=None):
     if not _has_extension(path, CWL_EXTENSIONS):
         return False
 
-    with open(path) as f:
-        try:
-            as_dict = yaml.safe_load(f)
-        except Exception:
-            return False
-
-    if not isinstance(as_dict, dict):
-        return False
-
-    file_class = as_dict.get("class", None)
-    if classes is not None and file_class not in classes:
+    is_yaml, as_dict = as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes)
+    if not is_yaml:
         return False
 
     file_cwl_version = as_dict.get("cwlVersion", None)

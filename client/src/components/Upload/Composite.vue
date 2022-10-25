@@ -61,7 +61,7 @@
 <script>
 import _l from "utils/localization";
 import _ from "underscore";
-import { getGalaxyInstance } from "app";
+import { refreshContentsWrapper } from "utils/data";
 import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
@@ -72,7 +72,7 @@ export default {
     data() {
         return {
             extension: "_select_",
-            genome: this.app.defaultGenome,
+            genome: this.app.defaultDbKey,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -179,7 +179,7 @@ export default {
             if (this.collection.where({ status: "running" }).length == 0) {
                 this.collection.reset();
                 this.extension = this.app.defaultExtension;
-                this.genome = this.app.defaultGenome;
+                this.genome = this.app.defaultDbKey;
                 this.renderNonReactiveComponents();
             }
         },
@@ -193,11 +193,10 @@ export default {
 
         /** Refresh success state */
         _eventSuccess: function (message) {
-            const Galaxy = getGalaxyInstance();
             this.collection.each((it) => {
                 it.set("status", "success");
             });
-            Galaxy.currHistoryPanel.refreshContents();
+            refreshContentsWrapper();
         },
 
         /** Refresh error state */

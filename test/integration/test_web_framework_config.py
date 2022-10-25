@@ -11,7 +11,7 @@ class BaseWebFrameworkTestCase(integration_util.IntegrationTestCase):
         return options_response
 
 
-class CorsDefaultIntegrationTestCase(BaseWebFrameworkTestCase):
+class TestCorsDefaultIntegration(BaseWebFrameworkTestCase):
     def test_options(self):
         headers = {
             "Access-Control-Request-Method": "GET",
@@ -32,9 +32,10 @@ class CorsDefaultIntegrationTestCase(BaseWebFrameworkTestCase):
         assert "access-control-allow-origin" not in options_response.headers
 
 
-class AllowOriginIntegrationTestCase(BaseWebFrameworkTestCase):
+class TestAllowOriginIntegration(BaseWebFrameworkTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["allowed_origin_hostnames"] = "192.168.0.101,/.*.galaxyproject.org/"
 
     def test_origin_allowed_if_configured(self):

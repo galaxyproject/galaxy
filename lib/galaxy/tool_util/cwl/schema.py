@@ -1,9 +1,10 @@
 """Abstraction around cwltool and related libraries for loading a CWL artifact."""
 import os
 import tempfile
-from collections import namedtuple
+from typing import NamedTuple
 
 from .cwltool_deps import (
+    CommentedMap,
     default_loader,
     ensure_cwltool_available,
     load_tool,
@@ -11,8 +12,19 @@ from .cwltool_deps import (
     resolve_and_validate_document,
 )
 
-RawProcessReference = namedtuple("RawProcessReference", ["loading_context", "process_object", "uri"])
-ResolvedProcessDefinition = namedtuple("ResolvedProcessDefinition", ["loading_context", "uri", "raw_process_reference"])
+
+class RawProcessReference(NamedTuple):
+    loading_context: LoadingContext
+    process_object: CommentedMap
+    uri: str
+
+
+class ResolvedProcessDefinition(NamedTuple):
+    loading_context: LoadingContext
+    uri: str
+    raw_process_reference: RawProcessReference
+
+
 REWRITE_EXPRESSIONS = False
 
 
@@ -63,19 +75,18 @@ class SchemaLoader:
         loading_context, process_object, uri = load_tool.fetch_document(process_object, loadingContext=loading_context)
         return RawProcessReference(loading_context, process_object, uri)
 
-    def process_definition(self, raw_process_reference):
+    def process_definition(self, raw_process_reference: RawProcessReference) -> ResolvedProcessDefinition:
         assert raw_process_reference.loading_context is not None, "No loading context found for raw_process_reference"
         loading_context, uri = resolve_and_validate_document(
             raw_process_reference.loading_context,
             raw_process_reference.process_object,
             raw_process_reference.uri,
         )
-        process_def = ResolvedProcessDefinition(
+        return ResolvedProcessDefinition(
             loading_context,
             uri,
             raw_process_reference,
         )
-        return process_def
 
     def tool(self, **kwds):
         process_definition = kwds.get("process_definition", None)

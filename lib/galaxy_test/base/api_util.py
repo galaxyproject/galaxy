@@ -1,5 +1,11 @@
+import base64
 import os
-from typing import Optional
+import random
+import string
+from typing import (
+    Dict,
+    Optional,
+)
 
 DEFAULT_GALAXY_MASTER_API_KEY = "TEST123"
 DEFAULT_GALAXY_USER_API_KEY = None
@@ -33,3 +39,20 @@ def get_user_api_key() -> Optional[str]:
     be used to create a new user and API key for tests.
     """
     return os.environ.get("GALAXY_TEST_USER_API_KEY", DEFAULT_GALAXY_USER_API_KEY)
+
+
+def baseauth_headers(username: str, password: str) -> Dict[str, str]:
+    unencoded_credentials = f"{username}:{password}"
+    authorization = base64.b64encode(unencoded_credentials.encode("utf-8")).decode("utf-8")
+    headers = {
+        "Authorization": authorization,
+    }
+    return headers
+
+
+def random_name(prefix: Optional[str] = None, suffix: Optional[str] = None, len: int = 10) -> str:
+    return "{}{}{}".format(
+        prefix or "",
+        "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len)),
+        suffix or "",
+    )

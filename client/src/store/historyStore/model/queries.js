@@ -7,7 +7,6 @@
 
 import axios from "axios";
 import { prependPath } from "utils/redirect";
-import { History } from "./History";
 
 /**
  * Generic json getter
@@ -39,7 +38,15 @@ function formData(fields = {}) {
  */
 const stdHistoryParams = {
     view: "summary",
-    keys: "size,contents_active",
+};
+
+/**
+ * Extended history request parameters.
+ * Retrieves additional details which are usually more "expensive".
+ */
+const extendedHistoryParams = {
+    view: "summary",
+    keys: "size,contents_active,user_id",
 };
 
 /**
@@ -48,8 +55,7 @@ const stdHistoryParams = {
 export async function getHistoryList() {
     const url = "api/histories";
     const response = await axios.get(prependPath(url), { params: stdHistoryParams });
-    const rawList = doResponse(response);
-    return rawList.map((props) => new History(props));
+    return doResponse(response);
 }
 
 /**
@@ -58,9 +64,8 @@ export async function getHistoryList() {
  */
 export async function getHistoryById(id) {
     const path = `api/histories/${id}`;
-    const response = await axios.get(prependPath(path), { params: stdHistoryParams });
-    const props = doResponse(response);
-    return new History(props);
+    const response = await axios.get(prependPath(path), { params: extendedHistoryParams });
+    return doResponse(response);
 }
 
 /**
@@ -79,8 +84,7 @@ export async function createNewHistory() {
     if (!id) {
         throw new Error("failed to create and select new history");
     }
-    const newHistoryProps = doResponse(createResponse);
-    return new History(newHistoryProps);
+    return doResponse(createResponse);
 }
 
 /**
@@ -98,8 +102,7 @@ export async function cloneHistory(history, name, copyAll) {
         current: true,
     };
     const response = await axios.post(prependPath(url), payload, { params: stdHistoryParams });
-    const clonedProps = doResponse(response);
-    return new History(clonedProps);
+    return doResponse(response);
 }
 
 /**
@@ -120,9 +123,8 @@ export async function deleteHistoryById(id, purge = false) {
  */
 export async function updateHistoryFields(id, payload) {
     const url = `api/histories/${id}`;
-    const response = await axios.put(prependPath(url), payload, { params: stdHistoryParams });
-    const props = doResponse(response);
-    return new History(props);
+    const response = await axios.put(prependPath(url), payload, { params: extendedHistoryParams });
+    return doResponse(response);
 }
 
 /**
@@ -143,11 +145,10 @@ export async function secureHistory(history) {
 /**
  * Content Current History
  */
-export async function getCurrentHistoryFromServer() {
+export async function getCurrentHistoryFromServer(since) {
     const url = "history/current_history_json";
-    const response = await axios.get(prependPath(url));
-    const props = doResponse(response);
-    return new History(props);
+    const response = await axios.get(prependPath(url), { params: { since: since } });
+    return doResponse(response);
 }
 
 export async function setCurrentHistoryOnServer(history_id) {

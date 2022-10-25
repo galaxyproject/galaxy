@@ -1,21 +1,24 @@
 import unittest
 
-import pytest
-import requests
-
+from galaxy.model.unittest_utils.store_fixtures import (
+    one_ld_library_model_store_dict,
+    TEST_LIBRARY_NAME,
+)
+from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
+    FILE_URL,
     LibraryPopulator,
     skip_if_github_down,
+    skip_without_asgi,
 )
 from ._framework import ApiTestCase
 
-FILE_URL = "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed"
-FILE_MD5 = "37b59762b59fff860460522d271bc111"
 
+class TestLibrariesApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
 
-class LibrariesApiTestCase(ApiTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -29,6 +32,17 @@ class LibrariesApiTestCase(ApiTestCase):
         library = create_response.json()
         self._assert_has_keys(library, "name")
         assert library["name"] == "CreateTestLibrary"
+
+    @skip_without_asgi
+    def test_create_from_store(self):
+        response = self.library_populator.create_from_store(store_dict=one_ld_library_model_store_dict())
+        assert isinstance(response, list)
+        assert len(response) == 1
+        library_summary = response[0]
+        assert library_summary["name"] == TEST_LIBRARY_NAME
+        assert "id" in library_summary
+        ld = self.library_populator.get_library_contents_with_path(library_summary["id"], "/my cool name")
+        assert ld
 
     def test_delete(self):
         library = self.library_populator.new_library("DeleteTestLibrary")
@@ -169,13 +183,13 @@ class LibrariesApiTestCase(ApiTestCase):
     def test_create_dataset_denied(self):
         url, payload = self._create_dataset_kwargs()
         with self._different_user():
-            create_response = self._post(url, payload)
+            create_response = self._post(url, payload, json=True)
             self._assert_status_code_is(create_response, 403)
 
     def test_create_dataset_bootstrap_admin_user(self):
         url, payload = self._create_dataset_kwargs()
         with self._different_user():
-            create_response = self._post(url, payload, key=self.master_api_key)
+            create_response = self._post(url, payload, key=self.master_api_key, json=True)
             self._assert_status_code_is(create_response, 400)
 
     def _create_dataset_kwargs(self):
@@ -192,10 +206,9 @@ class LibrariesApiTestCase(ApiTestCase):
             "ForCreateDatasets", wait=True
         )
         with self._different_user():
-            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-                self.library_populator.show_ld(library["id"], library_dataset["id"])
-            # TODO: this should really be 403 and a proper JSON exception.
-            self._assert_status_code_is(exc_info.value.response, 400)
+            response = self.library_populator.show_ld_raw(library["id"], library_dataset["id"])
+            api_asserts.assert_status_code_is(response, 403)
+            api_asserts.assert_error_code_is(response, 403002)
 
     def test_create_dataset(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library(
@@ -252,37 +265,14 @@ class LibrariesApiTestCase(ApiTestCase):
         assert dataset["file_size"] == 61, dataset
 
     def test_fetch_single_url_to_folder(self):
-        library, response = self._fetch_single_url_to_folder()
+        library, response = self.library_populator.fetch_single_url_to_folder()
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 
     def test_fetch_single_url_with_invalid_datatype(self):
-        _, response = self._fetch_single_url_to_folder("xxx", assert_ok=False)
+        _, response = self.library_populator.fetch_single_url_to_folder("xxx", assert_ok=False)
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
-
-    def _fetch_single_url_to_folder(self, file_type="auto", assert_ok=True):
-        history_id, library, destination = self._setup_fetch_to_folder("single_url")
-        items = [
-            {
-                "src": "url",
-                "url": FILE_URL,
-                "MD5": FILE_MD5,
-                "ext": file_type,
-            }
-        ]
-        targets = [
-            {
-                "destination": destination,
-                "items": items,
-            }
-        ]
-        payload = {
-            "history_id": history_id,  # TODO: Shouldn't be needed :(
-            "targets": targets,
-            "validate_hashes": True,
-        }
-        return library, self.dataset_populator.fetch(payload, assert_ok=assert_ok)
 
     def test_legacy_upload_unknown_datatype(self):
         library = self.library_populator.new_private_library("ForLegacyUpload")
@@ -388,7 +378,7 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")["id"]
         payload = {"from_hda_id": hda_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
 
@@ -404,7 +394,7 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")["id"]
         payload = {"from_hda_id": hda_id}
-        create_response = self._post(f"folders/{subfolder_id}/contents", payload)
+        create_response = self._post(f"folders/{subfolder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
         dataset_update_time = create_response.json()["update_time"]
@@ -535,7 +525,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]["id"]
         payload = {"from_hdca_id": hdca_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         assert len(create_response.json()) == 2
         # Also test that anything different from a flat dataset collection list
@@ -544,7 +534,7 @@ class LibrariesApiTestCase(ApiTestCase):
             "outputs"
         ][0]["id"]
         payload = {"from_hdca_id": hdca_pair_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 501)
         assert (
             create_response.json()["err_msg"]

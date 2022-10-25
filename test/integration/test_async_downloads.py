@@ -4,28 +4,18 @@ from io import BytesIO
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
-    uses_test_history,
 )
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    setup_celery_includes,
-    UsesCeleryTasks,
-)
-
-celery_includes = setup_celery_includes()
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class AsyncDownloadsIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
-    @classmethod
-    def handle_galaxy_config_kwds(cls, config):
-        cls.setup_celery_config(config)
+class TestAsyncDownloadsIntegration(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
 
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
-    @uses_test_history(require_new=True)
     def test_async_collection_download(self, history_id):
         fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, direct_upload=True).json()
         dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)

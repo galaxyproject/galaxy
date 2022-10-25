@@ -2,13 +2,12 @@ from typing import (
     Any,
     Dict,
 )
-from unittest import TestCase
 
 from galaxy.tools.parameters.meta import process_key
 from .util import BaseParameterTestCase
 
 
-class ProcessKeyTestCase(TestCase):
+class TestProcessKey:
     def test_process_key(self):
         nested_dict: Dict[str, Any] = {}
         d = {
@@ -25,7 +24,7 @@ class ProcessKeyTestCase(TestCase):
                 {"inner_repeat": [{"data_table_column_value": "bla3"}, {"data_table_column_value": "bla4"}]},
             ]
         }
-        self.assertEqual(nested_dict, expected_dict)
+        assert nested_dict == expected_dict
 
     def test_process_key_2(self):
         nested_dict: Dict[str, Any] = {}
@@ -40,10 +39,10 @@ class ProcessKeyTestCase(TestCase):
             "data_tables": [{"columns": [{"data_table_column_value": "Amel_HAv3.1"}]}],
             "directory_content": [],
         }
-        self.assertEqual(nested_dict, expected_dict)
+        assert nested_dict == expected_dict
 
 
-class ParameterParsingTestCase(BaseParameterTestCase):
+class TestParameterParsing(BaseParameterTestCase):
     """Test the parsing of XML for most parameter types - in many
     ways these are not very good tests since they break the abstraction
     established by the tools. The docs tests in basic.py are better but
@@ -144,7 +143,8 @@ class ParameterParsingTestCase(BaseParameterTestCase):
         assert param.value == "9"
         assert param.type == "integer"
         param.validate(8)
-        self.assertRaises(Exception, lambda: param.validate(10))
+        with self.assertRaises(ValueError):
+            param.validate(10)
 
     def test_float_params(self):
         param = self._parameter_for(
@@ -156,7 +156,8 @@ class ParameterParsingTestCase(BaseParameterTestCase):
         assert param.value == "9"
         assert param.type == "float"
         param.validate(8.1)
-        self.assertRaises(Exception, lambda: param.validate(10.0))
+        with self.assertRaises(ValueError):
+            param.validate(10.0)
 
     def test_boolean_params(self):
         param = self._parameter_for(

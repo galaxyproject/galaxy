@@ -1,6 +1,6 @@
-<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook" version="0.2">
+<tool id="interactive_tool_jupyter_notebook" tool_type="interactive" name="Interactive Jupyter Notebook" version="0.3" profile="22.01">
     <requirements>
-        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:ie2</container>
+        <container type="docker">quay.io/bgruening/docker-jupyter-notebook:2021-03-05</container>
     </requirements>
     <entry_points>
         <entry_point name="Jupyter Interactive Tool" requires_domain="True">
@@ -15,7 +15,7 @@
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
-    <command detect_errors="aggressive"><![CDATA[
+    <command><![CDATA[
         #import re
         export GALAXY_WORKING_DIR=`pwd` &&
         mkdir -p ./jupyter/outputs/ &&

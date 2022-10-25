@@ -5,7 +5,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
-import Portlet from "mvc/ui/ui-portlet";
+import Portlet from "./portlet";
 import Ui from "mvc/ui/ui-misc";
 
 export var View = Backbone.View.extend({

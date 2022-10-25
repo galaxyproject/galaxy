@@ -12,6 +12,7 @@ from concurrent.futures import (
     thread,
     ThreadPoolExecutor,
 )
+from typing import List
 
 import yaml
 
@@ -34,11 +35,13 @@ TestException = namedtuple("TestException", ["tool_id", "exception", "was_record
 
 
 class Results:
+    test_exceptions: List[Exception]
+
     def __init__(self, default_suitename, test_json, append=False, galaxy_url=None):
         self.test_json = test_json or "-"
         self.galaxy_url = galaxy_url
         test_results = []
-        test_exceptions = []
+        test_exceptions: List[Exception] = []
         suitename = default_suitename
         if append:
             assert test_json != "-"
@@ -374,7 +377,11 @@ def main(argv=None):
         argv = sys.argv[1:]
 
     args = arg_parser().parse_args(argv)
-    run_tests(args)
+    try:
+        run_tests(args)
+    except Exception as exc:
+        print(f"ERROR: {exc}", file=sys.stderr)
+        sys.exit(1)
 
 
 def run_tests(args, test_filters=None, log=None):

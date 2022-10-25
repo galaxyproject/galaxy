@@ -985,7 +985,7 @@ class Maf(Alignment):
     def init_meta(self, dataset, copy_from=None):
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset, overwrite=True, metadata_tmp_files_dir=None, **kwd):
         """
         Parses and sets species, chromosomes, index from MAF file.
         """
@@ -1002,7 +1002,9 @@ class Maf(Alignment):
         # write species chromosomes to a file
         chrom_file = dataset.metadata.species_chromosomes
         if not chrom_file:
-            chrom_file = dataset.metadata.spec["species_chromosomes"].param.new_file(dataset=dataset)
+            chrom_file = dataset.metadata.spec["species_chromosomes"].param.new_file(
+                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+            )
         with open(chrom_file.file_name, "w") as chrom_out:
             for spec, chroms in species_chromosomes.items():
                 chrom_out.write("{}\t{}\n".format(spec, "\t".join(chroms)))
@@ -1010,7 +1012,9 @@ class Maf(Alignment):
 
         index_file = dataset.metadata.maf_index
         if not index_file:
-            index_file = dataset.metadata.spec["maf_index"].param.new_file(dataset=dataset)
+            index_file = dataset.metadata.spec["maf_index"].param.new_file(
+                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+            )
         indexes.write(open(index_file.file_name, "wb"))
         dataset.metadata.maf_index = index_file
 

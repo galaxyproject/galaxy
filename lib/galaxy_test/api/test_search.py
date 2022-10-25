@@ -4,7 +4,7 @@ from galaxy_test.base.populators import WorkflowPopulator
 from ._framework import ApiTestCase
 
 
-class SearchApiTestCase(ApiTestCase):
+class TestSearchApi(ApiTestCase):
     def test_search_workflows(self):
         workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         workflow_id = workflow_populator.simple_workflow("test_for_search")

@@ -4,52 +4,40 @@
         <b-alert v-if="message" :variant="status" show>
             {{ message }}
         </b-alert>
-        <p>
-            Unfinished jobs (in the state 'new', 'queued', 'running', or 'upload') and recently terminal jobs (in the
-            state 'error' or 'ok') are displayed on this page. The 'cutoff' input box will limit the display of jobs to
-            only those jobs that have had their state updated in the specified timeframe.
-        </p>
-        <p>
-            If any jobs are displayed, you may choose to stop them. Your stop message will be displayed to the user as:
-            "This job was stopped by an administrator: <strong>&lt;YOUR MESSAGE&gt;</strong> For more information or
-            help, report this error".
-        </p>
-        <h3>Job Control</h3>
+        <h3>Job Lock</h3>
         <job-lock />
-        <h3>Job Details</h3>
+        <h3>Job Overview</h3>
+        <p>
+            Below unfinished jobs are displayed (in the 'new', 'queued', 'running', or 'upload' states) and recently
+            completed jobs (in 'error' or 'ok' states).
+        </p>
+        <p>
+            You may choose to stop some of the displayed jobs and provide the user with a message. Your stop message
+            will be displayed to the user as: "This job was stopped by an administrator:
+            <strong>&lt;YOUR MESSAGE&gt;</strong>
+            For more information or help, report this error".
+        </p>
         <b-row>
             <b-col class="col-sm-4">
-                <b-form-group
-                    label="Filters"
-                    label-for="show-all-running"
-                    description="Select whether or not to use the cutoff, or show all jobs.">
-                    <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch @change="update">
-                        {{ showAllRunning ? "Showing all currently running jobs" : "Time cutoff applied to query" }}
+                <b-form-group description="Select whether or not to use the cutoff below.">
+                    <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
+                        {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
                     </b-form-checkbox>
                 </b-form-group>
                 <b-form name="jobs" @submit.prevent="onRefresh">
                     <b-form-group
+                        v-show="!showAllRunning"
                         id="cutoff"
-                        label="Cutoff time period"
-                        :disabled="showAllRunning"
-                        description="in minutes">
+                        label="Cutoff in minutes"
+                        description="Display jobs that had their state updated in the given time period.">
                         <b-input-group>
                             <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
-                            <b-input-group-append>
-                                <b-btn type="submit">Refresh</b-btn>
-                            </b-input-group-append>
                         </b-input-group>
                     </b-form-group>
                 </b-form>
-                <b-form-group
-                    label="Filter Jobs"
-                    label-for="filter-regex"
-                    description="by strings or regular expressions">
+                <b-form-group description="Use strings or regular expressions to search jobs.">
                     <b-input-group id="filter-regex">
                         <b-form-input v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
-                        <b-input-group-append>
-                            <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                        </b-input-group-append>
                     </b-input-group>
                 </b-form-group>
             </b-col>
@@ -112,9 +100,10 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import JobsTable from "components/admin/JobsTable";
 import JobLock from "./JobLock";
-import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "utils/job-states-model";
 import { commonJobFields } from "./JobFields";
 import { errorMessageAsString } from "utils/simple-error";
+import { jobsProvider } from "components/providers/JobProvider";
 
 function cancelJob(jobId, message) {
     const url = `${getAppRoot()}api/jobs/${jobId}`;
@@ -169,6 +158,12 @@ export default {
         },
     },
     watch: {
+        filter(newVal) {
+            this.update();
+        },
+        cutoffMin(newVal) {
+            this.update();
+        },
         selectedStopJobIds(newVal) {
             if (newVal.length === 0) {
                 this.indeterminate = false;
@@ -199,31 +194,31 @@ export default {
         this.update();
     },
     methods: {
-        update() {
+        async update() {
             this.busy = true;
-            let params = [];
-            params.push("view=admin_job_list");
+            const params = { view: "admin_job_list" };
             if (this.showAllRunning) {
-                params.push("state=running");
+                params.state = "running";
             } else {
                 const cutoff = Math.floor(this.cutoffMin);
                 const dateRangeMin = new Date(Date.now() - cutoff * 60 * 1000).toISOString();
-                params.push(`date_range_min=${dateRangeMin}`);
+                params.date_range_min = `${dateRangeMin}`;
             }
-            params = params.join("&");
-            axios
-                .get(`${getAppRoot()}api/jobs?${params}`)
-                .then((response) => {
-                    this.jobs = response.data;
-                    this.loading = false;
-                    this.busy = false;
-                    this.status = "info";
-                })
-                .catch((error) => {
-                    this.message = errorMessageAsString(error);
-                    this.status = "danger";
-                    console.log(error.response);
-                });
+            const ctx = {
+                root: getAppRoot(),
+                ...params,
+            };
+            try {
+                const jobs = await jobsProvider(ctx);
+                this.jobs = jobs;
+                this.loading = false;
+                this.busy = false;
+                this.status = "info";
+            } catch (error) {
+                console.log(error);
+                this.message = errorMessageAsString(error);
+                this.status = "danger";
+            }
         },
         onRefresh() {
             this.update();

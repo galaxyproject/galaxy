@@ -213,7 +213,7 @@ Enhancements
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 7359`_
 * Do not default to ``DEV_WHEELS=1`` if no ``git`` is found
-  (thanks to `@ic4f <https://github.com/ic4f>`__).
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 7371`_
 * Restore gray scale difference between panel vs portlet background color for
   contrast.
@@ -320,7 +320,7 @@ Enhancements
 * Don't clean up jobs when running tests if `$GALAXY_TEST_NO_CLEANUP` is set
   `Pull Request 7798`_
 * Add option to wait for the database to become available
-  (thanks to `@ic4f <https://github.com/ic4f>`__).
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 7827`_
 * Remove recursion from ``expand_nested_tokens()``
   (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).

@@ -29,31 +29,6 @@ def can_eliminate_repository_dependency(metadata_dict, tool_shed_url, name, owne
     return True
 
 
-def can_eliminate_tool_dependency(metadata_dict, name, dependency_type, version):
-    """
-    Determine if the relationship between a tool_dependency record
-    associated with a tool_shed_repository record on the Galaxy side
-    can be eliminated.
-    """
-    td_dict = metadata_dict.get("tool_dependencies", {})
-    for td_key, td_val in td_dict.items():
-        if td_key == "set_environment":
-            for td in td_val:
-                n = td.get("name", None)
-                t = td.get("type", None)
-                if n == name and t == dependency_type:
-                    # The tool dependency is current, so keep it.
-                    return False
-        else:
-            n = td_val.get("name", None)
-            t = td_val.get("type", None)
-            v = td_val.get("version", None)
-            if n == name and t == dependency_type and v == version:
-                # The tool dependency is current, so keep it.
-                return False
-    return True
-
-
 def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, tool_shed_url):
     """
     Repositories of type tool_dependency_definition allow for defining a
@@ -70,13 +45,6 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             message += "removing from list of repository dependencies."
             log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
             trans.install_model.context.delete(rrda)
-            trans.install_model.context.flush()
-    for td in tool_shed_repository.tool_dependencies:
-        if can_eliminate_tool_dependency(metadata_dict, td.name, td.type, td.version):
-            message = "Tool dependency %s, version %s is not required by repository %s, owner %s, "
-            message += "removing from list of tool dependencies."
-            log.debug(message % (td.name, td.version, tool_shed_repository.name, tool_shed_repository.owner))
-            trans.install_model.context.delete(td)
             trans.install_model.context.flush()
 
 
@@ -212,7 +180,6 @@ def tool_shed_is_this_tool_shed(toolshed_base_url):
 
 __all__ = (
     "can_eliminate_repository_dependency",
-    "can_eliminate_tool_dependency",
     "clean_dependency_relationships",
     "DATATYPES_CONFIG_FILENAME",
     "generate_tool_guid",

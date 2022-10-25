@@ -3,6 +3,7 @@ API operations on a data library.
 """
 import logging
 from typing import (
+    List,
     Optional,
     Union,
 )
@@ -14,8 +15,9 @@ from fastapi import (
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    CreateLibrariesFromStore,
     CreateLibraryPayload,
     DeleteLibraryPayload,
     LegacyLibraryPermissionsPayload,
@@ -29,12 +31,12 @@ from galaxy.schema.schema import (
     LibrarySummaryList,
     UpdateLibraryPayload,
 )
-from galaxy.webapps.galaxy.services.libraries import LibrariesService
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.services.libraries import LibrariesService
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ DeletedQueryParam: Optional[bool] = Query(
     default=None, title="Display deleted", description="Whether to include deleted libraries in the result."
 )
 
-LibraryIdPathParam: EncodedDatabaseIdField = Path(
+LibraryIdPathParam: DecodedDatabaseIdField = Path(
     ..., title="Library ID", description="The encoded identifier of the Library."
 )
 
@@ -87,7 +89,7 @@ class FastAPILibraries:
     def show(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
     ) -> LibrarySummary:
         """Returns summary information about a particular library."""
         return self.service.show(trans, id)
@@ -105,6 +107,18 @@ class FastAPILibraries:
         """Creates a new library and returns its summary information. Currently, only admin users can create libraries."""
         return self.service.create(trans, payload)
 
+    @router.post(
+        "/api/libraries/from_store",
+        summary="Create libraries from a model store.",
+        require_admin=True,
+    )
+    def create_from_store(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: CreateLibrariesFromStore = Body(...),
+    ) -> List[LibrarySummary]:
+        return self.service.create_from_store(trans, payload)
+
     @router.patch(
         "/api/libraries/{id}",
         summary="Updates the information of an existing library.",
@@ -112,7 +126,7 @@ class FastAPILibraries:
     def update(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         payload: UpdateLibraryPayload = Body(...),
     ) -> LibrarySummary:
         """
@@ -128,7 +142,7 @@ class FastAPILibraries:
     def delete(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         undelete: Optional[bool] = UndeleteQueryParam,
         payload: Optional[DeleteLibraryPayload] = Body(default=None),
     ) -> LibrarySummary:
@@ -145,7 +159,7 @@ class FastAPILibraries:
     def get_permissions(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         scope: Optional[LibraryPermissionScope] = Query(
             None,
             title="Scope",
@@ -185,7 +199,7 @@ class FastAPILibraries:
     def set_permissions(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = LibraryIdPathParam,
+        id: DecodedDatabaseIdField = LibraryIdPathParam,
         action: Optional[LibraryPermissionAction] = Query(
             default=None,
             title="Action",

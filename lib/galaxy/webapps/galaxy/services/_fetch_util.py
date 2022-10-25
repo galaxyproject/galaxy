@@ -6,14 +6,13 @@ from galaxy.actions.library import (
     validate_server_directory_upload,
 )
 from galaxy.exceptions import RequestParameterInvalidException
+from galaxy.files.uris import validate_non_local
 from galaxy.model.store.discover import (
     get_required_item,
     replace_request_syntax_sugar,
 )
-from galaxy.tools.actions.upload_common import (
-    validate_datatype_extension,
-    validate_url,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.tools.actions.upload_common import validate_datatype_extension
 from galaxy.util import relpath
 
 log = logging.getLogger(__name__)
@@ -49,7 +48,7 @@ def validate_and_normalize_targets(trans, payload):
             for key in ["name", "description", "synopsis"]:
                 if key in destination:
                     del destination[key]
-            destination["library_folder_id"] = trans.app.security.encode_id(library.root_folder.id)
+            destination["library_folder_id"] = DecodedDatabaseIdField.encode(library.root_folder.id)
 
     # Unlike upload.py we don't transmit or use run_as_real_user in the job - we just make sure
     # in_place and purge_source are set on the individual upload fetch sources as needed based
@@ -163,10 +162,11 @@ def validate_and_normalize_targets(trans, payload):
             if not looks_like_url:
                 raise RequestParameterInvalidException(f"Invalid URL [{url}] found in src definition.")
 
-            validate_url(url, trans.app.config.fetch_url_allowlist_ips)
+            validate_non_local(url, trans.app.config.fetch_url_allowlist_ips)
             item["in_place"] = run_as_real_user
         elif src == "files":
             item["in_place"] = run_as_real_user
+            item["purge_source"] = True
 
         # Small disagreement with traditional uploads - we purge less by default since whether purging
         # happens varies based on upload options in non-obvious ways.

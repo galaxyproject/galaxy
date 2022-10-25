@@ -87,7 +87,7 @@ def fill_template(
         if python_template_version.release[0] < 3 and retry > 0:
             tb = e.__traceback__
             last_stack = traceback.extract_tb(tb)[-1]
-            if last_stack.name == "<listcomp>":
+            if last_stack.name == "<listcomp>" and last_stack.lineno:
                 # On python 3 list, dict and set comprehensions as well as generator expressions
                 # have their own local scope, which prevents accessing frame variables in cheetah.
                 # We can work around this by replacing `$var` with `var`, but we only do this for

@@ -6,13 +6,14 @@ THIS_DIR = os.path.dirname(__file__)
 PANEL_VIEWS_DIR_1 = os.path.join(THIS_DIR, "panel_views_1")
 
 
-class PanelViewsFromDirectoryIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
     allow_tool_conf_override = False
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["panel_views_dir"] = PANEL_VIEWS_DIR_1
 
     def test_section_copy(self):
@@ -111,12 +112,13 @@ class PanelViewsFromDirectoryIntegrationTestCase(integration_util.IntegrationTes
         assert len(tools) == 2, len(tools)
 
 
-class PanelViewsFromConfigIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestPanelViewsFromConfigIntegration(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["panel_views"] = [
             {
                 "id": "my-custom",

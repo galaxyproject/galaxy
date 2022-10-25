@@ -1,12 +1,12 @@
 /**
  * This module handles the filtering for content items. User specified filters are applied on the data available in the store and
- * are additionally parsed as query parameters to the API endpoint. User can engage filters by specifying a query QUERY=VALUE pair
- * e.g. hid=61 in the history search field. Each query key has a default suffix defined e.g. hid=61 is equivalent to hid-eq=61.
+ * are additionally parsed as query parameters to the API endpoint. User can engage filters by specifying a query QUERY:VALUE pair
+ * e.g. hid:61 in the history search field. Each query key has a default suffix defined e.g. hid:61 is equivalent to hid-eq:61.
  * Additionally, underscores and dashes in the QUERY are interchangeable. Quotation marks (') are only allowed in the VALUE.
- * Comparison aliases are allowed converting e.g. ">" to "-gt=" and "<" to "-lt". The following query pairs are equivalent:
- * create_time='March 12, 2022', create-time-lt='March 12, 2022'.
+ * Comparison aliases are allowed converting e.g. ">" to "-gt:" and "<" to "-lt". The following query pairs are equivalent:
+ * create_time:'March 12, 2022', create-time-lt:'March 12, 2022'.
  *
- * The format is: `QUERY[=, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
+ * The format is: `QUERY[:, < or >]VALUE`. QUERYs may only contain characters and, interchangeably, underscores (_) and dashes (-).
  * Use quotations (') around values containing spaces.
  */
 
@@ -30,10 +30,19 @@ function toLowerNoQuotes(value) {
     return toLower(value).replaceAll("'", "");
 }
 
+/** Converts name tags starting with '#' to 'name:' */
+function expandNameTag(value) {
+    if (value && typeof value === "string" && value.startsWith("#")) {
+        value = value.replace("#", "name:");
+    }
+    return toLower(value);
+}
+
 /**
  * Checks if a query value is equal to the item value
  * @param {*} attribute of the content item
  * @param {*} query parameter if the attribute does not match the server query key
+ * @param {*} converter if item attribute value has to be transformed e.g. to a date.
  */
 function equals(attribute, query = null, converter = null) {
     return {
@@ -41,6 +50,10 @@ function equals(attribute, query = null, converter = null) {
         converter,
         query: query || `${attribute}-eq`,
         handler: (v, q) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
             return toLower(v) == toLower(q);
         },
     };
@@ -49,12 +62,19 @@ function equals(attribute, query = null, converter = null) {
 /**
  * Checks if a query value is part of the item value
  * @param {*} attribute of the content item
+ * @param {*} query parameter if the attribute does not match the server query key
+ * @param {*} converter if item attribute value has to be transformed e.g. to a date.
  */
-function contains(attribute, query = null) {
+function contains(attribute, query = null, converter = null) {
     return {
         attribute,
+        converter,
         query: query || `${attribute}-contains`,
         handler: (v, q) => {
+            if (converter) {
+                v = converter(v);
+                q = converter(q);
+            }
             return toLower(v).includes(toLower(q));
         },
     };
@@ -107,7 +127,7 @@ const validFilters = {
     visible: equals("visible", "visible", toBool),
     name: contains("name"),
     state: equals("state"),
-    tag: contains("tags", "tag"),
+    tag: contains("tags", "tag", expandNameTag),
     update_time: compare("update_time", "le", toDate),
     update_time_ge: compare("update_time", "ge", toDate),
     update_time_gt: compare("update_time", "gt", toDate),
@@ -116,7 +136,7 @@ const validFilters = {
 };
 
 /** Default filters are set, unless explicitly specified by the user. */
-const defaultFilters = {
+export const defaultFilters = {
     deleted: false,
     visible: true,
 };
@@ -129,7 +149,7 @@ const validAlias = [
 
 /** Check the value of a particular filter. */
 export function checkFilter(filterText, filterName, filterValue) {
-    const re = new RegExp(`${filterName}=(\\S+)`);
+    const re = new RegExp(`${filterName}:(\\S+)`);
     const reMatch = re.exec(filterText);
     const testValue = reMatch ? reMatch[1] : defaultFilters[filterName];
     return toLowerNoQuotes(testValue) == toLowerNoQuotes(filterValue);
@@ -138,12 +158,12 @@ export function checkFilter(filterText, filterName, filterValue) {
 /** Parses single text input into a dict of field->value pairs. */
 export function getFilters(filterText) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
-    const result = {};
     const matches = filterText.match(pairSplitRE);
+    let result = {};
     let hasMatches = false;
     if (matches) {
         matches.forEach((pair) => {
-            const elgRE = /(\S+)([=><])(.+)/g;
+            const elgRE = /(\S+)([:><])(.+)/g;
             const elgMatch = elgRE.exec(pair);
             if (elgMatch) {
                 let field = elgMatch[1];
@@ -166,14 +186,22 @@ export function getFilters(filterText) {
             }
         });
     }
+    // assume name matching if no filter key has been matched
     if (!hasMatches && filterText.length > 0) {
         result["name"] = filterText;
     }
-    Object.entries(defaultFilters).forEach(([key, value]) => {
-        if (!result[key]) {
-            result[key] = value;
+    // check if any default filter keys have been used
+    let hasDefaults = false;
+    for (const defaultKey in defaultFilters) {
+        if (result[defaultKey]) {
+            hasDefaults = true;
+            break;
         }
-    });
+    }
+    // use default filters if none of the default filters has been explicitly specified
+    if (!hasDefaults) {
+        result = { ...result, ...defaultFilters };
+    }
     return Object.entries(result);
 }
 
@@ -202,4 +230,29 @@ export function testFilters(filters, item) {
         }
     }
     return true;
+}
+
+/** Returns a dictionary resembling filterSettings (for HistoryFilters):
+ * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
+ *       of changing it to "hid-gt":"3"
+ * Only used to sync filterSettings (in HistoryFilters)
+ * @param {Object} filters Parsed filterText from getFilters()
+ */
+export function toAlias(filters) {
+    const result = {};
+    for (const [key, value] of filters) {
+        let hasAlias = false;
+        for (const [alias, substitute] of validAlias) {
+            if (key.endsWith(substitute)) {
+                const keyPrefix = key.substr(0, key.length - substitute.length);
+                result[`${keyPrefix}${alias}`] = value;
+                hasAlias = true;
+                break;
+            }
+        }
+        if (!hasAlias) {
+            result[`${key}:`] = value;
+        }
+    }
+    return result;
 }

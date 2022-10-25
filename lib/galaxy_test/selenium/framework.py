@@ -38,7 +38,10 @@ from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
 )
 from galaxy_test.base import populators
-from galaxy_test.base.api import UsesApiTestCaseMixin
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
@@ -47,6 +50,7 @@ from galaxy_test.base.env import (
 from galaxy_test.base.populators import (
     load_data_dict,
     skip_if_github_down,
+    YamlContentT,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
 
@@ -66,7 +70,7 @@ DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
-# Test browser can be ["CHROME", "FIREFOX", "OPERA"]
+# Test browser can be ["CHROME", "FIREFOX"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", driver_factory.DEFAULT_SELENIUM_BROWSER)
 GALAXY_TEST_SELENIUM_REMOTE = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE", driver_factory.DEFAULT_SELENIUM_REMOTE)
 GALAXY_TEST_SELENIUM_REMOTE_PORT = os.environ.get(
@@ -86,7 +90,6 @@ GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADM
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get(
     "GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD
 )
-GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -222,7 +225,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
     """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
 
     @property
-    def dataset_populator(self) -> populators.BaseDatasetPopulator:
+    def dataset_populator(self) -> "SeleniumSessionDatasetPopulator":
         """A dataset populator connected to the Galaxy session described by Selenium context."""
         return SeleniumSessionDatasetPopulator(self)
 
@@ -237,7 +240,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
         return SeleniumSessionWorkflowPopulator(self)
 
 
-class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
+class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, UsesCeleryTasks):
     # If run one-off via nosetests, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
@@ -247,8 +250,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
     # GALAXY_TEST_SELENIUM_USER_PASSWORD are set these values
     # will be used to login.
     ensure_registered = False
-
-    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
 
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
@@ -289,8 +290,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin):
         """
         if self.ensure_registered:
             self.login()
-            if self.ensure_beta_history:
-                self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -544,12 +543,35 @@ EXAMPLE_WORKFLOW_URL_1 = (
 class UsesWorkflowAssertions(NavigatesGalaxyMixin):
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
-        assert len(self.workflow_index_table_elements()) == n
+        actual_count = len(self.workflow_index_table_elements())
+        if actual_count != n:
+            message = f"Expected {n} workflows to be displayed, based on DOM found {actual_count} workflow rows."
+            raise AssertionError(message)
 
     @skip_if_github_down
     def _workflow_import_from_url(self, url=EXAMPLE_WORKFLOW_URL_1):
         self.workflow_index_click_import()
         self.workflow_import_submit_url(url)
+
+
+class TestsGalaxyPagers(GalaxyTestSeleniumContext):
+    @retry_assertion_during_transitions
+    def _assert_current_page_is(self, component, expected_page: int):
+        component.pager.wait_for_visible()
+        page_from_pager = component.pager_page_active.wait_for_present().text
+        assert int(page_from_pager) == expected_page
+
+    def _next_page(self, component):
+        component.pager_page_next.wait_for_and_click()
+
+    def _previous_page(self, component):
+        component.pager_page_previous.wait_for_and_click()
+
+    def _last_page(self, component):
+        component.pager_page_last.wait_for_and_click()
+
+    def _first_page(self, component):
+        component.pager_page_first.wait_for_and_click()
 
 
 class RunsWorkflows(GalaxyTestSeleniumContext):
@@ -599,16 +621,11 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         return history_id
 
     def workflow_run_wait_for_ok(self, hid: int, expand=False):
-        if self.is_beta_history():
-            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
-            item = self.content_item_by_attributes(hid=hid, state="ok")
-            item.wait_for_present(timeout=timeout)
-            if expand:
-                item.title.wait_for_and_click()
-        else:
-            self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
-            if expand:
-                self.history_panel_click_item_title(hid=hid, wait=True)
+        timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+        item = self.content_item_by_attributes(hid=hid, state="ok")
+        item.wait_for_present(timeout=timeout)
+        if expand:
+            item.title.wait_for_and_click()
 
 
 def default_web_host_for_selenium_tests():
@@ -763,8 +780,8 @@ class SeleniumSessionWorkflowPopulator(
         upload_response.raise_for_status()
         return upload_response.json()
 
-    def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+    def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
+        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
         return workflow["id"]
 
 

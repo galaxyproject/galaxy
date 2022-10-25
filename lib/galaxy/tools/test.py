@@ -214,7 +214,7 @@ def _process_simple_value(param, param_value, required_data_tables, required_loc
                     found_value = True
                 if value_for_text is None and param_value == text:
                     value_for_text = opt_value
-            if param.options:
+            if param.options and not isinstance(param, galaxy.tools.parameters.basic.DrillDownSelectToolParameter):
                 if param.options.tool_data_table_name:
                     required_data_tables.append(param.options.tool_data_table_name)
                 elif param.options.index_file:

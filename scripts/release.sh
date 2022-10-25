@@ -444,7 +444,7 @@ function packages_make_all() {
     (
         cd packages/
         for dir in *; do
-            [ ! -d "$dir" -o ! -f "${dir}/setup.py" ] && continue
+            [ ! -d "$dir" -o ! -f "${dir}/setup.cfg" ] && continue
             # can't use log_exec here because we want to capture output
             echo + make -C "$dir" "$@" 1>&2
             make -C "$dir" "$@" >"${dir}/make-${1}.log" 2>&1
@@ -460,9 +460,9 @@ function update_package_versions() {
     (
         cd packages/
         for dir in *; do
-            project_file="${dir}/galaxy/project_galaxy_${dir}.py"
+            project_file="${dir}/galaxy/setup.cfg"
             if [ -f "${project_file}" ]; then
-                sed_inplace -e "s/^__version__ =.*/__version__ = \"${package_version}\"/" "$project_file"
+                sed_inplace -e "s/^version =.*/version = \"${package_version}\"/" "$project_file"
             fi
         done
     )

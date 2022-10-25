@@ -9,6 +9,7 @@ from collections.abc import (
     Mapping,
     Sequence,
 )
+from decimal import Decimal
 
 from ..util import unicodify
 
@@ -22,7 +23,8 @@ from_json_string = json.loads
 
 def swap_inf_nan(val):
     """
-    This takes an arbitrary object and preps it for jsonifying safely, templating Inf/NaN.
+    This takes an arbitrary object and preps it for jsonifying safely, templating Inf/NaN and
+    casting Decimal instances as strings.
     """
     if isinstance(val, str):
         # basestring first, because it's a sequence and would otherwise get caught below.
@@ -40,6 +42,8 @@ def swap_inf_nan(val):
             return "__-Infinity__"
         else:
             return val
+    elif isinstance(val, Decimal):
+        return str(val)
     else:
         return val
 
@@ -59,17 +63,17 @@ def safe_loads(arg):
     return loaded
 
 
-def safe_dumps(*args, **kwargs):
+def safe_dumps(obj, **kwargs):
     """
     This is a wrapper around dumps that encodes Infinity and NaN values.  It's a
     fairly rare case (which will be low in request volume).  Basically, we tell
-    json.dumps to blow up if it encounters Infinity/NaN, and we 'fix' it before
-    re-encoding.
+    json.dumps to blow up if it encounters Infinity/NaN, or Decimal values
+    and we 'fix' it before re-encoding.
     """
     try:
-        dumped = json.dumps(*args, allow_nan=False, **kwargs)
-    except ValueError:
-        obj = swap_inf_nan(args[0])
+        dumped = json.dumps(obj, allow_nan=False, **kwargs)
+    except (ValueError, TypeError):
+        obj = swap_inf_nan(obj)
         dumped = json.dumps(obj, allow_nan=False, **kwargs)
     if kwargs.get("escape_closing_tags", True):
         return dumped.replace("</", "<\\/")

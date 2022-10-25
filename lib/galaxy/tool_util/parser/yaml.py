@@ -1,4 +1,8 @@
 import json
+from typing import (
+    Dict,
+    List,
+)
 
 import packaging.version
 
@@ -27,10 +31,10 @@ class YamlToolSource(ToolSource):
 
     language = "yaml"
 
-    def __init__(self, root_dict, source_path=None):
+    def __init__(self, root_dict: Dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
-        self._macro_paths = []
+        self._macro_paths: List[str] = []
 
     @property
     def source_path(self):
@@ -89,7 +93,12 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_dict(self.root_dict)
+        mixed_requirements = self.root_dict.get("requirements", [])
+        return requirements.parse_requirements_from_lists(
+            software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
+            containers=self.root_dict.get("containers", []),
+            resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+        )
 
     def parse_input_pages(self):
         # All YAML tools have only one page (feature is deprecated)
@@ -187,9 +196,9 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("entry_points", [])
 
     def parse_python_template_version(self):
-        python_template_version = self.root_dict.get("python_template_version", None)
+        python_template_version = self.root_dict.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.parse(python_template_version)
+            python_template_version = packaging.version.Version(python_template_version)
         return python_template_version
 
     def to_string(self):

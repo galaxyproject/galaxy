@@ -1,8 +1,8 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import BASE_MVC from "mvc/base-mvc";
-import userModel from "mvc/user/user-model";
+import BASE_MVC from "./base-mvc";
+import userModel from "./user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
 import localize from "utils/localization";
@@ -77,7 +77,8 @@ GalaxyApp.prototype._init = function (options, bootstrapped) {
     this._initUser(options.user || {});
     this.debug("GalaxyApp.user: ", this.user);
 
-    this._initUserLocale();
+    this.localize._setUserLocale(this.user, this.config);
+    this.localize._getUserLocale();
     this.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
 
     this._setUpListeners();

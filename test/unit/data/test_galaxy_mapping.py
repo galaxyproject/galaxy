@@ -1,7 +1,6 @@
 import collections
 import os
 import random
-import unittest
 import uuid
 from tempfile import NamedTemporaryFile
 from typing import List
@@ -23,6 +22,7 @@ from galaxy.model.orm.util import (
     get_object_session,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.util.unittest import TestCase
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -37,7 +37,7 @@ skip_if_not_postgres_base = pytest.mark.skipif(
 )
 
 
-class BaseModelTestCase(unittest.TestCase):
+class BaseModelTestCase(TestCase):
     model: mapping.GalaxyModelMapping
 
     @classmethod
@@ -76,7 +76,7 @@ class BaseModelTestCase(unittest.TestCase):
         cls.model.session.expunge_all()
 
 
-class MappingTests(BaseModelTestCase):
+class TestMappings(BaseModelTestCase):
     def test_ratings(self):
         user_email = "rater@example.com"
         u = model.User(email=user_email, password="password")
@@ -310,7 +310,7 @@ class MappingTests(BaseModelTestCase):
             .first()
             .collection
         )
-        self.assertEqual(len(loaded_dataset_collection.elements), 2)
+        assert len(loaded_dataset_collection.elements) == 2
         assert loaded_dataset_collection.collection_type == "pair"
         assert loaded_dataset_collection["left"] == dce1
         assert loaded_dataset_collection["right"] == dce2
@@ -332,7 +332,7 @@ class MappingTests(BaseModelTestCase):
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
+        # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
 
     def test_nested_collection_attributes(self):
@@ -485,19 +485,13 @@ class MappingTests(BaseModelTestCase):
 
         # Make some changes and commit them
         u = model.User(email="james@foo.bar.baz", password="password")
-        # gs = model.GalaxySession()
         h1 = model.History(name="History 1", user=u)
-        # h1.queries.append( model.Query( "h1->q1" ) )
-        # h1.queries.append( model.Query( "h1->q2" ) )
         h2 = model.History(name=("H" * 1024))
         self.persist(u, h1, h2)
-        # q1 = model.Query( "h2->q1" )
         metadata = dict(chromCol=1, startCol=2, endCol=3)
         d1 = model.HistoryDatasetAssociation(
             extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=self.model.session
         )
-        # h2.queries.append( q1 )
-        # h2.queries.append( model.Query( "h2->q2" ) )
         self.persist(d1)
 
         # Check
@@ -509,8 +503,8 @@ class MappingTests(BaseModelTestCase):
         assert len(user.histories) == 1
         assert user.histories[0].name == "History 1"
         hists = self.model.session.query(model.History).all()
-        hist0 = [history for history in hists if history.name == "History 1"][0]
-        hist1 = [history for history in hists if history.name == "H" * 255][0]
+        hist0 = [history for history in hists if history.id == h1.id][0]
+        hist1 = [history for history in hists if history.id == h2.id][0]
         assert hist0.name == "History 1"
         assert hist1.name == ("H" * 255)
         assert hist0.user == user
@@ -518,7 +512,7 @@ class MappingTests(BaseModelTestCase):
         assert hist1.datasets[0].metadata.chromCol == 1
         # The filename test has moved to objectstore
         # id = hist1.datasets[0].id
-        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
+        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + f"/dataset_{id}.dat"
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()
@@ -570,7 +564,7 @@ class MappingTests(BaseModelTestCase):
         task.add_metric("gx", "galaxy_slots", 5)
         task.add_metric("system", "system_name", "localhost")
 
-        big_value = ":".join("%d" % i for i in range(2000))
+        big_value = ":".join(f"{i}" for i in range(2000))
         task.add_metric("env", "BIG_PATH", big_value)
         self.persist(task)
         # Ensure big values truncated
@@ -606,7 +600,7 @@ class MappingTests(BaseModelTestCase):
             )
             return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
 
-        self.assertEqual(contents_iter_names(), ["1", "2", "3", "4"])
+        assert contents_iter_names() == ["1", "2", "3", "4"]
         assert contents_iter_names(deleted=False) == ["1", "2"]
         assert contents_iter_names(visible=True) == ["1", "3"]
         assert contents_iter_names(visible=False) == ["2", "4"]
@@ -740,23 +734,7 @@ class MappingTests(BaseModelTestCase):
     def test_workflows(self):
         user = model.User(email="testworkflows@bx.psu.edu", password="password")
 
-        def workflow_from_steps(steps):
-            stored_workflow = model.StoredWorkflow()
-            add_object_to_object_session(stored_workflow, user)
-            stored_workflow.user = user
-            workflow = model.Workflow()
-
-            if steps:
-                for step in steps:
-                    if get_object_session(step):
-                        add_object_to_object_session(workflow, step)
-                        break
-
-            workflow.steps = steps
-            workflow.stored_workflow = stored_workflow
-            return workflow
-
-        child_workflow = workflow_from_steps([])
+        child_workflow = _workflow_from_steps(user, [])
         self.persist(child_workflow)
 
         workflow_step_1 = model.WorkflowStep()
@@ -773,7 +751,7 @@ class MappingTests(BaseModelTestCase):
         workflow_step_2.get_or_add_input("moo")
         workflow_step_1.add_connection("foo", "cow", workflow_step_2)
 
-        workflow = workflow_from_steps([workflow_step_1, workflow_step_2])
+        workflow = _workflow_from_steps(user, [workflow_step_1, workflow_step_2])
         self.persist(workflow)
         workflow_id = workflow.id
 
@@ -785,14 +763,11 @@ class MappingTests(BaseModelTestCase):
         self.persist(annotation)
 
         assert workflow_step_1.id is not None
-        h1 = model.History(name="WorkflowHistory1", user=user)
+        workflow_invocation = _invocation_for_workflow(user, workflow)
 
         invocation_uuid = uuid.uuid1()
 
-        workflow_invocation = model.WorkflowInvocation()
         workflow_invocation.uuid = invocation_uuid
-        add_object_to_object_session(workflow_invocation, h1)
-        workflow_invocation.history = h1
 
         workflow_invocation_step1 = model.WorkflowInvocationStep()
         add_object_to_object_session(workflow_invocation_step1, workflow_invocation)
@@ -807,8 +782,8 @@ class MappingTests(BaseModelTestCase):
         workflow_invocation_step2.workflow_invocation = workflow_invocation
         workflow_invocation_step2.workflow_step = workflow_step_2
 
-        workflow_invocation.workflow = workflow
-
+        h1 = workflow_invocation.history
+        add_object_to_object_session(workflow_invocation, h1)
         d1 = self.new_hda(h1, name="1")
         workflow_request_dataset = model.WorkflowRequestToInputDatasetAssociation()
         add_object_to_object_session(workflow_request_dataset, workflow_invocation)
@@ -1016,7 +991,7 @@ class MappingTests(BaseModelTestCase):
 
 
 @skip_if_not_postgres_base
-class PostgresMappingTests(MappingTests):
+class TestPostgresMappings(TestMappings):
     @classmethod
     def _db_uri(cls):
         base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
@@ -1025,6 +1000,30 @@ class PostgresMappingTests(MappingTests):
         postgres_url = base + dbname
         create_database(postgres_url)
         return postgres_url
+
+
+def _invocation_for_workflow(user, workflow):
+    h1 = galaxy.model.History(name="WorkflowHistory1", user=user)
+    workflow_invocation = galaxy.model.WorkflowInvocation()
+    workflow_invocation.workflow = workflow
+    workflow_invocation.history = h1
+    return workflow_invocation
+
+
+def _workflow_from_steps(user, steps):
+    stored_workflow = galaxy.model.StoredWorkflow()
+    add_object_to_object_session(stored_workflow, user)
+    stored_workflow.user = user
+    workflow = galaxy.model.Workflow()
+    if steps:
+        for step in steps:
+            if get_object_session(step):
+                add_object_to_object_session(workflow, step)
+                break
+
+    workflow.steps = steps
+    workflow.stored_workflow = stored_workflow
+    return workflow
 
 
 class MockObjectStore:
@@ -1045,9 +1044,3 @@ class MockObjectStore:
 
     def update_from_file(self, *arg, **kwds):
         pass
-
-
-def get_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(MappingTests("test_basic"))
-    return suite

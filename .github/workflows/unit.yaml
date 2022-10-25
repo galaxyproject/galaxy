@@ -11,7 +11,7 @@ on:
       - 'doc/**'
       - 'lib/galaxy_test/selenium/**'
 concurrency:
-  group: py-unit-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
   test:
@@ -22,23 +22,23 @@ jobs:
       matrix:
         python-version: ['3.7', '3.10']
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
       - name: Get full Python version
         id: full-python-version
         shell: bash
-        run: echo ::set-output name=version::$(python -c "import sys; print('-'.join(str(v) for v in sys.version_info))")
+        run: echo "version=$(python -c 'import sys; print("-".join(str(v) for v in sys.version_info))')" >> $GITHUB_OUTPUT
       - name: Cache pip dir
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
       - name: Cache galaxy venv
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unit
@@ -47,11 +47,11 @@ jobs:
       - name: Run tests
         run: ./run_tests.sh --coverage -u
         working-directory: 'galaxy root'
-      - uses: codecov/codecov-action@v2
+      - uses: codecov/codecov-action@v3
         with:
           flags: py-unit
           working-directory: 'galaxy root'
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: failure()
         with:
           name: Unit test results (${{ matrix.python-version }})

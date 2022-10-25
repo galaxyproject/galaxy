@@ -2,7 +2,6 @@ import os
 import threading
 import time
 from typing import Optional
-from unittest import TestCase
 
 import psutil
 
@@ -13,6 +12,7 @@ from galaxy import (
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.jobs.runners import local
 from galaxy.util import bunch
+from galaxy.util.unittest import TestCase
 
 
 class TestLocalJobRunner(TestCase, UsesTools):
@@ -97,6 +97,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
 
     def test_stopping_job_at_shutdown(self):
         self.job_wrapper.command_line = '''python -c "import time; time.sleep(15)"'''
+        self.app.model.session = bunch.Bunch(add=lambda x: None, flush=lambda: None)
         runner = local.LocalJobRunner(self.app, 1)
         runner.start()
         self.app.config.monitor_thread_join_timeout = 15
@@ -138,13 +139,15 @@ class MockJobWrapper:
         self.job.id = 1
         self.output_paths = ["/tmp/output1.dat"]
         self.mock_metadata_path = os.path.abspath(os.path.join(test_directory, "METADATA_SET"))
-        self.metadata_command = "touch %s" % self.mock_metadata_path
+        self.metadata_command = f"touch {self.mock_metadata_path}"
         self.galaxy_virtual_env = None
         self.shell = "/bin/bash"
         self.cleanup_job = "never"
         self.tmp_dir_creation_statement = ""
         self.use_metadata_binary = False
         self.guest_ports = []
+        self.metadata_strategy = "directory"
+        self.remote_command_line = False
 
         # Cruft for setting metadata externally, axe at some point.
         self.external_output_metadata: Optional[bunch.Bunch] = bunch.Bunch(
@@ -202,7 +205,9 @@ class MockJobWrapper:
     def has_limits(self):
         return False
 
-    def fail(self, message, exception):
+    def fail(
+        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+    ):
         self.fail_message = message
         self.fail_exception = exception
 
@@ -219,3 +224,7 @@ class MockJobWrapper:
 
     def reclaim_ownership(self):
         pass
+
+    @property
+    def is_cwl_job(self):
+        return False

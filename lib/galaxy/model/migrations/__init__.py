@@ -29,6 +29,7 @@ from sqlalchemy.engine import (
     CursorResult,
     Engine,
 )
+from sqlalchemy.exc import OperationalError
 
 from galaxy.model import Base as gxy_base
 from galaxy.model.database_utils import (
@@ -74,14 +75,18 @@ class IncorrectVersionError(Exception):
     def __init__(self, model: str, expected_version: int) -> None:
         msg = f"Your {model} database version is incorrect; version {expected_version} is expected. "
         msg += "Manual update is required. "
-        msg += "Please see this issue: https://github.com/galaxyproject/galaxy/issues/13528"
+        msg += "Please see documentation: https://docs.galaxyproject.org/en/master/admin/db_migration.html#how-to-handle-migrations-incorrectversionerror"
         super().__init__(msg)
 
 
 class OutdatedDatabaseError(Exception):
     # The database is under Alembic version control, but is out-of-date. Automatic upgrade possible.
-    def __init__(self, model: str) -> None:
-        msg = f"Your {model} database is out-of-date; automatic update requires setting `database_auto_migrate`"
+    def __init__(self, model: str, db_version: str, code_version: str) -> None:
+        msg = f"Your {model} database has version {db_version}, but this code expects "
+        msg += f"version {code_version}. "
+        msg += "To upgrade your database, run `manage_db.sh upgrade`. "
+        msg += "For more options (e.g. upgrading/downgrading to a specific version) see instructions in that file. "
+        msg += "Please remember to backup your database before migrating."
         super().__init__(msg)
 
 
@@ -357,7 +362,14 @@ class DatabaseStateVerifier:
 
     def _handle_no_database(self) -> bool:
         url = get_url_string(self.engine)
-        if not database_exists(url):
+
+        try:
+            # connect using the database name from the sqlalchemy engine
+            exists = database_exists(url, database=self.engine.url.database)
+        except OperationalError:
+            exists = False
+
+        if not exists:
             self._create_database(url)
             self._initialize_database()
             return True
@@ -410,21 +422,11 @@ class DatabaseStateVerifier:
         code_version = am.get_model_script_head(self.model)
         if not self.is_auto_migrate:
             db_version = am.get_model_db_head(self.model)
-            msg = self._get_upgrade_message(model, cast(str, db_version), cast(str, code_version))
-            log.warning(msg)
-            raise OutdatedDatabaseError(model)
+            raise OutdatedDatabaseError(model, cast(str, db_version), cast(str, code_version))
         else:
             log.info("Database is being upgraded to current version: {code_version}")
             am.upgrade(self.model)
             return
-
-    def _get_upgrade_message(self, model: str, db_version: str, code_version: str) -> str:
-        msg = f"Your {model} database has version {db_version}, but this code expects "
-        msg += f"version {code_version}. "
-        msg += "This database can be upgraded automatically if database_auto_migrate is set. "
-        msg += "To upgrade manually, run `run_alembic.sh` (see instructions in that file). "
-        msg += "Please remember to backup your database before migrating."
-        return msg
 
     def _get_model_name(self) -> str:
         return "galaxy" if self.model == GXY else "tool shed install"

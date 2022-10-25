@@ -16,6 +16,8 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
         title = _l("Build Rules for Uploading Collections");
     }
     options.title = title;
+    // Prevents user from accidentally closing the modal by clicking outside the bounds
+    options.closing_events = false;
     const { promise, showEl } = collectionCreatorModalSetup(options);
     return import(/* webpackChunkName: "ruleCollectionBuilder" */ "components/RuleCollectionBuilder.vue").then(
         (module) => {
@@ -40,7 +42,7 @@ function ruleBasedCollectionCreatorModal(elements, elementsType, importType, opt
         }
     );
 }
-function createCollectionViaRules(selection, defaultHideSourceItems) {
+function createCollectionViaRules(selection, defaultHideSourceItems = true) {
     let elements;
     let elementsType;
     let importType;

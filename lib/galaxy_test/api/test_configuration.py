@@ -22,7 +22,7 @@ TEST_KEYS_FOR_ADMIN_ONLY = [
 ]
 
 
-class ConfigurationApiTestCase(ApiTestCase):
+class TestConfigurationApi(ApiTestCase):
     def test_whoami(self):
         response = self._get("whoami")
         self._assert_status_code_is(response, 200)

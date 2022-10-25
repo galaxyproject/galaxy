@@ -8,6 +8,7 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
+  <tool file="ucsc_tablebrowser.xml"/>
   <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
@@ -52,7 +53,9 @@
   <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
+  <tool file="select_from_csvdataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
+  <tool file="drill_down.xml" />
   <tool file="dbkey_filter_input.xml" />
   <tool file="dbkey_filter_multi_input.xml" />
   <tool file="dbkey_filter_collection.xml" />
@@ -64,6 +67,7 @@
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="metadata_bcf.xml" />
+  <tool file="metadata_bed.xml" />
   <tool file="metadata_biom1.xml" />
   <tool file="metadata_column_names.xml" />
   <tool file="strict_shell.xml" />
@@ -205,6 +209,7 @@
   <tool file="model_attributes.xml" />
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
+  <tool file="expect_num_outputs.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
@@ -276,5 +281,6 @@
   <tool file="${model_tools_path}/build_list.xml" />
   <tool file="${model_tools_path}/build_list_1.2.0.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
+  <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
 
 </toolbox>

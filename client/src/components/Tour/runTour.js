@@ -4,7 +4,7 @@ import { mountVueComponent } from "utils/mountVueComponent";
 import Tour from "./Tour";
 
 // delays and maximum number of attempts to wait for element
-const attempts = 100;
+const attempts = 200;
 const delay = 200;
 
 // return tour data
@@ -103,15 +103,24 @@ export async function runTour(tourId, tourData = null) {
                     waitForElement(step.element, resolve, reject, attempts);
                 }).then(() => {
                     // pre-actions
-                    doClick(step.preclick);
+                    let preclick = step.preclick;
+                    if (preclick === true) {
+                        preclick = [step.element];
+                    }
+                    doClick(preclick);
                     doInsert(step.element, step.textinsert);
                 });
             },
             onNext: () => {
                 // post-actions
-                doClick(step.postclick);
+                let postclick = step.postclick;
+                if (postclick === true) {
+                    postclick = [step.element];
+                }
+                doClick(postclick);
             },
         });
     });
-    return mountTour({ steps });
+    const requirements = tourData.requirements || [];
+    return mountTour({ steps, requirements });
 }

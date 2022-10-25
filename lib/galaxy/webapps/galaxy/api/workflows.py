@@ -2,42 +2,42 @@
 API operations for Workflows
 """
 
-import hashlib
 import json
 import logging
 import os
+from io import BytesIO
 from typing import (
     Any,
     Dict,
+    List,
+    Optional,
 )
 
-import requests
 from fastapi import (
     Body,
     Path,
+    Query,
     Response,
     status,
 )
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
-from sqlalchemy import (
-    desc,
-    false,
-    or_,
-    true,
-)
-from sqlalchemy.orm import joinedload
+from pydantic import Extra
+from starlette.responses import StreamingResponse
 
 from galaxy import (
     exceptions,
     model,
     util,
 )
+from galaxy.files.uris import (
+    stream_url_to_str,
+    validate_uri_access,
+)
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     fetch_job_states,
     invocation_job_source_iter,
-    summarize_job_metrics,
 )
 from galaxy.managers.workflows import (
     MissingToolsException,
@@ -46,13 +46,17 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.model.store import BcoExportOptions
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
-    InvocationIndexPayload,
+    AsyncFile,
+    AsyncTaskResultSummary,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    StoreContentSource,
+    WorkflowSortByEnum,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -63,6 +67,7 @@ from galaxy.util.sanitize_html import sanitize_html
 from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
+    expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
     expose_api_raw,
     expose_api_raw_anonymous_and_sessionless,
@@ -74,43 +79,63 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
-from galaxy.webapps.galaxy.services.workflows import WorkflowsService
+from galaxy.webapps.galaxy.api import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    IndexQueryTag,
+    Router,
+    search_query_param,
+)
+from galaxy.webapps.galaxy.services.base import (
+    ConsumesModelStores,
+    ServesExportStores,
+)
+from galaxy.webapps.galaxy.services.invocations import (
+    InvocationIndexPayload,
+    InvocationSerializationParams,
+    InvocationsService,
+    PrepareStoreDownloadPayload,
+    WriteInvocationStoreToPayload,
+)
+from galaxy.webapps.galaxy.services.workflows import (
+    WorkflowIndexPayload,
+    WorkflowsService,
+)
 from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from . import (
-    BaseGalaxyAPIController,
-    depends,
-    DependsOnTrans,
-    Router,
-)
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["workflows"])
 
 
-class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, UsesAnnotations, SharableMixin):
+class CreateInvocationFromStore(StoreContentSource):
+    history_id: Optional[str]
+
+    class Config:
+        extra = Extra.allow
+
+
+class WorkflowsAPIController(
+    BaseGalaxyAPIController,
+    UsesStoredWorkflowMixin,
+    UsesAnnotations,
+    SharableMixin,
+    ServesExportStores,
+    ConsumesModelStores,
+):
+    service: WorkflowsService = depends(WorkflowsService)
+    invocations_service: InvocationsService = depends(InvocationsService)
+
     def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.history_manager = app.history_manager
         self.workflow_manager = app.workflow_manager
         self.workflow_contents_manager = app.workflow_contents_manager
         self.tool_recommendations = recommendations.ToolRecommendations()
-
-    def __get_full_shed_url(self, url):
-        for shed_url in self.app.tool_shed_registry.tool_sheds.values():
-            if url in shed_url:
-                return shed_url
-        return None
-
-    @expose_api_anonymous_and_sessionless
-    def index(self, trans: ProvidesUserContext, **kwd):
-        """
-        GET /api/workflows
-        """
-        return self.get_workflows_list(trans, **kwd)
 
     @expose_api
     def get_workflow_menu(self, trans: ProvidesUserContext, **kwd):
@@ -120,7 +145,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         user = trans.user
         ids_in_menu = [x.stored_workflow_id for x in user.stored_workflow_menu_entries]
-        return {"ids_in_menu": ids_in_menu, "workflows": self.get_workflows_list(trans, **kwd)}
+        workflows = self.get_workflows_list(trans, **kwd)
+        return {"ids_in_menu": ids_in_menu, "workflows": workflows}
 
     @expose_api
     def set_workflow_menu(self, trans: GalaxyWebTransaction, payload=None, **kwd):
@@ -194,103 +220,16 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         show_hidden = util.string_as_bool(show_hidden)
         show_deleted = util.string_as_bool(show_deleted)
         missing_tools = util.string_as_bool(missing_tools)
-        if show_shared is None:
-            show_shared = not show_hidden and not show_deleted
-        else:
-            show_shared = util.string_as_bool(show_shared)
-        if show_shared and show_deleted:
-            message = "show_shared and show_deleted cannot both be specified as true"
-            raise exceptions.RequestParameterInvalidException(message)
-        if show_shared and show_hidden:
-            message = "show_shared and show_hidden cannot both be specified as true"
-            raise exceptions.RequestParameterInvalidException(message)
-        rval = []
-        filter1 = model.StoredWorkflow.user == trans.user
-        user = trans.user
-        if show_published or user is None and show_published is None:
-            filter1 = or_(filter1, (model.StoredWorkflow.published == true()))
-        query = (
-            trans.sa_session.query(model.StoredWorkflow)
-            .options(joinedload("annotations"))
-            .options(joinedload("latest_workflow").undefer("step_count").lazyload("steps"))
-            .options(joinedload("tags"))
-            .filter(filter1)
+        show_shared = util.string_as_bool_or_none(show_shared)
+        payload = WorkflowIndexPayload(
+            show_published=show_published,
+            show_hidden=show_hidden,
+            show_deleted=show_deleted,
+            show_shared=show_shared,
+            missing_tools=missing_tools,
         )
-        query = query.filter_by(hidden=true() if show_hidden else false(), deleted=true() if show_deleted else false())
-        for wf in query.order_by(desc(model.StoredWorkflow.table.c.update_time)).all():
-            item = wf.to_dict(value_mapper={"id": trans.security.encode_id})
-            encoded_id = trans.security.encode_id(wf.id)
-            item["annotations"] = [x.annotation for x in wf.annotations]
-            item["url"] = url_for("workflow", id=encoded_id)
-            item["owner"] = wf.user.username
-            item["source_metadata"] = wf.latest_workflow.source_metadata
-            item["number_of_steps"] = wf.latest_workflow.step_count
-            item["show_in_tool_panel"] = False
-            if user is not None:
-                item["show_in_tool_panel"] = wf.show_in_tool_panel(user_id=user.id)
-            rval.append(item)
-        if show_shared:
-            for wf_sa in (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .join(model.StoredWorkflowUserShareAssociation.stored_workflow)
-                .options(joinedload("stored_workflow").joinedload("annotations"))
-                .options(
-                    joinedload("stored_workflow").joinedload("latest_workflow").undefer("step_count").lazyload("steps")
-                )
-                .options(joinedload("stored_workflow").joinedload("user"))
-                .options(joinedload("stored_workflow").joinedload("tags"))
-                .filter(model.StoredWorkflowUserShareAssociation.user == trans.user)
-                .filter(model.StoredWorkflow.table.c.deleted == false())
-                .order_by(desc(model.StoredWorkflow.update_time))
-                .all()
-            ):
-                item = wf_sa.stored_workflow.to_dict(value_mapper={"id": trans.security.encode_id})
-                encoded_id = trans.security.encode_id(wf_sa.stored_workflow.id)
-                item["annotations"] = [x.annotation for x in wf_sa.stored_workflow.annotations]
-                item["url"] = url_for("workflow", id=encoded_id)
-                item["slug"] = wf_sa.stored_workflow.slug
-                item["owner"] = wf_sa.stored_workflow.user.username
-                item["number_of_steps"] = wf_sa.stored_workflow.latest_workflow.step_count
-                item["show_in_tool_panel"] = False
-                if user is not None:
-                    item["show_in_tool_panel"] = wf_sa.stored_workflow.show_in_tool_panel(user_id=user.id)
-                rval.append(item)
-        if missing_tools:
-            workflows_missing_tools = []
-            workflows = []
-            workflows_by_toolshed = dict()
-            for value in rval:
-                tools = self.workflow_contents_manager.get_all_tools(
-                    self.__get_stored_workflow(trans, value["id"]).latest_workflow
-                )
-                missing_tool_ids = [
-                    tool["tool_id"] for tool in tools if self.app.toolbox.is_missing_shed_tool(tool["tool_id"])
-                ]
-                if len(missing_tool_ids) > 0:
-                    value["missing_tools"] = missing_tool_ids
-                    workflows_missing_tools.append(value)
-            for workflow in workflows_missing_tools:
-                for tool_id in workflow["missing_tools"]:
-                    toolshed, _, owner, name, tool, version = tool_id.split("/")
-                    shed_url = self.__get_full_shed_url(toolshed)
-                    repo_identifier = "/".join((toolshed, owner, name))
-                    if repo_identifier not in workflows_by_toolshed:
-                        workflows_by_toolshed[repo_identifier] = dict(
-                            shed=shed_url.rstrip("/"),
-                            repository=name,
-                            owner=owner,
-                            tools=[tool_id],
-                            workflows=[workflow["name"]],
-                        )
-                    else:
-                        if tool_id not in workflows_by_toolshed[repo_identifier]["tools"]:
-                            workflows_by_toolshed[repo_identifier]["tools"].append(tool_id)
-                        if workflow["name"] not in workflows_by_toolshed[repo_identifier]["workflows"]:
-                            workflows_by_toolshed[repo_identifier]["workflows"].append(workflow["name"])
-            for repo_tag in workflows_by_toolshed:
-                workflows.append(workflows_by_toolshed[repo_tag])
-            return workflows
-        return rval
+        workflows, _ = self.service.index(trans, payload)
+        return workflows
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
@@ -344,7 +283,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             trans, workflow_id, by_stored_id=not instance
         )
         return [
-            {"version": i, "update_time": str(w.update_time), "steps": len(w.steps)}
+            {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
             for i, w in enumerate(reversed(stored_workflow.workflows))
         ]
 
@@ -395,9 +334,8 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             archive_file = payload.get("archive_file")
             archive_data = None
             if archive_source:
+                validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
                 if archive_source.startswith("file://"):
-                    if not trans.user_is_admin:
-                        raise exceptions.AdminRequiredException()
                     workflow_src = {"src": "from_path", "path": archive_source[len("file://") :]}
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
@@ -409,7 +347,9 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                     archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
                 else:
                     try:
-                        archive_data = requests.get(archive_source, timeout=util.DEFAULT_SOCKET_TIMEOUT).text
+                        archive_data = stream_url_to_str(
+                            archive_source, trans.app.file_sources, prefix="gx_workflow_download"
+                        )
                         import_source = "URL"
                     except Exception:
                         raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
@@ -518,28 +458,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
-    def delete(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        DELETE /api/workflows/{encoded_workflow_id}
-        Deletes a specified workflow
-        Author: rpark
-
-        copied from galaxy.web.controllers.workflows.py (delete)
-        """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
-
-        # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException()
-
-        # Mark a workflow as deleted
-        stored_workflow.deleted = True
-        trans.sa_session.flush()
-
-        # TODO: Unsure of response message to let api know that a workflow was successfully deleted
-        return f"Workflow '{stored_workflow.name}' successfully deleted"
-
-    @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):
         """
         POST /api/workflows/upload
@@ -607,6 +525,7 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         workflow_dict = payload.get("workflow", {})
         workflow_dict.update({k: v for k, v in payload.items() if k not in workflow_dict})
         if workflow_dict:
+            require_flush = False
             raw_workflow_description = self.__normalize_workflow(trans, workflow_dict)
             workflow_dict = raw_workflow_description.as_dict
             new_workflow_name = workflow_dict.get("name")
@@ -621,42 +540,51 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
                 stored_workflow.name = sanitized_name
                 stored_workflow.latest_workflow = workflow
                 trans.sa_session.add(workflow, stored_workflow)
-                trans.sa_session.flush()
+                require_flush = True
 
             if "hidden" in workflow_dict and stored_workflow.hidden != workflow_dict["hidden"]:
                 stored_workflow.hidden = workflow_dict["hidden"]
-                trans.sa_session.flush()
+                require_flush = True
 
             if "published" in workflow_dict and stored_workflow.published != workflow_dict["published"]:
                 stored_workflow.published = workflow_dict["published"]
-                trans.sa_session.flush()
+                require_flush = True
 
             if "importable" in workflow_dict and stored_workflow.importable != workflow_dict["importable"]:
                 stored_workflow.importable = workflow_dict["importable"]
-                trans.sa_session.flush()
+                require_flush = True
 
             if "annotation" in workflow_dict and not steps_updated:
                 newAnnotation = sanitize_html(workflow_dict["annotation"])
                 self.add_item_annotation(trans.sa_session, trans.user, stored_workflow, newAnnotation)
-                trans.sa_session.flush()
+                require_flush = True
 
             if "menu_entry" in workflow_dict or "show_in_tool_panel" in workflow_dict:
-                if workflow_dict.get("menu_entry") or workflow_dict.get("show_in_tool_panel"):
-                    workflow_ids = [wf.stored_workflow_id for wf in trans.user.stored_workflow_menu_entries]
-                    if trans.security.decode_id(id) not in workflow_ids:
-                        menuEntry = model.StoredWorkflowMenuEntry()
-                        menuEntry.stored_workflow = stored_workflow
-                        trans.user.stored_workflow_menu_entries.append(menuEntry)
+                show_in_panel = workflow_dict.get("menu_entry") or workflow_dict.get("show_in_tool_panel")
+                stored_workflow_menu_entries = trans.user.stored_workflow_menu_entries
+                decoded_id = trans.security.decode_id(id)
+                if show_in_panel:
+                    workflow_ids = [wf.stored_workflow_id for wf in stored_workflow_menu_entries]
+                    if decoded_id not in workflow_ids:
+                        menu_entry = model.StoredWorkflowMenuEntry()
+                        menu_entry.stored_workflow = stored_workflow
+                        stored_workflow_menu_entries.append(menu_entry)
+                        trans.sa_session.add(menu_entry)
+                        require_flush = True
                 else:
                     # remove if in list
-                    entries = {x.stored_workflow_id: x for x in trans.user.stored_workflow_menu_entries}
-                    if trans.security.decode_id(id) in entries:
-                        trans.user.stored_workflow_menu_entries.remove(entries[trans.security.decode_id(id)])
+                    entries = {x.stored_workflow_id: x for x in stored_workflow_menu_entries}
+                    if decoded_id in entries:
+                        stored_workflow_menu_entries.remove(entries[decoded_id])
+                        require_flush = True
             # set tags
             if "tags" in workflow_dict:
                 trans.app.tag_handler.set_tags_from_list(
                     user=trans.user, item=stored_workflow, new_tags_list=workflow_dict["tags"]
                 )
+
+            if require_flush:
+                trans.sa_session.flush()
 
             if "steps" in workflow_dict:
                 try:
@@ -721,7 +649,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
             "inputs": module.get_all_inputs(connectable_only=True),
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
-            "post_job_actions": module.get_post_job_actions(inputs),
         }
 
     @expose_api
@@ -941,40 +868,41 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         invocation_payload = InvocationIndexPayload(**kwd)
-        workflow_id = invocation_payload.workflow_id
-        if invocation_payload.instance:
-            invocation_payload.workflow_id = self.__get_stored_workflow(
-                trans, trans.security.encode_id(workflow_id), instance=True
-            ).id
-        if invocation_payload.history_id:
-            # access check
-            self.history_manager.get_accessible(
-                invocation_payload.history_id, trans.user, current_history=trans.history
-            )
-        if not trans.user_is_admin:
-            # We restrict the query to the current users' invocations
-            # Endpoint requires user login, so trans.user.id is never None
-            # TODO: user_id should be optional!
-            user_id = trans.user.id
-            if invocation_payload.user_id and invocation_payload.user_id != user_id:
-                raise exceptions.AdminRequiredException("Only admins can index the invocations of others")
-        else:
-            # Get all invocation if user is admin (and user_id is None)
-            user_id = invocation_payload.user_id
-        invocations, total_matches = self.workflow_manager.build_invocations_query(
-            trans,
-            stored_workflow_id=invocation_payload.workflow_id,
-            history_id=invocation_payload.history_id,
-            job_id=invocation_payload.job_id,
-            user_id=user_id,
-            include_terminal=invocation_payload.include_terminal,
-            limit=invocation_payload.limit,
-            offset=invocation_payload.offset,
-            sort_by=invocation_payload.sort_by,
-            sort_desc=invocation_payload.sort_desc,
-        )
+        serialization_params = InvocationSerializationParams(**kwd)
+        invocations, total_matches = self.invocations_service.index(trans, invocation_payload, serialization_params)
         trans.response.headers["total_matches"] = total_matches
-        return self.workflow_manager.serialize_workflow_invocations(invocations, **kwd)
+        return invocations
+
+    @expose_api_anonymous
+    def create_invocations_from_store(self, trans, payload, **kwd):
+        """
+        POST /api/invocations/from_store
+
+        Create invocation(s) from a supplied model store.
+
+        Input can be an archive describing a Galaxy model store containing an
+        workflow invocation - for instance one created with with write_store
+        or prepare_store_download endpoint.
+        """
+        create_payload = CreateInvocationFromStore(**payload)
+        serialization_params = InvocationSerializationParams(**payload)
+        # refactor into a service...
+        return self._create_from_store(trans, create_payload, serialization_params)
+
+    def _create_from_store(
+        self, trans, payload: CreateInvocationFromStore, serialization_params: InvocationSerializationParams
+    ):
+        history = self.history_manager.get_owned(
+            self.decode_id(payload.history_id), trans.user, current_history=trans.history
+        )
+        object_tracker = self.create_objects_from_store(
+            trans,
+            payload,
+            history=history,
+        )
+        return self.invocations_service.serialize_workflow_invocations(
+            object_tracker.invocations_by_key.values(), serialization_params
+        )
 
     @expose_api
     def show_invocation(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
@@ -1007,13 +935,10 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
         workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
-        if workflow_invocation:
-            step_details = util.string_as_bool(kwd.pop("step_details", "False"))
-            legacy_job_state = util.string_as_bool(kwd.pop("legacy_job_state", "False"))
-            return self.__encode_invocation(
-                workflow_invocation, step_details=step_details, legacy_job_state=legacy_job_state, **kwd
-            )
-        return None
+        if not workflow_invocation:
+            raise exceptions.ObjectNotFound()
+
+        return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
     def cancel_invocation(self, trans: ProvidesUserContext, invocation_id, **kwd):
@@ -1053,292 +978,6 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         kwd["format"] = "pdf"
         trans.response.set_content_type("application/pdf")
         return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
-
-    def _generate_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
-        history = workflow_invocation.history
-        workflow = workflow_invocation.workflow
-        stored_workflow = workflow.stored_workflow
-
-        # pull in the user info from those who the history and workflow has been shared with
-        contributing_users = [stored_workflow.user]
-
-        # may want to extend this to have more reviewers.
-        reviewing_users = [stored_workflow.user]
-        encoded_workflow_id = trans.security.encode_id(stored_workflow.id)
-        encoded_history_id = trans.security.encode_id(history.id)
-        dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
-
-        spec_version = kwd.get("spec_version", "https://w3id.org/ieee/ieee-2791-schema/2791object.json")
-
-        for i, w in enumerate(reversed(stored_workflow.workflows)):
-            if workflow == w:
-                current_version = i
-
-        contributors = []
-        for contributing_user in contributing_users:
-            contributor = {
-                "orcid": kwd.get("xref", []),
-                "name": contributing_user.username,
-                "affiliation": "",
-                "contribution": ["authoredBy"],
-                "email": contributing_user.email,
-            }
-            contributors.append(contributor)
-
-        reviewers = []
-        for reviewer in reviewing_users:
-            reviewer = {
-                "status": "approved",
-                "reviewer_comment": "",
-                "date": workflow_invocation.update_time.isoformat(),
-                "reviewer": {
-                    "orcid": kwd.get("orcid", []),
-                    "name": contributing_user.username,
-                    "affiliation": "",
-                    "contribution": "curatedBy",
-                    "email": contributing_user.email,
-                },
-            }
-            reviewers.append(reviewer)
-
-        provenance_domain = {
-            "name": workflow.name,
-            "version": current_version,
-            "review": reviewers,
-            "derived_from": url_for("workflow", id=encoded_workflow_id, qualified=True),
-            "created": workflow_invocation.create_time.isoformat(),
-            "modified": workflow_invocation.update_time.isoformat(),
-            "contributors": contributors,
-            "license": "https://spdx.org/licenses/CC-BY-4.0.html",
-        }
-
-        keywords = []
-        for tag in stored_workflow.tags:
-            keywords.append(tag.user_tname)
-        for tag in history.tags:
-            if tag.user_tname not in keywords:
-                keywords.append(tag.user_tname)
-
-        metrics = {}
-        tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
-        for step in workflow_invocation.steps:
-            if step.workflow_step.type == "tool":
-                workflow_outputs_list, output_list, input_list = set(), [], []
-                for wo in step.workflow_step.workflow_outputs:
-                    workflow_outputs_list.add(wo.output_name)
-                for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
-                    for job_input in job.input_datasets:
-                        if hasattr(job_input.dataset, "dataset_id"):
-                            encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
-                            input_obj = {
-                                # TODO: that should maybe be a step prefix + element identifier where appropriate.
-                                "filename": job_input.dataset.name,
-                                "uri": url_for(
-                                    "history_content",
-                                    history_id=encoded_history_id,
-                                    id=encoded_dataset_id,
-                                    qualified=True,
-                                ),
-                                "access_time": job_input.dataset.create_time.isoformat(),
-                            }
-                            input_list.append(input_obj)
-
-                    for job_output in job.output_datasets:
-                        if hasattr(job_output.dataset, "dataset_id"):
-                            encoded_dataset_id = trans.security.encode_id(job_output.dataset.dataset_id)
-                            output_obj = {
-                                "filename": job_output.dataset.name,
-                                "uri": url_for(
-                                    "history_content",
-                                    history_id=encoded_history_id,
-                                    id=encoded_dataset_id,
-                                    qualified=True,
-                                ),
-                                "access_time": job_output.dataset.create_time.isoformat(),
-                            }
-                            output_list.append(output_obj)
-
-                            if job_output.name in workflow_outputs_list:
-                                output = {
-                                    "mediatype": job_output.dataset.extension,
-                                    "uri": {
-                                        "filename": job_output.dataset.name,
-                                        "uri": url_for(
-                                            "history_content",
-                                            history_id=encoded_history_id,
-                                            id=encoded_dataset_id,
-                                            qualified=True,
-                                        ),
-                                        "access_time": job_output.dataset.create_time.isoformat(),
-                                    },
-                                }
-                                output_subdomain.append(output)
-                workflow_step = step.workflow_step
-                step_index = workflow_step.order_index
-                current_step = dict_workflow["steps"][str(step_index)]
-                pipeline_step = {
-                    "step_number": step_index,
-                    "name": current_step["name"],
-                    "description": current_step["annotation"],
-                    "version": current_step["tool_version"],
-                    "prerequisite": kwd.get("prerequisite", []),
-                    "input_list": input_list,
-                    "output_list": output_list,
-                }
-                pipeline_steps.append(pipeline_step)
-                try:
-                    software_prerequisite = {
-                        "name": current_step["content_id"],
-                        "version": current_step["tool_version"],
-                        "uri": {"uri": current_step["content_id"], "access_time": current_step["uuid"]},
-                    }
-                    if software_prerequisite["uri"]["uri"] not in tools:
-                        software_prerequisites.append(software_prerequisite)
-                        tools.append(software_prerequisite["uri"]["uri"])
-                except Exception:
-                    continue
-
-            if step.workflow_step.type == "data_input" and step.output_datasets:
-                for output_assoc in step.output_datasets:
-                    encoded_dataset_id = trans.security.encode_id(output_assoc.dataset_id)
-                    input_obj = {
-                        "filename": step.workflow_step.label,
-                        "uri": url_for(
-                            "history_content", history_id=encoded_history_id, id=encoded_dataset_id, qualified=True
-                        ),
-                        "access_time": step.workflow_step.update_time.isoformat(),
-                    }
-                    input_subdomain.append(input_obj)
-
-            if step.workflow_step.type == "data_collection_input" and step.output_dataset_collections:
-                for output_dataset_collection_association in step.output_dataset_collections:
-                    encoded_dataset_id = trans.security.encode_id(
-                        output_dataset_collection_association.dataset_collection_id
-                    )
-                    input_obj = {
-                        "filename": step.workflow_step.label,
-                        "uri": url_for(
-                            "history_content",
-                            history_id=encoded_history_id,
-                            id=encoded_dataset_id,
-                            type="dataset_collection",
-                            qualified=True,
-                        ),
-                        "access_time": step.workflow_step.update_time.isoformat(),
-                    }
-                    input_subdomain.append(input_obj)
-
-        usability_domain = []
-        for a in stored_workflow.annotations:
-            usability_domain.append(a.annotation)
-        for h in history.annotations:
-            usability_domain.append(h.annotation)
-
-        parametric_domain = []
-        for inv_step in workflow_invocation.steps:
-            try:
-                for k, v in inv_step.workflow_step.tool_inputs.items():
-                    param, value, step = k, v, inv_step.workflow_step.order_index
-                    parametric_domain.append({"param": param, "value": value, "step": step})
-            except Exception:
-                continue
-
-        execution_domain = {
-            "script_access_type": "a_galaxy_workflow",
-            "script": [url_for("workflows", encoded_workflow_id=encoded_workflow_id, qualified=True)],
-            "script_driver": "Galaxy",
-            "software_prerequisites": software_prerequisites,
-            "external_data_endpoints": [
-                {"name": "Access to Galaxy", "url": url_for("/", qualified=True)},
-                kwd.get("external_data_endpoints"),
-            ],
-            "environment_variables": kwd.get("environment_variables", {}),
-        }
-
-        extension = [
-            {
-                "extension_schema": "https://raw.githubusercontent.com/biocompute-objects/extension_domain/6d2cd8482e6075746984662edcf78b57d3d38065/galaxy/galaxy_extension.json",
-                "galaxy_extension": {
-                    "galaxy_url": url_for("/", qualified=True),
-                    "galaxy_version": VERSION,
-                    # TODO:
-                    # 'aws_estimate': aws_estimate,
-                    # 'job_metrics': metrics
-                },
-            }
-        ]
-
-        error_domain = {
-            "empirical_error": kwd.get("empirical_error", []),
-            "algorithmic_error": kwd.get("algorithmic_error", []),
-        }
-
-        bco_dict = {
-            "provenance_domain": provenance_domain,
-            "usability_domain": usability_domain,
-            "extension_domain": extension,
-            "description_domain": {
-                "keywords": keywords,
-                "xref": kwd.get("xref", []),
-                "platform": ["Galaxy"],
-                "pipeline_steps": pipeline_steps,
-            },
-            "execution_domain": execution_domain,
-            "parametric_domain": parametric_domain,
-            "io_domain": {
-                "input_subdomain": input_subdomain,
-                "output_subdomain": output_subdomain,
-            },
-            "error_domain": error_domain,
-        }
-        # Generate etag from the BCO excluding object_id and spec_version, as
-        # specified in https://github.com/biocompute-objects/BCO_Specification/blob/main/docs/top-level.md#203-etag-etag
-        etag = hashlib.sha256(json.dumps(bco_dict, sort_keys=True).encode()).hexdigest()
-        bco_dict.update(
-            {
-                "object_id": url_for(
-                    controller=f"api/invocations/{invocation_id}", action="biocompute", qualified=True
-                ),
-                "spec_version": spec_version,
-                "etag": etag,
-            }
-        )
-        return bco_dict
-
-    @expose_api
-    def export_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/invocations/{invocations_id}/biocompute
-
-        Return a BioCompute Object for the workflow invocation.
-
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-        """
-        return self._generate_invocation_bco(trans, invocation_id, **kwd)
-
-    @expose_api_raw
-    def download_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/invocations/{invocations_id}/biocompute/download
-
-        Returns a selected BioCompute Object as a file for download (HTTP
-        headers configured with filename and such).
-
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-        """
-        ret_dict = self._generate_invocation_bco(trans, invocation_id, **kwd)
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="bco_{invocation_id}.json"'
-        trans.response.set_content_type("application/json")
-        return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):
@@ -1515,17 +1154,131 @@ class WorkflowsAPIController(BaseGalaxyAPIController, UsesStoredWorkflowMixin, U
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
     def __encode_invocation(self, invocation, **kwd):
-        return self.workflow_manager.serialize_workflow_invocation(invocation, **kwd)
+        params = InvocationSerializationParams(**kwd)
+        return self.invocations_service.serialize_workflow_invocation(invocation, params)
 
 
-StoredWorkflowIDPathParam: EncodedDatabaseIdField = Path(
+StoredWorkflowIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
+)
+
+InvocationIDPathParam: DecodedDatabaseIdField = Path(
+    ..., title="Invocation ID", description="The encoded database identifier of the Invocation."
+)
+
+DeletedQueryParam: bool = Query(
+    default=False, title="Display deleted", description="Whether to restrict result to deleted workflows."
+)
+
+HiddenQueryParam: bool = Query(
+    default=False, title="Display hidden", description="Whether to restrict result to hidden workflows."
+)
+
+MissingToolsQueryParam: bool = Query(
+    default=False,
+    title="Display missing tools",
+    description="Whether to include a list of missing tools per workflow entry",
+)
+
+ShowPublishedQueryParam: Optional[bool] = Query(default=None, title="Include published workflows.", description="")
+
+ShowSharedQueryParam: Optional[bool] = Query(
+    default=None, title="Include workflows shared with authenticated user.", description=""
+)
+
+SortByQueryParam: Optional[WorkflowSortByEnum] = Query(
+    default=None,
+    title="Sort workflow index by this attribute",
+    description="In unspecified, default ordering depends on other parameters but generally the user's own workflows appear first based on update time",
+)
+
+SortDescQueryParam: Optional[bool] = Query(
+    default=None,
+    title="Sort Descending",
+    description="Sort in descending order?",
+)
+
+LimitQueryParam: Optional[int] = Query(default=None, title="Limit number of queries.")
+
+OffsetQueryParam: Optional[int] = Query(
+    default=0,
+    title="Number of workflows to skip in sorted query (to enable pagination).",
+)
+
+query_tags = [
+    IndexQueryTag("name", "The stored workflow's name.", "n"),
+    IndexQueryTag(
+        "tag",
+        "The workflow's tag, if the tag contains a colon an approach will be made to match the key and value of the tag separately.",
+        "t",
+    ),
+    IndexQueryTag("user", "The stored workflow's owner's username.", "u"),
+    IndexQueryTag(
+        "is:published",
+        "Include only published workflows in the final result. Be sure the the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
+    ),
+    IndexQueryTag(
+        "is:share_with_me",
+        "Include only workflows shared with the requesting user.  Be sure the the query parameter `show_shared` is set to `true` if to include shared workflows.",
+    ),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Stored Workflow",
+    tags=query_tags,
+    free_text_fields=["name", "tag", "user"],
+)
+
+SkipStepCountsQueryParam: bool = Query(
+    default=False,
+    title="Skip step counts.",
+    description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
 
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
+    invocations_service: InvocationsService = depends(InvocationsService)
+
+    @router.get(
+        "/api/workflows",
+        summary="Lists stored workflows viewable by the user.",
+        response_description="A list with summary stored workflow information per viewable entry.",
+    )
+    def index(
+        self,
+        response: Response,
+        trans: ProvidesUserContext = DependsOnTrans,
+        show_deleted: bool = DeletedQueryParam,
+        show_hidden: bool = HiddenQueryParam,
+        missing_tools: bool = MissingToolsQueryParam,
+        show_published: Optional[bool] = ShowPublishedQueryParam,
+        show_shared: Optional[bool] = ShowSharedQueryParam,
+        sort_by: Optional[WorkflowSortByEnum] = SortByQueryParam,
+        sort_desc: Optional[bool] = SortDescQueryParam,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParam,
+        skip_step_counts: bool = SkipStepCountsQueryParam,
+    ) -> List[Dict[str, Any]]:
+        """Lists stored workflows viewable by the user."""
+        payload = WorkflowIndexPayload.construct(
+            show_published=show_published,
+            show_hidden=show_hidden,
+            show_deleted=show_deleted,
+            show_shared=show_shared,
+            missing_tools=missing_tools,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+            search=search,
+            skip_step_counts=skip_step_counts,
+        )
+        workflows, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return workflows
 
     @router.get(
         "/api/workflows/{id}/sharing",
@@ -1534,7 +1287,7 @@ class FastAPIWorkflows:
     def sharing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
@@ -1546,7 +1299,7 @@ class FastAPIWorkflows:
     def enable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
@@ -1558,7 +1311,7 @@ class FastAPIWorkflows:
     def disable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
@@ -1570,7 +1323,7 @@ class FastAPIWorkflows:
     def publish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
@@ -1582,7 +1335,7 @@ class FastAPIWorkflows:
     def unpublish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
@@ -1594,7 +1347,7 @@ class FastAPIWorkflows:
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -1608,9 +1361,151 @@ class FastAPIWorkflows:
     def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/invocations/{invocation_id}/prepare_store_download",
+        summary="Prepare a workflow invocation export-style download.",
+    )
+    def prepare_store_download(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        payload: PrepareStoreDownloadPayload = Body(...),
+    ) -> AsyncFile:
+        return self.invocations_service.prepare_store_download(
+            trans,
+            invocation_id,
+            payload,
+        )
+
+    @router.post(
+        "/api/invocations/{invocation_id}/write_store",
+        summary="Prepare a workflow invocation export-style download and write to supplied URI.",
+    )
+    def write_store(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        payload: WriteInvocationStoreToPayload = Body(...),
+    ) -> AsyncTaskResultSummary:
+        rval = self.invocations_service.write_store(
+            trans,
+            invocation_id,
+            payload,
+        )
+        return rval
+
+    @router.delete(
+        "/api/workflows/{workflow_id}",
+        summary="Add the deleted flag to a workflow.",
+    )
+    def delete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.delete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/undelete",
+        summary="Remove the deleted flag from a workflow.",
+    )
+    def undelete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.undelete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    # TODO: remove this endpoint after 23.1 release
+    @router.get(
+        "/api/invocations/{invocation_id}/biocompute",
+        summary="Return a BioCompute Object for the workflow invocation.",
+        deprecated=True,
+    )
+    def export_invocation_bco(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        merge_history_metadata: Optional[bool] = Query(default=False),
+    ):
+        """
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+
+        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
+
+        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
+            ```
+            {
+                model_store_format: bco.json
+            }
+            ```
+        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
+
+        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
+        """
+        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        return json.loads(bco)
+
+    # TODO: remove this endpoint after 23.1 release
+    @router.get(
+        "/api/invocations/{invocation_id}/biocompute/download",
+        summary="Return a BioCompute Object for the workflow invocation as a file for download.",
+        response_class=StreamingResponse,
+        deprecated=True,
+    )
+    def download_invocation_bco(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        merge_history_metadata: Optional[bool] = Query(default=False),
+    ):
+        """
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+
+        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
+
+        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
+            ```
+            {
+                model_store_format: bco.json
+            }
+            ```
+        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
+
+        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
+        """
+        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        return StreamingResponse(
+            content=BytesIO(bco),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="bco_{trans.security.encode_id(invocation_id)}.json"',
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+
+    # TODO: remove this after 23.1 release
+    def _deprecated_generate_bco(
+        self, trans, invocation_id: DecodedDatabaseIdField, merge_history_metadata: Optional[bool]
+    ):
+        export_options = BcoExportOptions(
+            galaxy_url=trans.request.base,
+            galaxy_version=VERSION,
+            merge_history_metadata=merge_history_metadata or False,
+        )
+        return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)

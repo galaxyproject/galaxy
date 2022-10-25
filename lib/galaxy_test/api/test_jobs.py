@@ -22,7 +22,9 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class JobsApiTestCase(ApiTestCase, TestsTools):
+class TestJobsApi(ApiTestCase, TestsTools):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
@@ -34,7 +36,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         # Create HDA to ensure at least one job exists...
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index()
-        assert "upload1" in map(itemgetter("tool_id"), jobs)
+        assert "__DATA_FETCH__" in map(itemgetter("tool_id"), jobs)
 
     @uses_test_history(require_new=True)
     def test_system_details_admin_only(self, history_id):
@@ -82,22 +84,26 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
 
     @uses_test_history(require_new=True)
     def test_index_date_filter(self, history_id):
-        self.__history_with_new_dataset(history_id)
         two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
         last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
-        next_week = (datetime.datetime.utcnow() + datetime.timedelta(7)).isoformat()
-        today = datetime.datetime.utcnow().isoformat()
-        tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).isoformat()
+        before = datetime.datetime.utcnow().isoformat()
+        today = before[:10]
+        tomorrow = (datetime.datetime.utcnow() + datetime.timedelta(1)).isoformat()[:10]
+        self.__history_with_new_dataset(history_id)
+        after = datetime.datetime.utcnow().isoformat()
 
-        jobs = self.__jobs_index(data={"date_range_min": today[0:10], "date_range_max": tomorrow[0:10]})
+        # Test using dates
+        jobs = self.__jobs_index(data={"date_range_min": today, "date_range_max": tomorrow})
         assert len(jobs) > 0
-        today_job_id = jobs[0]["id"]
+        today_job = jobs[0]
+        today_job_id = today_job["id"]
+
+        # Test using datetimes
+        jobs = self.__jobs_index(data={"date_range_min": before, "date_range_max": after})
+        assert today_job_id in map(itemgetter("id"), jobs), f"before: {before}, after: {after}, job: {today_job}"
 
         jobs = self.__jobs_index(data={"date_range_min": two_weeks_ago, "date_range_max": last_week})
         assert today_job_id not in map(itemgetter("id"), jobs)
-
-        jobs = self.__jobs_index(data={"date_range_min": last_week, "date_range_max": next_week})
-        assert today_job_id in map(itemgetter("id"), jobs)
 
     @uses_test_history(require_new=True)
     def test_index_history(self, history_id):
@@ -110,6 +116,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             assert len(jobs) == 0
 
     @uses_test_history(require_new=True)
+    @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
 class: GalaxyWorkflow
@@ -183,7 +190,37 @@ steps:
         assert len(jobs) == 0
 
     @uses_test_history(require_new=True)
-    def test_index_user_filter(self, history_id):
+    def test_index_search_filter_tool_id(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id})
+        assert len(jobs) > 0
+        length = len(jobs)
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "emptyresult"})
+        assert len(jobs) == 0
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
+        assert len(jobs) == length
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "tool:'FETCH'"})
+        assert len(jobs) == 0
+
+    @uses_test_history(require_new=True)
+    def test_index_search_filter_email(self, history_id):
+        self.__history_with_new_dataset(history_id)
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
+        user_email = self.dataset_populator.user_email()
+        jobs = self.__jobs_index(data={"history_id": history_id, "search": user_email})
+        assert len(jobs) == 0
+        # we can search on email...
+        jobs = self.__jobs_index(
+            data={"history_id": history_id, "search": user_email, "user_details": True}, admin=True
+        )
+        assert len(jobs) == 1
+        # but only if user details are joined in.
+        jobs = self.__jobs_index(
+            data={"history_id": history_id, "search": user_email, "user_details": False}, admin=True
+        )
+        assert len(jobs) == 0
+
+    def test_index_user_filter(self):
         test_user_email = "user_for_jobs_index_test@bx.psu.edu"
         user = self._setup_user(test_user_email)
         with self._different_user(email=test_user_email):
@@ -197,6 +234,51 @@ steps:
         jobs_response = self._get("jobs", data={"user_id": user["id"]})
         self._assert_status_code_is(jobs_response, 403)
         assert jobs_response.json() == {"err_msg": "Only admins can index the jobs of others", "err_code": 403006}
+
+    @uses_test_history(require_new=True)
+    def test_index_handler_runner_filters(self, history_id):
+        self.__history_with_new_dataset(history_id)
+
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}", admin=True).json()
+        job = jobs[0]
+        handler = job["handler"]
+        assert handler
+        runner = job["job_runner_name"]
+        assert runner
+
+        # Free text search includes handler and runner for admin list view.
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}&search={handler}", admin=True).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search={handler}suffixnotfound", admin=True
+        ).json()
+        assert not jobs
+        jobs = self._get(f"jobs?view=admin_job_list&history_id={history_id}&search={runner}", admin=True).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search={runner}suffixnotfound", admin=True
+        ).json()
+        assert not jobs
+
+        # Test tags for runner and handler specifically.
+        assert runner != handler
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=handler:%27{handler}%27", admin=True
+        ).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=runner:%27{handler}%27", admin=True
+        ).json()
+        assert not jobs
+
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=runner:%27{runner}%27", admin=True
+        ).json()
+        assert jobs
+        jobs = self._get(
+            f"jobs?view=admin_job_list&history_id={history_id}&search=handler:%27{runner}%27", admin=True
+        ).json()
+        assert not jobs
 
     @uses_test_history(require_new=True)
     def test_index_multiple_states_filter(self, history_id):
@@ -213,27 +295,50 @@ steps:
 
     @uses_test_history(require_new=True)
     def test_show(self, history_id):
-        # Create HDA to ensure at least one job exists...
-        self.__history_with_new_dataset(history_id)
-
-        jobs_response = self._get("jobs")
-        first_job = jobs_response.json()[0]
+        job_properties_tool_run = self.dataset_populator.run_tool(
+            tool_id="job_properties",
+            inputs={},
+            history_id=history_id,
+        )
+        first_job = self.__jobs_index()[0]
         self._assert_has_key(first_job, "id", "state", "exit_code", "update_time", "create_time")
 
-        job_id = first_job["id"]
-        show_jobs_response = self._get(f"jobs/{job_id}")
+        job_id = job_properties_tool_run["jobs"][0]["id"]
+        show_jobs_response = self.dataset_populator.get_job_details(job_id)
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
         self._assert_has_key(job_details, "id", "state", "exit_code", "update_time", "create_time")
 
-        show_jobs_response = self._get(f"jobs/{job_id}", {"full": True})
+        show_jobs_response = self.dataset_populator.get_job_details(job_id, full=True)
         self._assert_status_code_is(show_jobs_response, 200)
 
         job_details = show_jobs_response.json()
         self._assert_has_key(
-            job_details, "id", "state", "exit_code", "update_time", "create_time", "stdout", "stderr", "job_messages"
+            job_details,
+            "create_time",
+            "exit_code",
+            "id",
+            "job_messages",
+            "job_stderr",
+            "job_stdout",
+            "state",
+            "stderr",
+            "stdout",
+            "tool_stderr",
+            "tool_stdout",
+            "update_time",
         )
+
+        self.dataset_populator.wait_for_job(job_id, assert_ok=True)
+        show_jobs_response = self.dataset_populator.get_job_details(job_id, full=True)
+        job_details = show_jobs_response.json()
+        assert "The bool is not true\n" not in job_details["job_stdout"]
+        assert "The bool is very not true\n" not in job_details["job_stderr"]
+        assert job_details["tool_stdout"] == "The bool is not true\n"
+        assert job_details["tool_stderr"] == "The bool is very not true\n"
+        assert "The bool is not true\n" in job_details["stdout"]
+        assert "The bool is very not true\n" in job_details["stderr"]
 
     @uses_test_history(require_new=True)
     def test_show_security(self, history_id):
@@ -840,7 +945,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
         empty_search_response = self._post("jobs/search", data=search_payload)
         self._assert_status_code_is(empty_search_response, 200)
-        self.assertEqual(len(empty_search_response.json()), 0)
+        assert len(empty_search_response.json()) == 0
         tool_response = self._post("tools", data=search_payload)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
         self._search(search_payload, expected_search_count=1)

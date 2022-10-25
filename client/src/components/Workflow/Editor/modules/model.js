@@ -112,7 +112,7 @@ export function toSimple(workflow) {
             tool_state: node.tool_state,
             errors: node.errors,
             input_connections: input_connections,
-            position: _scaledBoundingClientRect(node.element, canvasZoom),
+            position: _scaledNodePosition(node.element, canvasZoom),
             annotation: node.annotation,
             post_job_actions: node.postJobActions,
             uuid: node.uuid,
@@ -129,11 +129,13 @@ export function toSimple(workflow) {
     return { steps: nodes, report, license, creator, annotation, name };
 }
 
-function _scaledBoundingClientRect(element, canvasZoom) {
+function _scaledNodePosition(element, canvasZoom) {
     const rect = element.getBoundingClientRect();
-    rect.x /= canvasZoom;
-    rect.y /= canvasZoom;
-    return rect;
+    const coords = {
+        left: rect.left / canvasZoom,
+        top: rect.top / canvasZoom,
+    };
+    return coords;
 }
 
 function _rectifyOutputs(workflow) {

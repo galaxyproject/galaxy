@@ -25,6 +25,7 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
                 ext: item.get("extension", "auto"),
                 space_to_tab: item.get("space_to_tab"),
                 to_posix_lines: item.get("to_posix_lines"),
+                deferred: item.get("deferred"),
             };
             switch (item.get("file_mode")) {
                 case "new":
@@ -84,7 +85,6 @@ export function uploadModelsToPayload(items, history_id, composite = false) {
         })
         .filter((item) => item)
         .flat();
-
     const target = {
         destination: { type: "hdas" },
         elements: elements,
@@ -117,19 +117,19 @@ export const commonProps = {
     },
     chunkUploadSize: {
         type: Number,
-        required: true,
+        default: 1024,
     },
     fileSourcesConfigured: {
         type: Boolean,
-        required: true,
+        default: false,
     },
     ftpUploadSite: {
         type: String,
         default: "",
     },
-    defaultGenome: {
+    defaultDbKey: {
         type: String,
-        default: UploadUtils.DEFAULT_GENOME,
+        default: UploadUtils.DEFAULT_DBKEY,
     },
     defaultExtension: {
         type: String,
@@ -155,12 +155,11 @@ export const commonProps = {
     },
     selectable: {
         type: Boolean,
-        required: false,
         default: false,
     },
     auto: {
         type: Object,
-        default: function () {
+        default: () => {
             return UploadUtils.AUTO_EXTENSION;
         },
     },

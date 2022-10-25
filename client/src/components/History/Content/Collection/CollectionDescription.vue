@@ -1,12 +1,20 @@
 <template>
-    <h6 class="description mt-1">
-        a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-    </h6>
+    <div>
+        <h6 class="description mt-1">
+            a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+        </h6>
+        <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
+    </div>
 </template>
 
 <script>
+import CollectionProgress from "./CollectionProgress";
+import { JobStateSummary } from "./JobStateSummary";
+
 export default {
+    components: { CollectionProgress },
     props: {
+        jobStateSummary: { type: JobStateSummary, required: true },
         collectionType: { type: String, required: true },
         elementCount: { type: Number, required: false, default: undefined },
         elementsDatatypes: { type: Array, required: false, default: () => [] },

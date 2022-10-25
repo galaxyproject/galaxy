@@ -24,7 +24,7 @@ def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=Non
     metadata_strategy = metadata_strategy_override or config.metadata_strategy
     if metadata_strategy == "legacy":
         raise Exception("legacy metadata_strategy has been removed")
-    elif metadata_strategy == "extended" and tool_id != "__SET_METADATA__":
+    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__":
         return ExtendedDirectoryMetadataGenerator(job_id)
     else:
         return PortableDirectoryMetadataGenerator(job_id)
@@ -170,7 +170,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             key = name
 
             def _metadata_path(what):
-                return os.path.join(metadata_dir, f"metadata_{what}_{key}")
+                return os.path.join(metadata_dir, f"metadata_{what}_{key}")  # noqa: B023
 
             _initialize_metadata_inputs(
                 dataset, _metadata_path, tmp_dir, kwds, real_metadata_object=self.write_object_store_conf
@@ -187,7 +187,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             }
 
         metadata_params_path = os.path.join(metadata_dir, "params.json")
-        datatypes_config = os.path.relpath(datatypes_config, tmp_dir)
+        datatypes_config = os.path.relpath(datatypes_config, tmp_dir) if datatypes_config else None
         metadata_params = {
             "job_metadata": job_relative_path(job_metadata),
             "provided_metadata_style": provided_metadata_style,
@@ -252,7 +252,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
                 script_path = os.path.join(metadata_dir, "set.py")
                 with open(script_path, "w") as f:
                     f.write(SET_METADATA_SCRIPT)
-                return 'python "metadata/set.py"'
+                return "python metadata/set.py"
         else:
             # return args to galaxy_ext.metadata.set_metadata required to build
             return ""

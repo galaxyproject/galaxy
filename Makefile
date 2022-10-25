@@ -2,9 +2,8 @@
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=22.05
+RELEASE_CURR:=22.09
 RELEASE_UPSTREAM:=upstream
-TARGET_BRANCH=$(RELEASE_UPSTREAM)/dev
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
 DOCS_DIR=doc
@@ -28,7 +27,7 @@ docs: ## Generate HTML documentation.
 # Run following commands to setup the Python portion of the requirements:
 #   $ ./scripts/common_startup.sh
 #   $ . .venv/bin/activate
-#   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
+#   $ pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
@@ -44,6 +43,9 @@ diff-format:  ## Format Python code changes since last commit
 format:  ## Format Python code base
 	$(IN_VENV) isort .
 	$(IN_VENV) black .
+
+remove-unused-imports:  ## Remove unused imports in Python code base
+	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
 
 list-dependency-updates: setup-venv
 	$(IN_VENV) pip list --outdated --format=columns
@@ -158,6 +160,9 @@ clean-cwl-conformance-tests:  ## Clean CWL conformance tests
 update-cwl-conformance-tests: ## update CWL conformance tests
 	$(MAKE) clean-cwl-conformance-tests
 	$(MAKE) generate-cwl-conformance-tests
+
+skip-client: ## Run only the server, skipping the client build.
+	GALAXY_SKIP_CLIENT_BUILD=1 sh run.sh
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN

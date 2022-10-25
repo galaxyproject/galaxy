@@ -4,7 +4,7 @@ from typing import List
 from ._framework import ApiTestCase
 
 
-class DisplayApplicationsApiTestCase(ApiTestCase):
+class TestDisplayApplicationsApi(ApiTestCase):
     def test_index(self):
         response = self._get("display_applications")
         self._assert_status_code_is(response, 200)

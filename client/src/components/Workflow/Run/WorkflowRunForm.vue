@@ -36,16 +36,15 @@
                     </template>
                 </FormCard>
                 <div v-for="step in model.steps" :key="step.index">
-                    <WorkflowRunToolStep
-                        v-if="step.step_type == 'tool'"
+                    <WorkflowRunDefaultStep
+                        v-if="step.step_type == 'tool' || step.step_type == 'subworkflow'"
                         :model="step"
-                        :step-data="stepData"
+                        :replace-params="getReplaceParams(step.inputs)"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
-                        :wp-data="wpData"
                         :history-id="currentHistoryId"
                         @onChange="onToolStepInputs"
                         @onValidation="onValidation" />
-                    <WorkflowRunDefaultStep
+                    <WorkflowRunInputStep
                         v-else
                         :model="step"
                         :validation-scroll-to="getValidationScrollTo(step.index)"
@@ -65,9 +64,10 @@ import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
-import WorkflowRunToolStep from "./WorkflowRunToolStep";
-import { invokeWorkflow } from "./services";
+import WorkflowRunInputStep from "./WorkflowRunInputStep";
 import { allowCachedJobs } from "components/Tool/utilities";
+import { getReplacements } from "./model";
+import { invokeWorkflow } from "./services";
 
 export default {
     components: {
@@ -78,7 +78,7 @@ export default {
         FormElement,
         UserHistories,
         WorkflowRunDefaultStep,
-        WorkflowRunToolStep,
+        WorkflowRunInputStep,
     },
     props: {
         model: {
@@ -93,6 +93,7 @@ export default {
             stepValidations: {},
             stepScrollTo: {},
             wpData: {},
+            inputs: {},
             historyData: {},
             useCachedJobs: false,
             historyInputs: [
@@ -145,6 +146,9 @@ export default {
         reuseAllowed(user) {
             return allowCachedJobs(user.preferences);
         },
+        getReplaceParams(inputs) {
+            return getReplacements(inputs, this.stepData, this.wpData);
+        },
         getValidationScrollTo(stepId) {
             if (this.stepScrollTo.stepId == stepId) {
                 return this.stepScrollTo.stepError;
@@ -152,8 +156,7 @@ export default {
             return [];
         },
         onDefaultStepInputs(stepId, data) {
-            this.stepData[stepId] = data;
-            this.stepData = Object.assign({}, this.stepData);
+            this.inputs[stepId] = data.input;
         },
         onToolStepInputs(stepId, data) {
             this.stepData[stepId] = data;
@@ -198,6 +201,7 @@ export default {
                 resource_params: this.resourceData,
                 replacement_params: this.wpData,
                 use_cached_job: this.useCachedJobs,
+                inputs: this.inputs,
                 parameters: parameters,
                 // Tool form will submit flat maps for each parameter
                 // (e.g. "repeat_0|cond|param": "foo" instead of nested

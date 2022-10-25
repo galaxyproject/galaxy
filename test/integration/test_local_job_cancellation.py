@@ -25,13 +25,13 @@ class CancelsJob:
 
     def _wait_for_job_running(self, job_id):
         self.galaxy_interactor.wait_for(
-            lambda: self._get("jobs/%s" % job_id).json()["state"] != "running",
+            lambda: self._get(f"jobs/{job_id}").json()["state"] != "running",
             what="Wait for job to start running",
             maxseconds=60,
         )
 
 
-class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestCase):
+class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 
@@ -53,7 +53,7 @@ class LocalJobCancellationTestCase(CancelsJob, integration_util.IntegrationTestC
             sa_session.add(job)
             sa_session.flush()
             self.galaxy_interactor.wait_for(
-                lambda: self._get("jobs/%s" % job_id).json()["state"] != "error",
+                lambda: self._get(f"jobs/{job_id}").json()["state"] != "error",
                 what="Wait for job to end in error",
                 maxseconds=60,
             )

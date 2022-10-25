@@ -1,6 +1,6 @@
 name: Galaxy UI
 description: A gentle introduction to the Galaxy User Interface
-title_default: "Welcome to Galaxy"
+title_default: Welcome to Galaxy
 tags:
   - "core"
   - "UI"
@@ -9,31 +9,26 @@ tags:
 steps:
     # 'title's will be displayed in the header of each step-container
     # If you don't specify any title, a default title is used, defined above.
-    - title: "Welcome to Galaxy"
+    - title: Welcome to Galaxy
       # 'content' is the actual text that is shown to the user
       content: "This short tour will guide you through Galaxy's user interface. You can leave the tour at any time by pressing escape."
-      # backdrop is just one of many properties you can attach to one step-container,
-      # a full reference can be found at http://bootstraptour.com/api/
-      backdrop: true
 
     # 'element' is the JQuery Selector (http://api.jquery.com/category/selectors/) of the element you want to describe
     # In this case we want to highlight the Upload button with the `.upload-button` selector
     - title: "Upload your data"
-      element: ".upload-button"
+      component: upload.start
       intro: "Galaxy supports many ways to get in your data. Use this button to upload your data."
       # You can trigger click() events on arbitrary elements before (preclick) or after (postclick) the element is shown
-      postclick:
-        - ".upload-button"
+      postclick: true
 
     - title: "Upload your data"
       element: "#btn-local"
       intro: "You can upload data from your computer."
-      postclick:
-        - "#btn-new"
 
     - title: "Upload your data"
       element: "#btn-new"
       intro: "Copy and paste data directly into Galaxy or include URLs that lead to your data"
+      preclick: true
 
     - title: "Insert URLs"
       element: ".upload-text-content"
@@ -46,14 +41,12 @@ steps:
     - title: "Start the upload"
       element: "#btn-start"
       intro: "Upload the data into your Galaxy history."
-      postclick:
-        - "#btn-start"
+      postclick: true
 
     - title: "Close upload/download manager"
       element: "#btn-close"
       intro: "Close the upload manager with this button or with a click outside of the manager window."
-      postclick:
-        - "#btn-close"
+      postclick: true
 
     - title: "Tools"
       element: "#left"
@@ -69,17 +62,16 @@ steps:
       textinsert: 'filter'
 
     - title: "Select a tool"
-      element: 'a[href$="tool_runner?tool_id=Filter1"]'
+      component: tool_panel.tool_link(tool_id=Filter1)
       intro: "Select and load a tool for your analysis by clicking the underlined link."
-      postclick:
-        - 'a[href$="tool_runner?tool_id=Filter1"]'
+      postclick: true
 
     - title: "Filter Tool"
       element: '.center-panel'
       intro: "Your tool is loaded into the main Galaxy page and ready for use."
 
     - title: "Tool parameters"
-      element: '.center-panel .portlet-content'
+      element: '.center-panel #tool-card-body'
       intro: "Here you can choose your tool parameters. Select your input dataset from your history and specify parameters for your analysis."
 
     - title: "Tool help"
@@ -91,8 +83,7 @@ steps:
       element: '#execute'
       intro: "Click on 'Execute' to run your tool and send it to the compute cluster.
               Don't be afraid to test different settings in parallel. Galaxy can handle multiple runs of the same tool."
-      postclick:
-        - '#execute'
+      postclick: true
 
     - title: "History"
       element: "#right"
@@ -101,70 +92,67 @@ steps:
               grey this means you are queued and need to wait until your tool can be started. If your dataset turns into red, an error has occurred. Please report the bug to the Galaxy team with the bug report button."
 
     - title: "View dataset"
-      element: "#current-history-panel div.content-item button[title='Display']"
+      element: "#current-history-panel div.content-item .display-btn"
       intro: "View your dataset by clicking the eye button."
 
     - title: "Rename dataset"
-      element: "#current-history-panel div.content-item button[title='Edit attributes']"
+      element: "#current-history-panel div.content-item .edit-btn"
       intro: "Rename your dataset by clicking the pencil button."
 
     - title: "Dataset information"
       element: "div.content-item .content-title"
       intro: "This is your dataset. You can get more informations and options like different visualizations by clicking on it."
-      postclick:
-        - "div.content-item .content-title"
-  
+      postclick: true
+
     - title: "Remove dataset"
-      element: "#current-history-panel div.content-item button[title='Delete']"
+      element: "#current-history-panel div.content-item .delete-btn"
       intro: "Delete your dataset by clicking the trash-button."
 
     - title: "Dataset information"
-      element: "#current-history-panel div.content-item button[title='Dataset Details']"
+      element: "#current-history-panel div.content-item .params-btn"
       intro: "Clicking on your dataset provides you with more information regarding your dataset (e.g. filetype or size)."
-      preclick:
-        - "#current-history-panel div.content-item button[title='Dataset Details']"
+      preclick: true
 
     - title: "Re-run tool"
-      element: "#current-history-panel div.content-item button[title='Run Job Again']"
+      element: "#current-history-panel div.content-item .rerun-btn"
       intro: "By clicking the reload button, you can re-run your tool again (e.g. with different parameters or on another dataset)."
 
     - title: "Panel collapse"
       element: "#left > div.unified-panel-footer > div.panel-collapse.left"
       intro: "To extend the view for your main Galaxy page in the middle, you can collapse the tool panel on the left hand side. Clicking the panel arrow on the right hand side, collapses the history."
-      postclick:
-        - "#left > div.unified-panel-footer > div.panel-collapse.left"
+      postclick: true
 
-    - title: 'Top panel'
+    - title: "Top panel"
       element: "#masthead"
       intro: "The top panel will give you access to a lot of useful things."
 
-    - title: 'Analyze data'
+    - title: "Analyze data"
       element: "#analysis"
       intro: "This is the current view. Start your <b>Analysis</b> from here."
 
-    - title: 'Workflow'
+    - title: "Workflow"
       element: "#workflow"
       intro: "Create, manage, import, export and share your <b>Workflows</b>."
 
-    - title: 'Shared data'
+    - title: "Shared data"
       element: "#shared"
       intro: "Get access to all <b>Workflows</b>, <b>Histories</b>, <b>Pages</b>, <b>Visualizations</b> and your <b>Data Library</b> that are shared with you."
 
-    - title: 'Visualization'
+    - title: "Visualization"
       element: "#visualization"
       intro: "Galaxy offers a lot of visualizations to review your data!"
 
-    - title: 'Help'
+    - title: "Help"
       element: "#help"
       intro: "Here you get more help from the Galaxy <b>Community</b> with Videos, a QA board and more tours."
 
-    - title: 'User Preferences'
+    - title: "User Preferences"
       element: "#user"
       intro: "Login and start your analysis!"
 
-    - title: 'Scratchbook'
-      element: "#enable-scratchbook"
-      intro: "Scratchbook offers you multiple visualizations next to each other. Have a look at our Scratchbook tour to learn more about it."
+    - title: "Window Manager"
+      element: "#enable-window-manager"
+      intro: "Window Manager offers you multiple visualizations next to each other. Have a look at our Window Manager tour to learn more about it."
 
     - title: "Enjoy Galaxy"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"

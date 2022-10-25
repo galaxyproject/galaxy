@@ -2,11 +2,12 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestQuotaIntegration(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["enable_quotas"] = True
 
     def setUp(self):

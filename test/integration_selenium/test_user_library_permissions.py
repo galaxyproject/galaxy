@@ -17,6 +17,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         user_import_dir = cls.user_import_dir()
         config["user_library_import_dir"] = user_import_dir
 

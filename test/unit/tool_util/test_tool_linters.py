@@ -5,6 +5,7 @@ import pytest
 
 from galaxy.tool_util.lint import (
     lint_tool_source_with,
+    lint_xml_with,
     LintContext,
     XMLLintMessageLine,
     XMLLintMessageXPath,
@@ -22,6 +23,7 @@ from galaxy.tool_util.linters import (
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
+from galaxy.util import parse_xml
 from galaxy.util.xml_macros import load_with_references
 
 # TODO tests tool xml for general linter
@@ -361,45 +363,91 @@ INPUTS_VALIDATOR_CORRECT = """
 <tool>
     <inputs>
         <param name="data_param" type="data" format="data">
-            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message" negate="true"/>
-            <validator type="unspecified_build" message="cutom validation message" negate="true"/>
-            <validator type="dataset_ok_validator" message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message" negate="true"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message" negate="true"/>
+            <validator type="unspecified_build" message="custom validation message" negate="true"/>
+            <validator type="dataset_ok_validator" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_range" metadata_name="sequences" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split="," metadata_name="dbkey" message="custom validation message" negate="true"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" metadata_name="dbkey" message="custom validation message" negate="true"/>
         </param>
         <param name="collection_param" type="collection">
-            <validator type="metadata" check="md1,md2" skip="md3,md4" message="cutom validation message"/>
-            <validator type="unspecified_build" message="cutom validation message"/>
-            <validator type="dataset_ok_validator" message="cutom validation message"/>
-            <validator type="dataset_metadata_in_range" min="0" max="100" exclude_min="true" exclude_max="true" message="cutom validation message"/>
-            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split=","  message="cutom validation message"/>
-            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
+            <validator type="metadata" check="md1,md2" skip="md3,md4" message="custom validation message"/>
+            <validator type="unspecified_build" message="custom validation message"/>
+            <validator type="dataset_ok_validator" message="custom validation message"/>
+            <validator type="dataset_metadata_in_range" metadata_name="sequences" min="0" max="100" exclude_min="true" exclude_max="true" message="custom validation message"/>
+            <validator type="dataset_metadata_in_file" filename="file.tsv" metadata_column="3" split="," metadata_name="dbkey" message="custom validation message"/>
+            <validator type="dataset_metadata_in_data_table" table_name="datatable_name" metadata_column="3" metadata_name="dbkey" message="custom validation message"/>
         </param>
         <param name="text_param" type="text">
             <validator type="regex">reg.xp</validator>
-            <validator type="length" min="0" max="100" message="cutom validation message"/>
-            <validator type="empty_field" message="cutom validation message"/>
-            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message"/>
-            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+            <validator type="length" min="0" max="100" message="custom validation message"/>
+            <validator type="empty_field" message="custom validation message"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message"/>
+            <validator type="expression" message="custom validation message">somepythonexpression</validator>
         </param>
         <param name="select_param" type="select">
             <options from_data_table="bowtie2_indexes"/>
             <validator type="no_options" negate="true"/>
             <validator type="regex" negate="true">reg.xp</validator>
-            <validator type="length" min="0" max="100" message="cutom validation message" negate="true"/>
-            <validator type="empty_field" message="cutom validation message" negate="true"/>
-            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="cutom validation message" negate="true"/>
-            <validator type="expression" message="cutom validation message" negate="true">somepythonexpression</validator>
+            <validator type="length" min="0" max="100" message="custom validation message" negate="true"/>
+            <validator type="empty_field" message="custom validation message" negate="true"/>
+            <validator type="value_in_data_table" table_name="datatable_name" metadata_column="3" message="custom validation message" negate="true"/>
+            <validator type="expression" message="custom validation message" negate="true">somepythonexpression</validator>
         </param>
         <param name="int_param" type="integer">
             <validator type="in_range" min="0" max="100" exclude_min="true" exclude_max="true" negate="true"/>
-            <validator type="expression" message="cutom validation message">somepythonexpression</validator>
+            <validator type="expression" message="custom validation message">somepythonexpression</validator>
         </param>
     </inputs>
 </tool>
 """
 
+INPUTS_TYPE_CHILD_COMBINATIONS = """
+<tool>
+    <inputs>
+        <param name="text_param" type="text">
+            <options/>
+        </param>
+        <param name="select_param" type="select">
+            <options from_data_table="data_table">
+                <option name="x" value="y"/>
+            </options>
+        </param>
+        <param name="data_param" type="data" format="tabular">
+            <column/>
+        </param>
+    </inputs>
+</tool>
+"""
+
+INPUTS_DUPLICATE_NAMES = """
+<tool>
+    <inputs>
+        <param name="dup" type="text"/>
+        <param name="dup" type="text"/>
+        <param name="dup_in_section" type="text"/>
+        <section name="sec">
+            <param name="dup_in_section" type="text"/>
+        </section>
+        <conditional name="cond">
+            <param name="dup_in_cond" type="select">
+                <option value="a">a</option>
+                <option value="b">b</option>
+            </param>
+            <when value="a">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+            <when value="b">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+        </conditional>
+        <param name="dup_in_output" type="text"/>
+    </inputs>
+    <outputs>
+        <data name="dup_in_output"/>
+    </outputs>
+</tool>
+"""
 
 # test tool xml for outputs linter
 OUTPUTS_MISSING = """
@@ -443,6 +491,25 @@ OUTPUTS_COLLECTION_FORMAT_SOURCE = """
             <data name="forward" format_source="input_readpair" />
             <data name="reverse" format_source="input_readpair" format="fastq"/>
         </collection>
+    </outputs>
+</tool>
+"""
+
+# check that setting format with actions is supported
+OUTPUTS_FORMAT_ACTION = """
+<tool>
+    <outputs>
+        <data name="output">
+            <actions>
+                <conditional name="library.type">
+                    <when value="paired">
+                        <action type="format">
+                            <option type="from_param" name="library.input_2" param_attribute="ext" />
+                        </action>
+                    </when>
+                </conditional>
+            </actions>
+        </data>
     </outputs>
 </tool>
 """
@@ -622,6 +689,64 @@ TESTS_VALID = """
     </tests>
 </tool>
 """
+TESTS_OUTPUT_TYPE_MISMATCH = """
+<tool>
+    <outputs>
+        <data name="data_name"/>
+        <collection name="collection_name" type="list:list"/>
+    </outputs>
+    <tests>
+        <test>
+            <output_collection name="data_name"/>
+            <output name="collection_name"/>
+        </test>
+    </tests>
+</tool>
+"""
+TESTS_DISCOVER_OUTPUTS = """
+<tool>
+    <outputs>
+        <data name="data_name">
+            <discover_datasets/>
+        </data>
+        <collection name="collection_name" type="list:list">
+            <discover_datasets/>
+        </collection>
+    </outputs>
+    <tests>
+        <!-- this should be fine -->
+        <test>
+            <output name="data_name">
+                <discovered_dataset/>
+            </output>
+            <output_collection name="collection_name">
+                <element count="2"/>
+            </output_collection>
+        </test>
+        <!-- this should be fine as well -->
+        <test>
+            <output name="data_name" count="2"/>
+            <output_collection name="collection_name">
+                <element>
+                    <element/>
+                </element>
+            </output_collection>
+        </test>
+        <!-- no count or discovered_dataset/element  -->
+        <test>
+            <output name="data_name"/>
+            <output_collection name="collection_name"/>
+        </test>
+        <!-- no nested element and count at element -->
+        <test>
+            <output name="data_name" count="1"/>
+            <output_collection name="collection_name" count="1">
+                <element/>
+            </output_collection>
+        </test>
+    </tests>
+</tool>
+"""
 
 # tool xml for xml_order linter
 XML_ORDER = """
@@ -629,6 +754,17 @@ XML_ORDER = """
     <wrong_tag/>
     <command/>
     <stdio/>
+</tool>
+"""
+
+TOOL_WITH_COMMENTS = """
+<tool>
+    <stdio>
+    <!-- This is a comment -->
+    </stdio>
+    <outputs>
+    <!-- This is a comment -->
+    </outputs>
 </tool>
 """
 
@@ -649,6 +785,15 @@ def get_xml_tool_source(xml_string):
         tmp.flush()
         tool_path = tmp.name
         return load_with_references(tool_path)[0]
+
+
+def get_tool_xml_exact(xml_string):
+    """Returns the tool XML as it is, without stripping comments or anything else."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
+        tmp.write(xml_string)
+        tmp.flush()
+        tool_path = tmp.name
+        return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
 
 
 def failed_assert_print(lint_ctx):
@@ -1095,6 +1240,40 @@ def test_inputs_validator_correct(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_inputs_type_child_combinations(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_TYPE_CHILD_COMBINATIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert (
+        "Parameter [text_param] './options' tags are only allowed for parameters of type ['select', 'drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [select_param] './options/option' tags are only allowed for parameters of type ['drill_down']"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Parameter [data_param] './column' tags are only allowed for parameters of type ['data_column']"
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 3
+
+
+def test_inputs_duplicate_names(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DUPLICATE_NAMES)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert "Tool defines multiple parameters with the same name: 'dup'" in lint_ctx.error_messages
+    assert (
+        "Tool defines an output with a name equal to the name of an input: 'dup_in_output'" in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 2
+
+
 def test_inputs_repeats(lint_ctx):
     tool_source = get_xml_tool_source(REPEATS)
     run_lint(lint_ctx, inputs.lint_repeats, tool_source)
@@ -1174,6 +1353,15 @@ def test_outputs_collection_format_source(lint_ctx):
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
+def test_outputs_format_action(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_ACTION)
+    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
 
 
@@ -1288,12 +1476,12 @@ def test_tests_param_output_names(lint_ctx):
     assert "Test 1: Test param non_existent_test_name not found in the inputs" in lint_ctx.error_messages
     assert "Test 1: Found output tag without a name defined." in lint_ctx.error_messages
     assert (
-        "Test 1: Found output tag with unknown name [nonexistent_output], valid names [['existent_output']]"
+        "Test 1: Found output tag with unknown name [nonexistent_output], valid names ['existent_output', 'existent_collection']"
         in lint_ctx.error_messages
     )
     assert "Test 1: Found output_collection tag without a name defined." in lint_ctx.error_messages
     assert (
-        "Test 1: Found output_collection tag with unknown name [nonexistent_collection], valid names [['existent_collection']]"
+        "Test 1: Found output_collection tag with unknown name [nonexistent_collection], valid names ['existent_output', 'existent_collection']"
         in lint_ctx.error_messages
     )
     assert not lint_ctx.info_messages
@@ -1353,6 +1541,44 @@ def test_tests_asserts(lint_ctx):
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 9
+
+
+def test_tests_output_type_mismatch(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_OUTPUT_TYPE_MISMATCH)
+    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    assert (
+        "Test 1: test output collection_name does not correspond to a 'data' output, but a 'collection'"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 1: test collection output 'data_name' does not correspond to a 'output_collection' output, but a 'data'"
+        in lint_ctx.error_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 2
+
+
+def test_tests_discover_outputs(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
+    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    assert (
+        "Test 3: test output 'data_name' must have a 'count' attribute and/or 'discovered_dataset' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 3: test collection 'collection_name' must have a 'count' attribute or 'element' children"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Test 4: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        in lint_ctx.error_messages
+    )
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 4
 
 
 def test_xml_order(lint_ctx):
@@ -1501,9 +1727,9 @@ def test_linting_cwl_tool(lint_ctx):
         tool_source = tool_sources[0][1]
         lint_tool_source_with(lint_ctx, tool_source)
     assert "Tool defines a version [0.0.1]." in lint_ctx.valid_messages
-    assert "Tool defines a name [tool]." in lint_ctx.valid_messages
-    assert "Tool defines an id [tool]." in lint_ctx.valid_messages
-    assert "Tool specifies profile version [16.04]." in lint_ctx.valid_messages
+    assert "Tool defines a name [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool defines an id [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [17.09]." in lint_ctx.valid_messages
     assert "CWL appears to be valid." in lint_ctx.info_messages
     assert "Description of tool is empty or absent." in lint_ctx.warn_messages
     assert "Tool does not specify a DockerPull source." in lint_ctx.warn_messages
@@ -1512,3 +1738,10 @@ def test_linting_cwl_tool(lint_ctx):
     assert len(lint_ctx.valid_messages) == 4
     assert len(lint_ctx.warn_messages) == 2
     assert not lint_ctx.error_messages
+
+
+def test_xml_comments_are_ignored(lint_ctx: LintContext):
+    tool_xml = get_tool_xml_exact(TOOL_WITH_COMMENTS)
+    lint_xml_with(lint_ctx, tool_xml)
+    for lint_message in lint_ctx.message_list:
+        assert "Comment" not in lint_message.message

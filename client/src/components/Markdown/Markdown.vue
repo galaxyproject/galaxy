@@ -6,6 +6,7 @@
                 <sts-download-button
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
+                    variant="link"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
                     title="Download PDF"></sts-download-button>
@@ -21,13 +22,13 @@
                 </b-button>
                 <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
                 <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
-                    ><br />
-                    <small>Username: {{ markdownConfig.username }}</small>
+                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
+                    <br />
+                    <small>Created by {{ markdownConfig.username }}</small>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }}</div>
+                <div class="float-left m-1">Published with Galaxy {{ getVersion }} on {{ getTime }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
@@ -110,7 +111,7 @@ import JobParameters from "./Elements/JobParameters";
 import ToolStd from "./Elements/ToolStd";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
 import Visualization from "./Elements/Visualization";
-import StsDownloadButton from "./StsDownloadButton";
+import StsDownloadButton from "components/StsDownloadButton";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
@@ -206,20 +207,29 @@ export default {
         },
     },
     watch: {
-        markdownConfig: function (config) {
-            const markdown = config.markdown;
-            this.markdownErrors = config.errors || [];
-            this.markdownObjects = this.splitMarkdown(markdown);
-            this.historyDatasets = config.history_datasets || {};
-            this.histories = config.histories || {};
-            this.historyDatasetCollections = config.history_dataset_collections || {};
-            this.workflows = config.workflows || {};
-            this.jobs = config.jobs || {};
-            this.invocations = config.invocations || {};
-            this.loading = false;
+        markdownConfig() {
+            this.initConfig();
         },
     },
+    created() {
+        this.initConfig();
+    },
     methods: {
+        initConfig() {
+            if (Object.keys(this.markdownConfig).length) {
+                const config = this.markdownConfig;
+                const markdown = config.content || config.markdown;
+                this.markdownErrors = config.errors || [];
+                this.markdownObjects = this.splitMarkdown(markdown);
+                this.historyDatasets = config.history_datasets || {};
+                this.histories = config.histories || {};
+                this.historyDatasetCollections = config.history_dataset_collections || {};
+                this.workflows = config.workflows || {};
+                this.jobs = config.jobs || {};
+                this.invocations = config.invocations || {};
+                this.loading = false;
+            }
+        },
         splitMarkdown(markdown) {
             const sections = [];
             let digest = markdown;

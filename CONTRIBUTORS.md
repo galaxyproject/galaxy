@@ -8,6 +8,7 @@ The following individuals have contributed code to Galaxy:
 * Guruprasad Ananda <gua110@bx.psu.edu>
 * Evgeny Anatskiy <evgeny.anatskiy@gmail.com>
 * Florent Angly <florent.angly@gmail.com>
+* Patrick Austin <patrick.austin@stfc.ac.uk>
 * Raj Ayyampalayam <raj76@uga.edu>
 * Abdulrahman Azab <eng.azab@gmail.com>
 * Finn Bacall <finn.bacall@cs.man.ac.uk>
@@ -34,6 +35,7 @@ The following individuals have contributed code to Galaxy:
 * Richard Burhans <burhans@bx.psu.edu>
 * Jennifer Cabral <jencabral@gmail.com>
 * Martin Čech <marten@bx.psu.edu>
+* Eli Chadwick <eli.chadwick@stfc.ac.uk>
 * Ramkrishna Chakrabarty <rc@bx.psu.edu>
 * Matt Chambers <matt.chambers42@gmail.com>
 * Brad Chapman <chapmanb@50mail.com>
@@ -140,7 +142,7 @@ The following individuals have contributed code to Galaxy:
 * Sourav Singh <ssouravsingh12@gmail.com>
 * Clare Sloggett <sloc@unimelb.edu.au>
 * Eteri Sokhoyan @Sokhoyan
-* Nicola Soranzo <nicola.soranzo@tgac.ac.uk> <nsoranzo@tiscali.it> <soranzo@crs4.it>
+* Nicola Soranzo <nicola.soranzo@earlham.ac.uk> <nicola.soranzo@tgac.ac.uk> <nsoranzo@tiscali.it> <soranzo@crs4.it>
 * Nick Stoler <nick@nstoler.com>
 * Roy Storey <kiwiroy@gmail.com>
 * Hanfei Sun <ad9075@gmail.com>

@@ -4,6 +4,7 @@ import shutil
 
 import pytest
 
+from galaxy.datatypes.data import Text
 from galaxy.datatypes.registry import Registry
 from galaxy.util.checkers import (
     is_bz2,
@@ -15,9 +16,9 @@ from galaxy_test.driver import integration_util
 from .test_upload_configuration_options import BaseUploadContentConfigurationInstance
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
-TEST_FILE_DIR = "%s/../../lib/galaxy/datatypes/test" % SCRIPT_DIRECTORY
+TEST_FILE_DIR = f"{SCRIPT_DIRECTORY}/../../lib/galaxy/datatypes/test"
 TestData = collections.namedtuple("TestData", "path datatype uploadable")
-GALAXY_ROOT = os.path.abspath("%s/../../" % SCRIPT_DIRECTORY)
+GALAXY_ROOT = os.path.abspath(f"{SCRIPT_DIRECTORY}/../../")
 DATATYPES_CONFIG = os.path.join(GALAXY_ROOT, "lib/galaxy/config/sample/datatypes_conf.xml.sample")
 PARENT_SNIFFER_MAP = {"fastqsolexa": "fastq"}
 
@@ -28,7 +29,7 @@ def find_datatype(registry, filename):
     for extension in sorted_extensions:
         if filename.endswith(extension) or filename.startswith(extension):
             return registry.datatypes_by_extension[extension]
-    raise Exception("Couldn't guess datatype for file '%s'" % filename)
+    raise Exception(f"Couldn't guess datatype for file '{filename}'")
 
 
 def collect_test_data(registry):
@@ -56,7 +57,7 @@ TEST_CASES = collect_test_data(registry)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_auto(instance, test_data, temp_file):
+def test_upload_datatype_auto(instance, test_data, temp_file, celery_session_worker, celery_session_app):
     upload_datatype_helper(instance, test_data, temp_file)
 
 
@@ -117,4 +118,13 @@ def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=Fals
             )
         )
         temp_file.flush()
-        assert md5_hash_file(test_data.path) == md5_hash_file(temp_file.name)
+        expected_hash = md5_hash_file(test_data.path)
+        test_hash = md5_hash_file(temp_file.name)
+        message = f"Expected md5 sum '{expected_hash}' for {os.path.relpath(test_data.path)}, but test file md5sum is {test_hash}."
+        if expected_hash != test_hash:
+            if isinstance(datatype, Text):
+                with open(test_data.path, "rb") as fh:
+                    fh.seek(-1, os.SEEK_END)
+                    if fh.read() != b"\n":
+                        message = f"{message} You need to add a final newline to {os.path.relpath(test_data.path)}."
+        assert expected_hash == test_hash, message

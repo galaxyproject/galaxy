@@ -13,6 +13,7 @@ import json
 import os
 import random
 import re
+import shlex
 import shutil
 import smtplib
 import stat
@@ -30,6 +31,11 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
+from typing import (
+    Any,
+    Optional,
+    overload,
+)
 from urllib.parse import (
     urlencode,
     urlparse,
@@ -44,6 +50,7 @@ from boltons.iterutils import (
 )
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from typing_extensions import Literal
 
 try:
     import grp
@@ -53,13 +60,17 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
-
-    Element = etree._Element
+    from lxml.etree import (
+        _Element as Element,
+        ElementTree,
+    )
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-
-    Element = etree.Element
+    from xml.etree.ElementTree import (  # noqa: F401
+        Element,
+        ElementTree,
+    )
 
 try:
     import docutils.core as docutils_core
@@ -74,7 +85,16 @@ from .path import (  # noqa: F401
     safe_contains,
     safe_makedirs,
     safe_relpath,
+    StrPath,
 )
+
+try:
+    shlex_join = shlex.join  # type: ignore[attr-defined]
+except AttributeError:
+    # Python < 3.8
+    def shlex_join(split_command):
+        return " ".join(map(shlex.quote, split_command))
+
 
 inflector = Inflector()
 
@@ -264,7 +284,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname, strip_whitespace=True, remove_comments=True):
+def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> etree.ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:
@@ -272,7 +292,7 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
         # but lxml doesn't do this by default
         parser = etree.XMLParser(remove_comments=remove_comments)
     try:
-        tree = etree.parse(fname, parser=parser)
+        tree = etree.parse(str(fname), parser=parser)
         root = tree.getroot()
         if strip_whitespace:
             for elem in root.iter("*"):
@@ -291,7 +311,7 @@ def parse_xml(fname, strip_whitespace=True, remove_comments=True):
     return tree
 
 
-def parse_xml_string(xml_string, strip_whitespace=True):
+def parse_xml_string(xml_string, strip_whitespace=True) -> etree.Element:
     try:
         tree = etree.fromstring(xml_string)
     except ValueError as e:
@@ -309,10 +329,10 @@ def parse_xml_string(xml_string, strip_whitespace=True):
 
 
 def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
-    return etree.ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
+    return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem, pretty=False):
+def xml_to_string(elem, pretty=False) -> str:
     """
     Returns a string from an xml tree.
     """
@@ -998,7 +1018,7 @@ def asbool(obj):
     return bool(obj)
 
 
-def string_as_bool(string: str) -> bool:
+def string_as_bool(string: Any) -> bool:
     if str(string).lower() in ("true", "yes", "on", "1"):
         return True
     else:
@@ -1024,7 +1044,7 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False) -> typing.List[typing.Any]:
+def listify(item, do_strip=False) -> typing.List[Any]:
     """
     Make a single item a single item list.
 
@@ -1075,7 +1095,35 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + "0" * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error="replace", strip_null=False, log_exception=True):
+@overload
+def unicodify(  # type: ignore[misc]
+    value: Literal[None],
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> None:
+    ...
+
+
+@overload
+def unicodify(
+    value: Any,
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> str:
+    ...
+
+
+def unicodify(
+    value: Any,
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> Optional[str]:
     """
     Returns a Unicode string or None.
 
@@ -1804,9 +1852,3 @@ class StructuredExecutionTimer:
     @property
     def elapsed(self):
         return time.time() - self.begin
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__], verbose=False)

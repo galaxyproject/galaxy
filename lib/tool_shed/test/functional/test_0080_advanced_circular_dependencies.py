@@ -21,15 +21,7 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_column_repository(self):
         """Create and populate the column_maker repository."""
@@ -40,7 +32,7 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -65,7 +57,7 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
             description=convert_repository_description,
             long_description=convert_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -82,17 +74,13 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0020_create_repository_dependencies(self):
         """Upload a repository_dependencies.xml file that specifies the current revision of convert_chars_0080 to the column_maker_0080 repository."""
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         repository_dependencies_path = self.generate_temp_path("test_0080", additional_paths=["convert"])
         repository_tuple = (
             self.url,
             convert_repository.name,
-            convert_repository.user.username,
+            convert_repository.owner,
             self.get_repository_tip(convert_repository),
         )
         self.create_repository_dependency(
@@ -101,17 +89,13 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0025_create_dependency_on_filtering(self):
         """Upload a repository_dependencies.xml file that specifies the current revision of filtering to the freebayes_0040 repository."""
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         repository_dependencies_path = self.generate_temp_path("test_0080", additional_paths=["convert"])
         repository_tuple = (
             self.url,
             column_repository.name,
-            column_repository.user.username,
+            column_repository.owner,
             self.get_repository_tip(column_repository),
         )
         self.create_repository_dependency(
@@ -120,12 +104,8 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0030_verify_repository_dependencies(self):
         """Verify that each repository can depend on the other without causing an infinite loop."""
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         self.check_repository_dependency(
             convert_repository, column_repository, self.get_repository_tip(column_repository)
         )
@@ -135,11 +115,7 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
 
     def test_0035_verify_repository_metadata(self):
         """Verify that resetting the metadata does not change it."""
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
         for repository in [column_repository, convert_repository]:
             self.verify_unchanged_repository_metadata(repository)

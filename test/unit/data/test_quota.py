@@ -3,7 +3,7 @@ from galaxy.quota import DatabaseQuotaAgent
 from .test_galaxy_mapping import BaseModelTestCase
 
 
-class CalculateUsageTestCase(BaseModelTestCase):
+class TestCalculateUsage(BaseModelTestCase):
     def test_calculate_usage(self):
         u = model.User(email="calc_usage@example.com", password="password")
         self.persist(u)
@@ -35,7 +35,7 @@ class CalculateUsageTestCase(BaseModelTestCase):
         assert u.calculate_disk_usage() == 10
 
 
-class QuotaTestCase(BaseModelTestCase):
+class TestQuota(BaseModelTestCase):
     def setUp(self):
         super().setUp()
         model = self.model

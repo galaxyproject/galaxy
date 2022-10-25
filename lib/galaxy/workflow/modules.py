@@ -31,6 +31,7 @@ from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
     PostJobAction,
     Workflow,
+    WorkflowStep,
     WorkflowStepConnection,
 )
 from galaxy.model.dataset_collections import matching
@@ -227,7 +228,7 @@ class WorkflowModule:
         return self.get_all_outputs(data_only=True)
 
     def get_post_job_actions(self, incoming):
-        return []
+        return {}
 
     def check_and_update_state(self):
         """
@@ -244,7 +245,7 @@ class WorkflowModule:
 
     # ---- Run time ---------------------------------------------------------
 
-    def get_runtime_state(self):
+    def get_runtime_state(self) -> DefaultToolState:
         raise TypeError("Abstract method")
 
     def get_runtime_inputs(self, **kwds):
@@ -428,6 +429,10 @@ class SubWorkflowModule(WorkflowModule):
     _modules: Optional[List[Any]] = None
     subworkflow: Workflow
 
+    def __init__(self, trans, content_id=None, **kwds):
+        super().__init__(trans, content_id, **kwds)
+        self.post_job_actions: Optional[Dict[str, Any]] = None
+
     @classmethod
     def from_dict(Class, trans, d, **kwds):
         module = super().from_dict(trans, d, **kwds)
@@ -510,6 +515,7 @@ class SubWorkflowModule(WorkflowModule):
 
     def get_all_outputs(self, data_only=False):
         outputs = []
+        self.post_job_actions = {}
         if hasattr(self.subworkflow, "workflow_outputs"):
             from galaxy.managers.workflows import WorkflowContentsManager
 
@@ -535,6 +541,11 @@ class SubWorkflowModule(WorkflowModule):
                             data_output["name"] == workflow_output["output_name"]
                             or data_output_uuid == workflow_output_uuid
                         ):
+                            change_datatype_action = step["post_job_actions"].get(
+                                f"ChangeDatatypeAction{data_output['name']}"
+                            )
+                            if change_datatype_action:
+                                self.post_job_actions[f"ChangeDatatypeAction{label}"] = change_datatype_action
                             data_output["name"] = label
                             # That's the right data_output
                             break
@@ -546,8 +557,12 @@ class SubWorkflowModule(WorkflowModule):
                             f"Workflow output '{workflow_output['output_name']}' defined, but not listed among data outputs"
                         )
                         continue
+
                     outputs.append(data_output)
         return outputs
+
+    def get_post_job_actions(self, incoming):
+        return self.post_job_actions
 
     def get_content_id(self):
         return self.trans.security.encode_id(self.subworkflow.id)
@@ -581,7 +596,9 @@ class SubWorkflowModule(WorkflowModule):
         inputs = {}
         for step in self.subworkflow.steps:
             if step.type == "tool":
+                assert isinstance(step.module, ToolModule)
                 tool = step.module.tool
+                assert tool
                 tool_inputs = step.module.state
 
                 def callback(input, prefixed_name, prefixed_label, value=None, **kwds):
@@ -591,7 +608,7 @@ class SubWorkflowModule(WorkflowModule):
                         return
 
                     if is_runtime_value(value) and runtime_to_json(value)["__class__"] != "ConnectedValue":
-                        input_name = "%d|%s" % (step.order_index, prefixed_name)
+                        input_name = f"{step.order_index}|{prefixed_name}"  # noqa: B023
                         inputs[input_name] = InputProxy(input, input_name)
 
                 visit_input_values(tool.inputs, tool_inputs.inputs, callback)
@@ -603,6 +620,7 @@ class SubWorkflowModule(WorkflowModule):
         replacement_parameters = set()
         for subworkflow_step in self.subworkflow.steps:
             module = subworkflow_step.module
+            assert module
             for replacement_parameter in module.get_replacement_parameters(subworkflow_step):
                 replacement_parameters.add(replacement_parameter)
 
@@ -676,7 +694,7 @@ class InputModule(WorkflowModule):
 
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
-        if invocation.copy_inputs_to_history:
+        if progress.copy_inputs_to_history:
             for input_dataset_hda in list(step_outputs.values()):
                 content_type = input_dataset_hda.history_content_type
                 if content_type == "dataset":
@@ -1112,11 +1130,14 @@ class InputParameterModule(WorkflowModule):
             # Retrieve possible runtime options for 'select' type inputs
             for connection in connections:
                 # Well this isn't a great assumption...
-                module = connection.input_step.module  # type: ignore[union-attr]
+                assert connection.input_step
+                module = connection.input_step.module
+                assert isinstance(module, ToolModule)
+                assert module.tool
                 tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
                 def callback(input, prefixed_name, context, **kwargs):
-                    if prefixed_name == connection.input_name and hasattr(input, "get_options"):
+                    if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
                         static_options.append(input.get_options(self.trans, {}))
 
                 visit_input_values(tool_inputs, module.state.inputs, callback)
@@ -1423,9 +1444,11 @@ class ToolModule(WorkflowModule):
         self.tool_id = tool_id
         self.tool_version = str(tool_version) if tool_version else None
         self.tool_uuid = tool_uuid
-        self.tool = trans.app.toolbox.get_tool(
-            tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
-        )
+        self.tool = None
+        if getattr(trans.app, "toolbox", None):
+            self.tool = trans.app.toolbox.get_tool(
+                tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
+            )
         if self.tool:
             current_tool_id = self.tool.id
             current_tool_version = str(self.tool.version)
@@ -1775,7 +1798,12 @@ class ToolModule(WorkflowModule):
         input_connections = kwds.get("input_connections", {})
         expected_replacement_keys = input_connections.keys()
 
-        def augment(expected_replacement_key, inputs, inputs_state):
+        def augment(expected_replacement_key, inputs_states):
+            if self.tool is None:
+                raise ToolMissingException(
+                    f"Tool {self.tool_id} missing. Cannot augment tool state for input connections.",
+                    tool_id=self.tool_id,
+                )
             if "|" not in expected_replacement_key:
                 return
 
@@ -1803,12 +1831,11 @@ class ToolModule(WorkflowModule):
 
             if repeat_instance_state:
                 # TODO: untest branch - no test case for nested repeats yet...
-                augment(rest, repeat.inputs, repeat_instance_state)
+                augment(rest, repeat_instance_state)
 
         for expected_replacement_key in expected_replacement_keys:
             inputs_states = self.state.inputs
-            inputs = self.tool.inputs
-            augment(expected_replacement_key, inputs, inputs_states)
+            augment(expected_replacement_key, inputs_states)
 
     def get_runtime_state(self):
         state = DefaultToolState()
@@ -1890,18 +1917,20 @@ class ToolModule(WorkflowModule):
 
                 replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
                 dataset_instance: Optional[model.Dataset] = None
-                if iteration_elements and prefixed_name in iteration_elements:
-                    dataset_instance = getattr(iteration_elements[prefixed_name], "dataset_instance", None)
+                if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
+                    dataset_instance = getattr(
+                        iteration_elements[prefixed_name], "dataset_instance", None  # noqa: B023
+                    )
                     if isinstance(input, DataToolParameter) and dataset_instance:
                         # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
                         # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
                         replacement = dataset_instance
-                        temp = iteration_elements[prefixed_name]
+                        temp = iteration_elements[prefixed_name]  # noqa: B023
                         if hasattr(temp, "element_identifier") and temp.element_identifier:
                             replacement.element_identifier = temp.element_identifier  # type: ignore[union-attr]
                     else:
                         # If collection - just use element model object.
-                        replacement = iteration_elements[prefixed_name]
+                        replacement = iteration_elements[prefixed_name]  # noqa: B023
                 else:
                     replacement = progress.replacement_for_input(step, input_dict)
 
@@ -1912,7 +1941,7 @@ class ToolModule(WorkflowModule):
                         if getattr(dataset2, "extension", None) == "expression.json":
                             with open(dataset2.file_name) as f:
                                 replacement = json.load(f)
-                    found_replacement_keys.add(prefixed_name)
+                    found_replacement_keys.add(prefixed_name)  # noqa: B023
 
                 return replacement
 
@@ -1969,7 +1998,7 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 validate_outputs=validate_outputs,
-                job_callback=lambda job: self._handle_post_job_actions(step, job, invocation.replacement_dict),
+                job_callback=lambda job: self._handle_post_job_actions(step, job, progress.replacement_dict),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters,
             )
@@ -1993,7 +2022,7 @@ class ToolModule(WorkflowModule):
             step_inputs = mapping_params.param_template
             step_inputs.update(collection_info.collections)
 
-            self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, invocation.replacement_dict)
+            self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, progress.replacement_dict)
         if execution_tracker.execution_errors:
             message = "Failed to create one or more job(s) for workflow step."
             raise Exception(message)
@@ -2079,9 +2108,9 @@ class WorkflowModuleFactory:
         ), f"Unexpected workflow step type [{type}] not found in [{self.module_types.keys()}]"
         return self.module_types[type].from_dict(trans, d, **kwargs)
 
-    def from_workflow_step(self, trans, step, **kwargs):
+    def from_workflow_step(self, trans, step: WorkflowStep, **kwargs) -> WorkflowModule:
         """
-        Return module initializd from the WorkflowStep object `step`.
+        Return module initialized from the WorkflowStep object `step`.
         """
         type = step.type
         return self.module_types[type].from_workflow_step(trans, step, **kwargs)
@@ -2154,7 +2183,7 @@ class WorkflowModuleInjector:
         self.trans = trans
         self.allow_tool_state_corrections = allow_tool_state_corrections
 
-    def inject(self, step, step_args=None, steps=None, **kwargs):
+    def inject(self, step: WorkflowStep, step_args=None, steps=None, **kwargs):
         """Pre-condition: `step` is an ORM object coming from the database, if
         supplied `step_args` is the representation of the inputs for that step
         supplied via web form.

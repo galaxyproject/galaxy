@@ -180,9 +180,11 @@ class OIDC(JSAppLauncher):
     @web.json
     @web.expose
     def logout(self, trans, provider, **kwargs):
-        post_logout_redirect_url = f"{trans.request.base + url_for('/')}root/login?is_logout_redirect=true"
+        post_user_logout_href = trans.app.config.post_user_logout_href
+        if post_user_logout_href is not None:
+            post_user_logout_href = trans.request.base + url_for(post_user_logout_href)
         success, message, redirect_uri = trans.app.authnz_manager.logout(
-            provider, trans, post_logout_redirect_url=post_logout_redirect_url
+            provider, trans, post_user_logout_href=post_user_logout_href
         )
         if success:
             return {"redirect_uri": redirect_uri}

@@ -15,7 +15,7 @@ def _parse_name(name, argument):
     all remaining dashes are replaced by underscores.
     """
     if name is None:
-        if not argument:
+        if argument is None:
             raise ValueError("parameter must specify a 'name' or 'argument'.")
         name = argument.lstrip("-").replace("-", "_")
     return name

@@ -13,7 +13,7 @@ Issue Reporting
 ===============
 
 Issues (bugs, feature requests, etc.) should be reported at `GitHub issues`_, and
-handling of issues follows the procedures described in the `issues document`_.
+handling of issues follows the procedures described in this document.
 
 Milestones
 ==========
@@ -80,15 +80,12 @@ request/report to separate enhancements and new features from bugs, etc.
 Status Labels
 -------------
 
-The default ``status`` of an issue or PR is ``ready for review``. If that
-is not true the state should be communicated using the following
-labels:
+The default status of an issue or PR is "ready for review". If that is not the
+case, the state should be communicated as follows:
 
--  ``status/planning`` - the issue planning phase, this issue may
-   potentially need more information (or just more thinking) to proceed
-   to a work in progress
--  ``status/WIP`` - this issue or PR is currently being worked on and in
-   the case of a PR, it should not be merged until this tag is removed
+- for issues, by using the ``status/planning`` label;
+- for PRs, by using the `draft <https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests#draft-pull-requests>`__
+  state.
 
 Note that there are no ``status/complete``, ``status/wontfix``,
 ``status/duplicate``, or other terminal status indicators. This is
@@ -100,18 +97,11 @@ be indicated in the closing comment by the issue closer.
 The following statuses may be applied to issues that need to be revisited
 after some event.
 
-- ``status/waiting/response`` - this issue or pull request is waiting for
+- ``status/needs feedback`` - this issue or pull request is waiting for
   a response from the author. The issue or pull request may be assumed stale
   and closed after a month. The committers reserve the right to close issues
   and pull requests without this process, but this tag makes tracking explicit
   and easy.
-- ``status/waiting/deployment/org`` - this issue was exhibited on usegalaxy.org
-  and committers believe a fix has been committed but are not certain and so the
-  issue should be rechecked after deployment of the target branch. Typically the
-  committers will close out issues when a fix has been merged, but in cases they
-  are uncertain whether the fix will correct the underlying issue, this tag may be used.
-- ``status/waiting/deployment/eu`` - this is the same as above but for issues
-  affecting usegalaxy.eu.
 
 Area Labels
 -----------
@@ -177,7 +167,8 @@ special purpose.
 -  ``procedures`` is a special tag that indicates that the issue is
    related to project governance, and it overrides the need for the trio
    of kind/status/area tags, and these are never auto-flagged for
-   triage.  More details are available in the ORGANIZATION_ document.
+   triage. More details are available in the
+   :doc:`Galaxy Core Governance <organization>` document.
 
 -  ``planning`` is also a special tag that indicates the issue is
    related to larger-scale issue planning. These issues are typically
@@ -259,6 +250,4 @@ For now, we will rely on a few simple automation rules:
 -  All PRs that are not assigned to a milestone will be tagged
    ``triage`` to indicate that they require attention prior to merge.
 
-.. _ORGANIZATION: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/organization.rst
-.. _issues document: https://github.com/galaxyproject/galaxy/blob/dev/doc/source/project/issues.rst
 .. _Github issues: https://github.com/galaxyproject/galaxy/issues/

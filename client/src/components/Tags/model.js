@@ -24,20 +24,20 @@ function TagModel(props = {}) {
     Object.defineProperty(this, "style", {
         enumerable: true,
         get: function () {
+            const { primary, darker } = keyedColorScheme(this.text);
+
+            const styles = {
+                "background-color": primary,
+                color: "black",
+                "border-color": darker,
+            };
             if (this.text.startsWith("name:")) {
-                const { primary, contrasting, darker } = keyedColorScheme(this.text);
-
-                const styles = {
-                    "background-color": primary,
-                    color: contrasting,
-                    "border-color": darker,
-                };
-
-                return Object.keys(styles)
-                    .map((prop) => `${prop}: ${styles[prop]}`)
-                    .join(";");
+                styles["font-weight"] = "bold";
             }
-            return "";
+
+            return Object.keys(styles)
+                .map((prop) => `${prop}: ${styles[prop]}`)
+                .join(";");
         },
     });
 

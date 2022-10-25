@@ -10,7 +10,7 @@
         <div v-else-if="deprecated" class="warningmessagelarge">
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}
         </div>
-        <div id="tool-recommendation" class="tool-recommendation-view"></div>
+        <div id="tool-recommendation" class="ui-tool-recommendation"></div>
     </div>
 </template>
 

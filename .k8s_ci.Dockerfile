@@ -18,11 +18,11 @@
 ARG ROOT_DIR=/galaxy
 ARG SERVER_DIR=$ROOT_DIR/server
 
-ARG STAGE1_BASE=python:3.7-slim
+ARG STAGE1_BASE=python:3.10-slim
 ARG FINAL_STAGE_BASE=$STAGE1_BASE
 ARG GALAXY_USER=galaxy
 ARG GALAXY_PLAYBOOK_REPO=https://github.com/galaxyproject/galaxy-docker-k8s
-ARG GALAXY_PLAYBOOK_BRANCH=v2.0.0
+ARG GALAXY_PLAYBOOK_BRANCH=v3.0.0
 
 ARG GIT_COMMIT=unspecified
 ARG BUILD_DATE=unspecified
@@ -51,7 +51,7 @@ RUN set -xe; \
         libc-dev \
         bzip2 \
         gcc \
-    && pip install --no-cache virtualenv 'ansible<2.10' \
+    && pip install --no-cache virtualenv ansible \
     && apt-get autoremove -y && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
@@ -72,7 +72,7 @@ COPY . $SERVER_DIR/
 FROM stage1 AS server_build
 ARG SERVER_DIR
 
-RUN ansible-playbook -i localhost, playbook.yml -v -e galaxy_build_client=False -e galaxy_virtualenv_command=virtualenv
+RUN ansible-playbook -i localhost, playbook.yml -v -e "{galaxy_build_client: false}" -e galaxy_virtualenv_command=virtualenv
 
 RUN cat /galaxy/server/lib/galaxy/dependencies/conditional-requirements.txt | grep psycopg2-binary | xargs /galaxy/server/.venv/bin/pip install
 

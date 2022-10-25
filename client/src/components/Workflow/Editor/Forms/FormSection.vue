@@ -18,8 +18,8 @@
             v-for="(output, index) in outputs"
             :key="index"
             :output-name="output.name"
-            :active-outputs="node.activeOutputs"
-            :inputs="node.inputs"
+            :active-outputs="nodeActiveOutputs"
+            :inputs="nodeInputs"
             :datatypes="datatypes"
             :form-data="formData"
             @onInput="onInput"
@@ -41,12 +41,24 @@ export default {
             type: String,
             required: true,
         },
-        getNode: {
-            type: Function,
+        nodeInputs: {
+            type: Array,
+            required: true,
+        },
+        nodeOutputs: {
+            type: Array,
+            required: true,
+        },
+        nodeActiveOutputs: {
+            type: Object,
             required: true,
         },
         datatypes: {
             type: Array,
+            required: true,
+        },
+        postJobActions: {
+            type: Object,
             required: true,
         },
     },
@@ -56,14 +68,8 @@ export default {
         };
     },
     computed: {
-        node() {
-            return this.getNode();
-        },
-        postJobActions() {
-            return this.node.postJobActions;
-        },
         outputs() {
-            return this.node.outputs;
+            return this.nodeOutputs;
         },
         firstOutput() {
             return this.outputs.length > 0 && this.outputs[0];
@@ -82,6 +88,34 @@ export default {
         },
         deleteActionValue() {
             return Boolean(this.formData[this.deleteActionKey]);
+        },
+    },
+    watch: {
+        formData() {
+            // The formData shape is kind of unfortunate, but it is what we have now.
+            // This should be a properly nested object whose values should be retrieved and set via a store
+            const postJobActions = {};
+            Object.entries(this.formData).forEach(([key, value]) => {
+                const [pja, outputName, actionType, name] = key.split("__", 4);
+                if (pja == "pja") {
+                    const pjaKey = `${actionType}${outputName}`;
+                    if (!postJobActions[pjaKey]) {
+                        postJobActions[pjaKey] = {
+                            action_type: actionType,
+                            output_name: outputName,
+                            action_arguments: {},
+                        };
+                    }
+                    if (name) {
+                        if (name == "output_name") {
+                            postJobActions[pjaKey]["output_name"] = value;
+                        } else {
+                            postJobActions[pjaKey]["action_arguments"][name] = value;
+                        }
+                    }
+                }
+            });
+            this.$emit("onChange", postJobActions);
         },
     },
     created() {
@@ -104,9 +138,8 @@ export default {
             if (pjas[this.emailPayloadKey]) {
                 pjas[this.emailActionKey] = true;
             }
-            this.formData = pjas;
             console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
-            this.$emit("onChange", this.formData);
+            this.formData = pjas;
         },
         setEmailAction(pjas) {
             if (pjas[this.emailActionKey]) {
@@ -131,7 +164,6 @@ export default {
             this.setEmailAction(this.formData);
             if (changed) {
                 this.formData = Object.assign({}, this.formData);
-                this.$emit("onChange", this.formData);
             }
         },
         onDatatype(pjaKey, outputName, newDatatype) {

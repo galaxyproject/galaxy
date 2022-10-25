@@ -12,10 +12,12 @@ class WritesConfig:
     def _with_handlers_config(self, assign_with=None, default=None, handlers=None):
         handlers = handlers or []
         template = {
-            "assign_with": ' assign_with="%s"' % assign_with if assign_with is not None else "",
-            "default": ' default="%s"' % default if default is not None else "",
+            "assign_with": f' assign_with="{assign_with}"' if assign_with is not None else "",
+            "default": f' default="{default}"' if default is not None else "",
             "handlers": "\n".join(
-                '<handler id="{id}"{tags}/>'.format(id=x["id"], tags=' tags="%s"' % x["tags"] if "tags" in x else "")
+                '<handler id="{id}"{tags}/>'.format(
+                    id=x["id"], tags=' tags="{}"'.format(x["tags"]) if "tags" in x else ""
+                )
                 for x in handlers
             ),
         }
@@ -36,6 +38,7 @@ class BaseHandlerAssignmentMethodIntegrationTestCase(integration_util.Integratio
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.jobs_directory = cls._test_driver.mkdtemp()
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = os.path.join(cls.jobs_directory, "job_conf.xml")
@@ -43,7 +46,7 @@ class BaseHandlerAssignmentMethodIntegrationTestCase(integration_util.Integratio
         config["tool_dependency_dir"] = "none"
 
 
-class DBPreassignHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
+class TestDBPreassignHandlerAssignmentMethodIntegration(BaseHandlerAssignmentMethodIntegrationTestCase):
     def setUp(self):
         self._with_handlers_config(assign_with="db-preassign", handlers=[{"id": "main"}])
         super().setUp()
@@ -53,7 +56,7 @@ class DBPreassignHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmen
         self._run_tool_test(tool_id)
 
 
-class DBTransactionIsolationHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
+class TestDBTransactionIsolationHandlerAssignmentMethodIntegration(BaseHandlerAssignmentMethodIntegrationTestCase):
     def setUp(self):
         self._with_handlers_config(assign_with="db-transaction-isolation", handlers=[{"id": "main"}])
         super().setUp()
@@ -64,7 +67,7 @@ class DBTransactionIsolationHandlerAssignmentMethodIntegrationTestCase(BaseHandl
         self._run_tool_test(tool_id)
 
 
-class DBSkipLockedHandlerAssignmentMethodIntegrationTestCase(BaseHandlerAssignmentMethodIntegrationTestCase):
+class TestDBSkipLockedHandlerAssignmentMethodIntegration(BaseHandlerAssignmentMethodIntegrationTestCase):
     def setUp(self):
         self._with_handlers_config(assign_with="db-skip-locked", handlers=[{"id": "main"}])
         super().setUp()

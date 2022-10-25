@@ -11,12 +11,21 @@ import urllib.parse
 import zipfile
 from json import dumps
 from logging import getLogger
-from typing import Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+)
 
 import requests
-from packaging.version import parse as parse_version
-from packaging.version import Version
+from packaging.version import (
+    parse as parse_version,
+    Version,
+)
 from requests.cookies import RequestsCookieJar
+from typing_extensions import Protocol
 
 try:
     from nose.tools import nottest
@@ -69,9 +78,15 @@ class OutputsDict(dict):
             return super().__getitem__(item)
 
 
+JobDataT = Dict[str, Any]
+JobDataCallbackT = Callable[[JobDataT], None]
+ToolTestDictT = Dict[str, Any]
+ToolTestDictsT = List[ToolTestDictT]
+
+
 def stage_data_in_history(
-    galaxy_interactor,
-    tool_id,
+    galaxy_interactor: "GalaxyInteractorApi",
+    tool_id: str,
     all_test_data,
     history=None,
     force_path_paste=False,
@@ -111,6 +126,9 @@ def stage_data_in_history(
 
 
 class GalaxyInteractorApi:
+    api_key: Optional[str]
+    keep_outputs_dir: Optional[str]
+
     def __init__(self, **kwds):
         self.api_url = f"{kwds['galaxy_url'].rstrip('/')}/api"
         self.cookies = None
@@ -120,7 +138,7 @@ class GalaxyInteractorApi:
         )
         if kwds.get("user_api_key_is_admin_key", False):
             self.master_api_key = self.api_key
-        self.keep_outputs_dir = kwds["keep_outputs_dir"]
+        self.keep_outputs_dir = kwds.get("keep_outputs_dir", None)
         self.download_attempts = kwds.get("download_attempts", 1)
         self.download_sleep = kwds.get("download_sleep", 1)
         # Local test data directories.
@@ -140,25 +158,22 @@ class GalaxyInteractorApi:
     def supports_test_data_download(self):
         return self.target_galaxy_version >= Version("19.01")
 
-    def __get_user_key(self, user_key, admin_key, test_user=None):
+    def __get_user_key(self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None) -> str:
         if not test_user:
             test_user = "test@bx.psu.edu"
         if user_key:
             return user_key
-        test_user = self.ensure_user_with_email(test_user)
-        return self._post(f"users/{test_user['id']}/api_key", key=admin_key).json()
-
-    # def get_tools(self):
-    #    response = self._get("tools?in_panel=false")
-    #    assert response.status_code == 200, "Non 200 response from tool index API. [%s]" % response.content
-    #    return response.json()
+        test_user_response = self.ensure_user_with_email(test_user)
+        if not admin_key:
+            raise Exception("Must specify either a user key or admin key to interact with the Galaxy API")
+        return self._post(f"users/{test_user_response['id']}/api_key", key=admin_key).json()
 
     def get_tests_summary(self):
         response = self._get("tools/tests_summary")
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
-    def get_tool_tests(self, tool_id, tool_version=None):
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
@@ -194,7 +209,7 @@ class GalaxyInteractorApi:
         outfile = output_testdef.outfile
         attributes = output_testdef.attributes
         name = output_testdef.name
-
+        expected_count = attributes.get("count")
         self.wait_for_jobs(history_id, jobs, maxseconds)
         hid = self.__output_id(output_data)
         # TODO: Twill version verifies dataset is 'ok' in here.
@@ -211,10 +226,16 @@ class GalaxyInteractorApi:
             raise AssertionError(f"Output {name}: {str(e)}")
 
         primary_datasets = attributes.get("primary_datasets", {})
-        if primary_datasets:
-            job_id = self._dataset_provenance(history_id, hid)["job_id"]
-            outputs = self._get(f"jobs/{job_id}/outputs").json()
-
+        job_id = self._dataset_provenance(history_id, hid)["job_id"]
+        outputs = self._get(f"jobs/{job_id}/outputs").json()
+        found_datasets = 0
+        for output in outputs:
+            if output["name"] == name or output["name"].startswith(f"__new_primary_file_{name}|"):
+                found_datasets += 1
+        if expected_count is not None and expected_count != found_datasets:
+            raise AssertionError(
+                f"Output '{name}': expected to have '{expected_count}' datasets, but it had '{found_datasets}'"
+            )
         for designation, (primary_outfile, primary_attributes) in primary_datasets.items():
             primary_output = None
             for output in outputs:
@@ -295,21 +316,22 @@ class GalaxyInteractorApi:
 
                     def compare(val, expected):
                         if str(val) != str(expected):
-                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."
-                            raise Exception(msg)
+                            raise Exception(
+                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}]. Dataset API value was [{dataset}]."  # noqa: B023
+                            )
 
                     if isinstance(dataset_value, list):
                         value = str(value).split(",")
                         if len(value) != len(dataset_value):
-                            msg = f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
-                            raise Exception(msg)
+                            raise Exception(
+                                f"Dataset metadata verification for [{key}] failed, expected [{value}] but found [{dataset_value}], lists differ in length. Dataset API value was [{dataset}]."
+                            )
                         for val, expected in zip(dataset_value, value):
                             compare(val, expected)
                     else:
                         compare(dataset_value, value)
                 except KeyError:
-                    msg = f"Failed to verify dataset metadata, metadata key [{key}] was not found."
-                    raise Exception(msg)
+                    raise Exception(f"Failed to verify dataset metadata, metadata key [{key}] was not found.")
 
     def wait_for_job(self, job_id, history_id=None, maxseconds=DEFAULT_TOOL_TEST_WAIT):
         self.wait_for(lambda: self.__job_ready(job_id, history_id), maxseconds=maxseconds)
@@ -330,7 +352,8 @@ class GalaxyInteractorApi:
 
     def get_history(self, history_name="test_history"):
         # Return the most recent non-deleted history matching the provided name
-        response = self._get(f"histories?q=name&qv={history_name}&order=update_time")
+        filters = urllib.parse.urlencode({"q": "name", "qv": history_name, "order": "update_time"})
+        response = self._get(f"histories?{filters}")
         try:
             return response.json()[-1]
         except IndexError:
@@ -423,13 +446,13 @@ class GalaxyInteractorApi:
 
     def stage_data_async(
         self,
-        test_data,
-        history_id,
-        tool_id,
-        force_path_paste=False,
-        maxseconds=DEFAULT_TOOL_TEST_WAIT,
-        tool_version=None,
-    ):
+        test_data: Dict[str, Any],
+        history_id: str,
+        tool_id: str,
+        force_path_paste: bool = False,
+        maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
+        tool_version: Optional[str] = None,
+    ) -> Callable[[], None]:
         fname = test_data["fname"]
         tool_input = {
             "file_type": test_data["ftype"],
@@ -754,6 +777,7 @@ class GalaxyInteractorApi:
                 else:
                     break
 
+            assert response
             response.raise_for_status()
             return response.content
 
@@ -927,7 +951,12 @@ class RunToolException(Exception):
 
 # Galaxy specific methods - rest of this can be used with arbitrary files and such.
 def verify_hid(
-    filename, hda_id, attributes, test_data_downloader, hid="", dataset_fetcher=None, keep_outputs_dir=False
+    filename: Optional[str],
+    hda_id: str,
+    attributes: Dict[str, Any],
+    test_data_downloader,
+    dataset_fetcher=None,
+    keep_outputs_dir: Optional[str] = None,
 ):
     assert dataset_fetcher is not None
 
@@ -978,13 +1007,13 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
     def verify_elements(element_objects, element_tests):
         expected_sort_order = {}
-
         eo_ids = [_["element_identifier"] for _ in element_objects]
         for element_identifier, element_test in element_tests.items():
             if isinstance(element_test, dict):
                 element_outfile, element_attrib = None, element_test
             else:
                 element_outfile, element_attrib = element_test
+            expected_count = element_attrib.get("count")
             if "expected_sort_order" in element_attrib:
                 expected_sort_order[element_attrib["expected_sort_order"]] = element_identifier
 
@@ -995,10 +1024,16 @@ def verify_collection(output_collection_def, data_collection, verify_dataset):
 
             element_type = element["element_type"]
             if element_type != "dataset_collection":
+                element_count = 1
                 verify_dataset(element, element_attrib, element_outfile)
             else:
                 elements = element["object"]["elements"]
+                element_count = len(elements)
                 verify_elements(elements, element_attrib.get("elements", {}))
+            if expected_count is not None and expected_count != element_count:
+                raise AssertionError(
+                    f"Element '{element_identifier}': expected to have {expected_count} elements, but it had {element_count}"
+                )
 
         if len(expected_sort_order) > 0:
             generated_sort_order = [_["element_identifier"] for _ in element_objects]
@@ -1021,7 +1056,7 @@ def _verify_composite_datatype_file_content(
     attributes=None,
     dataset_fetcher=None,
     test_data_downloader=None,
-    keep_outputs_dir=False,
+    keep_outputs_dir: Optional[str] = None,
     mode="file",
 ):
     assert dataset_fetcher is not None
@@ -1044,7 +1079,9 @@ def _verify_composite_datatype_file_content(
         raise AssertionError(errmsg)
 
 
-def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_downloader, keep_outputs_dir):
+def _verify_extra_files_content(
+    extra_files: List[Dict[str, Any]], hda_id: str, dataset_fetcher, test_data_downloader, keep_outputs_dir
+):
     files_list = []
     cleanup_directories = []
     for extra_file_dict in extra_files:
@@ -1084,12 +1121,17 @@ def _verify_extra_files_content(extra_files, hda_id, dataset_fetcher, test_data_
             shutil.rmtree(path)
 
 
-class NullClientTestConfig:
+class TestConfig(Protocol):
+    def get_test_config(self, job_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        ...
+
+
+class NullClientTestConfig(TestConfig):
     def get_test_config(self, job_data):
         return None
 
 
-class DictClientTestConfig:
+class DictClientTestConfig(TestConfig):
     def __init__(self, tools):
         self._tools = tools or {}
 
@@ -1127,22 +1169,22 @@ class DictClientTestConfig:
 
 
 def verify_tool(
-    tool_id,
-    galaxy_interactor,
-    resource_parameters=None,
-    register_job_data=None,
-    test_index=0,
-    tool_version=None,
-    quiet=False,
-    test_history=None,
-    no_history_cleanup=False,
-    publish_history=False,
-    force_path_paste=False,
-    maxseconds=DEFAULT_TOOL_TEST_WAIT,
-    tool_test_dicts=None,
-    client_test_config=None,
-    skip_with_reference_data=False,
-    skip_on_dynamic_param_errors=False,
+    tool_id: str,
+    galaxy_interactor: "GalaxyInteractorApi",
+    resource_parameters: Optional[Dict[str, Any]] = None,
+    register_job_data: Optional[JobDataCallbackT] = None,
+    test_index: int = 0,
+    tool_version: Optional[str] = None,
+    quiet: bool = False,
+    test_history: Optional[str] = None,
+    no_history_cleanup: bool = False,
+    publish_history: bool = False,
+    force_path_paste: bool = False,
+    maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
+    tool_test_dicts: Optional[ToolTestDictsT] = None,
+    client_test_config: Optional[TestConfig] = None,
+    skip_with_reference_data: bool = False,
+    skip_on_dynamic_param_errors: bool = False,
 ):
     if resource_parameters is None:
         resource_parameters = {}
@@ -1157,7 +1199,7 @@ def verify_tool(
     if tool_version is None and "tool_version" in tool_test_dict:
         tool_version = tool_test_dict.get("tool_version")
 
-    job_data = {
+    job_data: JobDataT = {
         "tool_id": tool_id,
         "tool_version": tool_version,
         "test_index": test_index,
@@ -1177,7 +1219,7 @@ def verify_tool(
         if required_loc_files:
             skip_message = f"Skipping test because of required loc files ({required_loc_files})"
 
-    if skip_message:
+    if skip_message and register_job_data:
         job_data["status"] = "skip"
         register_job_data(job_data)
         return
@@ -1199,7 +1241,7 @@ def verify_tool(
     tool_inputs = None
     job_stdio = None
     job_output_exceptions = None
-    tool_execution_exception = None
+    tool_execution_exception: Optional[Exception] = None
     input_staging_exception = None
     expected_failure_occurred = False
     begin_time = time.time()
@@ -1289,9 +1331,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
     assert len(jobs) == 1, "Test framework logic error, somehow tool test resulted in more than one job."
     job = jobs[0]
 
-    found_exceptions = []
+    found_exceptions: List[Exception] = []
 
-    def register_exception(e):
+    def register_exception(e: Exception):
         if not found_exceptions and not quiet:
             # Only print this stuff out once.
             for stream in ["stdout", "stderr"]:
@@ -1320,7 +1362,7 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
         expected = testdef.num_outputs
         actual = len(data_list) + len(data_collection_list)
         if expected != actual:
-            message = f"Incorrect number of outputs - expected {expected}, found {actual}: datasets {data_list.keys()} collections {data_collection_list.keys()}"
+            message = f"Incorrect number of outputs - expected {expected}, found {actual} (dataset(s): {','.join(data_list.keys())} collection(s): {' '.join(data_collection_list.keys())})"
             error = AssertionError(message)
             register_exception(error)
 

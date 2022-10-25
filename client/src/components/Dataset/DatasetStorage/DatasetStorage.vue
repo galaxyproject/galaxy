@@ -3,6 +3,18 @@
         <h3 v-if="includeTitle">Dataset Storage</h3>
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
         <loading-span v-else-if="storageInfo == null"> </loading-span>
+        <div v-else-if="discarded">
+            <p>This dataset has been discarded and its files are not available to Galaxy.</p>
+        </div>
+        <div v-else-if="deferred">
+            <p>
+                This dataset is remote and deferred. The dataset's files are not available to Galaxy.
+                <span v-if="sourceUri">
+                    This dataset will be downloaded from <b class="deferred-dataset-source-uri">{{ sourceUri }}</b> when
+                    jobs use this dataset.
+                </span>
+            </p>
+        </div>
         <div v-else>
             <p>
                 This dataset is stored in
@@ -49,6 +61,25 @@ export default {
             descriptionRendered: null,
             errorMessage: null,
         };
+    },
+    computed: {
+        discarded() {
+            return this.storageInfo.dataset_state == "discarded";
+        },
+        deferred() {
+            return this.storageInfo.dataset_state == "deferred";
+        },
+        sourceUri() {
+            const sources = this.storageInfo.sources;
+            if (!sources) {
+                return null;
+            }
+            const rootSources = sources.filter((source) => !source.extra_files_path);
+            if (rootSources.length == 0) {
+                return null;
+            }
+            return rootSources[0].source_uri;
+        },
     },
     created() {
         const datasetId = this.datasetId;

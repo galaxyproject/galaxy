@@ -3,6 +3,11 @@ Details of how the data model objects are mapped onto the relational database
 are encapsulated here.
 """
 import logging
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 
 import tool_shed.webapp.model
 import tool_shed.webapp.util.shed_statistics as shed_statistics
@@ -22,7 +27,9 @@ class ToolShedModelMapping(SharedModelMapping):
     create_tables: bool
 
 
-def init(file_path, url, engine_options=None, create_tables=False) -> ToolShedModelMapping:
+def init(
+    url: str, engine_options: Optional[Dict[str, Any]] = None, create_tables: bool = False
+) -> ToolShedModelMapping:
     """Connect mappings to the database"""
     engine_options = engine_options or {}
     # Create the database engine

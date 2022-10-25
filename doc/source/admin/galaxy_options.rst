@@ -57,10 +57,19 @@
 
 :Description:
     By default, Galaxy uses a SQLite database at
-    '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
+    '<data_dir>/universe.sqlite'. You may use a SQLAlchemy connection
     string to specify an external database instead.
     Sample default
     'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+    You may specify additional options that will be passed to the
+    SQLAlchemy database engine by using the prefix
+    "database_engine_option_". For some of these options, default
+    values are provided (e.g. see database_engine_option_pool_size,
+    etc.).
+    The same applies to `install_database_connection`, for which you
+    should use the "install_database_engine_option_" prefix.
+    For more options, please check SQLAlchemy's documentation at
+    https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
 :Default: ``None``
 :Type: str
 
@@ -592,22 +601,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``load_tool_shed_datatypes``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    This option controls whether legacy datatypes are loaded from
-    installed tool shed repositories. We're are in the process of
-    disabling Tool Shed datatypes. This option with a default of true
-    will be added in 22.01, we will disable the datatypes on the big
-    public servers during that release. This option will be switched
-    to False by default in 22.05 and this broken functionality will be
-    removed all together during some future release.
-:Default: ``true``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~
 ``watch_tools``
 ~~~~~~~~~~~~~~~
@@ -692,6 +685,18 @@
     cleaned up by Galaxy tasks (in seconds). The default duration is 1
     day.
 :Default: ``86400``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``short_term_storage_maximum_duration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The maximum duration short term storage files can hosted before
+    they will be marked for clean up.  The default setting of 0
+    indicates no limit here.
+:Default: ``0``
 :Type: int
 
 
@@ -1056,19 +1061,6 @@
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``jobs_directory``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``cluster_files_directory``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If using a cluster, Galaxy will write job scripts and
-    stdout/stderr to this directory.
-    The value of this option will be resolved with respect to
-    <data_dir>.
-:Default: ``pbs``
 :Type: str
 
 
@@ -2564,12 +2556,55 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~
+``log_destination``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Log destination, defaults to special value "stdout" that logs to
+    standard output. If set to anything else, then it will be
+    interpreted as a path that will be used as the log file, and
+    logging to stdout will be disabled.
+:Default: ``stdout``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~
+``log_rotate_size``
+~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Size of log file at which size it will be rotated as per the
+    documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    If log_rotate_count is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation. Size can
+    be a number of bytes or a human-friendly representation like "100
+    MB" or "1G".
+:Default: ``0``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``log_rotate_count``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Number of log file backups to keep, per the documentation in
+    https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+    Any additional rotated log files will automatically be pruned. If
+    log_rotate_size is not also set, no log rotation will be
+    performed. A value of 0 (the default) means no rotation.
+:Default: ``0``
+:Type: int
+
+
 ~~~~~~~~~~~~~
 ``log_level``
 ~~~~~~~~~~~~~
 
 :Description:
-    Verbosity of console log messages.  Acceptable values can be found
+    Verbosity of console log messages. Acceptable values can be found
     here: https://docs.python.org/library/logging.html#logging-levels
     A custom debug level of "TRACE" is available for even more
     verbosity.
@@ -2582,9 +2617,8 @@
 ~~~~~~~~~~~
 
 :Description:
-    Controls where and how the server logs messages. If unset, the
-    default is to log all messages to standard output at the level
-    defined by the `log_level` configuration option. Configuration is
+    Controls where and how the server logs messages. If set, overrides
+    all settings in the log_* configuration options. Configuration is
     described in the documentation at:
     https://docs.galaxyproject.org/en/master/admin/config_logging.html
 :Default: ``None``
@@ -2694,7 +2728,7 @@
     edited or manipulated through the Admin control panel -- see
     "Manage Allowlist"
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``sanitize_allowlist.txt``
 :Type: str
 
@@ -3037,11 +3071,20 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's name text will
+    receive this score multiplier.
+:Default: ``20.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_name_exact_multiplier``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If a search query matches a tool name exactly, the score will be
+    multiplied by this factor.
+:Default: ``10.0``
 :Type: float
 
 
@@ -3050,11 +3093,10 @@
 ~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``9.0``
+    In tool search, a query match against a tool's ID text will
+    receive this score multiplier. The query must be an exact match
+    against ID in order to be counted as a match.
+:Default: ``20.0``
 :Type: float
 
 
@@ -3063,10 +3105,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's section text will
+    receive this score multiplier.
 :Default: ``3.0``
 :Type: float
 
@@ -3076,11 +3116,9 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``2.0``
+    In tool search, a query match against a tool's description text
+    will receive this score multiplier.
+:Default: ``8.0``
 :Type: float
 
 
@@ -3089,10 +3127,8 @@
 ~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's label text will
+    receive this score multiplier.
 :Default: ``1.0``
 :Type: float
 
@@ -3102,11 +3138,10 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
-:Default: ``5.0``
+    A stub is parsed from the GUID as "owner/repo/tool_id". In tool
+    search, a query match against a tool's stub text will receive this
+    score multiplier.
+:Default: ``2.0``
 :Type: float
 
 
@@ -3115,10 +3150,22 @@
 ~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Boosts are used to customize this instance's toolbox search. The
-    higher the boost, the more importance the scoring algorithm gives
-    to the given field.  Section refers to the tool group in the tool
-    panel.  Rest of the fields are tool's attributes.
+    In tool search, a query match against a tool's help text will
+    receive this score multiplier.
+:Default: ``1.0``
+:Type: float
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``tool_help_bm25f_k1``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The lower this parameter, the greater the diminishing reward for
+    term frequency in the help text. A higher K1 increases the level
+    of reward for additional occurences of a term. The default value
+    will provide a slight increase in score for the first, second and
+    third occurrence and little reward thereafter.
 :Default: ``0.5``
 :Type: float
 
@@ -3128,8 +3175,8 @@
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Limits the number of results in toolbox search.  Can be used to
-    tweak how many results will appear.
+    Limits the number of results in toolbox search. Use to set the
+    maximum number of tool search results to display.
 :Default: ``20``
 :Type: int
 
@@ -3139,9 +3186,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Enable/ disable Ngram-search for tools. It makes tool search
-    results tolerant for spelling mistakes in the query by dividing
-    the query into multiple ngrams and search for each ngram
+    Disabling this will prevent partial matches on tool names.
+    Enable/disable Ngram-search for tools. It makes tool search
+    results tolerant for spelling mistakes in the query, and will also
+    match query substrings e.g. "genome" will match "genomics" or
+    "metagenome".
 :Default: ``true``
 :Type: bool
 
@@ -3151,7 +3200,7 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set minimum size of ngrams
+    Set minimum character length of ngrams
 :Default: ``3``
 :Type: int
 
@@ -3161,9 +3210,21 @@
 ~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Set maximum size of ngrams
+    Set maximum character length of ngrams
 :Default: ``4``
 :Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~
+``tool_ngram_factor``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Ngram matched scores will be multiplied by this factor. Should
+    always be below 1, because an ngram match is a partial match of a
+    search term.
+:Default: ``0.2``
+:Type: float
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3269,6 +3330,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``post_user_logout_href``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This is the default url to which users are redirected after they
+    log out.
+:Default: ``/root/login?is_logout_redirect=true``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``normalize_remote_user_email``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3326,6 +3398,17 @@
 :Description:
     Show the site's welcome page (see welcome_url) alongside the login
     page (even if require_login is true).
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~
+``prefer_custos_login``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Controls the order of the login page to prefer Custos-based login
+    and registration.
 :Default: ``false``
 :Type: bool
 
@@ -3719,9 +3802,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``master_api_key``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bootstrap_admin_api_key``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     API key that allows performing some admin actions without actually
@@ -4152,18 +4235,35 @@
 :Type: float
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+``workflow_monitor_sleep``
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Each Galaxy workflow handler process runs one thread responsible
+    for checking the state of active workflow invocations.  This
+    thread operates in a loop and sleeps for the given number of
+    seconds at the end of each iteration. This can be decreased if
+    extremely high job throughput is necessary, but doing so can
+    increase CPU usage of handler processes. Float values are allowed.
+:Default: ``1.0``
+:Type: float
+
+
 ~~~~~~~~~~~~~~~~~~~~~
 ``metadata_strategy``
 ~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Determines how metadata will be set. Valid values are `directory`
-    and `extended`. In extended mode jobs will decide if a tool run
-    failed, the object stores configuration is serialized and made
-    available to the job and is used for writing output datasets to
-    the object store as part of the job and dynamic output discovery
-    (e.g. discovered datasets <discover_datasets>, unpopulated
-    collections, etc) happens as part of the job.
+    Determines how metadata will be set. Valid values are `directory`,
+    `extended`, `directory_celery` and `extended_celery`. In extended
+    mode jobs will decide if a tool run failed, the object stores
+    configuration is serialized and made available to the job and is
+    used for writing output datasets to the object store as part of
+    the job and dynamic output discovery (e.g. discovered datasets
+    <discover_datasets>, unpopulated collections, etc) happens as part
+    of the job. In `directory_celery` and `extended_celery` metadata
+    will be set within a celery task.
 :Default: ``directory``
 :Type: str
 
@@ -4565,6 +4665,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``toolbox_auto_sort``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If true, the toolbox will be sorted by tool id when the toolbox is
+    loaded. This is useful for ensuring that tools are always
+    displayed in the same order in the UI.  If false, the order of
+    tools in the toolbox will be preserved as they are loaded from the
+    tool config files.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~
 ``tool_filters``
 ~~~~~~~~~~~~~~~~
@@ -4660,7 +4774,7 @@
     the process that handled that particular request will tell all
     others to also reload, lock jobs, etc. For connection examples,
     see
-    http://docs.celeryproject.org/projects/kombu/en/latest/userguide/connections.html
+    https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
     Without specifying anything here, galaxy will first attempt to use
     your specified database_connection above.  If that's not specified
     either, Galaxy will automatically create and use a separate sqlite
@@ -4668,6 +4782,24 @@
     the commented out line below).
 :Default: ``sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE``
 :Type: str
+
+
+~~~~~~~~~~~~~~~
+``celery_conf``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Configuration options passed to Celery.
+    To refer to a task by name, use the template `galaxy.foo` where
+    `foo` is the function name of the task defined in the
+    galaxy.celery.tasks module.
+    The `broker_url` option, if unset, defaults to the value of
+    `amqp_internal_connection`. The `result_backend` option must be
+    set if the `enable_celery_tasks` option is set.
+    For details, see Celery documentation at
+    https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+:Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
+:Type: any
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -4680,26 +4812,6 @@
     see https://docs.galaxyproject.org/en/master/admin/production.html
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~
-``celery_broker``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Celery broker (if unset falls back to amqp_internal_connection).
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~
-``celery_backend``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If set, it will be the results backend for Celery.
-:Default: ``None``
-:Type: str
 
 
 ~~~~~~~~~~~~~~

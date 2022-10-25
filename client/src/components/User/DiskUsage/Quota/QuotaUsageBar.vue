@@ -7,7 +7,8 @@
             {{ storageSourceText }}
         </h2>
         <h3>
-            <b>{{ quotaUsage.niceTotalDiskUsage }}</b> of {{ quotaUsage.niceQuota }} used
+            <b>{{ quotaUsage.niceTotalDiskUsage }}</b>
+            <span v-if="quotaHasLimit"> of {{ quotaUsage.niceQuota }}</span> used
         </h3>
         <span v-if="quotaHasLimit" class="quota-percent-text">
             {{ quotaUsage.quotaPercent }}{{ percentOfDiskQuotaUsedText }}

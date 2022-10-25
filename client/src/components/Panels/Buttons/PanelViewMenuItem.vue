@@ -1,5 +1,5 @@
 <template>
-    <b-dropdown-item :data-panel-id="panelView.id" :disabled="isSelected" @click="onClick">
+    <b-dropdown-item :data-panel-id="panelView.id" :active="isSelected" @click="onClick">
         <span :class="['fa', `fa-${icon}`]" fixed-width />
         <span v-localize class="ml-1" :title="title">{{ name }}</span>
     </b-dropdown-item>

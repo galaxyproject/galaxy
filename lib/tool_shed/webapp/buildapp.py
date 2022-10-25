@@ -22,7 +22,7 @@ log = logging.getLogger(__name__)
 
 
 class CommunityWebApplication(galaxy.webapps.base.webapp.WebApplication):
-    pass
+    injection_aware: bool = True
 
 
 def add_ui_controllers(webapp, app):
@@ -142,7 +142,6 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
             "get_ordered_installable_revisions": "GET",
             "get_installable_revisions": "GET",
             "remove_repository_registry_entry": "POST",
-            "repository_ids_for_setting_metadata": "GET",
             "reset_metadata_on_repositories": "POST",
             "reset_metadata_on_repository": "POST",
         },
@@ -202,8 +201,14 @@ def app_pair(global_conf, load_app_kwds=None, **kwargs):
         action="create",
         conditions=dict(method=["POST"]),
     )
+    webapp.mapper.connect(
+        "tools",
+        "/api/tools/build_search_index",
+        controller="tools",
+        action="build_search_index",
+        conditions=dict(method=["PUT"]),
+    )
     webapp.mapper.connect("tools", "/api/tools", controller="tools", action="index", conditions=dict(method=["GET"]))
-    webapp.mapper.connect("json", "/api/tools/json", controller="tools", action="json", conditions=dict(method=["GET"]))
     webapp.mapper.connect(
         "version", "/api/version", controller="configuration", action="version", conditions=dict(method=["GET"])
     )

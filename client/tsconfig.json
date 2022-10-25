@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "allowJs": true,
+        "baseUrl": "./src",
+        "jsx": "preserve",
+        "noEmit": true
+    },
+    "exclude": ["tests", "node_modules"]
+}

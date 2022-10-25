@@ -7,11 +7,11 @@ import random
 import socket
 import time
 from datetime import datetime
+from typing import Optional
 
 from markupsafe import escape
 from sqlalchemy import (
     and_,
-    desc,
     exc,
     func,
     true,
@@ -25,7 +25,6 @@ from galaxy import (
     util,
 )
 from galaxy.managers import (
-    api_keys,
     base,
     deletable,
 )
@@ -39,7 +38,7 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
-from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -65,7 +64,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     #   most of which it may be unneccessary to have here
 
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
-    # TODO: incorp CreatesApiKeysMixin
     # TODO: incorporate UsesFormDefinitionsMixin?
     def __init__(self, app: BasicSharedApp):
         self.model_class = app.model.User
@@ -82,18 +80,22 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return None, message
         if not email or not username or not password or not confirm:
             return None, "Please provide email, username and password."
+
+        email = util.restore_text(email).strip()
+        username = util.restore_text(username).strip()
+        # We could add a separate option here for enabling or disabling domain validation (DNS resolution test)
+        validate_domain = trans.app.config.user_activation_on
         message = "\n".join(
             (
-                validate_email(trans, email),
+                validate_email(trans, email, validate_domain=validate_domain),
                 validate_password(trans, password, confirm),
                 validate_publicname(trans, username),
             )
         ).rstrip()
+
         if message:
             return None, message
-        email = util.restore_text(email)
-        username = util.restore_text(username)
-        message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
+        message, status = trans.app.auth_manager.check_registration_allowed(email, username, password, trans.request)
         if message:
             return None, message
         if subscribe:
@@ -192,8 +194,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # to identify if it is needed for some reason.
         #
         # Deleting multiple times will re-hash the username/email
-        email_hash = new_secure_hash(user.email + pseudorandom_value)
-        uname_hash = new_secure_hash(user.username + pseudorandom_value)
+        email_hash = new_secure_hash_v2(user.email + pseudorandom_value)
+        uname_hash = new_secure_hash_v2(user.username + pseudorandom_value)
         # We must also redact username
         for role in user.all_roles():
             if self.app.config.redact_username_during_deletion:
@@ -214,20 +216,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 .all()
             )
             for addr in user_addresses:
-                addr.desc = new_secure_hash(addr.desc + pseudorandom_value)
-                addr.name = new_secure_hash(addr.name + pseudorandom_value)
-                addr.institution = new_secure_hash(addr.institution + pseudorandom_value)
-                addr.address = new_secure_hash(addr.address + pseudorandom_value)
-                addr.city = new_secure_hash(addr.city + pseudorandom_value)
-                addr.state = new_secure_hash(addr.state + pseudorandom_value)
-                addr.postal_code = new_secure_hash(addr.postal_code + pseudorandom_value)
-                addr.country = new_secure_hash(addr.country + pseudorandom_value)
-                addr.phone = new_secure_hash(addr.phone + pseudorandom_value)
+                addr.desc = new_secure_hash_v2(addr.desc + pseudorandom_value)
+                addr.name = new_secure_hash_v2(addr.name + pseudorandom_value)
+                addr.institution = new_secure_hash_v2(addr.institution + pseudorandom_value)
+                addr.address = new_secure_hash_v2(addr.address + pseudorandom_value)
+                addr.city = new_secure_hash_v2(addr.city + pseudorandom_value)
+                addr.state = new_secure_hash_v2(addr.state + pseudorandom_value)
+                addr.postal_code = new_secure_hash_v2(addr.postal_code + pseudorandom_value)
+                addr.country = new_secure_hash_v2(addr.country + pseudorandom_value)
+                addr.phone = new_secure_hash_v2(addr.phone + pseudorandom_value)
                 self.session().add(addr)
         # Purge the user
         super().purge(user, flush=flush)
 
-    def _error_on_duplicate_email(self, email):
+    def _error_on_duplicate_email(self, email: str) -> None:
         """
         Check for a duplicate email and raise if found.
 
@@ -237,11 +239,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if self.by_email(email) is not None:
             raise exceptions.Conflict("Email must be unique", email=email)
 
-    def by_id(self, user_id):
+    def by_id(self, user_id: int) -> model.User:
         return self.app.model.session.query(self.model_class).get(user_id)
 
     # ---- filters
-    def by_email(self, email, filters=None, **kwargs):
+    def by_email(self, email: str, filters=None, **kwargs) -> Optional[model.User]:
         """
         Find a user by their email.
         """
@@ -252,11 +254,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         except exceptions.ObjectNotFound:
             return None
 
-    def by_api_key(self, api_key, sa_session=None):
+    def by_api_key(self, api_key: str, sa_session=None):
         """
         Find a user by API key.
         """
-        if self.check_master_api_key(api_key=api_key):
+        if self.check_bootstrap_admin_api_key(api_key=api_key):
             return schema.BootstrapAdminUser()
         sa_session = sa_session or self.app.model.session
         try:
@@ -271,17 +273,17 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.AuthenticationFailed("Provided API key has expired.")
         return provided_key.user
 
-    def check_master_api_key(self, api_key):
-        master_api_key = getattr(self.app.config, "master_api_key", None)
-        if not master_api_key:
+    def check_bootstrap_admin_api_key(self, api_key):
+        bootstrap_admin_api_key = getattr(self.app.config, "bootstrap_admin_api_key", None)
+        if not bootstrap_admin_api_key:
             return False
         # Hash keys to make them the same size, so we can do safe comparison.
-        master_hash = hashlib.sha256(util.smart_str(master_api_key)).hexdigest()
+        bootstrap_hash = hashlib.sha256(util.smart_str(bootstrap_admin_api_key)).hexdigest()
         provided_hash = hashlib.sha256(util.smart_str(api_key)).hexdigest()
-        return util.safe_str_cmp(master_hash, provided_hash)
+        return util.safe_str_cmp(bootstrap_hash, provided_hash)
 
     # ---- admin
-    def is_admin(self, user, trans=None):
+    def is_admin(self, user: Optional[model.User], trans=None) -> bool:
         """Return True if this user is an admin (or session is authenticated as admin).
 
         Do not pass trans to simply check if an existing user object is an admin user,
@@ -313,7 +315,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         return user
 
     # ---- anonymous
-    def is_anonymous(self, user):
+    def is_anonymous(self, user: Optional[model.User]) -> bool:
         """
         Return True if `user` is anonymous.
         """
@@ -353,15 +355,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # TODO: trans
         return trans.user
 
-    # ---- api keys
-    def create_api_key(self, user):
-        """
-        Create and return an API key for `user`.
-        """
-        # TODO: seems like this should return the model
-        # Also TODO: seems unused? drop and see what happens? -John
-        return api_keys.ApiKeyManager(self.app).create_api_key(user)
-
     def user_can_do_run_as(self, user) -> bool:
         run_as_users = [u for u in self.app.config.get("api_allow_run_as", "").split(",") if u]
         if not run_as_users:
@@ -370,28 +363,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Can do if explicitly in list or master_api_key supplied.
         can_do_run_as = user_in_run_as_users or user.bootstrap_admin_user
         return can_do_run_as
-
-    # TODO: possibly move to ApiKeyManager
-    def valid_api_key(self, user):
-        """
-        Return this most recent APIKey for this user or None if none have been created.
-        """
-        query = self.session().query(model.APIKeys).filter_by(user=user).order_by(desc(model.APIKeys.create_time))
-        all = query.all()
-        if len(all):
-            return all[0]
-        return None
-
-    # TODO: possibly move to ApiKeyManager
-    def get_or_create_valid_api_key(self, user):
-        """
-        Return this most recent APIKey for this user or create one if none have been
-        created.
-        """
-        existing = self.valid_api_key(user)
-        if existing:
-            return existing
-        return self.create_api_key(self, user)
 
     # ---- preferences
     def preferences(self, user):
@@ -462,7 +433,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             user = self.by_id(self.app.security.decode_id(id))
             if user:
-                message = self.app.auth_manager.check_change_password(user, current)
+                message = self.app.auth_manager.check_change_password(user, current, trans.request)
                 if message:
                     return None, message
                 message = self.__set_password(trans, user, password, confirm)
@@ -558,7 +529,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
         activation_token = user.activation_token
         if activation_token is None:
-            activation_token = util.hash_util.new_secure_hash(str(random.getrandbits(256)))
+            activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
             user.activation_token = activation_token
             trans.sa_session.add(user)
             trans.sa_session.flush()

@@ -43,6 +43,11 @@
                 <i class="fa fa-files-o" />
             </b-button>
             <i :class="iconClass" />
+            <span
+                v-b-tooltip.hover
+                title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
+                >{{ stepIndex }}:
+            </span>
             <span class="node-title">{{ title }}</span>
         </div>
         <b-alert v-if="!!errors" variant="danger" show class="node-error">
@@ -65,6 +70,7 @@
                 v-for="output in outputs"
                 :key="output.name"
                 :output="output"
+                :post-job-actions="postJobActions"
                 :get-node="getNode"
                 :get-manager="getManager"
                 @onAdd="onAddOutput"
@@ -134,11 +140,12 @@ export default {
     data() {
         return {
             popoverShow: false,
-            node: null,
             inputs: [],
             outputs: [],
             inputTerminals: {},
             outputTerminals: {},
+            postJobActions: {},
+            activeOutputs: null,
             errors: null,
             label: null,
             annotation: null,
@@ -176,6 +183,9 @@ export default {
         },
         isInput() {
             return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
+        },
+        stepIndex() {
+            return parseInt(this.id) + 1;
         },
     },
     mounted() {
@@ -235,6 +245,7 @@ export default {
             this.$emit("onUpdate", this);
         }
     },
+
     methods: {
         onChange() {
             this.onRedraw();
@@ -311,7 +322,9 @@ export default {
             const outputNames = this.outputs.map((output) => output.name);
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.activeOutputs.filterOutputs(outputNames);
-            this.postJobActions = data.post_job_actions || {};
+            // data coming from the workflow editor API has post job actions,
+            // data coming from the build_module call does not (and should not)
+            this.postJobActions = data.post_job_actions || this.postJobActions;
             this.config_form = data.config_form;
         },
         initData(data) {

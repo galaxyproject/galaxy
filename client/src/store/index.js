@@ -16,7 +16,7 @@ import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
 import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
-import { userStore } from "./userStore";
+import { userStore, userFlagsStore } from "./userStore";
 import { configStore } from "./configStore";
 import { workflowStore } from "./workflowStore";
 import { toolStore } from "./toolStore";
@@ -24,7 +24,7 @@ import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
-import { genomeStore } from "./genomeStore";
+import { dbKeyStore } from "./dbKeyStore";
 import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
 
@@ -44,7 +44,14 @@ galaxyStorage.config({
 const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
-    modules: ["panels"],
+    reducer: (state) => {
+        const { panels, userFlags, history } = state;
+        return {
+            panels,
+            userFlags,
+            history: { pinnedHistories: history.pinnedHistories },
+        };
+    },
 });
 
 export function createStore() {
@@ -62,7 +69,7 @@ export function createStore() {
             informationStore: jobStore,
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,
-            genomeStore: genomeStore,
+            dbkeyStore: dbKeyStore,
             gridSearch: gridSearchStore,
             history: historyStore,
             historyItems: historyItemsStore,
@@ -70,6 +77,7 @@ export function createStore() {
             tags: tagStore,
             tools: toolStore,
             user: userStore,
+            userFlags: userFlagsStore,
             workflows: workflowStore,
         },
     };

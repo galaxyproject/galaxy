@@ -94,69 +94,6 @@ class TestCategory(BaseTest):
             assert stored_obj.repositories == [repository_category_association]
 
 
-class TestComponent(BaseTest):
-    def test_table(self, cls_):
-        assert cls_.__tablename__ == "component"
-
-    def test_columns(self, session, cls_):
-        name, description = "a", "b"
-        obj = cls_(name=name, description=description)
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.id == obj_id
-            assert stored_obj.name == name
-            assert stored_obj.description == description
-
-
-class TestComponentReview(BaseTest):
-    def test_table(self, cls_):
-        assert cls_.__tablename__ == "component_review"
-
-    def test_columns(self, session, cls_, repository_review, component):
-        create_time = datetime.now()
-        update_time = create_time + timedelta(hours=1)
-        comment = "a"
-        private = True
-        approved = "b"
-        rating = 1
-        deleted = True
-
-        obj = cls_()
-        obj.create_time = create_time
-        obj.update_time = update_time
-        obj.repository_review = repository_review
-        obj.component = component
-        obj.comment = comment
-        obj.private = private
-        obj.approved = approved
-        obj.rating = rating
-        obj.deleted = deleted
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.id == obj_id
-            assert stored_obj.create_time == create_time
-            assert stored_obj.update_time == update_time
-            assert stored_obj.repository_review_id == repository_review.id
-            assert stored_obj.component_id == component.id
-            assert stored_obj.comment == comment
-            assert stored_obj.private == private
-            assert stored_obj.approved == approved
-            assert stored_obj.rating == rating
-            assert stored_obj.deleted == deleted
-
-    def test_relationships(self, session, cls_, repository_review, component):
-        obj = cls_()
-        obj.repository_review = repository_review
-        obj.component = component
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.repository_review.id == repository_review.id
-            assert stored_obj.component.id == component.id
-
-
 class TestGalaxySession(BaseTest):
     def test_table(self, cls_):
         assert cls_.__tablename__ == "galaxy_session"
@@ -364,25 +301,13 @@ class TestRepository(BaseTest):
         repository_rating_association,
         repository_metadata_factory,
         repository_role_association,
-        repository_review_factory,
         user,
-        user_factory,
     ):
         obj = cls_()
         obj.user = user
         obj.categories.append(repository_category_association)
         obj.ratings.append(repository_rating_association)
         obj.roles.append(repository_role_association)
-
-        reviewer1 = user_factory()
-        review1 = repository_review_factory()
-        review1.user = reviewer1
-        review1.repository = obj
-
-        reviewer2 = user_factory()
-        review2 = repository_review_factory()
-        review2.user = reviewer2
-        review2.repository = obj
 
         metadata1 = repository_metadata_factory()
         metadata1.repository = obj
@@ -400,12 +325,10 @@ class TestRepository(BaseTest):
             assert stored_obj.categories == [repository_category_association]
             assert stored_obj.ratings == [repository_rating_association]
             assert stored_obj.roles == [repository_role_association]
-            assert collection_consists_of_objects(stored_obj.reviews, review1, review2)
-            assert collection_consists_of_objects(stored_obj.reviewers, reviewer1, reviewer2)
             assert collection_consists_of_objects(stored_obj.metadata_revisions, metadata1, metadata2)
             assert stored_obj.downloadable_revisions == [metadata2]
 
-        delete_from_database(session, [reviewer1, reviewer2, review1, review2, metadata1, metadata2])
+        delete_from_database(session, [metadata1, metadata2])
 
 
 class TestRepositoryCategoryAssociation(BaseTest):
@@ -491,45 +414,12 @@ class TestRepositoryMetadata(BaseTest):
         session,
         cls_,
         repository,
-        repository_review_factory,
         user,
     ):
 
         obj = cls_()
         obj.repository = repository
         obj.changeset_revision = "nonempty"
-
-        # create 3 reviews
-        review1 = repository_review_factory()
-        review2 = repository_review_factory()
-        review3 = repository_review_factory()
-
-        # set the same user for all reviews
-        review1.user = user
-        review2.user = user
-        review3.user = user
-
-        # set the same repository for all reviews
-        review1.repository = obj.repository
-        review2.repository = obj.repository
-        review3.repository = obj.repository
-
-        # set the same changeset for reviews 1,2
-        review1.changeset_revision = obj.changeset_revision
-        review2.changeset_revision = obj.changeset_revision
-        review3.changeset_revision = "something else"  # this won't be in reviews for this metadata
-
-        # add to session
-        session.add(review1)
-        session.add(review2)
-        session.add(review3)
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.repository.id == repository.id
-            assert collection_consists_of_objects(stored_obj.reviews, review1, review2)
-
-        delete_from_database(session, [review1, review2, review3])
 
 
 class TestRepositoryRatingAssociation(BaseTest):
@@ -569,106 +459,6 @@ class TestRepositoryRatingAssociation(BaseTest):
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.repository.id == repository.id
             assert stored_obj.user.id == user.id
-
-
-class TestRepositoryReview(BaseTest):
-    def test_table(self, cls_):
-        assert cls_.__tablename__ == "repository_review"
-
-    def test_columns(self, session, cls_, repository, user):
-        create_time = datetime.now()
-        update_time = create_time + timedelta(hours=1)
-        changeset_revision = "a"
-        approved = "b"
-        rating = 1
-        deleted = True
-
-        obj = cls_()
-        obj.create_time = create_time
-        obj.update_time = update_time
-        obj.repository = repository
-        obj.changeset_revision = changeset_revision
-        obj.user = user
-        obj.approved = approved
-        obj.rating = rating
-        obj.deleted = deleted
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.id == obj_id
-            assert stored_obj.create_time == create_time
-            assert stored_obj.update_time == update_time
-            assert stored_obj.repository_id == repository.id
-            assert stored_obj.changeset_revision == changeset_revision
-            assert stored_obj.user_id == user.id
-            assert stored_obj.approved == approved
-            assert stored_obj.rating == rating
-            assert stored_obj.deleted == deleted
-
-    def test_relationships(
-        self, session, cls_, repository, user, repository_metadata_factory, component_review_factory
-    ):
-        obj = cls_()
-        changeset = "nonempty"
-        obj.changeset_revision = changeset
-        obj.repository = repository
-        obj.user = user
-
-        metadata1 = repository_metadata_factory()
-        metadata2 = repository_metadata_factory()
-        metadata1.repository = repository
-        metadata2.repository = repository
-        metadata1.changeset_revision = changeset
-        metadata2.changeset_revision = "something else"
-
-        component_review1 = component_review_factory()
-        component_review1.repository_review = obj
-        component_review1.deleted = False
-
-        component_review2 = component_review_factory()
-        component_review2.repository_review = obj
-        component_review2.deleted = False
-        component_review2.private = True
-
-        session.add_all([metadata1, metadata2, component_review1, component_review2])
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.repository.id == repository.id
-            assert stored_obj.user.id == user.id
-            assert stored_obj.repository_metadata == metadata1
-            assert collection_consists_of_objects(stored_obj.component_reviews, component_review1, component_review2)
-            assert stored_obj.private_component_reviews == [component_review2]
-
-        delete_from_database(session, [component_review1, component_review2, metadata1, metadata2])
-
-
-class TestRepositoryRoleAssociation(BaseTest):
-    def test_table(self, cls_):
-        assert cls_.__tablename__ == "repository_role_association"
-
-    def test_columns(self, session, cls_, repository, role):
-        create_time = datetime.now()
-        update_time = create_time + timedelta(hours=1)
-        obj = cls_(repository, role)
-        obj.create_time = create_time
-        obj.update_time = update_time
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.id == obj_id
-            assert stored_obj.repository_id == repository.id
-            assert stored_obj.role_id == role.id
-            assert stored_obj.create_time == create_time
-            assert stored_obj.update_time == update_time
-
-    def test_relationships(self, session, cls_, repository, role):
-        obj = cls_(repository, role)
-
-        with dbcleanup(session, obj) as obj_id:
-            stored_obj = get_stored_obj(session, cls_, obj_id)
-            assert stored_obj.repository.id == repository.id
-            assert stored_obj.role.id == role.id
 
 
 class TestRole(BaseTest):
@@ -808,7 +598,6 @@ class TestUser(BaseTest):
         repository,
         galaxy_session,
         api_keys,
-        repository_review,
         role,
         group,
         password_reset_token,
@@ -825,7 +614,6 @@ class TestUser(BaseTest):
         obj.api_keys.append(api_keys)
         obj.reset_tokens.append(password_reset_token)
         obj.groups.append(user_group_association)
-        obj.repository_reviews.append(repository_review)
 
         _private_role = role_factory(name=obj.email)
         private_user_role = user_role_association_factory(obj, _private_role)
@@ -842,7 +630,6 @@ class TestUser(BaseTest):
             assert stored_obj.api_keys == [api_keys]
             assert stored_obj.reset_tokens == [password_reset_token]
             assert stored_obj.groups == [user_group_association]
-            assert stored_obj.repository_reviews == [repository_review]
             assert collection_consists_of_objects(stored_obj.roles, private_user_role, non_private_user_role)
             assert stored_obj.non_private_roles == [non_private_user_role]
 
@@ -926,7 +713,7 @@ def ensure_database_is_empty(session, model):
 @pytest.fixture(scope="module")
 def model():
     db_uri = "sqlite:///:memory:"
-    return mapping.init("/tmp", db_uri, create_tables=True)
+    return mapping.init(db_uri, create_tables=True)
 
 
 @pytest.fixture
@@ -945,12 +732,6 @@ def api_keys(model, session):
 @pytest.fixture
 def category(model, session):
     instance = model.Category(name=get_unique_value())
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def component(model, session):
-    instance = model.Component()
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -989,13 +770,6 @@ def repository(model, session):
 @pytest.fixture
 def repository_metadata(model, session):
     instance = model.RepositoryMetadata()
-    yield from dbcleanup_wrapper(session, instance)
-
-
-@pytest.fixture
-def repository_review(model, session, user):
-    instance = model.RepositoryReview()
-    instance.user = user
     yield from dbcleanup_wrapper(session, instance)
 
 
@@ -1045,14 +819,6 @@ def user_role_association(model, session, user, role):
 
 
 @pytest.fixture
-def component_review_factory(model):
-    def make_instance(*args, **kwds):
-        return model.ComponentReview(*args, **kwds)
-
-    return make_instance
-
-
-@pytest.fixture
 def group_role_association_factory(model):
     def make_instance(*args, **kwds):
         return model.GroupRoleAssociation(*args, **kwds)
@@ -1064,14 +830,6 @@ def group_role_association_factory(model):
 def repository_metadata_factory(model):
     def make_instance(*args, **kwds):
         return model.RepositoryMetadata(*args, **kwds)
-
-    return make_instance
-
-
-@pytest.fixture
-def repository_review_factory(model):
-    def make_instance(*args, **kwds):
-        return model.RepositoryReview(*args, **kwds)
 
     return make_instance
 

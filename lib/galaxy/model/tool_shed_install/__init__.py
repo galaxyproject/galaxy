@@ -146,7 +146,6 @@ class ToolShedRepository(Base, _HasTable):
         changeset_revision=None,
         ctx_rev=None,
         metadata_=None,
-        includes_datatypes=False,
         tool_shed_status=None,
         deleted=False,
         uninstalled=False,
@@ -164,7 +163,6 @@ class ToolShedRepository(Base, _HasTable):
         self.changeset_revision = changeset_revision
         self.ctx_rev = ctx_rev
         self.metadata_ = metadata_ or {}
-        self.includes_datatypes = includes_datatypes
         self.tool_shed_status = tool_shed_status
         self.deleted = deleted
         self.uninstalled = uninstalled
@@ -330,10 +328,6 @@ class ToolShedRepository(Base, _HasTable):
     @property
     def includes_tool_dependencies(self):
         return "tool_dependencies" in self.metadata_
-
-    @property
-    def includes_workflows(self):
-        return "workflows" in self.metadata_
 
     @property
     def installed_repository_dependencies(self):
@@ -727,13 +721,6 @@ class ToolDependency(Base, _HasTable):
             self.installation_status.UNINSTALLED,
         ]
 
-    def get_env_shell_file_path(self, app):
-        installation_directory = self.installation_directory(app)
-        file_path = os.path.join(installation_directory, "env.sh")
-        if os.path.exists(file_path):
-            return file_path
-        return None
-
     @property
     def in_error_state(self):
         return self.status == self.installation_status.ERROR
@@ -757,6 +744,7 @@ class ToolDependency(Base, _HasTable):
                 self.tool_shed_repository.name,
                 self.tool_shed_repository.installed_changeset_revision,
             )
+        return None
 
     @property
     def is_installed(self):

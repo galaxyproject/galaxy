@@ -19,7 +19,6 @@ from galaxy_test.base.api_asserts import (
 )
 from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
-    BaseDatasetPopulator,
     DatasetCollectionPopulator,
     DatasetPopulator,
     LibraryPopulator,
@@ -54,7 +53,7 @@ MINIMAL_TOOL_NO_ID = {
 
 
 class TestsTools:
-    dataset_populator: BaseDatasetPopulator
+    dataset_populator: DatasetPopulator
     dataset_collection_populator: BaseDatasetCollectionPopulator
 
     def _build_pair(self, history_id, contents):
@@ -125,7 +124,9 @@ class TestsTools:
             return create_response
 
 
-class ToolsTestCase(ApiTestCase, TestsTools):
+class TestToolsApi(ApiTestCase, TestsTools):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -347,8 +348,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         put_response.raise_for_status()
 
         response = get(user_info_url).json()
-        self.assertEqual(len(response["addresses"]), 1)
-        self.assertEqual(response["addresses"][0]["desc"], cool_name_with_quote)
+        assert len(response["addresses"]) == 1
+        assert response["addresses"][0]["desc"] == cool_name_with_quote
 
         hda1 = self.dataset_populator.new_dataset(history_id, content="1\t2\t3", name=cool_name_with_quote)
         assert hda1["name"] == cool_name_with_quote
@@ -549,7 +550,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             response = self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True)
             outputs = response["outputs"]
-            self.assertEqual(len(outputs), 2)
+            assert len(outputs) == 2
             output_forward = outputs[0]
             output_reverse = outputs[1]
             output_forward_content = self.dataset_populator.get_history_dataset_content(
@@ -605,7 +606,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             }
             response = self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True)
             implicit_collections = response["implicit_collections"]
-            self.assertEqual(len(implicit_collections), 2)
+            assert len(implicit_collections) == 2
             unzipped_hdca = self.dataset_populator.get_history_collection_details(
                 history_id, hid=implicit_collections[0]["hid"]
             )
@@ -622,7 +623,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             response = self._run("__ZIP_COLLECTION__", history_id, inputs, assert_ok=True)
             output_collections = response["output_collections"]
-            self.assertEqual(len(output_collections), 1)
+            assert len(output_collections) == 1
             self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
             zipped_hdca = self.dataset_populator.get_history_collection_details(
                 history_id, hid=output_collections[0]["hid"]
@@ -678,7 +679,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             response = self._run("__ZIP_COLLECTION__", history_id, inputs, assert_ok=True)
             implicit_collections = response["implicit_collections"]
-            self.assertEqual(len(implicit_collections), 1)
+            assert len(implicit_collections) == 1
             self.dataset_populator.wait_for_job(response["jobs"][0]["id"], assert_ok=True)
             zipped_hdca = self.dataset_populator.get_history_collection_details(
                 history_id, hid=implicit_collections[0]["hid"]
@@ -694,7 +695,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             response = self.dataset_populator.run_exit_code_from_file(history_id, ok_hdca_id)
 
             mixed_implicit_collections = response["implicit_collections"]
-            self.assertEqual(len(mixed_implicit_collections), 1)
+            assert len(mixed_implicit_collections) == 1
             mixed_hdca_hid = mixed_implicit_collections[0]["hid"]
             mixed_hdca = self.dataset_populator.get_history_collection_details(
                 history_id, hid=mixed_hdca_hid, wait=False
@@ -725,7 +726,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             response = self.dataset_populator.run_exit_code_from_file(history_id, ok_hdca_id)
 
             mixed_implicit_collections = response["implicit_collections"]
-            self.assertEqual(len(mixed_implicit_collections), 1)
+            assert len(mixed_implicit_collections) == 1
             mixed_hdca_hid = mixed_implicit_collections[0]["hid"]
             mixed_hdca = self.dataset_populator.get_history_collection_details(
                 history_id, hid=mixed_hdca_hid, wait=False
@@ -774,7 +775,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         filter_output_collections = response["output_collections"]
         if batch:
             return response["implicit_collections"][0]
-        self.assertEqual(len(filter_output_collections), 1)
+        assert len(filter_output_collections) == 1
         filtered_hid = filter_output_collections[0]["hid"]
         filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
         return filtered_hdca
@@ -787,7 +788,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             self.dataset_populator.wait_for_history(history_id)
             response = self._run("__APPLY_RULES__", history_id, inputs, assert_ok=True)
             output_collections = response["output_collections"]
-            self.assertEqual(len(output_collections), 1)
+            assert len(output_collections) == 1
             output_hid = output_collections[0]["hid"]
             output_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=output_hid, wait=False)
             example["check"](output_hdca, self.dataset_populator)
@@ -874,10 +875,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             input1=dataset_to_param(new_dataset),
         )
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 1)
+        assert len(outputs) == 1
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "Cat1Test")
+        assert output1_content.strip() == "Cat1Test"
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=True)
@@ -909,10 +910,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             input1=[dataset_to_param(new_dataset)],
         )
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 1)
+        assert len(outputs) == 1
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "Cat1Testlistified")
+        assert output1_content.strip() == "Cat1Testlistified"
 
     @skip_without_tool("multiple_versions")
     @uses_test_history(require_new=False)
@@ -922,10 +923,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             outputs = self._run_and_get_outputs(
                 tool_id="multiple_versions", history_id=history_id, tool_version=version
             )
-            self.assertEqual(len(outputs), 1)
+            assert len(outputs) == 1
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-            self.assertEqual(output1_content.strip(), f"Version {version}")
+            assert output1_content.strip() == f"Version {version}"
 
     @skip_without_tool("multiple_versions")
     @uses_test_history(require_new=False)
@@ -958,10 +959,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             input1={"batch": False, "values": [dataset_to_param(new_dataset)]},
         )
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 1)
+        assert len(outputs) == 1
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "123")
+        assert output1_content.strip() == "123"
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
@@ -986,7 +987,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert_inputs(inputs, can_be_used=False)
 
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 1)
+        assert len(outputs) == 1
         output1 = outputs[0]
 
         inputs_2 = dict(
@@ -1175,7 +1176,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_has_keys(output_collection, "id", "name", "elements", "populated")
         assert not output_collection["populated"]
         assert len(output_collection["elements"]) == 0
-        self.assertEqual(output_collection["name"], "Table split on first column")
+        assert output_collection["name"] == "Table split on first column"
         self.dataset_populator.wait_for_job(create["jobs"][0]["id"], assert_ok=True)
 
         get_collection_response = self._get(
@@ -1186,7 +1187,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         output_collection = get_collection_response.json()
         self._assert_has_keys(output_collection, "id", "name", "elements", "populated")
         assert output_collection["populated"]
-        self.assertEqual(output_collection["name"], "Table split on first column")
+        assert output_collection["name"] == "Table split on first column"
 
         assert len(output_collection["elements"]) == 2
         output_element_0 = output_collection["elements"][0]
@@ -1228,7 +1229,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(output_content, "Hello World\n")
+        assert output_content == "Hello World\n"
 
     def test_dynamic_tool_from_path(self):
         # Create tool.
@@ -1244,7 +1245,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(output_content, "Hello World 2\n")
+        assert output_content == "Hello World 2\n"
 
     def test_dynamic_tool_no_id(self):
         # Create tool.
@@ -1257,7 +1258,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(output_content, "Hello World 2\n")
+        assert output_content == "Hello World 2\n"
 
     def test_show_dynamic_tools(self):
         # Create tool.
@@ -1316,10 +1317,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         new_dataset2 = self.dataset_populator.new_dataset(history_id, content="Cat2Test")
         inputs = {"input1": dataset_to_param(new_dataset1), "queries_0|input2": dataset_to_param(new_dataset2)}
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 1)
+        assert len(outputs) == 1
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "Cat1Test\nCat2Test")
+        assert output1_content.strip() == "Cat1Test\nCat2Test"
 
     @skip_without_tool("mapper_two")
     @uses_test_history(require_new=False)
@@ -1375,13 +1376,13 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def _check_cat1_multirun(self, history_id, inputs):
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 2)
+        assert len(outputs) == 2
         output1 = outputs[0]
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        self.assertEqual(output1_content.strip(), "123")
-        self.assertEqual(output2_content.strip(), "456")
+        assert output1_content.strip() == "123"
+        assert output2_content.strip() == "456"
 
     @skip_without_tool("random_lines1")
     @uses_test_history(require_new=False)
@@ -1422,7 +1423,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             "queries_0|input2": {"batch": True, "values": second_two},
         }
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 2)
+        assert len(outputs) == 2
         outputs_contents = [
             self.dataset_populator.get_history_dataset_content(history_id, dataset=o).strip() for o in outputs
         ]
@@ -1440,7 +1441,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs_contents = [
             self.dataset_populator.get_history_dataset_content(history_id, dataset=o).strip() for o in outputs
         ]
-        self.assertEqual(len(outputs), 4)
+        assert len(outputs) == 4
         assert "123\n789" in outputs_contents
         assert "456\n0ab" in outputs_contents
         assert "123\n0ab" in outputs_contents
@@ -1533,19 +1534,19 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         implicit_collections = create["implicit_collections"]
         collections = create["output_collections"]
 
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(implicit_collections), 0)
-        self.assertEqual(len(collections), 1)
+        assert len(jobs) == 1
+        assert len(implicit_collections) == 0
+        assert len(collections) == 1
 
         output_collection = collections[0]
         return output_collection
 
     def _assert_elements_are(self, collection, *args):
         elements = collection["elements"]
-        self.assertEqual(len(elements), len(args))
+        assert len(elements) == len(args)
         for index, element in enumerate(elements):
             arg = args[index]
-            self.assertEqual(arg, element["element_identifier"])
+            assert arg == element["element_identifier"]
         return elements
 
     def _verify_element(self, history_id, element, **props):
@@ -1555,14 +1556,14 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             expected_contents = props["contents"]
 
             contents = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=object_id)
-            self.assertEqual(contents, expected_contents)
+            assert contents == expected_contents
 
             del props["contents"]
 
         if props:
             details = self.dataset_populator.get_history_dataset_details(history_id, dataset_id=object_id)
             for key, value in props.items():
-                self.assertEqual(details[key], value)
+                assert details[key] == value
 
     def _setup_repeat_multirun(self):
         history_id = self.dataset_populator.new_history()
@@ -1577,13 +1578,13 @@ class ToolsTestCase(ApiTestCase, TestsTools):
 
     def _check_repeat_multirun(self, history_id, inputs):
         outputs = self._cat1_outputs(history_id, inputs=inputs)
-        self.assertEqual(len(outputs), 2)
+        assert len(outputs) == 2
         output1 = outputs[0]
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        self.assertEqual(output1_content.strip(), "Common\n123")
-        self.assertEqual(output2_content.strip(), "Common\n456")
+        assert output1_content.strip() == "Common\n123"
+        assert output2_content.strip() == "Common\n456"
 
     def _setup_two_multiruns(self):
         history_id = self.dataset_populator.new_history()
@@ -1619,9 +1620,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 0)
-        self.assertEqual(len(outputs), 0)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 0
+        assert len(outputs) == 0
+        assert len(implicit_collections) == 1
 
         empty_output = implicit_collections[0]
         assert empty_output["name"] == "Concatenate datasets on collection 1", empty_output
@@ -1639,9 +1640,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             outputs = create["outputs"]
             jobs = create["jobs"]
             implicit_collections = create["implicit_collections"]
-            self.assertEqual(len(jobs), 2)
-            self.assertEqual(len(outputs), 2)
-            self.assertEqual(len(implicit_collections), 1)
+            assert len(jobs) == 2
+            assert len(outputs) == 2
+            assert len(implicit_collections) == 1
             output1 = outputs[0]
             output2 = outputs[1]
             output1_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output1)
@@ -1658,9 +1659,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(outputs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(outputs) == 2
+        assert len(implicit_collections) == 1
         for output in outputs:
             assert output["file_ext"] == "txt", output
 
@@ -1678,8 +1679,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         create = self._run("output_filter_with_input", history_id, inputs).json()
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 3)
-        self.assertEqual(len(implicit_collections), 3)
+        assert len(jobs) == 3
+        assert len(implicit_collections) == 3
         self._check_implicit_collection_populated(create)
 
     @skip_without_tool("output_filter_with_input_optional")
@@ -1694,9 +1695,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         create = self._run("output_filter_with_input_optional", history_id, inputs).json()
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
+        assert len(jobs) == 1
         self.dataset_populator.wait_for_job(jobs[0]["id"], assert_ok=True)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(implicit_collections) == 1
         self._check_implicit_collection_populated(create)
 
     @skip_without_tool("output_filter_with_input")
@@ -1713,8 +1714,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         create = self._run("output_filter_with_input", history_id, inputs).json()
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 3)
-        self.assertEqual(len(implicit_collections), 2)
+        assert len(jobs) == 3
+        assert len(implicit_collections) == 2
         self._check_implicit_collection_populated(create)
 
     @skip_without_tool("Cut1")
@@ -1730,9 +1731,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(outputs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(outputs) == 2
+        assert len(implicit_collections) == 1
         output1 = outputs[0]
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
@@ -1749,14 +1750,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         inputs = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}}
         create = self._run("collection_creates_dynamic_list_of_pairs", history_id, inputs).json()
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(implicit_collections), 1)
-        self.assertEqual(implicit_collections[0]["collection_type"], "list:list:paired")
-        self.assertEqual(implicit_collections[0]["elements"][0]["object"]["element_count"], None)
+        assert len(implicit_collections) == 1
+        assert implicit_collections[0]["collection_type"] == "list:list:paired"
+        assert implicit_collections[0]["elements"][0]["object"]["element_count"] is None
         self.dataset_populator.wait_for_job(create["jobs"][0]["id"], assert_ok=True)
         hdca = self._get(f"histories/{history_id}/contents/dataset_collections/{implicit_collections[0]['id']}").json()
-        self.assertEqual(
-            hdca["elements"][0]["object"]["elements"][0]["object"]["elements"][0]["element_identifier"], "forward"
-        )
+        assert hdca["elements"][0]["object"]["elements"][0]["object"]["elements"][0]["element_identifier"] == "forward"
 
     def _bed_list(self, history_id):
         bed1_contents = open(self.get_filename("1.bed")).read()
@@ -1778,15 +1777,15 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(outputs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(outputs) == 2
+        assert len(implicit_collections) == 1
         output1 = outputs[0]
         output2 = outputs[1]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        self.assertEqual(output1_content.strip(), "forward")
-        self.assertEqual(output2_content.strip(), "reverse")
+        assert output1_content.strip() == "forward"
+        assert output2_content.strip() == "reverse"
 
     @skip_without_tool("identifier_single")
     @uses_test_history(require_new=False)
@@ -1801,12 +1800,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "Plain HDA")
+        assert output1_content.strip() == "Plain HDA"
 
     @skip_without_tool("identifier_multiple")
     @uses_test_history(require_new=False)
@@ -1828,12 +1827,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "forward\nreverse")
+        assert output1_content.strip() == "forward\nreverse"
 
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
@@ -1848,12 +1847,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "forward\nreverse")
+        assert output1_content.strip() == "forward\nreverse"
 
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
@@ -1871,12 +1870,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "forward\nreverse")
+        assert output1_content.strip() == "forward\nreverse"
 
     @skip_without_tool("identifier_multiple_in_repeat")
     @uses_test_history(require_new=False)
@@ -1891,12 +1890,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "forward\nreverse")
+        assert output1_content.strip() == "forward\nreverse"
 
     @skip_without_tool("identifier_in_conditional")
     @uses_test_history(require_new=False)
@@ -1913,15 +1912,15 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(outputs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(outputs) == 2
+        assert len(implicit_collections) == 1
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "forward")
+        assert output1_content.strip() == "forward"
         output2 = outputs[1]
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        self.assertEqual(output2_content.strip(), "reverse")
+        assert output2_content.strip() == "reverse"
 
     @skip_without_tool("identifier_multiple_in_conditional")
     @uses_test_history(require_new=False)
@@ -1936,12 +1935,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "forward\nreverse")
+        assert output1_content.strip() == "forward\nreverse"
 
     @skip_without_tool("identifier_multiple_in_repeat")
     @uses_test_history(require_new=False)
@@ -1956,12 +1955,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "forward\nreverse")
+        assert output1_content.strip() == "forward\nreverse"
 
     @skip_without_tool("identifier_single_in_repeat")
     @uses_test_history(require_new=False)
@@ -1973,8 +1972,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         create = create_response.json()
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(implicit_collections) == 1
         output_collection = implicit_collections[0]
         elements = output_collection["elements"]
         assert len(elements) == 2
@@ -1995,12 +1994,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "Normal HDA1")
+        assert output1_content.strip() == "Normal HDA1"
 
     @skip_without_tool("identifier_multiple")
     @uses_test_history(require_new=False)
@@ -2014,12 +2013,12 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
-        self.assertEqual(len(implicit_collections), 0)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
+        assert len(implicit_collections) == 0
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "Normal HDA1\nNormal HDA2")
+        assert output1_content.strip() == "Normal HDA1\nNormal HDA2"
 
     @skip_without_tool("identifier_collection")
     @uses_test_history(require_new=False)
@@ -2046,11 +2045,11 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         create = create_response.json()
         outputs = create["outputs"]
         jobs = create["jobs"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 1)
+        assert len(jobs) == 1
+        assert len(outputs) == 1
         output1 = outputs[0]
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        self.assertEqual(output1_content.strip(), "\n".join(d["name"] for d in element_identifiers))
+        assert output1_content.strip() == "\n".join(d["name"] for d in element_identifiers)
 
     @skip_without_tool("identifier_in_actions")
     @uses_test_history(require_new=False)
@@ -2101,8 +2100,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(implicit_collections) == 1
         implicit_collection = implicit_collections[0]
         assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
         outer_elements = implicit_collection["elements"]
@@ -2120,8 +2119,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         create = self._run("collection_paired_conditional_structured_like", history_id, inputs, assert_ok=True)
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 2)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 2
+        assert len(implicit_collections) == 1
         implicit_collection = implicit_collections[0]
         assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
         outer_elements = implicit_collection["elements"]
@@ -2132,9 +2131,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         outputs = create["outputs"]
         jobs = create["jobs"]
         implicit_collections = create["implicit_collections"]
-        self.assertEqual(len(jobs), 4)
-        self.assertEqual(len(outputs), 4)
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(jobs) == 4
+        assert len(outputs) == 4
+        assert len(implicit_collections) == 1
         implicit_collection = implicit_collections[0]
         self._assert_has_keys(implicit_collection, "collection_type", "elements")
         assert implicit_collection["collection_type"] == "list:paired"
@@ -2147,7 +2146,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         assert first_object["collection_type"] == "paired"
         assert len(first_object["elements"]) == 2
         first_object_forward_element = first_object["elements"][0]
-        self.assertEqual(outputs[0]["id"], first_object_forward_element["object"]["id"])
+        assert outputs[0]["id"] == first_object_forward_element["object"]["id"]
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
@@ -2165,17 +2164,17 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_status_code_is(response, 200)
         response_object = response.json()
         outputs = response_object["outputs"]
-        self.assertEqual(len(outputs), 2)
+        assert len(outputs) == 2
         output1 = outputs[0]
         output2 = outputs[1]
         self.dataset_populator.wait_for_history(history_id)
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-        self.assertEqual(output1_content.strip(), "123\n789")
-        self.assertEqual(output2_content.strip(), "456\n0ab")
+        assert output1_content.strip() == "123\n789"
+        assert output2_content.strip() == "456\n0ab"
 
-        self.assertEqual(len(response_object["jobs"]), 2)
-        self.assertEqual(len(response_object["implicit_collections"]), 1)
+        assert len(response_object["jobs"]) == 2
+        assert len(response_object["implicit_collections"]) == 1
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
@@ -2190,13 +2189,13 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_status_code_is(response, 200)
         response_object = response.json()
         outputs = response_object["outputs"]
-        self.assertEqual(len(outputs), 4)
+        assert len(outputs) == 4
 
-        self.assertEqual(len(response_object["jobs"]), 4)
+        assert len(response_object["jobs"]) == 4
         implicit_collections = response_object["implicit_collections"]
-        self.assertEqual(len(implicit_collections), 1)
+        assert len(implicit_collections) == 1
         implicit_collection = implicit_collections[0]
-        self.assertEqual(implicit_collection["collection_type"], "paired:paired")
+        assert implicit_collection["collection_type"] == "paired:paired"
 
         outer_elements = implicit_collection["elements"]
         assert len(outer_elements) == 2
@@ -2227,7 +2226,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         for (element, expected_contents) in expected_contents_list:
             dataset_id = element["object"]["id"]
             contents = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=dataset_id)
-            self.assertEqual(expected_contents, contents)
+            assert expected_contents == contents
 
     @skip_without_tool("cat1")
     @uses_test_history(require_new=False)
@@ -2247,10 +2246,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_status_code_is(response, 200)
         response_object = response.json()
         outputs = response_object["outputs"]
-        self.assertEqual(len(outputs), 2)
+        assert len(outputs) == 2
 
-        self.assertEqual(len(response_object["jobs"]), 2)
-        self.assertEqual(len(response_object["implicit_collections"]), 1)
+        assert len(response_object["jobs"]) == 2
+        assert len(response_object["implicit_collections"]) == 1
 
     @skip_without_tool("identifier_source")
     def test_default_identifier_source_map_over(self):
@@ -2287,8 +2286,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             create = self._run("collection_creates_pair", history_id, inputs, assert_ok=True)
             jobs = create["jobs"]
             implicit_collections = create["implicit_collections"]
-            self.assertEqual(len(jobs), 2)
-            self.assertEqual(len(implicit_collections), 1)
+            assert len(jobs) == 2
+            assert len(implicit_collections) == 1
             implicit_collection = implicit_collections[0]
             assert implicit_collection["collection_type"] == "list:paired", implicit_collection
             outer_elements = implicit_collection["elements"]
@@ -2319,7 +2318,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             ]
             for i in range(4):
                 contents = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=pair_ids[i])
-                self.assertEqual(expected_contents[i], contents)
+                assert expected_contents[i] == contents
 
     @skip_without_tool("cat1")
     def test_cannot_map_over_incompatible_collections(self):
@@ -2362,9 +2361,9 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             new_collections = (
                 len([c for c in history_contents if c["history_content_type"] == "dataset_collection"]) - 1
             )
-            assert new_collections == 2, (
-                "Expected to generate 4 new, filtered collections, but got %d collections" % new_collections
-            )
+            assert (
+                new_collections == 2
+            ), f"Expected to generate 4 new, filtered collections, but got {new_collections} collections"
             assert (
                 filtered_collection["collection_type"] == discarded_collection["collection_type"] == "list:list"
             ), filtered_collection
@@ -2436,8 +2435,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             create = self._run("multi_data_param", history_id, inputs, assert_ok=True)
             jobs = create["jobs"]
             implicit_collections = create["implicit_collections"]
-            self.assertEqual(len(jobs), 1)
-            self.assertEqual(len(implicit_collections), 2)
+            assert len(jobs) == 1
+            assert len(implicit_collections) == 2
             output_hdca = self.dataset_populator.get_history_collection_details(
                 history_id, hid=implicit_collections[0]["hid"]
             )
@@ -2482,7 +2481,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             }
             create = self._run("column_multi_param", history_id, inputs, assert_ok=True)
             jobs = create["jobs"]
-            self.assertEqual(len(jobs), 1)
+            assert len(jobs) == 1
             content = self.dataset_populator.get_history_dataset_content(history_id, hid=3)
             assert content.strip() == "hg17", content
 
@@ -2496,8 +2495,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             create = self._run("multi_data_repeat", history_id, inputs, assert_ok=True)
             outputs = create["outputs"]
             jobs = create["jobs"]
-            self.assertEqual(len(jobs), 1)
-            self.assertEqual(len(outputs), 1)
+            assert len(jobs) == 1
+            assert len(outputs) == 1
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
             assert output1_content.strip() == "123\n456", output1_content
@@ -2512,8 +2511,8 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             create = self._run("multi_data_repeat", history_id, inputs, assert_ok=True)
             outputs = create["outputs"]
             jobs = create["jobs"]
-            self.assertEqual(len(jobs), 1)
-            self.assertEqual(len(outputs), 1)
+            assert len(jobs) == 1
+            assert len(outputs) == 1
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
             assert output1_content.strip() == "123\n456", output1_content
@@ -2532,20 +2531,20 @@ class ToolsTestCase(ApiTestCase, TestsTools):
             create = self._run("multi_data_param", history_id, inputs, assert_ok=True)
             outputs = create["outputs"]
             jobs = create["jobs"]
-            self.assertEqual(len(jobs), 1)
-            self.assertEqual(len(outputs), 2)
+            assert len(jobs) == 1
+            assert len(outputs) == 2
             output1, output2 = outputs
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
             output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
-            self.assertEqual(output1_content.strip(), "123\n456\nTestData123\nTestData123\nTestData123")
-            self.assertEqual(output2_content.strip(), "123\n456")
+            assert output1_content.strip() == "123\n456\nTestData123\nTestData123\nTestData123"
+            assert output2_content.strip() == "123\n456"
 
     def _check_simple_reduce_job(self, history_id, inputs):
         create = self._run("multi_data_param", history_id, inputs, assert_ok=True)
         outputs = create["outputs"]
         jobs = create["jobs"]
-        self.assertEqual(len(jobs), 1)
-        self.assertEqual(len(outputs), 2)
+        assert len(jobs) == 1
+        assert len(outputs) == 2
         output1, output2 = outputs
         output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
         output2_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output2)
@@ -2654,10 +2653,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         response = self._run("collection_cat_group_tag", history_id, inputs, assert_ok=True)
         outputs = response["outputs"]
-        self.assertEqual(len(outputs), 1)
+        assert len(outputs) == 1
         output = outputs[0]
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-        self.assertEqual(output_content.strip(), "123\n456")
+        assert output_content.strip() == "123\n456"
 
     @skip_without_tool("collection_cat_group_tag_multiple")
     @uses_test_history(require_new=False)
@@ -2670,10 +2669,10 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         response = self._run("collection_cat_group_tag_multiple", history_id, inputs, assert_ok=True)
         outputs = response["outputs"]
-        self.assertEqual(len(outputs), 1)
+        assert len(outputs) == 1
         output = outputs[0]
         output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
-        self.assertEqual(output_content.strip(), "123\n456\n456\n0ab")
+        assert output_content.strip() == "123\n456\n456\n0ab"
 
     @skip_without_tool("expression_forty_two")
     def test_galaxy_expression_tool_simplest(self):
@@ -2682,7 +2681,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_status_code_is(run_response, 200)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(output_content, "42")
+        assert output_content == "42"
 
     @skip_without_tool("expression_parse_int")
     def test_galaxy_expression_tool_simple(self):
@@ -2694,7 +2693,7 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_status_code_is(run_response, 200)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(output_content, "7")
+        assert output_content == "7"
 
     @skip_without_tool("expression_log_line_count")
     def test_galaxy_expression_metadata(self):
@@ -2709,7 +2708,290 @@ class ToolsTestCase(ApiTestCase, TestsTools):
         self._assert_status_code_is(run_response, 200)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         output_content = self.dataset_populator.get_history_dataset_content(history_id)
-        self.assertEqual(output_content, "3")
+        assert output_content == "3"
+
+    @skip_without_tool("cat1")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_dataset(self, history_id):
+        details = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed", ext="bed"
+        )
+        inputs = {
+            "input1": dataset_to_param(details),
+        }
+        outputs = self._cat1_outputs(history_id, inputs=inputs)
+        output = outputs[0]
+        details = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset=output, wait=True, assert_ok=True
+        )
+        assert details["state"] == "ok"
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content.startswith("chr1	147962192	147962580	CCDS989.1_cds_0_0_chr1_147962193_r	0	-")
+
+    @skip_without_tool("metadata_bam")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_dataset_with_metadata_options_filter(self, history_id):
+        details = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
+        )
+        inputs = {"input_bam": dataset_to_param(details), "ref_names": "chrM"}
+        run_response = self.dataset_populator.run_tool(tool_id="metadata_bam", inputs=inputs, history_id=history_id)
+        output = run_response["outputs"][0]
+        output_details = self.dataset_populator.get_history_dataset_details(
+            history_id, dataset=output, wait=True, assert_ok=True
+        )
+        assert output_details["state"] == "ok"
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output)
+        assert output_content.startswith("chrM")
+
+    @skip_without_tool("pileup")
+    @uses_test_history(require_new=False)
+    def test_metadata_validator_on_deferred_input(self, history_id):
+        deferred_bam_details = self.dataset_populator.create_deferred_hda(
+            history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
+        )
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
+        run_response = self.dataset_populator.run_tool(tool_id="pileup", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)
+
+    @pytest.mark.xfail
+    @skip_without_tool("pileup")
+    @uses_test_history(require_new=False)
+    def test_metadata_validator_can_fail_on_deferred_input(self, history_id):
+        # This test fails because we just skip the validator
+        # Fixing this is a TODO
+        deferred_bam_details = self.dataset_populator.create_deferred_hda(
+            history_id,
+            "https://github.com/galaxyproject/galaxy/blob/dev/test-data/3unsorted.bam?raw=true",
+            ext="unsorted.bam",
+        )
+        fasta1_contents = open(self.get_filename("1.fasta")).read()
+        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
+        run_response = self.dataset_populator.run_tool(tool_id="pileup", inputs=inputs, history_id=history_id)
+        self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=False)
+        job_id = run_response["jobs"][0]["id"]
+        job_details = self.dataset_populator.get_job_details(job_id=job_id).json()
+        assert job_details["state"] == "failed"
+
+    @skip_without_tool("cat1")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_mapping(self, history_id: str):
+        elements = [
+            {
+                "src": "url",
+                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "info": "my cool bed",
+                "deferred": True,
+                "ext": "bed",
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+        run_response = self._run_cat1(history_id, inputs).json()
+        hdca_id = run_response["implicit_collections"][0]["id"]
+        dataset_collection = self.dataset_populator.get_history_collection_details(history_id, id=hdca_id)
+        elements = dataset_collection["elements"]
+        assert len(elements) == 1
+        object_0 = elements[0]["object"]
+        assert isinstance(object_0, dict)
+        assert object_0["state"] == "ok"
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=object_0)
+        assert output_content.startswith("chr22	30128507	31828507	uc003bnx.1_cds_2_0_chr22_29227_f	0	+")
+
+    @skip_without_tool("cat_list")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_list_multi_data_reduction(self, history_id: str):
+        elements = [
+            {
+                "src": "url",
+                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "info": "my cool bed",
+                "deferred": True,
+                "ext": "bed",
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca_id},
+        }
+        run_response = self._run("cat_list", history_id, inputs, assert_ok=True)
+        output_dataset = run_response["outputs"][0]
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_dataset)
+        assert output_content.startswith("chr22	30128507	31828507	uc003bnx.1_cds_2_0_chr22_29227_f	0	+")
+
+    @skip_without_tool("cat_list")
+    @uses_test_history(require_new=False)
+    def test_run_deferred_nested_list_input(self, history_id: str):
+        elements = [
+            {
+                "name": "outer",
+                "elements": [
+                    {
+                        "src": "url",
+                        "name": "forward",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "info": "my cool bed 4",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                    {
+                        "src": "url",
+                        "name": "reverse",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "info": "my cool bed 1",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                ],
+            },
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list:paired",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        assert dataset_collection["collection_type"] == "list:paired"
+        result_elements = dataset_collection["elements"]
+        assert len(result_elements) == 1
+        outer_element = result_elements[0]
+        assert isinstance(outer_element, dict)
+        inner_dataset_coll = outer_element["object"]
+        assert isinstance(inner_dataset_coll, dict)
+        inner_elements = inner_dataset_coll["elements"]
+        assert isinstance(inner_elements, list)
+        assert len(inner_elements) == 2
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"src": "hdca", "id": hdca_id},
+        }
+        run_response = self._run("collection_nested_test", history_id, inputs, assert_ok=True, wait_for_job=True)
+        output_dataset = run_response["outputs"][1]
+        output_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output_dataset)
+        assert output_content.startswith("chr22	30128507	31828507	uc003bnx.1_cds_2_0_chr22_29227_f	0	+")
+
+    @skip_without_tool("collection_paired_structured_like")
+    @uses_test_history(require_new=False)
+    def test_deferred_map_over_nested_collections(self, history_id):
+        elements = [
+            {
+                "name": "outer1",
+                "elements": [
+                    {
+                        "src": "url",
+                        "name": "forward",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "info": "my cool bed 4",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                    {
+                        "src": "url",
+                        "name": "reverse",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "info": "my cool bed 1",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                ],
+            },
+            {
+                "name": "outer2",
+                "elements": [
+                    {
+                        "src": "url",
+                        "name": "forward",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                        "info": "my cool bed 4",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                    {
+                        "src": "url",
+                        "name": "reverse",
+                        "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed",
+                        "info": "my cool bed 1",
+                        "deferred": True,
+                        "ext": "bed",
+                    },
+                ],
+            },
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list:paired",
+                "name": "here is a name",
+            }
+        ]
+        payload = {
+            "history_id": history_id,
+            "targets": json.dumps(targets),
+        }
+        fetch_response = self.dataset_populator.fetch(payload, wait=True)
+        dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
+        hdca_id = dataset_collection["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [dict(map_over_type="paired", src="hdca", id=hdca_id)]},
+        }
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
+        jobs = create["jobs"]
+        implicit_collections = create["implicit_collections"]
+        assert len(jobs) == 2
+        self.dataset_populator.wait_for_jobs(jobs, assert_ok=True)
+        assert len(implicit_collections) == 1
+        implicit_collection = implicit_collections[0]
+        assert implicit_collection["collection_type"] == "list:paired", implicit_collection["collection_type"]
+        outer_elements = implicit_collection["elements"]
+        assert len(outer_elements) == 2
+        element0 = outer_elements[0]
+        pair1 = element0["object"]
+        hda = pair1["elements"][0]["object"]
+        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=hda, wait=False)
+        assert output1_content.startswith("chr22\t30128507\t31828507\tuc003bnx.1_cds_2_0_chr22_29227_f\t0\t+")
 
     def __build_group_list(self, history_id):
         response = self.dataset_collection_populator.upload_collection(

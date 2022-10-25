@@ -6,48 +6,101 @@ import shutil
 import tarfile
 import tempfile
 from collections import defaultdict
+from dataclasses import dataclass
+from enum import Enum
 from json import (
     dump,
     dumps,
     load,
 )
+from tempfile import mkdtemp
 from typing import (
     Any,
+    Callable,
     cast,
     Dict,
     List,
     Optional,
+    Set,
+    Tuple,
+    Type,
+    TYPE_CHECKING,
     Union,
 )
 
 from bdbag import bdbag_api as bdb
 from boltons.iterutils import remap
+from rocrate.model.computationalworkflow import (
+    ComputationalWorkflow,
+    WorkflowDescription,
+)
+from rocrate.rocrate import ROCrate
 from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import expression
+from typing_extensions import Protocol
 
+from galaxy.datatypes.registry import Registry
 from galaxy.exceptions import (
     MalformedContents,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
+from galaxy.files import ConfiguredFileSources
+from galaxy.files.uris import stream_url_to_file
+from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
     add_object_to_object_session,
     add_object_to_session,
     get_object_session,
 )
+from galaxy.objectstore import ObjectStore
+from galaxy.schema.bco import (
+    BioComputeObjectCore,
+    DescriptionDomain,
+    DescriptionDomainUri,
+    ErrorDomain,
+    InputAndOutputDomain,
+    InputAndOutputDomainUri,
+    InputSubdomainItem,
+    OutputSubdomainItem,
+    ParametricDomain,
+    ParametricDomainItem,
+    PipelineStep,
+    ProvenanceDomain,
+    UsabilityDomain,
+    XrefItem,
+)
+from galaxy.schema.bco.io_domain import Uri
+from galaxy.schema.bco.util import (
+    extension_domains,
+    galaxy_execution_domain,
+    get_contributors,
+    write_to_file,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
     in_directory,
+    safe_makedirs,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.path import safe_walk
+from ._bco_convert_utils import (
+    bco_workflow_version,
+    SoftwarePrerequisteTracker,
+)
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
     get_item_annotation_str,
 )
 from ... import model
+
+if TYPE_CHECKING:
+    from galaxy.managers.workflows import WorkflowContentsManager
+
 
 ObjectKeyType = Union[str, int]
 
@@ -58,22 +111,71 @@ ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS = "implicit_collection_jobs_attrs.txt"
 ATTRS_FILENAME_COLLECTIONS = "collections_attrs.txt"
 ATTRS_FILENAME_EXPORT = "export_attrs.txt"
 ATTRS_FILENAME_LIBRARIES = "libraries_attrs.txt"
+ATTRS_FILENAME_LIBRARY_FOLDERS = "library_folders_attrs.txt"
+ATTRS_FILENAME_INVOCATIONS = "invocation_attrs.txt"
 TRACEBACK = "traceback.txt"
 GALAXY_EXPORT_VERSION = "2"
 
+DICT_STORE_ATTRS_KEY_HISTORY = "history"
+DICT_STORE_ATTRS_KEY_DATASETS = "datasets"
+DICT_STORE_ATTRS_KEY_COLLECTIONS = "collections"
+DICT_STORE_ATTRS_KEY_JOBS = "jobs"
+DICT_STORE_ATTRS_KEY_IMPLICIT_COLLECTION_JOBS = "implicit_collection_jobs"
+DICT_STORE_ATTRS_KEY_LIBRARIES = "libraries"
+DICT_STORE_ATTRS_KEY_INVOCATIONS = "invocations"
+
+
+JsonDictT = Dict[str, Any]
+
+
+class StoreAppProtocol(Protocol):
+    """Define the parts of a Galaxy-like app consumed by model store."""
+
+    datatypes_registry: Registry
+    object_store: ObjectStore
+    security: IdEncodingHelper
+    model: GalaxyModelMapping
+    file_sources: ConfiguredFileSources
+    workflow_contents_manager: "WorkflowContentsManager"
+
+
+class ImportDiscardedDataType(Enum):
+    # Don't allow discarded 'okay' datasets on import, datasets will be marked deleted.
+    FORBID = "forbid"
+    # Allow datasets to be imported as experimental DISCARDED datasets that are not deleted if file data unavailable.
+    ALLOW = "allow"
+    # Import all datasets as discarded regardless of whether file data is available in the store.
+    FORCE = "force"
+
+
+DEFAULT_DISCARDED_DATA_TYPE = ImportDiscardedDataType.FORBID
+
 
 class ImportOptions:
-    def __init__(self, allow_edit=False, allow_library_creation=False, allow_dataset_object_edit=None):
+    allow_edit: bool
+    allow_library_creation: bool
+    allow_dataset_object_edit: bool
+    discarded_data: ImportDiscardedDataType
+
+    def __init__(
+        self,
+        allow_edit=False,
+        allow_library_creation=False,
+        allow_dataset_object_edit=None,
+        discarded_data=DEFAULT_DISCARDED_DATA_TYPE,
+    ):
         self.allow_edit = allow_edit
         self.allow_library_creation = allow_library_creation
         if allow_dataset_object_edit is None:
-            allow_dataset_object_edit = allow_edit
-        self.allow_dataset_object_edit = allow_dataset_object_edit
+            self.allow_dataset_object_edit = allow_edit
+        else:
+            self.allow_dataset_object_edit = allow_dataset_object_edit
+        self.discarded_data = discarded_data
 
 
 class SessionlessContext:
     def __init__(self):
-        self.objects = defaultdict(dict)
+        self.objects: Dict[Any, Any] = defaultdict(dict)
 
     def flush(self):
         pass
@@ -104,7 +206,16 @@ def replace_metadata_file(metadata: Dict[str, Any], dataset_instance: model.Data
 
 
 class ModelImportStore(metaclass=abc.ABCMeta):
-    def __init__(self, import_options=None, app=None, user=None, object_store=None, tag_handler=None):
+    app: Optional[StoreAppProtocol]
+
+    def __init__(
+        self,
+        import_options=None,
+        app: Optional[StoreAppProtocol] = None,
+        user=None,
+        object_store=None,
+        tag_handler=None,
+    ):
         if object_store is None:
             if app is not None:
                 object_store = app.object_store
@@ -162,14 +273,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         """Trust HID when importing objects into a new History."""
 
     @contextlib.contextmanager
-    def target_history(self, default_history=None):
+    def target_history(self, default_history=None, legacy_history_naming=True):
         new_history = None
 
         if self.defines_new_history():
             history_properties = self.new_history_properties()
             history_name = history_properties.get("name")
-            if history_name:
+            if history_name and legacy_history_naming:
                 history_name = f"imported from archive: {history_name}"
+            elif history_name:
+                pass  # history_name = history_name
             else:
                 history_name = "unnamed imported history"
 
@@ -218,7 +331,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self._reassign_hids(object_import_tracker, history)
         self._import_jobs(object_import_tracker, history)
         self._import_implicit_collection_jobs(object_import_tracker)
+        self._import_workflow_invocations(object_import_tracker, history)
         self._flush()
+        return object_import_tracker
 
     def _attach_dataset_hashes(self, dataset_or_file_attrs, dataset_instance):
         if "hashes" in dataset_or_file_attrs:
@@ -247,41 +362,40 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _import_datasets(self, object_import_tracker, datasets_attrs, history, new_history, job):
         object_key = self.object_key
 
-        for dataset_attrs in datasets_attrs:
+        def handle_dataset_object_edit(dataset_instance, dataset_attrs):
+            if "dataset" in dataset_attrs:
+                assert self.import_options.allow_dataset_object_edit
+                dataset_attributes = [
+                    "state",
+                    "deleted",
+                    "purged",
+                    "external_filename",
+                    "_extra_files_path",
+                    "file_size",
+                    "object_store_id",
+                    "total_size",
+                    "created_from_basename",
+                    "uuid",
+                ]
 
+                for attribute in dataset_attributes:
+                    if attribute in dataset_attrs["dataset"]:
+                        setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
+                self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
+                self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
+                if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
+                    dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
+                if job:
+                    dataset_instance.dataset.job_id = job.id
+
+        for dataset_attrs in datasets_attrs:
             if "state" not in dataset_attrs:
                 self.dataset_state_serialized = False
 
-            def handle_dataset_object_edit(dataset_instance):
-                if "dataset" in dataset_attrs:
-                    assert self.import_options.allow_dataset_object_edit
-                    dataset_attributes = [
-                        "state",
-                        "deleted",
-                        "purged",
-                        "external_filename",
-                        "_extra_files_path",
-                        "file_size",
-                        "object_store_id",
-                        "total_size",
-                        "created_from_basename",
-                        "uuid",
-                    ]
-
-                    for attribute in dataset_attributes:
-                        if attribute in dataset_attrs["dataset"]:
-                            setattr(dataset_instance.dataset, attribute, dataset_attrs["dataset"][attribute])
-                    self._attach_dataset_hashes(dataset_attrs["dataset"], dataset_instance)
-                    self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
-                    if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
-                        dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
-                    if job:
-                        dataset_instance.dataset.job_id = job.id
-
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
-                dataset_instance = self.sa_session.query(getattr(model, dataset_attrs["model_class"])).get(
-                    dataset_attrs["id"]
-                )
+                dataset_instance: model.DatasetInstance = self.sa_session.query(
+                    getattr(model, dataset_attrs["model_class"])
+                ).get(dataset_attrs["id"])
                 attributes = [
                     "name",
                     "extension",
@@ -302,12 +416,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             value = replace_metadata_file(value, dataset_instance, self.sa_session)
                         setattr(dataset_instance, attribute, value)
 
-                handle_dataset_object_edit(dataset_instance)
+                handle_dataset_object_edit(dataset_instance, dataset_attrs)
             else:
-                metadata = dataset_attrs["metadata"]
+                metadata_deferred = dataset_attrs.get("metadata_deferred", False)
+                metadata = dataset_attrs.get("metadata")
+                if metadata is None and not metadata_deferred:
+                    raise MalformedContents("metadata_deferred must be true if no metadata found in dataset attributes")
+                if metadata is None:
+                    metadata = {"dbkey": "?"}
 
                 model_class = dataset_attrs.get("model_class", "HistoryDatasetAssociation")
-                dataset_instance: model.DatasetInstance
                 if model_class == "HistoryDatasetAssociation":
                     # Create dataset and HDA.
                     dataset_instance = model.HistoryDatasetAssociation(
@@ -321,6 +439,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         deleted=dataset_attrs.get("deleted", False),
                         dbkey=metadata["dbkey"],
                         tool_version=metadata.get("tool_version"),
+                        metadata_deferred=metadata_deferred,
                         history=history,
                         create_dataset=True,
                         flush=False,
@@ -340,6 +459,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         deleted=dataset_attrs.get("deleted", False),
                         dbkey=metadata["dbkey"],
                         tool_version=metadata.get("tool_version"),
+                        metadata_deferred=metadata_deferred,
                         user=self.user,
                         create_dataset=True,
                         flush=False,
@@ -372,6 +492,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         hda.hid = dataset_attrs["hid"]
                     else:
                         object_import_tracker.requires_hid.append(hda)
+                else:
+                    pass
+                    # ldda = cast(model.LibraryDatasetDatasetAssociation, dataset_instance)
+                    # ldda.user = self.user
 
                 file_source_root = self.file_source_root
 
@@ -380,7 +504,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 # Otherwise, we will check for "file" information instead of dataset information - currently this includes
                 # "file_name", "extra_files_path".
                 if "dataset" in dataset_attrs:
-                    handle_dataset_object_edit(dataset_instance)
+                    handle_dataset_object_edit(dataset_instance, dataset_attrs)
                 else:
                     file_name = dataset_attrs.get("file_name")
                     if file_name:
@@ -395,14 +519,41 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         if not in_directory(temp_dataset_file_name, file_source_root):
                             raise MalformedContents(f"Invalid dataset path: {temp_dataset_file_name}")
 
-                    if not file_name or not os.path.exists(temp_dataset_file_name):
-                        dataset_instance.state = dataset_instance.states.DISCARDED
-                        dataset_instance.deleted = True
-                        dataset_instance.purged = True
-                        dataset_instance.dataset.deleted = True
-                        dataset_instance.dataset.purged = True
+                    has_good_source = False
+                    file_metadata = dataset_attrs.get("file_metadata") or {}
+                    if "sources" in file_metadata:
+                        for source_attrs in file_metadata["sources"]:
+                            extra_files_path = source_attrs["extra_files_path"]
+                            if extra_files_path is None:
+                                has_good_source = True
+
+                    discarded_data = self.import_options.discarded_data
+                    dataset_state = dataset_attrs.get("state", dataset_instance.states.OK)
+                    if dataset_state == dataset_instance.states.DEFERRED:
+                        dataset_instance._state = dataset_instance.states.DEFERRED
+                        dataset_instance.deleted = False
+                        dataset_instance.purged = False
+                        dataset_instance.dataset.state = dataset_instance.states.DEFERRED
+                        dataset_instance.dataset.deleted = False
+                        dataset_instance.dataset.purged = False
+                    elif (
+                        not file_name
+                        or not os.path.exists(temp_dataset_file_name)
+                        or discarded_data is ImportDiscardedDataType.FORCE
+                    ):
+                        is_discarded = not has_good_source
+                        target_state = (
+                            dataset_instance.states.DISCARDED if is_discarded else dataset_instance.states.DEFERRED
+                        )
+                        dataset_instance._state = target_state
+                        deleted = is_discarded and (discarded_data == ImportDiscardedDataType.FORBID)
+                        dataset_instance.deleted = deleted
+                        dataset_instance.purged = deleted
+                        dataset_instance.dataset.state = target_state
+                        dataset_instance.dataset.deleted = deleted
+                        dataset_instance.dataset.purged = deleted
                     else:
-                        dataset_instance.state = dataset_attrs.get("state", dataset_instance.states.OK)
+                        dataset_instance.state = dataset_state
                         self.object_store.update_from_file(
                             dataset_instance.dataset, file_name=temp_dataset_file_name, create=True
                         )
@@ -433,7 +584,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
                     if dataset_instance.deleted:
                         dataset_instance.dataset.deleted = True
-                    file_metadata = dataset_attrs.get("file_metadata") or {}
                     self._attach_dataset_hashes(file_metadata, dataset_instance)
                     self._attach_dataset_sources(file_metadata, dataset_instance)
                     if "created_from_basename" in file_metadata:
@@ -448,9 +598,26 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         )
 
                 if self.app:
-                    self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                        dataset_instance, history, job
-                    )
+                    # If dataset instance is discarded or deferred, don't attempt to regenerate
+                    # metadata for it.
+                    if dataset_instance.state == dataset_instance.states.OK:
+                        regenerate_kwds: Dict[str, Any] = {}
+                        if job:
+                            regenerate_kwds["user"] = job.user
+                            regenerate_kwds["session_id"] = job.session_id
+                        elif history:
+                            user = history.user
+                            regenerate_kwds["user"] = user
+                            if user is None:
+                                regenerate_kwds["session_id"] = history.galaxy_sessions[0].galaxy_session.id
+                            else:
+                                regenerate_kwds["session_id"] = None
+                        else:
+                            # Need a user to run library jobs to generate metadata...
+                            pass
+                        self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                            dataset_instance, history, **regenerate_kwds
+                        )
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
@@ -505,9 +672,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 and not self.sessionless
                 and self.import_options.allow_edit
             ):
-                library_folder = self.sa_session.query(model.LibraryFolder).get(
-                    self.app.security.decode_id(library_attrs["id"])
-                )
+                library_folder = self.sa_session.query(model.LibraryFolder).get(library_attrs["id"])
                 import_folder(library_attrs, root_folder=library_folder)
             else:
                 assert self.import_options.allow_library_creation
@@ -723,6 +888,192 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 history.stage_addition(obj)
             history.add_pending_items()
 
+    def _import_workflow_invocations(self, object_import_tracker, history):
+        #
+        # Create jobs.
+        #
+        object_key = self.object_key
+
+        for workflow_key, workflow_path in self.workflow_paths():
+            workflows_directory = os.path.join(self.archive_dir, "workflows")
+            workflow = self.app.workflow_contents_manager.read_workflow_from_path(
+                self.app, self.user, workflow_path, allow_in_directory=workflows_directory
+            )
+            object_import_tracker.workflows_by_key[workflow_key] = workflow
+
+        invocations_attrs = self.invocations_properties()
+        for invocation_attrs in invocations_attrs:
+            assert not self.import_options.allow_edit
+            imported_invocation = model.WorkflowInvocation()
+            imported_invocation.user = self.user
+            imported_invocation.history = history
+            workflow_key = invocation_attrs["workflow"]
+            if workflow_key not in object_import_tracker.workflows_by_key:
+                raise Exception(f"Failed to find key {workflow_key} in {object_import_tracker.workflows_by_key.keys()}")
+            workflow = object_import_tracker.workflows_by_key[workflow_key]
+            imported_invocation.workflow = workflow
+            state = invocation_attrs["state"]
+            if state in model.WorkflowInvocation.non_terminal_states:
+                state = model.WorkflowInvocation.states.CANCELLED
+            imported_invocation.state = state
+            restore_times(imported_invocation, invocation_attrs)
+
+            self._session_add(imported_invocation)
+            self._flush()
+
+            def attach_workflow_step(imported_object, attrs):
+                order_index = attrs["order_index"]
+                imported_object.workflow_step = workflow.step_by_index(order_index)  # noqa: B023
+
+            for step_attrs in invocation_attrs["steps"]:
+                imported_invocation_step = model.WorkflowInvocationStep()
+                imported_invocation_step.workflow_invocation = imported_invocation
+                attach_workflow_step(imported_invocation_step, step_attrs)
+                restore_times(imported_invocation_step, step_attrs)
+                imported_invocation_step.action = step_attrs["action"]
+
+                # TODO: ensure terminal...
+                imported_invocation_step.state = step_attrs["state"]
+
+                if "job" in step_attrs:
+                    job = object_import_tracker.jobs_by_key[step_attrs["job"][object_key]]
+                    imported_invocation_step.job = job
+                elif "implicit_collection_jobs" in step_attrs:
+                    icj = object_import_tracker.implicit_collection_jobs_by_key[
+                        step_attrs["implicit_collection_jobs"][object_key]
+                    ]
+                    imported_invocation_step.implicit_collection_jobs = icj
+
+                # TODO: handle step outputs...
+                output_dicts = step_attrs["outputs"]
+                step_outputs = []
+                for output_dict in output_dicts:
+                    step_output = model.WorkflowInvocationStepOutputDatasetAssociation()
+                    step_output.output_name = output_dict["output_name"]
+                    dataset_link_attrs = output_dict["dataset"]
+                    if dataset_link_attrs:
+                        dataset = object_import_tracker.find_hda(dataset_link_attrs[object_key])
+                        assert dataset
+                        step_output.dataset = dataset
+
+                    step_outputs.append(step_output)
+
+                imported_invocation_step.output_datasets = step_outputs
+
+                output_collection_dicts = step_attrs["output_collections"]
+                step_output_collections = []
+                for output_collection_dict in output_collection_dicts:
+                    step_output_collection = model.WorkflowInvocationStepOutputDatasetCollectionAssociation()
+                    step_output_collection.output_name = output_collection_dict["output_name"]
+                    dataset_collection_link_attrs = output_collection_dict["dataset_collection"]
+                    if dataset_collection_link_attrs:
+                        dataset_collection = object_import_tracker.find_hdca(dataset_collection_link_attrs[object_key])
+                        assert dataset_collection
+                        step_output_collection.dataset_collection = dataset_collection
+
+                    step_output_collections.append(step_output_collection)
+
+                imported_invocation_step.output_dataset_collections = step_output_collections
+
+            input_parameters = []
+            for input_parameter_attrs in invocation_attrs["input_parameters"]:
+                input_parameter = model.WorkflowRequestInputParameter()
+                input_parameter.value = input_parameter_attrs["value"]
+                input_parameter.name = input_parameter_attrs["name"]
+                input_parameter.type = input_parameter_attrs["type"]
+                input_parameter.workflow_invocation = imported_invocation
+                self._session_add(input_parameter)
+                input_parameters.append(input_parameter)
+
+            # invocation_attrs["input_parameters"] = input_parameters
+
+            step_states = []
+            for step_state_attrs in invocation_attrs["step_states"]:
+                step_state = model.WorkflowRequestStepState()
+                step_state.value = step_state_attrs["value"]
+                attach_workflow_step(step_state, step_state_attrs)
+                step_state.workflow_invocation = imported_invocation
+                self._session_add(step_state)
+                step_states.append(step_state)
+
+            input_step_parameters = []
+            for input_step_parameter_attrs in invocation_attrs["input_step_parameters"]:
+                input_step_parameter = model.WorkflowRequestInputStepParameter()
+                input_step_parameter.parameter_value = input_step_parameter_attrs["parameter_value"]
+                attach_workflow_step(input_step_parameter, input_step_parameter_attrs)
+                input_step_parameter.workflow_invocation = imported_invocation
+                self._session_add(input_step_parameter)
+                input_step_parameters.append(input_step_parameter)
+
+            input_datasets = []
+            for input_dataset_attrs in invocation_attrs["input_datasets"]:
+                input_dataset = model.WorkflowRequestToInputDatasetAssociation()
+                attach_workflow_step(input_dataset, input_dataset_attrs)
+                input_dataset.workflow_invocation = imported_invocation
+                input_dataset.name = input_dataset_attrs["name"]
+                dataset_link_attrs = input_dataset_attrs["dataset"]
+                if dataset_link_attrs:
+                    dataset = object_import_tracker.find_hda(dataset_link_attrs[object_key])
+                    assert dataset
+                    input_dataset.dataset = dataset
+                self._session_add(input_dataset)
+                input_datasets.append(input_dataset)
+
+            input_dataset_collections = []
+            for input_dataset_collection_attrs in invocation_attrs["input_dataset_collections"]:
+                input_dataset_collection = model.WorkflowRequestToInputDatasetCollectionAssociation()
+                attach_workflow_step(input_dataset_collection, input_dataset_collection_attrs)
+                input_dataset_collection.workflow_invocation = imported_invocation
+                input_dataset_collection.name = input_dataset_collection_attrs["name"]
+                dataset_collection_link_attrs = input_dataset_collection_attrs["dataset_collection"]
+                if dataset_collection_link_attrs:
+                    dataset_collection = object_import_tracker.find_hdca(dataset_collection_link_attrs[object_key])
+                    assert dataset_collection
+                    input_dataset_collection.dataset_collection = dataset_collection
+
+                self._session_add(input_dataset_collection)
+                input_dataset_collections.append(input_dataset_collection)
+
+            output_dataset_collections = []
+            for output_dataset_collection_attrs in invocation_attrs["output_dataset_collections"]:
+                output_dataset_collection = model.WorkflowInvocationOutputDatasetCollectionAssociation()
+                output_dataset_collection.workflow_invocation = imported_invocation
+                attach_workflow_step(output_dataset_collection, output_dataset_collection_attrs)
+                workflow_output = output_dataset_collection_attrs["workflow_output"]
+                label = workflow_output.get("label")
+                workflow_output = workflow.workflow_output_for(label)
+                output_dataset_collection.workflow_output = workflow_output
+                self._session_add(output_dataset_collection)
+                output_dataset_collections.append(output_dataset_collection)
+
+            output_datasets = []
+            for output_dataset_attrs in invocation_attrs["output_datasets"]:
+                output_dataset = model.WorkflowInvocationOutputDatasetAssociation()
+                output_dataset.workflow_invocation = imported_invocation
+                attach_workflow_step(output_dataset, output_dataset_attrs)
+                workflow_output = output_dataset_attrs["workflow_output"]
+                label = workflow_output.get("label")
+                workflow_output = workflow.workflow_output_for(label)
+                output_dataset.workflow_output = workflow_output
+                self._session_add(output_dataset)
+                output_datasets.append(output_dataset)
+
+            output_values = []
+            for output_value_attrs in invocation_attrs["output_values"]:
+                output_value = model.WorkflowInvocationOutputValue()
+                output_value.workflow_invocation = imported_invocation
+                output_value.value = output_value_attrs["value"]
+                attach_workflow_step(output_value, output_value_attrs)
+                workflow_output = output_value_attrs["workflow_output"]
+                label = workflow_output.get("label")
+                workflow_output = workflow.workflow_output_for(label)
+                output_value.workflow_output = workflow_output
+                self._session_add(output_value)
+                output_values.append(output_value)
+
+            if object_key in invocation_attrs:
+                object_import_tracker.invocations_by_key[invocation_attrs[object_key]] = imported_invocation
+
     def _import_jobs(self, object_import_tracker, history):
         self._flush()
         object_key = self.object_key
@@ -757,11 +1108,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_job.tool_version = job_attrs["tool_version"]
             self._set_job_attributes(imported_job, job_attrs, force_terminal=True)
 
-            try:
-                imported_job.create_time = datetime.datetime.strptime(job_attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
-                imported_job.update_time = datetime.datetime.strptime(job_attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
-            except Exception:
-                pass
+            restore_times(imported_job, job_attrs)
             self._session_add(imported_job)
 
             # Connect jobs to input and output datasets.
@@ -776,6 +1123,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 object_import_tracker.jobs_by_key[job_attrs[object_key]] = imported_job
 
     def _import_implicit_collection_jobs(self, object_import_tracker):
+        object_key = self.object_key
+
         implicit_collection_jobs_attrs = self.implicit_collection_jobs_properties()
         for icj_attrs in implicit_collection_jobs_attrs:
             icj = model.ImplicitCollectionJobs()
@@ -793,6 +1142,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 icja.order_index = order_index
                 icj.jobs.append(icja)
                 self._session_add(icja)
+
+            object_import_tracker.implicit_collection_jobs_by_key[icj_attrs[object_key]] = icj
 
             self._session_add(icj)
 
@@ -856,7 +1207,12 @@ class ObjectImportTracker:
         self.hda_copied_from_sinks = {}
         self.hdca_copied_from_sinks = {}
         self.jobs_by_key = {}
+        self.invocations_by_key = {}
+        self.implicit_collection_jobs_by_key = {}
+        self.workflows_by_key = {}
         self.requires_hid = []
+
+        self.new_history = None
 
     def find_hda(
         self, input_key: ObjectKeyType, hda_id: Optional[int] = None
@@ -910,6 +1266,45 @@ def get_import_model_store_for_directory(archive_dir, **kwd):
         return DirectoryImportModelStore1901(archive_dir, **kwd)
 
 
+class DictImportModelStore(ModelImportStore):
+    object_key = "encoded_id"
+
+    def __init__(self, store_as_dict, **kwd):
+        self._store_as_dict = store_as_dict
+        super().__init__(**kwd)
+
+    def defines_new_history(self) -> bool:
+        return DICT_STORE_ATTRS_KEY_HISTORY in self._store_as_dict
+
+    def new_history_properties(self):
+        return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_HISTORY) or {}
+
+    def datasets_properties(self):
+        return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_DATASETS) or []
+
+    def collections_properties(self):
+        return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_COLLECTIONS) or []
+
+    def library_properties(self):
+        return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_LIBRARIES) or []
+
+    def jobs_properties(self):
+        return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_JOBS) or []
+
+    def implicit_collection_jobs_properties(self):
+        return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_IMPLICIT_COLLECTION_JOBS) or []
+
+    def invocations_properties(self):
+        return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_INVOCATIONS) or []
+
+    def workflow_paths(self):
+        return []
+
+
+def get_import_model_store_for_dict(as_dict, **kwd):
+    return DictImportModelStore(as_dict, **kwd)
+
+
 class BaseDirectoryImportModelStore(ModelImportStore):
     @property
     def file_source_root(self):
@@ -936,27 +1331,15 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         return datasets_attrs
 
     def collections_properties(self):
-        collections_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_COLLECTIONS)
-        if os.path.exists(collections_attrs_file_name):
-            collections_attrs = load(open(collections_attrs_file_name))
-        else:
-            collections_attrs = []
-        return collections_attrs
+        return self._read_list_if_exists(ATTRS_FILENAME_COLLECTIONS)
 
     def library_properties(self):
-        libraries_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_LIBRARIES)
-        if os.path.exists(libraries_attrs_file_name):
-            libraries_attrs = load(open(libraries_attrs_file_name))
-        else:
-            libraries_attrs = []
+        libraries_attrs = self._read_list_if_exists(ATTRS_FILENAME_LIBRARIES)
+        libraries_attrs.extend(self._read_list_if_exists(ATTRS_FILENAME_LIBRARY_FOLDERS))
         return libraries_attrs
 
     def jobs_properties(self):
-        jobs_attr_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_JOBS)
-        try:
-            return load(open(jobs_attr_file_name))
-        except FileNotFoundError:
-            return []
+        return self._read_list_if_exists(ATTRS_FILENAME_JOBS)
 
     def implicit_collection_jobs_properties(self):
         implicit_collection_jobs_attrs_file_name = os.path.join(
@@ -966,6 +1349,21 @@ class BaseDirectoryImportModelStore(ModelImportStore):
             return load(open(implicit_collection_jobs_attrs_file_name))
         except FileNotFoundError:
             return []
+
+    def invocations_properties(self):
+        return self._read_list_if_exists(ATTRS_FILENAME_INVOCATIONS)
+
+    def workflow_paths(self):
+        workflows_directory = os.path.join(self.archive_dir, "workflows")
+        if not os.path.exists(workflows_directory):
+            return []
+
+        for name in os.listdir(workflows_directory):
+            if name.endswith(".ga") or name.endswith(".abstract.cwl") or name.endswith(".html"):
+                continue
+            assert name.endswith(".gxwf.yml")
+            workflow_key = name[0 : -len(".gxwf.yml")]
+            yield workflow_key, os.path.join(workflows_directory, name)
 
     def _set_job_attributes(self, imported_job, job_attrs, force_terminal=False):
         ATTRIBUTES = (
@@ -988,7 +1386,29 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         raw_state = job_attrs.get("state")
         if force_terminal and raw_state and raw_state not in model.Job.terminal_states:
             raw_state = model.Job.states.ERROR
-        imported_job.set_state(raw_state)
+        if raw_state:
+            imported_job.set_state(raw_state)
+
+    def _read_list_if_exists(self, file_name, required=False):
+        file_name = os.path.join(self.archive_dir, file_name)
+        if os.path.exists(file_name):
+            attrs = load(open(file_name))
+        else:
+            if required:
+                raise Exception("Failed to find file [%s] in model store archive" % file_name)
+            attrs = []
+        return attrs
+
+
+def restore_times(model_object, attrs):
+    try:
+        model_object.create_time = datetime.datetime.strptime(attrs["create_time"], "%Y-%m-%dT%H:%M:%S.%f")
+    except Exception:
+        pass
+    try:
+        model_object.update_time = datetime.datetime.strptime(attrs["update_time"], "%Y-%m-%dT%H:%M:%S.%f")
+    except Exception:
+        pass
 
 
 class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
@@ -1156,6 +1576,14 @@ class ModelExportStore(metaclass=abc.ABCMeta):
         """Export history to store."""
 
     @abc.abstractmethod
+    def export_library(self, history, include_hidden=False, include_deleted=False):
+        """Export library to store."""
+
+    @abc.abstractmethod
+    def export_workflow_invocation(self, workflow_invocation, include_hidden=False, include_deleted=False):
+        """Export workflow invocation to store."""
+
+    @abc.abstractmethod
     def add_dataset_collection(
         self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]
     ):
@@ -1179,15 +1607,19 @@ class ModelExportStore(metaclass=abc.ABCMeta):
 
 
 class DirectoryModelExportStore(ModelExportStore):
+    app: Optional[StoreAppProtocol]
+    file_sources: Optional[ConfiguredFileSources]
+
     def __init__(
         self,
-        export_directory,
-        app=None,
-        for_edit=False,
+        export_directory: str,
+        app: Optional[StoreAppProtocol] = None,
+        file_sources: Optional[ConfiguredFileSources] = None,
+        for_edit: bool = False,
         serialize_dataset_objects=None,
-        export_files=None,
-        strip_metadata_files=True,
-        serialize_jobs=True,
+        export_files: Optional[str] = None,
+        strip_metadata_files: bool = True,
+        serialize_jobs: bool = True,
     ):
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -1206,10 +1638,13 @@ class DirectoryModelExportStore(ModelExportStore):
             self.app = app
             security = app.security
             sessionless = False
+            if file_sources is None:
+                file_sources = app.file_sources
         else:
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
+        self.file_sources = file_sources
         self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
         self.security = security
@@ -1222,20 +1657,27 @@ class DirectoryModelExportStore(ModelExportStore):
             serialize_files_handler=self,
         )
         self.export_files = export_files
-        self.included_datasets = {}
-        self.included_collections = []
-        self.included_libraries = []
-        self.included_library_folders = []
-        self.collection_datasets = {}
-        self.collections_attrs = []
-        self.dataset_id_to_path = {}
+        self.included_datasets: Dict[model.DatasetInstance, Tuple[model.DatasetInstance, bool]] = {}
+        self.included_collections: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
+        self.included_libraries: List[model.Library] = []
+        self.included_library_folders: List[model.LibraryFolder] = []
+        self.included_invocations: List[model.WorkflowInvocation] = []
+        self.collection_datasets: Set[int] = set()
+        self.collections_attrs: List[Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]] = []
+        self.dataset_id_to_path: Dict[int, Tuple[Optional[str], Optional[str]]] = {}
 
-        self.job_output_dataset_associations = {}
+        self.job_output_dataset_associations: Dict[int, Dict[str, model.DatasetInstance]] = {}
 
-    def serialize_files(self, dataset, as_dict):
+    @property
+    def workflows_directory(self):
+        return os.path.join(self.export_directory, "workflows")
+
+    def serialize_files(self, dataset: model.DatasetInstance, as_dict: JsonDictT) -> None:
         if self.export_files is None:
             return None
-        elif self.export_files == "symlink":
+
+        add: Callable[[str, str], None]
+        if self.export_files == "symlink":
             add = os.symlink
         elif self.export_files == "copy":
 
@@ -1435,8 +1877,11 @@ class DirectoryModelExportStore(ModelExportStore):
             jobs_attrs_out.write(json_encoder.encode(jobs_attrs))
         return jobs_attrs
 
-    def export_history(self, history, include_hidden=False, include_deleted=False):
+    def export_history(
+        self, history: model.History, include_hidden: bool = False, include_deleted: bool = False
+    ) -> None:
         app = self.app
+        assert app, "exporting histories requires being bound to a session and Galaxy app object"
         export_directory = self.export_directory
 
         history_attrs = history.serialize(app.security, self.serialization_options)
@@ -1461,24 +1906,15 @@ class DirectoryModelExportStore(ModelExportStore):
             if collection.state != "ok":
                 break
 
-            self.add_dataset_collection(collection)
-
-            # export jobs for these datasets
-            for collection_dataset in collection.dataset_instances:
-                if collection_dataset.deleted and not include_deleted:
-                    include_files = False
-                else:
-                    include_files = True
-
-                self.add_dataset(collection_dataset, include_files=include_files)
-                self.collection_datasets[collection_dataset.id] = True
+            self.export_collection(collection, include_deleted=include_deleted)
 
         # Write datasets' attributes to file.
+        actions_backref = model.Dataset.actions  # type: ignore[attr-defined]
         query = (
             sa_session.query(model.HistoryDatasetAssociation)
             .filter(model.HistoryDatasetAssociation.history == history)
             .join(model.Dataset)
-            .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(model.Dataset.actions))
+            .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(actions_backref))
             .order_by(model.HistoryDatasetAssociation.hid)
             .filter(model.Dataset.purged == expression.false())
         )
@@ -1492,21 +1928,48 @@ class DirectoryModelExportStore(ModelExportStore):
             if dataset not in self.included_datasets:
                 self.add_dataset(dataset, include_files=add_dataset)
 
-    def export_library(self, library, include_hidden=False, include_deleted=False):
+    def export_library(self, library: model.Library, include_hidden=False, include_deleted=False):
         self.included_libraries.append(library)
-        root_folder = getattr(library, "root_folder", library)
-        self.included_library_folders.append(root_folder)
-        self.export_library_folder(root_folder, include_hidden=include_hidden, include_deleted=include_deleted)
+        root_folder = library.root_folder
+        self.export_library_folder_contents(root_folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
-    def export_library_folder(self, library_folder, include_hidden=False, include_deleted=False):
+    def export_library_folder(self, library_folder: model.LibraryFolder, include_hidden=False, include_deleted=False):
+        self.included_library_folders.append(library_folder)
+        self.export_library_folder_contents(
+            library_folder, include_hidden=include_hidden, include_deleted=include_deleted
+        )
+
+    def export_library_folder_contents(
+        self, library_folder: model.LibraryFolder, include_hidden=False, include_deleted=False
+    ):
         for library_dataset in library_folder.datasets:
             ldda = library_dataset.library_dataset_dataset_association
             add_dataset = (not ldda.visible or not include_hidden) and (not ldda.deleted or include_deleted)
             self.add_dataset(ldda, add_dataset)
         for folder in library_folder.folders:
-            self.export_library_folder(folder, include_hidden=include_hidden, include_deleted=include_deleted)
+            self.export_library_folder_contents(folder, include_hidden=include_hidden, include_deleted=include_deleted)
 
-    def add_job_output_dataset_associations(self, job_id, name, dataset_instance):
+    def export_workflow_invocation(
+        self, workflow_invocation: model.WorkflowInvocation, include_hidden=False, include_deleted=False
+    ):
+        self.included_invocations.append(workflow_invocation)
+        for input_dataset in workflow_invocation.input_datasets:
+            self.add_dataset(input_dataset.dataset)
+        for output_dataset in workflow_invocation.output_datasets:
+            self.add_dataset(output_dataset.dataset)
+        for input_dataset_collection in workflow_invocation.input_dataset_collections:
+            self.export_collection(input_dataset_collection.dataset_collection)
+        for output_dataset_collection in workflow_invocation.output_dataset_collections:
+            self.export_collection(output_dataset_collection.dataset_collection)
+        for workflow_invocation_step in workflow_invocation.steps:
+            for assoc in workflow_invocation_step.output_datasets:
+                self.add_dataset(assoc.dataset)
+            for assoc in workflow_invocation_step.output_dataset_collections:
+                self.export_collection(assoc.dataset_collection)
+
+    def add_job_output_dataset_associations(
+        self, job_id: int, name: str, dataset_instance: model.DatasetInstance
+    ) -> None:
         job_output_dataset_associations = self.job_output_dataset_associations
         if job_id not in job_output_dataset_associations:
             job_output_dataset_associations[job_id] = {}
@@ -1516,7 +1979,8 @@ class DirectoryModelExportStore(ModelExportStore):
         self,
         collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation],
         include_deleted: bool = False,
-    ):
+        include_hidden: bool = False,
+    ) -> None:
         self.add_dataset_collection(collection)
 
         # export datasets for this collection
@@ -1524,21 +1988,22 @@ class DirectoryModelExportStore(ModelExportStore):
             collection.collection if isinstance(collection, model.HistoryDatasetCollectionAssociation) else collection
         )
         for collection_dataset in has_collection.dataset_instances:
+            # ignoring include_hidden since the datasets will default to hidden for this collection.
             if collection_dataset.deleted and not include_deleted:
                 include_files = False
             else:
                 include_files = True
 
             self.add_dataset(collection_dataset, include_files=include_files)
-            self.collection_datasets[collection_dataset.id] = True
+            self.collection_datasets.add(collection_dataset.id)
 
     def add_dataset_collection(
         self, collection: Union[model.DatasetCollection, model.HistoryDatasetCollectionAssociation]
-    ):
+    ) -> None:
         self.collections_attrs.append(collection)
         self.included_collections.append(collection)
 
-    def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True):
+    def add_dataset(self, dataset: model.DatasetInstance, include_files: bool = True) -> None:
         self.included_datasets[dataset] = (dataset, include_files)
 
     def _finalize(self):
@@ -1566,6 +2031,10 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(libraries_attrs_filename, "w") as libraries_attrs_out:
             libraries_attrs_out.write(to_json(self.included_libraries))
 
+        library_folders_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_LIBRARY_FOLDERS)
+        with open(library_folders_attrs_filename, "w") as library_folder_attrs_out:
+            library_folder_attrs_out.write(to_json(self.included_library_folders))
+
         collections_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_COLLECTIONS)
         with open(collections_attrs_filename, "w") as collections_attrs_out:
             collections_attrs_out.write(to_json(self.collections_attrs))
@@ -1589,13 +2058,7 @@ class DirectoryModelExportStore(ModelExportStore):
             jobs_dict = {}
             implicit_collection_jobs_dict = {}
 
-            def record_associated_jobs(obj):
-                # Get the job object.
-                job = None
-                for assoc in getattr(obj, "creating_job_associations", []):
-                    # For mapped over jobs obj could be DatasetCollection, which has no creating_job_association
-                    job = assoc.job
-                    break
+            def record_job(job):
                 if not job:
                     # No viable job.
                     return
@@ -1606,7 +2069,16 @@ class DirectoryModelExportStore(ModelExportStore):
                     implicit_collection_jobs = icja.implicit_collection_jobs
                     implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
 
-            for hda, _ in self.included_datasets.values():
+            def record_associated_jobs(obj):
+                # Get the job object.
+                job = None
+                for assoc in getattr(obj, "creating_job_associations", []):
+                    # For mapped over jobs obj could be DatasetCollection, which has no creating_job_association
+                    job = assoc.job
+                    break
+                record_job(job)
+
+            for hda, _include_files in self.included_datasets.values():
                 # Get the associated job, if any. If this hda was copied from another,
                 # we need to find the job that created the original hda
                 job_hda = hda
@@ -1622,6 +2094,15 @@ class DirectoryModelExportStore(ModelExportStore):
                 record_associated_jobs(hdca)
 
             self.export_jobs(jobs_dict.values(), jobs_attrs=jobs_attrs)
+
+            for invocation in self.included_invocations:
+                for step in invocation.steps:
+                    for job in step.jobs:
+                        record_job(job)
+                    if step.implicit_collection_jobs:
+                        implicit_collection_jobs = step.implicit_collection_jobs
+                        implicit_collection_jobs_dict[implicit_collection_jobs.id] = implicit_collection_jobs
+
             # Get jobs' attributes.
 
             icjs_attrs = []
@@ -1632,6 +2113,29 @@ class DirectoryModelExportStore(ModelExportStore):
             icjs_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS)
             with open(icjs_attrs_filename, "w") as icjs_attrs_out:
                 icjs_attrs_out.write(json_encoder.encode(icjs_attrs))
+
+        invocations_attrs = []
+
+        for invocation in self.included_invocations:
+            invocation_attrs = invocation.serialize(self.security, self.serialization_options)
+
+            workflows_directory = self.workflows_directory
+            safe_makedirs(workflows_directory)
+
+            workflow = invocation.workflow
+            workflow_key = self.serialization_options.get_identifier(self.security, workflow)
+            history = invocation.history
+            assert invocation_attrs
+            invocation_attrs["workflow"] = workflow_key
+
+            self.app.workflow_contents_manager.store_workflow_artifacts(
+                workflows_directory, workflow_key, workflow, user=history.user, history=history
+            )
+            invocations_attrs.append(invocation_attrs)
+
+        invocations_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_INVOCATIONS)
+        with open(invocations_attrs_filename, "w") as invocations_attrs_out:
+            dump(invocations_attrs, invocations_attrs_out)
 
         export_attrs_filename = os.path.join(export_directory, ATTRS_FILENAME_EXPORT)
         with open(export_attrs_filename, "w") as export_attrs_out:
@@ -1645,17 +2149,383 @@ class DirectoryModelExportStore(ModelExportStore):
         return isinstance(exc_val, TypeError)
 
 
-class TarModelExportStore(DirectoryModelExportStore):
-    def __init__(self, out_file, gzip=True, **kwds):
-        self.gzip = gzip
-        self.out_file = out_file
+class WriteCrates:
+    def _generate_markdown_readme(self):
+        markdown_parts: List[str] = []
+        if self._is_single_invocation_export():
+            invocation = self.included_invocations[0]
+            name = invocation.workflow.name
+            create_time = invocation.create_time
+            markdown_parts.append("# Galaxy Workflow Invocation Export")
+            markdown_parts.append("")
+            markdown_parts.append(f"This crate describes the invocation of workflow {name} executed at {create_time}.")
+        else:
+            markdown_parts.append("# Galaxy Dataset Export")
+
+        return "\n".join(markdown_parts)
+
+    def _is_single_invocation_export(self):
+        return len(self.included_invocations) == 1
+
+    def _init_crate(self):
+        ro_crate = ROCrate()
+
+        markdown_path = os.path.join(self.export_directory, "README.md")
+        with open(markdown_path, "w") as f:
+            f.write(self._generate_markdown_readme())
+
+        properties = {
+            "name": "README.md",
+            "encodingFormat": "text/markdown",
+            "about": {"@id": "./"},
+        }
+        ro_crate.add_file(
+            markdown_path,
+            dest_path="README.md",
+            properties=properties,
+        )
+
+        for dataset, _ in self.included_datasets.values():
+            if dataset.dataset.id in self.dataset_id_to_path:
+                file_name, _ = self.dataset_id_to_path[dataset.dataset.id]
+                name = dataset.name
+                encoding_format = dataset.datatype.get_mime()
+                properties = {
+                    "name": name,
+                    "encodingFormat": encoding_format,
+                }
+                ro_crate.add_file(
+                    file_name,
+                    dest_path=file_name,
+                    properties=properties,
+                )
+
+        workflows_directory = self.workflows_directory
+        if os.path.exists(workflows_directory):
+            for filename in os.listdir(workflows_directory):
+                workflow_cls = ComputationalWorkflow if not filename.endswith(".cwl") else WorkflowDescription
+                lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
+                dest_path = os.path.join("workflows", filename)
+                ro_crate.add_workflow(
+                    source=os.path.join(workflows_directory, filename),
+                    dest_path=dest_path,
+                    main=False,
+                    cls=workflow_cls,
+                    lang=lang,
+                )
+
+        found_workflow_licenses = set()
+        for workflow_invocation in self.included_invocations:
+            workflow = workflow_invocation.workflow
+            license = workflow.license
+            if license:
+                found_workflow_licenses.add(license)
+        if len(found_workflow_licenses) == 1:
+            ro_crate.license = next(iter(found_workflow_licenses))
+
+        # TODO: license per workflow
+        # TODO: API options to license workflow outputs seprately
+        # TODO: Export report as PDF and stick it in here
+        return ro_crate
+
+
+class WorkflowInvocationOnlyExportStore(DirectoryModelExportStore):
+    def export_history(self, history: model.History, include_hidden: bool = False, include_deleted: bool = False):
+        """Export history to store."""
+        raise NotImplementedError()
+
+    def export_library(self, history, include_hidden=False, include_deleted=False):
+        """Export library to store."""
+        raise NotImplementedError()
+
+    @property
+    def only_invocation(self) -> model.WorkflowInvocation:
+        assert len(self.included_invocations) == 1
+        return self.included_invocations[0]
+
+
+@dataclass
+class BcoExportOptions:
+    galaxy_url: str
+    galaxy_version: str
+    merge_history_metadata: bool = False
+    override_environment_variables: Optional[Dict[str, str]] = None
+    override_empirical_error: Optional[Dict[str, str]] = None
+    override_algorithmic_error: Optional[Dict[str, str]] = None
+    override_xref: Optional[List[XrefItem]] = None
+
+
+class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
+    def __init__(self, uri, export_options: BcoExportOptions, **kwds):
         temp_output_dir = tempfile.mkdtemp()
-        super().__init__(temp_output_dir, **kwds)
+        self.temp_output_dir = temp_output_dir
+        if "://" in str(uri):
+            self.out_file = os.path.join(temp_output_dir, "out")
+            self.file_source_uri = uri
+            export_directory = os.path.join(temp_output_dir, "export")
+        else:
+            self.out_file = uri
+            self.file_source_uri = None
+            export_directory = temp_output_dir
+        self.export_options = export_options
+        super().__init__(export_directory, **kwds)
+
+    def _finalize(self):
+        super()._finalize()
+        core_biocompute_object, object_id = self._core_biocompute_object_and_object_id()
+        write_to_file(object_id, core_biocompute_object, self.out_file)
+        if self.file_source_uri:
+            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
+            file_source = file_source_path.file_source
+            assert os.path.exists(self.out_file)
+            file_source.write_from(file_source_path.path, self.out_file)
+
+    def _core_biocompute_object_and_object_id(self) -> Tuple[BioComputeObjectCore, str]:
+        assert self.app  # need app.security to do anything...
+        export_options = self.export_options
+        workflow_invocation = self.only_invocation
+        history = workflow_invocation.history
+        workflow = workflow_invocation.workflow
+        stored_workflow = workflow.stored_workflow
+
+        def get_dataset_url(encoded_dataset_id: str):
+            return f"{export_options.galaxy_url}api/datasets/{encoded_dataset_id}/display"
+
+        # pull in the creator_metadata info from workflow if it exists
+        contributors = get_contributors(workflow.creator_metadata)
+        provenance_domain = ProvenanceDomain(
+            name=workflow.name,
+            version=bco_workflow_version(workflow),
+            review=[],
+            contributors=contributors,
+            license=workflow.license or "",
+            created=workflow_invocation.create_time.isoformat(),
+            modified=workflow_invocation.update_time.isoformat(),
+        )
+
+        keywords = []
+        for tag in stored_workflow.tags:
+            keywords.append(tag.user_tname)
+        if export_options.merge_history_metadata:
+            for tag in history.tags:
+                if tag.user_tname not in keywords:
+                    keywords.append(tag.user_tname)
+
+        # metrics = {}  ... TODO
+        pipeline_steps: List[PipelineStep] = []
+        software_prerequisite_tracker = SoftwarePrerequisteTracker()
+        input_subdomain_items: List[InputSubdomainItem] = []
+        output_subdomain_items: List[OutputSubdomainItem] = []
+        for step in workflow_invocation.steps:
+            workflow_step = step.workflow_step
+            software_prerequisite_tracker.register_step(workflow_step)
+            if workflow_step.type == "tool":
+                workflow_outputs_list = set()
+                output_list: List[DescriptionDomainUri] = []
+                input_list: List[DescriptionDomainUri] = []
+                for wo in workflow_step.workflow_outputs:
+                    workflow_outputs_list.add(wo.output_name)
+                for job in step.jobs:
+                    for job_input in job.input_datasets:
+                        if hasattr(job_input.dataset, "dataset_id"):
+                            encoded_dataset_id = self.app.security.encode_id(job_input.dataset.dataset_id)
+                            url = get_dataset_url(encoded_dataset_id)
+                            input_uri_obj = DescriptionDomainUri(
+                                # TODO: that should maybe be a step prefix + element identifier where appropriate.
+                                filename=job_input.dataset.name,
+                                uri=url,
+                                access_time=job_input.dataset.create_time.isoformat(),
+                            )
+                            input_list.append(input_uri_obj)
+
+                    for job_output in job.output_datasets:
+                        if hasattr(job_output.dataset, "dataset_id"):
+                            encoded_dataset_id = self.app.security.encode_id(job_output.dataset.dataset_id)
+                            url = get_dataset_url(encoded_dataset_id)
+                            output_obj = DescriptionDomainUri(
+                                filename=job_output.dataset.name,
+                                uri=url,
+                                access_time=job_output.dataset.create_time.isoformat(),
+                            )
+                            output_list.append(output_obj)
+
+                            if job_output.name in workflow_outputs_list:
+                                output = OutputSubdomainItem(
+                                    mediatype=job_output.dataset.extension,
+                                    uri=InputAndOutputDomainUri(
+                                        filename=job_output.dataset.name,
+                                        uri=url,
+                                        access_time=job_output.dataset.create_time.isoformat(),
+                                    ),
+                                )
+                                output_subdomain_items.append(output)
+                step_index = workflow_step.order_index
+                step_name = workflow_step.label or workflow_step.tool_id
+                pipeline_step = PipelineStep(
+                    step_number=step_index,
+                    name=step_name,
+                    description=workflow_step.annotations[0].annotation if workflow_step.annotations else "",
+                    version=workflow_step.tool_version,
+                    prerequisite=[],
+                    input_list=input_list,
+                    output_list=output_list,
+                )
+                pipeline_steps.append(pipeline_step)
+
+            if workflow_step.type == "data_input" and step.output_datasets:
+                for output_assoc in step.output_datasets:
+                    encoded_dataset_id = self.app.security.encode_id(output_assoc.dataset_id)
+                    url = get_dataset_url(encoded_dataset_id)
+                    input_obj = InputSubdomainItem(
+                        uri=Uri(
+                            uri=url,
+                            filename=workflow_step.label,
+                            access_time=workflow_step.update_time.isoformat(),
+                        ),
+                    )
+                    input_subdomain_items.append(input_obj)
+
+            if workflow_step.type == "data_collection_input" and step.output_dataset_collections:
+                for output_dataset_collection_association in step.output_dataset_collections:
+                    encoded_dataset_id = self.app.security.encode_id(
+                        output_dataset_collection_association.dataset_collection_id
+                    )
+                    url = f"{export_options.galaxy_url}api/dataset_collections/{encoded_dataset_id}/download"
+                    input_obj = InputSubdomainItem(
+                        uri=Uri(
+                            uri=url,
+                            filename=workflow_step.label,
+                            access_time=workflow_step.update_time.isoformat(),
+                        ),
+                    )
+                    input_subdomain_items.append(input_obj)
+
+        usability_domain_str: List[str] = []
+        for a in stored_workflow.annotations:
+            usability_domain_str.append(a.annotation)
+        if export_options.merge_history_metadata:
+            for h in history.annotations:
+                usability_domain_str.append(h.annotation)
+
+        parametric_domain_items: List[ParametricDomainItem] = []
+        for inv_step in workflow_invocation.steps:
+            try:
+                for k, v in inv_step.workflow_step.tool_inputs.items():
+                    param, value, step = k, v, inv_step.workflow_step.order_index
+                    parametric_domain_items.append(
+                        ParametricDomainItem(param=str(param), value=str(value), step=str(step))
+                    )
+            except Exception:
+                continue
+
+        encoded_workflow_id = self.app.security.encode_id(workflow.id)
+        execution_domain = galaxy_execution_domain(
+            export_options.galaxy_url,
+            f"{export_options.galaxy_url}api/workflows?encoded_workflow_id={encoded_workflow_id}",
+            software_prerequisite_tracker.software_prerequisites,
+            export_options.override_environment_variables,
+        )
+        extension_domain = extension_domains(export_options.galaxy_url, export_options.galaxy_version)
+        error_domain = ErrorDomain(
+            empirical_error=export_options.override_empirical_error or {},
+            algorithmic_error=export_options.override_algorithmic_error or {},
+        )
+        usability_domain = UsabilityDomain(__root__=usability_domain_str)
+        description_domain = DescriptionDomain(
+            keywords=keywords,
+            xref=export_options.override_xref or [],
+            platform=["Galaxy"],
+            pipeline_steps=pipeline_steps,
+        )
+        parametric_domain = ParametricDomain(__root__=parametric_domain_items)
+        io_domain = InputAndOutputDomain(
+            input_subdomain=input_subdomain_items,
+            output_subdomain=output_subdomain_items,
+        )
+        core = BioComputeObjectCore(
+            description_domain=description_domain,
+            error_domain=error_domain,
+            execution_domain=execution_domain,
+            extension_domain=extension_domain,
+            io_domain=io_domain,
+            parametric_domain=parametric_domain,
+            provenance_domain=provenance_domain,
+            usability_domain=usability_domain,
+        )
+        encoded_invocation_id = self.app.security.encode_id(workflow_invocation.id)
+        url = f"{export_options.galaxy_url}api/invocations/{encoded_invocation_id}"
+        return core, url
+
+
+class ROCrateModelExportStore(DirectoryModelExportStore, WriteCrates):
+    def __init__(self, crate_directory, **kwds):
+        self.crate_directory = crate_directory
+        super().__init__(crate_directory, export_files="symlink", **kwds)
+
+    def _finalize(self):
+        super()._finalize()
+        ro_crate = self._init_crate()
+        ro_crate.write(self.crate_directory)
+
+
+class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
+    def __init__(self, uri, **kwds):
+        temp_output_dir = tempfile.mkdtemp()
+        self.temp_output_dir = temp_output_dir
+        if "://" in str(uri):
+            self.out_file = os.path.join(temp_output_dir, "out")
+            self.file_source_uri = uri
+            export_directory = os.path.join(temp_output_dir, "export")
+        else:
+            self.out_file = uri
+            self.file_source_uri = None
+            export_directory = temp_output_dir
+        super().__init__(export_directory, **kwds)
+
+    def _finalize(self):
+        super()._finalize()
+        ro_crate = self._init_crate()
+        ro_crate.write(self.export_directory)
+        out_file_name = str(self.out_file)
+        if out_file_name.endswith(".zip"):
+            out_file = out_file_name[: -len(".zip")]
+        else:
+            out_file = out_file_name
+        rval = shutil.make_archive(out_file, "zip", self.export_directory)
+        if not self.file_source_uri:
+            shutil.move(rval, self.out_file)
+        else:
+            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
+            file_source = file_source_path.file_source
+            assert os.path.exists(rval), rval
+            file_source.write_from(file_source_path.path, rval)
+        shutil.rmtree(self.temp_output_dir)
+
+
+class TarModelExportStore(DirectoryModelExportStore):
+    def __init__(self, uri, gzip=True, **kwds):
+        self.gzip = gzip
+        temp_output_dir = tempfile.mkdtemp()
+        self.temp_output_dir = temp_output_dir
+        if "://" in str(uri):
+            self.out_file = os.path.join(temp_output_dir, "out")
+            self.file_source_uri = uri
+            export_directory = os.path.join(temp_output_dir, "export")
+        else:
+            self.out_file = uri
+            self.file_source_uri = None
+            export_directory = temp_output_dir
+        super().__init__(export_directory, **kwds)
 
     def _finalize(self):
         super()._finalize()
         tar_export_directory(self.export_directory, self.out_file, self.gzip)
-        shutil.rmtree(self.export_directory)
+        if self.file_source_uri:
+            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
+            file_source = file_source_path.file_source
+            assert os.path.exists(self.out_file)
+            file_source.write_from(file_source_path.path, self.out_file)
+        shutil.rmtree(self.temp_output_dir)
 
 
 class BagDirectoryModelExportStore(DirectoryModelExportStore):
@@ -1669,28 +2539,78 @@ class BagDirectoryModelExportStore(DirectoryModelExportStore):
 
 
 class BagArchiveModelExportStore(BagDirectoryModelExportStore):
-    def __init__(self, out_file, bag_archiver="tgz", **kwds):
+    def __init__(self, uri, bag_archiver="tgz", **kwds):
         # bag_archiver in tgz, zip, tar
         self.bag_archiver = bag_archiver
-        self.out_file = out_file
         temp_output_dir = tempfile.mkdtemp()
-        super().__init__(temp_output_dir, **kwds)
+        self.temp_output_dir = temp_output_dir
+        if "://" in str(uri):
+            # self.out_file = os.path.join(temp_output_dir, "out")
+            self.file_source_uri = uri
+            export_directory = os.path.join(temp_output_dir, "export")
+        else:
+            self.out_file = uri
+            self.file_source_uri = None
+            export_directory = temp_output_dir
+        super().__init__(export_directory, **kwds)
 
     def _finalize(self):
         super()._finalize()
         rval = bdb.archive_bag(self.export_directory, self.bag_archiver)
-        shutil.move(rval, self.out_file)
-        shutil.rmtree(self.export_directory)
+        if not self.file_source_uri:
+            shutil.move(rval, self.out_file)
+        else:
+            file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
+            file_source = file_source_path.file_source
+            assert os.path.exists(rval)
+            file_source.write_from(file_source_path.path, rval)
+        shutil.rmtree(self.temp_output_dir)
 
 
-def tar_export_directory(export_directory, out_file, gzip):
+def get_export_store_factory(
+    app, download_format: str, export_files=None, bco_export_options: Optional[BcoExportOptions] = None
+) -> Callable[[str], ModelExportStore]:
+    export_store_class: Union[
+        Type[TarModelExportStore],
+        Type[BagArchiveModelExportStore],
+        Type[ROCrateArchiveModelExportStore],
+        Type[BcoModelExportStore],
+    ]
+    export_store_class_kwds = {
+        "app": app,
+        "export_files": export_files,
+        "serialize_dataset_objects": False,
+    }
+    if download_format in ["tar.gz", "tgz"]:
+        export_store_class = TarModelExportStore
+        export_store_class_kwds["gzip"] = True
+    elif download_format in ["tar"]:
+        export_store_class = TarModelExportStore
+        export_store_class_kwds["gzip"] = False
+    elif download_format == "rocrate.zip":
+        export_store_class = ROCrateArchiveModelExportStore
+    elif download_format == "bco.json":
+        export_store_class = BcoModelExportStore
+        export_store_class_kwds["export_options"] = bco_export_options
+    elif download_format.startswith("bag."):
+        bag_archiver = download_format[len("bag.") :]
+        if bag_archiver not in ["zip", "tar", "tgz"]:
+            raise RequestParameterInvalidException(f"Unknown download format [{download_format}]")
+        export_store_class = BagArchiveModelExportStore
+        export_store_class_kwds["bag_archiver"] = bag_archiver
+    else:
+        raise RequestParameterInvalidException(f"Unknown download format [{download_format}]")
+    return lambda path: export_store_class(path, **export_store_class_kwds)
+
+
+def tar_export_directory(export_directory: str, out_file: str, gzip: bool) -> None:
     tarfile_mode = "w"
     if gzip:
         tarfile_mode += ":gz"
 
-    with tarfile.open(out_file, tarfile_mode, dereference=True) as history_archive:
+    with tarfile.open(out_file, tarfile_mode, dereference=True) as store_archive:
         for export_path in os.listdir(export_directory):
-            history_archive.add(os.path.join(export_directory, export_path), arcname=export_path)
+            store_archive.add(os.path.join(export_directory, export_path), arcname=export_path)
 
 
 def get_export_dataset_filename(name, ext, hid):
@@ -1708,3 +2628,80 @@ def imported_store_for_metadata(directory, object_store=None):
     )
     import_model_store.perform_import()
     return import_model_store
+
+
+def source_to_import_store(
+    source: Union[str, dict],
+    app: StoreAppProtocol,
+    galaxy_user: Optional[model.User],
+    import_options: Optional[ImportOptions],
+    model_store_format: Optional[str] = None,
+) -> ModelImportStore:
+    if isinstance(source, dict):
+        if model_store_format is not None:
+            raise Exception(
+                "Can only specify a model_store_format as an argument to source_to_import_store in conjuction with URIs"
+            )
+        model_import_store = get_import_model_store_for_dict(
+            source,
+            import_options=import_options,
+            app=app,
+            user=galaxy_user,
+        )
+    else:
+        source_uri: str = str(source)
+        delete = False
+        if source_uri.startswith("file://"):
+            source_uri = source_uri[len("file://") :]
+        if "://" in source_uri:
+            source_uri = stream_url_to_file(source_uri, app.file_sources, prefix="gx_import_model_store")
+            delete = True
+        target_path = source_uri
+        if target_path.endswith(".json"):
+            with open(target_path) as f:
+                store_dict = load(f)
+            assert isinstance(store_dict, dict)
+            model_import_store = get_import_model_store_for_dict(
+                store_dict,
+                import_options=import_options,
+                app=app,
+                user=galaxy_user,
+            )
+        elif os.path.isdir(target_path):
+            model_import_store = get_import_model_store_for_directory(
+                target_path, import_options=import_options, app=app, user=galaxy_user
+            )
+        else:
+            model_store_format = model_store_format or "tgz"
+            if model_store_format in ["tar.gz", "tgz", "tar"]:
+                try:
+                    temp_dir = mkdtemp()
+                    target_dir = CompressedFile(target_path).extract(temp_dir)
+                finally:
+                    if delete:
+                        os.remove(target_path)
+                model_import_store = get_import_model_store_for_directory(
+                    target_dir, import_options=import_options, app=app, user=galaxy_user
+                )
+            elif model_store_format in ["bag.gz", "bag.tar", "bag.zip"]:
+                model_import_store = BagArchiveImportModelStore(
+                    target_path, import_options=import_options, app=app, user=galaxy_user
+                )
+            else:
+                raise Exception(f"Unknown model_store_format type encountered {model_store_format}")
+
+    return model_import_store
+
+
+def payload_to_source_uri(payload) -> str:
+    if payload.store_content_uri:
+        source_uri = payload.store_content_uri
+    else:
+        store_dict = payload.store_dict
+        assert isinstance(store_dict, dict)
+        temp_dir = mkdtemp()
+        import_json = os.path.join(temp_dir, "import_store.json")
+        with open(import_json, "w") as f:
+            dump(store_dict, f)
+        source_uri = f"file://{import_json}"
+    return source_uri

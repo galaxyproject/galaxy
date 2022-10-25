@@ -14,10 +14,11 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
-pip install --upgrade pip 'setuptools<58' wheel
+pip install --upgrade pip setuptools wheel
 pip install -r../lib/galaxy/dependencies/pinned-lint-requirements.txt
 
-# ensure ordered by dependency dag
+# ensure ordered by dependency DAG
+# TODO: add selenium in once type issues are cleared up
 PACKAGE_DIRS=(
     util
     objectstore
@@ -30,8 +31,13 @@ PACKAGE_DIRS=(
     auth
     web_stack
     web_framework
+    navigation
+    tours
     app
     webapps
+    test_base
+    test_driver
+    test_api
 )
 for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     printf "\n========= TESTING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
@@ -51,8 +57,10 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     pip install -r test-requirements.txt
 
     # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
-    unit_extra='--doctest-modules --ignore galaxy/model/migrations/alembic'
-    pytest $unit_extra galaxy tests
+    # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
+    unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/ --ignore=tool_shed/test/'
+    # Ignore exit code 5 (no tests ran)
+    pytest $unit_extra . || test $? -eq 5
     make mypy
     cd ..
 done

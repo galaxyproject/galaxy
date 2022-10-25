@@ -110,6 +110,12 @@ class SessionRequestContext(WorkRequestContext):
     def get_galaxy_session(self):
         return self.galaxy_session
 
+    def set_history(self, history):
+        if history and not history.deleted:
+            self.galaxy_session.current_history = history
+        self.sa_session.add(self.galaxy_session)
+        self.sa_session.flush()
+
 
 def proxy_work_context_for_history(
     trans: ProvidesHistoryContext, history: Optional[History] = None, workflow_building_mode=False

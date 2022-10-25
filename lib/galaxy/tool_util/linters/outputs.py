@@ -1,5 +1,8 @@
 """This module contains a linting functions for tool outputs."""
-from galaxy.util import string_as_bool
+from galaxy.util import (
+    etree,
+    string_as_bool,
+)
 from ._util import is_valid_cheetah_placeholder
 from ..parser.output_collection_def import NAMED_PATTERNS
 
@@ -20,6 +23,8 @@ def lint_output(tool_xml, lint_ctx):
     labels = set()
     names = set()
     for output in list(outputs[0]):
+        if output.tag is etree.Comment:
+            continue
         if output.tag not in ["data", "collection"]:
             lint_ctx.warn(f"Unknown element found in outputs [{output.tag}]", node=output)
             continue
@@ -83,6 +88,8 @@ def __check_format(node, lint_ctx, allow_ext=False):
             node=node,
         )
     if "format_source" in node.attrib:
+        return True
+    if node.find(".//action[@type='format']") is not None:
         return True
     # if allowed (e.g. for discover_datasets), ext takes precedence over format
     fmt = None

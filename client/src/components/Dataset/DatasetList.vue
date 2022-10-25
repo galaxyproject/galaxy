@@ -28,7 +28,7 @@
     </div>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import store from "store";
 import { getGalaxyInstance } from "app";
 import { Services } from "./services";
 import DatasetName from "./DatasetName";
@@ -88,7 +88,7 @@ export default {
             sortDesc: true,
             loading: true,
             message: null,
-            messageVariant: null,
+            messageVariant: "danger",
             rows: [],
         };
     },
@@ -105,8 +105,7 @@ export default {
     },
     created() {
         this.loadHistories();
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
         this.load();
     },
     methods: {
@@ -147,16 +146,13 @@ export default {
                     this.onError(error);
                 });
         },
-        onShowDataset(item) {
-            const Galaxy = getGalaxyInstance();
-            this.services
-                .setHistory(item.history_id)
-                .then(() => {
-                    Galaxy.currHistoryPanel.loadCurrentHistory();
-                })
-                .catch((error) => {
-                    this.onError(error);
-                });
+        async onShowDataset(item) {
+            const historyId = item.history_id;
+            try {
+                await store.dispatch("history/setCurrentHistory", historyId);
+            } catch (error) {
+                this.onError(error);
+            }
         },
         onTags(tags, index) {
             const item = this.rows[index];
@@ -184,13 +180,8 @@ export default {
                 }
             }
         },
-        onSuccess(message) {
-            this.message = message;
-            this.messageVariant = "success";
-        },
         onError(message) {
             this.message = message;
-            this.messageVariant = "danger";
         },
     },
 };

@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import pwd
+import shlex
 import shutil
 import sys
 import time
@@ -16,6 +17,7 @@ from json import loads
 from typing import (
     Any,
     Dict,
+    Iterable,
     List,
     TYPE_CHECKING,
 )
@@ -142,7 +144,7 @@ class JobToolConfiguration(Bunch):
 
 def config_exception(e, file):
     abs_path = os.path.abspath(file)
-    message = f"Problem parsing the XML in file {abs_path}, "
+    message = f"Problem parsing file '{abs_path}', "
     message += "please correct the indicated portion of the file and restart Galaxy. "
     message += unicodify(e)
     log.exception(message)
@@ -795,7 +797,7 @@ class JobConfiguration(ConfiguresHandlers):
             id_or_tag = self.default_destination_id
         return copy.deepcopy(self._get_single_item(self.destinations[id_or_tag]))
 
-    def get_destinations(self, id_or_tag):
+    def get_destinations(self, id_or_tag) -> Iterable[JobDestination]:
         """Given a destination ID or tag, return all JobDestinations matching the provided ID or tag
 
         :param id_or_tag: A destination ID or tag.
@@ -806,7 +808,7 @@ class JobConfiguration(ConfiguresHandlers):
         Destinations are not deepcopied, so they should not be passed to
         anything which might modify them.
         """
-        return self.destinations.get(id_or_tag, None)
+        return self.destinations.get(id_or_tag, [])
 
     def get_job_runner_plugins(self, handler_id):
         """Load all configured job runner plugins
@@ -956,7 +958,7 @@ class HasResourceParameters:
         return resource_params
 
 
-class JobWrapper(HasResourceParameters):
+class MinimalJobWrapper(HasResourceParameters):
     """
     Wraps a 'model.Job' with convenience methods for running processes and
     state management.
@@ -964,13 +966,12 @@ class JobWrapper(HasResourceParameters):
 
     is_task = False
 
-    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False):
+    def __init__(self, job: model.Job, app: MinimalManagerApp, use_persisted_destination: bool = False, tool=None):
         self.job_id = job.id
         self.session_id = job.session_id
         self.user_id = job.user_id
-        self.tool = queue.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
-        self.queue = queue
-        self.app = queue.app
+        self.app: MinimalManagerApp = app
+        self.tool = tool
         self.sa_session = self.app.model.context
         self.extra_filenames: List[str] = []
         self.environment_variables: List[Dict[str, str]] = []
@@ -990,12 +991,11 @@ class JobWrapper(HasResourceParameters):
         # resolved
         self._job_io = None
         self.tool_provided_job_metadata = None
-        self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
         self.params = None
         if job.params:
             self.params = loads(job.params)
-        if use_persisted_destination:
-            self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
+        self.runner_command_line = None
+
         # Wrapper holding the info required to restore and clean up from files used for setting metadata externally
         self.__external_output_metadata = None
         self.__has_tasks = bool(job.tasks)
@@ -1008,19 +1008,23 @@ class JobWrapper(HasResourceParameters):
     @property
     def external_output_metadata(self):
         if self.__external_output_metadata is None:
-            try:
-                metadata_strategy_override = self.get_destination_configuration("metadata_strategy", None)
-            except JobMappingException:
-                metadata_strategy_override = None
-            if self.__has_tasks:
-                metadata_strategy_override = "directory"
             self.__external_output_metadata = get_metadata_compute_strategy(
                 self.app.config,
                 self.job_id,
-                metadata_strategy_override=metadata_strategy_override,
+                metadata_strategy_override=self.metadata_strategy,
                 tool_id=self.tool.id,
             )
         return self.__external_output_metadata
+
+    @property
+    def metadata_strategy(self):
+        try:
+            metadata_strategy_override = self.get_destination_configuration("metadata_strategy", None)
+        except JobMappingException:
+            metadata_strategy_override = None
+        if self.__has_tasks:
+            metadata_strategy_override = "directory"
+        return metadata_strategy_override
 
     @property
     def remote_command_line(self):
@@ -1112,6 +1116,10 @@ class JobWrapper(HasResourceParameters):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
 
+    @property
+    def is_cwl_job(self):
+        return self.tool.tool_type == "cwl"
+
     def get_job_runner_url(self):
         log.warning(f"({self.job_id}) Job runner URLs are deprecated, use destinations instead.")
         return self.job_destination.url
@@ -1151,24 +1159,15 @@ class JobWrapper(HasResourceParameters):
     get_job_runner = get_job_runner_url
 
     @property
-    def job_destination(self):
-        """Return the JobDestination that this job will use to run.  This will
-        either be a configured destination, a randomly selected destination if
-        the configured destination was a tag, or a dynamically generated
-        destination from the dynamic runner.
-
-        Calling this method for the first time causes the dynamic runner to do
-        its calculation, if any.
-
-        :returns: ``JobDestination``
-        """
-        return self.job_runner_mapper.get_job_destination(self.params)
+    def job_destination(self) -> JobDestination:
+        """Subclassses can return a configured job destination."""
+        return JobDestination()
 
     @property
     def galaxy_url(self):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
-    def get_job(self):
+    def get_job(self) -> model.Job:
         return self.sa_session.query(model.Job).get(self.job_id)
 
     def get_id_tag(self):
@@ -1243,8 +1242,9 @@ class JobWrapper(HasResourceParameters):
             self.environment_variables,
         ) = tool_evaluator.build()
         job.command_line = self.command_line
-        self.interactivetools = tool_evaluator.populate_interactivetools()
-        self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
+        if hasattr(self.app, "interactivetool_manager"):
+            self.interactivetools = tool_evaluator.populate_interactivetools()
+            self.app.interactivetool_manager.create_interactivetool(job, self.tool, self.interactivetools)
 
         # Ensure galaxy_lib_dir is set in case there are any later chdirs
         self.galaxy_lib_dir
@@ -1534,7 +1534,7 @@ class JobWrapper(HasResourceParameters):
         if flush:
             self.sa_session.flush()
 
-    def get_state(self):
+    def get_state(self) -> str:
         job = self.get_job()
         self.sa_session.refresh(job)
         return job.state
@@ -1542,24 +1542,6 @@ class JobWrapper(HasResourceParameters):
     def set_runner(self, runner_url, external_id):
         log.warning("set_runner() is deprecated, use set_job_destination()")
         self.set_job_destination(self.job_destination, external_id)
-
-    def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
-        """
-        Persist job destination params in the database for recovery.
-
-        self.job_destination is not used because a runner may choose to rewrite
-        parts of the destination (e.g. the params).
-        """
-        if job is None:
-            job = self.get_job()
-        log.debug(f"({job.id}) Persisting job destination (destination id: {job_destination.id})")
-        job.destination_id = job_destination.id
-        job.destination_params = job_destination.params
-        job.job_runner_name = job_destination.runner
-        job.job_runner_external_id = external_id
-        self.sa_session.add(job)
-        if flush:
-            self.sa_session.flush()
 
     def set_external_id(self, external_id, job=None, flush=True):
         if job is None:
@@ -1594,6 +1576,10 @@ class JobWrapper(HasResourceParameters):
         # Set object store after job destination so can leverage parameters...
         self._set_object_store_ids(job)
         self.sa_session.flush()
+        return True
+
+    def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
+        """Subclasses should implement this to persist a destination, if necessary."""
 
     def _set_object_store_ids(self, job):
         if job.object_store_id:
@@ -1735,7 +1721,6 @@ class JobWrapper(HasResourceParameters):
         )
 
         # default post job setup
-        self.sa_session.expunge_all()
         job = self.get_job()
 
         def fail(message=job.info, exception=None):
@@ -1812,7 +1797,7 @@ class JobWrapper(HasResourceParameters):
                     else:
                         # Prior to fail we need to set job.state
                         job.set_state(final_job_state)
-                        return self.fail(f"Job {job.id}'s output dataset(s) could not be read")
+                        return fail(f"Job {job.id}'s output dataset(s) could not be read")
 
         job_context = ExpressionContext(dict(stdout=job.stdout, stderr=job.stderr))
         if extended_metadata:
@@ -1870,6 +1855,7 @@ class JobWrapper(HasResourceParameters):
                 if (
                     not final_job_state == job.states.ERROR
                     and not dataset_assoc.dataset.dataset.state == job.states.ERROR
+                    and not dataset_assoc.dataset.dataset.state == model.Dataset.states.DEFERRED
                 ):
                     # We don't set datsets in error state to OK because discover_outputs may have already set the state to error
                     dataset_assoc.dataset.dataset.state = model.Dataset.states.OK
@@ -2143,10 +2129,8 @@ class JobWrapper(HasResourceParameters):
             raise Exception(f"Unknown target type [{target}]")
 
     def get_tool_provided_job_metadata(self):
-        if self.tool_provided_job_metadata is not None:
-            return self.tool_provided_job_metadata
-
-        self.tool_provided_job_metadata = self.tool.tool_provided_metadata(self)
+        if self.tool_provided_job_metadata is None:
+            self.tool_provided_job_metadata = self.tool.tool_provided_metadata(self)
         return self.tool_provided_job_metadata
 
     def get_dataset_finish_context(self, job_context, output_dataset_assoc):
@@ -2278,6 +2262,8 @@ class JobWrapper(HasResourceParameters):
             return None
 
         exec_dir = kwds.get("exec_dir", os.path.abspath(os.getcwd()))
+        monitor_command = self.get_destination_configuration("container_monitor_command")
+        get_ip_method = self.get_destination_configuration("container_monitor_get_ip_method")
         work_dir = self.working_directory
         configs_dir = ensure_configs_directory(work_dir)
         container_config = os.path.join(configs_dir, "container_config.json")
@@ -2299,10 +2285,17 @@ class JobWrapper(HasResourceParameters):
             callback_url = endpoint_base % (galaxy_url, encoded_job_id, job_key)
             container_config_dict["callback_url"] = callback_url
 
+        if get_ip_method:
+            assert get_ip_method.startswith("command:"), f"Unsupported get_ip_method: {get_ip_method}"
+            container_config_dict["get_ip_method"] = get_ip_method
+
         with open(container_config, "w") as f:
             json.dump(container_config_dict, f)
 
-        return f"(python '{exec_dir}'/lib/galaxy_ext/container_monitor/monitor.py &); sleep 1 "
+        if not monitor_command:
+            _monitor_py = shlex.quote(os.path.join(exec_dir, "lib/galaxy_ext/container_monitor/monitor.py"))
+            monitor_command = f"python {_monitor_py}"
+        return f"({monitor_command} &); sleep 1 "
 
     @property
     def user(self):
@@ -2414,6 +2407,48 @@ class JobWrapper(HasResourceParameters):
             self.sa_session.flush()
 
 
+class JobWrapper(MinimalJobWrapper):
+    def __init__(self, job, queue: "JobHandlerQueue", use_persisted_destination=False, app=None):
+        super().__init__(job, app=queue.app, use_persisted_destination=use_persisted_destination)
+        self.queue = queue
+        self.tool = self.app.toolbox.get_tool(job.tool_id, job.tool_version, exact=True)
+        self.job_runner_mapper = JobRunnerMapper(self, queue.dispatcher.url_to_destination, self.app.job_config)
+        if use_persisted_destination:
+            self.job_runner_mapper.cached_job_destination = JobDestination(from_job=job)
+
+    @property
+    def job_destination(self):
+        """Return the JobDestination that this job will use to run.  This will
+        either be a configured destination, a randomly selected destination if
+        the configured destination was a tag, or a dynamically generated
+        destination from the dynamic runner.
+
+        Calling this method for the first time causes the dynamic runner to do
+        its calculation, if any.
+
+        :returns: ``JobDestination``
+        """
+        return self.job_runner_mapper.get_job_destination(self.params)
+
+    def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
+        """
+        Persist job destination params in the database for recovery.
+
+        self.job_destination is not used because a runner may choose to rewrite
+        parts of the destination (e.g. the params).
+        """
+        if job is None:
+            job = self.get_job()
+        log.debug(f"({job.id}) Persisting job destination (destination id: {job_destination.id})")
+        job.destination_id = job_destination.id
+        job.destination_params = job_destination.params
+        job.job_runner_name = job_destination.runner
+        job.job_runner_external_id = external_id
+        self.sa_session.add(job)
+        if flush:
+            self.sa_session.flush()
+
+
 class TaskWrapper(JobWrapper):
     """
     Extension of JobWrapper intended for running tasks.
@@ -2489,7 +2524,9 @@ class TaskWrapper(JobWrapper):
         self.status = "prepared"
         return self.extra_filenames
 
-    def fail(self, message, exception=False):
+    def fail(
+        self, message, exception=False, tool_stdout="", tool_stderr="", exit_code=None, job_stdout=None, job_stderr=None
+    ):
         log.error(f"TaskWrapper Failure {message}")
         self.status = "error"
         # How do we want to handle task failure?  Fail the job and let it clean up?
@@ -2537,7 +2574,6 @@ class TaskWrapper(JobWrapper):
             % (self.task_id, self.job_id, tool_exit_code if tool_exit_code is not None else -256)
         )
         # default post job setup_external_metadata
-        self.sa_session.expunge_all()
         task = self.get_task()
         # if the job was deleted, don't finish it
         if task.state == task.states.DELETED:

@@ -4,7 +4,6 @@ import json
 import logging
 import os
 import re
-import shlex
 import shutil
 import sys
 import tempfile
@@ -18,6 +17,7 @@ import packaging.version
 from galaxy.util import (
     commands,
     listify,
+    shlex_join,
     smart_str,
     which,
 )
@@ -111,12 +111,7 @@ class CondaContext(installable.InstallableContext):
         self.conda_prefix = conda_prefix
         if conda_exec is None:
             self.conda_exec = self._bin("conda")
-        if ensure_channels:
-            if not isinstance(ensure_channels, list):
-                ensure_channels = [c for c in ensure_channels.split(",") if c]
-        else:
-            ensure_channels = None
-        self.ensure_channels = ensure_channels
+        self.ensure_channels: List[str] = listify(ensure_channels)
         self._conda_version = None
         self._miniconda_version = None
         self._conda_build_available = None
@@ -242,7 +237,7 @@ class CondaContext(installable.InstallableContext):
         env = {}
         if self.condarc_override:
             env["CONDARC"] = self.condarc_override
-        cmd_string = " ".join(map(shlex.quote, cmd))
+        cmd_string = shlex_join(cmd)
         kwds = dict()
         try:
             if stdout_path:
@@ -534,7 +529,7 @@ def best_search_result(
         hits = sorted(hits, key=lambda hit: hit["build_number"], reverse=True)
         hits = sorted(hits, key=lambda hit: packaging.version.parse(hit["version"]), reverse=True)
     except commands.CommandLineException as e:
-        log.error("Could not execute: '%s'\n%s", e.command, e)
+        log.error(f"Could not execute: '{e.command}'\n{e}")
         hits = []
 
     if len(hits) == 0:

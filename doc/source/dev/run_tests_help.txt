@@ -3,6 +3,8 @@
 'run_tests.sh -list'                    for listing all the tool ids
 'run_tests.sh -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
                                     can be pytest selector
+'run_tests.sh -cwl (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api/cwl directory, test_path
+                                    can be pytest selector
 'run_tests.sh -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
 'run_tests.sh -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
@@ -43,27 +45,25 @@ The main test types are as follows:
    located in lib/tool_shed/test.
 
 Python testing is mostly done via pytest. Specific tests can be selected
-using the pytest selector syntax is described at https://docs.pytest.org/en/latest/usage.html.
-
-The spots these selectors can be used is described in the above usage documentation
-as test_path.  A few examples are shown below.
+using the syntax described at https://docs.pytest.org/en/latest/how-to/usage.html .
+A few examples are shown below.
 
 Run all API tests:
     ./run_tests.sh -api
 
-The same test as above can be run using nosetests directly as follows:
+The same test as above can be run using pytest directly as follows:
     pytest lib/galaxy_test/api
 
-However when using pytest directly output options defined in this
+However, when using pytest directly, output options defined in this
 file aren't respected and a new Galaxy instance will be created for each
-TestCase class (this scripts optimizes it so all tests can share a Galaxy
+Test class (this scripts optimizes it so all tests can share a Galaxy
 instance).
 
 Run a full class of API tests:
-    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::TestToolsApi
 
 Run a specific API test:
-    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::ToolsTestCase::test_map_over_with_output_format_actions
+    ./run_tests.sh -api lib/galaxy_test/api/test_tools.py::TestToolsApi::test_map_over_with_output_format_actions
 
 Run all selenium tests (Under Linux using Docker):
     # Start selenium chrome Docker container
@@ -71,14 +71,14 @@ Run all selenium tests (Under Linux using Docker):
     GALAXY_TEST_SELENIUM_REMOTE=1 ./run_tests.sh -selenium
 
 Run a specific selenium test (under Linux or Mac OS X after installing geckodriver or chromedriver):
-    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::RegistrationTestCase::test_reregister_username_fails
+    ./run_tests.sh -selenium lib/galaxy_test/selenium/test_registration.py::TestRegistration::test_reregister_username_fails
 
 Run a selenium test against a running server while watching client (fastest iterating on client tests):
     ./run.sh & # run Galaxy on 8080
     make client-watch & # watch for client changes
     export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
-    pytest lib/galaxy_test/selenium/test_workflow_editor.py::WorkflowEditorTestCase::test_data_input
+    pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
 
 Note About Selenium Tests:
 
@@ -89,7 +89,7 @@ the PATH.
 More information on geckodriver can be found at
 https://github.com/mozilla/geckodriver and more information on
 chromedriver can be found at
-https://sites.google.com/a/chromium.org/chromedriver/.
+https://sites.google.com/chromium.org/driver/ .
 
 By default Galaxy will check the PATH for these and pick
 whichever it finds. This can be overridden by setting
@@ -141,6 +141,10 @@ Extra options:
  --verbose_errors      Force some tests produce more verbose error reporting.
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
+ --coverage            Generate a test coverage report. This option currently
+                       should work with every test that uses pytest, but the
+                       results may not be reliable with selenium or other
+                       frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
  --report_file         Path of HTML report to produce (for Python Galaxy
@@ -150,10 +154,6 @@ Extra options:
                        functional tests).
  --skip-venv           Do not create .venv (passes this flag to
                        common_startup.sh)
- --dockerize           Run tests in a pre-configured Docker container (must be
-                       first argument if present).
- --db <type>           For use with --dockerize, run tests using partially
-                       migrated 'postgres', 'mysql', or 'sqlite' databases.
  --external_url        External URL to use for Galaxy testing (only certain
                        tests).
  --external_master_key Master API key used to configure external tests.
@@ -238,6 +238,7 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
                                 tool shed test server files to be placed.
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
+GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
 
 Unit Test Environment Variables
 

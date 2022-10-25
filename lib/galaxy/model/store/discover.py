@@ -15,7 +15,6 @@ from typing import (
     List,
     NamedTuple,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -32,13 +31,6 @@ from galaxy.util import (
     ExecutionTimer,
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
-
-if TYPE_CHECKING:
-    from galaxy.job_execution.output_collect import (
-        JobContext,
-        SessionlessJobContext,
-    )
-
 
 log = logging.getLogger(__name__)
 
@@ -60,6 +52,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     required for datasets and other potential model objects.
     """
 
+    job_working_directory: str  # TODO: rename
     max_discovered_files = float("inf")
     discovered_file_count: int
 
@@ -260,7 +253,13 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 log.exception("Exception occured while setting dataset peek")
 
     def populate_collection_elements(
-        self, collection, root_collection_builder, filenames, name=None, metadata_source_name=None, final_job_state="ok"
+        self,
+        collection,
+        root_collection_builder,
+        discovered_files,
+        name=None,
+        metadata_source_name=None,
+        final_job_state="ok",
     ):
         # TODO: allow configurable sorting.
         #    <sort by="lexical" /> <!-- default -->
@@ -270,7 +269,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         if name is None:
             name = "unnamed output"
         if self.flush_per_n_datasets and self.flush_per_n_datasets > 0:
-            for chunk in chunk_iterable(filenames.items(), size=self.flush_per_n_datasets):
+            for chunk in chunk_iterable(discovered_files, size=self.flush_per_n_datasets):
                 self._populate_elements(
                     chunk=chunk,
                     name=name,
@@ -285,7 +284,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     self.flush()
         else:
             self._populate_elements(
-                chunk=filenames.items(),
+                chunk=discovered_files,
                 name=name,
                 root_collection_builder=root_collection_builder,
                 metadata_source_name=metadata_source_name,
@@ -300,7 +299,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             "paths": [],
             "extra_files": [],
         }
-        for filename, discovered_file in chunk:
+        for discovered_file in chunk:
+            filename = discovered_file.path
             create_dataset_timer = ExecutionTimer()
             fields_match = discovered_file.match
             if not fields_match:
@@ -323,7 +323,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             sources = discovered_file.match.sources
             hashes = discovered_file.match.hashes
             created_from_basename = discovered_file.match.created_from_basename
-
+            effective_state = fields_match.effective_state
+            if final_job_state == "ok" and effective_state != "ok":
+                final_job_state = effective_state
             dataset = self.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -602,7 +604,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         return nested_folder
 
     def persist_library_folder(self, library_folder):
-        self.export_store.export_library(library_folder)
+        self.export_store.export_library_folder(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         # Consider copying these datasets to for_output_dataset copied histories
@@ -690,12 +692,12 @@ def persist_target_to_export_store(target_dict, export_store, object_store, work
 
 
 def persist_elements_to_hdca(
-    model_persistence_context: Union["JobContext", "SessionlessJobContext", SessionlessModelPersistenceContext],
+    model_persistence_context: ModelPersistenceContext,
     elements,
     hdca,
     collector=None,
 ):
-    filenames = {}
+    discovered_files = []
 
     def add_to_discovered_files(elements, parent_identifiers=None):
         parent_identifiers = parent_identifiers or []
@@ -706,7 +708,7 @@ def persist_elements_to_hdca(
                 discovered_file = discovered_file_for_element(
                     element, model_persistence_context, parent_identifiers, collector=collector
                 )
-                filenames[discovered_file.path] = discovered_file
+                discovered_files.append(discovered_file)
 
     add_to_discovered_files(elements)
 
@@ -715,7 +717,7 @@ def persist_elements_to_hdca(
     model_persistence_context.populate_collection_elements(
         collection,
         collection_builder,
-        filenames,
+        discovered_files,
     )
     collection_builder.populate()
 
@@ -743,7 +745,8 @@ def persist_elements_to_folder(model_persistence_context, elements, library_fold
             sources = fields_match.sources
             hashes = fields_match.hashes
             created_from_basename = fields_match.created_from_basename
-            info, state = discovered_file.discovered_state(element)
+            effective_state = fields_match.effective_state
+            info, state = discovered_file.discovered_state(element, final_job_state=effective_state)
             model_persistence_context.create_dataset(
                 ext=ext,
                 designation=designation,
@@ -895,12 +898,26 @@ class DiscoveredResultState(NamedTuple):
     state: str
 
 
-DiscoveredResult = Union[DiscoveredFile, "DiscoveredFileError"]
+class DiscoveredDeferredFile(NamedTuple):
+    collector: Optional[CollectorT]
+    match: "JsonCollectedDatasetMatch"
+
+    def discovered_state(self, element: Dict[str, Any], final_job_state="ok") -> DiscoveredResultState:
+        info = element.get("info", None)
+        state = "deferred" if final_job_state == "ok" else final_job_state
+        return DiscoveredResultState(info, state)
+
+    @property
+    def path(self):
+        return None
+
+
+DiscoveredResult = Union[DiscoveredFile, DiscoveredDeferredFile, "DiscoveredFileError"]
 
 
 def discovered_file_for_element(
     dataset,
-    model_persistence_context: Union["JobContext", "SessionlessJobContext", SessionlessModelPersistenceContext],
+    model_persistence_context: ModelPersistenceContext,
     parent_identifiers=None,
     collector=None,
 ) -> DiscoveredResult:
@@ -912,6 +929,11 @@ def discovered_file_for_element(
     filename = dataset.get("filename")
     error_message = dataset.get("error_message")
     if error_message is None:
+        if dataset.get("state") == "deferred":
+            return DiscoveredDeferredFile(
+                collector, JsonCollectedDatasetMatch(dataset, collector, None, parent_identifiers=parent_identifiers)
+            )
+
         # handle link_data_only here, verify filename is in directory if not linking...
         if not dataset.get("link_data_only"):
             path = os.path.join(target_directory, filename)
@@ -1035,6 +1057,10 @@ class JsonCollectedDatasetMatch:
     @property
     def extra_files(self):
         return self.as_dict.get("extra_files")
+
+    @property
+    def effective_state(self):
+        return self.as_dict.get("state") or "ok"
 
 
 class RegexCollectedDatasetMatch(JsonCollectedDatasetMatch):

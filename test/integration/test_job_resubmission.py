@@ -42,14 +42,17 @@ class _BaseResubmissionIntegerationTestCase(integration_util.IntegrationTestCase
         assert exception_thrown
 
 
-class JobResubmissionIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionIntegration(_BaseResubmissionIntegerationTestCase):
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
+        config["job_runner_monitor_sleep"] = 1
+        config["job_handler_monitor_sleep"] = 1
 
     def test_retry_tools_have_resource_params(self):
         tool_show = self._get("tools/simple_constructs", data=dict(io_details=True)).json()
@@ -172,12 +175,13 @@ class JobResubmissionIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
         )
 
 
-class JobResubmissionDefaultIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionDefaultIntegration(_BaseResubmissionIntegerationTestCase):
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["default_job_resubmission_condition"] = "attempt < 2"
         config["job_config_file"] = JOB_RESUBMISSION_DEFAULT_JOB_CONFIG_FILE
         config["job_resource_params_file"] = JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE
@@ -186,12 +190,13 @@ class JobResubmissionDefaultIntegrationTestCase(_BaseResubmissionIntegerationTes
         self._assert_job_passes(resource_parameters={"test_name": "test_default_resubmission"})
 
 
-class JobResubmissionDynamicIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegerationTestCase):
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_DYNAMIC_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -199,9 +204,10 @@ class JobResubmissionDynamicIntegrationTestCase(_BaseResubmissionIntegerationTes
 
 
 # Verify the test tool fails if only a small amount of memory is allocated.
-class JobResubmissionSmallMemoryIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionSmallMemoryIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_SMALL_MEMORY_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -210,9 +216,10 @@ class JobResubmissionSmallMemoryIntegrationTestCase(_BaseResubmissionIntegeratio
 
 # Verify the test tool will resubmit on failure tested above and will then pass with
 # proper resubmission condition.
-class JobResubmissionSmallMemoryResubmitsToLargeIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionSmallMemoryResubmitsToLargeIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_SMALL_MEMORY_RESUBMISSION_TO_LARGE_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -220,9 +227,10 @@ class JobResubmissionSmallMemoryResubmitsToLargeIntegrationTestCase(_BaseResubmi
 
 
 # Verify the test tool fails with an exit code issue.
-class JobResubmissionToolDetectedErrorIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionToolDetectedErrorIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_ALWAYS_ERROR_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -231,9 +239,10 @@ class JobResubmissionToolDetectedErrorIntegrationTestCase(_BaseResubmissionInteg
 
 # Verify the test tool will resubmit on failure tested above and will then pass in
 # an environment without a tool indicated error.
-class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionToolDetectedErrorResubmitsIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_TOOL_DETECTED_RESUBMIT_JOB_CONFIG_FILE
 
     def test_dynamic_resubmission(self):
@@ -241,9 +250,10 @@ class JobResubmissionToolDetectedErrorResubmitsIntegrationTestCase(_BaseResubmis
 
 
 # Verify that a failure to connect to pulsar can trigger a resubmit
-class JobResubmissionPulsarIntegrationTestCase(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionPulsarIntegration(_BaseResubmissionIntegerationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE
 
     def test_resubmit_on_invalid_pulsar_url(self):

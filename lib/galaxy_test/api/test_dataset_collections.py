@@ -11,7 +11,7 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class DatasetCollectionApiTestCase(ApiTestCase):
+class TestDatasetCollectionsApi(ApiTestCase):
     history_id: str
 
     def setUp(self):
@@ -88,8 +88,8 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         assert pair_1_element["element_index"] == 0, pair_1_element
         pair_1_object = pair_1_element["object"]
         self._assert_has_keys(pair_1_object, "collection_type", "elements", "element_count")
-        self.assertEqual(pair_1_object["collection_type"], "paired")
-        self.assertEqual(pair_1_object["populated"], True)
+        assert pair_1_object["collection_type"] == "paired"
+        assert pair_1_object["populated"] is True
         pair_elements = pair_1_object["elements"]
         assert len(pair_elements) == 2
         pair_1_element_1 = pair_elements[0]
@@ -233,7 +233,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
-        self.assertEqual(hdca["name"], "Test upload")
+        assert hdca["name"] == "Test upload"
         hdca_tags = hdca["tags"]
         assert len(hdca_tags) == 1
         assert "name:collection1" in hdca_tags
@@ -262,7 +262,7 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         }
         self.dataset_populator.fetch(payload)
         hdca = self._assert_one_collection_created_in_history()
-        self.assertEqual(hdca["name"], "Test upload")
+        assert hdca["name"] == "Test upload"
         assert len(hdca["elements"]) == 1, hdca
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "samp1"
@@ -293,6 +293,34 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         element0 = hdca["elements"][0]
         assert element0["element_identifier"] == "4.bed"
         assert element0["object"]["file_size"] == 61
+
+    def test_upload_collection_deferred(self):
+        elements = [
+            {
+                "src": "url",
+                "url": "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/4.bed",
+                "info": "my cool bed",
+                "deferred": True,
+            }
+        ]
+        targets = [
+            {
+                "destination": {"type": "hdca"},
+                "elements": elements,
+                "collection_type": "list",
+            }
+        ]
+        payload = {
+            "history_id": self.history_id,
+            "targets": targets,
+        }
+        self.dataset_populator.fetch(payload)
+        hdca = self._assert_one_collection_created_in_history()
+        assert len(hdca["elements"]) == 1, hdca
+        element0 = hdca["elements"][0]
+        assert element0["element_identifier"] == "4.bed"
+        object0 = element0["object"]
+        assert object0["state"] == "deferred"
 
     @skip_if_github_down
     def test_upload_collection_failed_expansion_url(self):
@@ -402,6 +430,17 @@ class DatasetCollectionApiTestCase(ApiTestCase):
         offset_contents = self._get(f"{root_contents_url}?offset=1").json()
         assert len(offset_contents) == 1
         assert offset_contents[0]["element_index"] == 1
+
+    def test_collection_contents_empty_root(self):
+        create_response = self.dataset_collection_populator.create_list_in_history(
+            self.history_id, contents=[], wait=True
+        ).json()
+        hdca = create_response["output_collections"][0]
+        assert hdca["elements"] == []
+        root_contents_url = hdca["contents_url"]
+        response = self._get(root_contents_url)
+        response.raise_for_status()
+        assert response.json() == []
 
     def test_get_suitable_converters_single_datatype(self):
         response = self.dataset_collection_populator.upload_collection(

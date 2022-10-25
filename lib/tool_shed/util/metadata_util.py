@@ -272,27 +272,6 @@ def get_repository_metadata_by_repository_id_changeset_revision(app, id, changes
     return get_repository_metadata_by_changeset_revision(app, id, changeset_revision)
 
 
-def get_repository_metadata_revisions_for_review(repository, reviewed=True):
-    repository_metadata_revisions = []
-    metadata_changeset_revision_hashes = []
-    if reviewed:
-        for metadata_revision in repository.metadata_revisions:
-            metadata_changeset_revision_hashes.append(metadata_revision.changeset_revision)
-        for review in repository.reviews:
-            if review.changeset_revision in metadata_changeset_revision_hashes:
-                rmcr_hashes = [rmr.changeset_revision for rmr in repository_metadata_revisions]
-                if review.changeset_revision not in rmcr_hashes:
-                    repository_metadata_revisions.append(review.repository_metadata)
-    else:
-        for review in repository.reviews:
-            if review.changeset_revision not in metadata_changeset_revision_hashes:
-                metadata_changeset_revision_hashes.append(review.changeset_revision)
-        for metadata_revision in repository.metadata_revisions:
-            if metadata_revision.changeset_revision not in metadata_changeset_revision_hashes:
-                repository_metadata_revisions.append(metadata_revision)
-    return repository_metadata_revisions
-
-
 def get_updated_changeset_revisions(app, name, owner, changeset_revision):
     """
     Return a string of comma-separated changeset revision hashes for all available updates to the received changeset
