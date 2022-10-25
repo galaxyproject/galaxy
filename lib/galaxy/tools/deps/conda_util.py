@@ -33,7 +33,7 @@ IS_OS_X = sys.platform == "darwin"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "4.6.14"
+CONDA_PACKAGE_SPECS = ("conda=4.6.14", "'pyopenssl>=22.1.0'")
 CONDA_BUILD_VERSION = "3.17.8"
 USE_LOCAL_DEFAULT = False
 
@@ -409,9 +409,7 @@ def install_conda(conda_context, force_conda_build=False):
     os.close(f)
     download_cmd = commands.download_command(conda_link(), to=script_path, quote_url=False)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
-    package_targets = [
-        "conda=%s" % CONDA_VERSION,
-    ]
+    package_targets = list(CONDA_PACKAGE_SPECS)
     if force_conda_build or conda_context.use_local:
         package_targets.append("conda-build=%s" % CONDA_BUILD_VERSION)
     log.info("Installing conda, this may take several minutes.")
