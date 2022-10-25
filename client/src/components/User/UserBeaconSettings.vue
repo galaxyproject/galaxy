@@ -104,7 +104,7 @@
           <ul>
             <li>must be VCF or VCF.bzip format</li>
             <li>must have a human reference assigned to it (e.g. hg19)</li>
-            <li>must define at least one sample</li>
+            <li>must define at least one sample in a dedicated genotype column</li>
           </ul>
         </div>
       </b-modal>
