@@ -69,7 +69,7 @@ export default {
                 })
                 .catch((error) => {
                     this.variant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
+                    const message = error.response && error.response.data && error.response.data.err_msg;
                     this.message = message || "Password change failed for an unknown reason.";
                 });
         },
