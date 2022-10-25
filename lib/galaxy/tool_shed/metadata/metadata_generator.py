@@ -3,6 +3,7 @@ import os
 import tempfile
 from typing import (
     Any,
+    TYPE_CHECKING,
     cast,
     Dict,
     List,
@@ -15,7 +16,6 @@ from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.model.tool_shed_install import ToolShedRepository
-from galaxy.structured_app import BasicSharedApp
 from galaxy.tool_shed.galaxy_install.client import (
     DataManagerInterface,
     InstallationTarget,
@@ -46,7 +46,10 @@ from galaxy.util.tool_shed.common_util import (
     remove_protocol_from_tool_shed_url,
 )
 from galaxy.util.tool_shed.xml_util import parse_xml
-from galaxy.web import url_for
+
+if TYPE_CHECKING:
+    from galaxy.structured_app import BasicSharedApp
+
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +73,7 @@ class RepositoryProtocol(Protocol):
 
 
 class BaseMetadataGenerator:
-    app: Union[BasicSharedApp, InstallationTarget]
+    app: Union["BasicSharedApp", InstallationTarget]
     repository: Optional[RepositoryProtocol]
     invalid_file_tups: List[InvalidFileT]
     changeset_revision: Optional[str]
@@ -961,10 +964,10 @@ class GalaxyMetadataGenerator(BaseMetadataGenerator):
                 error_message += util.xml_to_string(repository_elem, pretty=True)
                 log.error(error_message)
                 return repository_dependency_tup, False, error_message
-        if not toolshed:
-            # Default to the current tool shed.
-            toolshed = str(url_for("/", qualified=True)).rstrip("/")
-            repository_dependency_tup[0] = toolshed
+
+        # Must be present in Galaxy side code I think.
+        assert toolshed
+
         toolshed = remove_protocol_from_tool_shed_url(toolshed)
 
         # We're in Galaxy.  We reach here when we're generating the metadata for a tool
