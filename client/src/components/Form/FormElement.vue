@@ -202,7 +202,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
         </div>
 
         <div v-if="props.title" class="ui-form-title">
-            <div v-if="collapsible || connectable">
+            <span v-if="collapsible || connectable">
                 <b-button
                     v-if="collapsible && !connected"
                     class="ui-form-collapsible-icon"
@@ -220,7 +220,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 <span class="ui-form-title-text ml-1">
                     {{ props.title }}
                 </span>
-            </div>
+            </span>
             <span v-else class="ui-form-title-text">{{ props.title }}</span>
 
             <span
