@@ -88,7 +88,7 @@
           <!-- Case: History exists -->
           <div v-if="beaconHistory.id" class="flex-row">
             <div class="no-shrink">
-              Variant files are searched in your beacon history
+              Variant data to share gets discovered from your beacon history
             </div>
             <div class="fill"></div>
             <div class="no-shrink">
