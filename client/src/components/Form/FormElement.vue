@@ -147,7 +147,7 @@ const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasError = computed(() => Boolean(props.error));
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
-const showField = computed(() => !collapsed.value && !props.disabled.value);
+const showField = computed(() => !collapsed.value && !props.disabled);
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
