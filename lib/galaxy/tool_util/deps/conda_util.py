@@ -30,12 +30,10 @@ SHELL_UNSAFE_PATTERN = re.compile(r"[\s\"']")
 
 IS_OS_X = sys.platform == "darwin"
 
-# BSD 3-clause
-CONDA_LICENSE = "http://docs.continuum.io/anaconda/eula"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_VERSION = "4.6.14"
+CONDA_PACKAGE_SPECS = ("conda=4.6.14", "'pyopenssl>=22.1.0'")
 CONDA_BUILD_VERSION = "3.17.8"
 USE_LOCAL_DEFAULT = False
 
@@ -109,7 +107,6 @@ class CondaContext(installable.InstallableContext):
             ensure_channels = None
         self.ensure_channels = ensure_channels
         self._conda_version = None
-        self._miniconda_version = None
         self._conda_build_available = None
         self.use_local = use_local
 
@@ -126,35 +123,16 @@ class CondaContext(installable.InstallableContext):
         return self._conda_build_available
 
     def _guess_conda_properties(self):
-        conda_meta_path = self._conda_meta_path
-        # Perhaps we should call "conda info --json" and parse it but for now we are going
-        # to assume the default.
-        conda_version = packaging.version.parse(CONDA_VERSION)
-        conda_build_available = False
-        miniconda_version = "3"
-
-        if os.path.exists(conda_meta_path):
-            for package in os.listdir(conda_meta_path):
-                package_parts = package.split("-")
-                if len(package_parts) < 3:
-                    continue
-                package = '-'.join(package_parts[:-2])
-                version = package_parts[-2]
-                # build = package_parts[-1]
-                if package == "conda":
-                    conda_version = packaging.version.parse(version)
-                if package == "python" and version.startswith("2"):
-                    miniconda_version = "2"
-                if package == "conda-build":
-                    conda_build_available = True
-
-        self._conda_version = conda_version
-        self._miniconda_version = miniconda_version
-        self._conda_build_available = conda_build_available
-
-    @property
-    def _conda_meta_path(self):
-        return os.path.join(self.conda_prefix, "conda-meta")
+        info = self.conda_info()
+        self._conda_version = packaging.version.parse(info["conda_version"])
+        self._conda_build_available = False
+        conda_build_version = info.get("conda_build_version")
+        if conda_build_version != "not installed":
+            try:
+                self._conda_version = packaging.version.parse(conda_build_version)
+                self._conda_build_available = True
+            except Exception:
+                pass
 
     @property
     def _override_channels_args(self):
@@ -252,15 +230,14 @@ class CondaContext(installable.InstallableContext):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        create_base_args = [
-            "-y",
-            "--quiet"
-        ]
+        create_args = ["-y", "--quiet"]
+        if self.conda_version >= packaging.version.parse("4.7.5"):
+            create_args.append("--strict-channel-priority")
         if allow_local and self.use_local:
-            create_base_args.extend(["--use-local"])
-        create_base_args.extend(self._override_channels_args)
-        create_base_args.extend(args)
-        return self.exec_command("create", create_base_args, stdout_path=stdout_path)
+            create_args.extend(["--use-local"])
+        create_args.extend(self._override_channels_args)
+        create_args.extend(args)
+        return self.exec_command("create", create_args, stdout_path=stdout_path)
 
     def exec_remove(self, args):
         """
@@ -280,14 +257,14 @@ class CondaContext(installable.InstallableContext):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        install_base_args = [
-            "-y"
-        ]
+        install_args = ["-y"]
+        if self.conda_version >= packaging.version.parse("4.7.5"):
+            install_args.append("--strict-channel-priority")
         if allow_local and self.use_local:
-            install_base_args.append("--use-local")
-        install_base_args.extend(self._override_channels_args)
-        install_base_args.extend(args)
-        return self.exec_command("install", install_base_args, stdout_path=stdout_path)
+            install_args.append("--use-local")
+        install_args.extend(self._override_channels_args)
+        install_args.extend(args)
+        return self.exec_command("install", install_args, stdout_path=stdout_path)
 
     def exec_clean(self, args=[], quiet=False):
         """
@@ -437,9 +414,7 @@ def install_conda(conda_context, force_conda_build=False):
     os.close(f)
     download_cmd = commands.download_command(conda_link(), to=script_path, quote_url=False)
     install_cmd = ['bash', script_path, '-b', '-p', conda_context.conda_prefix]
-    package_targets = [
-        "conda=%s" % CONDA_VERSION,
-    ]
+    package_targets = list(CONDA_PACKAGE_SPECS)
     if force_conda_build or conda_context.use_local:
         package_targets.append("conda-build=%s" % CONDA_BUILD_VERSION)
     log.info("Installing conda, this may take several minutes.")
