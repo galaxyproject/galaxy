@@ -1930,7 +1930,7 @@ test_data:
                 history_id=history_id,
             )
 
-    def test_run_workflow_simple_conditional(self):
+    def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 """class: GalaxyWorkflow
@@ -1958,11 +1958,11 @@ should_run:
                 history_id=history_id,
             )
             invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
-            conditional_jobs = invocation_details["steps"][2]["jobs"]
-            assert conditional_jobs[0]["state"] == "ok"
-            assert conditional_jobs[1]["state"] == "skipped"
+            for step in invocation_details["steps"]:
+                if step["workflow_step_label"] == "cat1":
+                    assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
-    def test_run_workflow_conditional_map_over_expression_tool(self):
+    def test_run_workflow_conditional_step_map_over_expression_tool(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 """
@@ -1994,11 +1994,11 @@ test_data:
                 history_id=history_id,
             )
             invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
-            conditional_jobs = invocation_details["steps"][2]["jobs"]
-            assert conditional_jobs[0]["state"] == "ok"
-            assert conditional_jobs[1]["state"] == "skipped"
+            for step in invocation_details["steps"]:
+                if step["workflow_step_label"] == "consume_expression_parameter":
+                    assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
-    def test_run_workflow_conditional_map_over_expression_tool_pick_value(self):
+    def test_run_workflow_conditional_step_map_over_expression_tool_pick_value(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
                 """
@@ -2085,9 +2085,9 @@ test_data:
                     history_id, content_id=element["object"]["id"]
                 )
                 assert content == "True"
-            consume_expression_parameter_2 = invocation_details["steps"][5]
-            assert consume_expression_parameter_2["workflow_step_label"] == "consume_expression_parameter_2"
-            assert consume_expression_parameter_2["jobs"][0]["state"] == "skipped"
+            for step in invocation_details["steps"]:
+                if step["workflow_step_label"].startswith("consume_expression_parameter_"):
+                    assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
     def test_run_subworkflow_simple(self) -> None:
         with self.dataset_populator.test_history() as history_id:
