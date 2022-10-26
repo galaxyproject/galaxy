@@ -640,6 +640,7 @@ class DefaultToolAction(ToolAction):
         job = trans.app.model.Job()
         job.state = "ok"
         if skip:
+            job.state = "skipped"
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
                 object_store_populator.set_object_store_id(data)

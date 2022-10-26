@@ -2003,6 +2003,9 @@ class: GalaxyWorkflow
 inputs:
   boolean_input_files_1: collection
   boolean_input_files_2: collection
+outputs:
+  my_output:
+    outputSource: pick_value/data_param
 steps:
 - label: param_out_1
   tool_id: param_value_from_file
@@ -2032,13 +2035,17 @@ steps:
   tool_id: pick_value
   tool_state:
     style_cond:
+      __current_case__: 2
       pick_style: first_or_error
       type_cond:
+        __current_case__: 4
         param_type: data
         pick_from:
-        - value:
+        - __index__: 0
+          value:
             __class__: RuntimeValue
-        - value:
+        - __index__: 1
+          value:
             __class__: RuntimeValue
   in:
     style_cond|type_cond|pick_from_0|value:
@@ -2063,10 +2070,21 @@ test_data:
 """,
                 history_id=history_id,
             )
-            invocation_jobs = self.dataset_populator.invocation_jobs(summary.invocation_id)
-            assert len(invocation_jobs) == 3
-            assert sum(1 for j in invocation_jobs if j["tool_id"] == "param_value_from_file") == 2, invocation_jobs
-            assert sum(1 for j in invocation_jobs if j["tool_id"] == "cat1") == 1, invocation_jobs
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            output_collection_id = invocation_details["output_collections"]["my_output"]["id"]
+            hdca_details = self.dataset_populator.get_history_collection_details(
+                history_id=history_id, content_id=output_collection_id
+            )
+            elements = hdca_details["elements"]
+            assert len(elements) == 2
+            for element in elements:
+                content = self.dataset_populator.get_history_dataset_content(
+                    history_id, content_id=element["object"]["id"]
+                )
+                assert content == "True"
+            consume_expression_parameter_2 = invocation_details["steps"][5]
+            assert consume_expression_parameter_2["workflow_step_label"] == "consume_expression_parameter_2"
+            assert consume_expression_parameter_2["jobs"][0]["state"] == "skipped"
 
     def test_run_subworkflow_simple(self) -> None:
         with self.dataset_populator.test_history() as history_id:

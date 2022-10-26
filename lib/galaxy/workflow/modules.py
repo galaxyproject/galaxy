@@ -1992,8 +1992,7 @@ class ToolModule(WorkflowModule):
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 
                     if isinstance(input, ConditionalStepWhen) and replacement is False:
-                        outputs = self.get_all_outputs()
-                        raise SkipWorkflowStepEvaluation(outputs)
+                        raise SkipWorkflowStepEvaluation
 
                 return replacement
 
@@ -2006,12 +2005,9 @@ class ToolModule(WorkflowModule):
                     no_replacement_value=NO_REPLACEMENT,
                     replace_optional_connections=True,
                 )
-            except SkipWorkflowStepEvaluation as we:
-                progress.mark_step_outputs_skipped(invocation_step, we.outputs)
+            except SkipWorkflowStepEvaluation:
                 skip_execution_state = execution_state.inputs
                 skip_execution_state["when"] = False
-                param_combinations.append(execution_state.inputs)
-                continue
             except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, unicodify(k))
@@ -2230,8 +2226,7 @@ class CancelWorkflowEvaluation(Exception):
 
 
 class SkipWorkflowStepEvaluation(Exception):
-    def __init__(self, outputs):
-        self.outputs = outputs
+    pass
 
 
 class WorkflowModuleInjector:
