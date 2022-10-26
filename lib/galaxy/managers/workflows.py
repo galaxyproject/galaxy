@@ -10,6 +10,7 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
+    Union,
 )
 
 from gxformat2 import (
@@ -1668,7 +1669,11 @@ class WorkflowContentsManager(UsesAnnotations):
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
-        step.temp_input_connections = step_dict.get("input_connections", {})
+        DictConnection = Dict[str, Union[int, str]]
+        temp_input_connections: Dict[str, Union[List[DictConnection], DictConnection]] = step_dict.get(
+            "input_connections", {}
+        )
+        step.temp_input_connections = temp_input_connections
 
         # Create the model class for the step
         steps.append(step)
