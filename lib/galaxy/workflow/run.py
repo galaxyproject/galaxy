@@ -209,9 +209,6 @@ class WorkflowInvoker:
                     self.progress.mark_step_outputs_delayed(step, why="Not all jobs scheduled for state.")
                 else:
                     workflow_invocation_step.state = "scheduled"
-            except modules.SkipWorkflowStepEvaluation as we:
-                log.info("Skipping workflow step!")
-                self.progress.mark_step_outputs_skipped(workflow_invocation_step, we.outputs)
             except modules.DelayedWorkflowEvaluation as de:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
