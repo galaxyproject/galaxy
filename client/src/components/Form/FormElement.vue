@@ -174,6 +174,12 @@ const isHiddenType = computed(
 
 const collapseText = computed(() => (collapsed.value ? props.collapsedEnableText : props.collapsedDisableText));
 const connectText = computed(() => (connected.value ? props.connectedEnableText : props.connectedDisableText));
+
+const isEmpty = computed(
+    () => currentValue.value === null || currentValue.value === undefined || currentValue.value === ""
+);
+const isRequired = computed(() => attrs.value["optional"] === false);
+const isRequiredType = computed(() => props.type !== "boolean");
 </script>
 
 <script>
@@ -216,6 +222,17 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 </span>
             </div>
             <span v-else class="ui-form-title-text">{{ props.title }}</span>
+
+            <span
+                v-if="isRequired && isRequiredType"
+                v-b-tooltip.hover
+                class="ui-form-title-star"
+                title="required"
+                :class="{ warning: isEmpty }">
+                *
+                <span v-if="isEmpty" class="ui-form-title-message warning"> required </span>
+            </span>
+            <span v-else-if="isRequiredType" class="ui-form-title-message"> - optional </span>
         </div>
 
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
@@ -262,6 +279,24 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
         .icon {
             cursor: pointer;
             font-size: 1.2em;
+        }
+
+        .ui-form-title-message {
+            font-size: $font-size-base * 0.7;
+            font-weight: 300;
+            vertical-align: text-top;
+            color: $text-light;
+            cursor: default;
+        }
+
+        .ui-form-title-star {
+            color: $text-light;
+            font-weight: 300;
+            cursor: default;
+        }
+
+        .warning {
+            color: $brand-danger;
         }
     }
 
