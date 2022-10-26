@@ -34,7 +34,7 @@ describe("FormElement", () => {
         expect(no_error.length).toBe(0);
 
         const title = wrapper.find(".ui-form-title");
-        expect(title.text()).toBe("title_text");
+        expect(title.text()).toContain("title_text");
     });
 
     it("check collapsibles and other features", async () => {
@@ -76,5 +76,23 @@ describe("FormElement", () => {
         await wrapper.setProps({ attributes: { titleonly: true } });
         expect(wrapper.findComponent(FormHidden).exists()).toBe(true);
         expect(wrapper.findComponent(FormInput).exists()).toBe(false);
+    });
+
+    it("marks required values", async () => {
+        await wrapper.setProps({ type: "text", attributes: { optional: false } });
+        expect(wrapper.find(".ui-form-title-star").exists()).toBe(true);
+        expect(wrapper.find(".ui-form-title-message").exists()).toBe(false);
+    });
+
+    it("marks optional values", async () => {
+        await wrapper.setProps({ type: "text", attributes: { optional: true } });
+        expect(wrapper.find(".ui-form-title-star").exists()).toBe(false);
+        expect(wrapper.find(".ui-form-title-message").text()).toContain("optional");
+    });
+
+    it("warns about empty required values", async () => {
+        await wrapper.setProps({ type: "text", value: "", attributes: { optional: false } });
+        expect(wrapper.find(".ui-form-title-star").exists()).toBe(true);
+        expect(wrapper.find(".ui-form-title-message").text()).toContain("required");
     });
 });
