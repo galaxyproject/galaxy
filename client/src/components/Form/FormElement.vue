@@ -36,8 +36,11 @@
                 :id="id"
                 v-model="currentValue"
                 :readonly="attrs.readonly"
+                :value="attrs.value"
+                :area="attrs.area"
                 :placeholder="attrs.placeholder"
                 :color="attrs.color"
+                :multiple="attrs.multiple"
                 :style="attrs.style"
                 :datalist="attrs.datalist"
                 :type="type" />

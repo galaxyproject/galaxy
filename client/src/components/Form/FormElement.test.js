@@ -1,6 +1,8 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import FormElement from "./FormElement";
+import FormInput from "./Elements/FormInput";
+import FormHidden from "./Elements/FormHidden";
 
 const localVue = getLocalVue();
 
@@ -62,8 +64,9 @@ describe("FormElement", () => {
 
     it("check type matching", async () => {
         await wrapper.setProps({ type: "text" });
-        expect(wrapper.find("div[id='input'").text()).toEqual("form-input");
+        console.log(wrapper.html());
+        expect(wrapper.find("div[id='input']").text()).toEqual("form-input");
         await wrapper.setProps({ attributes: { titleonly: true } });
-        expect(wrapper.find("div[id='input'").text()).toEqual("form-hidden");
+        expect(wrapper.find("div[id='input']").text()).toEqual("form-hidden");
     });
 });

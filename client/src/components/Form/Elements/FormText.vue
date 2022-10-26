@@ -15,7 +15,7 @@
                     :type="type"
                     @change="onInputChange" />
 
-                <datalist v-if="datalist && !area && !multiple" :id="`${id}-datalist`">
+                <datalist v-if="datalist && !inputArea && !multiple" :id="`${id}-datalist`">
                     <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value"></option>
                 </datalist>
             </b-col>
@@ -28,7 +28,7 @@ import Utils from "utils/utils";
 
 export default {
     props: {
-        inputValue: {
+        value: {
             // String; Array for multiple
             required: false,
             default: "",
@@ -42,7 +42,7 @@ export default {
             required: false,
             default: "text",
         },
-        inputArea: {
+        area: {
             // <textarea> instead of <input> element
             type: Boolean,
             required: false,
@@ -96,13 +96,15 @@ export default {
         },
     },
     data() {
+        let inputArea;
+        let inputValue;
         if (["SelectTagParameter", "ColumnListParameter"].includes(this.model_class) || (this.options && this.data)) {
-            this.area = this.multiple;
+            inputArea = this.multiple;
             if (Utils.isEmpty(this.value)) {
-                this.value = null;
+                inputValue = null;
             } else {
                 if (Array.isArray(this.value)) {
-                    this.value = this.multiple
+                    inputValue = this.multiple
                         ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
                         : String(this.value[0]);
                 }
@@ -112,8 +114,8 @@ export default {
             dismissSecs: 5,
             dismissCountDown: 0,
             errorMessage: "",
-            value: this.inputValue,
-            area: this.inputArea,
+            inputArea: inputArea,
+            inputValue: inputValue,
         };
     },
     computed: {
