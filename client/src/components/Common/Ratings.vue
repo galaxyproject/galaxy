@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h4>Rating</h4>
+        <h1 class="h-sm">Rating</h1>
         <div>Community ({{ numRatings }} total, {{ averageRating.toFixed(1) }} average):</div>
         <star-rating read-only v-model="averageRating" :star-size="25" :show-rating="false" />
         <div class="mt-2">Yours:</div>
