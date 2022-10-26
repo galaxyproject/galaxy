@@ -5,9 +5,8 @@ Created on 15/07/2014
 
 Modification on 24/10/2022
 
-Addition of LDAP auth provider using ldap3 module. Current LDAP auth provider uses python-ldap module which
-has external dependencies like openldap client libs. ldap3 is pure Python implementation of OpenLDAP client library 
-and is more robust than python-ldap. 
+Addition of LDAP3 auth provider using the ldap3 module. The original LDAP auth provider uses the python-ldap library which
+has external dependencies like openldap client libs. ldap3 is a pure Python LDAP v3 client library.
 
 @author: Mahendra Paipuri, CNRS
 """
@@ -20,7 +19,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from galaxy.auth.providers import AuthProvider
+from . import AuthProvider
 
 try:
     import ldap
@@ -465,7 +464,7 @@ if __name__ == "__main__":
         "bind-password": "{password}",
         "search-fields": "uid",
         "search-filter": "(uid={username})",
-        "search-base": "cn=users,cn=accounts1,dc=demo,dc=freeipa,dc=org",
+        "search-base": "cn=users,cn=accounts,dc=demo,dc=freeipa,dc=org",
         "redact_username_in_logs": False,
         "auto-register-username": "{uid}",
         "auto-register-email": "{uid}@example.com",
