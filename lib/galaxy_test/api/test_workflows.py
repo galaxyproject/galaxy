@@ -1957,7 +1957,10 @@ should_run:
 """,
                 history_id=history_id,
             )
-            assert len(self.dataset_populator.invocation_jobs(summary.invocation_id)) == 0
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            conditional_jobs = invocation_details["steps"][2]["jobs"]
+            assert conditional_jobs[0]["state"] == "ok"
+            assert conditional_jobs[1]["state"] == "skipped"
 
     def test_run_workflow_conditional_map_over_expression_tool(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1990,10 +1993,10 @@ test_data:
 """,
                 history_id=history_id,
             )
-            invocation_jobs = self.dataset_populator.invocation_jobs(summary.invocation_id)
-            assert len(invocation_jobs) == 3
-            assert sum(1 for j in invocation_jobs if j["tool_id"] == "param_value_from_file") == 2, invocation_jobs
-            assert sum(1 for j in invocation_jobs if j["tool_id"] == "cat1") == 1, invocation_jobs
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            conditional_jobs = invocation_details["steps"][2]["jobs"]
+            assert conditional_jobs[0]["state"] == "ok"
+            assert conditional_jobs[1]["state"] == "skipped"
 
     def test_run_workflow_conditional_map_over_expression_tool_pick_value(self):
         with self.dataset_populator.test_history() as history_id:
