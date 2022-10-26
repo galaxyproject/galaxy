@@ -12,9 +12,6 @@ describe("FormText", () => {
             localVue,
         });
 
-    // constants
-    const getAlert = async (wrapper) => await wrapper.find("[role='alert']");
-
     it("should render the appropriate input type", async () => {
         let wrapper = await mountFormText({});
         await flushPromises();
