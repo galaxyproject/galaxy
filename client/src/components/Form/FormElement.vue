@@ -89,6 +89,11 @@ const props = defineProps({
 
 const emit = defineEmits(["input", "change"]);
 
+/** TODO: remove attrs computed.
+ useAttrs is *not* reactive, and does not play nice with type safety.
+ It is present for compatibility with the legacy "FormParameter" component,
+ but should be removed as soon as that component is removed.
+ */
 const attrs = computed(() => props.attributes || useAttrs());
 const collapsibleValue = computed(() => attrs.value["collapsible_value"]);
 const defaultValue = computed(() => attrs.value["default_value"]);
