@@ -8,15 +8,15 @@
                 <component
                     :is="componentName"
                     :id="id"
+                    v-model="currentValue"
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
                     :type="type"
-                    v-model="currentValue"
                     @change="onInputChange" />
 
                 <datalist v-if="datalist && !area && !multiple" :id="`${id}-datalist`">
-                    <option v-for="d in datalist" :label="d.label" :value="d.value"></option>
+                    <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value"></option>
                 </datalist>
             </b-col>
         </b-row>
@@ -28,7 +28,7 @@ import Utils from "utils/utils";
 
 export default {
     props: {
-        value: {
+        inputValue: {
             // String; Array for multiple
             required: false,
             default: "",
@@ -42,7 +42,7 @@ export default {
             required: false,
             default: "text",
         },
-        area: {
+        inputArea: {
             // <textarea> instead of <input> element
             type: Boolean,
             required: false,
@@ -104,7 +104,7 @@ export default {
                 if (Array.isArray(this.value)) {
                     this.value = this.multiple
                         ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
-                        : String(this.value[i]);
+                        : String(this.value[0]);
                 }
             }
         }
@@ -112,6 +112,8 @@ export default {
             dismissSecs: 5,
             dismissCountDown: 0,
             errorMessage: "",
+            value: this.inputValue,
+            area: this.inputArea,
         };
     },
     computed: {
@@ -119,7 +121,7 @@ export default {
             get() {
                 // TODO: is silent fail on non-strings appropriate?
                 const v = this.value || "";
-                if (typeof v === "array") {
+                if (Array.isArray(v)) {
                     return this.multiple ? v.map((i) => String(i)).join("\n") : String(v[0]);
                 }
                 return typeof v === "string" ? v : "";

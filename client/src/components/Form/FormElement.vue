@@ -41,16 +41,6 @@
                 :style="attrs.style"
                 :datalist="attrs.datalist"
                 :type="type" />
-            <FormText
-                v-else-if="type == 'text' || type == 'password'"
-                v-model="currentValue"
-                :readonly="attrs.readonly"
-                :placeholder="attrs.placeholder"
-                :color="attrs.color"
-                :style="attrs.style"
-                :datalist="attrs.datalist"
-                :type="type"
-                :id="id" />
             <FormColor v-else-if="type == 'color'" :id="id" v-model="currentValue" />
             <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormParameter
