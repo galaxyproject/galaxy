@@ -16,7 +16,7 @@
                     @change="onInputChange" />
 
                 <datalist v-if="datalist && !area && !multiple" :id="`${id}-datalist`">
-                    <option v-for="d in datalist" value="d"></option>
+                    <option v-for="d in datalist" :label="d.label" :value="d.value"></option>
                 </datalist>
             </b-col>
         </b-row>
