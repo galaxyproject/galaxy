@@ -104,7 +104,12 @@ def validate_email_domain_name(domain: str) -> LiteralString:
     try:
         dns.resolver.resolve(domain, "MX")
     except DNSException:
-        message = "The email domain cannot be resolved."
+        try:
+            # Per RFC 5321, try to fall back to the A record (implicit MX) for
+            # the domain, see https://www.rfc-editor.org/rfc/rfc5321#section-5.1
+            dns.resolver.resolve(domain, "A")
+        except DNSException:
+            message = "The email domain cannot be resolved."
     return message
 
 
