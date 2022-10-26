@@ -15,24 +15,25 @@
           title-tag="h1"
           @show="onOpenModal">
 
+
         <!-- Explanation text-->
         <p>
-          This setting will enable the possibility to share your Variants (in VCF (vcf) or compressed VCF (vcf_gz))
-          with the entire community in a secure way without sharing the entire file or Galaxy history. This is possible
-          by utilizing the <a href="https://beacon-project.io">Global Alliance for Genomics & Health Beacon Project</a>.
+          The <a href="https://beacon-project.io">Global Alliance for Genomics & Health Beacon Project</a> enables safe
+          sharing of human genetic variants.<br>
           <br>
+          Galaxy lets you use the Beacon protocol to share genetic variants directly from your analysis with the scientific
+          community in the following anonymous way:<br>
           <br>
-          We turn Galaxy into a Beacon server and offer your variants anonymously via the Beacon Network. All shared
-          Variants will be merged to a single dataset. If someone searches in the Beacon Network for a specific variant
-          that is in one of your datasets our Galaxy server will return
-          <span class="cursive">“Yes, we have seen such a variant”</span>. Nothing more.
+          For participating users, we will merge variant lists to be shared into a single Beacon dataset and make that
+          dataset accessible through a Beacon server.<br>
+          If someone queries the server for a specific variant that is in our Beacon dataset, the server will reply with
+          <span class="cursive">“Yes, we have seen such a variant”</span>. Nothing more.<br>
           <br>
-          <br>
-          The user has the possibility to contact the Admin of the Galaxy server and we will in turn contact
-          you and ask if you want to contact this user and negotiate a potential data access.
-          Sharing is essential in Galaxy, secure sharing of sensitive data is now possible using Beacon.
+          The user that issued the query then has the possibility to contact a Galaxy server admin who can link the
+          variant call in question to particular Galaxy users. If you are among the users that shared the variant, the
+          admin will, in turn, contact you and ask if you want to contact the user that initiated the query to negotiate
+          further information exchange or data access.
         </p>
-
 
         <b-alert v-if="enabled" show>
           <div class="flex-row space-between">
@@ -62,12 +63,12 @@
 
         <div v-if="enabled">
           <p>
-            If you enable this setting you can share data by copying VCF/VCF.gz files to a history called
-            <span class="cursive">{{ beaconHistoryName }}</span>. The Beacon database is rebuilt every day, which means
-            that if
-            you disable the option here, or if you remove the history or data in the history, the variants will
-            disappear
-            from the Beacon within the next 24h.
+            You can share data by copying VCF or VCF.bgzip files to a history called
+            <span class="cursive">{{ beaconHistoryName }}</span>. <br>
+            <br>
+            The Beacon database is rebuilt periodically. Therefore, changes do not go into effect immediately.
+            If you disable beacon sharing or remove a dataset from the beacon history, the corresponding variants will
+            disappear from the beacon dataset during the next rebuild.
           </p>
         </div>
 
@@ -105,6 +106,8 @@
             <li>must be VCF or VCF.bgzip format</li>
             <li>must have a human reference assigned to it (e.g. hg19)</li>
             <li>must define at least one sample in a dedicated genotype column</li>
+            <li>must contain the info field <span class="cursive">AC</span>, with the total
+              number of alternate alleles in called genotypes</li>
           </ul>
         </div>
       </b-modal>
