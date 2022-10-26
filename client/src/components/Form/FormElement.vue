@@ -142,6 +142,7 @@ const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasError = computed(() => Boolean(props.error));
 const showPreview = computed(() => (collapsed.value && attrs.value["collapsible_preview"]) || props.disabled);
+const showField = computed(() => !collapsed.value && !props.disabled.value);
 
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
@@ -212,7 +213,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
             <span v-else class="ui-form-title-text">{{ props.title }}</span>
         </div>
 
-        <div v-if="!collapsed && !disabled" class="ui-form-field" :data-label="props.title">
+        <div v-if="showField" class="ui-form-field" :data-label="props.title">
             <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
             <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
             <FormNumber
