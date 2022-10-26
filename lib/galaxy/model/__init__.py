@@ -1072,6 +1072,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         DELETED_NEW = "deleted_new"  # now DELETING, remove after 21.0
         STOPPING = "stop"
         STOPPED = "stopped"
+        SKIPPED = "skipped"
 
     terminal_states = [states.OK, states.ERROR, states.DELETED]
     #: job states where the job hasn't finished and the model may still change

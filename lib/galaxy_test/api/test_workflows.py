@@ -1980,6 +1980,9 @@ steps:
   tool_id: cat1
   in:
     input1: boolean_input_files
+  out:
+    out_file1:
+      change_datatype: txt
   when:
     source: param_out/boolean_param
 test_data:
@@ -1996,7 +1999,15 @@ test_data:
             invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
             for step in invocation_details["steps"]:
                 if step["workflow_step_label"] == "consume_expression_parameter":
-                    assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
+                    skipped_jobs = [j for j in step["jobs"] if j["state"] == "skipped"]
+                    assert len(skipped_jobs) == 1
+                    # also assert that change_datatype was ignored for null output
+                    job_details = self.dataset_populator.get_job_details(skipped_jobs[0]["id"], full=True).json()
+                    skipped_hda_id = job_details["outputs"]["out_file1"]["id"]
+                    dataset_details = self.dataset_populator.get_history_dataset_details(
+                        history_id=history_id, content_id=skipped_hda_id
+                    )
+                    assert dataset_details["file_ext"] == "expression.json", dataset_details
 
     def test_run_workflow_conditional_step_map_over_expression_tool_pick_value(self):
         with self.dataset_populator.test_history() as history_id:
