@@ -30,10 +30,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import (
-    error,
-    url_for,
-)
+from galaxy.web import url_for
 from galaxy.web.framework.helpers import (
     grids,
     time_ago,
@@ -527,9 +524,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             if workflow_id:
                 stored_workflow = self.app.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=False)
                 self.security_check(trans, stored_workflow, True, False)
-                stored_workflow_id = trans.security.encode_id(stored_workflow.id)
-                return trans.response.send_redirect(f'{url_for("/")}workflows/edit?id={stored_workflow_id}')
-            error("Invalid workflow id")
+                id = trans.security.encode_id(stored_workflow.id)
         stored = self.get_stored_workflow(trans, id)
         # The following query loads all user-owned workflows,
         # So that they can be copied or inserted in the workflow editor.

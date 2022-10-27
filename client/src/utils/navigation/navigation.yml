@@ -556,6 +556,7 @@ workflow_editor:
       selector: '//a[contains(., "${workflow_title}")]'
     connect_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-connected-icon'
     collapse_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-collapsible-icon'
+    edit_subworkflow: 'button[title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."]'
     node_title:
       type: xpath
       selector: '//span[@class="node-title" and text()="${title}"]'
