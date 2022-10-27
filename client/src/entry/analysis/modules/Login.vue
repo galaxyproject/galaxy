@@ -11,12 +11,15 @@
                         :message-variant="$route.query.status" />
                     <LoginIndex
                         v-else
-                        :show_welcome_with_login="config.show_welcome_with_login"
-                        :welcome_url="config.welcome_url"
-                        :terms_url="config.terms_url"
-                        :registration_warning_message="config.registration_warning_message"
-                        :mailing_join_addr="config.mailing_join_addr"
-                        :server_mail_configured="config.server_mail_configured" />
+                        :show-welcome-with-login="config.show_welcome_with_login"
+                        :welcome-url="config.welcome_url"
+                        :terms-url="config.terms_url"
+                        :redirect="$route.query.redirect"
+                        :registration-warning-message="config.registration_warning_message"
+                        :mailing-join-addr="config.mailing_join_addr"
+                        :server-mail-configured="config.server_mail_configured"
+                        :enable-oidc="config.enable_oidc"
+                        :prefer-custos-login="config.prefer_custos_login" />
                 </div>
             </div>
         </div>

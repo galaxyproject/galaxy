@@ -25,7 +25,7 @@
                                     </b-form-group>
                                     <b-button name="login" type="submit">Login</b-button>
                                 </div>
-                                <div v-if="enable_oidc">
+                                <div v-if="enableOidc">
                                     <!-- OIDC login-->
                                     <external-login :login_page="true" />
                                 </div>
@@ -64,7 +64,7 @@
             <template v-else>
                 <new-user-confirmation :redirect="redirect" @setRedirect="setRedirect" />
             </template>
-            <div v-if="show_welcome_with_login" class="col">
+            <div v-if="showWelcomeWithLogin" class="col">
                 <b-embed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
             </div>
         </div>
@@ -76,7 +76,6 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { safePath } from "utils/redirect";
-import { getGalaxyInstance } from "app";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 
@@ -88,27 +87,34 @@ export default {
         NewUserConfirmation,
     },
     props: {
-        show_welcome_with_login: {
+        allowUserCreation: {
             type: Boolean,
-            required: false,
+            default: false,
         },
-        welcome_url: {
+        enableOidc: {
+            type: Boolean,
+            default: false,
+        },
+        showWelcomeWithLogin: {
+            type: Boolean,
+            default: false,
+        },
+        welcomeUrl: {
             type: String,
-            required: false,
+            default: null,
+        },
+        redirect: {
+            type: String,
+            default: null,
         },
     },
     data() {
-        const galaxy = getGalaxyInstance();
         return {
             login: null,
             password: null,
             url: null,
             messageText: null,
             messageVariant: null,
-            allowUserCreation: galaxy.config.allow_user_creation,
-            redirect: galaxy.params.redirect,
-            session_csrf_token: galaxy.session_csrf_token,
-            enable_oidc: galaxy.config.enable_oidc,
         };
     },
     computed: {
@@ -120,7 +126,7 @@ export default {
             return urlParams.has("confirm") && urlParams.get("confirm") == "true";
         },
         welcomeUrlWithRoot() {
-            return safePath(this.welcome_url);
+            return safePath(this.welcomeUrl);
         },
     },
     methods: {

@@ -2,16 +2,19 @@
     <div>
         <template v-if="showLogin">
             <login-form
-                :show_welcome_with_login="show_welcome_with_login"
-                :welcome_url="welcome_url"
+                :redirect="redirect"
+                :show-welcome-with-login="show_welcome_with_login"
+                :welcome-url="welcome_url"
                 @toggle-login="toggleLogin" />
         </template>
         <template v-else>
             <register-form
-                :registration_warning_message="registration_warning_message"
-                :mailing_join_addr="mailing_join_addr"
-                :server_mail_configured="server_mail_configured"
-                :terms_url="terms_url"
+                :registration-warning-message="registrationWarningMessage"
+                :mailing-join-addr="mailingJoinAddr"
+                :server-mail-configured="serverMailConfigured"
+                :terms-url="termsUrl"
+                :enable-oidc="enableOidc"
+                :prefer-custos-login="preferCustosLogin"
                 @toggle-login="toggleLogin" />
         </template>
     </div>
@@ -26,33 +29,45 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        loginForm: LoginForm,
-        registerForm: RegisterForm,
+        LoginForm,
+        RegisterForm,
     },
     props: {
-        show_welcome_with_login: {
+        showWelcomeWithLogin: {
             type: Boolean,
             required: false,
         },
-        welcome_url: {
+        welcomeUrl: {
             type: String,
             required: false,
         },
-        terms_url: {
+        termsUrl: {
             type: String,
             required: false,
         },
-        registration_warning_message: {
+        registrationWarningMessage: {
             type: String,
             required: false,
         },
-        mailing_join_addr: {
+        mailingJoinAddr: {
             type: String,
             required: false,
         },
-        server_mail_configured: {
+        serverMailConfigured: {
             type: Boolean,
             required: false,
+        },
+        redirect: {
+            type: String,
+            required: false,
+        },
+        enableOidc: {
+            type: Boolean,
+            default: false,
+        },
+        preferCustosLogin: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {
