@@ -285,7 +285,10 @@ class WorkflowModule:
                 return NO_REPLACEMENT
 
             visit_input_values(
-                self.get_runtime_inputs(), state.inputs, update_value, no_replacement_value=NO_REPLACEMENT
+                self.get_runtime_inputs(connections=step.output_connections),
+                state.inputs,
+                update_value,
+                no_replacement_value=NO_REPLACEMENT,
             )
 
         if step_updates:
@@ -1131,16 +1134,29 @@ class InputParameterModule(WorkflowModule):
             for connection in connections:
                 # Well this isn't a great assumption...
                 assert connection.input_step
+                if not hasattr(connection.input_step, "module"):
+                    module_injector = WorkflowModuleInjector(self.trans)
+                    module_injector.inject(connection.input_step, {})
+
                 module = connection.input_step.module
-                assert isinstance(module, ToolModule)
-                assert module.tool
-                tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
+                if isinstance(module, ToolModule):
+                    assert module.tool
+                    tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
 
-                def callback(input, prefixed_name, context, **kwargs):
-                    if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
-                        static_options.append(input.get_options(self.trans, {}))
+                    def callback(input, prefixed_name, context, **kwargs):
+                        if prefixed_name == connection.input_name and hasattr(input, "get_options"):  # noqa: B023
+                            static_options.append(input.get_options(self.trans, {}))
 
-                visit_input_values(tool_inputs, module.state.inputs, callback)
+                    visit_input_values(tool_inputs, module.state.inputs, callback)
+                elif isinstance(module, SubWorkflowModule):
+                    subworkflow_input_name = connection.input_name
+                    for step in module.subworkflow.input_steps:
+                        if step.input_type == "parameter" and step.label == subworkflow_input_name:
+                            static_options.append(
+                                step.module.get_runtime_inputs(connections=step.output_connections)[
+                                    "input"
+                                ].static_options
+                            )
 
             options = None
             if static_options and len(static_options) == 1:

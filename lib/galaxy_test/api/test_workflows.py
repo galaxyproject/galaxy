@@ -4839,6 +4839,40 @@ steps:
         assert len(options) == 5
         assert options[0] == ["Ex1", "--ex1", False]
 
+    def test_value_restriction_with_select_from_subworkflow_input(self):
+        workflow_id = self.workflow_populator.upload_yaml_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  Outer input parameter:
+    optional: false
+    restrictOnConnections: true
+    type: string
+steps:
+- in:
+    inner input parameter:
+      source: Outer input parameter
+  run:
+    class: GalaxyWorkflow
+    label: Restriction from subworkflow param
+    inputs:
+      inner input parameter:
+        optional: false
+        restrictOnConnections: true
+        type: string
+    steps:
+    - tool_id: multi_select
+      in:
+        select_ex:
+          source: inner input parameter
+"""
+        )
+        with self.dataset_populator.test_history() as history_id:
+            run_workflow = self._download_workflow(workflow_id, style="run", history_id=history_id)
+        options = run_workflow["steps"][0]["inputs"][0]["options"]
+        assert len(options) == 5
+        assert options[0] == ["Ex1", "--ex1", False]
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_tool(self):
         workflow_request, history_id, workflow_id = self._setup_random_x2_workflow("test_for_replace_tool_params")
