@@ -180,7 +180,7 @@ const isEmpty = computed(() => {
         return true;
     }
 
-    if (["text", "integer", "float"].includes(props.type) && currentValue.value === "") {
+    if (["text", "integer", "float", "password"].includes(props.type) && currentValue.value === "") {
         return true;
     }
 
