@@ -22,6 +22,12 @@
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
+            <div v-if="queryTooShort" class="pb-2">
+                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+            </div>
+            <div v-else-if="noResults" class="pb-2">
+                <b-badge class="alert-danger w-100">No results found!</b-badge>
+            </div>
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -109,6 +115,12 @@ export default {
         };
     },
     computed: {
+        queryTooShort() {
+            return this.query && this.query.length < 3;
+        },
+        noResults() {
+            return this.query && this.results.length === 0;
+        },
         hasWorkflowSection() {
             return this.workflows.length > 0;
         },

@@ -1,5 +1,9 @@
 <template>
-    <ToolsProvider v-slot="{ loading, result: itemsLoaded }" :filter-settings="filterSettings" :toolbox="toolbox">
+    <ToolsProvider
+        v-slot="{ loading, result: itemsLoaded }"
+        :filter-settings="filterSettings"
+        :toolbox="toolbox"
+        :panel-view="panelView">
         <section class="overflow-auto h-100" @scroll="onScroll">
             <div class="mb-2">
                 <span class="row mb-1">
@@ -84,6 +88,9 @@ export default {
     computed: {
         toolbox() {
             return this.$store.getters["panels/currentPanel"];
+        },
+        panelView() {
+            return this.$store.getters["panels/currentPanelView"];
         },
         filterSettings() {
             const newFilterSettings = {};

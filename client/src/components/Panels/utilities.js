@@ -3,11 +3,47 @@ import { orderBy } from "lodash";
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
 const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
 
+export function createWhooshQuery(filterSettings, panelView, toolbox) {
+    let query = "(";
+    // add description+name_exact fields = name, to do a combined AndGroup at backend
+    const name = filterSettings["name"];
+    if (name) {
+        query += "name:(" + name + ") ";
+        query += "name_exact:(" + name + ") ";
+        query += "description:(" + name + ") ";
+    }
+    query += ") AND (";
+    for (const [key, filterValue] of Object.entries(filterSettings)) {
+        // get ontology keys if view is not default
+        if (key === "section" && panelView !== "default") {
+            const ontology = toolbox.find(({ name }) => name && name.toLowerCase().match(filterValue.toLowerCase()));
+            if (ontology) {
+                let ontologyKey = "";
+                if (panelView === "ontology:edam_operations") {
+                    ontologyKey = "edam_operations";
+                } else if (panelView === "ontology:edam_topics") {
+                    ontologyKey = "edam_topics";
+                }
+                query += ontologyKey + ":(" + ontology.id + ") AND ";
+            } else {
+                query += key + ":(" + filterValue + ") AND ";
+            }
+        } else if (key == "id") {
+            query += "id_exact:(" + filterValue + ") AND ";
+        } else if (key != "name") {
+            query += key + ":(" + filterValue + ") AND ";
+        }
+    }
+    query += ")";
+    return query;
+}
+
 export function filterTools(tools, results) {
     let toolsResults = [];
     tools = normalizeTools(tools);
     toolsResults = mapToolsResults(tools, results);
     toolsResults = sortToolsResults(toolsResults);
+    toolsResults = removeDuplicateResults(toolsResults);
     return toolsResults;
 }
 
@@ -33,6 +69,25 @@ export function filterToolSections(tools, results) {
 
 export function hasResults(results) {
     return Array.isArray(results) && results.length > 0;
+}
+
+export function searchToolsByKeys(tools, keys, query) {
+    const returnedTools = [];
+    for (const section of tools) {
+        if (section.elems) {
+            for (const tool of section.elems) {
+                for (const key of keys) {
+                    const actualValue = tool[key];
+                    if (actualValue && actualValue.toLowerCase().match(query.toLowerCase())) {
+                        returnedTools.push({ id: tool.id, key: key });
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    // sorting results by indexed order of key in keys
+    return orderBy(returnedTools, ["key"], ["desc"]).map((tool) => tool.id);
 }
 
 function normalizeTools(tools) {
@@ -63,6 +118,18 @@ function mapToolsResults(tools, results) {
             return tool;
         });
     return toolsResults;
+}
+
+function removeDuplicateResults(results) {
+    const uniqueTools = [];
+    return results.filter((tool) => {
+        if (!uniqueTools.includes(tool.id)) {
+            uniqueTools.push(tool.id);
+            return true;
+        } else {
+            return false;
+        }
+    });
 }
 
 function setSort(tool, results) {

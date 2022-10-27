@@ -14,8 +14,14 @@
             description="advanced tool filters"
             @keyup.enter="onSearch"
             @keyup.esc="onToggle(false)">
-            <small class="mt-1">Filter by section:</small>
-            <b-form-input v-model="filterSettings['section']" size="sm" placeholder="any section" />
+            <small class="mt-1">Filter by {{ sectionLabel }}:</small>
+            <b-form-input
+                v-model="filterSettings['section']"
+                autocomplete="off"
+                size="sm"
+                :placeholder="`any ${sectionLabel}`"
+                list="sectionSelect" />
+            <b-form-datalist id="sectionSelect" :options="sections"></b-form-datalist>
             <small class="mt-1">Filter by id:</small>
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
             <small class="mt-1">Filter by help text:</small>
@@ -37,6 +43,7 @@
 <script>
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
+import { searchToolsByKeys } from "../utilities.js";
 
 export default {
     name: "ToolSearch",
@@ -81,6 +88,14 @@ export default {
             const Galaxy = getGalaxyInstance();
             return Galaxy.user.getFavorites().tools;
         },
+        sections() {
+            return this.toolbox.map((section) =>
+                section.name !== undefined && section.name !== "Uncategorized" ? section.name : ""
+            );
+        },
+        sectionLabel() {
+            return this.currentPanelView === "default" ? "section" : "ontology";
+        },
     },
     methods: {
         checkQuery(q) {
@@ -90,24 +105,8 @@ export default {
                 if (this.favorites.includes(q)) {
                     this.$emit("onResults", this.favoritesResults);
                 } else {
-                    const returnedTools = [];
                     const keys = ["name", "description"];
-                    for (const section of this.toolbox) {
-                        if (section.elems) {
-                            for (const tool of section.elems) {
-                                for (const key of keys) {
-                                    const actualValue = tool[key];
-                                    if (actualValue && actualValue.toUpperCase().match(q.toUpperCase())) {
-                                        returnedTools.push({ id: tool.id, key: key });
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // sorting results by 'key:name' before 'key:description'
-                    const sortedTools = returnedTools.sort((a, b) => (b.key < a.key ? -1 : 1)).map((a) => a.id);
-                    this.$emit("onResults", sortedTools);
+                    this.$emit("onResults", searchToolsByKeys(this.toolbox, keys, q));
                 }
             } else {
                 this.$emit("onResults", null);

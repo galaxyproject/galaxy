@@ -46,6 +46,13 @@ describe("ToolSearch", () => {
         // Test: values are stored in the filterSettings object
         expect(Object.values(wrapper.vm.filterSettings)).toEqual(Object.values(filterInputs));
 
+        // Test: changing panel view should change search by section field to search by ontology
+        expect(wrapper.find("[placeholder='any section']").exists()).toBe(true);
+        await wrapper.setProps({ currentPanelView: "ontology:edam_operations" });
+        expect(wrapper.find("[placeholder='any section']").exists()).toBe(false);
+        expect(wrapper.find("[placeholder='any ontology']").exists()).toBe(true);
+        await wrapper.setProps({ currentPanelView: "default" });
+
         // Test: keyup.esc (should toggle the view out) --- doesn't work from name (DelayedInput) field
         const sectionField = wrapper.find("[placeholder='any section']");
         expect(wrapper.emitted()["update:show-advanced"]).toBeUndefined();

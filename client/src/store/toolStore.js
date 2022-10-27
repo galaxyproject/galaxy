@@ -7,7 +7,7 @@ export const state = {
 import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
-import { filterTools } from "components/Panels/utilities";
+import { filterTools, createWhooshQuery } from "components/Panels/utilities";
 
 const getters = {
     getToolForId: (state) => (toolId) => {
@@ -38,20 +38,10 @@ const actions = {
         const { data } = await axios.get(`${getAppRoot()}api/tools/${toolId}`);
         commit("saveToolForId", { toolId, toolData: data });
     },
-    fetchAllTools: async ({ commit }, { filterSettings }) => {
+    fetchAllTools: async ({ commit }, { filterSettings, panelView, toolbox }) => {
         if (Object.keys(filterSettings).length !== 0) {
             // Parsing filterSettings to Whoosh query
-            let q = "";
-            for (const [key, filterValue] of Object.entries(filterSettings)) {
-                // Do OR search on name+description field
-                if (key == "name") {
-                    q += "(" + key + ":(" + filterValue + ") OR description" + ":(" + filterValue + ")) ";
-                } else if (key == "id") {
-                    q += "id_exact:(" + filterValue + ") ";
-                } else {
-                    q += key + ":(" + filterValue + ") ";
-                }
-            }
+            const q = createWhooshQuery(filterSettings, panelView, toolbox);
             const { data } = await axios.get(`${getAppRoot()}api/tools`, { params: { q } });
             commit("saveToolResults", { toolsData: data });
         } else if (state.allTools.length === 0) {
