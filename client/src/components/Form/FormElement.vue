@@ -303,30 +303,6 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
     .ui-form-field {
         position: relative;
         margin-top: $margin-v * 0.25;
-        .ui-form-wp-source {
-            border-left-width: 10px;
-        }
-
-        .ui-form-wp-target {
-            box-shadow: none;
-            border-top: none;
-            border-bottom: none;
-            border-right: none;
-            border-left-width: 5px;
-            font-style: italic;
-        }
-
-        .ui-form-backdrop {
-            z-index: 10;
-            position: absolute;
-            top: 0px;
-            width: 100%;
-            height: 100%;
-            background: $white;
-            display: block;
-            opacity: 0;
-            cursor: default;
-        }
     }
 
     &:deep(.ui-form-collapsible-icon),
