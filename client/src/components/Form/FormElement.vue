@@ -31,7 +31,7 @@
                 :min="attrs.min"
                 :type="type" />
             <FormSelect
-                v-else-if="type == 'select'"
+                v-else-if="type == 'select' || type == 'data_column' || type == 'genomebuild' || type == 'group_tag'"
                 v-model="currentValue"
                 :id="id"
                 :options="attrs.options"
