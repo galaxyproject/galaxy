@@ -175,9 +175,18 @@ const isHiddenType = computed(
 const collapseText = computed(() => (collapsed.value ? props.collapsedEnableText : props.collapsedDisableText));
 const connectText = computed(() => (connected.value ? props.connectedEnableText : props.connectedDisableText));
 
-const isEmpty = computed(
-    () => currentValue.value === null || currentValue.value === undefined || currentValue.value === ""
-);
+const isEmpty = computed(() => {
+    if (currentValue.value === null || currentValue.value === undefined) {
+        return true;
+    }
+
+    if (["text", "integer", "float"].includes(props.type) && currentValue.value === "") {
+        return true;
+    }
+
+    return false;
+});
+
 const isRequired = computed(() => attrs.value["optional"] === false);
 const isRequiredType = computed(() => props.type !== "boolean");
 </script>
