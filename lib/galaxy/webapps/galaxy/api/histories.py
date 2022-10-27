@@ -14,6 +14,7 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
+    Header,
     Path,
     Query,
     Response,
@@ -39,8 +40,9 @@ from galaxy.schema.schema import (
     CreateHistoryPayload,
     CustomBuildsMetadataResponse,
     ExportHistoryArchivePayload,
+    ExportTaskListResponse,
     HistoryArchiveExportResult,
-    JobExportHistoryArchiveCollection,
+    JobExportHistoryArchiveListResponse,
     JobImportHistoryResponse,
     SetSlugPayload,
     ShareWithPayload,
@@ -326,14 +328,31 @@ class FastAPIHistories:
     @router.get(
         "/api/histories/{id}/exports",
         summary=("Get previous history exports (to links). Effectively returns serialized JEHA objects."),
+        responses={
+            200: {
+                "description": "TODO",
+                "content": {
+                    "application/json": {
+                        "schema": {"ref": "#/components/schemas/JobExportHistoryArchiveListResponse"},
+                    },
+                    ExportTaskListResponse.__accept_type__: {
+                        "schema": {"ref": "#/components/schemas/ExportTaskListResponse"},
+                    },
+                },
+            },
+        },
     )
     def index_exports(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: DecodedDatabaseIdField = HistoryIDPathParam,
-    ) -> JobExportHistoryArchiveCollection:
-        exports = self.service.index_exports(trans, id)
-        return JobExportHistoryArchiveCollection(__root__=exports)
+        accept: str = Header(default="application/json", include_in_schema=False),
+    ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
+        use_tasks = accept == ExportTaskListResponse.__accept_type__
+        exports = self.service.index_exports(trans, id, use_tasks)
+        if use_tasks:
+            return ExportTaskListResponse(__root__=exports)
+        return JobExportHistoryArchiveListResponse(__root__=exports)
 
     @router.put(  # PUT instead of POST because multiple requests should just result in one object being created.
         "/api/histories/{id}/exports",
