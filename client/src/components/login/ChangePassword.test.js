@@ -4,7 +4,6 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import { safePath } from "utils/redirect";
 import MountTarget from "./ChangePassword";
-import VueRouter from "vue-router";
 
 // mock routes
 jest.mock("utils/redirect");
@@ -12,9 +11,6 @@ const mockSafePath = jest.fn();
 safePath.mockImplementation(() => mockSafePath);
 
 const localVue = getLocalVue(true);
-localVue.use(VueRouter);
-
-const router = new VueRouter();
 
 describe("ChangePassword", () => {
     let wrapper;
@@ -24,11 +20,10 @@ describe("ChangePassword", () => {
         axiosMock = new MockAdapter(axios);
         wrapper = mount(MountTarget, {
             propsData: {
-                expiredUser: "",
-                token: "",
+                messageText: "message_text",
+                messageVariant: "message_variant",
             },
             localVue,
-            router,
         });
     });
 
@@ -36,7 +31,7 @@ describe("ChangePassword", () => {
         axiosMock.reset();
     });
 
-    it("basic tests", async () => {
+    it("basics", async () => {
         const cardHeader = wrapper.find(".card-header");
         expect(cardHeader.text()).toBe("Change your password");
         const inputs = wrapper.findAll("input");
@@ -52,5 +47,23 @@ describe("ChangePassword", () => {
         const postedData = JSON.parse(axiosMock.history.post[0].data);
         expect(postedData.password).toBe("test_first_pwd");
         expect(postedData.confirm).toBe("test_second_pwd");
+    });
+
+    it("props", async () => {
+        await wrapper.setProps({
+            token: "test_token",
+            expiredUser: "expired_user",
+        });
+        const input = wrapper.find("input");
+        expect(input.attributes("type")).toBe("password");
+        await input.setValue("current_password");
+        const submitButton = wrapper.find("button[type='submit']");
+        await submitButton.trigger("submit");
+        const postedData = JSON.parse(axiosMock.history.post[0].data);
+        expect(postedData.token).toBe("test_token");
+        expect(postedData.id).toBe("expired_user");
+        expect(postedData.current).toBe("current_password");
+        const alert = wrapper.find(".alert");
+        expect(alert.text()).toBe("message_text");
     });
 });

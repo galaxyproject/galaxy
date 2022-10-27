@@ -1,6 +1,6 @@
 <template>
     <b-form @submit.prevent="submit">
-        <b-alert :show="messageShow" :variant="variant">
+        <b-alert v-if="!!message" :variant="variant" show>
             {{ message }}
         </b-alert>
         <b-card header="Change your password">
@@ -48,11 +48,6 @@ export default {
             message: this.messageText,
             variant: this.messageVariant,
         };
-    },
-    computed: {
-        messageShow() {
-            return this.message != null;
-        },
     },
     methods: {
         submit(ev) {
