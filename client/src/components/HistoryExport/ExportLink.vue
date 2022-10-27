@@ -3,13 +3,9 @@
         <b
             ><a class="generated-export-link" :href="link">{{ link }}</a></b
         >
-        <font-awesome-icon
-            v-b-tooltip.hover
-            title="Copy export URL to your clipboard"
-            class="copy-export-link"
-            icon="link"
-            style="cursor: pointer"
-            @click="copyUrl" />
+        <span v-b-tooltip.hover title="Copy export URL to your clipboard">
+            <font-awesome-icon class="copy-export-link" icon="link" style="cursor: pointer" @click="copyUrl" />
+        </span>
         <i
             title="Information about when the history export was generated is included in the job details. Additionally, if there are issues with export, the job details may help figure out the underlying problem or communicate issues to your Galaxy administrator.">
             (<b-link class="show-job-link" href="#" @click="showDetails">view job details</b-link>)

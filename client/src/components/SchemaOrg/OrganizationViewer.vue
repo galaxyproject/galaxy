@@ -18,9 +18,9 @@
         <span v-else-if="email" itemprop="email" :content="organization.email">
             {{ email }}
         </span>
-        <a v-if="url" :href="url" target="_blank">
+        <a v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
-            <font-awesome-icon v-b-tooltip.hover title="Organization URL" icon="external-link-alt" />
+            <font-awesome-icon icon="external-link-alt" />
         </a>
         <meta
             v-for="attribute in explicitMetaAttributes"
