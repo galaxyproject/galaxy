@@ -37,6 +37,7 @@ from galaxy.model import (
     DatasetCollection,
     DatasetInstance,
     Job,
+    StoreExportAssociation,
 )
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
@@ -1378,31 +1379,30 @@ class WriteStoreToPayload(StoreExportPayload):
     )
 
 
-class ExportHistoryArchiveBaseModel(Model):
+class ExportAssociationBase(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
-        description="The encoded database ID of export request.",
+        description="The encoded database ID of the export request.",
     )
     ready: bool = Field(
         ...,
         title="Ready",
-        description="Whether the history export has completed successfully and the archive is ready to download",
+        description="Whether the export has completed successfully and the archive is ready",
     )
     preparing: bool = Field(
         ...,
         title="Preparing",
-        description="Whether the history archive is currently being built or in preparation.",
+        description="Whether the archive is currently being built or in preparation.",
     )
     up_to_date: bool = Field(
         ...,
         title="Up to Date",
-        description="False, if a new export archive should be generated for the corresponding history.",
+        description="False, if a new export archive should be generated.",
     )
 
 
-class JobExportHistoryArchiveModel(ExportHistoryArchiveBaseModel):
-    type: Literal["job"]
+class JobExportHistoryArchiveModel(ExportAssociationBase):
     job_id: EncodedDatabaseIdField = Field(
         ...,
         title="Job ID",
@@ -1425,40 +1425,40 @@ class JobExportHistoryArchiveModel(ExportHistoryArchiveBaseModel):
     )
 
 
-class ExportHistoryRequestMetadata(Model):
-    history_id: EncodedDatabaseIdField
+class ExportObjectRequestMetadata(Model):
+    object_id: EncodedDatabaseIdField
+    object_type: StoreExportAssociation.object_types
     user_id: Optional[EncodedDatabaseIdField]
     payload: WriteStoreToPayload
 
 
-class ExportHistoryResultMetadata(Model):
+class ExportObjectResultMetadata(Model):
     published: bool
     # TODO: figure out what else is needed
 
 
-class ExportHistoryMetadata(Model):
-    request_data: ExportHistoryRequestMetadata
-    result_data: ExportHistoryResultMetadata
+class ExportObjectMetadata(Model):
+    request_data: ExportObjectRequestMetadata
+    result_data: ExportObjectResultMetadata
 
 
-class TaskExportHistoryArchiveModel(ExportHistoryArchiveBaseModel):
-    type: Literal["task"]
+class ExportTaskAssociation(ExportAssociationBase):
     task_uuid: UUID4 = Field(
         ...,
         title="Task ID",
-        description="The identifier of the celery task processing the export.",
+        description="The identifier of the task processing the export.",
     )
     create_time: datetime = CreateTimeField
-    export_metadata: Optional[ExportHistoryMetadata]
+    export_metadata: Optional[ExportObjectMetadata]
 
 
-AnyExportHistoryArchiveModel = Annotated[
-    Union[JobExportHistoryArchiveModel, TaskExportHistoryArchiveModel], Field(discriminator="type")
-]
+class JobExportHistoryArchiveListResponse(Model):
+    __root__: List[JobExportHistoryArchiveModel]
 
 
-class JobExportHistoryArchiveCollection(Model):
-    __root__: List[AnyExportHistoryArchiveModel]
+class ExportTaskListResponse(Model):
+    __root__: List[ExportTaskAssociation]
+    __accept_type__ = "application/vnd.galaxy.task.export+json"
 
 
 class LabelValuePair(Model):

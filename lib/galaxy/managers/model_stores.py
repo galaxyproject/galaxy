@@ -4,6 +4,7 @@ from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.users import UserManager
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -15,9 +16,9 @@ from galaxy.model.store import (
     source_to_import_store,
 )
 from galaxy.schema.schema import (
-    ExportHistoryMetadata,
-    ExportHistoryRequestMetadata,
-    ExportHistoryResultMetadata,
+    ExportObjectMetadata,
+    ExportObjectRequestMetadata,
+    ExportObjectResultMetadata,
     HistoryContentType,
     WriteStoreToPayload,
 )
@@ -67,6 +68,7 @@ class ModelStoreManager:
         self,
         app: MinimalManagerApp,
         history_manager: HistoryManager,
+        export_tracker: StoreExportTracker,
         sa_session: galaxy_scoped_session,
         job_manager: JobManager,
         short_term_storage_monitor: ShortTermStorageMonitor,
@@ -76,6 +78,7 @@ class ModelStoreManager:
         self._sa_session = sa_session
         self._job_manager = job_manager
         self._history_manager = history_manager
+        self._export_tracker = export_tracker
         self._short_term_storage_monitor = short_term_storage_monitor
         self._user_manager = user_manager
 
@@ -202,15 +205,16 @@ class ModelStoreManager:
                 history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
             )
             if request.export_association_id:
-                export_metadata = ExportHistoryMetadata(
-                    request_data=ExportHistoryRequestMetadata(
-                        history_id=request.history_id,
+                export_metadata = ExportObjectMetadata(
+                    request_data=ExportObjectRequestMetadata(
+                        object_id=request.history_id,
+                        object_type=model.StoreExportAssociation.object_types.HISTORY,
                         user_id=request.user.user_id,
                         payload=WriteStoreToPayload(**request.dict()),
                     ),
-                    result_data=ExportHistoryResultMetadata(published=False),
+                    result_data=ExportObjectResultMetadata(published=False),
                 )
-                self._history_manager.set_export_association_metadata(request.export_association_id, export_metadata)
+                self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
 
     def import_model_store(self, request: ImportModelStoreTaskRequest):
         import_options = ImportOptions(

@@ -33,7 +33,7 @@ from galaxy.managers.citations import CitationsManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.histories import (
     HistoryDeserializer,
-    HistoryExportView,
+    HistoryExportManager,
     HistoryFilters,
     HistoryManager,
     HistorySerializer,
@@ -100,7 +100,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         serializer: HistorySerializer,
         deserializer: HistoryDeserializer,
         citations_manager: CitationsManager,
-        history_export_view: HistoryExportView,
+        history_export_manager: HistoryExportManager,
         filters: HistoryFilters,
         short_term_storage_allocator: ShortTermStorageAllocator,
     ):
@@ -110,7 +110,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self.serializer = serializer
         self.deserializer = deserializer
         self.citations_manager = citations_manager
-        self.history_export_view = history_export_view
+        self.history_export_manager = history_export_manager
         self.filters = filters
         self.shareable_service = ShareableService(self.manager, self.serializer)
         self.short_term_storage_allocator = short_term_storage_allocator
@@ -351,7 +351,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField, payload: WriteStoreToPayload
     ) -> AsyncTaskResultSummary:
         history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
-        export_association = self.manager.create_export_association(history_id=history.id)
+        export_association = self.history_export_manager.create_export_association(history.id)
         request = WriteHistoryTo(
             user=trans.async_request_user,
             history_id=history.id,
@@ -507,12 +507,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             tool_ids.add(tool_id)
         return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
 
-    def index_exports(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField):
-        """
-        Get previous history exports (to links). Effectively returns serialized
-        JEHA objects.
-        """
-        return self.history_export_view.get_exports(trans, id)
+    def index_exports(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField, use_tasks: bool = False):
+        if use_tasks:
+            return self.history_export_manager.get_task_exports(trans, id)
+        return self.history_export_manager.get_exports(trans, id)
 
     def archive_export(
         self,
@@ -561,12 +559,12 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             return (JobIdResponse.construct(job_id=job.id), ready)
 
         if up_to_date and jeha.ready:
-            serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
+            serialized_jeha = self.history_export_manager.serialize(trans, id, jeha)
             return (JobExportHistoryArchiveModel.construct(**serialized_jeha), ready)
         else:
             # Valid request, just resource is not ready yet.
             if jeha:
-                serialized_jeha = self.history_export_view.serialize(trans, id, jeha)
+                serialized_jeha = self.history_export_manager.serialize(trans, id, jeha)
                 return (JobExportHistoryArchiveModel.construct(**serialized_jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
@@ -580,7 +578,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     ) -> model.JobExportHistoryArchive:
         """Returns the exported history archive information if it's ready
         or raises an exception if not."""
-        return self.history_export_view.get_ready_jeha(trans, id, jeha_id)
+        return self.history_export_manager.get_ready_jeha(trans, id, jeha_id)
 
     def get_archive_download_path(
         self,
@@ -610,7 +608,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         """
         If ready and available, return raw contents of exported history.
         """
-        jeha = self.history_export_view.get_ready_jeha(trans, id, jeha_id)
+        jeha = self.history_export_manager.get_ready_jeha(trans, id, jeha_id)
         return self.manager.legacy_serve_ready_history_export(trans, jeha)
 
     def get_custom_builds_metadata(
