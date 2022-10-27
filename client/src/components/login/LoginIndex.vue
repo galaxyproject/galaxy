@@ -2,9 +2,11 @@
     <div>
         <template v-if="showLogin">
             <login-form
+                :allow-user-creation="allowUserCreation"
                 :redirect="redirect"
-                :show-welcome-with-login="show_welcome_with_login"
-                :welcome-url="welcome_url"
+                :session-csrf-token="sessionCsrfToken"
+                :show-welcome-with-login="showWelcomeWithLogin"
+                :welcome-url="welcomeUrl"
                 @toggle-login="toggleLogin" />
         </template>
         <template v-else>
@@ -15,6 +17,7 @@
                 :terms-url="termsUrl"
                 :enable-oidc="enableOidc"
                 :prefer-custos-login="preferCustosLogin"
+                :session-csrf-token="sessionCsrfToken"
                 @toggle-login="toggleLogin" />
         </template>
     </div>
@@ -33,6 +36,14 @@ export default {
         RegisterForm,
     },
     props: {
+        allowUserCreation: {
+            type: Boolean,
+            default: false,
+        },
+        sessionCsrfToken: {
+            type: String,
+            default: null,
+        },
         showWelcomeWithLogin: {
             type: Boolean,
             required: false,

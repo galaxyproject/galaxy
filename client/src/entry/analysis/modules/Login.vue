@@ -11,6 +11,7 @@
                         :message-variant="$route.query.status" />
                     <LoginIndex
                         v-else
+                        :allow-user-creation="config.allow_user_creation"
                         :show-welcome-with-login="config.show_welcome_with_login"
                         :welcome-url="config.welcome_url"
                         :terms-url="config.terms_url"
@@ -19,7 +20,8 @@
                         :mailing-join-addr="config.mailing_join_addr"
                         :server-mail-configured="config.server_mail_configured"
                         :enable-oidc="config.enable_oidc"
-                        :prefer-custos-login="config.prefer_custos_login" />
+                        :prefer-custos-login="config.prefer_custos_login"
+                        :session-csrf-token="sessionCsrfToken" />
                 </div>
             </div>
         </div>
@@ -42,6 +44,9 @@ export default {
         },
         hasToken() {
             return this.$route.query.token || this.$route.query.expired_user;
+        },
+        sessionCsrfToken() {
+            return getGalaxyInstance().session_csrf_token;
         },
     },
 };

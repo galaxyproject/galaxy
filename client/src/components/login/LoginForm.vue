@@ -6,7 +6,7 @@
                     <b-alert :show="messageShow" :variant="messageVariant">
                         {{ messageText }}
                     </b-alert>
-                    <b-form id="login" @submit.prevent="submitGalaxyLogin()">
+                    <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body header="Welcome to Galaxy, please log in">
                             <b-card-body>
                                 <div>
@@ -18,7 +18,7 @@
                                         <b-form-input v-model="password" name="password" type="password" />
                                         <b-form-text>
                                             Forgot password?
-                                            <a href="javascript:void(0)" role="button" @click="reset">
+                                            <a href="javascript:void(0)" role="button" @click.prevent="resetLogin">
                                                 Click here to reset your password.
                                             </a>
                                         </b-form-text>
@@ -95,15 +95,19 @@ export default {
             type: Boolean,
             default: false,
         },
+        redirect: {
+            type: String,
+            default: null,
+        },
+        sessionCsrfToken: {
+            type: String,
+            default: null,
+        },
         showWelcomeWithLogin: {
             type: Boolean,
             default: false,
         },
         welcomeUrl: {
-            type: String,
-            default: null,
-        },
-        redirect: {
             type: String,
             default: null,
         },
@@ -133,12 +137,18 @@ export default {
         toggleLogin() {
             this.$emit("toggle-login");
         },
-        submitGalaxyLogin(method) {
+        submitLogin(method) {
+            let redirect = this.redirect;
             if (localStorage.getItem("redirect_url")) {
-                this.redirect = localStorage.getItem("redirect_url");
+                redirect = localStorage.getItem("redirect_url");
             }
             axios
-                .post(safePath(`/user/login`), this.$data)
+                .post(safePath("/user/login"), {
+                    login: this.login,
+                    password: this.password,
+                    redirect: redirect,
+                    session_csrf_token: this.sessionCsrfToken,
+                })
                 .then(({ data }) => {
                     if (data.message && data.status) {
                         alert(data.message);
@@ -160,10 +170,9 @@ export default {
         setRedirect(url) {
             localStorage.setItem("redirect_url", url);
         },
-        reset(ev) {
-            ev.preventDefault();
+        resetLogin() {
             axios
-                .post(safePath(`/user/reset_password`), { email: this.login })
+                .post(safePath("/user/reset_password"), { email: this.login })
                 .then((response) => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;

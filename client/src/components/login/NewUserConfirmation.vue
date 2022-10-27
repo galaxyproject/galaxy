@@ -3,7 +3,7 @@
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
                 <b-alert :show="showRegistrationWarning" variant="info">
-                    {{ registration_warning_message }}
+                    {{ registrationWarningMessage }}
                 </b-alert>
                 <b-alert :show="messageShow" :variant="messageVariant">
                     {{ messageText }}
@@ -51,7 +51,7 @@
                     </b-card>
                 </b-form>
             </div>
-            <div v-if="terms_url" class="col">
+            <div v-if="termsUrl" class="col">
                 <b-embed type="iframe" :src="termsUrlwithRoot" aspect="1by1" />
             </div>
         </div>
@@ -68,7 +68,7 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-        registration_warning_message: {
+        registrationWarningMessage: {
             type: String,
             required: false,
         },
@@ -76,7 +76,7 @@ export default {
             type: String,
             required: false,
         },
-        terms_url: {
+        termsUrl: {
             type: String,
             required: false,
         },
@@ -88,7 +88,6 @@ export default {
             subscribe: null,
             messageText: null,
             messageVariant: null,
-            session_csrf_token: galaxy.session_csrf_token,
             isAdmin: galaxy.user.isAdmin(),
             termsRead: false,
         };
@@ -98,10 +97,10 @@ export default {
             return this.messageText != null;
         },
         showRegistrationWarning() {
-            return this.registration_warning_message != null;
+            return this.registrationWarningMessage != null;
         },
         termsUrlwithRoot() {
-            return safePath(this.terms_url);
+            return safePath(this.termsUrl);
         },
     },
     methods: {

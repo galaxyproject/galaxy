@@ -92,23 +92,23 @@ export default {
     props: {
         registrationWarningMessage: {
             type: String,
-            required: false,
+            default: null,
         },
         serverMailConfigured: {
             type: Boolean,
-            required: false,
+            default: null,
         },
         mailingJoinAddr: {
             type: String,
-            required: false,
+            default: null,
         },
         redirect: {
             type: String,
-            required: false,
+            default: null,
         },
         termsUrl: {
             type: String,
-            required: false,
+            default: null,
         },
         enableOidc: {
             type: Boolean,
@@ -117,6 +117,10 @@ export default {
         preferCustosLogin: {
             type: Boolean,
             default: false,
+        },
+        sessionCsrfToken: {
+            type: String,
+            default: null,
         },
     },
     data() {
@@ -151,12 +155,18 @@ export default {
         submit(method) {
             this.disableCreate = true;
             axios
-                .post(safePath("/user/create"), this.$data)
+                .post(safePath("/user/create"), {
+                    email: this.email,
+                    username: this.username,
+                    password: this.password,
+                    confirm: this.confirm,
+                    session_csrf_token: this.sessionCsrfToken,
+                })
                 .then((response) => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    window.location = this.redirect || safePath("welcome/new");
+                    window.location = this.redirect || safePath("/welcome/new");
                 })
                 .catch((error) => {
                     this.disableCreate = false;
