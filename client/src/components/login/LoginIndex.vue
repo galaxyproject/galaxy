@@ -18,6 +18,7 @@
                 :enable-oidc="enableOidc"
                 :prefer-custos-login="preferCustosLogin"
                 :session-csrf-token="sessionCsrfToken"
+                :is-admin="isAdmin"
                 @toggle-login="toggleLogin" />
         </template>
     </div>
@@ -77,6 +78,10 @@ export default {
             default: false,
         },
         preferCustosLogin: {
+            type: Boolean,
+            default: false,
+        },
+        isAdmin: {
             type: Boolean,
             default: false,
         },

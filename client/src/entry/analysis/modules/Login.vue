@@ -11,6 +11,7 @@
                         :message-variant="$route.query.status" />
                     <LoginIndex
                         v-else
+                        :is-admin="isAdmin"
                         :allow-user-creation="config.allow_user_creation"
                         :show-welcome-with-login="config.show_welcome_with_login"
                         :welcome-url="config.welcome_url"
@@ -44,6 +45,9 @@ export default {
         },
         hasToken() {
             return this.$route.query.token || this.$route.query.expired_user;
+        },
+        isAdmin() {
+            return getGalaxyInstance().user.isAdmin();
         },
         sessionCsrfToken() {
             return getGalaxyInstance().session_csrf_token;

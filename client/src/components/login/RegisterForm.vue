@@ -79,7 +79,6 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
 import { safePath } from "utils/redirect";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
@@ -122,9 +121,12 @@ export default {
             type: String,
             default: null,
         },
+        isAdmin: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
-        const galaxy = getGalaxyInstance();
         return {
             disableCreate: false,
             email: null,
@@ -134,7 +136,6 @@ export default {
             subscribe: null,
             messageText: null,
             messageVariant: null,
-            isAdmin: galaxy.user.isAdmin(),
         };
     },
     computed: {
