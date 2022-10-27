@@ -327,10 +327,11 @@ class FastAPIHistories:
 
     @router.get(
         "/api/histories/{id}/exports",
-        summary=("Get previous history exports (to links). Effectively returns serialized JEHA objects."),
+        name="get_exports",
+        summary=("Get previous history exports."),
         responses={
             200: {
-                "description": "TODO",
+                "description": "A list of history exports",
                 "content": {
                     "application/json": {
                         "schema": {"ref": "#/components/schemas/JobExportHistoryArchiveListResponse"},
@@ -348,6 +349,11 @@ class FastAPIHistories:
         id: DecodedDatabaseIdField = HistoryIDPathParam,
         accept: str = Header(default="application/json", include_in_schema=False),
     ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
+        """
+        By default the legacy job-based history exports (jeha) are returned.
+
+        Change the `accept` content type header to return the new task-based history exports.
+        """
         use_tasks = accept == ExportTaskListResponse.__accept_type__
         exports = self.service.index_exports(trans, id, use_tasks)
         if use_tasks:
