@@ -32,7 +32,14 @@
                 :type="type"
                 :workflow-building-mode="workflowBuildingMode" />
             <FormText
-                v-else-if="type == 'text' || type == 'password'"
+                v-else-if="
+                    type === 'text' ||
+                    type === 'password' ||
+                    (type === 'select' && attrs.isWorkflow == true) ||
+                    (type === 'genomebuild' && attrs.isWorkflow == true) ||
+                    (type === 'data_column' && attrs.isWorkflow == true) ||
+                    (type === 'group_tag' && attrs.isWorkflow == true)
+                "
                 :id="id"
                 v-model="currentValue"
                 :readonly="attrs.readonly"
