@@ -2319,10 +2319,6 @@ class StoreExportAssociation(Base, RepresentById):
     object_id = Column(Integer)
     export_metadata = Column(JSONType)
 
-    class object_types(str, Enum):
-        HISTORY = "history"
-        INVOCATION = "invocation"
-
 
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"

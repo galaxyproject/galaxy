@@ -19,6 +19,7 @@ from galaxy.schema.schema import (
     ExportObjectMetadata,
     ExportObjectRequestMetadata,
     ExportObjectResultMetadata,
+    ExportObjectType,
     HistoryContentType,
     WriteStoreToPayload,
 )
@@ -208,7 +209,7 @@ class ModelStoreManager:
                 export_metadata = ExportObjectMetadata(
                     request_data=ExportObjectRequestMetadata(
                         object_id=request.history_id,
-                        object_type=model.StoreExportAssociation.object_types.HISTORY,
+                        object_type=ExportObjectType.HISTORY,
                         user_id=request.user.user_id,
                         payload=WriteStoreToPayload(**request.dict()),
                     ),

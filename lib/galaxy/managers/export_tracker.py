@@ -10,6 +10,7 @@ from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy.exceptions import ObjectNotFound
 from galaxy.model import StoreExportAssociation
+from galaxy.schema.schema import ExportObjectType
 from galaxy.structured_app import MinimalManagerApp
 
 
@@ -26,9 +27,7 @@ class StoreExportTracker:
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def create_export_association(
-        self, object_id: int, object_type: StoreExportAssociation.object_types
-    ) -> StoreExportAssociation:
+    def create_export_association(self, object_id: int, object_type: ExportObjectType) -> StoreExportAssociation:
         export_association = StoreExportAssociation(object_id=object_id, object_type=object_type)
         self.session.add(export_association)
         self.session.flush()
@@ -43,9 +42,7 @@ class StoreExportTracker:
         export_association.export_metadata = export_metadata.json()
         self.session.flush()
 
-    def get_object_exports(
-        self, object_id: int, object_type: StoreExportAssociation.object_types
-    ) -> List[StoreExportAssociation]:
+    def get_object_exports(self, object_id: int, object_type: ExportObjectType) -> List[StoreExportAssociation]:
         stmt = select(StoreExportAssociation).where(
             and_(StoreExportAssociation.object_type == object_type, StoreExportAssociation.object_id == object_id)
         )

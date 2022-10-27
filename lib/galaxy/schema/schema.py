@@ -37,7 +37,6 @@ from galaxy.model import (
     DatasetCollection,
     DatasetInstance,
     Job,
-    StoreExportAssociation,
 )
 from galaxy.schema.bco import XrefItem
 from galaxy.schema.fields import (
@@ -1425,9 +1424,16 @@ class JobExportHistoryArchiveModel(ExportAssociationBase):
     )
 
 
+class ExportObjectType(str, Enum):
+    """Types of objects that can be exported."""
+
+    HISTORY = "history"
+    INVOCATION = "invocation"
+
+
 class ExportObjectRequestMetadata(Model):
     object_id: EncodedDatabaseIdField
-    object_type: StoreExportAssociation.object_types
+    object_type: ExportObjectType
     user_id: Optional[EncodedDatabaseIdField]
     payload: WriteStoreToPayload
 

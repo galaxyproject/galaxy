@@ -41,6 +41,7 @@ from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.managers.tasks import AsyncTasksManager
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    ExportObjectType,
     HDABasicInfo,
     ShareHistoryExtra,
 )
@@ -355,7 +356,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
 
 class HistoryExportManager:
-    export_object_type = model.StoreExportAssociation.object_types.HISTORY
+    export_object_type = ExportObjectType.HISTORY
 
     def __init__(self, app: MinimalManagerApp, export_tracker: StoreExportTracker, task_manager: AsyncTasksManager):
         self.app = app
