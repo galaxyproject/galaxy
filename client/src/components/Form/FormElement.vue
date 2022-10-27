@@ -276,10 +276,6 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
     .ui-form-title {
         word-wrap: break-word;
         font-weight: bold;
-        .icon {
-            cursor: pointer;
-            font-size: 1.2em;
-        }
 
         .ui-form-title-message {
             font-size: $font-size-base * 0.7;
