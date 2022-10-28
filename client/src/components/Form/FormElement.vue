@@ -14,11 +14,11 @@
                     <span v-if="connected" :class="connectedEnableIcon" :title="connectedEnableText" />
                     <span v-else :class="connectedDisableIcon" :title="connectedDisableText" />
                 </span>
-                <span class="ui-form-title-text ml-1">
+                <span v-if="title" class="ui-form-title-text ml-1">
                     {{ title }}
                 </span>
             </div>
-            <span v-else class="ui-form-title-text">{{ title }}</span>
+            <span v-else-if="title" class="ui-form-title-text">{{ title }}</span>
         </div>
         <div v-if="showField" class="ui-form-field" :data-label="title">
             <FormBoolean v-if="type == 'boolean'" :id="id" v-model="currentValue" />
