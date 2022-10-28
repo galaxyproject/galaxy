@@ -1218,6 +1218,7 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         for step in stored_workflow.latest_workflow.steps:
             try:
                 module_injector.inject(step, exact_tools=False)
+                module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException:
                 pass
 

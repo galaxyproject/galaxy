@@ -225,6 +225,9 @@ class MockModuleInjector:
     def inject(self, step, step_args=None, steps=None, **kwargs):
         step.module = MockModule(self.progress)
 
+    def compute_runtime_state(self, step, step_args=None):
+        pass
+
 
 class MockModule:
     def __init__(self, progress):

@@ -284,6 +284,9 @@ class ModuleInjector(Protocol):
     def inject(self, step, step_args=None, steps=None, **kwargs):
         pass
 
+    def compute_runtime_state(self, step, step_args=None):
+        pass
+
 
 class WorkflowProgress:
     def __init__(
@@ -332,7 +335,9 @@ class WorkflowProgress:
         for step in steps:
             step_id = step.id
             if not hasattr(step, "module"):
-                self.module_injector.inject(step, step_args=self.param_map.get(step.id, {}))
+                step_args = self.param_map.get(step.id, {})
+                self.module_injector.inject(step, step_args=step_args)
+                self.module_injector.compute_runtime_state(step, step_args=step_args)
                 if step_id not in step_states:
                     raise Exception(
                         f"Workflow invocation [{self.workflow_invocation.id}] has no step state for step {step.log_str()}. States ids are {list(step_states.keys())}."

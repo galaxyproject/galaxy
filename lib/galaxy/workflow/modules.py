@@ -1134,11 +1134,8 @@ class InputParameterModule(WorkflowModule):
             for connection in connections:
                 # Well this isn't a great assumption...
                 assert connection.input_step
-                if not hasattr(connection.input_step, "module"):
-                    module_injector = WorkflowModuleInjector(self.trans)
-                    module_injector.inject(connection.input_step, {})
-
                 module = connection.input_step.module
+                assert isinstance(module, (ToolModule, SubWorkflowModule))
                 if isinstance(module, ToolModule):
                     assert module.tool
                     tool_inputs = module.tool.inputs  # may not be set, but we're catching the Exception below.
@@ -2211,7 +2208,6 @@ class WorkflowModuleInjector:
         If step_args is provided from a web form this is applied to generate
         'state' else it is just obtained from the database.
         """
-        step_errors = None
         step.upgrade_messages = {}
 
         # Make connection information available on each step by input name.
@@ -2234,11 +2230,13 @@ class WorkflowModuleInjector:
             subworkflow = step.subworkflow
             populate_module_and_state(self.trans, subworkflow, param_map=unjsonified_subworkflow_param_map)
 
-        state, step_errors = module.compute_runtime_state(self.trans, step, step_args)
+    def compute_runtime_state(self, step: WorkflowStep, step_args=None):
+        assert step.module, "module must be injected before computing runtime state"
+        state, step_errors = step.module.compute_runtime_state(self.trans, step, step_args)
         step.state = state
 
         # Fix any missing parameters
-        step.upgrade_messages = module.check_and_update_state()
+        step.upgrade_messages = step.module.check_and_update_state()
 
         return step_errors
 
@@ -2251,7 +2249,10 @@ def populate_module_and_state(trans, workflow, param_map, allow_tool_state_corre
         module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections)
     for step in workflow.steps:
         step_args = param_map.get(step.id, {})
-        step_errors = module_injector.inject(step, step_args=step_args)
+        module_injector.inject(step, step_args=step_args)
+    for step in workflow.steps:
+        step_args = param_map.get(step.id, {})
+        step_errors = module_injector.compute_runtime_state(step, step_args=step_args)
         if step_errors:
             raise exceptions.MessageException(step_errors, err_data={step.order_index: step_errors})
         if step.upgrade_messages:
