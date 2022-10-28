@@ -43,7 +43,13 @@ class StoreExportTracker:
         self.session.flush()
 
     def get_object_exports(self, object_id: int, object_type: ExportObjectType) -> List[StoreExportAssociation]:
-        stmt = select(StoreExportAssociation).where(
-            and_(StoreExportAssociation.object_type == object_type, StoreExportAssociation.object_id == object_id)
+        stmt = (
+            select(
+                StoreExportAssociation,
+            )
+            .where(
+                and_(StoreExportAssociation.object_type == object_type, StoreExportAssociation.object_id == object_id)
+            )
+            .order_by(StoreExportAssociation.create_time.desc())
         )
         return self.session.execute(stmt).scalars().all()
