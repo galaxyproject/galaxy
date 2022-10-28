@@ -26,35 +26,15 @@
                 </div>
             </div>
             <div v-else-if="input.type == 'repeat'">
-                <div v-if="!sustainRepeats || (input.cache && input.cache.length > 0)">
-                    <div class="font-weight-bold mb-2">{{ input.title }}</div>
-                    <div v-if="input.help" class="mb-2" data-description="repeat help">{{ input.help }}</div>
-                </div>
-                <FormCard
-                    v-for="(cache, cacheId) in input.cache"
-                    :key="cacheId"
-                    data-description="repeat block"
-                    :title="repeatTitle(cacheId, input.title)">
-                    <template v-slot:operations>
-                        <b-button
-                            v-if="!sustainRepeats"
-                            v-b-tooltip.hover.bottom
-                            role="button"
-                            variant="link"
-                            size="sm"
-                            class="float-right"
-                            @click="repeatDelete(input, cacheId)">
-                            <FontAwesomeIcon icon="trash-alt" />
-                        </b-button>
-                    </template>
-                    <template v-slot:body>
-                        <FormNode v-bind="$props" :inputs="cache" :prefix="getPrefix(input.name, cacheId)" />
-                    </template>
-                </FormCard>
-                <b-button v-if="!sustainRepeats" @click="repeatInsert(input)">
-                    <FontAwesomeIcon icon="plus" class="mr-1" />
-                    <span data-description="repeat insert">Insert {{ input.title || "Repeat" }}</span>
-                </b-button>
+                <FormRepeat
+                    v-model="input.cache"
+                    :input="input"
+                    :sustain-repeats="sustainRepeats"
+                    :passthrough-props="$props"
+                    :prefix="prefix"
+                    @insert="() => repeatInsert(input)"
+                    @delete="(id) => repeatDelete(input, id)"
+                    @change="onChangeForm" />
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
@@ -87,21 +67,18 @@
 </template>
 
 <script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
 import { matchCase } from "components/Form/utilities";
 
-library.add(faPlus, faTrashAlt);
+import FormRepeat from "./FormRepeat.vue";
 
 export default {
     name: "FormNode",
     components: {
-        FontAwesomeIcon,
         FormCard,
         FormElement,
+        FormRepeat,
     },
     props: {
         inputs: {
@@ -151,9 +128,6 @@ export default {
     },
     methods: {
         getPrefix(name, index) {
-            if (index !== undefined) {
-                name = `${name}_${index}`;
-            }
             if (this.prefix) {
                 return `${this.prefix}|${name}`;
             } else {
@@ -165,9 +139,6 @@ export default {
         },
         conditionalMatch(input, caseId) {
             return matchCase(input, input.test_param.value) == caseId;
-        },
-        repeatTitle(index, title) {
-            return `${parseInt(index) + 1}: ${title}`;
         },
         repeatInsert(input) {
             const newInputs = JSON.parse(JSON.stringify(input.inputs));
