@@ -10,7 +10,7 @@ export function createWhooshQuery(filterSettings, panelView, toolbox) {
     if (name) {
         query += "name:(" + name + ") ";
         query += "name_exact:(" + name + ") ";
-        query += "description:(" + name + ") ";
+        query += "description:(" + name + ")";
     }
     query += ") AND (";
     for (const [key, filterValue] of Object.entries(filterSettings)) {
