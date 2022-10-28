@@ -54,10 +54,12 @@ export default [
                 props: () => {
                     const Galaxy = getGalaxyInstance();
                     return {
+                        isAdmin: true,
                         redirect: "/admin/users",
-                        registration_warning_message: Galaxy.config.registration_warning_message,
-                        mailing_join_addr: Galaxy.config.mailing_join_addr,
-                        server_mail_configured: Galaxy.config.server_mail_configured,
+                        registrationWarningMessage: Galaxy.config.registration_warning_message,
+                        mailingJoinAddr: Galaxy.config.mailing_join_addr,
+                        serverMailConfigured: Galaxy.config.server_mail_configured,
+                        sessionCsrfToken: Galaxy.session_csrf_token,
                     };
                 },
             },

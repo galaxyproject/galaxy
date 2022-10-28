@@ -10,6 +10,7 @@ describe("LoginIndex", () => {
     beforeEach(() => {
         wrapper = mount(MountTarget, {
             propsData: {
+                allowUserCreation: false,
                 sessionCsrfToken: "sessionCsrfToken",
             },
             localVue,

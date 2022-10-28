@@ -41,7 +41,7 @@ export default {
     props: {
         allowUserCreation: {
             type: Boolean,
-            default: false,
+            required: true,
         },
         enableOidc: {
             type: Boolean,
