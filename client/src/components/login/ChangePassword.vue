@@ -50,9 +50,9 @@ export default {
         };
     },
     methods: {
-        submit(ev) {
+        submit() {
             axios
-                .post(safePath(`/user/change_password`), {
+                .post(safePath("/user/change_password"), {
                     token: this.token,
                     id: this.expiredUser,
                     current: this.current,

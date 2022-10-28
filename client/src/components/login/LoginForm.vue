@@ -3,7 +3,7 @@
         <div class="row justify-content-md-center">
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
-                    <b-alert :show="messageShow" :variant="messageVariant">
+                    <b-alert :show="!!messageText" :variant="messageVariant">
                         {{ messageText }}
                     </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
@@ -62,7 +62,11 @@
                 </div>
             </template>
             <template v-else>
-                <new-user-confirmation :redirect="redirect" @setRedirect="setRedirect" />
+                <new-user-confirmation
+                    :is-admin="isAdmin"
+                    :registration-warning-message="registrationWarningMessage"
+                    :terms-url="termsUrl"
+                    @setRedirect="setRedirect" />
             </template>
             <div v-if="showWelcomeWithLogin" class="col">
                 <b-embed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
@@ -95,7 +99,15 @@ export default {
             type: Boolean,
             default: false,
         },
+        isAdmin: {
+            type: Boolean,
+            default: false,
+        },
         redirect: {
+            type: String,
+            default: null,
+        },
+        registrationWarningMessage: {
             type: String,
             default: null,
         },
@@ -106,6 +118,10 @@ export default {
         showWelcomeWithLogin: {
             type: Boolean,
             default: false,
+        },
+        termsUrl: {
+            type: String,
+            default: null,
         },
         welcomeUrl: {
             type: String,
@@ -122,9 +138,6 @@ export default {
         };
     },
     computed: {
-        messageShow() {
-            return this.messageText != null;
-        },
         confirmURL() {
             var urlParams = new URLSearchParams(window.location.search);
             return urlParams.has("confirm") && urlParams.get("confirm") == "true";
@@ -137,7 +150,7 @@ export default {
         toggleLogin() {
             this.$emit("toggle-login");
         },
-        submitLogin(method) {
+        submitLogin() {
             let redirect = this.redirect;
             if (localStorage.getItem("redirect_url")) {
                 redirect = localStorage.getItem("redirect_url");

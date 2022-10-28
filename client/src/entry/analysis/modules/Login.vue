@@ -5,24 +5,24 @@
                 <div class="center-panel" style="display: block">
                     <ChangePassword
                         v-if="hasToken"
-                        :token="$route.query.token"
                         :expired-user="$route.query.expired_user"
                         :message-text="$route.query.message"
-                        :message-variant="$route.query.status" />
+                        :message-variant="$route.query.status"
+                        :token="$route.query.token" />
                     <LoginIndex
                         v-else
-                        :is-admin="isAdmin"
                         :allow-user-creation="config.allow_user_creation"
-                        :show-welcome-with-login="config.show_welcome_with_login"
-                        :welcome-url="config.welcome_url"
-                        :terms-url="config.terms_url"
+                        :enable-oidc="config.enable_oidc"
+                        :is-admin="isAdmin"
+                        :mailing-join-addr="config.mailing_join_addr"
+                        :prefer-custos-login="config.prefer_custos_login"
                         :redirect="$route.query.redirect"
                         :registration-warning-message="config.registration_warning_message"
-                        :mailing-join-addr="config.mailing_join_addr"
                         :server-mail-configured="config.server_mail_configured"
-                        :enable-oidc="config.enable_oidc"
-                        :prefer-custos-login="config.prefer_custos_login"
-                        :session-csrf-token="sessionCsrfToken" />
+                        :session-csrf-token="sessionCsrfToken"
+                        :show-welcome-with-login="config.show_welcome_with_login"
+                        :terms-url="config.terms_url"
+                        :welcome-url="config.welcome_url" />
                 </div>
             </div>
         </div>

@@ -2,10 +2,10 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="showRegistrationWarning" variant="info">
+                <b-alert :show="!!registrationWarningMessage" variant="info">
                     {{ registrationWarningMessage }}
                 </b-alert>
-                <b-alert :show="messageShow" :variant="messageVariant">
+                <b-alert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
                 </b-alert>
                 <b-form id="registration" @submit.prevent="submit()">
@@ -45,12 +45,12 @@
                                 </b-form-group>
                                 <b-form-group label="Public name">
                                     <b-form-input v-model="username" name="username" type="text" />
-                                    <b-form-text
-                                        >Your public name is an identifier that will be used to generate addresses for
+                                    <b-form-text>
+                                        Your public name is an identifier that will be used to generate addresses for
                                         information you share publicly. Public names must be at least three characters
                                         in length and contain only lower-case letters, numbers, dots, underscores, and
-                                        dashes ('.', '_', '-').</b-form-text
-                                    >
+                                        dashes ('.', '_', '-').
+                                    </b-form-text>
                                 </b-form-group>
                                 <b-form-group
                                     v-if="mailingJoinAddr && serverMailConfigured"
@@ -62,9 +62,9 @@
                         </b-collapse>
                         <b-card-footer v-if="!isAdmin">
                             Already have an account?
-                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin"
-                                >Log in here.</a
-                            >
+                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin">
+                                Log in here.
+                            </a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
@@ -80,7 +80,7 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { safePath } from "utils/redirect";
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 
 Vue.use(BootstrapVue);
 
@@ -89,31 +89,31 @@ export default {
         ExternalLogin,
     },
     props: {
-        registrationWarningMessage: {
-            type: String,
-            default: null,
-        },
-        serverMailConfigured: {
+        enableOidc: {
             type: Boolean,
-            default: null,
+            default: false,
+        },
+        isAdmin: {
+            type: Boolean,
+            default: false,
         },
         mailingJoinAddr: {
             type: String,
             default: null,
         },
+        preferCustosLogin: {
+            type: Boolean,
+            default: false,
+        },
         redirect: {
             type: String,
             default: null,
         },
-        termsUrl: {
+        registrationWarningMessage: {
             type: String,
             default: null,
         },
-        enableOidc: {
-            type: Boolean,
-            default: false,
-        },
-        preferCustosLogin: {
+        serverMailConfigured: {
             type: Boolean,
             default: false,
         },
@@ -121,9 +121,9 @@ export default {
             type: String,
             default: null,
         },
-        isAdmin: {
-            type: Boolean,
-            default: false,
+        termsUrl: {
+            type: String,
+            default: null,
         },
     },
     data() {
@@ -139,12 +139,6 @@ export default {
         };
     },
     computed: {
-        messageShow() {
-            return this.messageText != null;
-        },
-        showRegistrationWarning() {
-            return this.registrationWarningMessage != null;
-        },
         custosPreferred() {
             return this.enableOidc && this.preferCustosLogin;
         },
@@ -153,7 +147,7 @@ export default {
         toggleLogin() {
             this.$emit("toggle-login");
         },
-        submit(method) {
+        submit() {
             this.disableCreate = true;
             axios
                 .post(safePath("/user/create"), {
@@ -161,6 +155,7 @@ export default {
                     username: this.username,
                     password: this.password,
                     confirm: this.confirm,
+                    subscribe: this.subscribe,
                     session_csrf_token: this.sessionCsrfToken,
                 })
                 .then((response) => {
