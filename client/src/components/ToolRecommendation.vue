@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import * as d3 from "d3";
+import * as d3 from "d3-legacy";
 import { getAppRoot } from "onload/loadConfig";
 import { getDatatypesMapper } from "components/Datatypes";
 import { getToolPredictions } from "components/Workflow/Editor/modules/services";
