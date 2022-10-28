@@ -6,6 +6,7 @@
                 <sts-download-button
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
+                    variant="link"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
                     title="Download PDF"></sts-download-button>
@@ -19,10 +20,10 @@
                     @click="$emit('onEdit')">
                     <font-awesome-icon icon="edit" />
                 </b-button>
-                <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
+                <h1 class="float-right align-middle mr-1 mt-2 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
-                    ><br />
+                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
+                    <br />
                     <small>Created by {{ markdownConfig.username }}</small>
                 </span>
             </div>
@@ -33,7 +34,7 @@
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
-                        <h5>{{ obj.error || "Error" }}</h5>
+                        <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
                 </b-alert>
@@ -110,7 +111,7 @@ import JobParameters from "./Elements/JobParameters";
 import ToolStd from "./Elements/ToolStd";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
 import Visualization from "./Elements/Visualization";
-import StsDownloadButton from "./StsDownloadButton";
+import StsDownloadButton from "components/StsDownloadButton";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;

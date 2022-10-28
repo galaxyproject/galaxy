@@ -48,7 +48,7 @@ const submit = (ev) => {
 
 <template>
     <b-form class="mt-4" @submit="submit">
-        <h4>Import from a Galaxy workflow export URL or a workflow file</h4>
+        <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <b-form-group label="Archived Workflow URL">
             <b-form-input
                 id="workflow-import-url-input"

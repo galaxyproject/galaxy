@@ -1,8 +1,8 @@
 <template>
-    <div class="invocations-list">
-        <h2 class="mb-3">
-            <span id="invocations-title">{{ title }}</span>
-        </h2>
+    <div class="invocations-list" aria-labelledby="invocations-title">
+        <h1 id="invocations-title" class="mb-3 h-lg">
+            {{ title }}
+        </h1>
         <b-alert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
         </b-alert>
@@ -83,7 +83,7 @@
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import { invocationsProvider } from "components/providers/InvocationsProvider";
-import { WorkflowInvocationState } from "components/WorkflowInvocationState";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 import UtcDate from "components/UtcDate";
 import { mapCacheActions } from "vuex-cache";

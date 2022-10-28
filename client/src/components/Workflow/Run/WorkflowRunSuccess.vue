@@ -26,7 +26,7 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { WorkflowInvocationState } from "components/WorkflowInvocationState";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import Webhooks from "utils/webhooks";
 import { getAppRoot } from "onload/loadConfig";
 import { refreshContentsWrapper } from "utils/data";

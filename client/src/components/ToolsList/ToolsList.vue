@@ -6,7 +6,7 @@
         :panel-view="panelView">
         <section class="overflow-auto h-100" @scroll="onScroll">
             <div class="mb-2">
-                <span class="row mb-1">
+                <span class="row mb-2">
                     <span class="col">
                         <h1 v-if="hasFilters" class="d-inline-block h-lg">Advanced Tool Search Results</h1>
                         <h1 v-else class="d-inline-block h-lg">

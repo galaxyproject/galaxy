@@ -447,6 +447,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "update_time",
                 "importable",
                 "slug",
+                "username",
                 "username_and_slug",
                 "genome_build",
                 # TODO: remove the next three - instead getting the same info from the 'hdas' list

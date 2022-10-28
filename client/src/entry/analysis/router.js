@@ -31,12 +31,15 @@ import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
+import HistoryPublished from "components/History/HistoryPublished";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
 import NewUserConfirmation from "components/login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
+import PageDisplay from "components/PageDisplay/PageDisplay";
+import PageEditor from "components/PageEditor/PageEditor";
 import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
@@ -50,8 +53,10 @@ import UserPreferences from "components/User/UserPreferences";
 import UserPreferencesForm from "components/User/UserPreferencesForm";
 import VisualizationsList from "components/Visualizations/Index";
 import WorkflowExport from "components/Workflow/WorkflowExport";
+import VisualizationPublished from "components/Visualizations/VisualizationPublished";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
+import WorkflowPublished from "components/Workflow/WorkflowPublished";
 import { APIKey } from "components/User/APIKey";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
@@ -77,6 +82,42 @@ export function getRouter(Galaxy) {
         base: getAppRoot(),
         mode: "history",
         routes: [
+            ...AdminRoutes,
+            ...LibraryRoutes,
+            /** Login entry route */
+            { path: "/login/start", component: Login },
+            /** Page editor */
+            {
+                path: "/pages/editor",
+                component: PageEditor,
+                props: (route) => ({
+                    pageId: route.query.id,
+                }),
+            },
+            /** Workflow editor */
+            { path: "/workflows/edit", component: WorkflowEditorModule },
+            /** Published resources routes */
+            {
+                path: "/published/history",
+                component: HistoryPublished,
+                props: (route) => ({ id: route.query.id }),
+            },
+            {
+                path: "/published/page",
+                component: PageDisplay,
+                props: (route) => ({ pageId: route.query.id }),
+            },
+            {
+                path: "/published/visualization",
+                component: VisualizationPublished,
+                props: (route) => ({ id: route.query.id }),
+            },
+            {
+                path: "/published/workflow",
+                component: WorkflowPublished,
+                props: (route) => ({ id: route.query.id }),
+            },
+            /** Analysis routes */
             {
                 path: "/",
                 component: Analysis,
@@ -432,10 +473,6 @@ export function getRouter(Galaxy) {
                     },
                 ],
             },
-            { path: "/login/start", component: Login },
-            { path: "/workflows/edit", component: WorkflowEditorModule },
-            ...AdminRoutes,
-            ...LibraryRoutes,
         ],
     });
 }

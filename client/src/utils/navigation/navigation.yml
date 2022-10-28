@@ -421,15 +421,15 @@ pages:
     export: '.markdown-pdf-export'
   editor:
     selectors:
-      wym_iframe: 'div.wym_iframe iframe'
-      wym_iframe_content: '.text-content'
       save: '#save-button'
-      embed_button: '#embed-galaxy-object'
-      dataset_selector: '.saved-datasets'
+      embed_dataset:
+        type: xpath
+        selector: '//span[text() = "Embedded Dataset"]'
+      dataset_selector:
+        type: xpath
+        selector: '//span[text() = "1: 1.fasta"]'
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
       markdown_editor: '.markdown-textarea'
-    labels:
-      embed_dataset: 'Embed Dataset'
 
 login:
   selectors:
@@ -608,8 +608,8 @@ workflow_editor:
 
 workflow_show:
   selectors:
-    title: 'h3.item_name'
-    annotation: '.page-item-header .annotation'
+    title: '[data-description="workflow name"]'
+    import_link: '[data-description="workflow import"]'
 
 invocations:
   selectors:

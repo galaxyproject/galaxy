@@ -1,9 +1,6 @@
 <%!
     def inherit( context ):
-        if context.get('no_panels'):
-            return '/base.mako'
-        else:
-            return '/webapps/galaxy/base_panels.mako'
+        return '/base.mako'
 
     from galaxy.model import History, StoredWorkflow, Page
     from galaxy.web.framework.helpers import iff
@@ -13,7 +10,7 @@
 <%namespace file="/display_common.mako" import="*" />
 
 ##
-## Functions used by base.mako and base_panels.mako to display content.
+## Functions used by base.mako to display content.
 ##
 
 <%def name="title()">
@@ -92,12 +89,6 @@
 <%def name="body()">
     ${self.render_content()}
 </%def>
-
-## For base_panels.mako
-<%def name="center_panel()">
-    ${self.render_content()}
-</%def>
-
 
 ##
 ## Render page content. Pages that inherit this page should override render_item_links() and render_item()

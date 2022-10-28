@@ -42,7 +42,10 @@ from galaxy import (
     util,
 )
 from galaxy.job_execution.actions.post import ActionBox
-from galaxy.managers import sharable
+from galaxy.managers import (
+    deletable,
+    sharable,
+)
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
@@ -107,7 +110,7 @@ INDEX_SEARCH_FILTERS = {
 }
 
 
-class WorkflowsManager(sharable.SharableModelManager):
+class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManagerMixin):
     """Handle CRUD type operations related to workflows. More interesting
     stuff regarding workflow execution, step sorting, etc... can be found in
     the galaxy.workflow module.
@@ -163,7 +166,6 @@ class WorkflowsManager(sharable.SharableModelManager):
         query = query.options(latest_workflow_load)
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
-        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
@@ -191,6 +193,9 @@ class WorkflowsManager(sharable.SharableModelManager):
                     elif key == "is":
                         if q == "published":
                             query = query.filter(model.StoredWorkflow.published == true())
+                        elif q == "deleted":
+                            query = query.filter(model.StoredWorkflow.deleted == true())
+                            show_deleted = true
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
@@ -210,6 +215,7 @@ class WorkflowsManager(sharable.SharableModelManager):
                             term,
                         )
                     )
+        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if include_total_count:
             total_matches = query.count()
         else:
@@ -1045,6 +1051,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict["inputs"] = do_inputs(module.get_runtime_inputs(), step.state.inputs, "", step)
             step_dicts.append(step_dict)
         return {
+            "name": workflow.name,
             "steps": step_dicts,
         }
 

@@ -58,7 +58,7 @@ class PAM(AuthProvider):
 
     plugin_type = "PAM"
 
-    def authenticate(self, email, username, password, options):
+    def authenticate(self, email, username, password, options, request):
         pam_username = None
         auto_register_username = None
         auto_register_email = None
@@ -156,8 +156,8 @@ class PAM(AuthProvider):
             )
             return False, "", ""
 
-    def authenticate_user(self, user, password, options):
-        return self.authenticate(user.email, user.username, password, options)[0]
+    def authenticate_user(self, user, password, options, request):
+        return self.authenticate(user.email, user.username, password, options, request)[0]
 
 
 __all__ = ("PAM",)

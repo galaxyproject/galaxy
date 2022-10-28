@@ -1,7 +1,7 @@
 <template>
     <DatasetProvider :id="hda_id" v-slot="{ result: dataset, loading }">
         <div v-if="!loading">
-            <h3>Dataset Information</h3>
+            <h2 class="h-md">Dataset Information</h2>
             <table id="dataset-details" class="tabletip info_data_table">
                 <tbody>
                     <tr>

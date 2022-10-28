@@ -19,17 +19,12 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.managers.pages import (
-    get_page_identifiers,
-    PageContentProcessor,
-    PageManager,
-)
+from galaxy.managers.pages import PageManager
 from galaxy.managers.sharable import SlugBuilder
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
-from galaxy.util import unicodify
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import (
     error,
@@ -109,7 +104,7 @@ class PageListGrid(grids.Grid):
     global_actions = [grids.GridAction("Add new page", dict(controller="", action="pages/create"))]
     operations = [
         grids.DisplayByUsernameAndSlugGridOperation("View", allow_multiple=False),
-        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(action="edit_content")),
+        grids.GridOperation("Edit content", allow_multiple=False, url_args=dict(controller="", action="pages/editor")),
         grids.GridOperation("Edit attributes", allow_multiple=False, url_args=dict(controller="", action="pages/edit")),
         grids.GridOperation(
             "Share or Publish",
@@ -419,7 +414,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             title = ""
             slug = ""
             content = ""
-            content_format_hide = False
             content_hide = True
             if "invocation_id" in kwd:
                 invocation_id = kwd.get("invocation_id")
@@ -430,7 +424,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 )
                 title = invocation_report.get("title")
                 content = invocation_report.get("markdown")
-                content_format_hide = True
                 content_hide = False
             return {
                 "title": form_title,
@@ -454,10 +447,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     {
                         "name": "content_format",
                         "label": "Content Format",
-                        "type": "select",
-                        "hidden": content_format_hide,
-                        "options": [("Markdown", "markdown"), ("HTML", "html")],
-                        "help": "Use the traditional rich HTML editor or the newer experimental Markdown editor to create the page content. The HTML editor has several known bugs, is unmaintained and pages created with it will be read-only in future releases of Galaxy.",
+                        "type": "hidden",
+                        "value": "markdown",
                     },
                     {
                         "name": "content",
@@ -533,14 +524,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             return {"message": "Attributes of '%s' successfully saved." % p.title, "status": "success"}
 
     @web.expose
-    @web.require_login("edit pages")
-    def edit_content(self, trans, id):
-        """
-        Render the main page editor interface.
-        """
-        return trans.fill_template("page/editor.mako", id=id)
-
-    @web.expose
     @web.require_login()
     def display(self, trans, id):
         id = self.decode_id(id)
@@ -559,20 +542,12 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         page = trans.sa_session.query(model.Page).filter_by(user=user, slug=slug, deleted=False).first()
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
+
         # Security check raises error if user cannot access page.
         self.security_check(trans, page, False, True)
 
-        latest_revision = page.latest_revision
-        if latest_revision.content_format == "html":
-            # Process page content.
-            processor = PageContentProcessor(trans, self._get_embed_html)
-            processor.feed(page.latest_revision.content)
-            # Output is string, so convert to unicode for display.
-            page_content = unicodify(processor.output(), "utf-8")
-            template = "page/display.mako"
-        else:
-            page_content = trans.security.encode_id(page.id)
-            template = "page/display_markdown.mako"
+        # Encode page identifier.
+        page_id = trans.security.encode_id(page.id)
 
         # Get rating data.
         user_item_rating = 0
@@ -584,14 +559,16 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 user_item_rating = 0
         ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
 
-        return trans.fill_template_mako(
-            template,
-            item=page,
-            item_data=page_content,
-            user_item_rating=user_item_rating,
-            ave_item_rating=ave_item_rating,
-            num_ratings=num_ratings,
-            content_only=True,
+        # Redirect to client.
+        return trans.response.send_redirect(
+            web.url_for(
+                controller="published",
+                action="page",
+                id=page_id,
+                user_item_rating=user_item_rating,
+                ave_item_rating=ave_item_rating,
+                num_ratings=num_ratings,
+            )
         )
 
     @web.expose
@@ -686,11 +663,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         """Returns HTML that enables a user to select one or more datasets."""
         return self._datasets_selection_grid(trans, **kwargs)
 
-    @web.expose
-    def get_editor_iframe(self, trans):
-        """Returns the document for the page editor's iframe."""
-        return trans.fill_template("page/wymiframe.mako")
-
     def get_page(self, trans, id, check_ownership=True, check_accessible=False):
         """Get a page from the database by id."""
         # Load history from database
@@ -703,88 +675,3 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
 
     def get_item(self, trans, id):
         return self.get_page(trans, id)
-
-    def _get_embedded_history_html(self, trans, decoded_id):
-        """
-        Returns html suitable for embedding in another page.
-        """
-        # histories embedded in pages are set to importable when embedded, check for access here
-        history = self.history_manager.get_accessible(decoded_id, trans.user, current_history=trans.history)
-
-        # create ownership flag for template, dictify models
-        # note: adding original annotation since this is published - get_dict returns user-based annos
-        user_is_owner = trans.user == history.user
-        history.annotation = self.get_item_annotation_str(trans.sa_session, history.user, history)
-
-        # include all datasets: hidden, deleted, and purged
-        history_dictionary = self.history_serializer.serialize_to_view(
-            history, view="detailed", user=trans.user, trans=trans
-        )
-        contents = self.history_serializer.serialize_contents(history, "contents", trans=trans, user=trans.user)
-        history_dictionary["annotation"] = history.annotation
-
-        filled = trans.fill_template(
-            "history/embed.mako",
-            item=history,
-            user_is_owner=user_is_owner,
-            history_dict=history_dictionary,
-            content_dicts=contents,
-        )
-        return filled
-
-    def _get_embedded_visualization_html(self, trans, encoded_id):
-        """
-        Returns html suitable for embedding visualizations in another page.
-        """
-        visualization = self.get_visualization(trans, encoded_id, False, True)
-        visualization.annotation = self.get_item_annotation_str(trans.sa_session, visualization.user, visualization)
-        if not visualization:
-            return None
-
-        # Fork to template based on visualization.type (registry or builtin).
-        if (trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins) and (
-            visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS
-        ):
-            # if a registry visualization, load a version into an iframe :(
-            # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
-            # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
-            encoded_visualization_id = trans.security.encode_id(visualization.id)
-            return trans.fill_template(
-                "visualization/embed_in_frame.mako",
-                item=visualization,
-                encoded_visualization_id=encoded_visualization_id,
-                content_only=True,
-            )
-
-        return trans.fill_template("visualization/embed.mako", item=visualization, item_data=None)
-
-    def _get_embed_html(self, trans, item_class, item_id):
-        """Returns HTML for embedding an item in a page."""
-        item_class = self.get_class(item_class)
-        encoded_id, decoded_id = get_page_identifiers(item_id, trans.app)
-        if item_class == model.History:
-            return self._get_embedded_history_html(trans, decoded_id)
-
-        elif item_class == model.HistoryDatasetAssociation:
-            dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-            dataset = self.hda_manager.error_if_uploading(dataset)
-
-            dataset.annotation = self.get_item_annotation_str(trans.sa_session, dataset.history.user, dataset)
-            if dataset:
-                data = self.hda_manager.text_data(dataset)
-                return trans.fill_template("dataset/embed.mako", item=dataset, item_data=data)
-
-        elif item_class == model.StoredWorkflow:
-            workflow = self.get_stored_workflow(trans, encoded_id, False, True)
-            workflow.annotation = self.get_item_annotation_str(trans.sa_session, workflow.user, workflow)
-            if workflow:
-                self.get_stored_workflow_steps(trans, workflow)
-                return trans.fill_template(
-                    "workflow/embed.mako", item=workflow, item_data=workflow.latest_workflow.steps
-                )
-
-        elif item_class == model.Visualization:
-            return self._get_embedded_visualization_html(trans, encoded_id)
-
-        elif item_class == model.Page:
-            pass

@@ -33,10 +33,13 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
-    smart_str,
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.markdown import (
+    indicate_data_truncated,
+    literal_via_fence,
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
@@ -416,8 +419,6 @@ class Data(metaclass=DataMeta):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         headers["X-Content-Type-Options"] = "nosniff"
-        if isinstance(data, str):
-            return smart_str(data), headers
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = data.dataset.extra_files_path_name
@@ -503,7 +504,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance, markdown_format_helpers):
+    def display_as_markdown(self, dataset_instance: "DatasetInstance"):
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented
@@ -526,9 +527,9 @@ class Data(metaclass=DataMeta):
         else:
             with open(dataset_instance.file_name) as f:
                 contents = f.read(DEFAULT_MAX_PEEK_SIZE)
-            result = markdown_format_helpers.literal_via_fence(contents)
+            result = literal_via_fence(contents)
             if len(contents) == DEFAULT_MAX_PEEK_SIZE:
-                result += markdown_format_helpers.indicate_data_truncated()
+                result += indicate_data_truncated()
         return result
 
     def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):

@@ -3,8 +3,9 @@
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h1 v-if="!showAdvanced" v-localize class="m-1 h-sm">Tools</h1>
-                    <h1 v-else v-localize class="m-1 h-sm">Advanced Tool Search</h1>
+                    <h2 v-if="!showAdvanced" v-localize id="toolbox-heading" class="m-1 h-sm">Tools</h2>
+                    <h2 v-else v-localize id="toolbox-heading" class="m-1 h-sm">Advanced Tool Search</h2>
+
                     <div class="panel-header-buttons">
                         <b-button-group>
                             <favorites-button v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />

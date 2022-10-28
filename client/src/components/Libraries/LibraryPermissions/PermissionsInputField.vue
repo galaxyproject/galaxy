@@ -1,8 +1,8 @@
 <template>
     <div>
-        <h4>
+        <h2 class="h-sm">
             {{ title }}
-        </h4>
+        </h2>
         <b-row>
             <b-col>
                 <div v-if="options && value" :class="permission_type">

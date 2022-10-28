@@ -1,25 +1,37 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <markdown
-            v-if="!loading"
-            :markdown-config="page"
-            :enable_beta_markdown_export="config.enable_beta_markdown_export"
-            :download-endpoint="stsUrl(config)"
-            :export-link="exportUrl"
-            @onEdit="onEdit" />
+        <Published :details="page">
+            <template v-slot>
+                <div v-if="!loading">
+                    <markdown
+                        v-if="page.content_format == 'markdown'"
+                        :markdown-config="page"
+                        :enable_beta_markdown_export="config.enable_beta_markdown_export"
+                        :download-endpoint="stsUrl(config)"
+                        :export-link="exportUrl"
+                        @onEdit="onEdit" />
+                    <PageHtml v-else :page="page" />
+                </div>
+                <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
+            </template>
+        </Published>
     </config-provider>
 </template>
 
 <script>
-import { safePath } from "utils/redirect";
 import { urlData } from "utils/url";
+import { safePath } from "utils/redirect";
 import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown.vue";
+import Markdown from "components/Markdown/Markdown";
+import Published from "components/Common/Published";
+import PageHtml from "./PageHtml";
 
 export default {
     components: {
         ConfigProvider,
         Markdown,
+        PageHtml,
+        Published,
     },
     props: {
         pageId: {

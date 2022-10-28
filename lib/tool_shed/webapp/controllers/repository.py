@@ -24,6 +24,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web.form_builder import (
     CheckboxField,
@@ -32,7 +33,6 @@ from galaxy.web.form_builder import (
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.dependencies.repository import relation_builder
-from tool_shed.galaxy_install import dependency_display
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.tools import (
     tool_validator,

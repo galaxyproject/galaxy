@@ -1370,20 +1370,18 @@ class NavigatesGalaxy(HasDriver):
         self.driver.execute_script("arguments[0].scrollIntoView(true);", tool_element)
         tool_link.wait_for_and_click()
 
-    def create_page_and_edit(self, name=None, slug=None, content_format=None, screenshot_name=None):
-        name = self.create_page(name=name, slug=slug, content_format=content_format, screenshot_name=screenshot_name)
+    def create_page_and_edit(self, name=None, slug=None, screenshot_name=None):
+        name = self.create_page(name=name, slug=slug, screenshot_name=screenshot_name)
         self.click_grid_popup_option(name, "Edit content")
-        self.components.pages.editor.wym_iframe.wait_for_visible()
+        self.components.pages.editor.markdown_editor.wait_for_visible()
         return name
 
-    def create_page(self, name=None, slug=None, content_format=None, screenshot_name=None):
+    def create_page(self, name=None, slug=None, screenshot_name=None):
         self.components.pages.create.wait_for_and_click()
         name = name or self._get_random_name(prefix="page")
         slug = slug = self._get_random_name(prefix="pageslug")
-        content_format = content_format or "HTML"
         self.tool_set_value("title", name)
         self.tool_set_value("slug", slug)
-        self.tool_set_value("content_format", content_format, expected_type="select")
         self.screenshot_if(screenshot_name)
         # Sometimes 'submit' button not yet hooked up?
         self.sleep_for(self.wait_types.UX_RENDER)

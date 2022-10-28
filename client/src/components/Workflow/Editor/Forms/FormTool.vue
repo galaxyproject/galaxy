@@ -27,7 +27,8 @@
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                     @input="onAnnotation" />
-                <ToolCardSection title="Tool Parameters">
+                <div class="mt-2 mb-4">
+                    <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                     <FormDisplay
                         :id="id"
                         :inputs="inputs"
@@ -36,8 +37,9 @@
                         text-disable="Set at Runtime"
                         :workflow-building-mode="true"
                         @onChange="onChange" />
-                </ToolCardSection>
-                <ToolCardSection title="Additional Options">
+                </div>
+                <div class="mt-2 mb-4">
+                    <Heading h2 separator bold size="sm"> Additional Options </Heading>
                     <FormSection
                         :id="nodeId"
                         :node-inputs="nodeInputs"
@@ -46,7 +48,7 @@
                         :datatypes="datatypes"
                         :post-job-actions="postJobActions"
                         @onChange="onChangePostJobActions" />
-                </ToolCardSection>
+                </div>
             </template>
         </ToolCard>
     </CurrentUser>
@@ -56,20 +58,20 @@
 import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import ToolCard from "components/Tool/ToolCard";
-import ToolCardSection from "components/Tool/ToolCardSection";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
+import Heading from "components/Common/Heading";
 
 export default {
     components: {
         CurrentUser,
         FormDisplay,
         ToolCard,
-        ToolCardSection,
         FormElement,
         FormSection,
+        Heading,
     },
     props: {
         nodeId: {

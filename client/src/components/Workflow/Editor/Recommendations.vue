@@ -1,7 +1,7 @@
 <template>
     <div class="workflow-recommendations">
         <div class="header-background">
-            <h4>{{ popoverHeaderText }}</h4>
+            <h2 class="h-sm">{{ popoverHeaderText }}</h2>
         </div>
         <LoadingSpan v-if="showLoading" message="Loading recommendations" />
         <div v-if="compatibleTools.length > 0 && !isDeprecated">

@@ -99,6 +99,16 @@ class WorkflowsService(ServiceBase):
             return workflows, total_matches
         return rval, total_matches
 
+    def delete(self, trans, workflow_id):
+        workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
+        self._workflows_manager.check_security(trans, workflow_to_delete)
+        self._workflows_manager.delete(workflow_to_delete)
+
+    def undelete(self, trans, workflow_id):
+        workflow_to_undelete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
+        self._workflows_manager.check_security(trans, workflow_to_undelete)
+        self._workflows_manager.undelete(workflow_to_undelete)
+
     def __get_full_shed_url(self, url):
         for shed_url in self._tool_shed_registry.tool_sheds.values():
             if url in shed_url:

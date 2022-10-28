@@ -477,3 +477,36 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .flex-gapx-1 {
     column-gap: 0.25rem;
 }
+
+/* Heading Sizes */
+.h-xl {
+    font-size: $h1-font-size;
+}
+
+.h-lg {
+    font-size: $h2-font-size;
+}
+
+.h-md {
+    font-size: $h3-font-size;
+}
+
+.h-sm {
+    font-size: $h4-font-size;
+}
+
+.h-text {
+    font-size: $font-size-base;
+}
+
+/* hides element in a way where it can still be read by screen-readers */
+.hide-element {
+    border: 0;
+    clip: rect(1px, 1px, 1px, 1px);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}

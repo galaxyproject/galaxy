@@ -140,12 +140,11 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(
+        self.reinstall_repository_api(
             installed_column_repository,
             install_tool_dependencies=False,
             install_repository_dependencies=False,
             new_tool_panel_section_label="new_column_maker",
-            no_changes=False,
         )
         self._assert_has_installed_repos_with_names("column_maker_1085")
 
@@ -154,12 +153,11 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(
+        self.reinstall_repository_api(
             installed_convert_repository,
             install_tool_dependencies=False,
             install_repository_dependencies=False,
             new_tool_panel_section_label="new_convert_chars",
-            no_changes=False,
         )
         self._assert_has_installed_repos_with_names("convert_chars_1085")
 
