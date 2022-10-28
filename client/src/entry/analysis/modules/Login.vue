@@ -13,7 +13,6 @@
                         v-else
                         :allow-user-creation="config.allow_user_creation"
                         :enable-oidc="config.enable_oidc"
-                        :is-admin="isAdmin"
                         :mailing-join-addr="config.mailing_join_addr"
                         :prefer-custos-login="config.prefer_custos_login"
                         :redirect="$route.query.redirect"
@@ -31,8 +30,8 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import LoginIndex from "components/login/LoginIndex";
-import ChangePassword from "components/login/ChangePassword";
+import LoginIndex from "components/Login/LoginIndex";
+import ChangePassword from "components/Login/ChangePassword";
 
 export default {
     components: {
@@ -45,9 +44,6 @@ export default {
         },
         hasToken() {
             return this.$route.query.token || this.$route.query.expired_user;
-        },
-        isAdmin() {
-            return getGalaxyInstance().user.isAdmin();
         },
         sessionCsrfToken() {
             return getGalaxyInstance().session_csrf_token;

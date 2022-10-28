@@ -1,7 +1,7 @@
 <template>
     <div class="container">
         <div class="row justify-content-md-center">
-            <div class="col" :class="{ 'col-lg-6': !isAdmin }">
+            <div class="col col-lg-6">
                 <b-alert :show="!!registrationWarningMessage" variant="info">
                     {{ registrationWarningMessage }}
                 </b-alert>
@@ -60,7 +60,7 @@
                                 <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
                             </b-card-body>
                         </b-collapse>
-                        <b-card-footer v-if="!isAdmin">
+                        <b-card-footer v-if="showLoginLink">
                             Already have an account?
                             <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin">
                                 Log in here.
@@ -93,7 +93,7 @@ export default {
             type: Boolean,
             default: false,
         },
-        isAdmin: {
+        showLoginLink: {
             type: Boolean,
             default: false,
         },

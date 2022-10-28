@@ -51,7 +51,6 @@ describe("Login", () => {
         expect(attributes.registrationwarningmessage).toBe("registration_warning_message");
         expect(attributes.termsurl).toBe("terms_url");
         expect(attributes.welcomeurl).toBe("welcome_url");
-        expect(attributes.isadmin).toBe("true");
     });
 
     it("change password attribute matching", async () => {

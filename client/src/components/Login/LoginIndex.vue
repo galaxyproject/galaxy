@@ -4,7 +4,6 @@
             v-if="showLogin"
             :allow-user-creation="allowUserCreation"
             :enable-oidc="enableOidc"
-            :is-admin="isAdmin"
             :redirect="redirect"
             :registration-warning-message="registrationWarningMessage"
             :session-csrf-token="sessionCsrfToken"
@@ -15,10 +14,10 @@
         <register-form
             v-else
             :enable-oidc="enableOidc"
-            :is-admin="isAdmin"
             :mailing-join-addr="mailingJoinAddr"
             :prefer-custos-login="preferCustosLogin"
             :registration-warning-message="registrationWarningMessage"
+            :show-login-link="showLoginLink"
             :server-mail-configured="serverMailConfigured"
             :session-csrf-token="sessionCsrfToken"
             :terms-url="termsUrl"
@@ -28,8 +27,8 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import LoginForm from "components/login/LoginForm";
-import RegisterForm from "components/login/RegisterForm";
+import LoginForm from "./LoginForm";
+import RegisterForm from "./RegisterForm";
 
 Vue.use(BootstrapVue);
 
@@ -44,10 +43,6 @@ export default {
             required: true,
         },
         enableOidc: {
-            type: Boolean,
-            default: false,
-        },
-        isAdmin: {
             type: Boolean,
             default: false,
         },
@@ -66,6 +61,10 @@ export default {
         registrationWarningMessage: {
             type: String,
             default: null,
+        },
+        showLoginLink: {
+            type: Boolean,
+            default: true,
         },
         sessionCsrfToken: {
             type: String,

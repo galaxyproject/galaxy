@@ -45,7 +45,5 @@ describe("NewUserConfirmation", () => {
         const $toggle = "a[id=login-toggle]";
         const loginToggle = wrapper.find($toggle);
         expect(loginToggle.text()).toBe("Log in here.");
-        await wrapper.setProps({ isAdmin: true });
-        expect(wrapper.findAll($toggle).length).toBe(0);
     });
 });

@@ -15,7 +15,7 @@ import ErrorStack from "components/admin/ErrorStack";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
 import Jobs from "components/admin/Jobs";
-import RegisterForm from "components/login/RegisterForm";
+import RegisterForm from "components/Login/RegisterForm";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import Toolshed from "components/Toolshed/Index";
@@ -54,7 +54,6 @@ export default [
                 props: () => {
                     const Galaxy = getGalaxyInstance();
                     return {
-                        isAdmin: true,
                         redirect: "/admin/users",
                         registrationWarningMessage: Galaxy.config.registration_warning_message,
                         mailingJoinAddr: Galaxy.config.mailing_join_addr,

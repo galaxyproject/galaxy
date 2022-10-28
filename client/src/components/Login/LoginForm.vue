@@ -63,7 +63,6 @@
             </template>
             <template v-else>
                 <new-user-confirmation
-                    :is-admin="isAdmin"
                     :registration-warning-message="registrationWarningMessage"
                     :terms-url="termsUrl"
                     @setRedirect="setRedirect" />
@@ -80,7 +79,7 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { safePath } from "utils/redirect";
-import NewUserConfirmation from "components/login/NewUserConfirmation";
+import NewUserConfirmation from "./NewUserConfirmation";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 
 Vue.use(BootstrapVue);
@@ -96,10 +95,6 @@ export default {
             default: false,
         },
         enableOidc: {
-            type: Boolean,
-            default: false,
-        },
-        isAdmin: {
             type: Boolean,
             default: false,
         },

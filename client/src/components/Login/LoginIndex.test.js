@@ -34,5 +34,6 @@ describe("LoginIndex", () => {
         await loginToggle.trigger("click");
         const oldCardHeader = wrapper.find(".card-header");
         expect(oldCardHeader.text()).toBe("Welcome to Galaxy, please log in");
+        expect(wrapper.vm.showLoginLink).toBe(true);
     });
 });

@@ -1,7 +1,7 @@
 <template>
     <div class="container">
         <div class="row justify-content-md-center">
-            <div class="col" :class="{ 'col-lg-6': !isAdmin }">
+            <div class="col col-lg-6">
                 <b-alert :show="!!registrationWarningMessage" variant="info">
                     {{ registrationWarningMessage }}
                 </b-alert>
@@ -41,7 +41,7 @@
                             </b-button>
                             <b-button name="cancel" type="submit" @click.prevent="login">No, go back to login</b-button>
                         </b-card-body>
-                        <b-card-footer v-if="!isAdmin">
+                        <b-card-footer>
                             Already have an account?
                             <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="login">
                                 Log in here.
@@ -66,10 +66,6 @@ Vue.use(BootstrapVue);
 
 export default {
     props: {
-        isAdmin: {
-            type: Boolean,
-            default: false,
-        },
         registrationWarningMessage: {
             type: String,
             default: null,
@@ -94,7 +90,7 @@ export default {
     methods: {
         login() {
             // set url to redirect user to 3rd party management after login
-            this.$emit("setRedirect", "user/external_ids");
+            this.$emit("setRedirect", "/user/external_ids");
             window.location = safePath("/login");
         },
         submit() {
