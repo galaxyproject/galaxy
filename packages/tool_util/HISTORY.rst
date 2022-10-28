@@ -5,6 +5,11 @@ History
 
 .. to_doc
 
+22.1.4 (2022-10-28)
+-------------------
+
+* Add missing unittest_utils package to galaxy-tool-util
+
 22.1.3 (2022-10-27)
 -------------------
 
