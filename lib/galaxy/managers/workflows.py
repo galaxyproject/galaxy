@@ -864,9 +864,9 @@ class WorkflowContentsManager(UsesAnnotations):
         step_version_changes = []
         missing_tools = []
         errors = {}
+        module_injector.inject_all(workflow, exact_tools=False, ignore_tool_missing_exception=True)
         for step in workflow.steps:
             try:
-                module_injector.inject(step, steps=workflow.steps, exact_tools=False)
                 module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException as e:
                 # FIXME: if a subworkflow lacks multiple tools we report only the first missing tool
@@ -1019,15 +1019,16 @@ class WorkflowContentsManager(UsesAnnotations):
                 input_dicts.append(input_dict)
             return input_dicts
 
+        module_injector = WorkflowModuleInjector(trans)
+        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False)
         step_dicts = []
         for step in workflow.steps:
-            module_injector = WorkflowModuleInjector(trans)
             step_dict = {}
             step_dict["order_index"] = step.order_index
-            if hasattr(step, "annotation") and step.annotation is not None:
-                step_dict["annotation"] = step.annotation
+            if step.annotations:
+                step_dict["annotation"] = step.annotations[0].annotation
             try:
-                module_injector.inject(step, steps=workflow.steps, exact_tools=False)
+                module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException as e:
                 step_dict["label"] = f"Unknown Tool with id '{e.tool_id}'"
                 step_dicts.append(step_dict)

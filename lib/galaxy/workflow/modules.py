@@ -2228,7 +2228,18 @@ class WorkflowModuleInjector:
                 unjsonified_subworkflow_param_map[int(key)] = value
 
             subworkflow = step.subworkflow
+            assert subworkflow
             populate_module_and_state(self.trans, subworkflow, param_map=unjsonified_subworkflow_param_map)
+
+    def inject_all(self, workflow: Workflow, param_map=None, ignore_tool_missing_exception=False, **kwargs):
+        param_map = param_map or {}
+        for step in workflow.steps:
+            step_args = param_map.get(step.id, {})
+            try:
+                self.inject(step, steps=workflow.steps, step_args=step_args, **kwargs)
+            except ToolMissingException:
+                if not ignore_tool_missing_exception:
+                    raise
 
     def compute_runtime_state(self, step: WorkflowStep, step_args=None):
         assert step.module, "module must be injected before computing runtime state"
@@ -2241,15 +2252,15 @@ class WorkflowModuleInjector:
         return step_errors
 
 
-def populate_module_and_state(trans, workflow, param_map, allow_tool_state_corrections=False, module_injector=None):
+def populate_module_and_state(
+    trans, workflow: Workflow, param_map, allow_tool_state_corrections=False, module_injector=None
+):
     """Used by API but not web controller, walks through a workflow's steps
     and populates transient module and state attributes on each.
     """
     if module_injector is None:
         module_injector = WorkflowModuleInjector(trans, allow_tool_state_corrections)
-    for step in workflow.steps:
-        step_args = param_map.get(step.id, {})
-        module_injector.inject(step, step_args=step_args)
+    module_injector.inject_all(workflow, param_map=param_map)
     for step in workflow.steps:
         step_args = param_map.get(step.id, {})
         step_errors = module_injector.compute_runtime_state(step, step_args=step_args)

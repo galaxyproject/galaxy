@@ -225,6 +225,12 @@ class MockModuleInjector:
     def inject(self, step, step_args=None, steps=None, **kwargs):
         step.module = MockModule(self.progress)
 
+    def inject_all(self, workflow, param_map=None, ignore_tool_missing_exception=True, **kwargs):
+        param_map = param_map or {}
+        for step in workflow.steps:
+            step_args = param_map.get(step.id, {})
+            self.inject(step, step_args=step_args)
+
     def compute_runtime_state(self, step, step_args=None):
         pass
 
