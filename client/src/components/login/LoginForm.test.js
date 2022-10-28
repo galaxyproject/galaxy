@@ -13,7 +13,9 @@ describe("LoginForm", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         wrapper = mount(MountTarget, {
-            propsData: {},
+            propsData: {
+                sessionCsrfToken: "sessionCsrfToken",
+            },
             localVue,
             stubs: {
                 ExternalLogin: true,

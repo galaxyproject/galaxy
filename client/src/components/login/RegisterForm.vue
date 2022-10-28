@@ -119,7 +119,7 @@ export default {
         },
         sessionCsrfToken: {
             type: String,
-            default: null,
+            required: true,
         },
         termsUrl: {
             type: String,

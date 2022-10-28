@@ -13,7 +13,9 @@ describe("RegisterForm", () => {
     beforeEach(() => {
         axiosMock = new MockAdapter(axios);
         wrapper = mount(MountTarget, {
-            propsData: {},
+            propsData: {
+                sessionCsrfToken: "sessionCsrfToken",
+            },
             localVue,
         });
     });

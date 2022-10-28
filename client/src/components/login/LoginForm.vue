@@ -113,7 +113,7 @@ export default {
         },
         sessionCsrfToken: {
             type: String,
-            default: null,
+            required: true,
         },
         showWelcomeWithLogin: {
             type: Boolean,

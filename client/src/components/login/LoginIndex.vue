@@ -69,38 +69,33 @@ export default {
         },
         sessionCsrfToken: {
             type: String,
-            default: null,
+            required: true,
         },
         serverMailConfigured: {
             type: Boolean,
-            required: false,
+            default: false,
         },
         showWelcomeWithLogin: {
             type: Boolean,
-            required: false,
+            default: false,
         },
         termsUrl: {
             type: String,
-            required: false,
+            default: null,
         },
         welcomeUrl: {
             type: String,
-            required: false,
+            default: null,
         },
     },
     data() {
         return {
-            login: true,
+            showLogin: true,
         };
-    },
-    computed: {
-        showLogin() {
-            return this.login;
-        },
     },
     methods: {
         toggleLogin() {
-            this.login = !this.login;
+            this.showLogin = !this.showLogin;
         },
     },
 };
