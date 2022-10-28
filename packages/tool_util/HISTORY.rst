@@ -3,6 +3,17 @@ History
 
 .. to_doc
 
+22.1.4 (2022-10-28)
+-------------------
+
+* Add missing unittest_utils package to galaxy-tool-util
+
+22.1.3 (2022-10-27)
+-------------------
+
+* Pin minimum pyopenssl version when installing Conda
+* Add ``--strict-channel-priority`` to conda create/install commands if using conda >=4.7.5
+
 22.1.2 (2022-08-29)
 -------------------
 
