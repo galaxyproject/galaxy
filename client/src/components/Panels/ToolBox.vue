@@ -1,5 +1,5 @@
 <template>
-    <div class="unified-panel">
+    <div class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
