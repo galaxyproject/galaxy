@@ -1378,7 +1378,7 @@ class WriteStoreToPayload(StoreExportPayload):
     )
 
 
-class ExportAssociationBase(Model):
+class ObjectExportResponseBase(Model):
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -1401,7 +1401,7 @@ class ExportAssociationBase(Model):
     )
 
 
-class JobExportHistoryArchiveModel(ExportAssociationBase):
+class JobExportHistoryArchiveModel(ObjectExportResponseBase):
     job_id: EncodedDatabaseIdField = Field(
         ...,
         title="Job ID",
@@ -1439,8 +1439,7 @@ class ExportObjectRequestMetadata(Model):
 
 
 class ExportObjectResultMetadata(Model):
-    published: bool
-    # TODO: figure out what else is needed
+    import_uri: str
 
 
 class ExportObjectMetadata(Model):
@@ -1448,7 +1447,7 @@ class ExportObjectMetadata(Model):
     result_data: ExportObjectResultMetadata
 
 
-class ExportTaskAssociation(ExportAssociationBase):
+class ObjectExportTaskResponse(ObjectExportResponseBase):
     task_uuid: UUID4 = Field(
         ...,
         title="Task ID",
@@ -1463,7 +1462,7 @@ class JobExportHistoryArchiveListResponse(Model):
 
 
 class ExportTaskListResponse(Model):
-    __root__: List[ExportTaskAssociation]
+    __root__: List[ObjectExportTaskResponse]
     __accept_type__ = "application/vnd.galaxy.task.export+json"
 
 

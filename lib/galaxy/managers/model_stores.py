@@ -205,17 +205,20 @@ class ModelStoreManager:
             export_store.export_history(
                 history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
             )
-            if request.export_association_id:
-                export_metadata = ExportObjectMetadata(
-                    request_data=ExportObjectRequestMetadata(
-                        object_id=request.history_id,
-                        object_type=ExportObjectType.HISTORY,
-                        user_id=request.user.user_id,
-                        payload=WriteStoreToPayload(**request.dict()),
-                    ),
-                    result_data=ExportObjectResultMetadata(published=False),
-                )
-                self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
+            self.set_history_export_metadata(request)
+
+    def set_history_export_metadata(self, request: WriteHistoryTo):
+        if request.export_association_id:
+            export_metadata = ExportObjectMetadata(
+                request_data=ExportObjectRequestMetadata(
+                    object_id=request.history_id,
+                    object_type=ExportObjectType.HISTORY,
+                    user_id=request.user.user_id,
+                    payload=WriteStoreToPayload(**request.dict()),
+                ),
+                result_data=ExportObjectResultMetadata(import_uri=request.target_uri),
+            )
+            self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
 
     def import_model_store(self, request: ImportModelStoreTaskRequest):
         import_options = ImportOptions(
