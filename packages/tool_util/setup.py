@@ -45,6 +45,7 @@ PACKAGES = [
     'galaxy.tool_util.toolbox.filters',
     'galaxy.tool_util.toolbox.lineages',
     'galaxy.tool_util.toolbox.views',
+    "galaxy.tool_util.unittest_utils",
     'galaxy.tool_util.verify',
     'galaxy.tool_util.verify.asserts',
 ]
