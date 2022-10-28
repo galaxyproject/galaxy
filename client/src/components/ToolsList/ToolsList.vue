@@ -8,10 +8,10 @@
             <div class="mb-2">
                 <span class="row mb-1">
                     <span class="col">
-                        <h4 v-if="hasFilters" class="d-inline-block">Advanced Tool Search Results</h4>
-                        <h4 v-else class="d-inline-block">
+                        <h1 v-if="hasFilters" class="d-inline-block h-lg">Advanced Tool Search Results</h1>
+                        <h1 v-else class="d-inline-block h-lg">
                             Consolidated view of {{ itemsLoaded.length }} available tools.
-                        </h4>
+                        </h1>
                     </span>
                 </span>
                 <span v-if="itemsLoaded.length !== 0" class="row">
