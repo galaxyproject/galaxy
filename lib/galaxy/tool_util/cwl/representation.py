@@ -7,6 +7,7 @@ import os
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     NamedTuple,
     Optional,
 )
@@ -160,7 +161,7 @@ def dataset_wrapper_to_file_json(inputs_dir, dataset_wrapper):
     extra_files_path = dataset_wrapper.extra_files_path
     secondary_files_path = os.path.join(extra_files_path, "__secondary_files__")
     path = str(dataset_wrapper)
-    raw_file_object = {"class": "File"}
+    raw_file_object: Dict[str, Any] = {"class": "File"}
 
     if os.path.exists(secondary_files_path):
         safe_makedirs(inputs_dir)

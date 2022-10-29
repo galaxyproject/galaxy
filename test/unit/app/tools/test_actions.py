@@ -235,7 +235,7 @@ def quick_output(format, format_source=None, change_format_xml=None):
     if change_format_xml:
         test_output.change_format = XML(change_format_xml)
     else:
-        test_output.change_format = None
+        test_output.change_format = []
     return test_output
 
 

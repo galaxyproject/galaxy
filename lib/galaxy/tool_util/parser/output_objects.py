@@ -33,6 +33,9 @@ class ToolOutput(ToolOutputBase):
 
     (format, metadata_source, parent)
     """
+    count: int
+    tool: str
+    default_identifier_source: str
 
     dict_collection_visible_keys = [
         "name",

@@ -60,6 +60,7 @@ class MatchingCollections:
             self.subcollection_types[input_name] = subcollection_type
 
     def slice_collections(self):
+        assert self.linked_structure
         return self.linked_structure.walk_collections(self.collections)
 
     def subcollection_mapping_type(self, input_name):

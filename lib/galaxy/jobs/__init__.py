@@ -16,10 +16,13 @@ import traceback
 from json import loads
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
     TYPE_CHECKING,
+    Tuple,
+    Union,
 )
 
 import packaging.version
@@ -103,6 +106,8 @@ class JobDestination(Bunch):
     Provides details about where a job runs
     """
 
+    resubmit: List[Dict[str, Any]]
+
     def __init__(self, **kwds):
         self["id"] = None
         self["url"] = None
@@ -152,9 +157,9 @@ def config_exception(e, file):
 
 
 def job_config_xml_to_dict(config, root):
-    config_dict = {}
+    config_dict: Dict[str, Any] = {}
 
-    runners = {}
+    runners: Dict[str, Dict[str, Any]] = {}
     config_dict["runners"] = runners
 
     # Parser plugins section populate 'runners' and 'dynamic' in config_dict.
@@ -325,7 +330,7 @@ class JobConfiguration(ConfiguresHandlers):
         self.handler_assignment_methods = None
         self.handler_assignment_methods_configured = False
         self.handler_max_grab = None
-        self.handler_ready_window_size = None
+        self.handler_ready_window_size = JobConfiguration.DEFAULT_HANDLER_READY_WINDOW_SIZE
         self.destinations = {}
         self.default_destination_id = None
         self.tools = {}
@@ -479,7 +484,7 @@ class JobConfiguration(ConfiguresHandlers):
                 resubmits = self.default_resubmits
                 job_destination.resubmit = resubmits
 
-            self.destinations[environment_id] = (job_destination,)
+            self.destinations[environment_id] = [job_destination]
             if job_destination.tags is not None:
                 for tag in job_destination.tags:
                     if tag not in self.destinations:
@@ -528,13 +533,11 @@ class JobConfiguration(ConfiguresHandlers):
             else:
                 self.tool_classes[tool_class].append(jtc)
 
-        types = dict(
-            registered_user_concurrent_jobs=int,
-            anonymous_user_concurrent_jobs=int,
-            walltime=str,
-            total_walltime=str,
-            output_size=util.size_to_bytes,
-        )
+        types: Dict[str, Callable] = dict(registered_user_concurrent_jobs=int,
+                                          anonymous_user_concurrent_jobs=int,
+                                          walltime=str,
+                                          total_walltime=str,
+                                          output_size=util.size_to_bytes)
 
         # Parse job limits
         for limit_dict in job_config_dict.get("limits", []):
@@ -937,6 +940,9 @@ class JobConfiguration(ConfiguresHandlers):
 
 
 class HasResourceParameters:
+    get_job: Callable
+    app: MinimalManagerApp
+
     def get_resource_parameters(self, job=None):
         # Find the dymically inserted resource parameters and give them
         # to rule.
@@ -2465,7 +2471,7 @@ class TaskWrapper(JobWrapper):
         if task.prepare_input_files_cmd is not None:
             self.prepare_input_files_cmds = [task.prepare_input_files_cmd]
         else:
-            self.prepare_input_files_cmds = None
+            self.prepare_input_files_cmds = None  # type: ignore[assignment]
         self.status = task.states.NEW
 
     def can_split(self):

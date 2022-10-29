@@ -2,6 +2,10 @@ import json
 import logging
 import math
 from typing import Optional
+from typing import (
+    Any,
+    List
+)
 
 import packaging.version
 
@@ -59,7 +63,7 @@ class CwlToolSource(ToolSource):
         return "$__cwl_command"
 
     def parse_environment_variables(self):
-        environment_variables = []
+        environment_variables: List[Any] = []
         # TODO: Is this even possible from here, should instead this be moved
         # into the job.
 
@@ -142,7 +146,7 @@ class CwlToolSource(ToolSource):
         output.metadata_source = ""
         output.parent = None
         output.label = None
-        output.count = None
+        output.count = 1
         output.filters = []
         output.tool = tool
         output.hidden = ""

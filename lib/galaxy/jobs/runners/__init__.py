@@ -652,6 +652,8 @@ class JobState:
     """
 
     runner_states = runner_states
+    stop_job: bool
+    fail_message: str
 
     def __init__(self, job_wrapper: "JobWrapper", job_destination: "JobDestination"):
         self.runner_state_handled = False

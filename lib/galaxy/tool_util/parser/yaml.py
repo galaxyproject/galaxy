@@ -1,5 +1,6 @@
 import json
 from typing import (
+    Any,
     Dict,
     List,
 )
@@ -155,7 +156,6 @@ class YamlToolSource(ToolSource):
             inherit_metadata = output_dict.get("inherit_metadata", None)
         default_format_source = output_dict.get("format_source", None)
         default_metadata_source = output_dict.get("metadata_source", "")
-        filters = []
         dataset_collector_descriptions = dataset_collector_descriptions_from_output_dict(output_dict)
 
         structure = ToolOutputCollectionStructure(
@@ -168,7 +168,7 @@ class YamlToolSource(ToolSource):
             name,
             structure,
             label=label,
-            filters=filters,
+            filters=[],
             default_format=default_format,
             inherit_format=inherit_format,
             inherit_metadata=inherit_metadata,
@@ -178,7 +178,7 @@ class YamlToolSource(ToolSource):
         return output_collection
 
     def parse_tests_to_dict(self):
-        tests = []
+        tests: List[Dict[str, Any]] = []
         rval = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
@@ -231,7 +231,11 @@ def _parse_test(i, test_dict):
             name = output["name"]
             value = output.get("file", None)
             attributes = output
-            new_outputs.append((name, value, attributes))
+            new_outputs.append({
+                "name": name,
+                "value": value,
+                "attributes": attributes
+            })
 
     for output in new_outputs:
         attributes = output["attributes"]

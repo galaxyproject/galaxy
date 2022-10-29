@@ -109,7 +109,7 @@ class LocalJobRunner(BaseJobRunner):
                 preexec_fn=os.setpgrp,
             )
 
-            proc.terminated_by_shutdown = False
+            proc.terminated_by_shutdown = False  # type: ignore[attr-defined]
             with self._proc_lock:
                 self._procs.append(proc)
 
@@ -130,7 +130,7 @@ class LocalJobRunner(BaseJobRunner):
                 with self._proc_lock:
                     self._procs.remove(proc)
 
-            if proc.terminated_by_shutdown:
+            if proc.terminated_by_shutdown:  # type: ignore[attr-defined]
                 self._fail_job_local(job_wrapper, "job terminated by Galaxy shutdown")
                 return
 
