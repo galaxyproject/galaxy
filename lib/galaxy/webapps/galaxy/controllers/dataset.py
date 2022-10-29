@@ -459,7 +459,8 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             payload_permissions = {}
             for key, value in {"DATASET_MANAGE_PERMISSIONS": "manage_ids", "DATASET_ACCESS": "access_ids"}.items():
                 role_ids = util.listify(payload.get(key))
-                payload_permissions[f"{value}[]"] = role_ids
+                decoded_role_ids = list(map(self.decode_id, role_ids))
+                payload_permissions[f"{value}[]"] = decoded_role_ids
 
             self.hda_manager.update_permissions(
                 trans,
