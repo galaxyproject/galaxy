@@ -299,14 +299,13 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repositories_select_field.add_option(option_label, option_value)
         return repositories_select_field
 
-    def clean_repository_metadata(self, changeset_revisions):
+    def _clean_repository_metadata(self, changeset_revisions):
         assert self.repository
         # Delete all repository_metadata records associated with the repository that have
         # a changeset_revision that is not in changeset_revisions.  We sometimes see multiple
         # records with the same changeset revision value - no idea how this happens. We'll
         # assume we can delete the older records, so we'll order by update_time descending and
         # delete records that have the same changeset_revision we come across later.
-        changeset_revisions_checked = []
         for repository_metadata in (
             self.sa_session.query(self.app.model.RepositoryMetadata)
             .filter(self.app.model.RepositoryMetadata.table.c.repository_id == self.repository.id)
@@ -316,7 +315,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             )
         ):
             changeset_revision = repository_metadata.changeset_revision
-            if changeset_revision in changeset_revisions_checked or changeset_revision not in changeset_revisions:
+            if changeset_revision not in changeset_revisions:
                 self.sa_session.delete(repository_metadata)
                 session = self.sa_session()
                 with transaction(session):
@@ -1117,7 +1116,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             basic_util.remove_dir(work_dir)
         # Delete all repository_metadata records for this repository that do not have a changeset_revision
         # value in changeset_revisions.
-        self.clean_repository_metadata(changeset_revisions)
+        self._clean_repository_metadata(changeset_revisions)
         # Set tool version information for all downloadable changeset revisions.  Get the list of changeset
         # revisions from the changelog.
         self.reset_all_tool_versions(repo)
