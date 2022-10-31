@@ -1,4 +1,4 @@
-<tool id="Show beginning1" name="Select first" version="1.0.1" profile="20.05">
+<tool id="Show beginning1" name="Select first" version="1.0.2" profile="20.05">
   <description>lines from a dataset</description>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
@@ -6,7 +6,7 @@
   <requirements>
     <requirement type="package" version="8.31">coreutils</requirement>
   </requirements>
-  <command detect_errors="exit_code"><![CDATA[
+  <command><![CDATA[
     #if $header
       #set $n = int($lineNum) + 1
     #else
