@@ -2,7 +2,7 @@
 import Draggable from "vuedraggable";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import FormCard from "./FormCard";
-import { defineAsyncComponent, computed } from "vue";
+import { defineAsyncComponent, computed, ref } from "vue";
 
 const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 
@@ -26,10 +26,20 @@ const props = defineProps({
 });
 
 const emit = defineEmits("insert", "delete", "changed");
+const uidCounter = ref(0);
 
 const cache = computed({
     get() {
-        return props.input.cache;
+        const items = props.input.cache;
+
+        items.forEach((item) => {
+            if (!item.uid) {
+                item.uid = uidCounter.value;
+                uidCounter.value += 1;
+            }
+        });
+
+        return items;
     },
     set(val) {
         emit("changed");
@@ -72,10 +82,10 @@ library.add(faPlus, faTrashAlt);
             <div class="font-weight-bold mb-2">{{ props.input.title }}</div>
             <div v-if="props.input.help" class="mb-2" data-description="repeat help">{{ props.input.help }}</div>
         </div>
-        <Draggable v-model="cache" draggable="card">
+        <Draggable v-model="cache" :options="{ handle: '.portlet-header' }">
             <FormCard
                 v-for="(cache, cacheId) in cache"
-                :key="cacheId"
+                :key="cache.uid"
                 data-description="repeat block"
                 class="card"
                 :title="getTitle(cacheId)">
@@ -96,11 +106,11 @@ library.add(faPlus, faTrashAlt);
                     <FormNode v-bind="props.passthroughProps" :inputs="cache" :prefix="getPrefix(cacheId)" />
                 </template>
             </FormCard>
-
-            <b-button v-if="!props.sustainRepeats" slot="footer" @click="onInsert()">
-                <font-awesome-icon icon="plus" class="mr-1" />
-                <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
-            </b-button>
         </Draggable>
+
+        <b-button v-if="!props.sustainRepeats" @click="onInsert()">
+            <font-awesome-icon icon="plus" class="mr-1" />
+            <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
+        </b-button>
     </div>
 </template>
