@@ -362,6 +362,11 @@ export default {
         },
     },
     watch: {
+        id(newId, oldId) {
+            if (oldId) {
+                this._loadCurrent(newId);
+            }
+        },
         annotation(newAnnotation, oldAnnotation) {
             if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
@@ -490,7 +495,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `/workflows/edit?id=${contentId}`;
+            const editUrl = `/workflows/edit?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {
@@ -563,7 +568,7 @@ export default {
                 .then((response) => {
                     this.onWorkflowMessage("Workflow saved as", "success");
                     this.hideModal();
-                    this.onNavigate(`${getAppRoot()}workflow/editor?id=${response.data}`, true);
+                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`, true);
                 })
                 .catch((response) => {
                     this.onWorkflowError("Saving workflow failed, please contact an administrator.");

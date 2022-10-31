@@ -619,6 +619,29 @@ steps:
         self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
 
     @selenium_test
+    def test_edit_subworkflow(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  nested_workflow:
+    run:
+        class: GalaxyWorkflow
+        inputs: []
+        steps:
+          - tool_id: create_2
+            label: create_2
+"""
+        )
+        editor = self.components.workflow_editor
+        node = editor.node._(label="nested_workflow")
+        node.wait_for_and_click()
+        editor.edit_subworkflow.wait_for_and_click()
+        node = editor.node._(label="create_2")
+        node.wait_for_and_click()
+
+    @selenium_test
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.workflow_index_open()
