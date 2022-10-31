@@ -121,9 +121,9 @@ class CondaContext(installable.InstallableContext):
         self._conda_version = packaging.version.parse(info["conda_version"])
         self._conda_build_available = False
         conda_build_version = info.get("conda_build_version")
-        if conda_build_version != "not installed":
+        if conda_build_version and conda_build_version != "not installed":
             try:
-                self._conda_version = packaging.version.parse(conda_build_version)
+                packaging.version.parse(conda_build_version)
                 self._conda_build_available = True
             except Exception:
                 pass
