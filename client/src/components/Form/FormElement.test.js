@@ -67,4 +67,9 @@ describe("FormElement", () => {
         await wrapper.setProps({ attributes: { titleonly: true } });
         expect(wrapper.find("div[id='input']").text()).toEqual("form-hidden");
     });
+
+    it("displays as the correct type if is_workflow is true", async () => {
+        await wrapper.setProps({ type: "data_column", attributes: { is_workflow: true } });
+        expect(wrapper.find("div[id='input']").text()).toEqual("form-text");
+    });
 });

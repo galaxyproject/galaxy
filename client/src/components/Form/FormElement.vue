@@ -35,10 +35,10 @@
                 v-else-if="
                     type === 'text' ||
                     type === 'password' ||
-                    (type === 'select' && attrs.isWorkflow == true) ||
-                    (type === 'genomebuild' && attrs.isWorkflow == true) ||
-                    (type === 'data_column' && attrs.isWorkflow == true) ||
-                    (type === 'group_tag' && attrs.isWorkflow == true)
+                    (type === 'select' && attrs.is_workflow == true) ||
+                    (type === 'genomebuild' && attrs.is_workflow == true) ||
+                    (type === 'data_column' && attrs.is_workflow == true) ||
+                    (type === 'group_tag' && attrs.is_workflow == true)
                 "
                 :id="id"
                 v-model="currentValue"
