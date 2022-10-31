@@ -69,7 +69,7 @@ jobs:
           mapfile -t TOOL_ARRAY < tool_list.txt
           for CONVERTER in "${TOOL_ARRAY[@]}"; do
             json=$(mktemp -u -p json_output --suff .json)
-            planemo test --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "$CONVERTER" --test_data 'galaxy root/test-data/' || EXIT_CODE=$?
+            planemo test --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "$CONVERTER" --test_data 'galaxy root/test-data/' --no_conda_auto_init --biocontainers || EXIT_CODE=$?
           done
           planemo merge_test_reports json_output/*.json tool_test_output.json
           planemo test_reports tool_test_output.json --test_output tool_test_output.html
