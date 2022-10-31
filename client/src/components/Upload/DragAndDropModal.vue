@@ -1,92 +1,25 @@
 <script setup>
-import { useEventListener } from "@vueuse/core";
 import { ref, computed } from "vue";
-
-/** prevents any internal drag-events from opening the modal */
-const dragBlocked = ref(false);
-
-const isDragOver = ref(false);
-
-const modal = ref(null);
-
-useEventListener(
-    document.body,
-    "dragstart",
-    (event) => {
-        dragBlocked.value = true;
-    },
-    true
-);
-
-useEventListener(
-    document.body,
-    "dragover",
-    (event) => {
-        if (!dragBlocked.value) {
-            // prevent the browser from opening the file
-            event.preventDefault();
-        }
-    },
-    true
-);
-
-useEventListener(document.body, "drop", (event) => {
-    if (!dragBlocked.value) {
-        // prevent the browser from opening the file
-        event.preventDefault();
-        modal.value.hide();
-    }
-}),
-    true;
-
-useEventListener(
-    document.body,
-    "dragend",
-    (event) => {
-        dragBlocked.value = false;
-        isDragOver.value = false;
-        modal.value.hide();
-    },
-    true
-);
-
-useEventListener(
-    document.body,
-    "dragenter",
-    (event) => {
-        if (!dragBlocked.value && !isAnyModalOpen()) {
-            isDragOver.value = false;
-            modal.value.show();
-            event.preventDefault();
-        }
-    },
-    true
-);
-
-function isAnyModalOpen() {
-    return document.querySelectorAll(".modal.show").length > 0;
-}
+import { useFileDrop } from "composables/useFileDrop";
 
 const modalContentElement = ref(null);
+const { isFileOverDocument, isFileOverDropZone } = useFileDrop(
+    modalContentElement,
+    (e) => console.log(e.dataTransfer),
+    true
+);
+
 const modalClass = computed(() => {
-    if (isDragOver.value) {
+    if (isFileOverDropZone.value) {
         return "ui-drag-and-drop-modal drag-over";
     } else {
         return "ui-drag-and-drop-modal";
     }
 });
-
-useEventListener(modalContentElement, "dragenter", () => {
-    isDragOver.value = true;
-});
-
-useEventListener(modalContentElement, "dragleave", () => {
-    isDragOver.value = false;
-});
 </script>
 
 <template>
-    <b-modal ref="modal" :modal-class="modalClass" hide-header hide-footer centered>
+    <b-modal v-model="isFileOverDocument" :modal-class="modalClass" hide-header hide-footer centered>
         <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload them</div>
     </b-modal>
 </template>
@@ -117,10 +50,10 @@ useEventListener(modalContentElement, "dragleave", () => {
 
     &.drag-over {
         .modal-content {
-            border-color: $brand-success;
+            border-color: lighten($brand-info, 30%);
 
             .inner-content {
-                color: $brand-success;
+                color: lighten($brand-info, 30%);
             }
         }
     }

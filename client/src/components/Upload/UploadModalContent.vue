@@ -35,7 +35,6 @@ import RulesInput from "./RulesInput";
 import LoadingSpan from "components/LoadingSpan";
 import { uploadModelsToPayload } from "./helpers";
 import { BTabs, BTab } from "bootstrap-vue";
-import { commonProps } from "./helpers";
 
 export default {
     components: {
@@ -50,7 +49,29 @@ export default {
     props: {
         currentHistoryId: { type: String, required: true },
         currentUserId: { type: String, default: "" },
-        ...commonProps,
+        uploadPath: { type: String, required: true },
+        chunkUploadSize: { type: Number, default: 1024 },
+        fileSourcesConfigured: { type: Boolean, default: false },
+        ftpUploadSite: { type: String, default: "" },
+        defaultDbKey: { type: String, default: UploadUtils.DEFAULT_DBKEY },
+        defaultExtension: { type: String, default: UploadUtils.DEFAULT_EXTENSION },
+        datatypesDisableAuto: { type: Boolean, default: false },
+        formats: { type: Array, default: null },
+        multiple: {
+            // Restrict the forms to a single dataset upload if false
+            type: Boolean,
+            default: true,
+        },
+        hasCallback: {
+            // Return uploads when done if supplied.
+            type: Boolean,
+            default: false,
+        },
+        selectable: { type: Boolean, default: false },
+        auto: {
+            type: Object,
+            default: () => UploadUtils.AUTO_EXTENSION,
+        },
     },
     data: function () {
         return {
