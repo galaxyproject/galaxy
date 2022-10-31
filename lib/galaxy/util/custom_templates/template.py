@@ -8,10 +8,11 @@ the Galaxy root (config/templates).
 
 import os
 from pathlib import Path
+
 from jinja2 import Environment
 
 DEFAULT_TEMPLATES_DIR = Path("lib/galaxy/config/templates")
-TEMPLATE_SEP = '>>>>>>'  # Used to split templates into doc/body sections
+TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
 def render(template_path: str, context: dict, custom_templates_dir: str) -> str:
@@ -24,7 +25,7 @@ def render(template_path: str, context: dict, custom_templates_dir: str) -> str:
 
 def _get_template_body(template: str) -> str:
     """Remove comment/doc header to return the template body."""
-    return template.split(TEMPLATE_SEP, 1)[-1].split('\n', 1)[1]
+    return template.split(TEMPLATE_SEP, 1)[-1].split("\n", 1)[1]
 
 
 def _get_template_path(relpath: str, custom_templates_dir: str) -> str:

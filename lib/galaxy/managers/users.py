@@ -1,9 +1,9 @@
 """
 Manager and Serializer for Users.
 """
-import os
 import hashlib
 import logging
+import os
 import random
 import socket
 import time
@@ -41,8 +41,8 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
-from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.util.custom_templates import template
+from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
@@ -517,19 +517,19 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         )
         host = self.__get_host(trans)
         template_context = {
-            'name': escape(username),
-            'user_email': escape(email),
-            'date': datetime.utcnow().strftime("%D"),
-            'hostname': trans.request.host,
-            'activation_url': activation_link,
-            'terms_url': self.app.config.terms_url,
-            'contact_email': self.app.config.error_email_to,
-            'instance_resource_url': self.app.config.instance_resource_url,
-            'custom_message': self.app.config.custom_activation_email_message,
-            'expiry_days': self.app.config.activation_grace_period,
+            "name": escape(username),
+            "user_email": escape(email),
+            "date": datetime.utcnow().strftime("%D"),
+            "hostname": trans.request.host,
+            "activation_url": activation_link,
+            "terms_url": self.app.config.terms_url,
+            "contact_email": self.app.config.error_email_to,
+            "instance_resource_url": self.app.config.instance_resource_url,
+            "custom_message": self.app.config.custom_activation_email_message,
+            "expiry_days": self.app.config.activation_grace_period,
         }
-        body = template.render('mail/activation-email.txt', template_context, self.app.config.templates_dir)
-        html = template.render('mail/activation-email.html', template_context, self.app.config.templates_dir)
+        body = template.render("mail/activation-email.txt", template_context, self.app.config.templates_dir)
+        html = template.render("mail/activation-email.html", template_context, self.app.config.templates_dir)
         to = email
         frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = "Galaxy Account Activation"
