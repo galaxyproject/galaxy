@@ -481,6 +481,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         try:
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
             return self.__stream_dataset_collection(trans, dataset_collection_instance)
+        except (exceptions.ItemAccessibilityException, exceptions.RequestParameterInvalidException):
+            raise
         except Exception:
             error_message = "Error in API while creating dataset collection archive"
             log.exception(error_message)
