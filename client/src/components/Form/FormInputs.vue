@@ -27,14 +27,13 @@
             </div>
             <div v-else-if="input.type == 'repeat'">
                 <FormRepeat
-                    v-model="input.cache"
                     :input="input"
                     :sustain-repeats="sustainRepeats"
                     :passthrough-props="$props"
                     :prefix="prefix"
                     @insert="() => repeatInsert(input)"
                     @delete="(id) => repeatDelete(input, id)"
-                    @change="onChangeForm" />
+                    @swap="(a, b) => repeatSwap(input, a, b)" />
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
@@ -148,6 +147,10 @@ export default {
         },
         repeatDelete(input, cacheId) {
             input.cache.splice(cacheId, 1);
+            this.onChangeForm();
+        },
+        repeatSwap(input, a, b) {
+            [input.cache[a], input.cache[b]] = [input.cache[b], input.cache[a]];
             this.onChangeForm();
         },
     },
