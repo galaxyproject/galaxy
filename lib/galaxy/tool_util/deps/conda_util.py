@@ -110,9 +110,12 @@ class CondaContext(installable.InstallableContext):
         if conda_exec is None:
             self.conda_exec = self._bin("conda")
         self.ensure_channels: List[str] = listify(ensure_channels)
+        self.use_local = use_local
+        self._reset_conda_properties()
+
+    def _reset_conda_properties(self):
         self._conda_version = None
         self._conda_build_available = None
-        self.use_local = use_local
 
     @property
     def conda_version(self):
@@ -283,6 +286,8 @@ class CondaContext(installable.InstallableContext):
             ret = self.exec_command("install", install_args, stdout_path=stdout_path)
             if ret == 0:
                 break
+        if ret == 0:
+            self._reset_conda_properties()
         return ret
 
     def exec_clean(self, args=None, quiet=False):
