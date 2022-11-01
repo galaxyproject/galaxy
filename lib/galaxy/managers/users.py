@@ -59,6 +59,8 @@ you may want to notify an administrator.
 If you're having trouble using the link when clicking it from email client, you
 can also copy and paste it into your browser.
 """
+TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.txt"
+HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.html"
 
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
@@ -528,8 +530,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             "custom_message": self.app.config.custom_activation_email_message,
             "expiry_days": self.app.config.activation_grace_period,
         }
-        body = template.render("mail/activation-email.txt", template_context, self.app.config.templates_dir)
-        html = template.render("mail/activation-email.html", template_context, self.app.config.templates_dir)
+        body = template.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        html = template.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
         to = email
         frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = "Galaxy Account Activation"

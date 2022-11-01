@@ -1,8 +1,8 @@
 """Test custom template configuration and rendering."""
 
 from galaxy.util.custom_templates import template
+from galaxy.managers.users import TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH as TEMPLATE_RELPATH
 
-TEMPLATE_RELPATH = "mail/activation-email.txt"
 CONTEXT = {"name": "Jane Doe"}
 CUSTOM_TEMPLATE = """
 Here's my custom template. It starts with a comment section to let admins
