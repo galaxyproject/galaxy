@@ -47,7 +47,7 @@ colorama==0.4.5; sys_platform == "win32" and python_version >= "3.7" and python_
 coloredlogs==15.0.1; python_version >= "3.6" and python_full_version < "3.0.0" and python_version < "4" or python_version >= "3.6" and python_version < "4" and python_full_version >= "3.5.0"
 commonmark==0.9.1; python_full_version >= "3.6.3" and python_full_version < "4.0.0"
 coverage==6.4.1; python_version >= "3.7"
-cryptography==37.0.2; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4") or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4")
+cryptography==38.0.3; python_version >= "3.7" and python_full_version < "3.0.0" and python_version < "4" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4") or python_full_version >= "3.5.0" and python_version < "4" and python_version >= "3.7" and (python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4")
 cwltest==2.2.20210901154959; python_version >= "3.6" and python_version < "4"
 cwltool==3.1.20211107152837; python_version >= "3.6" and python_version < "4"
 cycler==0.11.0; python_version >= "3.7"
