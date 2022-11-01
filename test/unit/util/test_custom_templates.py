@@ -10,13 +10,14 @@ know how to use it.
 
 >>>>>> The actual template starts from the next line
 This is my custom template!
-
 Name: {{ name }}
-
 """
 DEFAULT_TEMPLATE_HEADER_SUBSTRING = "The following variables are available"
 DEFAULT_TEMPLATE_OUTPUT_SUBSTRING = f"Hello {CONTEXT['name']}"
-CUSTOM_TEMPLATE_OUTPUT_SUBSTRING = f"Name: {CONTEXT['name']}"
+CUSTOM_TEMPLATE_OUTPUT = (
+    "This is my custom template!\n"
+    f"Name: {CONTEXT['name']}"
+)
 
 
 def test_it_can_render_a_default_template(tmp_path):
@@ -46,4 +47,4 @@ def test_it_can_render_a_custom_template(tmp_path):
         CONTEXT,
         custom_templates_dir,
     )
-    assert CUSTOM_TEMPLATE_OUTPUT_SUBSTRING in output
+    assert output == CUSTOM_TEMPLATE_OUTPUT
