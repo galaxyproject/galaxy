@@ -23,7 +23,6 @@ import tempfile
 import textwrap
 import threading
 import time
-import typing
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
@@ -33,6 +32,9 @@ from hashlib import md5
 from os.path import relpath
 from typing import (
     Any,
+    Iterable,
+    Iterator,
+    List,
     Optional,
     overload,
 )
@@ -257,7 +259,7 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
         yield data
 
 
-def chunk_iterable(it: typing.Iterable, size: int = 1000):
+def chunk_iterable(it: Iterable, size: int = 1000) -> Iterator[tuple]:
     """
     Break an iterable into chunks of ``size`` elements.
 
@@ -786,7 +788,7 @@ def ready_name_for_url(raw_name):
     return slug_base
 
 
-def which(file):
+def which(file: str) -> Optional[str]:
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
@@ -1044,7 +1046,7 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False) -> typing.List[Any]:
+def listify(item, do_strip: bool = False) -> List[Any]:
     """
     Make a single item a single item list.
 
