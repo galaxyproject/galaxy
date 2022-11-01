@@ -3,17 +3,7 @@
 from galaxy.util.custom_templates import template
 
 TEMPLATE_RELPATH = "mail/activation-email.txt"
-CONTEXT = {
-    "name": "Jane Doe",
-    "user_email": "jane@example.com",
-    "date": "01-01-2021",
-    "hostname": "example.galaxy.org",
-    "activation_url": "https://example.galaxy.org/fake-activation-link",
-    "terms_url": "https://example.galaxy.org/terms",
-    "contact_email": "contact@example.galaxy.org",
-    "instance_resource_url": "https://example.galaxy.org/resources",
-    "expiry_days": 7,
-}
+CONTEXT = {"name": "Jane Doe"}
 CUSTOM_TEMPLATE = """
 Here's my custom template. It starts with a comment section to let admins
 know how to use it.
