@@ -45,7 +45,7 @@ IS_OS_X = sys.platform == "darwin"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_PACKAGE_SPECS = ("conda>=22.9.0", "'pyopenssl>=22.1.0'")
+CONDA_PACKAGE_SPECS = ("conda>=22.9.0", "conda-libmamba-solver", "'pyopenssl>=22.1.0'")
 CONDA_BUILD_VERSION = "3.17.8"
 USE_LOCAL_DEFAULT = False
 
@@ -87,6 +87,7 @@ class CondaContext(installable.InstallableContext):
     installable_description = "Conda"
     _conda_build_available: Optional[bool]
     _conda_version: Optional[Union[packaging.version.Version, packaging.version.LegacyVersion]]
+    _experimental_solver_available: Optional[bool]
 
     def __init__(
         self,
@@ -127,6 +128,7 @@ class CondaContext(installable.InstallableContext):
     def _reset_conda_properties(self) -> None:
         self._conda_version = None
         self._conda_build_available = None
+        self._experimental_solver_available = None
 
     @property
     def conda_version(self) -> Union[packaging.version.Version, packaging.version.LegacyVersion]:
@@ -162,6 +164,17 @@ class CondaContext(installable.InstallableContext):
             for channel in self.ensure_channels:
                 override_channels_args.extend(["--channel", channel])
         return override_channels_args
+
+    @property
+    def _experimental_solver_args(self) -> List[str]:
+        if self._experimental_solver_available is None:
+            self._experimental_solver_available = self.conda_version >= packaging.version.parse(
+                "4.12.0"
+            ) and self.is_package_installed("conda-libmamba-solver")
+        if self._experimental_solver_available:
+            return ["--experimental-solver", "libmamba"]
+        else:
+            return []
 
     def ensure_conda_build_installed_if_needed(self) -> int:
         if self.use_local and not self.conda_build_available:
@@ -248,6 +261,20 @@ class CondaContext(installable.InstallableContext):
             if conda_exec_home:
                 shutil.rmtree(conda_exec_home, ignore_errors=True)
 
+    def is_package_installed(self, pkg_name: str, version: Optional[str] = None) -> bool:
+        list_args = ["-f", "--json", pkg_name]
+        with tempfile.NamedTemporaryFile("r") as temp:
+            ret = self.exec_command("list", list_args, stdout_path=temp.name)
+            if ret != 0:
+                log.error("Failed to execute 'conda list'")
+                return False
+            out = json.load(temp)
+        if not out:
+            return False
+        if not version:
+            return True
+        return any(match["version"] == version for match in out)
+
     def exec_create(self, args: List[str], allow_local: bool = True, stdout_path: Optional[str] = None) -> int:
         """
         Return the process exit code (i.e. 0 in case of success).
@@ -261,6 +288,7 @@ class CondaContext(installable.InstallableContext):
                     continue
             if allow_local and self.use_local:
                 create_args.append("--use-local")
+            create_args.extend(self._experimental_solver_args)
             create_args.extend(self._override_channels_args)
             create_args.extend(args)
             ret = self.exec_command("create", create_args, stdout_path=stdout_path)
@@ -291,6 +319,7 @@ class CondaContext(installable.InstallableContext):
                     continue
             if allow_local and self.use_local:
                 install_args.append("--use-local")
+            install_args.extend(self._experimental_solver_args)
             install_args.extend(self._override_channels_args)
             install_args.extend(args)
             ret = self.exec_command("install", install_args, stdout_path=stdout_path)
