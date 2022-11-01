@@ -1,7 +1,7 @@
 """Test custom template configuration and rendering."""
 
 from galaxy.util.custom_templates import template
-from galaxy.managers.users import TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH as TEMPLATE_RELPATH
+from galaxy.managers.users import HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH as TEMPLATE_RELPATH
 
 CONTEXT = {"name": "Jane Doe"}
 CUSTOM_TEMPLATE = """
@@ -13,7 +13,7 @@ This is my custom template!
 Name: {{ name }}
 """
 DEFAULT_TEMPLATE_HEADER_SUBSTRING = "The following variables are available"
-DEFAULT_TEMPLATE_OUTPUT_SUBSTRING = f"Hello {CONTEXT['name']}"
+DEFAULT_TEMPLATE_OUTPUT_SUBSTRING = "<!DOCTYPE html>"
 CUSTOM_TEMPLATE_OUTPUT = (
     "This is my custom template!\n"
     f"Name: {CONTEXT['name']}"
@@ -30,7 +30,7 @@ def test_it_can_render_a_default_template(tmp_path):
     )
     # Make sure it's parsed out the doc header
     assert DEFAULT_TEMPLATE_HEADER_SUBSTRING not in output
-    # Make sure the template content is correct
+    # Make sure the template content is present
     assert DEFAULT_TEMPLATE_OUTPUT_SUBSTRING in output
 
 
