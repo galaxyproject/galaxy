@@ -2212,6 +2212,16 @@ mapping:
           implication that this will give Galaxy Admins access to anything your Galaxy
           user has access to.
 
+      tool_path_allowlist:
+        type: seq
+        sequence:
+          - type: str
+        required: false
+        desc: |
+          List of paths that are valid targets of symbolic links outside of the current tool directory.
+          Currently only used when staging files to a remote location using a pulsar job runner.
+          This option should only be useful during local development and in continuous integration environments.
+
       disable_library_comptypes:
         type: str
         required: false

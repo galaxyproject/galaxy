@@ -3051,6 +3051,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~~~
+``tool_path_allowlist``
+~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    List of paths that are valid targets of symbolic links outside of
+    the current tool directory. Currently only used when staging files
+    to a remote location using a pulsar job runner. This option should
+    only be useful during local development and in continuous
+    integration environments.
+:Default: ``[]``
+:Type: seq
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``disable_library_comptypes``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

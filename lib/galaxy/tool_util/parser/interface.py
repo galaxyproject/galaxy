@@ -179,7 +179,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return boolean indicating ... I have no clue..."""
         return False
 
-    def parse_required_files(self) -> Optional["RequiredFiles"]:
+    def parse_required_files(self, tool_path_allowlist: Optional[List[str]] = None) -> Optional["RequiredFiles"]:
         """Parse explicit RequiredFiles object or return None to let Galaxy decide implicit logic."""
         return None
 
@@ -473,17 +473,25 @@ class TestCollectionDef:
 
 
 class RequiredFiles:
-    def __init__(self, includes: List[Dict], excludes: List[Dict], extend_default_excludes: bool):
+    def __init__(
+        self,
+        includes: List[Dict],
+        excludes: List[Dict],
+        extend_default_excludes: bool,
+        tool_path_allowlist: Optional[List[str]] = None,
+    ):
         self.includes = includes
         self.excludes = excludes
         self.extend_default_excludes = extend_default_excludes
+        self.tool_path_allowlist = tool_path_allowlist or []
 
     @staticmethod
     def from_dict(as_dict):
         extend_default_excludes: bool = as_dict.get("extend_default_excludes", True)
         includes: List = as_dict.get("includes", [])
         excludes: List = as_dict.get("excludes", [])
-        return RequiredFiles(includes, excludes, extend_default_excludes)
+        tool_path_allowlist = as_dict.get("tool_path_allowlist", [])
+        return RequiredFiles(includes, excludes, extend_default_excludes, tool_path_allowlist)
 
     def find_required_files(self, tool_directory: str) -> List[str]:
         def matches(ie_list: List, rel_path: str):
@@ -511,7 +519,7 @@ class RequiredFiles:
             excludes.append({"path": ".hg", "path_type": "prefix"})
 
         files: List[str] = []
-        for (dirpath, _, filenames) in safe_walk(tool_directory):
+        for (dirpath, _, filenames) in safe_walk(tool_directory, allowlist=self.tool_path_allowlist):
             for filename in filenames:
                 rel_path = join(dirpath, filename).replace(tool_directory + os.path.sep, "")
                 if matches(self.includes, rel_path) and not matches(self.excludes, rel_path):

@@ -1,5 +1,9 @@
 import os
 from pathlib import Path
+from typing import (
+    List,
+    Optional,
+)
 
 from .test_parsing import BaseLoaderTestCase
 
@@ -92,9 +96,9 @@ TOOL_REQUIRED_FILES_XML_DISABLED_DEFAULT_EXCLUSIONS = """
 class BaseRequiredFilesTestCase(BaseLoaderTestCase):
     source_file_name = "required_files.xml"
 
-    def _required_files(self, tool_directory: str):
+    def _required_files(self, tool_directory: str, tool_path_allowlist: Optional[List[str]] = None):
         tool_source = self._tool_source
-        required_files = tool_source.parse_required_files()
+        required_files = tool_source.parse_required_files(tool_path_allowlist)
         return required_files.find_required_files(tool_directory)
 
 
@@ -160,6 +164,25 @@ class TestHgExclusionDisabled(BaseRequiredFilesTestCase):
         assert ".hg/index.R" in files
 
 
+class TestSafeWalkExcludesLink(BaseRequiredFilesTestCase):
+    source_contents = TOOL_REQUIRED_FILES_XML_2
+
+    def test_expected_files(self):
+        _, child_path = setup_dir_with_symlink_outside_of_root(self.temp_directory)
+        files = self._required_files(child_path)
+        assert len(files) == 0
+
+
+class TestSafeWalkAllowList(BaseRequiredFilesTestCase):
+    source_contents = TOOL_REQUIRED_FILES_XML_2
+
+    def test_expected_files(self):
+        repo, child_path = setup_dir_with_symlink_outside_of_root(self.temp_directory)
+        files = self._required_files(child_path, repo)
+        assert len(files) == 1
+        assert files[0] == "symlink.R"
+
+
 def setup_dir_with_repo(tmp_dir):
     repo = os.path.join(tmp_dir, "repo")
     os.makedirs(repo)
@@ -168,3 +191,15 @@ def setup_dir_with_repo(tmp_dir):
     Path(hg, "index.R").touch()
     Path(repo, "my_script.R").touch()
     return repo
+
+
+def setup_dir_with_symlink_outside_of_root(tmp_dir):
+    repo = Path(tmp_dir) / "root"
+    repo.mkdir()
+    target = repo / "symlink_target.R"
+    target.touch()
+    child_path = repo / "child"
+    child_path.mkdir()
+    symlink = child_path / "symlink.R"
+    symlink.symlink_to(target)
+    return str(repo), str(child_path)

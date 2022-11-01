@@ -1583,6 +1583,13 @@ galaxy:
   # access to.
   #allow_path_paste: false
 
+  # List of paths that are valid targets of symbolic links outside of
+  # the current tool directory. Currently only used when staging files
+  # to a remote location using a pulsar job runner. This option should
+  # only be useful during local development and in continuous
+  # integration environments.
+  #tool_path_allowlist: []
+
   # Users may choose to download multiple files from a library in an
   # archive.  By default, Galaxy allows users to select from a few
   # different archive formats if testing shows that Galaxy is able to
