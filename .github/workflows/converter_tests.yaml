@@ -62,8 +62,6 @@ jobs:
           planemo lint --skip citations,stdio,help --report_level warn "${TOOL_ARRAY[@]}"
       - name: Run tests
         run: |
-          mkdir -p json_output
-          EXIT_CODE=0
           mapfile -t TOOL_ARRAY < tool_list.txt
           planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' --test_data 'galaxy root/test-data/' --no_conda_auto_init --biocontainers "${TOOL_ARRAY[@]}"
       - uses: actions/upload-artifact@v3
