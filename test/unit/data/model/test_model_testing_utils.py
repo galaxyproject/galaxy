@@ -15,7 +15,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import registry
 
 from galaxy.model import _HasTable
-from . import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,

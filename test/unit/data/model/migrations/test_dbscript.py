@@ -20,10 +20,7 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine
 
-from ..testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
-    create_and_drop_database,
-    disposing_engine,
-    drop_existing_database,
+from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
 

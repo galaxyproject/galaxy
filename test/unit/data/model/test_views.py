@@ -14,15 +14,15 @@ from galaxy.model.database_utils import (
     create_database,
     sqlalchemy_engine,
 )
-from galaxy.model.view.utils import (
-    CreateView,
-    View,
-)
-from .testing_utils import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     drop_database,
     replace_database_in_url,
     skip_if_not_mysql_uri,
     skip_if_not_postgres_uri,
+)
+from galaxy.model.view.utils import (
+    CreateView,
+    View,
 )
 
 

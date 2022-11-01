@@ -11,12 +11,12 @@ from sqlalchemy import (
 from sqlalchemy.orm import registry
 
 from galaxy.model import _HasTable
-from . import (
+from galaxy.model.unittest_utils.mapping_testing_utils import (
     collection_consists_of_objects,
     has_index,
     has_unique_constraint,
 )
-from ...testing_utils import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     get_stored_instance_by_id,
     initialize_model,
     persist,

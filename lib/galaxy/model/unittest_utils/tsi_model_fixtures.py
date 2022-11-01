@@ -1,7 +1,7 @@
 import pytest
 
 from galaxy.model import tool_shed_install as model
-from ...testing_utils import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     dbcleanup_wrapper,
     initialize_model,
 )
