@@ -34,17 +34,17 @@ IS_OS_X = sys.platform == "darwin"
 VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
-CONDA_PACKAGE_SPECS = ("conda=4.6.14", "'pyopenssl>=22.1.0'")
+CONDA_PACKAGE_SPECS = ("conda>=22.9.0", "'pyopenssl>=22.1.0'")
 CONDA_BUILD_VERSION = "3.17.8"
 USE_LOCAL_DEFAULT = False
 
 
 def conda_link():
     if IS_OS_X:
-        url = "https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-MacOSX-x86_64.sh"
+        url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-x86_64.sh"
     else:
         if sys.maxsize > 2**32:
-            url = "https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh"
+            url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
         else:
             url = "https://repo.anaconda.com/miniconda/Miniconda3-4.5.12-Linux-x86.sh"
     return url
