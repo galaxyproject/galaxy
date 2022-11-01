@@ -6307,13 +6307,6 @@ jest-snapshot@^27.5.1:
     pretty-format "^27.5.1"
     semver "^7.3.2"
 
-jest-transform-yaml@1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/jest-transform-yaml/-/jest-transform-yaml-1.0.0.tgz#666fd8b30bb7f7c059d8722da0e96fdf17f8a91c"
-  integrity sha512-W2vVRXLCF2sCc6p0/hwRx0PgimmXqImLlRzXxtZAQZTjcUvzydWgg5dQ+Xc2FpvkXj0k0vmin4dPsylVOWuE2Q==
-  dependencies:
-    js-yaml "4.1.0"
-
 jest-util@^27.5.1:
   version "27.5.1"
   resolved "https://registry.yarnpkg.com/jest-util/-/jest-util-27.5.1.tgz#3ba9771e8e31a0b85da48fe0b0891fb86c01c2f9"
@@ -6437,13 +6430,6 @@ js-tokens@^4.0.0:
   resolved "https://registry.yarnpkg.com/js-tokens/-/js-tokens-4.0.0.tgz#19203fb59991df98e3a287050d4647cdeaf32499"
   integrity sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==
 
-js-yaml@4.1.0, js-yaml@^4.1.0:
-  version "4.1.0"
-  resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-4.1.0.tgz#c1fb65f8f5017901cdd2c951864ba18458a10602"
-  integrity sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==
-  dependencies:
-    argparse "^2.0.1"
-
 js-yaml@^3.13.1:
   version "3.14.1"
   resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-3.14.1.tgz#dae812fdb3825fa306609a8717383c50c36a0537"
@@ -6451,6 +6437,13 @@ js-yaml@^3.13.1:
   dependencies:
     argparse "^1.0.7"
     esprima "^4.0.0"
+
+js-yaml@^4.1.0:
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/js-yaml/-/js-yaml-4.1.0.tgz#c1fb65f8f5017901cdd2c951864ba18458a10602"
+  integrity sha512-wpxZs9NoxZaJESJGIZTyDEaYpl0FKSA+FB9aJiyemKhMwkxQg63h4T1KJgUGHpTqPDNRcmmYLugrRjJlBtWvRA==
+  dependencies:
+    argparse "^2.0.1"
 
 jsdom@^16.6.0:
   version "16.7.0"
@@ -10440,6 +10433,13 @@ yallist@^4.0.0:
   version "4.0.0"
   resolved "https://registry.yarnpkg.com/yallist/-/yallist-4.0.0.tgz#9bb92790d9c0effec63be73519e11a35019a3a72"
   integrity sha512-3wdGidZyq5PB084XLES5TpOSRA3wjXAlIWMhum2kRcv/41Sn2emQ0dycQW4uZXLejwKvg6EsvbdlVL+FYEct7A==
+
+yaml-jest@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/yaml-jest/-/yaml-jest-1.2.0.tgz#5e863a8c3ce5aa7b9f63e12f8bffd6e2e47b4bf7"
+  integrity sha512-rrUNn3ovs5J8td7i3k6rJfh3leBydnM+3YqKJcVyTFRiSiEAdKMy7uhqBxJfsJ+w1le5AGCkMTldNEMY8oqbPg==
+  dependencies:
+    js-yaml "^4.1.0"
 
 yaml-loader@^0.8.0:
   version "0.8.0"
