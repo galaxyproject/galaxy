@@ -239,14 +239,21 @@ class CondaContext(installable.InstallableContext):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        create_args = ["-y", "--quiet"]
-        if self.conda_version >= packaging.version.parse("4.7.5"):
-            create_args.append("--strict-channel-priority")
-        if allow_local and self.use_local:
-            create_args.extend(["--use-local"])
-        create_args.extend(self._override_channels_args)
-        create_args.extend(args)
-        return self.exec_command("create", create_args, stdout_path=stdout_path)
+        for try_strict in [True, False]:
+            create_args = ["-y", "--quiet"]
+            if try_strict:
+                if self.conda_version >= packaging.version.parse("4.7.5"):
+                    create_args.append("--strict-channel-priority")
+                else:
+                    continue
+            if allow_local and self.use_local:
+                create_args.append("--use-local")
+            create_args.extend(self._override_channels_args)
+            create_args.extend(args)
+            ret = self.exec_command("create", create_args, stdout_path=stdout_path)
+            if ret == 0:
+                break
+        return ret
 
     def exec_remove(self, args):
         """
@@ -262,14 +269,21 @@ class CondaContext(installable.InstallableContext):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        install_args = ["-y"]
-        if self.conda_version >= packaging.version.parse("4.7.5"):
-            install_args.append("--strict-channel-priority")
-        if allow_local and self.use_local:
-            install_args.append("--use-local")
-        install_args.extend(self._override_channels_args)
-        install_args.extend(args)
-        return self.exec_command("install", install_args, stdout_path=stdout_path)
+        for try_strict in [True, False]:
+            install_args = ["-y"]
+            if try_strict:
+                if self.conda_version >= packaging.version.parse("4.7.5"):
+                    install_args.append("--strict-channel-priority")
+                else:
+                    continue
+            if allow_local and self.use_local:
+                install_args.append("--use-local")
+            install_args.extend(self._override_channels_args)
+            install_args.extend(args)
+            ret = self.exec_command("install", install_args, stdout_path=stdout_path)
+            if ret == 0:
+                break
+        return ret
 
     def exec_clean(self, args=None, quiet=False):
         """
