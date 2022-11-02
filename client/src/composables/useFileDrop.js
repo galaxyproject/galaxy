@@ -39,13 +39,15 @@ export function useFileDrop(dropZone, onDrop, solo) {
         document.body,
         "drop",
         (event) => {
-            if (!dragBlocked.value && isFileOverDocument.value) {
+            if (!dragBlocked.value) {
                 // prevent the browser from opening the file
                 event.preventDefault();
 
-                isFileOverDocument.value = false;
-                unref(onDrop)(event);
+                if (isFileOverDropZone.value && isFileOverDocument.value) {
+                    unref(onDrop)(event);
+                }
             }
+            isFileOverDocument.value = false;
             dragBlocked.value = false;
         },
         true
