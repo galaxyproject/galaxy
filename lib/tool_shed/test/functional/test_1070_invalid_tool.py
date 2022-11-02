@@ -34,28 +34,7 @@ class TestFreebayesRepository(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
-                repository,
-                filename="bismark/bismark.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="bismark/bismark_methylation_extractor.xml",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded an updated tool xml.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.user_populator().setup_bismark_repo(repository)
 
     def test_0010_browse_tool_shed(self):
         """Browse the available tool sheds in this Galaxy instance and preview the bismark repository."""

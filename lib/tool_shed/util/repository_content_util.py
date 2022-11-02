@@ -24,6 +24,20 @@ if TYPE_CHECKING:
     from tool_shed.webapp.model import Repository
 
 
+def tar_open(uploaded_file):
+    isgzip = False
+    isbz2 = False
+    isgzip = checkers.is_gzip(uploaded_file)
+    if not isgzip:
+        isbz2 = checkers.is_bz2(uploaded_file)
+    if isgzip or isbz2:
+        # Open for reading with transparent compression.
+        tar = tarfile.open(uploaded_file, "r:*")
+    else:
+        tar = tarfile.open(uploaded_file)
+    return tar
+
+
 def upload_tar(
     app: "ToolShedApp",
     host: str,
@@ -39,17 +53,7 @@ def upload_tar(
     tdah: Optional[ToolDependencyAttributeHandler] = None,
 ) -> ChangeResponseT:
     if tar is None:
-        isgzip = False
-        isbz2 = False
-        isgzip = checkers.is_gzip(uploaded_file)
-        if not isgzip:
-            isbz2 = checkers.is_bz2(uploaded_file)
-        if isgzip or isbz2:
-            # Open for reading with transparent compression.
-            tar = tarfile.open(uploaded_file, "r:*")
-        else:
-            tar = tarfile.open(uploaded_file)
-
+        tar = tar_open(uploaded_file)
     rdah = rdah or RepositoryDependencyAttributeHandler(app, unpopulate=False)
     tdah = tdah or ToolDependencyAttributeHandler(app, unpopulate=False)
     # Upload a tar archive of files.

@@ -39,16 +39,10 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             column_maker_repository,
-            filename="column_maker/column_maker.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "column_maker/column_maker.tar",
             commit_message="Uploaded column_maker tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_create_emboss_5_repository_and_upload_files(self):
@@ -62,16 +56,10 @@ class TestBasicRepositoryDependencies(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "emboss/emboss.tar",
             commit_message="Uploaded emboss tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0025_generate_repository_dependency_with_invalid_url(self):

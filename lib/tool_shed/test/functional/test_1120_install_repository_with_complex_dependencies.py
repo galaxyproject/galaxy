@@ -53,19 +53,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             open(xml_filename, "w").write(
                 open(old_tool_dependency).read().replace("__PATH__", self.get_filename("bwa/complex"))
             )
-            self.upload_file(
-                repository,
-                filename=xml_filename,
-                filepath=new_tool_dependency_path,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded tool_dependencies.xml.",
-                strings_displayed=[
-                    "This repository currently contains a single file named <b>tool_dependencies.xml</b>"
-                ],
-                strings_not_displayed=[],
-            )
+            self.add_file_to_repository(repository, xml_filename, "tool_dependencies.xml")
             self.display_manage_repository_page(
                 repository, strings_displayed=["Tool dependencies", "consider setting its type"]
             )
@@ -85,16 +73,10 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
                 strings_displayed=[],
             )
             self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="bwa/complex/bwa_base.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "bwa/complex/bwa_base.tar",
                 commit_message="Uploaded bwa_base.tar with tool wrapper XML, but without tool dependency XML.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0015_generate_complex_repository_dependency_invalid_shed_url(self):
@@ -237,17 +219,7 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
             open(xml_filename, "w").write(
                 open(old_tool_dependency).read().replace("__PATH__", self.get_filename("bwa/complex"))
             )
-            self.upload_file(
-                tool_repository,
-                filename=xml_filename,
-                filepath=new_tool_dependency_path,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded new tool_dependencies.xml.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.add_file_to_repository(tool_repository, xml_filename, "tool_dependencies.xml")
             # Verify that the dependency display has been updated as a result of the new tool_dependencies.xml file.
             self.display_manage_repository_page(
                 base_repository,

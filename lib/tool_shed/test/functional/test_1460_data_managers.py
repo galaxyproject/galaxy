@@ -55,17 +55,12 @@ class TestDataManagers(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
+        assert repository, "No repository created with name {commit_tar_to_repository}"
         # Upload the data manager files to the repository.
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename=data_manager_tar_file,
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            data_manager_tar_file,
             commit_message=f"Populate {data_manager_repository_name} with a data manager configuration.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0020_install_data_manager_repository(self):

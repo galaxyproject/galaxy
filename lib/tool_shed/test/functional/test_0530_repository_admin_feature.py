@@ -57,16 +57,10 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Uploaded filtering 1.1.0 tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_verify_repository_admin_role_exists(self):

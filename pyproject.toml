@@ -5,6 +5,7 @@ include = '\.pyi?$'
 extend-exclude = '''
 ^/(
   | packages
+  | lib/tool_shed/test/test_data/repos
 )/
 '''
 

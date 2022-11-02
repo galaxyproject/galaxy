@@ -39,16 +39,8 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category,
         )
-        self.upload_file(
-            repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
+        self.commit_tar_to_repository(
+            repository, "emboss/emboss.tar", commit_message="Uploaded tool tarball."
         )
 
     def test_0015_create_emboss_6_repository(self):
@@ -62,16 +54,8 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category,
         )
-        self.upload_file(
-            repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
+        self.commit_tar_to_repository(
+            repository, "emboss/emboss.tar", commit_message="Uploaded tool tarball.",
         )
 
     def test_0020_create_dependent_repository(self):
@@ -86,16 +70,8 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             category=category,
         )
         if self.repository_is_new(repository):
-            self.upload_file(
-                repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=False,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded bismark tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
+            self.commit_tar_to_repository(
+                repository, "column_maker/column_maker.tar", commit_message="Uploaded bismark tarball.",
             )
 
     def test_0025_create_emboss_repository(self):
@@ -109,16 +85,8 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category,
         )
-        self.upload_file(
-            repository,
-            filename="emboss/emboss.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded the tool tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
+        self.commit_tar_to_repository(
+            repository, "emboss/emboss.tar", commit_message="Uploaded the tool tarball.",
         )
 
     def test_0030_generate_repository_dependencies_for_emboss_5(self):

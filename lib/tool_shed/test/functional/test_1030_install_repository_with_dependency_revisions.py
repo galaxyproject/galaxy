@@ -43,16 +43,10 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
         )
         if self.repository_is_new(column_maker_repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 column_maker_repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             emboss_5_repository = self.get_or_create_repository(
                 name=emboss_5_repository_name,
@@ -62,16 +56,10 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_5_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "5"])
             column_maker_tuple = (
@@ -93,16 +81,10 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_6_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "6"])
             column_maker_tuple = (
@@ -124,16 +106,10 @@ class TestRepositoryWithDependencyRevisions(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self.upload_file(
+            self.commit_tar_to_repository(
                 emboss_repository,
-                filename="emboss/emboss.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
+                "emboss/emboss.tar",
                 commit_message="Uploaded tool tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             repository_dependencies_path = self.generate_temp_path("test_1030", additional_paths=["emboss", "5"])
             dependency_tuple = (

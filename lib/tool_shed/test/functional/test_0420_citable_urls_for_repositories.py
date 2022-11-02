@@ -59,16 +59,10 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
             category=category,
             strings_displayed=strings_displayed,
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_2.2.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "filtering/filtering_2.2.0.tar",
             commit_message="Uploaded filtering 2.2.0 tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
         # We'll be checking for this hash later, after uploading another file to the repository, making get_repository_tip() not usable.
         first_changeset_hash = self.get_repository_tip(repository)
@@ -81,17 +75,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         The repository should now contain two changeset revisions, 0:<revision hash> and 1:<revision hash>.
         """
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(
-            repository,
-            filename="readme.txt",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded readme.txt.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "readme.txt")
 
     def test_0015_load_user_view_page(self):
         """Load the /view/<username> page amd check for strings.

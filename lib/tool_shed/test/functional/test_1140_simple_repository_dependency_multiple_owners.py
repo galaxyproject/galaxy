@@ -60,16 +60,10 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
             strings_displayed=strings_displayed,
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="blast/blast_datatypes.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "blast/blast_datatypes.tar",
                 commit_message="Uploaded blast_datatypes tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_verify_datatypes_repository(self):
@@ -112,13 +106,13 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             running_standalone = True
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="blast/blastxml_to_top_descr.tar",
+                "blast/blastxml_to_top_descr.tar",
                 filepath=None,
                 valid_tools_only=True,
                 uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                remove_repo_files_not_in_tar=True,
                 commit_message="Uploaded blastxml_to_top_descr tarball.",
                 strings_displayed=[],
                 strings_not_displayed=[],

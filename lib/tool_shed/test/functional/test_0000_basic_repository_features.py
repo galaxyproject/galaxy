@@ -78,17 +78,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0035_upload_filtering_1_1_0(self):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(
-            repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=True,
-            commit_message="Uploaded filtering 1.1.0",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.commit_tar_to_repository(repository, "filtering/filtering_1.1.0.tar", commit_message="Uploaded filtering 1.1.0")
 
     def test_0040_verify_repository(self):
         """Display basic repository pages"""
@@ -164,17 +154,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0055_upload_filtering_txt_file(self):
         """Upload filtering.txt file associated with tool version 1.1.0."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(
-            repository,
-            filename="filtering/filtering_0000.txt",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded filtering.txt",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "filtering/filtering_0000.txt")
         self.display_manage_repository_page(
             repository, strings_displayed=["Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0"]
         )
@@ -182,17 +162,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0060_upload_filtering_test_data(self):
         """Upload filtering test data."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(
-            repository,
-            filename="filtering/filtering_test_data.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded filtering test data",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_tar_to_repository(repository, "filtering/filtering_test_data.tar")
         self.display_repository_file_contents(
             repository=repository,
             filename="1.bed",
@@ -205,17 +175,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0065_upload_filtering_2_2_0(self):
         """Upload filtering version 2.2.0"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(
-            repository,
-            filename="filtering/filtering_2.2.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded filtering 2.2.0",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_tar_to_repository(repository, "filtering/filtering_2.2.0.tar")
 
     def test_0070_verify_filtering_repository(self):
         """Verify the new tool versions and repository metadata."""
@@ -245,17 +205,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0075_upload_readme_txt_file(self):
         """Upload readme.txt file associated with tool version 2.2.0."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(
-            repository,
-            filename="readme.txt",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded readme.txt",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "readme.txt")
         self.display_manage_repository_page(
             repository, strings_displayed=["This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file."]
         )
@@ -378,17 +328,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         # Upload readme.txt to the filtering_0000 repository and verify that it is now displayed.
-        self.upload_file(
-            repository,
-            filename="filtering/readme.txt",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded new readme.txt with invalid ascii characters.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "filtering/readme.txt")
         self.display_manage_repository_page(
             repository, strings_displayed=["These&nbsp;characters&nbsp;should&nbsp;not"]
         )

@@ -1,4 +1,5 @@
 import abc
+import contextlib
 import logging
 import os
 import shutil
@@ -11,6 +12,7 @@ from pathlib import Path
 from typing import (
     Any,
     Dict,
+    Iterator,
     List,
     Optional,
 )
@@ -59,6 +61,8 @@ from tool_shed.util import (
     hgweb_config,
     xml_util,
 )
+from tool_shed.test.base.populators import TEST_DATA_REPO_FILES
+from tool_shed.util.repository_content_util import tar_open
 from tool_shed.webapp.model import Repository as DbRepository
 from tool_shed_client.schema import (
     Category,
@@ -716,6 +720,12 @@ class ShedTwillTestCase(ShedApiTestCase):
     def last_url(self):
         return tc.browser.url
 
+    def user_api_interactor(self, email="test@bx.psu.edu", password="testuser"):
+        return self._api_interactor_by_credentials(email, password)
+
+    def user_populator(self, email="test@bx.psu.edu", password="testuser"):
+        return self._get_populator(self.user_api_interactor(email=email, password=password))
+
     def login(
         self, email="test@bx.psu.edu", password="testuser", username="admin-user", redirect="", logout_first=True
     ):
@@ -1025,7 +1035,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         repository_names = []
         if complex:
             filename = "tool_dependencies.xml"
-            self.generate_complex_dependency_xml(
+            target = self.generate_complex_dependency_xml(
                 filename=filename,
                 filepath=filepath,
                 repository_tuples=repository_tuples,
@@ -1037,54 +1047,114 @@ class ShedTwillTestCase(ShedApiTestCase):
                 repository_names.append(name)
             dependency_description = f"{repository.name} depends on {', '.join(repository_names)}."
             filename = "repository_dependencies.xml"
-            self.generate_simple_dependency_xml(
+            target = self.generate_simple_dependency_xml(
                 repository_tuples=repository_tuples,
                 filename=filename,
                 filepath=filepath,
                 dependency_description=dependency_description,
                 prior_installation_required=prior_installation_required,
             )
-        self.upload_file(
-            repository,
-            filename=filename,
-            filepath=filepath,
-            valid_tools_only=False,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message=f"Uploaded dependency on {', '.join(repository_names)}.",
-            strings_displayed=None,
-            strings_not_displayed=None,
-        )
+        self.add_file_to_repository(repository, target, filename, strings_displayed=strings_displayed)
 
     def deactivate_repository(self, installed_repository: galaxy_model.ToolShedRepository) -> None:
         assert self._installation_client
         self._installation_client.deactivate_repository(installed_repository)
 
-    def delete_files_from_repository(self, repository: Repository, filenames: List[str]):
+    @contextlib.contextmanager
+    def cloned_repo(self, repository: Repository) -> Iterator[str]:
         temp_directory = tempfile.mkdtemp(prefix="toolshedrepowithoutfiles")
         try:
             self.clone_repository(repository, temp_directory)
+            shutil.rmtree(os.path.join(temp_directory, ".hg"))
+            contents = os.listdir(temp_directory)
+            if len(contents) == 1 and contents[0] == "repo":
+                yield os.path.join(temp_directory, "repo")
+            else:
+                yield temp_directory
+        finally:
+            shutil.rmtree(temp_directory)
+
+    def setup_freebayes_0010_repo(self, repository: Repository):
+        strings_displayed = [
+            "Metadata may have been defined",
+            "This file requires an entry",
+            "tool_data_table_conf",
+        ]
+        self.add_file_to_repository(repository, "freebayes/freebayes.xml", strings_displayed=strings_displayed)
+        strings_displayed = ["Upload a file named <b>sam_fa_indices.loc.sample"]
+        self.add_file_to_repository(repository, "freebayes/tool_data_table_conf.xml.sample", strings_displayed=strings_displayed)
+        self.add_file_to_repository(repository, "freebayes/sam_fa_indices.loc.sample")
+        target = os.path.join("freebayes", "malformed_tool_dependencies", "tool_dependencies.xml")
+        self.add_file_to_repository(
+            repository, target, strings_displayed=["Exception attempting to parse", "invalid element name"]
+        )
+        target = os.path.join("freebayes", "invalid_tool_dependencies", "tool_dependencies.xml")
+        strings_displayed = [
+            "The settings for <b>name</b>, <b>version</b> and <b>type</b> from a contained tool configuration"
+        ]
+        # , strings_displayed=strings_displayed
+        self.add_file_to_repository(repository, target)
+        target = os.path.join("freebayes", "tool_dependencies.xml")
+        self.add_file_to_repository(repository, target)
+
+    def add_file_to_repository(
+        self, repository: Repository, source: str, target: Optional[str] = None, strings_displayed=None, commit_message: Optional[str] = None
+    ):
+        with self.cloned_repo(repository) as temp_directory:
+            if target is None:
+                target = os.path.basename(source)
+            full_target = os.path.join(temp_directory, target)
+            full_source = TEST_DATA_REPO_FILES.joinpath(source)
+            shutil.copyfile(str(full_source), full_target)
+            commit_message = commit_message or "Uploaded revision with added file."
+            self._upload_dir_to_repository(repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed)
+
+    def add_tar_to_repository(
+        self, repository: Repository, source: str, strings_displayed=None
+    ):
+        with self.cloned_repo(repository) as temp_directory:
+            full_source = TEST_DATA_REPO_FILES.joinpath(source)
+            tar = tar_open(full_source)
+            tar.extractall(path=temp_directory)
+            tar.close()
+            commit_message = "Uploaded revision with added files from tar."
+            self._upload_dir_to_repository(repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed)
+
+    def commit_tar_to_repository(
+        self, repository: Repository, source: str, commit_message=None, strings_displayed=None
+    ):
+        full_source = TEST_DATA_REPO_FILES.joinpath(source)
+        assert full_source.is_file(), f"Attempting to upload {full_source} as a tar which is not a file"
+        populator = self.user_populator()
+        if strings_displayed is None:
+            # Just assume this is a valid upload...
+            populator.upload_revision(repository, full_source, commit_message=commit_message)
+        else:
+            response = populator.upload_revision_raw(repository, full_source, commit_message=commit_message)
+            try:
+                text = response.json()["message"]
+            except Exception:
+                text = response.text
+            for string_displayed in strings_displayed:
+                if string_displayed not in text:
+                    raise AssertionError(f"Failed to find {string_displayed} in JSON response {text}")
+
+    def delete_files_from_repository(self, repository: Repository, filenames: List[str]):
+        with self.cloned_repo(repository) as temp_directory:
             for filename in filenames:
                 to_delete = os.path.join(temp_directory, filename)
                 os.remove(to_delete)
-            shutil.rmtree(os.path.join(temp_directory, ".hg"))
-            tf = tempfile.NamedTemporaryFile()
-            with tarfile.open(tf.name, "w:gz") as tar:
-                tar.add(temp_directory, arcname="repo")
-            target = os.path.abspath(tf.name)
-            self.upload_file(
-                repository,
-                filename=os.path.basename(target),
-                filepath=os.path.dirname(target),
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=True,
-                commit_message="Uploaded revision with deleted files.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-        finally:
-            shutil.rmtree(temp_directory)
+            commit_message = "Uploaded revision with deleted files."
+            self._upload_dir_to_repository(repository, temp_directory, commit_message=commit_message)
+
+    def _upload_dir_to_repository(self, repository: Repository, target, commit_message, strings_displayed=None):
+        tf = tempfile.NamedTemporaryFile()
+        with tarfile.open(tf.name, "w:gz") as tar:
+            tar.add(target, arcname=".")
+        target = os.path.abspath(tf.name)
+        self.commit_tar_to_repository(
+            repository, target, commit_message=commit_message, strings_displayed=strings_displayed
+        )
 
     def delete_repository(self, repository: Repository) -> None:
         repository_id = repository.id
@@ -1241,6 +1311,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         )
         # Save the generated xml to the specified location.
         open(file_path, "w").write(repository_dependency_xml)
+        return file_path
 
     def generate_simple_dependency_xml(
         self,
@@ -1282,6 +1353,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         # Save the generated xml to the specified location.
         full_path = os.path.join(filepath, filename)
         open(full_path, "w").write(repository_dependency_xml)
+        return full_path
 
     def generate_temp_path(self, test_script_path, additional_paths=None):
         additional_paths = additional_paths or []
@@ -1416,6 +1488,10 @@ class ShedTwillTestCase(ShedApiTestCase):
     def get_repository_tip(self, repository: Repository) -> str:
         repo = self.get_hg_repo(self.get_repo_path(repository))
         return str(repo[repo.changelog.tip()])
+
+    def get_repository_first_revision(self, repository: Repository) -> str:
+        repo = self.get_hg_repo(self.get_repo_path(repository))
+        return str(repo[0])
 
     def _get_metadata_revision_count(self, repository: Repository) -> int:
         repostiory_metadata: RepositoryMetadata = self.populator.get_metadata(repository, downloadable_only=False)
@@ -1744,97 +1820,6 @@ class ShedTwillTestCase(ShedApiTestCase):
     ) -> Dict[str, Any]:
         assert self._installation_client
         return self._installation_client.update_installed_repository(installed_repository, verify_no_updates=False)
-
-    def upload_file(
-        self,
-        repository: Repository,
-        filename,
-        filepath,
-        valid_tools_only,
-        uncompress_file,
-        remove_repo_files_not_in_tar,
-        commit_message,
-        strings_displayed=None,
-        strings_not_displayed=None,
-    ):
-        if strings_displayed is None:
-            strings_displayed = []
-        if strings_not_displayed is None:
-            strings_not_displayed = []
-        removed_message = "files were removed from the repository"
-        if remove_repo_files_not_in_tar:
-            if not self.repository_is_new(repository):
-                if removed_message not in strings_displayed:
-                    strings_displayed.append(removed_message)
-        else:
-            if removed_message not in strings_not_displayed:
-                strings_not_displayed.append(removed_message)
-        params = {"repository_id": repository.id}
-        self.visit_url("/upload/upload", params=params)
-        if valid_tools_only:
-            strings_displayed.extend(["has been successfully", "uploaded to the repository."])
-        tc.formfile("1", "file_data", self.get_filename(filename, filepath))
-        if uncompress_file:
-            tc.fv(1, "uncompress_file", "Yes")
-        else:
-            tc.fv(1, "uncompress_file", "No")
-        if not self.repository_is_new(repository):
-            if remove_repo_files_not_in_tar:
-                tc.fv(1, "remove_repo_files_not_in_tar", "Yes")
-            else:
-                tc.fv(1, "remove_repo_files_not_in_tar", "No")
-        tc.fv(1, "commit_message", commit_message)
-        tc.submit("upload_button")
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        # Uncomment this if it becomes necessary to wait for an asynchronous process to complete after submitting an upload.
-        # for i in range( 5 ):
-        #    try:
-        #        self.check_for_strings( strings_displayed, strings_not_displayed )
-        #        break
-        #    except Exception as e:
-        #        if i == 4:
-        #            raise e
-        #        else:
-        #            time.sleep( 1 )
-        #            continue
-
-    def upload_url(
-        self,
-        repository,
-        url,
-        filepath,
-        valid_tools_only,
-        uncompress_file,
-        remove_repo_files_not_in_tar,
-        commit_message,
-        strings_displayed=None,
-        strings_not_displayed=None,
-    ):
-        removed_message = "files were removed from the repository"
-        if remove_repo_files_not_in_tar:
-            if not self.repository_is_new(repository):
-                if removed_message not in strings_displayed:
-                    strings_displayed.append(removed_message)
-        else:
-            if removed_message not in strings_not_displayed:
-                strings_not_displayed.append(removed_message)
-        params = {"repository_id": repository.id}
-        self.visit_url("/upload/upload", params=params)
-        if valid_tools_only:
-            strings_displayed.extend(["has been successfully", "uploaded to the repository."])
-        tc.fv("1", "url", url)
-        if uncompress_file:
-            tc.fv(1, "uncompress_file", "Yes")
-        else:
-            tc.fv(1, "uncompress_file", "No")
-        if not self.repository_is_new(repository):
-            if remove_repo_files_not_in_tar:
-                tc.fv(1, "remove_repo_files_not_in_tar", "Yes")
-            else:
-                tc.fv(1, "remove_repo_files_not_in_tar", "No")
-        tc.fv(1, "commit_message", commit_message)
-        tc.submit("upload_button")
-        self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def verify_installed_repositories(self, installed_repositories=None, uninstalled_repositories=None):
         installed_repositories = installed_repositories or []

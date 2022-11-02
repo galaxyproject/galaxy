@@ -35,7 +35,7 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
     @property
     def populator(self) -> ToolShedPopulator:
         if self._populator is None:
-            self._populator = ToolShedPopulator(self.admin_api_interactor, self.api_interactor)
+            self._populator = self._get_populator(self.api_interactor)
         return self._populator
 
     @property
@@ -50,7 +50,18 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
             password = "testpassword"
             ensure_user_with_email(self.admin_api_interactor, email, password)
             user_api_key = self._api_key(email, password)
-        return ShedApiInteractor(self.url, user_api_key)
+        return self._api_interactor(user_api_key)
+
+    def _api_interactor_by_credentials(self, email: str, password: str) -> ShedApiInteractor:
+        ensure_user_with_email(self.admin_api_interactor, email, password)
+        user_api_key = self._api_key(email, password)
+        return self._api_interactor(user_api_key)
+
+    def _api_interactor(self, api_key: str) -> ShedApiInteractor:
+        return ShedApiInteractor(self.url, api_key)
+
+    def _get_populator(self, user_api_interactor) -> ToolShedPopulator:
+        return ToolShedPopulator(self.admin_api_interactor, user_api_interactor)
 
     def _api_key(self, email: str, password: str) -> str:
         headers = baseauth_headers(email, password)

@@ -37,50 +37,14 @@ class TestBasicToolShedFeatures(ShedTwillTestCase):
             category=category,
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="filtering/filtering_1.1.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "filtering/filtering_1.1.0.tar",
                 commit_message="Uploaded filtering 1.1.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
-            self.upload_file(
-                repository,
-                filename="filtering/filtering_0000.txt",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded readme for 1.1.0",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="filtering/filtering_2.2.0.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded filtering 2.2.0 tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
-            self.upload_file(
-                repository,
-                filename="readme.txt",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
-                commit_message="Uploaded readme for 2.2.0",
-                strings_displayed=[],
-                strings_not_displayed=[],
-            )
+            self.add_file_to_repository(repository, "filtering/filtering_0000.txt")
+            self.add_tar_to_repository(repository, "filtering/filtering_2.2.0.tar")
+            self.add_file_to_repository(repository, "readme.txt")
 
     def test_0010_browse_tool_sheds(self):
         """Browse the available tool sheds in this Galaxy instance."""

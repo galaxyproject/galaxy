@@ -81,21 +81,52 @@ class ToolShedPopulator:
         self._admin_api_interactor = admin_api_interactor
         self._api_interactor = api_interactor
 
-    def setup_test_data_repo(self, test_data_path: str) -> Repository:
-        prefix = test_data_path.replace("_", "")
-        category_id = self.new_category(prefix=prefix).id
-        repository = self.new_repository(category_id, prefix=prefix)
-        repository_id = repository.id
+    def setup_bismark_repo(self, repository_id: HasRepositoryId, end: Optional[int] = None):
+        self.setup_test_data_repo_by_id("bismark", repository_id, assert_ok=False, end=end)
+
+    def setup_test_data_repo_by_id(
+        self,
+        test_data_path: str,
+        repository_id: Optional[HasRepositoryId] = None,
+        assert_ok=True,
+        start: int = 0,
+        end: Optional[int] = None,
+    ) -> HasRepositoryId:
+        if repository_id is None:
+            prefix = test_data_path.replace("_", "")
+            category_id = self.new_category(prefix=prefix).id
+            repository = self.new_repository(category_id, prefix=prefix)
+            repository_id = repository.id
+
         assert repository_id
 
         for index, repo_tar in enumerate(repo_tars(test_data_path)):
+            if index < start:
+                continue
+
+            if end and index >= end:
+                break
+
             commit_message = f"Updating {test_data_path} with index {index} with tar {repo_tar}"
-            response = self.upload_revision(
-                repository_id,
-                repo_tar,
-                commit_message=commit_message,
-            )
-            assert response.is_ok
+            response = self.upload_revision_raw(repository_id, repo_tar, commit_message)
+            if assert_ok:
+                api_asserts.assert_status_code_is_ok(response)
+                assert RepositoryUpdate(__root__=response.json()).is_ok
+        return repository_id
+
+    def setup_test_data_repo(
+        self,
+        test_data_path: str,
+        repository: Optional[Repository] = None,
+        assert_ok=True,
+        start: int = 0,
+        end: Optional[int] = None,
+    ) -> Repository:
+        if repository is None:
+            prefix = test_data_path.replace("_", "")
+            category_id = self.new_category(prefix=prefix).id
+            repository = self.new_repository(category_id, prefix=prefix)
+        self.setup_test_data_repo_by_id(test_data_path, repository, assert_ok=assert_ok, start=start, end=end)
         return repository
 
     def setup_column_maker_repo(self, prefix=DEFAULT_PREFIX) -> Repository:
@@ -152,7 +183,7 @@ class ToolShedPopulator:
     def upload_revision(
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
     ):
-        response = self.upload_revision_raw(repository, path, commit_message)
+        response = self.upload_revision_raw(repository, path, commit_message=commit_message)
         if response.status_code != 200:
             response_json = None
             err_msg = None

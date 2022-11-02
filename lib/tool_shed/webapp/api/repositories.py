@@ -41,7 +41,6 @@ from tool_shed.managers.repositories import upload_tar_and_set_metadata
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.util import (
-    commit_util,
     encoding_util,
     metadata_util,
     repository_util,

@@ -48,16 +48,10 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Uploaded filtering 1.1.0 tarball.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_install_filtering_to_galaxy(self):
@@ -85,17 +79,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.upload_file(
-            repository,
-            filename="filtering/readme.txt",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded readme.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(repository, "filtering/readme.txt")
 
     def test_0020_get_repository_updates(self):
         """Get updates to the installed repository.
