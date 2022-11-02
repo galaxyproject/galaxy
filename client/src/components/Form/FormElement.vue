@@ -210,7 +210,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
             <span class="ui-form-error-text" v-html="props.error" />
         </div>
 
-        <div v-if="props.title" class="ui-form-title">
+        <div class="ui-form-title">
             <span v-if="collapsible || connectable">
                 <b-button
                     v-if="collapsible && !connected"
@@ -226,14 +226,14 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                     <FontAwesomeIcon v-else :icon="props.connectedDisableIcon" />
                 </b-button>
 
-                <span class="ui-form-title-text ml-1">
+                <span v-if="props.title" class="ui-form-title-text ml-1">
                     {{ props.title }}
                 </span>
             </span>
-            <span v-else class="ui-form-title-text">{{ props.title }}</span>
+            <span v-else-if="props.title" class="ui-form-title-text">{{ props.title }}</span>
 
             <span
-                v-if="isRequired && isRequiredType"
+                v-if="isRequired && isRequiredType && props.title"
                 v-b-tooltip.hover
                 class="ui-form-title-star"
                 title="required"
@@ -241,7 +241,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 *
                 <span v-if="isEmpty" class="ui-form-title-message warning"> required </span>
             </span>
-            <span v-else-if="isRequiredType" class="ui-form-title-message"> - optional </span>
+            <span v-else-if="isRequiredType && props.title" class="ui-form-title-message"> - optional </span>
         </div>
 
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
