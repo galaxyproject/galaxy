@@ -44,8 +44,8 @@ export function dialog(callback, options = {}) {
             history: history_id,
         });
         if (options.new) {
-            const { showGlobalUploadModal } = useGlobalUploadModal();
-            showGlobalUploadModal(options);
+            const { openGlobalUploadModal } = useGlobalUploadModal();
+            openGlobalUploadModal(options);
         } else {
             _mountSelectionDialog(DataDialog, options);
         }

@@ -20,6 +20,7 @@ function getDefaultOptions() {
         callback: () => {},
         multiple: true,
         selectable: false,
+        uploadPath: "",
     };
 
     const configOptions = isLoaded.value
@@ -43,6 +44,8 @@ function dismiss(result) {
     if (result && options.value.callback) {
         options.value.callback(result);
     }
+
+    showModal.value = false;
 }
 
 function open(overrideOptions) {

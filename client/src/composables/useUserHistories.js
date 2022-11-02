@@ -13,7 +13,7 @@ export function useUserHistories(user) {
         { immediate: true }
     );
 
-    const currentHistoryId = computed(() => store.getters("history/currentHistoryId"));
+    const currentHistoryId = computed(() => store.getters["history/currentHistoryId"]);
 
     return { currentHistoryId };
 }
