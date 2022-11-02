@@ -6,14 +6,13 @@
             class="search-query"
             size="sm"
             autocomplete="off"
-            :disabled="includeAdvBtn && showAdvanced"
             :placeholder="placeholder"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
         <b-input-group-append>
             <b-button
-                v-if="includeAdvBtn"
+                v-if="enableAdvanced"
                 size="sm"
                 :pressed="showAdvanced"
                 :variant="showAdvanced ? 'info' : 'secondary'"
@@ -27,7 +26,6 @@
                 class="search-clear"
                 size="sm"
                 :title="titleClear | l"
-                :disabled="includeAdvBtn && showAdvanced"
                 data-description="reset query"
                 @click="clearBox">
                 <icon v-if="loading" icon="spinner" spin />
@@ -55,7 +53,7 @@ export default {
             type: Number,
             default: 1000,
         },
-        includeAdvBtn: {
+        enableAdvanced: {
             type: Boolean,
             default: false,
         },
