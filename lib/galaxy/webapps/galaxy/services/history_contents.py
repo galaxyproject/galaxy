@@ -478,15 +478,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         :param id: encoded HistoryDatasetCollectionAssociation (HDCA) id
         """
-        try:
-            dataset_collection_instance = self.__get_accessible_collection(trans, id)
-            return self.__stream_dataset_collection(trans, dataset_collection_instance)
-        except (exceptions.ItemAccessibilityException, exceptions.RequestParameterInvalidException):
-            raise
-        except Exception:
-            error_message = "Error in API while creating dataset collection archive"
-            log.exception(error_message)
-            raise exceptions.InternalServerError(error_message)
+        dataset_collection_instance = self.__get_accessible_collection(trans, id)
+        return self.__stream_dataset_collection(trans, dataset_collection_instance)
 
     def prepare_collection_download(self, trans, id: EncodedDatabaseIdField) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
