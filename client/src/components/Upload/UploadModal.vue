@@ -17,7 +17,7 @@ function getDefaultOptions() {
     const baseOptions = {
         title: "Upload from disk or web",
         modalStatic: true,
-        callback: () => {},
+        callback: null,
         multiple: true,
         selectable: false,
         uploadPath: "",
@@ -54,6 +54,11 @@ function dismiss(result) {
 function open(overrideOptions) {
     const newOptions = overrideOptions ?? {};
     options.value = { ...getDefaultOptions(), ...newOptions };
+
+    if (options.value.callback) {
+        options.value.hasCallback = true;
+    }
+
     showModal.value = true;
 
     if (options.value.immediateUpload) {
