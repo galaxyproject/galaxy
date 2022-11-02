@@ -1,3 +1,6 @@
+import tarfile
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import (
     List,
     Optional,
@@ -7,6 +10,7 @@ from typing import (
 import requests
 
 from galaxy.util.resources import (
+    files,
     resource_path,
     Traversable,
 )
@@ -43,6 +47,28 @@ DEFAULT_PREFIX = "repofortest"
 COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
 COLUMN_MAKER_1_1_1_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
 DEFAULT_COMMIT_MESSAGE = "a test commit message"
+TEST_DATA_REPO_FILES = files("tool_shed.test.test_data")
+
+
+def repo_files(test_data_path: str) -> List[Path]:
+    repos = TEST_DATA_REPO_FILES.joinpath(f"repos/{test_data_path}")
+    paths = sorted(Path(str(x)) for x in repos.iterdir())
+    return paths
+
+
+def repo_tars(test_data_path: str) -> List[Path]:
+    tar_paths = []
+    for path in repo_files(test_data_path):
+        if path.is_dir():
+            prefix = f"shedtest_{test_data_path}_{path.name}_"
+            tf = NamedTemporaryFile(delete=False, prefix=prefix)
+            with tarfile.open(tf.name, "w:gz") as tar:
+                tar.add(str(path.absolute()), arcname=test_data_path or path.name)
+            tar_path = tf.name
+        else:
+            tar_path = str(path)
+        tar_paths.append(Path(tar_path))
+    return tar_paths
 
 
 class ToolShedPopulator:
@@ -54,6 +80,23 @@ class ToolShedPopulator:
     def __init__(self, admin_api_interactor: ShedApiInteractor, api_interactor: ShedApiInteractor):
         self._admin_api_interactor = admin_api_interactor
         self._api_interactor = api_interactor
+
+    def setup_test_data_repo(self, test_data_path: str) -> Repository:
+        prefix = test_data_path.replace("_", "")
+        category_id = self.new_category(prefix=prefix).id
+        repository = self.new_repository(category_id, prefix=prefix)
+        repository_id = repository.id
+        assert repository_id
+
+        for index, repo_tar in enumerate(repo_tars(test_data_path)):
+            commit_message = f"Updating {test_data_path} with index {index} with tar {repo_tar}"
+            response = self.upload_revision(
+                repository_id,
+                repo_tar,
+                commit_message=commit_message,
+            )
+            assert response.is_ok
+        return repository
 
     def setup_column_maker_repo(self, prefix=DEFAULT_PREFIX) -> Repository:
         category_id = self.new_category(prefix=prefix).id
@@ -110,7 +153,19 @@ class ToolShedPopulator:
         self, repository: HasRepositoryId, path: Traversable, commit_message: str = DEFAULT_COMMIT_MESSAGE
     ):
         response = self.upload_revision_raw(repository, path, commit_message)
-        api_asserts.assert_status_code_is_ok(response)
+        if response.status_code != 200:
+            response_json = None
+            err_msg = None
+            try:
+                response_json = response.json()
+            except Exception:
+                pass
+            if response_json and "err_msg" in response_json:
+                err_msg = response_json["err_msg"]
+            if err_msg and "No changes" in err_msg:
+                assert_msg = f"Updating repository [{repository}] with path [{path}] and commit_message {commit_message} failed to update repository contents, no changes found. Response: [{response_json}]"
+                raise AssertionError(assert_msg)
+            api_asserts.assert_status_code_is_ok(response)
         return RepositoryUpdate(__root__=response.json())
 
     def new_repository(self, category_id, prefix=DEFAULT_PREFIX) -> Repository:
@@ -168,6 +223,11 @@ class ToolShedPopulator:
         )
         api_asserts.assert_status_code_is_ok(revisions_response)
         return OrderedInstallableRevisions(__root__=revisions_response.json())
+
+    def assert_has_n_installable_revisions(self, repository: Repository, n: int):
+        revisions = self.get_ordered_installable_revisions(repository.owner, repository.name)
+        actual_n = len(revisions.__root__)
+        assert actual_n == n, f"Expected {n} repository revisions, found {actual_n} for {repository}"
 
     def get_repository_for(self, owner: str, name: str, deleted: str = "false") -> Optional[Repository]:
         request = RepositoryIndexRequest(

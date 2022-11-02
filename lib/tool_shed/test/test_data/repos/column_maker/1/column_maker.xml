@@ -1,0 +1,83 @@
+<tool id="Add_a_column1" name="Compute" version="1.1.0">
+  <description>an expression on every row</description>
+  <command interpreter="python">
+    column_maker.py $input $out_file1 "$cond" $round ${input.metadata.columns} "${input.metadata.column_types}"
+  </command>
+  <inputs>
+    <param name="cond" size="40" type="text" value="c3-c2" label="Add expression"/>
+    <param format="tabular" name="input" type="data" label="as a new column to" help="Query missing? See TIP below"/>
+    <param name="round" type="select" label="Round result?">
+      <option value="no">NO</option>
+      <option value="yes">YES</option>
+    </param>    
+  </inputs>
+  <outputs>
+    <data format="input" name="out_file1" metadata_source="input"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="cond" value="c3-c2"/>
+      <param name="input" value="1.bed"/>
+      <param name="round" value="no"/>
+      <output name="out_file1" file="column_maker_out1.interval"/>
+    </test>
+    <test>
+      <param name="cond" value="c4*1"/>
+      <param name="input" value="1.interval"/>
+      <param name="round" value="no"/>
+      <output name="out_file1" file="column_maker_out2.interval"/>
+    </test>
+    <test>
+      <param name="cond" value="c4*1"/>
+      <param name="input" value="1.interval"/>
+      <param name="round" value="yes"/>
+      <output name="out_file1" file="column_maker_out3.interval"/>
+    </test>
+  </tests>
+  <help>
+
+ .. class:: infomark
+
+**TIP:** If your data is not TAB delimited, use *Text Manipulation-&gt;Convert*
+
+-----
+
+**What it does**
+
+This tool computes an expression for every row of a query and appends the result as a new column (field).
+
+- Columns are referenced with **c** and a **number**. For example, **c1** refers to the first column of a tab-delimited file
+
+- **c3-c2** will add a length column to the query if **c2** and **c3** are start and end position
+
+-----
+
+**Example**
+
+If this is your input::
+
+   chr1  151077881  151077918  2  200  -
+   chr1  151081985  151082078  3  500  +
+
+computing "c4*c5" will produce::
+
+   chr1  151077881  151077918  2  200  -   400.0
+   chr1  151081985  151082078  3  500  +  1500.0
+    
+if, at the same time, "Round result?" is set to **YES** results will look like this::
+
+   chr1  151077881  151077918  2  200  -   400
+   chr1  151081985  151082078  3  500  +  1500
+
+You can also use this tool to evaluate expressions. For example, computing "c3>=c2" for Input will result in the following::
+
+   chr1  151077881  151077918  2  200  -  True
+   chr1  151081985  151082078  3  500  +  True
+
+or computing "type(c2)==type('') for Input will return::
+
+   chr1  151077881  151077918  2  200  -  False
+   chr1  151081985  151082078  3  500  +  False
+
+</help>
+</tool>

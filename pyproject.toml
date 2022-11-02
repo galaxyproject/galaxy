@@ -158,6 +158,9 @@ target-version = "py37"
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
 ignore = ["B008", "B9", "E402", "E501"]
+exclude = [
+  "lib/tool_shed/test/test_data/repos"
+]
 
 [tool.ruff.isort]
 # We are not selecting "I" rules in ruff yet because support for all the isort
