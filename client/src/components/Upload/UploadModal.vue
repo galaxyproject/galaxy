@@ -15,7 +15,7 @@ const { config, isLoaded } = useConfig();
 
 function getDefaultOptions() {
     const baseOptions = {
-        title: "Upload from disk or web",
+        title: "Upload from Disk or Web",
         modalStatic: true,
         callback: null,
         multiple: true,
@@ -88,6 +88,7 @@ defineExpose({
         <UploadModalContent
             v-if="currentHistoryId"
             ref="content"
+            :key="showModal"
             :currentUserId="currentUser.id"
             :currentHistoryId="currentHistoryId"
             v-bind="options"
