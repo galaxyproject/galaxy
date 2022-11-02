@@ -9,7 +9,7 @@
             {{ errorMessage }}
         </b-alert>
         <b-row align-v="center">
-            <b-col v-if="display == 'radio'">
+            <b-col v-if="display == 'radio' || display == 'radiobutton'">
                 <b-form-group>
                     <!-- Select single from radio -->
                     <b-form-radio-group v-model="currentValue" :options="formattedOptions" text-field="label" stacked>
