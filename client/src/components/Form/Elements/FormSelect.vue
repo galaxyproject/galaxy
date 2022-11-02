@@ -1,13 +1,5 @@
 <template>
     <div>
-        <b-alert
-            v-if="errorMessage"
-            class="mt-2"
-            :show="dismissCountDown"
-            variant="info"
-            @dismissed="dismissCountDown = 0">
-            {{ errorMessage }}
-        </b-alert>
         <b-row align-v="center">
             <b-col v-if="display == 'radio' || display == 'radiobutton'">
                 <b-form-group>
@@ -92,12 +84,6 @@ export default {
             required: false,
             default: null,
         },
-    },
-    data() {
-        return {
-            // Currently never set?
-            errorMessage: "",
-        };
     },
     computed: {
         formattedOptions() {
