@@ -263,7 +263,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "__APPLY_RULES__": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.1.0")),
     "__EXTRACT_DATASET__": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     "Grep1": safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.4")),
-    "Show beginning1": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
+    "Show beginning1": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.2")),
     "Show tail1": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     "sort1": safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.2.0")),
 }
