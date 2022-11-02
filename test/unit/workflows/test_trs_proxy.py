@@ -19,27 +19,30 @@ search_test = pytest.mark.skipif(
 
 def test_proxy():
     proxy = TrsProxy()
+    server = proxy.get_server("dockstore")
 
     assert "dockstore" == proxy.get_servers()[0]["id"]
 
+    assert proxy.get_servers()[0]["api_url"] == server._trs_url
+
     tool_id = "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
-    tool = proxy.get_tool("dockstore", tool_id)
+    tool = server.get_tool(tool_id)
     assert "description" in tool
 
     b64_tool_id = base64.b64encode(tool_id.encode("UTF-8"))
-    tool = proxy.get_tool("dockstore", b64_tool_id, tool_id_b64_encoded=True)
+    tool = server.get_tool(b64_tool_id, tool_id_b64_encoded=True)
     assert "description" in tool
 
-    versions = proxy.get_versions("dockstore", tool_id)
+    versions = server.get_versions(tool_id)
     assert isinstance(versions, list)
     assert len(versions) >= 1
 
     version_id = versions[0]["name"]
-    version = proxy.get_version("dockstore", tool_id, version_id)
+    version = server.get_version(tool_id, version_id)
     assert "descriptor_type" in version
     assert GA4GH_GALAXY_DESCRIPTOR in version["descriptor_type"]
 
-    descriptor = proxy.get_version_descriptor("dockstore", tool_id, version_id)
+    descriptor = server.get_version_descriptor(tool_id, version_id)
     content = yaml.safe_load(descriptor)
     assert "inputs" in content
 
@@ -47,22 +50,23 @@ def test_proxy():
 @search_test
 def test_search():
     proxy = TrsProxy()
+    server = proxy.get_server("dockstore")
 
     search_kwd = parse_search_kwds("documentation")
-    response = proxy.get_tools("dockstore", **search_kwd)
+    response = server.get_tools(**search_kwd)
     assert len(response) == 1
 
     search_kwd = parse_search_kwds("n:example")
-    response = proxy.get_tools("dockstore", **search_kwd)
+    response = server.get_tools(**search_kwd)
     assert len(response) == 2
 
     search_kwd = parse_search_kwds("organization:jmchilton")
-    response = proxy.get_tools("dockstore", **search_kwd)
+    response = server.get_tools(**search_kwd)
     assert len(response) == 2
 
     search_kwd = parse_search_kwds("organization:jmchiltonx")
-    response = proxy.get_tools("dockstore", **search_kwd)
+    response = server.get_tools(**search_kwd)
     assert len(response) == 0
 
-    response = proxy.get_tools("dockstore", descriptorType="GALAXY")
+    response = server.get_tools(descriptorType="GALAXY")
     assert len(response) == 2

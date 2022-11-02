@@ -20,13 +20,14 @@ class TrsConsumeAPIController(BaseGalaxyAPIController):
         return self._trs_proxy.get_servers()
 
     @expose_api
-    def get_tool(self, trans, *args, **kwd):
-        return self._trs_proxy.get_tool(*args, **kwd)
+    def get_tool(self, trans, payload, **kwd):
+        return self._trs_proxy.get_server(payload.get('trs_server')).get_tool(payload.get('tool_id'), **kwd)
 
     @expose_api
-    def get_versions(self, trans, *args, **kwd):
-        return self._trs_proxy.get_versions(*args, **kwd)
+    def get_versions(self, trans, payload, **kwd):
+        return self._trs_proxy.get_server(payload.get('trs_server')).get_versions(payload.get('tool_id'), **kwd)
 
     @expose_api
-    def get_version(self, trans, *args, **kwd):
-        return self._trs_proxy.get_version(*args, **kwd)
+    def get_version(self, trans, payload, **kwd):
+        return self._trs_proxy.get_server(payload.get('trs_server')).get_version(payload.get('tool_id'),
+                                                                                 payload.get('version_id'), **kwd)

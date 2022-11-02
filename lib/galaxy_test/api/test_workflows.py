@@ -1085,6 +1085,30 @@ steps:
         reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
         assert reuploaded_workflow.get("source_metadata") is None
 
+    def test_trs_import_from_trs_url(self):
+        trs_payload = {
+            "archive_source": "trs_tool",
+            "trs_url": "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5",
+        }
+        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        original_workflow = self._download_workflow(workflow_id)
+        assert "sars-cov-2-variation-reporting/COVID-19-VARIATION-REPORTING" in original_workflow["name"]
+        assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
+        assert original_workflow.get("source_metadata").get("trs_version_id") == "5"
+
+        # refactor workflow and check that the trs id is removed
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactored_workflow = self._download_workflow(workflow_id)
+        assert refactored_workflow.get("source_metadata") is None
+
+        # reupload original_workflow and check that the trs id is removed
+        reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
+        reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
+        assert reuploaded_workflow.get("source_metadata") is None
+
     def test_anonymous_published(self):
         def anonymous_published_workflows(explicit_query_parameter):
             if explicit_query_parameter:
