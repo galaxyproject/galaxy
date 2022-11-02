@@ -102,6 +102,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     MAX_JOBS_PER_QUERY = 100
     # Higher minimum interval as jobs are queried in batches.
     MIN_QUERY_INTERVAL = 10
+    OOM_ERROR = "OutOfMemoryError:"
 
     # fmt: off
     RUNNER_PARAM_SPEC = {
@@ -358,7 +359,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                 {
                     "networkConfiguration": {"assignPublicIp": "ENABLED"},
                     "fargatePlatformConfiguration": {"platformVersion": destination_params.get("fargate_version")},
-                    "logConfiguration": {"logDriver": "awslogs"},
                 }
             )
         other_kwargs = {}
@@ -482,12 +482,14 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             gotten.add(job_id)
             job_state = jobs_dict[job_id]
 
-            if status == "SUCCEEDED":
-                self._mark_as_successful(job_state)
-                done.add(job_id)
-            elif status == "FAILED":
-                reason = job["statusReason"]
-                self._mark_as_failed(job_state, reason)
+            if status in ("SUCCEEDED", "FAILED"):
+                container_exit_code = job["container"].get("exitCode", 0)
+                container_reason = job["container"].get("reason", "")
+                if status == "FAILED" or container_exit_code or container_reason:
+                    reason = job["statusReason"]
+                    self._mark_as_failed(job_state, f"{container_reason}\n{reason}")
+                else:
+                    self._mark_as_successful(job_state)
                 done.add(job_id)
             elif status in ("STARTING", "RUNNING"):
                 self._mark_as_active(job_state)
@@ -511,8 +513,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         self.mark_as_finished(job_state)
 
     def _mark_as_active(self, job_state):
-        job_state.running = True
-        job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+        if not job_state.running:
+            job_state.running = True
+            job_state.job_wrapper.change_state(model.Job.states.RUNNING)
 
     def _mark_as_failed(self, job_state, reason):
         _write_logfile(job_state.error_file, reason)
@@ -520,6 +523,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_state.stop_job = False
         job_state.job_wrapper.change_state(model.Job.states.ERROR)
         job_state.fail_message = reason
+        if reason.startswith(self.OOM_ERROR):
+            job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
         self.mark_as_failed(job_state)
 
     def parse_destination_params(self, params):
