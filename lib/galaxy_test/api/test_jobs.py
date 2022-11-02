@@ -4,6 +4,7 @@ import os
 import time
 import urllib.parse
 from operator import itemgetter
+from unittest import SkipTest
 
 import requests
 from dateutil.parser import isoparse
@@ -601,8 +602,6 @@ steps:
             assert not os.path.exists(output_dataset_paths[0])
 
     def _hack_to_skip_test_if_state_ok(self, job_state):
-        from nose.plugins.skip import SkipTest
-
         if job_state().json()["state"] == "ok":
             message = "Job state switch from running to ok too quickly - the rest of the test requires the job to be in a running state. Skipping test."
             raise SkipTest(message)

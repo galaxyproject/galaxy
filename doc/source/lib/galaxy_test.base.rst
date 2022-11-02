@@ -65,14 +65,6 @@ galaxy\_test.base.interactor module
    :undoc-members:
    :show-inheritance:
 
-galaxy\_test.base.nose\_util module
------------------------------------
-
-.. automodule:: galaxy_test.base.nose_util
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy\_test.base.populators module
 -----------------------------------
 
