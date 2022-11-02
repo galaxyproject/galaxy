@@ -375,6 +375,7 @@ class FastAPIHistories:
                 "description": "The exported archive file is not ready yet.",
             },
         },
+        deprecated=True,
     )
     def archive_export(
         self,
@@ -392,6 +393,9 @@ class FastAPIHistories:
         If the history will be exported to a `directory_uri`, instead of returning the download
         link information, the Job ID will be returned so it can be queried to determine when
         the file has been written.
+
+        **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+        `/api/histories/{id}/write_store` instead.
         """
         export_result, ready = self.service.archive_export(trans, id, payload)
         if not ready:
@@ -408,6 +412,7 @@ class FastAPIHistories:
                 "description": "The archive file containing the History.",
             }
         },
+        deprecated=True,
     )
     def archive_download(
         self,
@@ -419,6 +424,9 @@ class FastAPIHistories:
         See ``PUT /api/histories/{id}/exports`` to initiate the creation
         of the history export - when ready, that route will return 200 status
         code (instead of 202) and this route can be used to download the archive.
+
+        **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+        `/api/histories/{id}/write_store` instead.
         """
         jeha = self.service.get_ready_history_export(trans, id, jeha_id)
         media_type = self.service.get_archive_media_type(jeha)
