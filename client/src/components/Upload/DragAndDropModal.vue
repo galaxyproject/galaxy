@@ -1,13 +1,10 @@
 <script setup>
 import { ref, computed } from "vue";
 import { useFileDrop } from "composables/useFileDrop";
+import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
 
 const modalContentElement = ref(null);
-const { isFileOverDocument, isFileOverDropZone } = useFileDrop(
-    modalContentElement,
-    (e) => console.log(e.dataTransfer),
-    true
-);
+const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, true);
 
 const modalClass = computed(() => {
     if (isFileOverDropZone.value) {
@@ -16,6 +13,19 @@ const modalClass = computed(() => {
         return "ui-drag-and-drop-modal";
     }
 });
+
+const { openGlobalUploadModal } = useGlobalUploadModal();
+
+function onDrop(event) {
+    console.debug(event.dataTransfer);
+
+    if (event.dataTransfer?.files?.length > 0) {
+        openGlobalUploadModal({
+            immediateUpload: true,
+            immediateFiles: event.dataTransfer.files,
+        });
+    }
+}
 </script>
 
 <template>

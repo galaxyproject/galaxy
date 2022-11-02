@@ -21,6 +21,8 @@ function getDefaultOptions() {
         multiple: true,
         selectable: false,
         uploadPath: "",
+        immediateUpload: false,
+        immediateFiles: null,
     };
 
     const configOptions = isLoaded.value
@@ -39,6 +41,7 @@ function getDefaultOptions() {
 
 const options = ref(getDefaultOptions());
 const showModal = ref(false);
+const content = ref(null);
 
 function dismiss(result) {
     if (result && options.value.callback) {
@@ -52,6 +55,10 @@ function open(overrideOptions) {
     const newOptions = overrideOptions ?? {};
     options.value = { ...getDefaultOptions(), ...newOptions };
     showModal.value = true;
+
+    if (options.value.immediateUpload) {
+        content.value.immediateUpload(options.value.immediateFiles);
+    }
 }
 
 defineExpose({
@@ -75,6 +82,7 @@ defineExpose({
 
         <UploadModalContent
             v-if="currentHistoryId"
+            ref="content"
             :currentUserId="currentUser.id"
             :currentHistoryId="currentHistoryId"
             v-bind="options"

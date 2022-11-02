@@ -289,6 +289,9 @@ export default {
         _eventCreate: function () {
             this.uploadbox.add([{ name: defaultNewFileName, size: 0, mode: "new" }]);
         },
+        addFiles: function (files) {
+            this.uploadbox.add(files);
+        },
         /** Pause upload process */
         _eventStop: function () {
             if (this.counterRunning > 0) {

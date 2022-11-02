@@ -2,6 +2,7 @@
     <b-tabs v-if="ready">
         <b-tab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <default
+                ref="regular"
                 :app="this"
                 :lazy-load-max="50"
                 :multiple="multiple"
@@ -200,6 +201,10 @@ export default {
          */
         toData: function (items, history_id, composite = false) {
             return uploadModelsToPayload(items, history_id, composite);
+        },
+        immediateUpload: function (files) {
+            this.$refs.regular?.addFiles(files);
+            this.$refs.regular?._eventStart();
         },
     },
 };

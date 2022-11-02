@@ -46,6 +46,7 @@ export function useFileDrop(dropZone, onDrop, solo) {
                 isFileOverDocument.value = false;
                 unref(onDrop)(event);
             }
+            dragBlocked.value = false;
         },
         true
     );
@@ -57,6 +58,7 @@ export function useFileDrop(dropZone, onDrop, solo) {
             // reset on drag end
             isFileOverDocument.value = false;
             isFileOverDropZone.value = false;
+            dragBlocked.value = false;
         },
         true
     );
