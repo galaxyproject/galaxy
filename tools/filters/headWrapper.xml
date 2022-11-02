@@ -1,4 +1,4 @@
-<tool id="Show beginning1" name="Select first" version="1.0.1" profile="20.05">
+<tool id="Show beginning1" name="Select first" version="1.0.2" profile="20.05">
   <description>lines from a dataset</description>
   <edam_operations>
     <edam_operation>operation_3695</edam_operation>
@@ -6,20 +6,13 @@
   <requirements>
     <requirement type="package" version="8.31">coreutils</requirement>
   </requirements>
-  <stdio>
-    <exit_code range="1:140"/>
-    <exit_code range="142:"/>
-  </stdio>
   <command><![CDATA[
-    set -eo pipefail;
     #if $header
-      head -n 1 '$input' > '$out_file1' &&
-      tail -n +2 '$input'
+      #set $n = int($lineNum) + 1
     #else
-      cat '$input'
+      #set $n = $lineNum
     #end if
-    | head -n $lineNum 
-    >> '$out_file1'
+    head -n $n '$input' > '$out_file1'
   ]]></command>
   <inputs>
     <param name="lineNum" type="integer" value="10" min="1" label="Select first" help="lines"/>
