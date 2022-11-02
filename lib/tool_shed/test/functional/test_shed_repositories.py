@@ -1,5 +1,5 @@
-import tempfile
 import os
+import tempfile
 
 from galaxy.tool_util.parser import get_tool_source
 from galaxy.util.compression_utils import CompressedFile

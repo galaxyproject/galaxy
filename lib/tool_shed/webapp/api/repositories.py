@@ -564,10 +564,17 @@ class RepositoriesController(BaseAPIController):
 
         """
 
-        def handle_repository(trans, rmm, repository, results):
+        def handle_repository(trans, repository, results):
             log.debug(f"Resetting metadata on repository {repository.name}")
             try:
-                rmm.set_repository(repository)
+                rmm = repository_metadata_manager.RepositoryMetadataManager(
+                    app=self.app,
+                    user=trans.user,
+                    resetting_all_metadata_on_repository=True,
+                    updating_installed_repository=False,
+                    repository=repository,
+                    persist=False,
+                )
                 rmm.reset_all_metadata_on_repository_in_tool_shed()
                 rmm_invalid_file_tups = rmm.get_invalid_file_tups()
                 if rmm_invalid_file_tups:
@@ -587,13 +594,6 @@ class RepositoriesController(BaseAPIController):
             results["repository_status"].append(status)
             return results
 
-        rmm = repository_metadata_manager.RepositoryMetadataManager(
-            app=self.app,
-            user=trans.user,
-            resetting_all_metadata_on_repository=True,
-            updating_installed_repository=False,
-            persist=False,
-        )
         start_time = strftime("%Y-%m-%d %H:%M:%S")
         results = dict(start_time=start_time, repository_status=[], successful_count=0, unsuccessful_count=0)
         handled_repository_ids = []
@@ -612,6 +612,13 @@ class RepositoriesController(BaseAPIController):
             my_writable = util.asbool(payload.get("my_writable", False))
         else:
             my_writable = True
+        rmm = repository_metadata_manager.RepositoryMetadataManager(
+            app=self.app,
+            user=trans.user,
+            resetting_all_metadata_on_repository=True,
+            updating_installed_repository=False,
+            persist=False,
+        )
         query = rmm.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=False)
         # First reset metadata on all repositories of type repository_dependency_definition.
         for repository in query:
@@ -623,7 +630,7 @@ class RepositoriesController(BaseAPIController):
                     encoded_ids_to_skip,
                 )
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository(trans, rmm, repository, results)
+                results = handle_repository(trans, repository, results)
         # Now reset metadata on all remaining repositories.
         for repository in query:
             encoded_id = trans.security.encode_id(repository.id)
@@ -634,7 +641,7 @@ class RepositoriesController(BaseAPIController):
                     encoded_ids_to_skip,
                 )
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository(trans, rmm, repository, results)
+                results = handle_repository(trans, repository, results)
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
         results["stop_time"] = stop_time
         return json.dumps(results, sort_keys=True, indent=4)
