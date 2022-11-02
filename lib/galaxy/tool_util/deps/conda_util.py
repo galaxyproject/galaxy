@@ -106,9 +106,12 @@ class CondaContext(installable.InstallableContext):
         else:
             ensure_channels = None
         self.ensure_channels = ensure_channels
+        self.use_local = use_local
+        self._reset_conda_properties()
+
+    def _reset_conda_properties(self):
         self._conda_version = None
         self._conda_build_available = None
-        self.use_local = use_local
 
     @property
     def conda_version(self):
@@ -127,9 +130,9 @@ class CondaContext(installable.InstallableContext):
         self._conda_version = packaging.version.parse(info["conda_version"])
         self._conda_build_available = False
         conda_build_version = info.get("conda_build_version")
-        if conda_build_version != "not installed":
+        if conda_build_version and conda_build_version != "not installed":
             try:
-                self._conda_version = packaging.version.parse(conda_build_version)
+                packaging.version.parse(conda_build_version)
                 self._conda_build_available = True
             except Exception:
                 pass
@@ -230,14 +233,21 @@ class CondaContext(installable.InstallableContext):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        create_args = ["-y", "--quiet"]
-        if self.conda_version >= packaging.version.parse("4.7.5"):
-            create_args.append("--strict-channel-priority")
-        if allow_local and self.use_local:
-            create_args.extend(["--use-local"])
-        create_args.extend(self._override_channels_args)
-        create_args.extend(args)
-        return self.exec_command("create", create_args, stdout_path=stdout_path)
+        for try_strict in [True, False]:
+            create_args = ["-y", "--quiet"]
+            if try_strict:
+                if self.conda_version >= packaging.version.parse("4.7.5"):
+                    create_args.append("--strict-channel-priority")
+                else:
+                    continue
+            if allow_local and self.use_local:
+                create_args.append("--use-local")
+            create_args.extend(self._override_channels_args)
+            create_args.extend(args)
+            ret = self.exec_command("create", create_args, stdout_path=stdout_path)
+            if ret == 0:
+                break
+        return ret
 
     def exec_remove(self, args):
         """
@@ -257,14 +267,23 @@ class CondaContext(installable.InstallableContext):
         """
         Return the process exit code (i.e. 0 in case of success).
         """
-        install_args = ["-y"]
-        if self.conda_version >= packaging.version.parse("4.7.5"):
-            install_args.append("--strict-channel-priority")
-        if allow_local and self.use_local:
-            install_args.append("--use-local")
-        install_args.extend(self._override_channels_args)
-        install_args.extend(args)
-        return self.exec_command("install", install_args, stdout_path=stdout_path)
+        for try_strict in [True, False]:
+            install_args = ["-y"]
+            if try_strict:
+                if self.conda_version >= packaging.version.parse("4.7.5"):
+                    install_args.append("--strict-channel-priority")
+                else:
+                    continue
+            if allow_local and self.use_local:
+                install_args.append("--use-local")
+            install_args.extend(self._override_channels_args)
+            install_args.extend(args)
+            ret = self.exec_command("install", install_args, stdout_path=stdout_path)
+            if ret == 0:
+                break
+        if ret == 0:
+            self._reset_conda_properties()
+        return ret
 
     def exec_clean(self, args=[], quiet=False):
         """
