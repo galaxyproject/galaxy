@@ -507,9 +507,16 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             tool_ids.add(tool_id)
         return [citation.to_dict("bibtex") for citation in self.citations_manager.citations_for_tool_ids(tool_ids)]
 
-    def index_exports(self, trans: ProvidesHistoryContext, id: DecodedDatabaseIdField, use_tasks: bool = False):
+    def index_exports(
+        self,
+        trans: ProvidesHistoryContext,
+        id: DecodedDatabaseIdField,
+        use_tasks: bool = False,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+    ):
         if use_tasks:
-            return self.history_export_manager.get_task_exports(trans, id)
+            return self.history_export_manager.get_task_exports(trans, id, limit, offset)
         return self.history_export_manager.get_exports(trans, id)
 
     def archive_export(

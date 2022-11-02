@@ -363,11 +363,11 @@ class HistoryExportManager:
         self.export_tracker = export_tracker
         self.task_manager = task_manager
 
-    def get_task_exports(self, trans, history_id: int):
+    def get_task_exports(self, trans, history_id: int, limit: Optional[int] = None, offset: Optional[int] = None):
         """Returns task-based exports associated with this history"""
         history = self._history(trans, history_id)
         export_associations = self.export_tracker.get_object_exports(
-            object_id=history_id, object_type=self.export_object_type
+            object_id=history_id, object_type=self.export_object_type, limit=limit, offset=offset
         )
         return [self._serialize_task_export(export, history) for export in export_associations]
 

@@ -62,6 +62,8 @@ from galaxy.webapps.galaxy.api import (
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
+    LimitQueryParam,
+    OffsetQueryParam,
     query_serialization_params,
 )
 from galaxy.webapps.galaxy.services.histories import HistoriesService
@@ -327,7 +329,7 @@ class FastAPIHistories:
 
     @router.get(
         "/api/histories/{id}/exports",
-        name="get_exports",
+        name="get_history_exports",
         summary=("Get previous history exports."),
         responses={
             200: {
@@ -347,6 +349,8 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: DecodedDatabaseIdField = HistoryIDPathParam,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
         accept: str = Header(default="application/json", include_in_schema=False),
     ) -> Union[JobExportHistoryArchiveListResponse, ExportTaskListResponse]:
         """
@@ -355,7 +359,7 @@ class FastAPIHistories:
         Change the `accept` content type header to return the new task-based history exports.
         """
         use_tasks = accept == ExportTaskListResponse.__accept_type__
-        exports = self.service.index_exports(trans, id, use_tasks)
+        exports = self.service.index_exports(trans, id, use_tasks, limit, offset)
         if use_tasks:
             return ExportTaskListResponse(__root__=exports)
         return JobExportHistoryArchiveListResponse(__root__=exports)

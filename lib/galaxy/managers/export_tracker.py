@@ -1,4 +1,7 @@
-from typing import List
+from typing import (
+    List,
+    Optional,
+)
 
 from pydantic import BaseModel
 from sqlalchemy import (
@@ -42,7 +45,9 @@ class StoreExportTracker:
         export_association.export_metadata = export_metadata.json()
         self.session.flush()
 
-    def get_object_exports(self, object_id: int, object_type: ExportObjectType) -> List[StoreExportAssociation]:
+    def get_object_exports(
+        self, object_id: int, object_type: ExportObjectType, limit: Optional[int] = None, offset: Optional[int] = None
+    ) -> List[StoreExportAssociation]:
         stmt = (
             select(
                 StoreExportAssociation,
@@ -52,4 +57,8 @@ class StoreExportTracker:
             )
             .order_by(StoreExportAssociation.create_time.desc())
         )
-        return self.session.execute(stmt).scalars().all()
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+        return self.session.execute(stmt).scalars()
