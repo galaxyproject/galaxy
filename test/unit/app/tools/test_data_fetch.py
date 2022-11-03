@@ -2,17 +2,11 @@ import json
 import os
 import tempfile
 from contextlib import contextmanager
-from os import environ
 from shutil import rmtree
 from tempfile import mkdtemp
 
-import pytest
-
+from galaxy.tool_util.unittest_utils import skip_if_github_down
 from galaxy.tools.data_fetch import main
-
-github_fetch = pytest.mark.skipif(
-    not environ.get("GALAXY_TEST_INCLUDE_SLOW"), reason="GALAXY_TEST_INCLUDE_SLOW not set"
-)
 
 
 def test_simple_path_get():
@@ -36,6 +30,7 @@ def test_simple_path_get():
         assert output
 
 
+@skip_if_github_down
 def test_simple_uri_get():
     with _execute_context() as execute_context:
         request = {
@@ -60,6 +55,7 @@ def test_simple_uri_get():
         assert hda_result["ext"] == "bed"
 
 
+@skip_if_github_down
 def test_deferred_uri_get():
     with _execute_context() as execute_context:
         request = {
@@ -109,7 +105,7 @@ def test_simple_list_path_get():
         assert destination["object_id"] == 76
 
 
-@github_fetch
+@skip_if_github_down
 def test_hdas_single_url_error():
     with _execute_context() as execute_context:
         job_directory = execute_context.job_directory
@@ -145,7 +141,7 @@ def test_hdas_single_url_error():
         )
 
 
-@github_fetch
+@skip_if_github_down
 def test_hdca_collection_element_failed():
     with _execute_context() as execute_context:
         job_directory = execute_context.job_directory
@@ -177,7 +173,7 @@ def test_hdca_collection_element_failed():
         )
 
 
-@github_fetch
+@skip_if_github_down
 def test_hdca_allow_failed_collections():
     with _execute_context() as execute_context:
         job_directory = execute_context.job_directory
