@@ -57,6 +57,7 @@ defusedxml==0.7.1; python_version >= "3.6" and python_full_version < "3.0.0" and
 deprecated==1.2.13; python_version >= "3.6" and python_full_version < "3.0.0" or python_full_version >= "3.4.0" and python_version >= "3.6"
 deprecation==2.1.0
 dictobj==0.4
+dnspython==2.2.1 ; python_version >= "3.7" and python_version < "3.11"
 docopt==0.6.2
 docutils==0.16; (python_version >= "2.7" and python_full_version < "3.0.0") or (python_full_version >= "3.5.0")
 ecdsa==0.17.0; python_version >= "2.6" and python_full_version < "3.0.0" or python_full_version >= "3.3.0"
