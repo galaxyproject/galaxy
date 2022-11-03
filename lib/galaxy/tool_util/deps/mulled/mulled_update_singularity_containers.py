@@ -1,10 +1,18 @@
 #!/usr/bin/env python
 
 import argparse
+import os
+import os.path
 import subprocess
 import tempfile
 from glob import glob
 from subprocess import check_output
+from typing import (
+    Any,
+    Dict,
+    List,
+    Union,
+)
 
 from galaxy.util import unicodify
 from .get_tests import (
@@ -25,7 +33,7 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
     """
     Convert docker to singularity container.
     """
-    cmd = [installation, "build", "/".join((filepath, container)), f"docker://quay.io/biocontainers/{container}"]
+    cmd = [installation, "build", os.path.join(filepath, container), f"docker://quay.io/biocontainers/{container}"]
     try:
         if no_sudo:
             check_output(cmd, stderr=subprocess.STDOUT)
@@ -36,46 +44,43 @@ def docker_to_singularity(container, installation, filepath, no_sudo=False):
         raise Exception(f"Docker to Singularity conversion failed.\nOutput was:\n{unicodify(e.output)}")
 
 
-def singularity_container_test(tests, installation, filepath):
+def singularity_container_test(
+    tests: Dict[str, Dict[str, Any]], installation: str, filepath: Union[str, os.PathLike]
+) -> Dict[str, List]:
     """
     Run tests, record if they pass or fail
     """
-    test_results = {"passed": [], "failed": [], "notest": []}
+    test_results: Dict[str, List] = {"passed": [], "failed": [], "notest": []}
 
     # create a 'sanitised home' directory in which the containers may be mounted - see http://singularity.lbl.gov/faq#solution-1-specify-the-home-to-mount
     with tempfile.TemporaryDirectory() as tmpdirname:
         for container, test in tests.items():
             if "commands" not in test and "imports" not in test:
                 test_results["notest"].append(container)
-
             else:
-                exec_command = [installation, "exec", "-H", tmpdirname, "/".join((filepath, container))]
+                exec_command = [installation, "exec", "-H", tmpdirname, os.path.join(filepath, container)]
                 test_passed = True
                 errors = []
-                if test.get("commands", False):
-                    for test_command in test["commands"]:
-                        test_command = test_command.replace("$PREFIX", "/usr/local/")
-                        test_command = test_command.replace("${PREFIX}", "/usr/local/")
-                        test_command = test_command.replace("$R ", "Rscript ")
+                for test_command in test.get("commands", []):
+                    test_command = test_command.replace("$PREFIX", "/usr/local/")
+                    test_command = test_command.replace("${PREFIX}", "/usr/local/")
+                    test_command = test_command.replace("$R ", "Rscript ")
 
+                    try:
+                        check_output(exec_command + ["bash", "-c", test_command], stderr=subprocess.STDOUT)
+                    except subprocess.CalledProcessError:
                         try:
-                            check_output(exec_command.extend(["bash", "-c", test_command]), stderr=subprocess.STDOUT)
-                        except subprocess.CalledProcessError:
-                            try:
-                                check_output(exec_command.append(test_command), stderr=subprocess.STDOUT)
-                            except subprocess.CalledProcessError as e:
-                                errors.append({"command": test_command, "output": unicodify(e.output)})
-                                test_passed = False
-
-                if test.get("imports", False):
-                    for imp in test["imports"]:
-                        try:
-                            check_output(
-                                exec_command.extend([test["import_lang"], f"import {imp}"]), stderr=subprocess.STDOUT
-                            )
+                            check_output(exec_command + [test_command], stderr=subprocess.STDOUT)
                         except subprocess.CalledProcessError as e:
-                            errors.append({"import": imp, "output": unicodify(e.output)})
+                            errors.append({"command": test_command, "output": unicodify(e.output)})
                             test_passed = False
+
+                for imp in test.get("imports", []):
+                    try:
+                        check_output(exec_command + [test["import_lang"], f"import {imp}"], stderr=subprocess.STDOUT)
+                    except subprocess.CalledProcessError as e:
+                        errors.append({"import": imp, "output": unicodify(e.output)})
+                        test_passed = False
 
                 if test_passed:
                     test_results["passed"].append(container)
