@@ -28,8 +28,8 @@ from galaxy.schema.schema import (
     ShareWithStatus,
     SharingStatus,
 )
+from galaxy.util.hash_util import md5_hash_str
 from galaxy.web import expose_api
-from galaxy.web.framework.helpers import md5
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.api import (
@@ -192,7 +192,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
             slug=visualization.slug,
         )
         dictionary["username"] = visualization.user.username
-        dictionary["email_hash"] = md5(visualization.user.email)
+        dictionary["email_hash"] = md5_hash_str(visualization.user.email)
         dictionary["tags"] = visualization.make_tag_string_list()
         dictionary["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, visualization)
         # need to encode ids in revisions as well

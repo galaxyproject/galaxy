@@ -146,10 +146,12 @@ from galaxy.util.form_builder import (
     WorkflowField,
     WorkflowMappingField,
 )
-from galaxy.util.hash_util import new_insecure_hash
+from galaxy.util.hash_util import (
+    md5_hash_str,
+    new_insecure_hash,
+)
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web.framework.helpers import md5
 
 log = logging.getLogger(__name__)
 
@@ -8912,7 +8914,7 @@ class Page(Base, HasTags, Dictifiable, RepresentById):
     # email needed for hash generation
     @property
     def email_hash(self):
-        return md5(self.user.email)
+        return md5_hash_str(self.user.email)
 
 
 class PageRevision(Base, Dictifiable, RepresentById):

@@ -45,7 +45,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
-from galaxy.web.framework.helpers import md5
+from galaxy.util.hash_util import md5_hash_str
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Query
@@ -418,7 +418,7 @@ class SharableModelSerializer(
     def serialize_email_hash(self, item, key, **context):
         if not (item.user and item.user.email):
             return None
-        return md5(item.user.email)
+        return md5_hash_str(item.user.email)
 
     def serialize_title(self, item, key, **context):
         if hasattr(item, "title"):
