@@ -98,7 +98,7 @@
             :disabled="tagsDisabled"
             @tag-click="onTagClick"
             @input="onTags" /-->
-        <Tags v-if="!tagsDisabled || hasTags" :value="tags" :disabled="tagsDisabled" />
+        <StatelessTags v-if="!tagsDisabled || hasTags" :value="tags" :disabled="tagsDisabled" @input="onTags" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <b-collapse :visible="expandDataset">
             <DatasetDetails
@@ -114,7 +114,7 @@
 </template>
 
 <script>
-import Tags from "components/TagsMultiselect/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
@@ -132,7 +132,7 @@ export default {
         CollectionDescription,
         ContentOptions,
         DatasetDetails,
-        Tags,
+        StatelessTags,
         FontAwesomeIcon,
     },
     props: {

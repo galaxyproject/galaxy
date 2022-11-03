@@ -3,13 +3,10 @@ import Multiselect from "vue-multiselect";
 import Tag from "./Tag.vue";
 import { ref } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useUserTags } from "composables/user";
 
 const props = defineProps({
     value: {
-        type: Array,
-        default: () => [],
-    },
-    options: {
         type: Array,
         default: () => [],
     },
@@ -19,8 +16,25 @@ const props = defineProps({
     },
 });
 
+const emit = defineEmits(["input"]);
+
+const { userTags, addLocalTag } = useUserTags();
+
 function onAddTag(tag) {
-    console.log(tag);
+    addLocalTag(tag);
+    emit("input", [...props.value, tag]);
+}
+
+function onInput(val) {
+    console.log(val);
+    emit("input", val);
+}
+
+function onDelete(tag) {
+    const val = [...props.value];
+    const index = props.value.indexOf(tag);
+    val.splice(index, 1);
+    emit("input", val);
 }
 
 const editing = ref(false);
@@ -55,15 +69,15 @@ library.add(faTags, faCheck, faTimes, faPlus);
             class=""
             ref="multiselectElement"
             :value="props.value"
-            :options="props.options"
+            :options="userTags"
             :multiple="true"
             :taggable="true"
             @tag="onAddTag"
-            @select="onAddTag"
+            @input="onInput"
             @open="onOpen"
             @close="onClose">
-            <template v-slot:tag="{ option, search, remove }">
-                <Tag :option="option" :search="search" :remove="remove" :editable="true"></Tag>
+            <template v-slot:tag="{ option, search }">
+                <Tag :option="option" :search="search" :editable="true" @deleted="onDelete"></Tag>
             </template>
 
             <template v-slot:noOptions> Type to add new tag </template>

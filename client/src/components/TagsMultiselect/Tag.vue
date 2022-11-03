@@ -11,12 +11,16 @@ const props = defineProps({
     focusable: Boolean,
 });
 
-const emit = defineEmits(["click"]);
+const emit = defineEmits(["click", "deleted"]);
 
 const color = computed(() => keyedColorScheme(props.option).primary);
 
 function onClick() {
     emit("click", props.option);
+}
+
+function onDelete() {
+    emit("deleted", props.option);
 }
 </script>
 
@@ -32,7 +36,13 @@ library.add(faTimes);
         <span>
             {{ props.option }}
         </span>
-        <b-button v-if="editable" size="sm" variant="link" class="px-1 py-0" tabindex="-1" @click="props.remove">
+        <b-button
+            v-if="editable"
+            size="sm"
+            variant="link"
+            class="px-1 py-0"
+            tabindex="-1"
+            @click.prevent.stop="onDelete">
             <FontAwesomeIcon icon="fa-times"></FontAwesomeIcon>
         </b-button>
     </div>
