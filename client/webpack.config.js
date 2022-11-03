@@ -280,8 +280,10 @@ const toolshedConfig = (env = {}, argv = {}) => {
         toolshed: ["polyfills", "bundleToolshed", "entry/generic"],
     };
     buildConfig.optimization = {
-        minimize: true,
-        minimizer: [`...`, new CssMinimizerPlugin()],
+        splitChunks: {
+            // include all types of chunks
+            chunks: "all",
+        },
     };
 
     return buildConfig;
