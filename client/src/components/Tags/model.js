@@ -10,11 +10,6 @@ import { keyedColorScheme } from "utils/color";
 export const VALID_TAG_RE = /^([^\s.:])+(.[^\s.:]+)*(:[^\s.:]+)?$/;
 
 export class TagModel {
-    text;
-    styles;
-    label;
-    valid;
-
     /**
      * @param {string || object} data
      */
@@ -33,11 +28,11 @@ export class TagModel {
         Object.assign(this, props);
 
         this.text = props.text ?? "";
-        this.label = this.text;
+        this.label = this.text.replace(/^name:/, "#");
         this.styles = "";
 
         if (this.text.startsWith("#")) {
-            this.text = this.text.replace("#", "name:");
+            this.text = this.text.replace(/^#/, "name:");
             this.styles += "font-weight: bold;";
         }
 
