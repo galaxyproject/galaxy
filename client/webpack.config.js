@@ -58,26 +58,6 @@ const baseConfig = (env = {}, argv = {}) => {
                 config$: path.join(scriptsBase, "config", targetEnv) + ".js",
             },
         },
-        optimization: {
-            splitChunks: {
-                cacheGroups: {
-                    styles: {
-                        name: "base",
-                        chunks: "all",
-                        test: (m) => m.constructor.name == "CssModule",
-                        priority: -5,
-                    },
-                    libs: {
-                        name: "libs",
-                        test: new RegExp(`node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`),
-                        chunks: "all",
-                        priority: -10,
-                    },
-                },
-            },
-            minimize: true,
-            minimizer: [`...`, new CssMinimizerPlugin()],
-        },
         module: {
             rules: [
                 {
@@ -237,6 +217,27 @@ const analysisConfig = (env = {}, argv = {}) => {
         generic: ["polyfills", "bundleEntries", "entry/generic"],
     };
 
+    buildConfig.optimization = {
+        splitChunks: {
+            cacheGroups: {
+                styles: {
+                    name: "base",
+                    chunks: "all",
+                    test: (m) => m.constructor.name == "CssModule",
+                    priority: -5,
+                },
+                libs: {
+                    name: "libs",
+                    test: new RegExp(`node_modules[\\/](?!(${modulesExcludedFromLibs})[\\/])|galaxy/scripts/libs`),
+                    chunks: "all",
+                    priority: -10,
+                },
+            },
+        },
+        minimize: true,
+        minimizer: [`...`, new CssMinimizerPlugin()],
+    };
+
     buildConfig.devServer = {
         client: {
             overlay: {
@@ -287,3 +288,4 @@ const toolshedConfig = (env = {}, argv = {}) => {
 };
 
 module.exports = [analysisConfig, toolshedConfig];
+module.exports.parallelism = 2;
