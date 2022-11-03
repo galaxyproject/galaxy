@@ -7,23 +7,23 @@
                         {{ messageText }}
                     </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
-                        <b-card no-body header="Welcome to Galaxy, please log in">
+                        <b-card no-body :header="headerWelcome">
                             <b-card-body>
                                 <div>
                                     <!-- standard internal galaxy login -->
-                                    <b-form-group label="Public Name or Email Address">
+                                    <b-form-group :label="labelNameAddress">
                                         <b-form-input v-model="login" name="login" type="text" />
                                     </b-form-group>
-                                    <b-form-group label="Password">
+                                    <b-form-group :label="labelPassword">
                                         <b-form-input v-model="password" name="password" type="password" />
-                                        <b-form-text>
+                                        <b-form-text v-localize>
                                             Forgot password?
-                                            <a href="javascript:void(0)" role="button" @click.prevent="resetLogin">
+                                            <a v-localize href="javascript:void(0)" role="button" @click.prevent="resetLogin">
                                                 Click here to reset your password.
                                             </a>
                                         </b-form-text>
                                     </b-form-group>
-                                    <b-button name="login" type="submit">Login</b-button>
+                                    <b-button v-localize name="login" type="submit">Login</b-button>
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
@@ -35,6 +35,7 @@
                                 <span v-if="allowUserCreation">
                                     <a
                                         id="register-toggle"
+                                        v-localize
                                         href="javascript:void(0)"
                                         role="button"
                                         @click.prevent="toggleLogin">
@@ -81,6 +82,7 @@ import BootstrapVue from "bootstrap-vue";
 import { safePath } from "utils/redirect";
 import NewUserConfirmation from "./NewUserConfirmation";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
+import _l from "utils/localization";
 
 Vue.use(BootstrapVue);
 
@@ -130,6 +132,9 @@ export default {
             url: null,
             messageText: null,
             messageVariant: null,
+            headerWelcome: _l("Welcome to Galaxy, please log in"),
+            labelNameAddress: _l("Public Name or Email Address"),
+            labelPassword: _l("Password"),
         };
     },
     computed: {
