@@ -29,18 +29,18 @@ export class TagModel {
 
         this.text = props.text ?? "";
         this.label = this.text.replace(/^name:/, "#");
-        this.styles = "";
+        this.text = this.text.replace(/^#/, "name:");
+        this.style = "";
 
-        if (this.text.startsWith("#")) {
-            this.text = this.text.replace(/^#/, "name:");
-            this.styles += "font-weight: bold;";
+        if (this.text.startsWith("name:")) {
+            this.style += "font-weight: bold;";
         }
 
         const { primary, darker } = keyedColorScheme(this.text);
 
-        this.styles += `background-color: ${primary};`;
-        this.styles += "color: black;";
-        this.styles += `border-color: ${darker};`;
+        this.style += `background-color: ${primary};`;
+        this.style += "color: black;";
+        this.style += `border-color: ${darker};`;
 
         this.valid = VALID_TAG_RE.test(this.text);
 
