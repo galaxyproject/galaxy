@@ -142,8 +142,8 @@ Extra options:
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
  --coverage            Generate a test coverage report. This option currently
-                       works with every python test, but the
-                       results may not be reliable with selenium or other
+                       works with every Python test, but the
+                       results may not be reliable with Selenium or other
                        frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
@@ -169,6 +169,11 @@ can be used to control the Galaxy functional testing processing. Command-line
 options above like (--external_url) will set environment variables - in such
 cases the command line argument takes precedent over environment variables set
 at the time of running this script.
+
+General Test Environment Variables
+
+GALAXY_TEST_COVERAGE            If set, it is equivalent to passing the
+                                --coverage option.
 
 Functional Test Environment Variables
 
@@ -239,9 +244,4 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
-
-Unit Test Environment Variables
-
-GALAXY_TEST_INCLUDE_SLOW - Used in unit tests to trigger slower tests that
-                           aren't included by default with --unit/-u.
 

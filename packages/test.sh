@@ -60,7 +60,7 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
     unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/ --ignore=tool_shed/test/'
     # Ignore exit code 5 (no tests ran)
-    pytest $unit_extra . || test $? -eq 5
+    pytest $unit_extra -m 'not external_dependency_management' . || test $? -eq 5
     make mypy
     cd ..
 done
