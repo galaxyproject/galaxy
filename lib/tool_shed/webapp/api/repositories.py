@@ -1082,6 +1082,8 @@ class RepositoriesController(BaseAPIController):
             commit_message,
             new_repo_alert,
         )
+        upload_message = message
+        files_removed = util.listify(undesirable_dirs_removed) + util.listify(undesirable_files_removed)
         if ok:
             # Update the repository files for browsing.
             hg_util.update_repository(repo_dir)
@@ -1106,6 +1108,11 @@ class RepositoriesController(BaseAPIController):
         if os.path.exists(uploaded_file_name):
             os.remove(uploaded_file_name)
         if not ok:
-            return {"err_msg": message}
+            return {
+                "err_msg": message,
+                "content_alert": content_alert_str,
+                "files_removed": files_removed,
+                "upload_message": upload_message,
+            }
         else:
             return {"message": message}
