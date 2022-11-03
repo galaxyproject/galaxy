@@ -89,7 +89,7 @@
     "vue-multiselect": "^2.1.6",
     "vue-observe-visibility": "^1.0.0",
     "vue-prismjs": "^1.2.0",
-    "vue-router": "^3.5.3",
+    "vue-router": "^3.6.5",
     "vue-rx": "^6.2.0",
     "vue-virtual-scroll-list": "^2.3.3",
     "vuedraggable": "2.24.3",
