@@ -189,6 +189,7 @@ const isEmpty = computed(() => {
 
 const isRequired = computed(() => attrs.value["optional"] === false);
 const isRequiredType = computed(() => props.type !== "boolean");
+const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !== undefined);
 </script>
 
 <script>
@@ -241,7 +242,9 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 *
                 <span v-if="isEmpty" class="ui-form-title-message warning"> required </span>
             </span>
-            <span v-else-if="isRequiredType && props.title" class="ui-form-title-message"> - optional </span>
+            <span v-else-if="isOptional && isRequiredType && props.title" class="ui-form-title-message">
+                - optional
+            </span>
         </div>
 
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
