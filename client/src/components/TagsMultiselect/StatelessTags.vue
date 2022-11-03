@@ -1,7 +1,7 @@
 <script setup>
 import Multiselect from "vue-multiselect";
 import Tag from "./Tag.vue";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useUserTags } from "composables/user";
 
@@ -52,6 +52,8 @@ const multiselectElement = ref(null);
 function openMultiselect() {
     multiselectElement.value.activate();
 }
+
+const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#")));
 </script>
 
 <script>
@@ -68,7 +70,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
             placeholder="Add Tags"
             class=""
             ref="multiselectElement"
-            :value="props.value"
+            :value="tags"
             :options="userTags"
             :multiple="true"
             :taggable="true"
@@ -91,7 +93,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
 
             <template v-slot:option="{ option }">
                 <span>{{ option.label ?? option }}</span>
-                <span v-if="value.includes(option)" class="float-right">
+                <span v-if="tags.includes(option)" class="float-right">
                     <FontAwesomeIcon class="check-icon" icon="fa-check"></FontAwesomeIcon>
                     <FontAwesomeIcon class="times-icon" icon="fa-times"></FontAwesomeIcon>
                 </span>
@@ -102,7 +104,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
         </Multiselect>
         <div v-else class="pl-1 pb-2">
             <div class="d-inline">
-                <Tag v-for="tag in props.value" :key="tag" :option="tag" :editable="false"></Tag>
+                <Tag v-for="tag in tags" :key="tag" :option="tag" :editable="false"></Tag>
             </div>
         </div>
     </div>

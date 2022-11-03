@@ -22,6 +22,8 @@ function onClick() {
 function onDelete() {
     emit("deleted", props.option);
 }
+
+const named = computed(() => props.option.startsWith("#"));
 </script>
 
 <script>
@@ -33,7 +35,7 @@ library.add(faTimes);
 
 <template>
     <div class="tag" :class="{ editable }" :style="`background-color: ${color};`" @click.prevent.stop="onClick">
-        <span>
+        <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
         </span>
         <b-button

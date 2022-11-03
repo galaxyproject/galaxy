@@ -39,11 +39,15 @@ export function useUserTags() {
     );
 
     const userTags = computed(() => {
+        let tags;
+
         if (currentUser.value) {
-            return [...currentUser.value.tags_used, ...localTags.value];
+            tags = [...currentUser.value.tags_used, ...localTags.value];
         } else {
-            return localTags.value;
+            tags = localTags.value;
         }
+
+        return tags.map((tag) => tag.replace(/^name:/, "#"));
     });
 
     const addLocalTag = (tag) => {
