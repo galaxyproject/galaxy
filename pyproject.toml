@@ -47,6 +47,7 @@ cloudbridge = "*"
 circus = "*"
 cwltool = "==3.1.20211107152837"
 dictobj = "*"
+dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 edam-ontology = "*"
 fastapi = ">=0.68.2, !=0.69.0, !=0.70.0, !=0.70.1"  # https://github.com/tiangolo/fastapi/issues/4041
