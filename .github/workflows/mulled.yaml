@@ -42,6 +42,8 @@ jobs:
         with:
           path: .tox
           key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-mulled
+      - name: Install Apptainer's singularity
+        uses: eWaterCycle/setup-apptainer@v2
       - name: Install tox
         run: pip install tox
       - name: Run tests
