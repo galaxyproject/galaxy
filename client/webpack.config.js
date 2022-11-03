@@ -27,17 +27,11 @@ const modulesExcludedFromLibs = [
 
 const buildDate = new Date();
 
-module.exports = (env = {}, argv = {}) => {
-    // environment name based on -d, -p, webpack flag
+const baseConfig = (env = {}, argv = {}) => {
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
 
-    const buildconfig = {
+    const buildConfig = {
         mode: targetEnv,
-        entry: {
-            analysis: ["polyfills", "bundleEntries", "entry/analysis"],
-            generic: ["polyfills", "bundleEntries", "entry/generic"],
-            toolshed: ["polyfills", "bundleToolshed", "entry/generic"],
-        },
         output: {
             path: path.join(__dirname, "../", "/static/dist"),
             filename: "[name].bundled.js",
@@ -225,40 +219,71 @@ module.exports = (env = {}, argv = {}) => {
                 }),
             }),
         ],
-        devServer: {
-            client: {
-                overlay: {
-                    errors: true,
-                    warnings: false,
-                },
-                webSocketURL: {
-                    port: process.env.GITPOD_WORKSPACE_ID ? 443 : undefined,
-                },
+    };
+
+    if (process.env.GXY_BUILD_SOURCEMAPS || buildConfig.mode == "development") {
+        buildConfig.devtool = "eval-cheap-source-map";
+    }
+
+    return buildConfig;
+};
+
+const analysisConfig = (env = {}, argv = {}) => {
+    // environment name based on -d, -p, webpack flag
+    const buildConfig = baseConfig(env, argv);
+
+    buildConfig.entry = {
+        analysis: ["polyfills", "bundleEntries", "entry/analysis"],
+        generic: ["polyfills", "bundleEntries", "entry/generic"],
+    };
+
+    buildConfig.devServer = {
+        client: {
+            overlay: {
+                errors: true,
+                warnings: false,
             },
-            allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
-            devMiddleware: {
-                publicPath: "/static/dist",
+            webSocketURL: {
+                port: process.env.GITPOD_WORKSPACE_ID ? 443 : undefined,
             },
-            hot: true,
-            port: 8081,
-            host: "0.0.0.0",
-            // proxy *everything* to the galaxy server.
-            // someday, when we have a fully API-driven independent client, this
-            // can be a more limited set -- e.g. `/api`, `/auth`
-            proxy: {
-                "**": {
-                    target: process.env.GALAXY_URL || "http://localhost:8080",
-                    secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
-                    changeOrigin: !!process.env.CHANGE_ORIGIN,
-                    logLevel: "debug",
-                },
+        },
+        allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
+        devMiddleware: {
+            publicPath: "/static/dist",
+        },
+        hot: true,
+        port: 8081,
+        host: "0.0.0.0",
+        // proxy *everything* to the galaxy server.
+        // someday, when we have a fully API-driven independent client, this
+        // can be a more limited set -- e.g. `/api`, `/auth`
+        proxy: {
+            "**": {
+                target: process.env.GALAXY_URL || "http://localhost:8080",
+                secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
+                changeOrigin: !!process.env.CHANGE_ORIGIN,
+                logLevel: "debug",
             },
         },
     };
 
-    if (process.env.GXY_BUILD_SOURCEMAPS || buildconfig.mode == "development") {
-        buildconfig.devtool = "eval-cheap-source-map";
-    }
-
-    return buildconfig;
+    return buildConfig;
 };
+
+const toolshedConfig = (env = {}, argv = {}) => {
+    // environment name based on -d, -p, webpack flag
+
+    const buildConfig = baseConfig(env, argv);
+
+    buildConfig.entry = {
+        toolshed: ["polyfills", "bundleToolshed", "entry/generic"],
+    };
+    buildConfig.optimization = {
+        minimize: true,
+        minimizer: [`...`, new CssMinimizerPlugin()],
+    };
+
+    return buildConfig;
+};
+
+module.exports = [analysisConfig, toolshedConfig];
