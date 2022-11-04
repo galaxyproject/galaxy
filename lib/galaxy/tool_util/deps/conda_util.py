@@ -46,7 +46,7 @@ VERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@(.*)")
 UNVERSIONED_ENV_DIR_NAME = re.compile(r"__(.*)@_uv_")
 USE_PATH_EXEC_DEFAULT = False
 CONDA_PACKAGE_SPECS = ("conda>=22.9.0", "conda-libmamba-solver", "'pyopenssl>=22.1.0'")
-CONDA_BUILD_VERSION = "3.17.8"
+CONDA_BUILD_SPECS = ("conda-build>=3.22.0",)
 USE_LOCAL_DEFAULT = False
 
 
@@ -178,9 +178,8 @@ class CondaContext(installable.InstallableContext):
 
     def ensure_conda_build_installed_if_needed(self) -> int:
         if self.use_local and not self.conda_build_available:
-            conda_targets = [CondaTarget("conda-build", version=CONDA_BUILD_VERSION)]
             # Cannot use --use-local during installation of conda-build.
-            return install_conda_targets(conda_targets, conda_context=self, env_name=None, allow_local=False)
+            return self.exec_install(CONDA_BUILD_SPECS, allow_local=False)
         else:
             return 0
 
@@ -275,7 +274,7 @@ class CondaContext(installable.InstallableContext):
             return True
         return any(match["version"] == version for match in out)
 
-    def exec_create(self, args: List[str], allow_local: bool = True, stdout_path: Optional[str] = None) -> int:
+    def exec_create(self, args: Iterable[str], allow_local: bool = True, stdout_path: Optional[str] = None) -> int:
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -306,7 +305,7 @@ class CondaContext(installable.InstallableContext):
         remove_args.extend(args)
         return self.exec_command("env remove", remove_args)
 
-    def exec_install(self, args: List[str], allow_local: bool = True, stdout_path: Optional[str] = None) -> int:
+    def exec_install(self, args: Iterable[str], allow_local: bool = True, stdout_path: Optional[str] = None) -> int:
         """
         Return the process exit code (i.e. 0 in case of success).
         """
@@ -488,7 +487,7 @@ def install_conda(conda_context: CondaContext, force_conda_build: bool = False) 
     install_cmd = ["bash", script_path, "-b", "-p", conda_context.conda_prefix]
     package_targets = list(CONDA_PACKAGE_SPECS)
     if force_conda_build or conda_context.use_local:
-        package_targets.append(f"conda-build={CONDA_BUILD_VERSION}")
+        package_targets.extend(CONDA_BUILD_SPECS)
     log.info("Installing conda, this may take several minutes.")
     try:
         exit_code = conda_context.shell_exec(download_cmd)
