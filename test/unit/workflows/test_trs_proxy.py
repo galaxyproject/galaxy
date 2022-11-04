@@ -94,16 +94,16 @@ def test_match_url():
     assert ignore_extra["version_id"] == "1"
 
     invalid = proxy.match_url("https://workflowhub.eu/workflows/1")
-    assert invalid == None
+    assert invalid is None
 
     missing_version = proxy.match_url("https://workflowhub.eu/ga4gh/trs/v2/tools/344")
-    assert missing_version == None
+    assert missing_version is None
 
     blank = proxy.match_url("")
-    assert blank == None
+    assert blank is None
 
     not_url = proxy.match_url("1234")
-    assert not_url == None
+    assert not_url is None
 
 
 def test_server_from_url():
