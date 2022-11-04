@@ -571,16 +571,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # Security check raises error if user cannot access history.
         self.history_manager.error_unless_accessible(history, trans.user, current_history=trans.history)
 
-        # Get rating data.
-        user_item_rating = 0
-        if trans.get_user():
-            user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), history)
-            if user_item_rating:
-                user_item_rating = user_item_rating.rating
-            else:
-                user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, history)
-
         # Encode history id.
         history_id = trans.security.encode_id(history.id)
 
@@ -590,9 +580,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 controller="published",
                 action="history",
                 id=history_id,
-                user_item_rating=user_item_rating,
-                ave_item_rating=ave_item_rating,
-                num_ratings=num_ratings,
             )
         )
 
@@ -740,19 +727,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         trans.sa_session.flush()
         return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
         # TODO: used in index.mako
-
-    @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a history asynchronously and return updated community data."""
-        history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if not history:
-            return trans.show_error_message("The specified history does not exist.")
-        # Rate history.
-        self.rate_item(trans.sa_session, trans.get_user(), history, rating)
-        return self.get_ave_item_rating_data(trans.sa_session, history)
-        # TODO: used in display_base.mako
 
     @web.expose
     @web.json

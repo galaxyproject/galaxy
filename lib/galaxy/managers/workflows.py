@@ -69,6 +69,7 @@ from galaxy.tools.parameters.basic import (
     RuntimeValue,
     workflow_building_modes,
 )
+from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.json import (
     safe_dumps,
     safe_loads,
@@ -1480,6 +1481,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["name"] = workflow.name
         item["url"] = url_for("workflow", id=item["id"])
         item["owner"] = stored.user.username
+        item["email_hash"] = md5_hash_str(stored.user.email)
         item["slug"] = stored.slug
         inputs = {}
         for step in workflow.input_steps:
