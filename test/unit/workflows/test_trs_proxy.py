@@ -48,11 +48,23 @@ def test_proxy():
 
 def test_match_url():
     proxy = TrsProxy()
-    valid_dockstore = proxy.match_url("https://dockstore.org/api/ga4gh/trs/v2/tools/quay.io%252Fcollaboratory%252Fdockstore-tool-bedtools-genomecov/versions/0.3")
+    valid_dockstore = proxy.match_url(
+        "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+        "quay.io%2Fcollaboratory%2Fdockstore-tool-bedtools-genomecov/versions/0.3")
     assert valid_dockstore
     assert valid_dockstore["trs_base_url"] == "https://dockstore.org/api"
-    assert valid_dockstore["tool_id"] == "quay.io%252Fcollaboratory%252Fdockstore-tool-bedtools-genomecov"
+    # Should unquote
+    assert valid_dockstore["tool_id"] == "quay.io/collaboratory/dockstore-tool-bedtools-genomecov"
     assert valid_dockstore["version_id"] == "0.3"
+
+    valid_dockstore_unescaped = proxy.match_url(
+        "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+        "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow/versions/master")
+    assert valid_dockstore_unescaped
+    assert valid_dockstore_unescaped["trs_base_url"] == "https://dockstore.org/api"
+    assert valid_dockstore_unescaped["tool_id"] == \
+           "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+    assert valid_dockstore_unescaped["version_id"] == "master"
 
     valid_workflow_hub = proxy.match_url("https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1")
     assert valid_workflow_hub
@@ -60,13 +72,15 @@ def test_match_url():
     assert valid_workflow_hub["tool_id"] == "344"
     assert valid_workflow_hub["version_id"] == "1"
 
-    valid_arbitrary_trs = proxy.match_url("https://my-trs-server.golf/stuff/ga4gh/trs/v2/tools/hello-world/versions/version-1")
+    valid_arbitrary_trs = proxy.match_url(
+        "https://my-trs-server.golf/stuff/ga4gh/trs/v2/tools/hello-world/versions/version-1")
     assert valid_arbitrary_trs
     assert valid_arbitrary_trs["trs_base_url"] == "https://my-trs-server.golf/stuff"
     assert valid_arbitrary_trs["tool_id"] == "hello-world"
     assert valid_arbitrary_trs["version_id"] == "version-1"
 
-    ignore_extra = proxy.match_url("https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1/CWL/descriptor/ro-crate-metadata.json")
+    ignore_extra = proxy.match_url(
+        "https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1/CWL/descriptor/ro-crate-metadata.json")
     assert ignore_extra
     assert ignore_extra["trs_base_url"] == "https://workflowhub.eu"
     assert ignore_extra["tool_id"] == "344"

@@ -26,7 +26,7 @@ DEFAULT_TRS_SERVERS = [
     },
 ]
 GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
-TRS_URL_REGEX = r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>[^\/]+)\/versions\/(?P<version_id>[^\/]+)"
+TRS_URL_REGEX = r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
 
 def parse_search_kwds(search_query):
     filters = {
@@ -73,7 +73,9 @@ class TrsProxy:
     def match_url(self, url):
         matches = re.match(TRS_URL_REGEX, url)
         if matches:
-            return matches.groupdict()
+            match_dict = matches.groupdict()
+            match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
+            return match_dict
         else:
             return None
 
