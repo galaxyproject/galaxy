@@ -1,8 +1,8 @@
 import logging
 import os
+import re
 import urllib.parse
 
-import re
 import requests
 import yaml
 
@@ -26,7 +26,10 @@ DEFAULT_TRS_SERVERS = [
     },
 ]
 GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
-TRS_URL_REGEX = r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
+TRS_URL_REGEX = (
+    r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
+)
+
 
 def parse_search_kwds(search_query):
     filters = {
@@ -79,6 +82,7 @@ class TrsProxy:
         else:
             return None
 
+
 class TrsServer:
     def __init__(self, trs_url):
         self._trs_url = trs_url
@@ -106,7 +110,9 @@ class TrsServer:
         return self._get(trs_api_url)
 
     def get_version_descriptor(self, tool_id, version_id, **kwd):
-        trs_api_url = f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
+        trs_api_url = (
+            f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
+        )
         return self._get(trs_api_url)["content"]
 
     def _quote(self, tool_id, **kwd):

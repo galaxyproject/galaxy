@@ -46,11 +46,13 @@ def test_proxy():
     content = yaml.safe_load(descriptor)
     assert "inputs" in content
 
+
 def test_match_url():
     proxy = TrsProxy()
     valid_dockstore = proxy.match_url(
         "https://dockstore.org/api/ga4gh/trs/v2/tools/"
-        "quay.io%2Fcollaboratory%2Fdockstore-tool-bedtools-genomecov/versions/0.3")
+        "quay.io%2Fcollaboratory%2Fdockstore-tool-bedtools-genomecov/versions/0.3"
+    )
     assert valid_dockstore
     assert valid_dockstore["trs_base_url"] == "https://dockstore.org/api"
     # Should unquote
@@ -59,11 +61,14 @@ def test_match_url():
 
     valid_dockstore_unescaped = proxy.match_url(
         "https://dockstore.org/api/ga4gh/trs/v2/tools/"
-        "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow/versions/master")
+        "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow/versions/master"
+    )
     assert valid_dockstore_unescaped
     assert valid_dockstore_unescaped["trs_base_url"] == "https://dockstore.org/api"
-    assert valid_dockstore_unescaped["tool_id"] == \
-           "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+    assert (
+        valid_dockstore_unescaped["tool_id"]
+        == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+    )
     assert valid_dockstore_unescaped["version_id"] == "master"
 
     valid_workflow_hub = proxy.match_url("https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1")
@@ -73,14 +78,16 @@ def test_match_url():
     assert valid_workflow_hub["version_id"] == "1"
 
     valid_arbitrary_trs = proxy.match_url(
-        "https://my-trs-server.golf/stuff/ga4gh/trs/v2/tools/hello-world/versions/version-1")
+        "https://my-trs-server.golf/stuff/ga4gh/trs/v2/tools/hello-world/versions/version-1"
+    )
     assert valid_arbitrary_trs
     assert valid_arbitrary_trs["trs_base_url"] == "https://my-trs-server.golf/stuff"
     assert valid_arbitrary_trs["tool_id"] == "hello-world"
     assert valid_arbitrary_trs["version_id"] == "version-1"
 
     ignore_extra = proxy.match_url(
-        "https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1/CWL/descriptor/ro-crate-metadata.json")
+        "https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1/CWL/descriptor/ro-crate-metadata.json"
+    )
     assert ignore_extra
     assert ignore_extra["trs_base_url"] == "https://workflowhub.eu"
     assert ignore_extra["tool_id"] == "344"
@@ -97,6 +104,7 @@ def test_match_url():
 
     not_url = proxy.match_url("1234")
     assert not_url == None
+
 
 def test_server_from_url():
     proxy = TrsProxy()
@@ -116,7 +124,7 @@ def test_server_from_url():
     assert isinstance(versions, list)
     assert len(versions) >= 1
 
-    version_id = versions[0]["id"] # Dockstore and WorkflowHub differ here! Spec is not clear
+    version_id = versions[0]["id"]  # Dockstore and WorkflowHub differ here! Spec is not clear
     version = server.get_version(tool_id, version_id)
     assert "descriptor_type" in version
     assert GA4GH_GALAXY_DESCRIPTOR in version["descriptor_type"]
@@ -124,6 +132,7 @@ def test_server_from_url():
     descriptor = server.get_version_descriptor(tool_id, version_id)
     content = yaml.safe_load(descriptor)
     assert "steps" in content
+
 
 @search_test
 def test_search():

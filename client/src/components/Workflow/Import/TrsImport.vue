@@ -174,11 +174,9 @@ const importVersionFromUrl = (url, isRunFormRedirect = false) => {
                     :trs-tool="trsTool"
                     @onImport="importVersion(trsSelection.id, trsTool.id, $event)" />
             </div>
-            <hr/>
+            <hr />
             <div>
-                <TrsUrlImport
-                    :query-trs-url="props.queryTrsUrl"
-                    @onImport="importVersionFromUrl($event)" />
+                <TrsUrlImport :query-trs-url="props.queryTrsUrl" @onImport="importVersionFromUrl($event)" />
             </div>
         </b-card>
         <b-alert v-else class="text-center my-2" show variant="danger">

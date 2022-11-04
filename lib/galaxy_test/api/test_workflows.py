@@ -1089,14 +1089,16 @@ steps:
         trs_payload = {
             "archive_source": "trs_tool",
             "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/"
-                       "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
-                       "versions/master",
+            "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
+            "versions/master",
         }
         workflow_id = self._post("workflows", data=trs_payload).json()["id"]
         original_workflow = self._download_workflow(workflow_id)
         assert "Test Workflow" in original_workflow["name"]
-        assert original_workflow.get("source_metadata").get("trs_tool_id") == \
-               "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        assert (
+            original_workflow.get("source_metadata").get("trs_tool_id")
+            == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        )
         assert original_workflow.get("source_metadata").get("trs_version_id") == "master"
 
         # refactor workflow and check that the trs id is removed

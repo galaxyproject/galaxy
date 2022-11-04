@@ -5,7 +5,7 @@ const props = defineProps({
     queryTrsUrl: {
         type: String,
         default: null,
-    }
+    },
 });
 
 const trsUrl = ref(props.queryTrsUrl);
@@ -15,9 +15,7 @@ const isImportDisabled = computed(() => {
 });
 
 const importTooltip = computed(() => {
-    return isImportDisabled.value
-        ? "You must provide a TRS URL."
-        : "Import workflow from TRS URL";
+    return isImportDisabled.value ? "You must provide a TRS URL." : "Import workflow from TRS URL";
 });
 
 const emit = defineEmits(["onImport"]);
@@ -29,7 +27,7 @@ const submit = (ev) => {
 
 // Automatically trigger the import if the TRS URL was provided as a query param
 if (trsUrl.value) {
-  emit("onImport", trsUrl.value);
+    emit("onImport", trsUrl.value);
 }
 </script>
 
@@ -37,11 +35,7 @@ if (trsUrl.value) {
     <b-form class="mt-4" @submit="submit">
         <h2 class="h-sm">alternatively, provide a TRS URL directly</h2>
         <b-form-group label="TRS URL:" label-class="font-weight-bold">
-            <b-form-input
-                id="trs-import-url-input"
-                v-model="trsUrl"
-                aria-label="TRS URL"
-                type="url" />
+            <b-form-input id="trs-import-url-input" v-model="trsUrl" aria-label="TRS URL" type="url" />
             If the workflow is accessible via a TRS URL, enter the URL above and click Import.
         </b-form-group>
         <b-button
