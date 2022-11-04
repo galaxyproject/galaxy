@@ -1092,7 +1092,7 @@ steps:
         }
         workflow_id = self._post("workflows", data=trs_payload).json()["id"]
         original_workflow = self._download_workflow(workflow_id)
-        assert "sars-cov-2-variation-reporting/COVID-19-VARIATION-REPORTING" in original_workflow["name"]
+        assert "COVID-19: variation analysis reporting" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
         assert original_workflow.get("source_metadata").get("trs_version_id") == "5"
 
