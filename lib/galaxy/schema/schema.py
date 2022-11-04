@@ -1348,6 +1348,10 @@ class StoreExportPayload(Model):
     )
 
 
+class ShortTermStoreExportPayload(StoreExportPayload):
+    short_term_storage_request_id: UUID
+
+
 class BcoGenerationParametersMixin(BaseModel):
     bco_merge_history_metadata: bool = Field(
         default=False, description="When reading tags/annotations to generate BCO object include history metadata."
