@@ -39,7 +39,7 @@ if (trsUrl.value) {
             If the workflow is accessible via a TRS URL, enter the URL above and click Import.
         </b-form-group>
         <b-button
-            id="trs-import-button"
+            id="trs-url-import-button"
             type="submit"
             :disabled="isImportDisabled"
             :title="importTooltip"

@@ -344,7 +344,7 @@ class WorkflowsAPIController(
                     trs_tool_id = None
                     trs_version_id = None
                     import_source = None
-                    if payload["trs_url"]:
+                    if "trs_url" in payload:
                         parts = self.app.trs_proxy.match_url(payload.get("trs_url"))
                         if parts:
                             server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
