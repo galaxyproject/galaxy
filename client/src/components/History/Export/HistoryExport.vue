@@ -1,16 +1,19 @@
 <script setup>
 import { computed, ref, onMounted, watch } from "vue";
 import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
+import LoadingSpan from "components/LoadingSpan";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
 import { HistoryExportServices } from "./services";
 import { useTaskMonitor } from "composables/useTaskMonitor";
 import { useFileSources } from "composables/fileSources";
+import { useShortTermStorage } from "composables/shortTermStorage";
 
 const service = new HistoryExportServices();
 
 const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
 const { hasWritable: hasWritableFileSources } = useFileSources();
+const { isPreparing: isPreparingDownload, downloadHistory } = useShortTermStorage();
 
 const props = defineProps({
     historyId: {
@@ -18,6 +21,14 @@ const props = defineProps({
         required: true,
     },
 });
+
+// TODO: make this user configurable
+const EXPORT_PARAMS = {
+    model_store_format: "rocrate.zip",
+    include_files: true,
+    include_deleted: false,
+    include_hidden: false,
+};
 
 const isLoadingRecords = ref(true);
 const latestExportRecord = ref(null);
@@ -59,13 +70,13 @@ async function updateExports() {
 }
 
 async function exportToFileSource(exportDirectory, fileName) {
-    await service.exportToFileSource(props.historyId, exportDirectory, fileName);
+    await service.exportToFileSource(props.historyId, exportDirectory, fileName, EXPORT_PARAMS);
     updateExports();
 }
 
-async function generateDownloadLink() {
-    await service.generateDownloadLink();
-    updateExports();
+async function prepareDownload() {
+    downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: EXPORT_PARAMS });
+    // updateExports();
 }
 
 function reimportHistoryFromRecord(record) {
@@ -78,12 +89,17 @@ function reimportHistoryFromRecord(record) {
 
         <b-card no-body>
             <b-tabs pills card>
-                <b-tab title="to link" title-link-class="tab-export-to-link" active>
+                <b-tab title="to direct download" title-link-class="tab-export-to-link" active>
                     <p>
-                        Here you can generate a temporal link to download your packaged history. When your download link
-                        expires or your history changes, you can re-generate the link again.
+                        Here you can generate a temporal download for your history. When your download link expires or
+                        your history changes you can re-generate it again.
                     </p>
-                    <b-button variant="primary" @click="generateDownloadLink">Generate Download Link</b-button>
+                    <b-button :disabled="isPreparingDownload" variant="primary" @click="prepareDownload">
+                        Download
+                    </b-button>
+                    <span v-if="isPreparingDownload">
+                        <loading-span message="Galaxy is preparing your download, this will likely take a while" />
+                    </span>
                 </b-tab>
                 <b-tab v-if="hasWritableFileSources" title="to remote file" title-link-class="tab-export-to-file">
                     <p>

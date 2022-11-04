@@ -10,9 +10,9 @@ export class HistoryExportServices {
      * @returns {Promise<ExportRecordModel[]>}
      */
     async getExportRecords(historyId, params = { offset: undefined, limit: undefined }) {
-        const url = `/api/histories/${historyId}/exports`;
+        const url = safePath(`/api/histories/${historyId}/exports`);
         try {
-            const response = await axios.get(safePath(url), {
+            const response = await axios.get(url, {
                 headers: { Accept: "application/vnd.galaxy.task.export+json" },
                 params: params,
             });
@@ -51,10 +51,6 @@ export class HistoryExportServices {
             include_hidden: options.include_hidden,
         };
         return axios.post(`/api/histories/${historyId}/write_store`, writeStoreParams);
-    }
-
-    async generateDownloadLink() {
-        console.debug("TODO: Generate link");
     }
 
     async reimportHistoryFromRecord(record) {
