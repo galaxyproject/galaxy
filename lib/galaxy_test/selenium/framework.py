@@ -31,6 +31,7 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
+from galaxy.tool_util.unittest_utils import skip_if_github_down
 from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
@@ -49,7 +50,6 @@ from galaxy_test.base.env import (
 )
 from galaxy_test.base.populators import (
     load_data_dict,
-    skip_if_github_down,
     YamlContentT,
 )
 from galaxy_test.base.testcase import FunctionalTestCase

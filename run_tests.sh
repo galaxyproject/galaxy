@@ -148,8 +148,8 @@ Extra options:
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
  --coverage            Generate a test coverage report. This option currently
-                       works with every python test, but the
-                       results may not be reliable with selenium or other
+                       works with every Python test, but the
+                       results may not be reliable with Selenium or other
                        frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
@@ -175,6 +175,11 @@ can be used to control the Galaxy functional testing processing. Command-line
 options above like (--external_url) will set environment variables - in such
 cases the command line argument takes precedent over environment variables set
 at the time of running this script.
+
+General Test Environment Variables
+
+GALAXY_TEST_COVERAGE            If set, it is equivalent to passing the
+                                --coverage option.
 
 Functional Test Environment Variables
 
@@ -246,11 +251,6 @@ TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
 
-Unit Test Environment Variables
-
-GALAXY_TEST_INCLUDE_SLOW - Used in unit tests to trigger slower tests that
-                           aren't included by default with --unit/-u.
-
 EOF
 }
 
@@ -268,21 +268,23 @@ exists() {
 debug=""
 test_script="pytest"
 report_file="run_functional_tests.html"
-coverage_arg=""
+if [ -n "$GALAXY_TEST_COVERAGE" ]; then
+    coverage_arg="--with-coverage"
+else
+    coverage_arg=""
+fi
 xunit_report_file=""
 structured_data_report_file=""
 structured_data_html=0
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
-if [ "$SKIP_CLIENT_BUILD" = "1" ];
-then
+if [ "$SKIP_CLIENT_BUILD" = "1" ]; then
     skip_client_build="--skip-client-build"
 else
     skip_client_build=""
 fi
 
 # If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
-if [ -n "$BUILD_NUMBER" ];
-then
+if [ -n "$BUILD_NUMBER" ]; then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
 

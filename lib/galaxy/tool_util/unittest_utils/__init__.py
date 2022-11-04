@@ -52,3 +52,6 @@ def skip_if_site_down(url: str) -> Callable:
         return wrapped_method
 
     return method_wrapper
+
+
+skip_if_github_down = skip_if_site_down("https://github.com/")

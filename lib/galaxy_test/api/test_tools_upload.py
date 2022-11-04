@@ -5,7 +5,10 @@ import urllib.parse
 import pytest
 from tusclient import client
 
-from galaxy.tool_util.unittest_utils import skip_if_site_down
+from galaxy.tool_util.unittest_utils import (
+    skip_if_github_down,
+    skip_if_site_down,
+)
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
@@ -16,7 +19,6 @@ from galaxy_test.base.constants import (
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
-    skip_if_github_down,
     skip_without_datatype,
     stage_inputs,
     uses_test_history,

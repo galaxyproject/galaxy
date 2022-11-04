@@ -195,7 +195,6 @@ def skip_without_datatype(extension):
 
 
 skip_if_toolshed_down = skip_if_site_down("https://toolshed.g2.bx.psu.edu")
-skip_if_github_down = skip_if_site_down("https://github.com/")
 
 
 def summarize_instance_history_on_error(method):
