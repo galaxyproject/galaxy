@@ -556,23 +556,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
         return
 
     @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a dataset asynchronously and return updated community data."""
-
-        decoded_id = self.decode_id(id)
-        dataset = self.hda_manager.get_accessible(decoded_id, trans.user)
-        dataset = self.hda_manager.error_if_uploading(dataset)
-        if not dataset:
-            return trans.show_error_message("The specified dataset does not exist.")
-
-        # Rate dataset.
-        self.rate_item(trans.sa_session, trans.get_user(), dataset, rating)
-
-        return self.get_ave_item_rating_data(trans.sa_session, dataset)
-
-    @web.expose
     def display_by_username_and_slug(self, trans, username, slug, filename=None, preview=True):
         """Display dataset by username and slug; because datasets do not yet have slugs, the slug is the dataset's id."""
         dataset = self._check_dataset(trans, slug)
@@ -600,24 +583,11 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             trans.response.set_content_type(dataset.get_mime())
             return open(dataset.file_name, "rb")
         else:
-            # Get rating data.
-            user_item_rating = 0
-            if trans.get_user():
-                user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), dataset)
-                if user_item_rating:
-                    user_item_rating = user_item_rating.rating
-                else:
-                    user_item_rating = 0
-            ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, dataset)
-
             return trans.fill_template_mako(
                 "/dataset/display.mako",
                 item=dataset,
                 item_data=dataset_data,
                 truncated=truncated,
-                user_item_rating=user_item_rating,
-                ave_item_rating=ave_item_rating,
-                num_ratings=num_ratings,
                 first_chunk=first_chunk,
             )
 
