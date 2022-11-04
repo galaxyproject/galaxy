@@ -46,6 +46,70 @@ def test_proxy():
     content = yaml.safe_load(descriptor)
     assert "inputs" in content
 
+def test_match_url():
+    proxy = TrsProxy()
+    valid_dockstore = proxy.match_url("https://dockstore.org/api/ga4gh/trs/v2/tools/quay.io%252Fcollaboratory%252Fdockstore-tool-bedtools-genomecov/versions/0.3")
+    assert valid_dockstore
+    assert valid_dockstore["trs_base_url"] == "https://dockstore.org/api"
+    assert valid_dockstore["tool_id"] == "quay.io%252Fcollaboratory%252Fdockstore-tool-bedtools-genomecov"
+    assert valid_dockstore["version_id"] == "0.3"
+
+    valid_workflow_hub = proxy.match_url("https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1")
+    assert valid_workflow_hub
+    assert valid_workflow_hub["trs_base_url"] == "https://workflowhub.eu"
+    assert valid_workflow_hub["tool_id"] == "344"
+    assert valid_workflow_hub["version_id"] == "1"
+
+    valid_arbitrary_trs = proxy.match_url("https://my-trs-server.golf/stuff/ga4gh/trs/v2/tools/hello-world/versions/version-1")
+    assert valid_arbitrary_trs
+    assert valid_arbitrary_trs["trs_base_url"] == "https://my-trs-server.golf/stuff"
+    assert valid_arbitrary_trs["tool_id"] == "hello-world"
+    assert valid_arbitrary_trs["version_id"] == "version-1"
+
+    ignore_extra = proxy.match_url("https://workflowhub.eu/ga4gh/trs/v2/tools/344/versions/1/CWL/descriptor/ro-crate-metadata.json")
+    assert ignore_extra
+    assert ignore_extra["trs_base_url"] == "https://workflowhub.eu"
+    assert ignore_extra["tool_id"] == "344"
+    assert ignore_extra["version_id"] == "1"
+
+    invalid = proxy.match_url("https://workflowhub.eu/workflows/1")
+    assert invalid == None
+
+    missing_version = proxy.match_url("https://workflowhub.eu/ga4gh/trs/v2/tools/344")
+    assert missing_version == None
+
+    blank = proxy.match_url("")
+    assert blank == None
+
+    not_url = proxy.match_url("1234")
+    assert not_url == None
+
+def test_server_from_url():
+    proxy = TrsProxy()
+    server = proxy.server_from_url("https://workflowhub.eu")
+
+    assert "https://workflowhub.eu" == server._trs_url
+
+    tool_id = "138"
+    tool = server.get_tool(tool_id)
+    assert "description" in tool
+
+    b64_tool_id = base64.b64encode(tool_id.encode("UTF-8"))
+    tool = server.get_tool(b64_tool_id, tool_id_b64_encoded=True)
+    assert "description" in tool
+
+    versions = server.get_versions(tool_id)
+    assert isinstance(versions, list)
+    assert len(versions) >= 1
+
+    version_id = versions[0]["id"] # Dockstore and WorkflowHub differ here! Spec is not clear
+    version = server.get_version(tool_id, version_id)
+    assert "descriptor_type" in version
+    assert GA4GH_GALAXY_DESCRIPTOR in version["descriptor_type"]
+
+    descriptor = server.get_version_descriptor(tool_id, version_id)
+    content = yaml.safe_load(descriptor)
+    assert "steps" in content
 
 @search_test
 def test_search():

@@ -67,7 +67,7 @@ class TrsProxy:
         trs_url = self._server_dict[trs_server]["api_url"]
         return TrsServer(trs_url)
 
-    def new_server(self, trs_url):
+    def server_from_url(self, trs_url):
         return TrsServer(trs_url)
 
     def match_url(self, url):
