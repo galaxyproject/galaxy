@@ -4,13 +4,13 @@ import { safePath } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
 const DEFAULT_POLL_DELAY = 1000;
-const EXPORT_PARAMS = {
-    model_store_format: "rocrate.zip",
-    include_files: false,
-    include_deleted: false,
-    include_hidden: false,
+const DEFAULT_EXPORT_PARAMS = {
+    modelStoreFormat: "rocrate.zip",
+    includeFiles: true,
+    includeDeleted: false,
+    includeHidden: false,
 };
-const DEFAULT_OPTIONS = { exportParams: EXPORT_PARAMS, pollDelayInMs: DEFAULT_POLL_DELAY };
+const DEFAULT_OPTIONS = { exportParams: DEFAULT_EXPORT_PARAMS, pollDelayInMs: DEFAULT_POLL_DELAY };
 
 /**
  * Composable to simplify and reuse the logic for downloading objects using Galaxy's Short Term Storage system.
@@ -40,7 +40,13 @@ export function useShortTermStorage() {
         isPreparing.value = true;
         pollDelay = finalOptions.pollDelayInMs;
         const url = safePath(`/api/${object_api}/${object_id}/prepare_store_download`);
-        axios.post(url, finalOptions.exportParams).then(handleInitialize).catch(handleError);
+        const exportParams = {
+            model_store_format: finalOptions.exportParams.modelStoreFormat,
+            include_files: finalOptions.exportParams.includeFiles,
+            include_deleted: finalOptions.exportParams.includeDeleted,
+            include_hidden: finalOptions.exportParams.includeHidden,
+        };
+        axios.post(url, exportParams).then(handleInitialize).catch(handleError);
     }
 
     function handleInitialize(response) {

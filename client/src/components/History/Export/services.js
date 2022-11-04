@@ -3,7 +3,21 @@ import { rethrowSimple } from "utils/simple-error";
 import { safePath } from "utils/redirect";
 import { ExportRecordModel } from "components/Common/models/exportRecordModel";
 
-export class HistoryExportServices {
+const DEFAULT_EXPORT_PARAMS = {
+    modelStoreFormat: "rocrate.zip",
+    includeFiles: true,
+    includeDeleted: false,
+    includeHidden: false,
+};
+
+export class HistoryExportService {
+    /**
+     * Gets the default options to export a history.
+     */
+    get defaultExportParams() {
+        return DEFAULT_EXPORT_PARAMS;
+    }
+
     /**
      * Gets a list of export records for the given history.
      * @param {String} historyId
@@ -36,21 +50,16 @@ export class HistoryExportServices {
         }
     }
 
-    async exportToFileSource(
-        historyId,
-        exportDirectory,
-        fileName,
-        options = { exportFormat: "rocrate.zip", include_files: true, include_deleted: false, include_hidden: false }
-    ) {
-        const exportDirectoryUri = `${exportDirectory}/${fileName}.${options.exportFormat}`;
-        const writeStoreParams = {
+    async exportToFileSource(historyId, exportDirectory, fileName, exportParams = DEFAULT_EXPORT_PARAMS) {
+        const exportDirectoryUri = `${exportDirectory}/${fileName}.${exportParams.modelStoreFormat}`;
+        const writeStorePayload = {
             target_uri: exportDirectoryUri,
-            model_store_format: options.exportFormat,
-            include_files: options.include_files,
-            include_deleted: options.include_deleted,
-            include_hidden: options.include_hidden,
+            model_store_format: exportParams.modelStoreFormat,
+            include_files: exportParams.includeFiles,
+            include_deleted: exportParams.includeDeleted,
+            include_hidden: exportParams.includeHidden,
         };
-        return axios.post(`/api/histories/${historyId}/write_store`, writeStoreParams);
+        return axios.post(`/api/histories/${historyId}/write_store`, writeStorePayload);
     }
 
     async reimportHistoryFromRecord(record) {

@@ -4,12 +4,12 @@ import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
-import { HistoryExportServices } from "./services";
+import { HistoryExportService } from "./services";
 import { useTaskMonitor } from "composables/useTaskMonitor";
 import { useFileSources } from "composables/fileSources";
 import { useShortTermStorage } from "composables/shortTermStorage";
 
-const service = new HistoryExportServices();
+const service = new HistoryExportService();
 
 const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
 const { hasWritable: hasWritableFileSources } = useFileSources();
@@ -22,13 +22,8 @@ const props = defineProps({
     },
 });
 
-// TODO: make this user configurable
-const EXPORT_PARAMS = {
-    model_store_format: "rocrate.zip",
-    include_files: true,
-    include_deleted: false,
-    include_hidden: false,
-};
+// TODO: make this configurable by the user?
+const EXPORT_PARAMS = service.defaultExportParams;
 
 const isLoadingRecords = ref(true);
 const latestExportRecord = ref(null);
