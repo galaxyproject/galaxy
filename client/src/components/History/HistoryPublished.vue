@@ -1,5 +1,5 @@
 <template>
-    <Published :item="history" @set-rating="onSetRating">
+    <Published :item="history">
         <template v-slot>
             <HistoryView :id="id" />
         </template>
@@ -29,16 +29,9 @@ export default {
     },
     created() {
         const url = `/api/histories/${this.id}`;
-        const query = this.$route.query;
         urlData({ url }).then((data) => {
-            this.history = { ...data, ...query };
+            this.history = data;
         });
-    },
-    methods: {
-        onSetRating(newRating) {
-            const url = `/history/rate_async?id=${this.id}&rating=${newRating}`;
-            urlData({ url });
-        },
     },
 };
 </script>

@@ -25,13 +25,6 @@
                     <div>
                         <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}. </router-link>
                     </div>
-                    <br />
-                    <ratings
-                        v-if="hasRatingData"
-                        :ave-item-rating="aveItemRating"
-                        :user-item-rating="userItemRating"
-                        :num-ratings="numRatings"
-                        @set-rating="$emit('set-rating', $event)" />
                 </div>
                 <LoadingSpan v-else message="Loading item details" />
             </div>
@@ -41,12 +34,10 @@
 
 <script>
 import { StatelessTags } from "components/Tags";
-import Ratings from "components/Common/Ratings";
 import LoadingSpan from "components/LoadingSpan";
 export default {
     components: {
         LoadingSpan,
-        Ratings,
         StatelessTags,
     },
     props: {
@@ -56,14 +47,8 @@ export default {
         },
     },
     computed: {
-        aveItemRating() {
-            return Number(this.item.ave_item_rating);
-        },
         gravatarSource() {
             return `https://secure.gravatar.com/avatar/${this.item.email_hash}?d=identicon`;
-        },
-        hasRatingData() {
-            return this.item.num_ratings !== undefined;
         },
         modelTitle() {
             const modelClass = this.item ? this.item.model_class : "Item";
@@ -71,9 +56,6 @@ export default {
                 return "Workflow";
             }
             return modelClass;
-        },
-        numRatings() {
-            return parseInt(this.item.num_ratings);
         },
         owner() {
             return this.item.owner || this.item.username || "Unavailable";
@@ -92,9 +74,6 @@ export default {
         },
         urlAll() {
             return `/${this.pluralPath}/list_published`;
-        },
-        userItemRating() {
-            return Number(this.item.user_item_rating);
         },
     },
 };

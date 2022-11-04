@@ -1,6 +1,6 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <Published :item="page" @set-rating="onSetRating">
+        <Published :item="page">
             <template v-slot>
                 <div v-if="!loading">
                     <markdown
@@ -56,18 +56,13 @@ export default {
         },
     },
     created() {
-        const query = this.$route.query;
         urlData({ url: this.dataUrl }).then((data) => {
-            this.page = { ...data, ...query };
+            this.page = data;
         });
     },
     methods: {
         onEdit() {
             window.location = safePath(this.editUrl);
-        },
-        onSetRating(newRating) {
-            const url = `/page/rate_async?id=${this.pageId}&rating=${newRating}`;
-            urlData({ url });
         },
         stsUrl(config) {
             return `${this.dataUrl}/prepare_download`;

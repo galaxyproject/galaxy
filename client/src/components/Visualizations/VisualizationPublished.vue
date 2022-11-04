@@ -1,5 +1,5 @@
 <template>
-    <Published :item="visualization" @set-rating="onSetRating">
+    <Published :item="visualization">
         <template v-slot>
             <CenterFrame :src="getUrl" />
         </template>
@@ -33,16 +33,9 @@ export default {
     },
     created() {
         const url = `/api/visualizations/${this.id}`;
-        const query = this.$route.query;
         urlData({ url }).then((data) => {
-            this.visualization = { ...data, ...query };
+            this.visualization = data;
         });
-    },
-    methods: {
-        onSetRating(newRating) {
-            const url = `/visualization/rate_async?id=${this.id}&rating=${newRating}`;
-            urlData({ url });
-        },
     },
 };
 </script>
