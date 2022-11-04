@@ -26,6 +26,11 @@ const submit = (ev) => {
     ev.preventDefault();
     emit("onImport", trsUrl.value);
 };
+
+// Automatically trigger the import if the TRS URL was provided as a query param
+if (trsUrl.value) {
+  emit("onImport", trsUrl.value);
+}
 </script>
 
 <template>
