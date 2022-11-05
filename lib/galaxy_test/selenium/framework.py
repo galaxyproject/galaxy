@@ -17,6 +17,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import pytest
 import requests
 import yaml
 from gxformat2 import (
@@ -424,27 +425,17 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
 
 
 class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
-    galaxy_driver_class = GalaxyTestDriver
-
     def setUp(self):
         super().setUp()
         self.setup_selenium()
         self.admin_api_key = get_admin_api_key()
 
     def tearDown(self):
-        exception = None
-        try:
-            self.tear_down_selenium()
-        except Exception as e:
-            exception = e
+        self.tear_down_selenium()
 
-        try:
-            super().tearDown()
-        except Exception as e:
-            exception = e
-
-        if exception is not None:
-            raise exception
+    @pytest.fixture(autouse=True)
+    def _get_driver(self, galaxy_test_driver):
+        self._test_driver = galaxy_test_driver
 
 
 class SharedStateSeleniumTestCase(SeleniumTestCase):

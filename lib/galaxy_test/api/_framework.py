@@ -1,6 +1,8 @@
 from typing import Optional
 from unittest import SkipTest
 
+import pytest
+
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
@@ -22,6 +24,10 @@ class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
     def setUp(self):
         super().setUp()
         self._setup_interactor()
+
+    @pytest.fixture(autouse=True)
+    def _get_driver(self, galaxy_test_driver):
+        self._test_driver = galaxy_test_driver
 
     def driver_or_skip_test_if_remote(self) -> GalaxyTestDriver:
         if self._test_driver is None:

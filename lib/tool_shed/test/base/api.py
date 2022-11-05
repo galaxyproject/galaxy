@@ -74,16 +74,6 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
     __test__ = True
     galaxy_driver_class = driver.ToolShedTestDriver
 
-    @classmethod
-    def setUpClass(cls):
-        """Configure and start Galaxy for a test."""
-        pass
-
-    @classmethod
-    def tearDownClass(cls):
-        """Shutdown Galaxy server and cleanup temp directory."""
-        pass
-
     @pytest.fixture(autouse=True)
     def _get_driver(self, tool_shed_test_driver):
         self._test_driver = tool_shed_test_driver

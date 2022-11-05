@@ -45,21 +45,6 @@ class FunctionalTestCase(unittest.TestCase):
         self.test_data_resolver = TestDataResolver()
         self.keepOutdir = setup_keep_outdir()
 
-    @classmethod
-    def setUpClass(cls):
-        """Configure and start Galaxy for a test."""
-        cls._test_driver = None
-
-        if cls.galaxy_driver_class is not None and not os.environ.get("GALAXY_TEST_ENVIRONMENT_CONFIGURED"):
-            cls._test_driver = cls.galaxy_driver_class()
-            cls._test_driver.setup(config_object=cls)
-
-    @classmethod
-    def tearDownClass(cls):
-        """Shutdown Galaxy server and cleanup temp directory."""
-        if cls._test_driver:
-            cls._test_driver.tear_down()
-
     def get_filename(self, filename: str) -> str:
         # No longer used by tool tests - drop if isn't used else where.
         return self.test_data_resolver.get_filename(filename)
