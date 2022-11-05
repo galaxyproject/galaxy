@@ -17,7 +17,24 @@ from galaxy.util import safe_makedirs
 
 log = getLogger(__name__)
 
-SET_METADATA_SCRIPT = "from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()"
+SET_METADATA_SCRIPT = """
+import os
+import traceback
+try:
+    from galaxy_ext.metadata.set_metadata import set_metadata; set_metadata()
+except Exception:
+    WORKING_DIRECTORY = os.getcwd()
+    WORKING_PARENT = os.path.join(WORKING_DIRECTORY, os.path.pardir)
+    if not os.path.isdir("working") and os.path.isdir(os.path.join(WORKING_PARENT, "working")):
+        # We're probably in pulsar
+        WORKING_DIRECTORY = WORKING_PARENT
+    METADATA_DIRECTORY = os.path.join(WORKING_DIRECTORY, "metadata")
+    EXPORT_STORE_DIRECTORY = os.path.join(METADATA_DIRECTORY, "outputs_populated")
+    os.makedirs(EXPORT_STORE_DIRECTORY, exist_ok=True)
+    with open(os.path.join(EXPORT_STORE_DIRECTORY, "traceback.txt"), "w") as out:
+        out.write(traceback.format_exc())
+    raise
+"""
 
 
 def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None):
