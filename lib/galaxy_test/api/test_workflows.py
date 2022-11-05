@@ -236,7 +236,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         assert tool_state_value["__class__"] == "RuntimeValue"
 
 
-class ChangeDatatypeTestCase:
+class ChangeDatatypeTests:
     dataset_populator: DatasetPopulator
     workflow_populator: WorkflowPopulator
 
@@ -305,7 +305,7 @@ class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
+class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
     dataset_populator: DatasetPopulator
 
     def test_show_valid(self):
