@@ -1279,7 +1279,7 @@ steps:
         # In this case the newline may have been added by the workflow editor
         # text field that is used for data_column parameters
         with self.dataset_populator.test_history() as history_id:
-            job_summary = self._run_jobs(
+            job_summary = self._run_workflow(
                 """class: GalaxyWorkflow
 steps:
   empty_output:
