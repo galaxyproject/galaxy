@@ -1934,7 +1934,15 @@ class NavigatesGalaxy(HasDriver):
             # Wait for select2 options to load and then click to add this one.
             self.send_enter(text_element)
         else:
-            select_elem = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")[0]
+            candidate_elements = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")
+            # try to find exact match
+            for elem in candidate_elements:
+                if elem.text == value:
+                    select_elem = elem
+                    break
+            else:
+                # Pick first match. We're replacing select2 anyway ...
+                select_elem = elem
             action_chains = self.action_chains()
             action_chains.move_to_element(select_elem).click().perform()
         self.wait_for_selector_absent_or_hidden("#select2-drop")
