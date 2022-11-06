@@ -44,7 +44,6 @@ def upload_tar(
     username: str,
     repository: "Repository",
     uploaded_file,
-    upload_point,
     commit_message: str,
     remove_repo_files_not_in_tar: bool = True,
     new_repo_alert: bool = False,
@@ -72,10 +71,7 @@ def upload_tar(
         return False, message, [], "", undesirable_dirs_removed, undesirable_files_removed
     else:
         repo_dir = repository.repo_path(app)
-        if upload_point is not None:
-            full_path = os.path.abspath(os.path.join(repo_dir, upload_point))
-        else:
-            full_path = os.path.abspath(repo_dir)
+        full_path = os.path.abspath(repo_dir)
         undesirable_files_removed = len(check_results.undesirable_files)
         undesirable_dirs_removed = len(check_results.undesirable_dirs)
         filenames_in_archive = [ti.name for ti in check_results.valid]

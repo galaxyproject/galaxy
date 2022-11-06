@@ -27,7 +27,6 @@ def upload_tar_and_set_metadata(
     user: User,
     repository: Repository,
     uploaded_file,
-    upload_point,
     commit_message: str,
 ):
     repo_dir = repository.repo_path(app)
@@ -38,7 +37,6 @@ def upload_tar_and_set_metadata(
         user.username,
         repository,
         uploaded_file,
-        upload_point,
         commit_message,
     )
     if ok:

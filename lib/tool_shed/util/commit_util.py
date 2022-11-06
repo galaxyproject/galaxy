@@ -137,28 +137,6 @@ def get_change_lines_in_file_for_tag(tag, change_dict):
     return cleaned_lines
 
 
-def get_upload_point(repository: "Repository", **kwd) -> Optional[str]:
-    upload_point = kwd.get("upload_point", None)
-    if upload_point is not None:
-        # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
-        if os.path.exists(upload_point):
-            if os.path.isfile(upload_point):
-                # Get the parent directory
-                upload_point, not_needed = os.path.split(upload_point)
-                # Now the value of uplaod_point will be something like: database/community_files/000/repo_12/
-            upload_point = upload_point.split("repo_%d" % repository.id)[1]
-            if upload_point:
-                upload_point = upload_point.lstrip("/")
-                upload_point = upload_point.rstrip("/")
-            # Now the value of uplaod_point will be something like: /
-            if upload_point == "/":
-                upload_point = None
-        else:
-            # Must have been an error selecting something that didn't exist, so default to repository root
-            upload_point = None
-    return upload_point
-
-
 def handle_bz2(repository: "Repository", uploaded_file_name):
     with tempfile.NamedTemporaryFile(
         mode="wb",

@@ -1021,8 +1021,6 @@ class RepositoriesController(BaseAPIController):
                 "err_msg": "You do not have permission to update this repository.",
             }
 
-        upload_point = commit_util.get_upload_point(repository, **kwd)
-
         file_data = payload.get("file")
         # Code stolen from gx's upload_common.py
         if isinstance(file_data, cgi_FieldStorage):
@@ -1044,7 +1042,6 @@ class RepositoriesController(BaseAPIController):
                 trans.user,
                 repository,
                 uploaded_file_name,
-                upload_point,
                 commit_message,
             )
             rval = {"message": message}
