@@ -132,13 +132,13 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.display_manage_repository_page(
             repository,
             strings_displayed=strings_displayed,
-            strings_not_displayed=["Upload files", "Reset all repository metadata"],
+            strings_not_displayed=["Reset all repository metadata"],
         )
-        self.browse_repository(repository, strings_not_displayed=["Upload files"])
+        self.browse_repository(repository)
         self.set_repository_deprecated(
             repository, strings_displayed=["has been marked as not deprecated"], set_deprecated=False
         )
-        strings_displayed = ["Mark repository as deprecated", "Upload files", "Reset all repository metadata"]
+        strings_displayed = ["Mark repository as deprecated", "Reset all repository metadata"]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0050_display_repository_tip_file(self):

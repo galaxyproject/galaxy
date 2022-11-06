@@ -58,11 +58,6 @@
         else:
             can_reset_all_metadata = False
 
-        if can_push and not is_deprecated:
-            can_upload = True
-        else:
-            can_upload = False
-
         if not is_new and not is_deprecated and trans.user and repository.user != trans.user:
             can_rate = True
         else:
@@ -97,18 +92,12 @@
     <br/><br/>
     <ul class="manage-table-actions">
         %if is_new:
-            %if can_upload:
-                <a class="action-button" target="galaxy_main" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-            %endif
             %if can_undeprecate:
                 <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='deprecate', id=trans.security.encode_id( repository.id ), mark_deprecated=False )}">Mark repository as not deprecated</a>
             %endif
         %else:
             <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
             <div popupmenu="repository-${repository.id}-popup">
-                %if can_upload:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
-                %endif
                 %if can_administer:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='manage_repository', id=trans.app.security.encode_id( repository.id ), changeset_revision=repository.tip() )}">Manage repository</a>
                 %else:
