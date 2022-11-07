@@ -34,7 +34,11 @@ library.add(faTimes);
 </script>
 
 <template>
-    <div class="tag" :class="{ editable }" :style="`background-color: ${color};`" @click.prevent.stop="onClick">
+    <div
+        class="tag btn-transparent-background"
+        :class="{ editable }"
+        :style="`background-color: ${color};`"
+        @click.prevent.stop="onClick">
         <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
         </span>
