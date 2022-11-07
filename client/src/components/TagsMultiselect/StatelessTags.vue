@@ -21,8 +21,10 @@ const emit = defineEmits(["input"]);
 const { userTags, addLocalTag } = useUserTags();
 
 function onAddTag(tag) {
-    addLocalTag(tag);
-    emit("input", [...props.value, tag]);
+    if (isValid(tag)) {
+        addLocalTag(tag);
+        emit("input", [...props.value, tag]);
+    }
 }
 
 function onInput(val) {
@@ -54,6 +56,16 @@ function openMultiselect() {
 }
 
 const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#")));
+
+const validTagRegex = /^([^.:])+(.[^\s.:]+)*(:[^.:]+)?$/;
+
+function isValid(tag) {
+    if (typeof tag === "string") {
+        return Boolean(tag.match(validTagRegex));
+    } else {
+        return Boolean(tag.label.match(validTagRegex));
+    }
+}
 </script>
 
 <script>
@@ -92,13 +104,24 @@ library.add(faTags, faCheck, faTimes, faPlus);
             </template>
 
             <template v-slot:option="{ option }">
-                <span>{{ option.label ?? option }}</span>
-                <span v-if="tags.includes(option)" class="float-right">
-                    <FontAwesomeIcon class="check-icon" icon="fa-check"></FontAwesomeIcon>
-                    <FontAwesomeIcon class="times-icon" icon="fa-times"></FontAwesomeIcon>
-                </span>
-                <span v-else class="float-right">
-                    <FontAwesomeIcon class="plus-icon" icon="fa-plus"></FontAwesomeIcon>
+                <span class="multiselect-option" :class="{ invalid: !isValid(option) }">
+                    <span>{{ option.label ?? option }}</span>
+                    <span v-if="tags.includes(option)" class="float-right">
+                        <span class="info">
+                            <FontAwesomeIcon class="check-icon" icon="fa-check"></FontAwesomeIcon>
+                        </span>
+
+                        <span class="info highlighted">
+                            <FontAwesomeIcon class="times-icon" icon="fa-times"></FontAwesomeIcon>
+                            <span class="sr-only">add tag</span>
+                        </span>
+                    </span>
+                    <span v-else class="float-right">
+                        <span class="info highlighted">
+                            <FontAwesomeIcon class="plus-icon" icon="fa-plus"></FontAwesomeIcon>
+                            <span class="sr-only">remove tag</span>
+                        </span>
+                    </span>
                 </span>
             </template>
         </Multiselect>
@@ -173,41 +196,58 @@ library.add(faTags, faCheck, faTimes, faPlus);
             padding-left: 0.5rem;
         }
 
+        // built in option class
         .multiselect__option {
-            font-size: $font-size-base;
             min-height: unset;
-            padding: 0.5rem 1rem;
-
-            .plus-icon {
-                display: none;
-            }
+            padding: 0;
 
             &::after {
                 display: none;
             }
 
-            &.multiselect__option--selected {
-                color: $brand-primary;
+            // custom option wrapper
+            .multiselect-option {
+                font-size: $font-size-base;
+                padding: 0.5rem 1rem;
+                display: inline-block;
+                width: 100%;
+                height: 100%;
 
-                .times-icon {
+                .info {
                     display: none;
                 }
+
+                &.invalid {
+                    color: $brand-light;
+                    background-color: $brand-warning;
+                }
+            }
+        }
+
+        .multiselect__option--selected {
+            .multiselect-option {
+                color: $brand-primary;
+
+                .info:not(.highlighted) {
+                    display: inline-block;
+                }
+            }
+        }
+
+        .multiselect__option--highlight {
+            &::after {
+                display: none;
             }
 
-            &.multiselect__option--highlight {
+            .multiselect-option {
                 background: $brand-primary;
                 color: $brand-light;
 
-                .times-icon,
-                .plus-icon {
+                .info.highlighted {
                     display: inline-block;
                 }
 
-                .check-icon {
-                    display: none;
-                }
-
-                &::after {
+                .info:not(.highlighted) {
                     display: none;
                 }
             }

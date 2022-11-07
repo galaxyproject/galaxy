@@ -56,13 +56,6 @@ export class TagModel {
     }
 }
 
-/**
- * Legacy functions
- *
- * The following two functions are deprecated and will be removed.
- * Do not use them in new code.
- */
-
 // Public factory
 
 export function createTag(data) {
