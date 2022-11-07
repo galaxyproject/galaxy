@@ -21,7 +21,8 @@
           The <a href="https://beacon-project.io">Global Alliance for Genomics & Health Beacon Project</a> enables safe
           sharing of human genetic variants.<br>
           <br>
-          Galaxy lets you use the Beacon protocol to share genetic variants directly from your analysis with the scientific
+          Galaxy lets you use the Beacon protocol to share genetic variants directly from your analysis with the
+          scientific
           community in the following anonymous way:<br>
           <br>
           For participating users, we will merge variant lists to be shared into a single Beacon dataset and make that
@@ -76,7 +77,7 @@
         <!-- Detailed information about the beacon history -->
         <div v-if="enabled" class="gray-box">
           <!-- Case: History does not exist-->
-          <div v-if="!beaconHistory.id" class="flex-row">
+          <div v-if="beaconHistories.length < 1" class="flex-row">
             <div class="no-shrink">
               No beacon history found
             </div>
@@ -87,9 +88,10 @@
           </div>
 
           <!-- Case: History exists -->
-          <div v-if="beaconHistory.id" class="flex-row">
+          <div v-for="beaconHistory in beaconHistories" :key="beaconHistory.id" class="flex-row history-entry"
+               :class="{'gray-border-bottom': beaconHistory.id !== beaconHistories[beaconHistories.length-1].id}">
             <div class="no-shrink">
-              Variant data to share gets discovered from your beacon history
+              History with {{ beaconHistory.contents.length }} datasets
             </div>
             <div class="fill"></div>
             <div class="no-shrink">
@@ -107,7 +109,8 @@
             <li>must have a human reference assigned to it (e.g. hg19)</li>
             <li>must define at least one sample in a dedicated genotype column</li>
             <li>must contain the info field <span class="cursive">AC</span>, with the total
-              number of alternate alleles in called genotypes</li>
+              number of alternate alleles in called genotypes
+            </li>
           </ul>
         </div>
       </b-modal>
@@ -138,34 +141,41 @@ export default {
     return {
       enabled: false,
       beaconHistoryName: "___BEACON_PICKUP___",
-      beaconHistory: {}
+      beaconHistories: [{}]
     };
   },
   methods: {
     switchHistory: async function (historyId) {
       await store.dispatch("history/setCurrentHistory", historyId);
     },
-    getBeaconHistory: function () {
+    getBeaconHistories: function () {
       axios
-          .get(this.root + "api/histories?q=name&qv=" + this.beaconHistoryName)
+          .get(this.root + "api/histories?&keys=id,contents&q=name&qv=" + this.beaconHistoryName)
           .then((response) => {
-            if (response.data.length > 0) {
-              // always select first match
-              this.beaconHistory = response.data[0];
-
-            }
+            this.beaconHistories = this.removeDeletedContents(response.data)
           })
           .catch((error) => {
             console.log(error.response)
           });
     },
-    createBeaconHistory() {
+    removeDeletedContents: function (beaconHistories) {
+      beaconHistories.forEach(
+          beaconHistory => {
+            beaconHistory.contents.splice(0, beaconHistory.contents.length, ...beaconHistory.contents.filter(
+                dataset => {
+                  return !dataset.deleted
+                }
+            ))
+          }
+      )
+      return beaconHistories
+    },
+    createBeaconHistory: function () {
       const annotation = "Variants will be collected from VCF datasets in this history if beacon sharing is activated"
       axios
           .post(this.root + "api/histories", {name: this.beaconHistoryName})
           .then((response) => {
-            this.beaconHistory = response.data
-            axios.put(`${this.root}api/histories/${this.beaconHistory.id}`, {"annotation": annotation});
+            axios.put(`${this.root}api/histories/${response.data.id}`, {"annotation": annotation});
           })
           .catch((error) => {
             this.errorMessages.push(error.response.data.err_msg), console.log(error.response)
@@ -177,8 +187,9 @@ export default {
             response => {
               // TODO check response
               this.loadSettings();
-              if (!this.beaconHistory.id) {
+              if (this.beaconHistories.length < 1) {
                 this.createBeaconHistory()
+                this.getBeaconHistories()
               }
             }
         );
@@ -200,7 +211,7 @@ export default {
     },
     onOpenModal() {
       this.loadSettings();
-      this.getBeaconHistory();
+      this.getBeaconHistories();
     },
     async loadSettings() {
       try {
@@ -227,7 +238,6 @@ span.bold {
 }
 
 .gray-box {
-  padding: 8px 16px;
   margin-top: 32px;
   margin-bottom: 32px;
   border: 1px solid #bdc6d0;
@@ -238,6 +248,14 @@ span.bold {
 .flex-row {
   display: flex;
   flex-flow: row;
+}
+
+.history-entry {
+  padding: 8px;
+}
+
+.gray-border-bottom {
+  border-bottom: 1px solid #bdc6d0;
 }
 
 .space-between {
