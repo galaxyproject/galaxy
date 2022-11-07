@@ -581,6 +581,7 @@ class WorkflowContentsManager(UsesAnnotations):
         source=None,
         add_to_menu=False,
         hidden=False,
+        is_subworkflow=False,
     ):
         data = raw_workflow_description.as_dict
         # Put parameters in workflow mode
@@ -600,6 +601,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raw_workflow_description,
             workflow_create_options,
             name=name,
+            is_subworkflow=is_subworkflow,
         )
         if "uuid" in data:
             workflow.uuid = data["uuid"]
@@ -689,7 +691,7 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_raw_description(
-        self, trans, raw_workflow_description, workflow_state_resolution_options, name, **kwds
+        self, trans, raw_workflow_description, workflow_state_resolution_options, name, is_subworkflow=False, **kwds
     ):
         # don't commit the workflow or attach its part to the sa session - just build a
         # a transient model to operate on or render.
@@ -764,8 +766,12 @@ class WorkflowContentsManager(UsesAnnotations):
         # Second pass to deal with connections between steps
         self.__connect_workflow_steps(steps, steps_by_external_id, dry_run)
 
-        # Order the steps if possible
-        attach_ordered_steps(workflow, steps)
+        workflow.has_cycles = True
+        workflow.steps = steps
+        # we can't reorder subworkflows, as step connections would become invalid
+        if not is_subworkflow:
+            # Order the steps if possible
+            attach_ordered_steps(workflow)
 
         return workflow, missing_tool_tups
 
@@ -857,7 +863,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if len(workflow.steps) == 0:
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
-        if attach_ordered_steps(workflow, workflow.steps):
+        if attach_ordered_steps(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector(trans)
@@ -950,7 +956,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if len(workflow.steps) == 0:
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
-        if attach_ordered_steps(workflow, workflow.steps):
+        if attach_ordered_steps(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
 
         # Ensure that the user has a history
@@ -1652,6 +1658,7 @@ class WorkflowContentsManager(UsesAnnotations):
         steps.append(step)
         external_id = step_dict["id"]
         steps_by_external_id[external_id] = step
+        step.order_index = external_id
         if "workflow_outputs" in step_dict:
             workflow_outputs = step_dict["workflow_outputs"]
             found_output_names = set()
@@ -1718,7 +1725,11 @@ class WorkflowContentsManager(UsesAnnotations):
     def __build_embedded_subworkflow(self, trans, data, workflow_state_resolution_options):
         raw_workflow_description = self.ensure_raw_description(data)
         subworkflow = self.build_workflow_from_raw_description(
-            trans, raw_workflow_description, workflow_state_resolution_options, hidden=True
+            trans,
+            raw_workflow_description,
+            workflow_state_resolution_options,
+            hidden=True,
+            is_subworkflow=True,
         ).workflow
         return subworkflow
 
