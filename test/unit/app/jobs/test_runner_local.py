@@ -66,7 +66,7 @@ class TestLocalJobRunner(TestCase, UsesTools):
     def test_metadata_gets_set_if_embedded(self):
         self.job_wrapper.job_destination.params["embed_metadata_in_job"] = "True"
 
-        # Kill off cruft for _handle_metadata_externally and make sure job stil works...
+        # Kill off cruft for _handle_metadata_externally and make sure job still works...
         self.job_wrapper.external_output_metadata = None
         self.app.datatypes_registry.set_external_metadata_tool = None
 
@@ -150,9 +150,7 @@ class MockJobWrapper:
         self.remote_command_line = False
 
         # Cruft for setting metadata externally, axe at some point.
-        self.external_output_metadata: Optional[bunch.Bunch] = bunch.Bunch(
-            set_job_runner_external_pid=lambda pid, session: None
-        )
+        self.external_output_metadata: Optional[bunch.Bunch] = bunch.Bunch()
         self.app.datatypes_registry.set_external_metadata_tool = bunch.Bunch(build_dependency_shell_commands=lambda: [])
 
     def check_tool_output(*args, **kwds):
