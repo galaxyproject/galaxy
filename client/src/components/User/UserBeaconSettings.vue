@@ -17,7 +17,7 @@
 
 
         <!-- Explanation text-->
-        <p>
+        <p>AAAA
           The <a href="https://beacon-project.io">Global Alliance for Genomics & Health Beacon Project</a> enables safe
           sharing of human genetic variants.<br>
           <br>
@@ -25,8 +25,8 @@
           scientific
           community in the following anonymous way:<br>
           <br>
-          For participating users, we will merge variant lists to be shared into a single Beacon dataset and make that
-          dataset accessible through a Beacon server.<br>
+          For participating users, we will merge variant lists to be shared into a single Beacon dataset per reference
+          genome and make that dataset accessible through a Beacon server.<br>
           If someone queries the server for a specific variant that is in our Beacon dataset, the server will reply with
           <span class="cursive">“Yes, we have seen such a variant”</span>.<br>
           <br>
@@ -65,7 +65,7 @@
         <div v-if="enabled">
           <p>
             You can share data by copying VCF or VCF.bgzip files to a history called
-            <span class="cursive">{{ beaconHistoryName }}</span>. <br>
+            <span class="cursive gray-background">{{ beaconHistoryName }}</span>. <br>
             <br>
             The Beacon database is rebuilt periodically. Therefore, changes do not go into effect immediately.
             If you disable beacon sharing or remove a dataset from the beacon history, the corresponding variants will
@@ -77,7 +77,7 @@
         <!-- Detailed information about the beacon history -->
         <div v-if="enabled" class="gray-box">
           <!-- Case: History does not exist-->
-          <div v-if="beaconHistories.length < 1" class="flex-row">
+          <div v-if="beaconHistories.length < 1" class="flex-row history-entry">
             <div class="no-shrink">
               No beacon history found
             </div>
@@ -90,7 +90,7 @@
           <!-- Case: History exists -->
           <div v-for="beaconHistory in beaconHistories" :key="beaconHistory.id" class="flex-row history-entry"
                :class="{'gray-border-bottom': beaconHistory.id !== beaconHistories[beaconHistories.length-1].id}">
-            <div class="no-shrink">
+            <div class="no-shrink" v-if="beaconHistory.contents">
               History with {{ beaconHistory.contents.length }} datasets
             </div>
             <div class="fill"></div>
@@ -140,7 +140,7 @@ export default {
   data() {
     return {
       enabled: false,
-      beaconHistoryName: "___BEACON_PICKUP___",
+      beaconHistoryName: "Beacon Export 📡",
       beaconHistories: [{}]
     };
   },
@@ -150,7 +150,7 @@ export default {
     },
     getBeaconHistories: function () {
       axios
-          .get(this.root + "api/histories?&keys=id,contents&q=name&qv=" + this.beaconHistoryName)
+          .get(this.root + "api/histories?&keys=id,contents&q=name&qv=" + encodeURI(this.beaconHistoryName))
           .then((response) => {
             this.beaconHistories = this.removeDeletedContents(response.data)
           })
@@ -175,7 +175,11 @@ export default {
       axios
           .post(this.root + "api/histories", {name: this.beaconHistoryName})
           .then((response) => {
-            axios.put(`${this.root}api/histories/${response.data.id}`, {"annotation": annotation});
+            axios.put(`${this.root}api/histories/${response.data.id}`, {"annotation": annotation}).then(
+                () => {
+                  this.getBeaconHistories()
+                }
+            );
           })
           .catch((error) => {
             this.errorMessages.push(error.response.data.err_msg), console.log(error.response)
