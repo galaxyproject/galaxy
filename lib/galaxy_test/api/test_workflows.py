@@ -5021,6 +5021,65 @@ steps:
         run_workflow_response = self.workflow_populator.invoke_workflow_raw(uploaded_workflow_id, workflow_request)
         return run_workflow_response, history_id
 
+    def test_subworkflow_import_order_maintained(self):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  outer_input_1:
+    type: int
+    default: 1
+    position:
+      left: 0
+      top: 0
+  outer_input_2:
+    type: int
+    default: 2
+    position:
+      left: 100
+      top: 0
+steps:
+  nested_workflow:
+    in:
+      inner_input_1: outer_input_1
+      inner_input_2: outer_input_2
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input_1:
+          type: int
+          position:
+            left: 100
+            top: 0
+        inner_input_2:
+          type: int
+          position:
+            left: 0
+            top: 0
+      steps: []
+      outputs:
+        - label: nested_out_1
+          outputSource: inner_input_1/output
+        - label: nested_out_2
+          outputSource: inner_input_2/output
+outputs:
+  - label: out_1
+    outputSource: nested_workflow/nested_out_1
+  - label: out_2
+    outputSource: nested_workflow/nested_out_2
+""",
+            assert_ok=False,
+            wait=False,
+        )
+        self.workflow_populator.wait_for_invocation(summary.workflow_id, summary.invocation_id)
+        self.workflow_populator.wait_for_history_workflows(
+            summary.history_id, assert_ok=False, expected_invocation_count=2
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        output_values = invocation["output_values"]
+        assert output_values["out_1"] == 1
+        assert output_values["out_2"] == 2
+
     @skip_without_tool("random_lines1")
     def test_run_replace_params_by_steps(self):
         workflow_request, history_id, workflow_id, steps = self._setup_random_x2_workflow_steps(
