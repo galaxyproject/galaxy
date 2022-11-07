@@ -17,7 +17,7 @@
 
 
         <!-- Explanation text-->
-        <p>AAAA
+        <p>
           The <a href="https://beacon-project.io">Global Alliance for Genomics & Health Beacon Project</a> enables safe
           sharing of human genetic variants.<br>
           <br>
