@@ -78,7 +78,9 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0035_upload_filtering_1_1_0(self):
         """Upload filtering_1.1.0.tar to the repository"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        self.commit_tar_to_repository(repository, "filtering/filtering_1.1.0.tar", commit_message="Uploaded filtering 1.1.0")
+        self.commit_tar_to_repository(
+            repository, "filtering/filtering_1.1.0.tar", commit_message="Uploaded filtering 1.1.0"
+        )
 
     def test_0040_verify_repository(self):
         """Display basic repository pages"""

@@ -26,7 +26,7 @@ def test_create_repository(shed_app: TestToolShedApp, new_user: User):
 
 
 def test_upload_tar(shed_app: TestToolShedApp, new_repository: Repository):
-    tar_resource = TEST_DATA_FILES.joinpath("convert_chars/convert_chars.tar")
+    tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
     old_tip = new_repository.tip()
     upload_ok, _, _, alert, dirs_removed, files_removed = upload_tar(
         shed_app,
@@ -34,8 +34,7 @@ def test_upload_tar(shed_app: TestToolShedApp, new_repository: Repository):
         new_repository.user.username,
         new_repository,
         tar_resource,
-        None,
-        "Commit Message",
+        commit_message="Commit Message",
     )
     assert upload_ok
     assert alert == ""
@@ -48,3 +47,17 @@ def test_upload_tar(shed_app: TestToolShedApp, new_repository: Repository):
     for change in changesets:
         ctx = new_repository.hg_repo[change]
         assert str(ctx) == new_tip
+
+
+def test_upload_fails_if_contains_symlink(shed_app: TestToolShedApp, new_repository: Repository):
+    tar_resource = TEST_DATA_FILES.joinpath("safetar_with_symlink.tar")
+    upload_ok, message, _, _, _, _ = upload_tar(
+        shed_app,
+        "localhost",
+        new_repository.user.username,
+        new_repository,
+        tar_resource,
+        commit_message="Commit Message",
+    )
+    assert not upload_ok
+    assert "Invalid paths" in message

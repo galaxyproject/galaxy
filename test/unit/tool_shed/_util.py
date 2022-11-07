@@ -17,7 +17,10 @@ from tool_shed.managers.users import create_user
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.registry import Registry as RepositoryTypesRegistry
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.test.base.populators import repo_tars, TEST_DATA_REPO_FILES
+from tool_shed.test.base.populators import (
+    repo_tars,
+    TEST_DATA_REPO_FILES,
+)
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.util.repository_util import create_repository
 from tool_shed.webapp.model import (
@@ -25,7 +28,6 @@ from tool_shed.webapp.model import (
     Repository,
     User,
 )
-
 
 TEST_DATA_FILES = TEST_DATA_REPO_FILES
 TEST_HOST = "localhost"
@@ -50,10 +52,6 @@ class TestToolShedConfig:
 
 class TestToolShedApp(ToolShedApp):
     repository_types_registry = RepositoryTypesRegistry()
-    model = mapping.init(
-        "sqlite:///:memory:",
-        create_tables=True,
-    )
     config: TestToolShedConfig
     hgweb_config_manager = hgweb_config_manager
     repository_registry: tool_shed.repository_registry.Registry
@@ -61,6 +59,10 @@ class TestToolShedApp(ToolShedApp):
     name: str = "ToolShed"
 
     def __init__(self, temp_directory=None):
+        self.model = mapping.init(
+            "sqlite:///:memory:",
+            create_tables=True,
+        )
         temp_directory = temp_directory or mkdtemp()
         hgweb_config_dir = os.path.join(temp_directory, "hgweb")
         safe_makedirs(hgweb_config_dir)
@@ -130,8 +132,7 @@ def upload(app: TestToolShedApp, repository: Repository, path: Path, arcname: Op
         repository.user,
         repository,
         tar_path,
-        None,
-        TEST_COMMIT_MESSAGE,
+        commit_message=TEST_COMMIT_MESSAGE,
     )
 
 

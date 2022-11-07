@@ -13,7 +13,10 @@ from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import hg_util
 from tool_shed.util.repository_content_util import upload_tar
-from tool_shed.webapp.model import Repository, User
+from tool_shed.webapp.model import (
+    Repository,
+    User,
+)
 
 log = logging.getLogger(__name__)
 

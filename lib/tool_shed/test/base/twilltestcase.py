@@ -56,12 +56,12 @@ from galaxy.util import (
 from galaxy_test.base.api_asserts import assert_status_code_is_ok
 from galaxy_test.base.api_util import get_admin_api_key
 from galaxy_test.base.populators import wait_on_assertion
+from tool_shed.test.base.populators import TEST_DATA_REPO_FILES
 from tool_shed.util import (
     hg_util,
     hgweb_config,
     xml_util,
 )
-from tool_shed.test.base.populators import TEST_DATA_REPO_FILES
 from tool_shed.util.repository_content_util import tar_open
 from tool_shed.webapp.model import Repository as DbRepository
 from tool_shed_client.schema import (
@@ -1082,7 +1082,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         ]
         self.add_file_to_repository(repository, "freebayes/freebayes.xml", strings_displayed=strings_displayed)
         strings_displayed = ["Upload a file named <b>sam_fa_indices.loc.sample"]
-        self.add_file_to_repository(repository, "freebayes/tool_data_table_conf.xml.sample", strings_displayed=strings_displayed)
+        self.add_file_to_repository(
+            repository, "freebayes/tool_data_table_conf.xml.sample", strings_displayed=strings_displayed
+        )
         self.add_file_to_repository(repository, "freebayes/sam_fa_indices.loc.sample")
         target = os.path.join("freebayes", "malformed_tool_dependencies", "tool_dependencies.xml")
         self.add_file_to_repository(
@@ -1098,7 +1100,12 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.add_file_to_repository(repository, target)
 
     def add_file_to_repository(
-        self, repository: Repository, source: str, target: Optional[str] = None, strings_displayed=None, commit_message: Optional[str] = None
+        self,
+        repository: Repository,
+        source: str,
+        target: Optional[str] = None,
+        strings_displayed=None,
+        commit_message: Optional[str] = None,
     ):
         with self.cloned_repo(repository) as temp_directory:
             if target is None:
@@ -1107,18 +1114,20 @@ class ShedTwillTestCase(ShedApiTestCase):
             full_source = TEST_DATA_REPO_FILES.joinpath(source)
             shutil.copyfile(str(full_source), full_target)
             commit_message = commit_message or "Uploaded revision with added file."
-            self._upload_dir_to_repository(repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed)
+            self._upload_dir_to_repository(
+                repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed
+            )
 
-    def add_tar_to_repository(
-        self, repository: Repository, source: str, strings_displayed=None
-    ):
+    def add_tar_to_repository(self, repository: Repository, source: str, strings_displayed=None):
         with self.cloned_repo(repository) as temp_directory:
             full_source = TEST_DATA_REPO_FILES.joinpath(source)
             tar = tar_open(full_source)
             tar.extractall(path=temp_directory)
             tar.close()
             commit_message = "Uploaded revision with added files from tar."
-            self._upload_dir_to_repository(repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed)
+            self._upload_dir_to_repository(
+                repository, temp_directory, commit_message=commit_message, strings_displayed=strings_displayed
+            )
 
     def commit_tar_to_repository(
         self, repository: Repository, source: str, commit_message=None, strings_displayed=None

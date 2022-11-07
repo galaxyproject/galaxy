@@ -70,7 +70,9 @@ class TestFreebayesRepository(ShedTwillTestCase):
         """
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         strings_displayed = ["Upload a file named <b>sam_fa_indices.loc.sample"]
-        self.add_file_to_repository(repository, "freebayes/tool_data_table_conf.xml.sample", strings_displayed=strings_displayed)
+        self.add_file_to_repository(
+            repository, "freebayes/tool_data_table_conf.xml.sample", strings_displayed=strings_displayed
+        )
         self.display_manage_repository_page(
             repository, strings_displayed=["Invalid tools"], strings_not_displayed=["Valid tools"]
         )

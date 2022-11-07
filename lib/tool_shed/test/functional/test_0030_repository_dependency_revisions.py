@@ -39,9 +39,7 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category,
         )
-        self.commit_tar_to_repository(
-            repository, "emboss/emboss.tar", commit_message="Uploaded tool tarball."
-        )
+        self.commit_tar_to_repository(repository, "emboss/emboss.tar", commit_message="Uploaded tool tarball.")
 
     def test_0015_create_emboss_6_repository(self):
         """Create and populate the emboss_6_0030 repository."""
@@ -55,7 +53,9 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             category=category,
         )
         self.commit_tar_to_repository(
-            repository, "emboss/emboss.tar", commit_message="Uploaded tool tarball.",
+            repository,
+            "emboss/emboss.tar",
+            commit_message="Uploaded tool tarball.",
         )
 
     def test_0020_create_dependent_repository(self):
@@ -71,7 +71,9 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             self.commit_tar_to_repository(
-                repository, "column_maker/column_maker.tar", commit_message="Uploaded bismark tarball.",
+                repository,
+                "column_maker/column_maker.tar",
+                commit_message="Uploaded bismark tarball.",
             )
 
     def test_0025_create_emboss_repository(self):
@@ -86,7 +88,9 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             category=category,
         )
         self.commit_tar_to_repository(
-            repository, "emboss/emboss.tar", commit_message="Uploaded the tool tarball.",
+            repository,
+            "emboss/emboss.tar",
+            commit_message="Uploaded the tool tarball.",
         )
 
     def test_0030_generate_repository_dependencies_for_emboss_5(self):

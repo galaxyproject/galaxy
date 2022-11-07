@@ -62,8 +62,13 @@ def upload_tar(
     check_results = check_archive(repository, tar)
     if check_results.invalid:
         tar.close()
-        uploaded_file.close()
-        message = "{} Invalid paths were: {}".format(" ".join(check_results.errors), ", ".join(check_results.invalid))
+        try:
+            uploaded_file.close()
+        except AttributeError:
+            pass
+        message = "{} Invalid paths were: {}".format(
+            " ".join(check_results.errors), ", ".join([i.name for i in check_results.invalid])
+        )
         return False, message, [], "", undesirable_dirs_removed, undesirable_files_removed
     else:
         repo_dir = repository.repo_path(app)

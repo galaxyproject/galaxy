@@ -262,7 +262,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 owner=common.test_user_1_name,
                 category=category,
                 strings_displayed=[],
-            )            
+            )
             self.commit_tar_to_repository(
                 repository,
                 "filtering/filtering_1.1.0.tar",
