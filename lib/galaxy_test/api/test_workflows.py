@@ -3049,6 +3049,51 @@ input1:
             invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
             assert invocation["state"] == "cancelled"
 
+    @skip_without_tool("identifier_multiple")
+    def test_invocation_map_over(self):
+        summary = self._run_workflow(
+            """class: GalaxyWorkflow
+inputs:
+  input_collection:
+    collection_type: list
+    type: collection
+outputs:
+  main_out:
+    outputSource: subworkflow/sub_out
+steps:
+  subworkflow:
+    in:
+      data_input: input_collection
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        data_input:
+          type: data
+      outputs:
+        sub_out:
+          outputSource: output_step/output1
+      steps:
+        output_step:
+          tool_id: identifier_multiple
+          in:
+            input1: data_input
+test_data:
+  input_collection:
+    collection_type: list
+    elements:
+      - identifier: A
+        content: A
+      - identifier: B
+        content: B
+        """,
+            assert_ok=True,
+            wait=True,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        # For consistency and conditional subworkflow steps this really needs to remain
+        # a collection and not get reduced.
+        assert "main_out" in invocation["output_collections"], invocation
+
     @skip_without_tool("cat")
     def test_pause_outputs_with_deleted_inputs(self):
         self._deleted_inputs_workflow(purge=False)
