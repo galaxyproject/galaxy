@@ -475,7 +475,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_convert_dataset_explicit_history(self, history_id):
         fasta1_contents = open(self.get_filename("1.fasta")).read()
-        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents, file_type="fasta")
 
         payload = {
             "src": "hda",
@@ -494,7 +494,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_convert_dataset_implicit_history(self, history_id):
         fasta1_contents = open(self.get_filename("1.fasta")).read()
-        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        hda1 = self.dataset_populator.new_dataset(history_id, content=fasta1_contents, file_type="fasta")
 
         payload = {"src": "hda", "id": hda1["id"], "source_type": "fasta", "target_type": "tabular"}
         create_response = self._post("tools/CONVERTER_fasta_to_tabular/convert", data=payload)
@@ -1164,7 +1164,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
     @uses_test_history(require_new=False)
     def test_dynamic_list_output(self, history_id):
         new_dataset1 = self.dataset_populator.new_dataset(
-            history_id, content="samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n"
+            history_id, content="samp1\t1\nsamp1\t3\nsamp2\t2\nsamp2\t4\n",
+            file_type="tabular"
         )
         inputs = {
             "input1": dataset_to_param(new_dataset1),
@@ -2751,7 +2752,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"
         )
         fasta1_contents = open(self.get_filename("1.fasta")).read()
-        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents)
+        fasta = self.dataset_populator.new_dataset(history_id, content=fasta1_contents, file_type="fasta")
         inputs = {"input1": dataset_to_param(deferred_bam_details), "reference": dataset_to_param(fasta)}
         run_response = self.dataset_populator.run_tool(tool_id="pileup", inputs=inputs, history_id=history_id)
         self.dataset_populator.wait_for_job(run_response["jobs"][0]["id"], assert_ok=True)

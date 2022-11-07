@@ -1,0 +1,94 @@
+<tool id="filter_data_param" name="filter_data_param" version="0.1.0" profile="22.09">
+    <description>Filter applied to a data param</description>
+    <command><![CDATA[
+    #for ri in $ref_input
+        #for fd in $filter_dbkey
+            echo "filter dbkey ${ri.metadata.dbkey} ${fd.metadata.dbkey}" >> '$output' &&
+        #end for
+    #end for
+    true
+    ]]></command>
+    <inputs>
+        <param name="ref_input" type="data" format="bed" multiple="true" label="Inputs" help="" />
+        <!-- test to filter a data param such that only inputs with the same dbkey
+            as the "inputs" parameter, this is the only combination of filter attributes 
+            that should work-->
+        <param name="filter_dbkey" type="data" format="bed" multiple="true" label="Splitted options">
+            <options>
+                <filter type="data_meta" key="dbkey" ref="ref_input"/>
+          </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+
+    <tests>
+        <!-- test that filter allows matching dbkey combinations -->
+        <test>
+            <param name="ref_input" value="1.bed" dbkey="hg19"/>
+            <param name="filter_dbkey" value="2.bed" dbkey="hg19"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="filter dbkey hg19 hg19" n="1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- test that filter forbids non-matching dbkey combinations -->
+        <test expect_failure="true">
+            <param name="ref_input" value="1.bed" dbkey="hg19"/>
+            <param name="filter_dbkey" value="2.bed" dbkey="hg38"/>
+        </test>
+
+        <!-- if the referred input sets no dbkey then any dbkey is accepted-->
+        <test>
+            <param name="ref_input" value="1.bed"/>
+            <param name="filter_dbkey" value="2.bed" dbkey="hg19"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="filter dbkey ? hg19" n="1"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <param name="ref_input" value="1.bed"/>
+            <param name="filter_dbkey" value="2.bed"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="filter dbkey ? ?" n="1"/>
+                </assert_contents>
+            </output>
+        </test>
+
+        <!-- check that a dbkey has to be set if the referred data set has one -->
+        <test expect_failure="true">
+            <param name="ref_input" value="1.bed" dbkey="hg19"/>
+            <param name="filter_dbkey" value="2.bed"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="filter dbkey hg19 ?" n="1"/>
+                </assert_contents>
+            </output>
+        </test>
+
+        <!-- same as in test 1 but multiple inputs -->
+        <test>
+            <param name="ref_input" value="1.bed,2.bed" dbkey="hg19"/>
+            <param name="filter_dbkey" value="4.bed,5.bed" dbkey="hg19"/>
+            <output name="output">
+                <assert_contents>
+                    <has_text text="filter dbkey hg19 hg19" n="4"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- same as in test 2 but multiple inputs -->
+        <test expect_failure="true">
+            <param name="ref_input" value="1.bed,2.bed" dbkey="hg19"/>
+            <param name="filter_dbkey" value="4.bed,5.bed" dbkey="hg38"/>
+        </test>
+    </tests>
+    
+    <help>
+    </help>
+</tool>

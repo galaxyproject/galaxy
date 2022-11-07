@@ -12,14 +12,14 @@
   </outputs>
   <tests>
     <test>
-      <param name="input1" value="tinywga.fam" />
+      <param name="input1" value="tinywga.fam" ftype="tabular"/>
       <output_collection name="split_output" type="list">
-        <element name="101">
+        <element name="101" ftype="tabular">
           <assert_contents>
             <has_text_matching expression="^1\n2\n3\n$" />
           </assert_contents>
         </element>
-        <element name="1334">
+        <element name="1334" ftype="tabular">
           <assert_contents>
             <has_text_matching expression="^1\n10\n11\n12\n13\n2\n$" />
           </assert_contents>

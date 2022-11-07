@@ -30,7 +30,7 @@
                     <element name="reverse" value="simple_line_alternative.txt" />
                 </collection>
             </param>
-            <param name="tags" value="new_tags_1.txt" ftype="txt" />
+            <param name="tags" value="new_tags_1.txt" ftype="tabular" />
             <param name="how" value="add"/>
             <output_collection name="output" type="list">
                 <element name="forward">
@@ -59,7 +59,7 @@
                 </collection>
             </param>
             <param name="how" value="set"/>
-            <param name="tags" value="new_tags_1.txt" ftype="txt" />
+            <param name="tags" value="new_tags_1.txt" ftype="tabular" />
             <output_collection name="output" type="list:paired">
                 <element name="i1">
                     <element name="forward">

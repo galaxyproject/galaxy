@@ -2566,11 +2566,12 @@ class BaseDatasetCollectionPopulator:
                         element_identifier = "forward"
                     else:
                         element_identifier = "reverse"
+                    if "file_type" in contents_level:
+                        element["ext"] = contents_level["file_type"]
                 element["name"] = element_identifier
                 element["paste_content"] = dataset_contents
                 element["to_posix_lines"] = kwds.get("to_posix_lines", True)
                 elements.append(element)
-
         name = kwds.get("name", "Test Dataset Collection")
 
         targets = [
@@ -2700,10 +2701,14 @@ def load_data_dict(
     dataset_collection_populator: BaseDatasetCollectionPopulator,
 ) -> LoadDataDictResponseT:
     """Load a dictionary as inputs to a workflow (test data focused)."""
-
     def open_test_data(test_dict, mode="rb"):
+        """
+        load test data given in test_dict["value"]
+        - if its a file name: a handle to the file
+        - otherwise: a handle to the raw string data
+        """
         test_data_resolver = TestDataResolver()
-        filename = test_data_resolver.get_filename(test_dict.pop("value"))
+        filename = test_data_resolver.get_filename(test_dict["value"])
         return open(filename, mode)
 
     def read_test_data(test_dict):
@@ -2712,7 +2717,6 @@ def load_data_dict(
     inputs = {}
     label_map = {}
     has_uploads = False
-
     for key, value in test_data.items():
         is_dict = isinstance(value, dict)
         if is_dict and ("elements" in value or value.get("collection_type")):
@@ -2726,7 +2730,10 @@ def load_data_dict(
                 input_type = element_data.pop("type", "raw")
                 content = None
                 if input_type == "File":
-                    content = read_test_data(element_data)
+                    if 'content' in value:
+                        content = element_data.pop('content')
+                    else:
+                        content = read_test_data(element_data)
                 else:
                     content = element_data.pop("content")
                 if content is not None:
@@ -2766,7 +2773,10 @@ def load_data_dict(
         elif is_dict and "type" in value:
             input_type = value.pop("type")
             if input_type == "File":
-                content = open_test_data(value)
+                if 'content' in value:
+                    content = StringIO(value["content"])
+                else:
+                    content = open_test_data(value)
                 new_dataset_kwds = {"content": content}
                 if "name" in value:
                     new_dataset_kwds["name"] = value["name"]
@@ -2774,6 +2784,7 @@ def load_data_dict(
                     new_dataset_kwds["file_type"] = value["file_type"]
                 hda = dataset_populator.new_dataset(history_id, wait=True, **new_dataset_kwds)
                 label_map[key] = dataset_populator.ds_entry(hda)
+                inputs[key] = hda
                 has_uploads = True
             elif input_type == "raw":
                 label_map[key] = value["value"]
@@ -2785,7 +2796,6 @@ def load_data_dict(
             inputs[key] = hda
         else:
             raise ValueError(f"Invalid test_data def {test_data}")
-
     return inputs, label_map, has_uploads
 
 

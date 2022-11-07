@@ -100,7 +100,7 @@ class TestToolExecution(TestCase, tools_support.UsesTools):
 
     def test_data_param_execute(self):
         self._init_tool(tools_support.SIMPLE_CAT_TOOL_CONTENTS)
-        hda = self.__add_dataset(1)
+        hda = self.__add_dataset(1, extension="tabular")
         # Execute tool action
         vars = self.__handle_with_incoming(param1=1)
         self.__assert_executed(vars)
@@ -110,7 +110,7 @@ class TestToolExecution(TestCase, tools_support.UsesTools):
 
     def test_data_param_state_update(self):
         self._init_tool(tools_support.SIMPLE_CAT_TOOL_CONTENTS)
-        hda = self.__add_dataset(1)
+        hda = self.__add_dataset(1, extension="tabular")
         # Update state
         vars = self.__handle_with_incoming(param1=1)
         state = self.__assert_rerenders_tool_without_errors(vars)
@@ -122,8 +122,8 @@ class TestToolExecution(TestCase, tools_support.UsesTools):
         """
         return self.tool.handle_input(trans=self.trans, incoming=kwds)
 
-    def __add_dataset(self, id, state="ok"):
-        hda = galaxy.model.HistoryDatasetAssociation()
+    def __add_dataset(self, id, state="ok", **kwds):
+        hda = galaxy.model.HistoryDatasetAssociation(**kwds)
         hda.id = id
         hda.dataset = galaxy.model.Dataset()
         hda.dataset.state = "ok"
