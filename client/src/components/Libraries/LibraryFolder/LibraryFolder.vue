@@ -276,7 +276,7 @@ import { Services } from "./services";
 import Utils from "utils/utils";
 import linkifyHtml from "linkify-html";
 import { fields } from "./table-fields";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
