@@ -1,6 +1,8 @@
 import zipfile
 from io import BytesIO
 
+import pytest
+
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -16,6 +18,7 @@ class TestAsyncDownloadsIntegration(IntegrationTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
+    @pytest.mark.require_new_history
     def test_async_collection_download(self, history_id):
         fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, direct_upload=True).json()
         dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)

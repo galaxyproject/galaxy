@@ -209,15 +209,10 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         invocation_details = invocation_details_response.json()
         return invocation_details
 
-    def _run_jobs(self, has_workflow, history_id=None, **kwds) -> Union[Dict[str, Any], RunJobsSummary]:
-        if history_id is None:
-            history_id = self.history_id
-
+    def _run_jobs(self, has_workflow, history_id: str, **kwds) -> Union[Dict[str, Any], RunJobsSummary]:
         return self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
 
-    def _run_workflow(self, has_workflow, history_id=None, **kwds) -> RunJobsSummary:
-        if history_id is None:
-            history_id = self.history_id
+    def _run_workflow(self, has_workflow, history_id: str, **kwds) -> RunJobsSummary:
         assert "expected_response" not in kwds
         run_summary = self.workflow_populator.run_workflow(has_workflow, history_id=history_id, **kwds)
         return cast(RunJobsSummary, run_summary)
@@ -241,7 +236,7 @@ class BaseWorkflowsApiTestCase(ApiTestCase, RunsWorkflowFixtures):
         assert tool_state_value["__class__"] == "RuntimeValue"
 
 
-class ChangeDatatypeTestCase:
+class ChangeDatatypeTests:
     dataset_populator: DatasetPopulator
     workflow_populator: WorkflowPopulator
 
@@ -310,7 +305,7 @@ class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
 # - Allow post to workflows/<workflow_id>/run in addition to posting to
 #    /workflows with id in payload.
 # - Much more testing obviously, always more testing.
-class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTestCase):
+class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
     dataset_populator: DatasetPopulator
 
     def test_show_valid(self):
@@ -3461,8 +3456,7 @@ text_input:
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert "chrX\t152691446\t152691471\tCCDS14735.1_cds_0_0_chrX_152691447_f\t0\t+\n" == content
 
-    def test_run_with_numeric_input_connection(self):
-        history_id = self.dataset_populator.new_history()
+    def test_run_with_numeric_input_connection(self, history_id):
         self._run_jobs(
             """
 class: GalaxyWorkflow
@@ -3492,8 +3486,7 @@ test_data: {}
         assert abs(float(str_4point14) - 4.14) < 0.0001
 
     @skip_without_tool("param_value_from_file")
-    def test_expression_tool_map_over(self):
-        history_id = self.dataset_populator.new_history()
+    def test_expression_tool_map_over(self, history_id):
         self._run_jobs(
             """
 class: GalaxyWorkflow
@@ -5200,6 +5193,7 @@ input:
 
     def test_invocation_filtering(self):
         with self._different_user(email=f"{uuid4()}@test.com"):
+            history_id = self.dataset_populator.new_history()
             # new user, start with no invocations
             assert not self._assert_invocation_for_url_is("invocations")
             self._run_jobs(
@@ -5211,6 +5205,7 @@ inputs:
     optional: true
 steps: []
 """,
+                history_id=history_id,
                 wait=False,
             )
             first_invocation = self._assert_invocation_for_url_is("invocations")
@@ -5647,7 +5642,7 @@ class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
 
     require_admin_user = True
 
-    def test_import_export_dynamic_tools(self):
+    def test_import_export_dynamic_tools(self, history_id):
         workflow_id = self._upload_yaml_workflow(
             """
 class: GalaxyWorkflow
@@ -5680,7 +5675,6 @@ test_data:
         downloaded_workflow = self._download_workflow(workflow_id)
         response = self.workflow_populator.create_workflow_response(downloaded_workflow)
         workflow_id = response.json()["id"]
-        history_id = self.dataset_populator.new_history()
         hda1 = self.dataset_populator.new_dataset(history_id, content="Hello World Second!")
         workflow_request = dict(
             inputs_by="name",
