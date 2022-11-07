@@ -61,3 +61,38 @@ def test_upload_fails_if_contains_symlink(shed_app: TestToolShedApp, new_reposit
     )
     assert not upload_ok
     assert "Invalid paths" in message
+
+
+def test_upload_dry_run_ok(shed_app: TestToolShedApp, new_repository: Repository):
+    tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
+    old_tip = new_repository.tip()
+    upload_ok, _, _, alert, dirs_removed, files_removed = upload_tar(
+        shed_app,
+        "localhost",
+        new_repository.user.username,
+        new_repository,
+        tar_resource,
+        commit_message="Commit Message",
+        dry_run=True,
+    )
+    assert upload_ok
+    assert alert == ""
+    assert dirs_removed == 0
+    assert files_removed == 0
+    new_tip = new_repository.tip()
+    assert old_tip == new_tip
+
+
+def test_upload_dry_run_failed(shed_app: TestToolShedApp, new_repository: Repository):
+    tar_resource = TEST_DATA_FILES.joinpath("safetar_with_symlink.tar")
+    upload_ok, message, _, _, _, _ = upload_tar(
+        shed_app,
+        "localhost",
+        new_repository.user.username,
+        new_repository,
+        tar_resource,
+        commit_message="Commit Message",
+        dry_run=True,
+    )
+    assert not upload_ok
+    assert "Invalid paths" in message

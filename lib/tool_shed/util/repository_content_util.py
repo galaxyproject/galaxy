@@ -1,12 +1,14 @@
 import os
 import shutil
 import tarfile
+import tempfile
 from typing import (
     Optional,
     TYPE_CHECKING,
 )
 
 import tool_shed.repository_types.util as rt_util
+from galaxy.tool_shed.util.hg_util import clone_repository
 from galaxy.util import checkers
 from tool_shed.dependencies.attribute_handlers import (
     RepositoryDependencyAttributeHandler,
@@ -45,6 +47,7 @@ def upload_tar(
     repository: "Repository",
     uploaded_file,
     commit_message: str,
+    dry_run: bool = False,
     remove_repo_files_not_in_tar: bool = True,
     new_repo_alert: bool = False,
     tar=None,
@@ -71,7 +74,11 @@ def upload_tar(
         return False, message, [], "", undesirable_dirs_removed, undesirable_files_removed
     else:
         repo_dir = repository.repo_path(app)
-        full_path = os.path.abspath(repo_dir)
+        if dry_run:
+            full_path = tempfile.mkdtemp()
+            clone_repository(repo_dir, full_path)
+        else:
+            full_path = os.path.abspath(repo_dir)
         undesirable_files_removed = len(check_results.undesirable_files)
         undesirable_dirs_removed = len(check_results.undesirable_dirs)
         filenames_in_archive = [ti.name for ti in check_results.valid]
@@ -114,4 +121,5 @@ def upload_tar(
             commit_message,
             undesirable_dirs_removed,
             undesirable_files_removed,
+            repo_path=full_path,
         )

@@ -172,12 +172,13 @@ def handle_directory_changes(
     commit_message: str,
     undesirable_dirs_removed: int,
     undesirable_files_removed: int,
+    repo_path: Optional[str] = None,
+    dry_run: bool = False,
 ) -> ChangeResponseT:
-    repo_path = repository.repo_path(app)
+    repo_path = repo_path or repository.repo_path(app)
     content_alert_str = ""
     files_to_remove = []
     filenames_in_archive = [os.path.normpath(os.path.join(full_path, name)) for name in filenames_in_archive]
-    print(filenames_in_archive)
     if remove_repo_files_not_in_tar and not repository.is_new():
         # We have a repository that is not new (it contains files), so discover those files that are in the
         # repository, but not in the uploaded archive.
@@ -211,7 +212,6 @@ def handle_directory_changes(
         # Check file content to ensure it is appropriate.
         if check_contents and os.path.isfile(filename_in_archive):
             content_alert_str += check_file_content_for_html_and_images(filename_in_archive)
-        print(filename_in_archive)
         hg_util.add_changeset(repo_path, filename_in_archive)
         if filename_in_archive.endswith("tool_data_table_conf.xml.sample"):
             # Handle the special case where a tool_data_table_conf.xml.sample file is being uploaded
@@ -230,9 +230,15 @@ def handle_directory_changes(
                 )
     hg_util.commit_changeset(repo_path, full_path_to_changeset=full_path, username=username, message=commit_message)
     admin_only = len(repository.downloadable_revisions) != 1
-    suc.handle_email_alerts(
-        app, host, repository, content_alert_str=content_alert_str, new_repo_alert=new_repo_alert, admin_only=admin_only
-    )
+    if not dry_run:
+        suc.handle_email_alerts(
+            app,
+            host,
+            repository,
+            content_alert_str=content_alert_str,
+            new_repo_alert=new_repo_alert,
+            admin_only=admin_only,
+        )
     return True, "", files_to_remove, content_alert_str, undesirable_dirs_removed, undesirable_files_removed
 
 

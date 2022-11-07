@@ -532,6 +532,7 @@ def upload_tar_and_set_metadata(
     repository: Repository,
     uploaded_file,
     commit_message: str,
+    dry_run: bool = False,
 ):
     repo_dir = repository.repo_path(app)
     tip = repository.tip()
