@@ -5,6 +5,7 @@ import yaml
 from galaxy import model
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.workflow.modules import module_factory
 
 
@@ -13,6 +14,8 @@ class MockTrans:
         self.app = MockApp()
         self.sa_session = self.app.model.context
         self._user = None
+        self.workflow_building_mode = workflow_building_modes.ENABLED
+        self.history = None
 
     def save_workflow(self, workflow):
         stored_workflow = model.StoredWorkflow()

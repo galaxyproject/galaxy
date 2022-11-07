@@ -231,6 +231,9 @@ class TestToolEvaluator(TestCase, UsesApp):
 
 
 class MockHistoryDatasetAssociation(HistoryDatasetAssociation):
+
+    src = "hda"
+
     def __init__(self, **kwds):
         self._metadata = dict()
         super().__init__(**kwds)

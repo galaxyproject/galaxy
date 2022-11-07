@@ -55,6 +55,7 @@ from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_WITH_BAD_COLUMN_PARAMETER_GOOD_TEST_DATA,
     WORKFLOW_WITH_CUSTOM_REPORT_1,
     WORKFLOW_WITH_CUSTOM_REPORT_1_TEST_DATA,
+    WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
     WORKFLOW_WITH_DYNAMIC_OUTPUT_COLLECTION,
     WORKFLOW_WITH_MAPPED_OUTPUT_COLLECTION,
     WORKFLOW_WITH_OUTPUT_COLLECTION,
@@ -1584,8 +1585,6 @@ test_data:
                 wait=True,
             )
             invocation = self.workflow_populator.get_invocation(job_summary.invocation_id, step_details=True)
-            # TODO: return steps sorted by order_index ? Why don't we do that ??
-            invocation["steps"].sort(key=lambda step: step["order_index"])
             failed_step = invocation["steps"][1]
             assert failed_step["jobs"][0]["state"] == "error"
             failed_hdca_id = failed_step["output_collections"]["list_output"]["id"]
@@ -1919,12 +1918,8 @@ outer_input:
                 step["subworkflow_invocation_id"] for step in steps if step["subworkflow_invocation_id"]
             ][0]
             subworkflow_invocation = self.workflow_populator.get_invocation(subworkflow_invocation_id)
-            assert [step for step in subworkflow_invocation["steps"] if step["order_index"] == 0][0][
-                "workflow_step_label"
-            ] == "inner_input"
-            assert [step for step in subworkflow_invocation["steps"] if step["order_index"] == 1][0][
-                "workflow_step_label"
-            ] == "random_lines"
+            assert subworkflow_invocation["steps"][0]["workflow_step_label"] == "inner_input"
+            assert subworkflow_invocation["steps"][1]["workflow_step_label"] == "random_lines"
 
     @skip_without_tool("random_lines1")
     def test_run_subworkflow_runtime_parameters(self):
@@ -3400,6 +3395,109 @@ data_input:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
             content = self.dataset_populator.get_history_dataset_content(history_id)
             assert len(content.splitlines()) == 3, content
+
+    def test_run_with_default_file_dataset_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT,
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(run_response.invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "dda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["hid"] == 1
+            assert dataset_details["file_ext"] == "txt"
+            assert "chr1" in dataset_details["peek"]
+
+    def test_run_with_default_file_dataset_input_and_explicit_input(self):
+        with self.dataset_populator.test_history() as history_id:
+            run_response = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: 1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+test_data:
+  default_file_input:
+    content: "I am not the default"
+    type: File
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(run_response.invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "hda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["hid"] == 2
+            assert dataset_details["file_ext"] == "txt"
+            assert "I am not the default" in dataset_details["peek"]
+
+    def test_run_with_default_file_in_step_inline(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: 1.bed
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            content = self.dataset_populator.get_history_dataset_content(history_id)
+            assert "chr1" in content
+
+    def test_run_shared_workflow_with_default_file(self):
+        workflow_id = self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT, publish=True)
+        with self._different_user(), self.dataset_populator.test_history() as history_id:
+            other_import_response = self.__import_workflow(workflow_id)
+            self._assert_status_code_is(other_import_response, 200)
+            other_id = other_import_response.json()["id"]
+            invocation_id = self.workflow_populator.invoke_workflow_and_wait(
+                other_id,
+                history_id,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(invocation_id, step_details=True)
+            assert invocation_details["steps"][0]["outputs"]["output"]["src"] == "dda"
+            dataset_details = self.dataset_populator.get_history_dataset_details(
+                history_id, dataset_id=invocation_details["steps"][1]["outputs"]["out_file1"]["id"]
+            )
+            assert dataset_details["hid"] == 1
+            assert dataset_details["file_ext"] == "txt"
+            assert "chr1" in dataset_details["peek"]
+
+    def test_workflow_default_file_counts_towards_quota(self):
+        current_user = self._get("users/current").json()
+        current_disk_usage = current_user["total_disk_usage"]
+        self._upload_yaml_workflow(WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT, publish=True)
+        updated_user = self._get("users/current").json()
+        new_disk_usage = updated_user["total_disk_usage"]
+        assert new_disk_usage > current_disk_usage
 
     def test_run_with_validated_parameter_connection_invalid(self):
         with self.dataset_populator.test_history() as history_id:
@@ -5333,24 +5431,15 @@ steps: []
         self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
 
         invocation_steps = usage_details["steps"]
-        invocation_input_step, invocation_tool_step = None, None
-        for invocation_step in invocation_steps:
+        for step_index, invocation_step in enumerate(invocation_steps):
             self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
-            order_index = invocation_step["order_index"]
-            assert order_index in [0, 1]
-            if invocation_step["order_index"] == 0:
-                assert invocation_input_step is None
-                invocation_input_step = invocation_step
-            else:
-                assert invocation_tool_step is None
-                invocation_tool_step = invocation_step
-
-        assert invocation_input_step
-        assert invocation_tool_step
+            assert step_index == invocation_step["order_index"]
+        invocation_input_step = invocation_steps[0]
+        invocation_tool_step = invocation_steps[1]
 
         # Tool steps have non-null job_ids (deprecated though they may be)
-        assert invocation_input_step.get("job_id", None) is None
-        assert invocation_tool_step.get("job_id", None) is None
+        assert invocation_input_step.get("job_id") is None
+        assert invocation_tool_step.get("job_id") is None
         assert invocation_tool_step["state"] == "scheduled"
 
         usage_details = self._invocation_details(workflow_id, invocation_id, legacy_job_state="true")
@@ -5362,13 +5451,8 @@ steps: []
         invocation_tool_steps = []
         for invocation_step in invocation_steps:
             self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
-            order_index = invocation_step["order_index"]
-            assert order_index in [0, 1]
-            if invocation_step["order_index"] == 0:
-                assert invocation_input_step is None
-                invocation_input_step = invocation_step
-            else:
-                invocation_tool_steps.append(invocation_step)
+        invocation_input_step = invocation_steps[0]
+        invocation_tool_steps.extend(invocation_steps[1:])
 
         assert len(invocation_tool_steps) == 2
         assert invocation_tool_steps[0]["state"] == "ok"

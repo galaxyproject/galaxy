@@ -5,12 +5,14 @@ API operations for Workflows
 import json
 import logging
 import os
+import zipfile
 from io import BytesIO
 from typing import (
     Any,
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from fastapi import (
@@ -64,6 +66,7 @@ from galaxy.tools import recommendations
 from galaxy.tools.parameters import populate_state
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util.sanitize_html import sanitize_html
+from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.version import VERSION
 from galaxy.web import (
     expose_api,
@@ -357,7 +360,10 @@ class WorkflowsAPIController(
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
                 if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
-                    archive_data = util.unicodify(uploaded_file.read())
+                    if zipfile.is_zipfile(uploaded_file_name):
+                        archive_data = zipfile.ZipFile(uploaded_file_name)
+                    else:
+                        archive_data = util.unicodify(uploaded_file.read())
                     import_source = "uploaded file"
                 else:
                     raise exceptions.MessageException("You attempted to upload an empty file.")
@@ -427,7 +433,8 @@ class WorkflowsAPIController(
         :type   instance:                 boolean
         """
         stored_workflow = self.__get_stored_accessible_workflow(trans, workflow_id, **kwd)
-
+        sname = stored_workflow.name
+        sname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in sname)[0:150]
         style = kwd.get("style", "export")
         download_format = kwd.get("format")
         version = kwd.get("version")
@@ -437,25 +444,33 @@ class WorkflowsAPIController(
             history = self.history_manager.get_accessible(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
+
+        archive = ZipstreamWrapper(sname, trans.app.config.upstream_mod_zip, trans.app.config.upstream_gzip)
         ret_dict = self.workflow_contents_manager.workflow_to_dict(
-            trans, stored_workflow, style=style, version=version, history=history
+            trans, stored_workflow, style=style, version=version, history=history, archive=archive
         )
         if download_format == "json-download":
-            sname = stored_workflow.name
-            sname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in sname)[0:150]
+
             if ret_dict.get("format-version", None) == "0.1":
                 extension = "ga"
             else:
                 extension = "gxwf.json"
-            trans.response.headers[
-                "Content-Disposition"
-            ] = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}"'
-            trans.response.set_content_type("application/galaxy-archive")
+            content_disposition = f'attachment; filename="Galaxy-Workflow-{sname}.{extension}'
+            content_type = "application/galaxy-archive"
+            if archive.size > 0:
+                content_type = "application/zip"
+                content_disposition = f"{content_disposition}.zip"
+            trans.response.set_content_type(content_type)
+            trans.response.headers["Content-Disposition"] = content_disposition
 
         if style == "format2" and download_format != "json-download":
             return ordered_dump(ret_dict)
         else:
-            return format_return_as_json(ret_dict, pretty=True)
+            json_content = format_return_as_json(ret_dict, pretty=True)
+            if archive.size > 0:
+                archive.write_str(f"Galaxy-Workflow-{sname}.{extension}", json_content.encode())
+                return archive.response()
+            return json_content
 
     @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):
@@ -634,6 +649,11 @@ class WorkflowsAPIController(
         if payload is None:
             payload = {}
         inputs = payload.get("inputs", {})
+        default = inputs.get("default")
+        if default and isinstance(default, dict) and "src" in default and "id" in default:
+            # We don't do this for other state ... but we really should not have to deal with
+            # encoded ids outside of the API layer.
+            default["id"] = trans.security.decode_id(default["id"])
         trans.workflow_building_mode = workflow_building_modes.ENABLED
         module = module_factory.from_dict(trans, payload, from_tool_form=True)
         if "tool_state" not in payload:
@@ -677,21 +697,31 @@ class WorkflowsAPIController(
     #
     # -- Helper methods --
     #
-    def __api_import_from_archive(self, trans: GalaxyWebTransaction, archive_data, source=None, payload=None):
+    def __api_import_from_archive(
+        self, trans: GalaxyWebTransaction, archive_data: Union[str, zipfile.ZipFile], source=None, payload=None
+    ):
         payload = payload or {}
-        try:
-            data = json.loads(archive_data)
-        except Exception:
-            if "GalaxyWorkflow" in archive_data:
-                data = {"yaml_content": archive_data}
-            else:
-                raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
+        archive = None
+        if isinstance(archive_data, zipfile.ZipFile):
+            archive = archive_data
+            for archive_entry in archive_data.filelist:
+                if archive_entry.filename.endswith(".ga"):
+                    # This isn't great, should use some kind of manifest here to pick the right workflow file
+                    data = json.loads(archive_data.read(archive_entry).decode("utf-8"))
+        else:
+            try:
+                data = json.loads(archive_data)
+            except json.decoder.JSONDecodeError:
+                if "GalaxyWorkflow" in archive_data:
+                    data = {"yaml_content": archive_data}
+                else:
+                    raise exceptions.MessageException("The data content does not appear to be a valid workflow.")
         if not data:
             raise exceptions.MessageException("The data content is missing.")
         raw_workflow_description = self.__normalize_workflow(trans, data)
         workflow_create_options = WorkflowCreateOptions(**payload)
         workflow, missing_tool_tups = self._workflow_from_dict(
-            trans, raw_workflow_description, workflow_create_options, source=source
+            trans, raw_workflow_description, workflow_create_options, source=source, archive=archive
         )
         workflow_id = workflow.id
         workflow = workflow.latest_workflow
@@ -1078,7 +1108,9 @@ class WorkflowsAPIController(
         )
         return self.__encode_invocation_step(trans, invocation_step)
 
-    def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
+    def _workflow_from_dict(
+        self, trans, data, workflow_create_options, source=None, archive: Optional[zipfile.ZipFile] = None
+    ):
         """Creates a workflow from a dict.
 
         Created workflow is stored in the database and returned.
@@ -1095,6 +1127,7 @@ class WorkflowsAPIController(
             raw_workflow_description,
             workflow_create_options,
             source=source,
+            archive=archive,
         )
         if importable:
             self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)

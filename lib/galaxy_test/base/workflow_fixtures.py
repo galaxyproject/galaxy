@@ -964,7 +964,6 @@ input_list:
   name: example list
 """
 
-
 WORKFLOW_WITH_BAD_COLUMN_PARAMETER = """
 class: GalaxyWorkflow
 inputs:
@@ -981,6 +980,22 @@ steps:
     state:
       col: 9
       col_names: notacolumn
+"""
+
+WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: 1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
 """
 
 

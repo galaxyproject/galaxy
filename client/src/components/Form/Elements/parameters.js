@@ -22,6 +22,7 @@ export default Backbone.View.extend({
         genomebuild: "_fieldSelect",
         data: "_fieldData",
         data_collection: "_fieldData",
+        default_file: "_fieldData",
         drill_down: "_fieldDrilldown",
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
@@ -59,6 +60,7 @@ export default Backbone.View.extend({
             flavor: input_def.flavor,
             data: input_def.options,
             tag: input_def.tag,
+            value: input_def.value,
             onchange: input_def.onchange,
         });
     },

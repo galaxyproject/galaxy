@@ -29,6 +29,7 @@ from galaxy.exceptions import (
 )
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    DatasetInstance,
     PostJobAction,
     Workflow,
     WorkflowStep,
@@ -59,6 +60,7 @@ from galaxy.tools.parameters.basic import (
     ConnectedValue,
     DataCollectionToolParameter,
     DataToolParameter,
+    DefaultDatasetToolParameter,
     FloatToolParameter,
     HiddenToolParameter,
     IntegerToolParameter,
@@ -114,6 +116,9 @@ class WorkflowModule:
         self.content_id = content_id
         self.state = DefaultToolState()
 
+    def recover_defaults(self, step):
+        return {}
+
     # ---- Creating modules from various representations ---------------------
 
     @classmethod
@@ -128,6 +133,7 @@ class WorkflowModule:
     def from_workflow_step(Class, trans, step, **kwds):
         module = Class(trans, **kwds)
         module.recover_state(step.tool_inputs, from_tool_form=False)
+        module.recover_defaults(step)
         module.label = step.label
         return module
 
@@ -693,7 +699,11 @@ class InputModule(WorkflowModule):
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
-        step_outputs = dict(output=step.state.inputs["input"])
+        step_output = step.state.inputs["input"]
+        if not step_output:
+            step_output = self.state.inputs.get("default")
+
+        step_outputs = dict(output=step_output)
 
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
@@ -798,7 +808,13 @@ class InputDataModule(InputModule):
         data_src = dict(
             name="input", label=self.label, multiple=False, type="data", format=formats, tag=tag, optional=optional
         )
-        input_param = DataToolParameter(None, data_src, self.trans)
+        default = parameter_def.get("default")
+        input_param: Union[DefaultDatasetToolParameter, DataToolParameter]
+        if default:
+            data_src["default"] = default
+            input_param = DefaultDatasetToolParameter(None, data_src, self.trans)
+        else:
+            input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
     def get_inputs(self):
@@ -818,7 +834,46 @@ class InputDataModule(InputModule):
         inputs["optional"] = optional_param(optional)
         inputs["format"] = format_param(self.trans, parameter_def.get("format"))
         inputs["tag"] = input_tag
+        default_source: Dict[str, Union[int, float, bool, str]] = dict(
+            name="default",
+            label="Default Dataset",
+            help="Select a dataset that will be suggested as input for all runs of this workflow",
+            type="default_file",
+            default=parameter_def.get("default"),
+        )
+        inputs["default"] = DefaultDatasetToolParameter(None, default_source)
         return inputs
+
+    def get_export_state(self):
+        default = self.state.inputs.get("default")
+        if default and isinstance(default, DatasetInstance):
+            self.state.inputs["default"] = "step://default"
+        return super().get_export_state()
+
+    def _parse_state_into_dict(self):
+        rval = super()._parse_state_into_dict()
+        inputs = self.state.inputs
+        default = inputs.get("default")
+        if default and not is_runtime_value(default):
+            if isinstance(default, DatasetInstance):
+                rval["default"] = {"src": default.src, "id": default.id}  # type: ignore[attr-defined]
+            else:
+                rval["default"] = default
+        return rval
+
+    def recover_defaults(self, step):
+        # TODO: make method on step?
+        default = self.state.inputs.get("default")
+        if isinstance(default, str) and default.startswith("step://"):
+            input_name = default.split("step://", 1)[-1]
+            for step_input in step.inputs:
+                # is currently always 'default', but we might want to have more than one input
+                # per step in the future
+                if step_input.name == input_name:
+                    self.state.inputs["default"] = step_input.step_input_default_dataset_associations[
+                        0
+                    ].default_dataset_association
+                    return
 
 
 class InputDataCollectionModule(InputModule):
@@ -1928,8 +1983,8 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
-                dataset_instance: Optional[model.Dataset] = None
+                replacement: Union[model.DatasetInstance, NoReplacement] = NO_REPLACEMENT
+                dataset_instance: Optional[model.DatasetInstance] = None
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     dataset_instance = getattr(
                         iteration_elements[prefixed_name], "dataset_instance", None  # noqa: B023

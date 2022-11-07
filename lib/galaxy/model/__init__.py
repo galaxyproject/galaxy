@@ -777,16 +777,22 @@ class User(Base, Dictifiable, RepresentById):
                 WHERE user_id = :id
                     AND NOT purged
             ),
-            per_hist_hdas AS (
+            per_parent_datasets AS (
                 SELECT DISTINCT dataset_id
                 FROM history_dataset_association
                 WHERE NOT purged
                     AND history_id IN (SELECT id FROM per_user_histories)
+                UNION
+                SELECT DISTINCT dataset_id
+                FROM default_dataset_association
+                JOIN workflow ON default_dataset_association.workflow_id = workflow.id
+                JOIN stored_workflow ON workflow.stored_workflow_id = workflow.id
+                WHERE stored_workflow.user_id = :id
             )
             SELECT SUM(COALESCE(dataset.total_size, dataset.file_size, 0))
             FROM dataset
             LEFT OUTER JOIN library_dataset_dataset_association ON dataset.id = library_dataset_dataset_association.dataset_id
-            WHERE dataset.id IN (SELECT dataset_id FROM per_hist_hdas)
+            WHERE dataset.id IN (SELECT dataset_id FROM per_parent_datasets)
                 AND library_dataset_dataset_association.id IS NULL
         """
         )
@@ -1289,11 +1295,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         self.parameters.append(JobParameter(name, value))
 
     def add_input_dataset(self, name, dataset=None, dataset_id=None):
-        assoc = JobToInputDatasetAssociation(name, dataset)
-        if dataset is None and dataset_id is not None:
-            assoc.dataset_id = dataset_id
-        add_object_to_object_session(self, assoc)
-        self.input_datasets.append(assoc)
+        if isinstance(dataset, HistoryDatasetAssociation):
+            assoc = JobToInputDatasetAssociation(name, dataset)
+            if dataset is None and dataset_id is not None:
+                assoc.dataset_id = dataset_id
+            add_object_to_object_session(self, assoc)
+            self.input_datasets.append(assoc)
+        # Should we track DefaultDatasetAssociations ?
 
     def add_output_dataset(self, name, dataset):
         joda = JobToOutputDatasetAssociation(name, dataset)
@@ -4380,6 +4388,34 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
 
         return msg
 
+    def purge_usage_from_quota(self, user):
+        """Remove this HDA's quota_amount from user's quota."""
+        if user:
+            user.adjust_total_disk_usage(-self.quota_amount(user))
+
+    def quota_amount(self, user):
+        """
+        Return the disk space used for this HDA relevant to user quotas.
+
+        If the user has multiple instances of this dataset, it will not affect their
+        disk usage statistic.
+        """
+        rval = 0
+        # Anon users are handled just by their single history size.
+        if not user:
+            return rval
+        # Gets an HDA disk usage, if the user does not already
+        #   have an association of the same dataset
+        if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
+            for hda in self.dataset.history_associations:
+                if hda.id == self.id:
+                    continue
+                if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
+                    break
+            else:
+                rval += self.get_total_size()
+        return rval
+
     def _serialize(self, id_encoder, serialization_options):
         metadata = _prepare_metadata_for_serialization(id_encoder, serialization_options, self.metadata)
         rval = dict_for(
@@ -4426,6 +4462,8 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
     """
     Resource class that creates a relation between a dataset and a user history.
     """
+
+    src = "hda"
 
     def __init__(
         self,
@@ -4620,34 +4658,6 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         Return The access roles associated with this HDA's dataset.
         """
         return self.dataset.get_access_roles(security_agent)
-
-    def purge_usage_from_quota(self, user):
-        """Remove this HDA's quota_amount from user's quota."""
-        if user:
-            user.adjust_total_disk_usage(-self.quota_amount(user))
-
-    def quota_amount(self, user):
-        """
-        Return the disk space used for this HDA relevant to user quotas.
-
-        If the user has multiple instances of this dataset, it will not affect their
-        disk usage statistic.
-        """
-        rval = 0
-        # Anon users are handled just by their single history size.
-        if not user:
-            return rval
-        # Gets an HDA disk usage, if the user does not already
-        #   have an association of the same dataset
-        if not self.dataset.library_associations and not self.purged and not self.dataset.purged:
-            for hda in self.dataset.history_associations:
-                if hda.id == self.id:
-                    continue
-                if not hda.purged and hda.history and hda.history.user and hda.history.user == user:
-                    break
-            else:
-                rval += self.get_total_size()
-        return rval
 
     def _serialize(self, id_encoder, serialization_options):
         rval = super()._serialize(id_encoder, serialization_options)
@@ -5188,6 +5198,9 @@ class LibraryDataset(Base, Serializable):
 
 
 class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
+
+    src = "ldda"
+
     def __init__(
         self,
         copied_from_history_dataset_association=None,
@@ -6026,6 +6039,7 @@ class HistoryDatasetCollectionAssociation(
 ):
     """Associates a DatasetCollection with a History."""
 
+    src = "hdca"
     __tablename__ = "history_dataset_collection_association"
 
     id = Column(Integer, primary_key=True)
@@ -6383,6 +6397,7 @@ class LibraryDatasetCollectionAssociation(Base, DatasetCollectionInstance, Repre
 class DatasetCollectionElement(Base, Dictifiable, Serializable):
     """Associates a DatasetInstance (hda or ldda) with a DatasetCollection."""
 
+    src = "dce"
     __tablename__ = "dataset_collection_element"
 
     id = Column(Integer, primary_key=True)
@@ -6848,6 +6863,10 @@ class Workflow(Base, Dictifiable, RepresentById):
         primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),
         back_populates="workflows",
     )
+    default_dataset_associations = relationship(
+        "DefaultDatasetAssociation",
+        primaryjoin=(lambda: Workflow.id == DefaultDatasetAssociation.workflow_id),  # type: ignore[has-type]
+    )
 
     step_count: column_property
 
@@ -7229,6 +7248,72 @@ class WorkflowStep(Base, RepresentById):
                 pass
 
 
+class DefaultDatasetAssociation(DatasetInstance, RepresentById):
+    __tablename__ = "default_dataset_association"
+    src = "dda"
+    history_content_type = None
+
+    def __init__(
+        self,
+        copied_from_history_dataset_association=None,
+        copied_from_library_dataset_dataset_association=None,
+        dataset_id=None,
+        dataset=None,
+        workflow_id=None,
+        workflow=None,
+        sa_session=None,
+        **kwd,
+    ):
+        """
+        Create a a new DDA and associate it with the given workflow.
+        """
+        # FIXME: sa_session is must be passed to DataSetInstance if the create_dataset
+        # parameter is True so that the new object can be flushed.  Is there a better way?
+        DatasetInstance.__init__(self, sa_session=sa_session, **kwd)
+        self.workflow_id = workflow_id
+        self.workflow = workflow
+        if not kwd.get("create_dataset"):
+            self.dataset_id = dataset_id
+            self.dataset = dataset
+        # self.copied_from_history_dataset_association_id = copied_from_history_dataset_association_id
+        # self.copied_from_library_dataset_dataset_association_id = copied_from_library_dataset_dataset_association_id
+
+    @property
+    def tags(self):
+        return []
+
+    @property
+    def auto_propagated_tags(self):
+        return []
+
+    def to_history_dataset_association(
+        self, target_history, parent_id=None, add_to_history=False, visible=None, flush=False
+    ):
+        sa_session = object_session(self)
+        hda = HistoryDatasetAssociation(
+            name=self.name,
+            info=self.info,
+            blurb=self.blurb,
+            peek=self.peek,
+            extension=self.extension,
+            dbkey=self.dbkey,
+            dataset=self.dataset,
+            visible=True,
+            deleted=self.deleted,
+            history=target_history,
+        )
+
+        sa_session.add(hda)
+        hda.metadata = self.metadata  # need to set after flushed, as MetadataFiles require dataset.id
+        if add_to_history and target_history:
+            target_history.add_dataset(hda)
+        if not self.datatype.copy_safe_peek:
+            hda.set_peek()  # in some instances peek relies on dataset_id, i.e. gmaj.zip for viewing MAFs
+        if flush:
+            sa_session.flush()
+        return hda
+
+
 class WorkflowStepInput(Base, RepresentById):
     __tablename__ = "workflow_step_input"
     __table_args__ = (
@@ -7263,22 +7348,43 @@ class WorkflowStepInput(Base, RepresentById):
         back_populates="input_step_input",
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
     )
+    step_input_default_dataset_associations = relationship(
+        "WorkflowStepInputDefaultDatasetAssociation",
+    )
+    default_datasets = relationship("WorkflowStepInputDefaultDatasetAssociation", back_populates="workflow_step_input")
 
     def __init__(self, workflow_step):
         add_object_to_object_session(self, workflow_step)
         self.workflow_step = workflow_step
         self.default_value_set = False
 
-    def copy(self, copied_step):
+    def copy(self, copied_step: WorkflowStep):
         copied_step_input = WorkflowStepInput(copied_step)
         copied_step_input.name = self.name
         copied_step_input.default_value = self.default_value
         copied_step_input.default_value_set = self.default_value_set
+        for association in self.step_input_default_dataset_associations:
+            copied_ddaa = WorkflowStepInputDefaultDatasetAssociation()
+            copied_ddaa.workflow_step_input = copied_step_input
+            copied_ddaa.default_dataset_association = association.default_dataset_association
+            copied_ddaa.name = association.name
+            copied_step_input.step_input_default_dataset_associations.append(copied_ddaa)
         copied_step_input.merge_type = self.merge_type
         copied_step_input.scatter_type = self.scatter_type
 
         copied_step_input.connections = copy_list(self.connections)
         return copied_step_input
+
+
+class WorkflowStepInputDefaultDatasetAssociation(Base, RepresentById):
+    __tablename__ = "workflow_step_input_default_dataset_association"
+    id = Column(Integer, primary_key=True)
+    workflow_step_input_id = Column(Integer, ForeignKey("workflow_step_input.id"), index=True)
+    default_dataset_association_id = Column(Integer, ForeignKey("default_dataset_association.id"), index=True)
+    name = Column(TEXT)
+
+    workflow_step_input = relationship("WorkflowStepInput", back_populates="step_input_default_dataset_associations")
+    default_dataset_association = relationship("DefaultDatasetAssociation")
 
 
 class WorkflowStepConnection(Base, RepresentById):
@@ -7431,7 +7537,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship("WorkflowInvocationStep", back_populates="workflow_invocation")
+    steps = relationship(
+        "WorkflowInvocationStep",
+        back_populates="workflow_invocation",
+        order_by=lambda: WorkflowInvocationStep.order_index,
+    )
     workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
@@ -7576,12 +7686,15 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             output_assoc.workflow_step = step
             output_assoc.value = output_object
             self.output_values.append(output_assoc)
-        elif output_object.history_content_type == "dataset":
+        elif isinstance(output_object, (HistoryDatasetAssociation, DefaultDatasetAssociation)):
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
-            output_assoc.dataset = output_object
+            if isinstance(output_object, HistoryDatasetAssociation):
+                output_assoc.dataset = output_object
+            else:
+                output_assoc.default_dataset = output_object
             self.output_datasets.append(output_assoc)
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
@@ -7591,7 +7704,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             output_assoc.dataset_collection = output_object
             self.output_dataset_collections.append(output_assoc)
         else:
-            raise Exception("Unknown output type encountered")
+            raise Exception(f"Unknown output object {output_object} encountered")
 
     def get_output_object(self, label):
         for output_dataset_assoc in self.output_datasets:
@@ -7756,9 +7869,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 if not label:
                     continue
 
+                output = output_assoc.dataset or output_assoc.default_dataset
+
                 outputs[label] = {
-                    "src": "hda",
-                    "id": output_assoc.dataset_id,
+                    "src": output.src,
+                    "id": output.id,
                     "workflow_step_id": output_assoc.workflow_step_id,
                 }
 
@@ -7807,6 +7922,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             request_to_content.dataset_collection = content
             attach_step(request_to_content)
             self.input_dataset_collections.append(request_to_content)
+        elif isinstance(content, DefaultDatasetAssociation):
+            # Arguments could be made for and against tracking DefaultDatasetAssociation:
+            # Tracking would be more explicit, but we also haven't selected a value ...
+            # and this adds fewer models. May need to track this in the future though.
+            pass
         else:
             request_to_content = WorkflowRequestInputStepParameter()
             request_to_content.parameter_value = content
@@ -7909,6 +8029,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         back_populates="workflow_invocation_step",
         viewonly=True,
     )
+    order_index = column_property(
+        select([WorkflowStep.order_index]).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
+    )
 
     subworkflow_invocation_id: column_property
 
@@ -7943,10 +8066,13 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         return self.state == self.states.NEW
 
     def add_output(self, output_name, output_object):
-        if output_object.history_content_type == "dataset":
+        if isinstance(output_object, (HistoryDatasetAssociation, DefaultDatasetAssociation)):
             output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
             output_assoc.workflow_invocation_step = self
-            output_assoc.dataset = output_object
+            if isinstance(output_object, HistoryDatasetAssociation):
+                output_assoc.dataset = output_object
+            else:
+                output_assoc.default_dataset = output_object
             output_assoc.output_name = output_name
             self.output_datasets.append(output_assoc)
         elif output_object.history_content_type == "dataset_collection":
@@ -8022,12 +8148,11 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
             outputs = {}
             for output_assoc in self.output_datasets:
                 name = output_assoc.output_name
+                output_dataset = output_assoc.dataset or output_assoc.default_dataset
                 outputs[name] = {
-                    "src": "hda",
-                    "id": output_assoc.dataset.id,
-                    "uuid": str(output_assoc.dataset.dataset.uuid)
-                    if output_assoc.dataset.dataset.uuid is not None
-                    else None,
+                    "src": output_dataset.src,
+                    "id": output_dataset.id,
+                    "uuid": str(output_dataset.dataset.uuid) if output_dataset.dataset.uuid is not None else None,
                 }
 
             output_collections = {}
@@ -8182,12 +8307,14 @@ class WorkflowInvocationOutputDatasetAssociation(Base, Dictifiable, Serializable
     id = Column(Integer, primary_key=True)
     workflow_invocation_id = Column(Integer, ForeignKey("workflow_invocation.id"), index=True)
     workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"), index=True)
-    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True, nullable=True)
+    default_dataset_id = Column(Integer, ForeignKey("default_dataset_association.id"), index=True, nullable=True)
     workflow_output_id = Column(Integer, ForeignKey("workflow_output.id"), index=True)
 
     workflow_invocation = relationship("WorkflowInvocation", back_populates="output_datasets")
     workflow_step = relationship("WorkflowStep")
     dataset = relationship("HistoryDatasetAssociation")
+    default_dataset = relationship("DefaultDatasetAssociation")
     workflow_output = relationship("WorkflowOutput")
 
     history_content_type = "dataset"
@@ -8278,10 +8405,12 @@ class WorkflowInvocationStepOutputDatasetAssociation(Base, Dictifiable, Represen
 
     id = Column(Integer, primary_key=True)
     workflow_invocation_step_id = Column(Integer, ForeignKey("workflow_invocation_step.id"), index=True)
-    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True)
+    dataset_id = Column(Integer, ForeignKey("history_dataset_association.id"), index=True, nullable=True)
+    default_dataset_id = Column(Integer, ForeignKey("default_dataset_association.id"), index=True, nullable=True)
     output_name = Column(String(255), nullable=True)
     workflow_invocation_step = relationship("WorkflowInvocationStep", back_populates="output_datasets")
     dataset = relationship("HistoryDatasetAssociation")
+    default_dataset = relationship("DefaultDatasetAssociation")
 
     dict_collection_visible_keys = ["id", "workflow_invocation_step_id", "dataset_id", "output_name"]
 
@@ -9755,6 +9884,55 @@ LibraryDatasetDatasetAssociation.table = Table(
     Column("message", TrimmedString(255)),
 )
 
+DefaultDatasetAssociation.table = Table(
+    "default_dataset_association",
+    mapper_registry.metadata,
+    Column("id", Integer, primary_key=True),
+    Column("dataset_id", Integer, ForeignKey("dataset.id"), index=True),
+    Column("workflow_id", Integer, ForeignKey("workflow.id"), index=True),
+    Column("create_time", DateTime, default=now),
+    Column("update_time", DateTime, default=now, onupdate=now, index=True),
+    Column("state", TrimmedString(64), index=True, key="_state"),
+    Column(
+        "copied_from_history_dataset_association_id",
+        Integer,
+        ForeignKey("history_dataset_association.id"),
+        nullable=True,
+    ),
+    Column(
+        "copied_from_library_dataset_dataset_association_id",
+        Integer,
+        ForeignKey("library_dataset_dataset_association.id"),
+        nullable=True,
+    ),
+    Column("name", TrimmedString(255)),
+    Column("info", TrimmedString(255)),
+    Column("blurb", TrimmedString(255)),
+    Column("peek", TEXT, key="_peek"),
+    Column("extension", TrimmedString(64)),
+    Column("metadata", JSONType, key="_metadata"),
+    Column("deleted", Boolean, index=True, default=False),
+    Column("extended_metadata_id", Integer, ForeignKey("extended_metadata.id"), index=True),
+    Column("purged", Boolean, index=True, default=False),
+    Column("validated_state", TrimmedString(64), default="unvalidated", nullable=False),
+    Column("validated_state_message", TEXT),
+)
+
+
+mapper_registry.map_imperatively(
+    DefaultDatasetAssociation,
+    DefaultDatasetAssociation.table,
+    properties=dict(
+        workflow=relationship(
+            "Workflow",
+            primaryjoin=(lambda: Workflow.id == DefaultDatasetAssociation.workflow_id),
+            back_populates="default_dataset_associations",
+        ),
+        dataset=relationship("Dataset", primaryjoin=(lambda: Dataset.id == DefaultDatasetAssociation.dataset_id)),
+        _metadata=deferred(DefaultDatasetAssociation.table.c._metadata),
+    ),
+)
+
 
 mapper_registry.map_imperatively(
     HistoryDatasetAssociation,
@@ -9997,6 +10175,14 @@ WorkflowInvocationStep.subworkflow_invocation_id = column_property(
 # Set up proxy so that this syntax is possible:
 # <user_obj>.preferences[pref_name] = pref_value
 User.preferences = association_proxy("_preferences", "value", creator=UserPreference)
+
+SRC_CLASS_MAPPING = {
+    "hda": HistoryDatasetAssociation,
+    "ldda": LibraryDatasetDatasetAssociation,
+    "dce": DatasetCollectionElement,
+    "dda": DefaultDatasetAssociation,
+    "hdca": HistoryDatasetCollectionAssociation,
+}
 
 
 @event.listens_for(HistoryDatasetCollectionAssociation, "init")
