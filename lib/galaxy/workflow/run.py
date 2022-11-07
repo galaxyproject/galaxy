@@ -284,6 +284,12 @@ class ModuleInjector(Protocol):
     def inject(self, step, step_args=None, steps=None, **kwargs):
         pass
 
+    def inject_all(self, workflow: "Workflow", param_map=None, ignore_tool_missing_exception=True, **kwargs):
+        pass
+
+    def compute_runtime_state(self, step, step_args=None):
+        pass
+
 
 class WorkflowProgress:
     def __init__(
@@ -329,17 +335,18 @@ class WorkflowProgress:
         # steps we are no where near ready to schedule?
         remaining_steps = []
         step_invocations_by_id = self.workflow_invocation.step_invocations_by_step_id()
+        self.module_injector.inject_all(self.workflow_invocation.workflow, param_map=self.param_map)
         for step in steps:
             step_id = step.id
-            if not hasattr(step, "module"):
-                self.module_injector.inject(step, step_args=self.param_map.get(step.id, {}))
-                if step_id not in step_states:
-                    raise Exception(
-                        f"Workflow invocation [{self.workflow_invocation.id}] has no step state for step {step.log_str()}. States ids are {list(step_states.keys())}."
-                    )
-                runtime_state = step_states[step_id].value
-                assert step.module
-                step.state = step.module.decode_runtime_state(runtime_state)
+            step_args = self.param_map.get(step_id, {})
+            self.module_injector.compute_runtime_state(step, step_args=step_args)
+            if step_id not in step_states:
+                raise Exception(
+                    f"Workflow invocation [{self.workflow_invocation.id}] has no step state for step {step.log_str()}. States ids are {list(step_states.keys())}."
+                )
+            runtime_state = step_states[step_id].value
+            assert step.module
+            step.state = step.module.decode_runtime_state(runtime_state)
 
             invocation_step = step_invocations_by_id.get(step_id, None)
             if invocation_step and invocation_step.state == "scheduled":
