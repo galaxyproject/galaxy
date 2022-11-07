@@ -28,7 +28,7 @@
           For participating users, we will merge variant lists to be shared into a single Beacon dataset and make that
           dataset accessible through a Beacon server.<br>
           If someone queries the server for a specific variant that is in our Beacon dataset, the server will reply with
-          <span class="cursive">“Yes, we have seen such a variant”</span>. Nothing more.<br>
+          <span class="cursive">“Yes, we have seen such a variant”</span>.<br>
           <br>
           The user that issued the query then has the possibility to contact a Galaxy server admin who can link the
           variant call in question to particular Galaxy users. If you are among the users that shared the variant, the
