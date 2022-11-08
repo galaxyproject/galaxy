@@ -5059,7 +5059,7 @@ steps:
         run_workflow_response = self.workflow_populator.invoke_workflow_raw(uploaded_workflow_id, workflow_request)
         return run_workflow_response, history_id
 
-    def test_subworkflow_import_order_maintained(self):
+    def test_subworkflow_import_order_maintained(self, history_id):
         summary = self._run_workflow(
             """
 class: GalaxyWorkflow
@@ -5106,6 +5106,7 @@ outputs:
   - label: out_2
     outputSource: nested_workflow/nested_out_2
 """,
+            history_id=history_id,
             assert_ok=False,
             wait=False,
         )
