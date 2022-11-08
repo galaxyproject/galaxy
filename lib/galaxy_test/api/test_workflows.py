@@ -3052,7 +3052,8 @@ input1:
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over(self):
         summary = self._run_workflow(
-            """class: GalaxyWorkflow
+            """
+class: GalaxyWorkflow
 inputs:
   input_collection:
     collection_type: list
@@ -3073,10 +3074,14 @@ steps:
         sub_out:
           outputSource: output_step/output1
       steps:
-        output_step:
+        intermediate_step:
           tool_id: identifier_multiple
           in:
             input1: data_input
+        output_step:
+          tool_id: identifier_multiple
+          in:
+            input1: intermediate_step/output1
 test_data:
   input_collection:
     collection_type: list
