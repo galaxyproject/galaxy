@@ -5022,8 +5022,9 @@ steps:
         return run_workflow_response, history_id
 
     def test_subworkflow_import_order_maintained(self):
-        summary = self._run_workflow(
-            """
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
 class: GalaxyWorkflow
 inputs:
   outer_input_1:
@@ -5068,9 +5069,10 @@ outputs:
   - label: out_2
     outputSource: nested_workflow/nested_out_2
 """,
-            assert_ok=False,
-            wait=False,
-        )
+                history_id=history_id,
+                assert_ok=False,
+                wait=False,
+            )
         self.workflow_populator.wait_for_invocation(summary.workflow_id, summary.invocation_id)
         self.workflow_populator.wait_for_history_workflows(
             summary.history_id, assert_ok=False, expected_invocation_count=2
