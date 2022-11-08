@@ -1,4 +1,4 @@
-import { computed, onMounted, inject, watch, ref } from "vue";
+import { computed, onMounted, inject, ref } from "vue";
 
 /**
  * composable user store wrapper
@@ -27,16 +27,6 @@ const localTags = ref([]);
  */
 export function useUserTags() {
     const { currentUser } = useCurrentUser();
-
-    watch(
-        () => currentUser.value,
-        (user) => {
-            // reset local tags if user reloads
-            if (user) {
-                localTags.value = [];
-            }
-        }
-    );
 
     const userTags = computed(() => {
         let tags;
