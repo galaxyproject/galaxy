@@ -670,7 +670,7 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "unknown"
 
-    def as_display_type(self, dataset, type, **kwd):
+    def as_display_type(self, dataset: "DatasetInstance", type: str, **kwd) -> Any:
         """Returns modified file contents for a particular display type"""
         try:
             if type in self.get_display_types():
