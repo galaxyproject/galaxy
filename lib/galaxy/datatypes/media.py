@@ -262,7 +262,7 @@ class Wav(Audio):
         name="sampwidth", desc="Sample Width", default=0, no_value=0, readonly=True, visible=True, optional=True
     )
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype."""
         return "audio/wav"
 

@@ -606,7 +606,7 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "info unavailable"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/octet-stream"
 
@@ -928,7 +928,7 @@ class Text(Data):
         no_value=0,
     )
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/plain"
 

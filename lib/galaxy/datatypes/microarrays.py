@@ -87,7 +87,7 @@ class GenericMicroarrayFile(data.Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         return "text/plain"
 
 

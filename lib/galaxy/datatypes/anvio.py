@@ -63,7 +63,7 @@ class AnvioComposite(Html):
         rval.append("</html>")
         return "\n".join(rval)
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/html"
 

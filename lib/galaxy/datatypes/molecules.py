@@ -78,7 +78,7 @@ class GenericMolFile(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         return "text/plain"
 
     element_symbols = [
@@ -542,7 +542,7 @@ class OBFS(Binary):
         except Exception:
             return "OpenBabel Fastsearch Index"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype (pretend it is text for peek)"""
         return "text/plain"
 
