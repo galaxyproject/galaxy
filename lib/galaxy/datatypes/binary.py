@@ -14,6 +14,7 @@ import tempfile
 import zipfile
 from json import dumps
 from typing import (
+    Iterable,
     Optional,
     TYPE_CHECKING,
 )
@@ -534,7 +535,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
-    def to_archive(self, dataset, name=""):
+    def to_archive(self, dataset: "DatasetInstance", name: str = "") -> Iterable:
         rel_paths = []
         file_paths = []
         rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")
