@@ -90,6 +90,7 @@ library.add(faTimes);
                 border: 2px solid;
                 border-color: inherit;
                 border-radius: inherit;
+                pointer-events: none;
             }
         }
     }

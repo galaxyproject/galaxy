@@ -38,8 +38,8 @@ function onInput(val) {
 }
 
 function onDelete(tag) {
-    const val = [...props.value];
-    const index = props.value.indexOf(tag.trim());
+    const val = [...tags.value];
+    const index = tags.value.indexOf(tag);
     val.splice(index, 1);
     emit("input", val);
 }
