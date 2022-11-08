@@ -3,6 +3,7 @@ import html
 import io
 import uuid as _uuid
 import zipfile
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -10,6 +11,9 @@ from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import build_sniff_from_prefix
 from galaxy.datatypes.tabular import Tabular
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 class _QIIME2ResultBase(CompressedZipArchive):
@@ -37,7 +41,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         def make_row(item):
             return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
 

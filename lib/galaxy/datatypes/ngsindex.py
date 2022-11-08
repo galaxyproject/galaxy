@@ -3,9 +3,13 @@ NGS indexes
 """
 import logging
 import os
+from typing import TYPE_CHECKING
 
 from .metadata import MetadataElement
 from .text import Html
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +69,7 @@ class BowtieIndex(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

@@ -5,10 +5,16 @@ https://github.com/merenlab/anvio
 import glob
 import logging
 import os
-from typing import Optional
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +76,7 @@ class AnvioComposite(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

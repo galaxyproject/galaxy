@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import tempfile
+from typing import TYPE_CHECKING
 
 import yaml
 
@@ -31,6 +32,9 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -115,7 +119,7 @@ class Json(Text):
                 return start.startswith("[") or start.startswith("{")
             return False
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

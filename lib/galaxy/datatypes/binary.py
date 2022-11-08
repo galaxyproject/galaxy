@@ -113,7 +113,7 @@ class Ab1(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -237,7 +237,7 @@ class CompressedArchive(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -294,7 +294,7 @@ class Bref3(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -354,7 +354,7 @@ class CompressedZipArchive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -528,7 +528,7 @@ class BamNative(CompressedArchive, _BamOrSam):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1090,7 +1090,7 @@ class H5(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1196,7 +1196,7 @@ class Loom(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1481,7 +1481,7 @@ class Anndata(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1534,7 +1534,7 @@ class Grib(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1577,7 +1577,7 @@ class GmxBinary(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1744,7 +1744,7 @@ class Biom2(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1797,7 +1797,7 @@ class Cool(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1857,7 +1857,7 @@ class MCool(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1942,7 +1942,7 @@ class H5MLM(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2103,7 +2103,7 @@ class Scf(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2131,7 +2131,7 @@ class Sff(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2168,7 +2168,7 @@ class BigWig(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2208,7 +2208,7 @@ class TwoBit(Binary):
         else:
             return super().set_peek(dataset)
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2319,7 +2319,7 @@ class SQlite(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2396,7 +2396,7 @@ class GeminiSQLite(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2483,7 +2483,7 @@ class CuffDiffSQlite(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2813,7 +2813,7 @@ class IdpDB(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2915,7 +2915,7 @@ class NcbiTaxonomySQlite(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2959,7 +2959,7 @@ class ExcelXls(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2986,7 +2986,7 @@ class Sra(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3383,7 +3383,7 @@ class PostgresqlArchive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3437,7 +3437,7 @@ class Fast5Archive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3546,7 +3546,7 @@ class SearchGuiArchive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3569,7 +3569,7 @@ class NetCDF(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3625,7 +3625,7 @@ class Dcd(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3677,7 +3677,7 @@ class Vel(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3849,7 +3849,7 @@ class BafTar(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3959,7 +3959,7 @@ class Pretext(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4003,7 +4003,7 @@ class JP2(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4059,7 +4059,7 @@ class Npz(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4136,7 +4136,7 @@ class HexrdImagesNpz(Npz):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4198,7 +4198,7 @@ class HexrdEtaOmeNpz(Npz):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

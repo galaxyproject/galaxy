@@ -2,10 +2,14 @@
 Neo4j Composite Dataset
 """
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
@@ -50,7 +54,7 @@ class Neo4j(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

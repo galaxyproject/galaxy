@@ -3,6 +3,7 @@ Proteomics Datatypes
 """
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
@@ -18,6 +19,9 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -190,7 +194,7 @@ class Kroenik(Tabular):
             "Modifications",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -229,7 +233,7 @@ class PepList(Tabular):
         super().__init__(**kwd)
         self.column_names = ["m/z", "rt(min)", "snr", "charge", "intensity"]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -266,7 +270,7 @@ class PSMS(Tabular):
         super().__init__(**kwd)
         self.column_names = ["PSMId", "score", "q-value", "posterior_error_prob", "peptide", "proteinIds"]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -326,7 +330,7 @@ class PepXmlReport(Tabular):
             "Interprophet Probability",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -367,7 +371,7 @@ class ProtXmlReport(Tabular):
             "Is Evidence?",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -914,7 +918,7 @@ class ThermoRAW(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

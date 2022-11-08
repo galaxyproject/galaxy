@@ -1,5 +1,6 @@
 import logging
 import re
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -14,6 +15,9 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import nice_size
 
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
+
 log = logging.getLogger(__name__)
 
 
@@ -21,7 +25,7 @@ log = logging.getLogger(__name__)
 class Smat(Text):
     file_ext = "smat"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -93,7 +97,7 @@ class PlantTribesKsComponents(Tabular):
         no_value=0,
     )
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

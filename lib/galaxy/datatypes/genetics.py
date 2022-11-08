@@ -234,7 +234,7 @@ class rgTabList(Tabular):
         super().__init__(**kwd)
         self.column_names = []
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -912,7 +912,7 @@ class RexpBase(Html):
             out = f"Can't create html table {unicodify(exc)}"
         return out
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """
         Returns formatted html of peek
         """

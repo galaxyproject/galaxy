@@ -5,7 +5,10 @@ Constructive Solid Geometry file formats.
 """
 
 import abc
-from typing import List
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 from galaxy import util
 from galaxy.datatypes import data
@@ -20,6 +23,9 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.tabular import Tabular
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -123,7 +129,7 @@ class Ply:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -455,7 +461,7 @@ class Vtk:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

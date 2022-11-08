@@ -33,6 +33,7 @@ Covers the ``blastxml`` format and the BLAST databases.
 import logging
 import os
 from time import sleep
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -45,6 +46,9 @@ from .data import (
     Text,
 )
 from .xml import GenericXml
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -191,7 +195,7 @@ class _BlastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -349,7 +353,7 @@ class LastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

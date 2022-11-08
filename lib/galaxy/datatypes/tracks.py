@@ -2,9 +2,13 @@
 Datatype classes for tracks/track views within galaxy.
 """
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.text import Html
 from . import binary
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -50,7 +54,7 @@ class UCSCTrackHub(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:

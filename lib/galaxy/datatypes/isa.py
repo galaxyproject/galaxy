@@ -11,6 +11,7 @@ import os.path
 import re
 import shutil
 import tempfile
+from typing import TYPE_CHECKING
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
@@ -24,6 +25,9 @@ from galaxy import util
 from galaxy.datatypes import data
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 # CONSTANTS {{{1
 ################################################################
@@ -173,7 +177,7 @@ class _Isa(data.Data):
     # Display peek {{{2
     ################################################################
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
 
         out = ['<table cellspacing="0" cellpadding="3">']

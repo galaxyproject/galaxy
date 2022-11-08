@@ -1,6 +1,7 @@
 import logging
 import os
 import re
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
@@ -22,6 +23,9 @@ from galaxy.util import (
     commands,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 # optional import to enhance metadata
 try:
@@ -531,7 +535,7 @@ class OBFS(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
