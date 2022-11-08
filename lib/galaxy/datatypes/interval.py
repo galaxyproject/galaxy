@@ -350,10 +350,6 @@ class Interval(Tabular):
                 except StopIteration:
                     return DatatypeValidation.validated()
 
-    def repair_methods(self, dataset):
-        """Return options for removing errors along with a description"""
-        return [("lines", "Remove erroneous lines")]
-
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for 'intervalness'

@@ -864,10 +864,6 @@ class Pileup(Tabular):
             dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
         )
 
-    def repair_methods(self, dataset):
-        """Return options for removing errors along with a description"""
-        return [("lines", "Remove erroneous lines")]
-
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
         Checks for 'pileup-ness'

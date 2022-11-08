@@ -606,10 +606,6 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "info unavailable"
 
-    def repair_methods(self, dataset):
-        """Unimplemented method, returns dict with method/option for repairing errors"""
-        return None
-
     def get_mime(self):
         """Returns the mime type of the datatype"""
         return "application/octet-stream"
