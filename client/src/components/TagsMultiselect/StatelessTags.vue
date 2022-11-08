@@ -57,13 +57,13 @@ function openMultiselect() {
 
 const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#")));
 
-const validTagRegex = /^([^.:])+(.[^\s.:]+)*(:[^.:]+)?$/;
+const invalidTagRegex = /([.:\s][.:\s])|(^[.:])|([.:]$)|(^[\s]*$)/;
 
 function isValid(tag) {
     if (typeof tag === "string") {
-        return Boolean(tag.match(validTagRegex));
+        return !tag.match(invalidTagRegex);
     } else {
-        return Boolean(tag.label.match(validTagRegex));
+        return !tag.label.match(invalidTagRegex);
     }
 }
 </script>
