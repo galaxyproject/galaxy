@@ -387,51 +387,39 @@ class WorkflowModule:
                 continue
 
             is_data_param = input_dict["input_type"] == "dataset"
-            if is_data_param:
+            is_data_collection_param = input_dict["input_type"] == "dataset_collection"
+            if is_data_param or is_data_collection_param:
                 multiple = input_dict["multiple"]
-                if multiple:
-                    # multiple="true" data input, acts like "list" collection_type.
-                    # just need to figure out subcollection_type_description
-                    effective_input_collection_type = ["list"]
-                    type_list = []
-                    if progress.subworkflow_collection_info:
-
-                        type_list = progress.subworkflow_collection_info.structure.collection_type_description.collection_type.split(
-                            ":"
-                        )
-                        leaf_type = type_list.pop(0)
-                        if type_list and type_list[-1] == effective_input_collection_type:
-                            effective_input_collection_type = (
-                                [":".join(type_list[:-1])] if ":".join(type_list[:-1]) else []
-                            )
-                    history_query = HistoryQuery.from_collection_types(
-                        effective_input_collection_type,
-                        dataset_collection_type_descriptions,
-                    )
-                    subcollection_type_description = history_query.can_map_over(data)
-
-                    if subcollection_type_description:
-                        subcollection_type_description_list = subcollection_type_description.collection_type.split(":")
-                        for std in reversed(subcollection_type_description_list):
-                            if type_list:
-                                leaf_type = type_list.pop(0)
-                                assert std == leaf_type
-                        if not type_list:
-                            collections_to_match.add(name, data)
-                        else:
-                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
-                                ":".join(type_list)
-                            )
-
-                    if subcollection_type_description:
-                        collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
-                    else:
-                        collections_to_match.add(name, data)
-                else:
+                if is_data_param and not multiple:
                     collections_to_match.add(name, data)
+                    continue
+                # multiple="true" data input, acts like "list" collection_type.
+                # just need to figure out subcollection_type_description
+                effective_input_collection_type = ["list"]
+                type_list = []
+                if progress.subworkflow_structure:
+                    type_list = progress.subworkflow_structure.collection_type_description.collection_type.split(":")
+                    leaf_type = type_list.pop(0)
+                    if type_list and type_list[-1] == effective_input_collection_type:
+                        effective_input_collection_type = [":".join(type_list[:-1])] if ":".join(type_list[:-1]) else []
+                history_query = HistoryQuery.from_collection_types(
+                    effective_input_collection_type,
+                    dataset_collection_type_descriptions,
+                )
+                subcollection_type_description = history_query.can_map_over(data) or None
+                if subcollection_type_description:
+                    subcollection_type_list = subcollection_type_description.collection_type.split(":")
+                    for collection_type in reversed(subcollection_type_list):
+                        if type_list:
+                            leaf_type = type_list.pop(0)
+                            assert collection_type == leaf_type
+                    if type_list:
+                        subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                            ":".join(type_list)
+                        )
+                collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
                 continue
 
-            is_data_collection_param = input_dict["input_type"] == "dataset_collection"
             if is_data_collection_param:
                 effective_input_collection_type = input_dict.get("collection_types", None)
                 history_query = HistoryQuery.from_collection_types(
@@ -606,8 +594,9 @@ class SubWorkflowModule(WorkflowModule):
         """
         step = invocation_step.workflow_step
         collection_info = self.compute_collection_info(progress, step, self.get_all_inputs())
+        structure = collection_info.structure if collection_info else None
         subworkflow_invoker = progress.subworkflow_invoker(
-            trans, step, use_cached_job=use_cached_job, collection_info=collection_info
+            trans, step, use_cached_job=use_cached_job, subworkflow_structure=structure
         )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
