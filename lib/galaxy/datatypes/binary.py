@@ -85,7 +85,7 @@ class Binary(data.Data):
     def register_unsniffable_binary_ext(ext):
         """Deprecated method."""
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "binary data"
