@@ -390,12 +390,22 @@ class WorkflowModule:
             is_data_collection_param = input_dict["input_type"] == "dataset_collection"
             if is_data_param or is_data_collection_param:
                 multiple = input_dict["multiple"]
-                if is_data_param and not multiple:
-                    collections_to_match.add(name, data)
-                    continue
-                # multiple="true" data input, acts like "list" collection_type.
-                # just need to figure out subcollection_type_description
-                effective_input_collection_type = ["list"]
+                if is_data_param:
+                    if multiple:
+                        # multiple="true" data input, acts like "list" collection_type.
+                        effective_input_collection_type = ["list"]
+                    else:
+                        collections_to_match.add(name, data)
+                        continue
+                else:
+                    effective_input_collection_type = input_dict.get("collection_types")
+                    if not effective_input_collection_type:
+                        if progress.subworkflow_structure:
+                            effective_input_collection_type = [
+                                progress.subworkflow_structure.collection_type_description.collection_type
+                            ]
+                        elif input_dict.get("collection_type"):
+                            effective_input_collection_type = [input_dict.get("collection_type")]
                 type_list = []
                 if progress.subworkflow_structure:
                     type_list = progress.subworkflow_structure.collection_type_description.collection_type.split(":")
