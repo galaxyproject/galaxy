@@ -49,6 +49,7 @@ from . import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.datatypes.display_applications.application import DisplayApplication
     from galaxy.model import DatasetInstance
 
 XSS_VULNERABLE_MIME_TYPES = [
@@ -648,7 +649,7 @@ class Data(metaclass=DataMeta):
     def get_display_application(self, key, default=None):
         return self.display_applications.get(key, default)
 
-    def get_display_applications_by_dataset(self, dataset, trans):
+    def get_display_applications_by_dataset(self, dataset: "DatasetInstance", trans) -> Dict[str, "DisplayApplication"]:
         rval = {}
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
