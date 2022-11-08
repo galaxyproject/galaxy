@@ -10,6 +10,10 @@ import re
 import string
 import subprocess
 from itertools import islice
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import bx.align.maf
 from markupsafe import escape
@@ -35,6 +39,9 @@ from galaxy.util import (
 from galaxy.util.checkers import is_gzip
 from galaxy.util.image_util import check_image_type
 from . import data
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -982,7 +989,7 @@ class Maf(Alignment):
         optional=True,
     )
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, metadata_tmp_files_dir=None, **kwd):

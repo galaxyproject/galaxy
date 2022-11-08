@@ -5,6 +5,10 @@ import logging
 import math
 import sys
 import tempfile
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 from urllib.parse import quote_plus
 
 import pysam
@@ -28,12 +32,14 @@ from galaxy.datatypes.util.gff_util import (
     parse_gff3_attributes,
     parse_gff_attributes,
 )
-from galaxy.model import DatasetInstance
 from galaxy.util import compression_utils
 from . import (
     data,
     dataproviders,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +113,7 @@ class Interval(Tabular):
         Tabular.__init__(self, **kwd)
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(self, dataset, overwrite=True, first_line_is_header=False, **kwd):
@@ -170,7 +176,7 @@ class Interval(Tabular):
                     else:
                         empty_line_count += 1
 
-    def displayable(self, dataset: DatasetInstance):
+    def displayable(self, dataset: "DatasetInstance"):
         try:
             return (
                 not dataset.dataset.purged
