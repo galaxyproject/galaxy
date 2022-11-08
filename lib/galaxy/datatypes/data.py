@@ -582,14 +582,14 @@ class Data(metaclass=DataMeta):
 
         return string.Template(filename_pattern).substitute(**template_values)
 
-    def display_name(self, dataset):
+    def display_name(self, dataset: "DatasetInstance") -> str:
         """Returns formatted html of dataset name"""
         try:
             return escape(unicodify(dataset.name, "utf-8"))
         except Exception:
             return "name unavailable"
 
-    def display_info(self, dataset):
+    def display_info(self, dataset: "DatasetInstance") -> str:
         """Returns formatted html of dataset info"""
         try:
             # Change new line chars to html
