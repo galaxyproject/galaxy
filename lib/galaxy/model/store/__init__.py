@@ -215,7 +215,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         user=None,
         object_store=None,
         tag_handler=None,
-    ):
+    ) -> None:
         if object_store is None:
             if app is not None:
                 object_store = app.object_store
@@ -231,6 +231,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.import_options = import_options or ImportOptions()
         self.dataset_state_serialized = True
         self.tag_handler = tag_handler
+        if self.defines_new_history():
+            self.import_history_encoded_id = self.new_history_properties().get("encoded_id")
+        else:
+            self.import_history_encoded_id = None
 
     @abc.abstractmethod
     def defines_new_history(self) -> bool:
@@ -269,8 +273,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         """Source of valid file data."""
         return None
 
-    def trust_hid(self, obj_attrs) -> bool:
+    def trust_hid(self, obj_attrs: Dict[str, Any]) -> bool:
         """Trust HID when importing objects into a new History."""
+        return (
+            self.import_history_encoded_id is not None
+            and obj_attrs.get("history_encoded_id") == self.import_history_encoded_id
+        )
 
     @contextlib.contextmanager
     def target_history(self, default_history=None, legacy_history_naming=True):
@@ -1306,11 +1314,13 @@ def get_import_model_store_for_dict(as_dict, **kwd):
 
 
 class BaseDirectoryImportModelStore(ModelImportStore):
+    archive_dir: str
+
     @property
     def file_source_root(self):
         return self.archive_dir
 
-    def defines_new_history(self):
+    def defines_new_history(self) -> bool:
         new_history_attributes = os.path.join(self.archive_dir, ATTRS_FILENAME_HISTORY)
         return os.path.exists(new_history_attributes)
 
@@ -1415,17 +1425,15 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
     object_key = "hid"
 
     def __init__(self, archive_dir, **kwd):
-        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
-
-        # Bioblend previous to 17.01 exported histories with an extra subdir.
+        # BioBlend previous to 17.01 exported histories with an extra subdir.
         if not os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_HISTORY)):
             for d in os.listdir(archive_dir):
                 if os.path.isdir(os.path.join(archive_dir, d)):
                     archive_dir = os.path.join(archive_dir, d)
                     break
-
         self.archive_dir = archive_dir
+        super().__init__(**kwd)
 
     def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         for output_key in job_attrs["output_datasets"]:
@@ -1464,13 +1472,9 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     object_key = "encoded_id"
 
     def __init__(self, archive_dir, **kwd):
-        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
         self.archive_dir = archive_dir
-        if self.defines_new_history():
-            self.import_history_encoded_id = self.new_history_properties().get("encoded_id")
-        else:
-            self.import_history_encoded_id = None
+        super().__init__(**kwd)
 
     def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         if imported_job.command_line is None:
@@ -1518,9 +1522,6 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                     output_hdca = _find_hdca(output_key)
                     if output_hdca:
                         imported_job.add_output_dataset_collection(output_name, output_hdca)
-
-    def trust_hid(self, obj_attrs):
-        return self.import_history_encoded_id and obj_attrs.get("history_encoded_id") == self.import_history_encoded_id
 
     def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         def remap_objects(p, k, obj):
@@ -1572,12 +1573,22 @@ class BagArchiveImportModelStore(DirectoryImportModelStoreLatest):
 
 class ModelExportStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def export_history(self, history: model.History, include_hidden: bool = False, include_deleted: bool = False):
+    def export_history(
+        self, history: model.History, include_hidden: bool = False, include_deleted: bool = False
+    ) -> None:
         """Export history to store."""
 
     @abc.abstractmethod
-    def export_library(self, history, include_hidden=False, include_deleted=False):
+    def export_library(
+        self, library: model.Library, include_hidden: bool = False, include_deleted: bool = False
+    ) -> None:
         """Export library to store."""
+
+    @abc.abstractmethod
+    def export_library_folder(
+        self, library_folder: model.LibraryFolder, include_hidden: bool = False, include_deleted: bool = False
+    ) -> None:
+        """Export library folder to store."""
 
     @abc.abstractmethod
     def export_workflow_invocation(self, workflow_invocation, include_hidden=False, include_deleted=False):

@@ -7,7 +7,6 @@ import abc
 import json
 import logging
 import os
-import warnings
 
 import yaml
 
@@ -55,6 +54,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
             self._handle_job(job)
         return tool_response
 
+    @abc.abstractmethod
     def _handle_job(self, job_response):
         """Implementer can decide if to wait for job(s) individually or not here."""
 
@@ -258,12 +258,6 @@ class StagingInterface(metaclass=abc.ABCMeta):
     @abc.abstractproperty
     def use_fetch_api(self):
         """Return true is this should use (modern) data fetch API."""
-
-
-class StagingInterace(StagingInterface):
-    """For backward compatibility with previous class name"""
-
-    warnings.warn("StagingInterace is deprecated, use StagingInterface instead", DeprecationWarning)
 
 
 class InteractorStaging(StagingInterface):

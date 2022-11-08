@@ -48,6 +48,7 @@ class FilesSource(metaclass=abc.ABCMeta):
     def realize_to(self, source_path, native_path, user_context=None):
         """Realize source path (relative to uri root) to local file system path."""
 
+    @abc.abstractmethod
     def write_from(self, target_path, native_path, user_context=None):
         """Write file at native path to target_path (relative to uri root)."""
 

@@ -1,6 +1,6 @@
 attrs==22.1.0
 flake8==5.0.4
-flake8-bugbear==22.9.23
+flake8-bugbear==22.10.27
 importlib-metadata==4.2.0
 mccabe==0.7.0
 mypy==0.982

@@ -35,15 +35,6 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
 
     extended = False
 
-    def invalidate_external_metadata(self, datasets, sa_session):
-        """Invalidate written files."""
-
-    def set_job_runner_external_pid(self, pid, sa_session):
-        pass
-
-    def cleanup_external_metadata(self, sa_session):
-        pass
-
     @abc.abstractmethod
     def setup_external_metadata(
         self,
