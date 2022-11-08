@@ -232,7 +232,9 @@ class Data(metaclass=DataMeta):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
 
-    def missing_meta(self, dataset, check=None, skip=None):
+    def missing_meta(
+        self, dataset: "DatasetInstance", check: Optional[List] = None, skip: Optional[List] = None
+    ) -> bool:
         """
         Checks for empty metadata values.
         Returns False if no non-optional metadata is missing and the missing metadata key otherwise.
