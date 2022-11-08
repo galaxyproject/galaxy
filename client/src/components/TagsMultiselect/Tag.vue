@@ -69,7 +69,6 @@ library.add(faTimes);
     font-size: $font-size-base * 0.95;
     color: black;
     border-radius: 4px;
-    cursor: pointer;
 
     padding: 0 0.5rem;
     &.editable {
@@ -77,7 +76,9 @@ library.add(faTimes);
     }
 
     &.clickable {
+        cursor: pointer;
         position: relative;
+
         &:hover {
             &:before {
                 content: "";
