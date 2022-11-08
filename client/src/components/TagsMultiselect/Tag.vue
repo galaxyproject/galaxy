@@ -36,6 +36,7 @@ library.add(faTimes);
 <template>
     <div
         class="tag btn-transparent-background"
+        :data-option="props.option"
         :class="{ editable }"
         :style="`background-color: ${color};`"
         @click.prevent.stop="onClick">

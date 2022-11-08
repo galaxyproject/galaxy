@@ -43,8 +43,6 @@ export class TagModel {
         this.style += `border-color: ${darker};`;
 
         this.valid = VALID_TAG_RE.test(this.text);
-
-        Object.freeze(this);
     }
 
     equals(otherTag) {

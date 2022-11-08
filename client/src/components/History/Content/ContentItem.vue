@@ -98,7 +98,12 @@
             :disabled="tagsDisabled"
             @tag-click="onTagClick"
             @input="onTags" /-->
-        <StatelessTags v-if="!tagsDisabled || hasTags" :value="tags" :disabled="tagsDisabled" @input="onTags" />
+        <StatelessTags
+            v-if="!tagsDisabled || hasTags"
+            :value="tags"
+            :disabled="tagsDisabled"
+            @input="onTags"
+            @tag-click="onTagClick" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <b-collapse :visible="expandDataset">
             <DatasetDetails
@@ -243,7 +248,7 @@ export default {
             updateContentFields(this.item, { tags: newTags });
         },
         onTagClick(tag) {
-            this.$emit("tag-click", tag.label);
+            this.$emit("tag-click", tag);
         },
         toggleHighlights() {
             this.$emit("toggleHighlights", this.item);
