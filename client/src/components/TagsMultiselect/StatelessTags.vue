@@ -21,9 +21,11 @@ const emit = defineEmits(["input", "tag-click"]);
 const { userTags, addLocalTag } = useUserTags();
 
 function onAddTag(tag) {
-    if (isValid(tag)) {
-        addLocalTag(tag);
-        emit("input", [...props.value, tag]);
+    const newTag = tag.trim();
+
+    if (isValid(newTag)) {
+        addLocalTag(newTag);
+        emit("input", [...props.value, newTag]);
     }
 }
 
@@ -33,7 +35,7 @@ function onInput(val) {
 
 function onDelete(tag) {
     const val = [...props.value];
-    const index = props.value.indexOf(tag);
+    const index = props.value.indexOf(tag.trim());
     val.splice(index, 1);
     emit("input", val);
 }
@@ -83,8 +85,8 @@ library.add(faTags, faCheck, faTimes, faPlus);
         <Multiselect
             v-if="!disabled"
             placeholder="Add Tags"
-            class=""
             ref="multiselectElement"
+            class=""
             :value="tags"
             :options="userTags"
             :multiple="true"
