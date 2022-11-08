@@ -82,7 +82,10 @@ def build_command(
 
     __handle_task_splitting(commands_builder, job_wrapper)
 
+    externalized = False
+    for_pulsar = "pulsar_version" in remote_command_params
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
+        externalized = True
         if container and modify_command_for_container:
             # Many Docker containers do not have /bin/bash.
             external_command_shell = container.shell
@@ -103,10 +106,13 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
-    for_pulsar = "script_directory" in remote_command_params
-    if not for_pulsar:
+    wrap_stdio = externalized or not for_pulsar
+    if wrap_stdio:
+        # Galaxy writes I/O files to outputs, Pulsar uses metadata. metadata seems like
+        # it should be preferred - at least if the directory exists.
+        io_directory = "../metadata" if for_pulsar else "../outputs"
         commands_builder.capture_stdout_stderr(
-            "../outputs/tool_stdout", "../outputs/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
+            f"{io_directory}/tool_stdout", f"{io_directory}/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
         )
 
     # Don't need to create a separate tool working directory for Pulsar
@@ -201,7 +207,7 @@ def __externalize_commands(
     #   doesn't need to mount the job directory (rw) and then eliminate this hack
     #   (or restrict to older Pulsar versions).
     #   https://github.com/galaxyproject/galaxy/pull/8449
-    for_pulsar = "script_directory" in remote_command_params
+    for_pulsar = "pulsar_version" in remote_command_params
     if for_pulsar:
         commands = f"{shell} {join(remote_command_params['script_directory'], script_name)}"
     log.info(f"Built script [{local_container_script}] for tool command [{tool_commands}]")
@@ -260,6 +266,7 @@ def __handle_metadata(
     config_file = metadata_kwds.get("config_file", None)
     datatypes_config = metadata_kwds.get("datatypes_config", None)
     compute_tmp_dir = metadata_kwds.get("compute_tmp_dir", None)
+    version_path = job_wrapper.job_io.version_path
     resolve_metadata_dependencies = job_wrapper.commands_in_new_shell
     metadata_command = (
         job_wrapper.setup_external_metadata(
@@ -272,6 +279,7 @@ def __handle_metadata(
             config_file=config_file,
             datatypes_config=datatypes_config,
             compute_tmp_dir=compute_tmp_dir,
+            compute_version_path=version_path,
             resolve_metadata_dependencies=resolve_metadata_dependencies,
             use_bin=job_wrapper.use_metadata_binary,
             kwds={"overwrite": False},
