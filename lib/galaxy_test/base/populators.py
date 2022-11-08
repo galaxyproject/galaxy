@@ -1756,9 +1756,9 @@ class BaseWorkflowPopulator(BasePopulator):
             print(json.dumps(raw_workflow, sort_keys=True, indent=2))
 
     def workflow_inputs(self, workflow_id: str) -> Dict[str, Dict[str, Any]]:
-        workflow_show_resposne = self._get(f"workflows/{workflow_id}")
-        api_asserts.assert_status_code_is_ok(workflow_show_resposne)
-        workflow_inputs = workflow_show_resposne.json()["inputs"]
+        workflow_show_response = self._get(f"workflows/{workflow_id}")
+        api_asserts.assert_status_code_is_ok(workflow_show_response)
+        workflow_inputs = workflow_show_response.json()["inputs"]
         return workflow_inputs
 
     def build_ds_map(self, workflow_id: str, label_map: Dict[str, Any]) -> str:
