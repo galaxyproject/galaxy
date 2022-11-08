@@ -5398,15 +5398,11 @@ steps: []
         self._assert_has_keys(usage_details, "inputs", "steps", "workflow_id")
 
         invocation_steps = usage_details["steps"]
-        invocation_input_step = None
-        invocation_tool_steps = []
+        assert len(invocation_steps) == 3
         for invocation_step in invocation_steps:
             self._assert_has_keys(invocation_step, "workflow_step_id", "order_index", "id")
-        invocation_input_step = invocation_steps[0]
-        invocation_tool_steps.extend(invocation_steps[1:])
 
-        assert len(invocation_tool_steps) == 2
-        assert invocation_tool_steps[0]["state"] == "ok"
+        assert invocation_steps[1]["state"] == "ok"
 
     def _run_mapping_workflow(self):
         history_id = self.dataset_populator.new_history()
