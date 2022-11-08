@@ -185,7 +185,7 @@ class TabularData(data.Text):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance):
+    def display_as_markdown(self, dataset_instance: "DatasetInstance") -> str:
         with open(dataset_instance.file_name) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)

@@ -505,7 +505,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: "DatasetInstance"):
+    def display_as_markdown(self, dataset_instance: "DatasetInstance") -> str:
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented
