@@ -9,11 +9,12 @@ const props = defineProps({
     remove: Function,
     editable: Boolean,
     focusable: Boolean,
+    clickable: Boolean,
 });
 
 const emit = defineEmits(["click", "deleted"]);
 
-const color = computed(() => keyedColorScheme(props.option).primary);
+const color = computed(() => keyedColorScheme(props.option));
 
 function onClick() {
     emit("click", props.option);
@@ -37,8 +38,8 @@ library.add(faTimes);
     <div
         class="tag btn-transparent-background"
         :data-option="props.option"
-        :class="{ editable }"
-        :style="`background-color: ${color};`"
+        :class="{ editable, clickable }"
+        :style="`background-color: ${color.primary}; border-color: ${color.darker}`"
         @click.prevent.stop="onClick">
         <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
@@ -73,6 +74,23 @@ library.add(faTimes);
     padding: 0 0.5rem;
     &.editable {
         padding: 0 0.25rem;
+    }
+
+    &.clickable {
+        position: relative;
+        &:hover {
+            &:before {
+                content: "";
+                width: 100%;
+                height: 100%;
+                top: 0;
+                left: 0;
+                position: absolute;
+                border: 2px solid;
+                border-color: inherit;
+                border-radius: inherit;
+            }
+        }
     }
 }
 </style>

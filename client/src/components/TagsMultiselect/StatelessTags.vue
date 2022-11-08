@@ -14,6 +14,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    clickable: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["input", "tag-click"]);
@@ -96,7 +100,13 @@ library.add(faTags, faCheck, faTimes, faPlus);
             @open="onOpen"
             @close="onClose">
             <template v-slot:tag="{ option, search }">
-                <Tag :option="option" :search="search" :editable="true" @deleted="onDelete" @click="onTagClicked"></Tag>
+                <Tag
+                    :option="option"
+                    :search="search"
+                    :editable="true"
+                    :clickable="props.clickable"
+                    @deleted="onDelete"
+                    @click="onTagClicked"></Tag>
             </template>
 
             <template v-slot:noOptions> Type to add new tag </template>
@@ -132,7 +142,13 @@ library.add(faTags, faCheck, faTimes, faPlus);
         </Multiselect>
         <div v-else class="pl-1 pb-2">
             <div class="d-inline">
-                <Tag v-for="tag in tags" :key="tag" :option="tag" :editable="false" @click="onTagClicked"></Tag>
+                <Tag
+                    v-for="tag in tags"
+                    :key="tag"
+                    :option="tag"
+                    :editable="false"
+                    :clickable="props.clickable"
+                    @click="onTagClicked"></Tag>
             </div>
         </div>
     </div>
