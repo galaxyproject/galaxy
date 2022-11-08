@@ -3105,10 +3105,9 @@ test_data:
         assert len(elements) == 2
         assert elements[0]["element_identifier"] == "1"
         assert elements[0]["element_type"] == "hda"
-        # FIXME: make this work!
-        # hda_id = elements[0]["object"]["id"]
-        # hda_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=hda_id)
-        # assert hda_content == "1"
+        hda_id = elements[0]["object"]["id"]
+        hda_content = self.dataset_populator.get_history_dataset_content(history_id, content_id=hda_id)
+        assert hda_content.strip() == "1"
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over_inner_collection(self, history_id):

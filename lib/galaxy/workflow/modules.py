@@ -1925,7 +1925,6 @@ class ToolModule(WorkflowModule):
         all_inputs_by_name = {}
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
-        # do some magic here with incoming collection info
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         param_combinations = []
@@ -1950,19 +1949,7 @@ class ToolModule(WorkflowModule):
                 replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
                 dataset_instance: Optional[model.Dataset] = None
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
-                    dataset_instance = getattr(
-                        iteration_elements[prefixed_name], "dataset_instance", None  # noqa: B023
-                    )
-                    if isinstance(input, DataToolParameter) and dataset_instance:
-                        # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
-                        # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
-                        replacement = dataset_instance
-                        temp = iteration_elements[prefixed_name]  # noqa: B023
-                        if hasattr(temp, "element_identifier") and temp.element_identifier:
-                            replacement.element_identifier = temp.element_identifier  # type: ignore[union-attr]
-                    else:
-                        # If collection - just use element model object.
-                        replacement = iteration_elements[prefixed_name]  # noqa: B023
+                    replacement = iteration_elements[prefixed_name]  # noqa: B023
                 else:
                     replacement = progress.replacement_for_input(step, input_dict)
 
