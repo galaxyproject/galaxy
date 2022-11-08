@@ -430,19 +430,6 @@ class WorkflowModule:
                 collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
                 continue
 
-            if is_data_collection_param:
-                effective_input_collection_type = input_dict.get("collection_types", None)
-                history_query = HistoryQuery.from_collection_types(
-                    effective_input_collection_type,
-                    dataset_collection_type_descriptions,
-                )
-                subcollection_type_description = history_query.can_map_over(data)
-                if subcollection_type_description:
-                    collections_to_match.add(
-                        name, data, subcollection_type=subcollection_type_description.collection_type
-                    )
-                continue
-
             if data is not NO_REPLACEMENT:
                 collections_to_match.add(name, data)
                 continue
