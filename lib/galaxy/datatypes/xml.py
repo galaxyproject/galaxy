@@ -3,6 +3,7 @@ XML format classes
 """
 import logging
 import re
+from typing import List
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement
@@ -160,7 +161,7 @@ class Dzi(GenericXml):
                 dataset.metadata.width = elem.get("Width")
                 dataset.metadata.height = elem.get("Height")
 
-    def get_visualizations(self, dataset):
+    def get_visualizations(self) -> List[str]:
         """Returns a list of visualizations for datatype"""
         return ["openseadragon"]
 
@@ -222,7 +223,7 @@ class Phyloxml(GenericXml):
         """
         return self._has_root_element_in_prefix(file_prefix, "phyloxml")
 
-    def get_visualizations(self, dataset):
+    def get_visualizations(self) -> List[str]:
         """
         Returns a list of visualizations for datatype.
         """

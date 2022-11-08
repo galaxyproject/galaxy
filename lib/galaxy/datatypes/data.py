@@ -851,7 +851,7 @@ class Data(metaclass=DataMeta):
                 for fsrc in split_files:
                     shutil.copyfileobj(open(fsrc, "rb"), fdst)
 
-    def get_visualizations(self, dataset):
+    def get_visualizations(self) -> List[str]:
         """
         Returns a list of visualizations for datatype.
         """
@@ -1129,7 +1129,7 @@ class Newick(Text):
         """Returning false as the newick format is too general and cannot be sniffed."""
         return False
 
-    def get_visualizations(self, dataset):
+    def get_visualizations(self) -> List[str]:
         """
         Returns a list of visualizations for datatype.
         """
@@ -1148,7 +1148,7 @@ class Nexus(Text):
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
         return file_prefix.string_io().read(6).upper() == "#NEXUS"
 
-    def get_visualizations(self, dataset):
+    def get_visualizations(self) -> List[str]:
         """
         Returns a list of visualizations for datatype.
         """
