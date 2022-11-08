@@ -127,13 +127,13 @@ library.add(faTags, faCheck, faTimes, faPlus);
 
                         <span class="info highlighted">
                             <FontAwesomeIcon class="times-icon" icon="fa-times"></FontAwesomeIcon>
-                            <span class="sr-only">add tag</span>
+                            <span class="sr-only">remove tag</span>
                         </span>
                     </span>
                     <span v-else class="float-right">
                         <span class="info highlighted">
                             <FontAwesomeIcon class="plus-icon" icon="fa-plus"></FontAwesomeIcon>
-                            <span class="sr-only">remove tag</span>
+                            <span class="sr-only">add tag</span>
                         </span>
                     </span>
                 </span>
