@@ -90,7 +90,6 @@ library.add(faTags, faCheck, faTimes, faPlus);
             v-if="!disabled"
             placeholder="Add Tags"
             ref="multiselectElement"
-            class=""
             :value="tags"
             :options="userTags"
             :multiple="true"

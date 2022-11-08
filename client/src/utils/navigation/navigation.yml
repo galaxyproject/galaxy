@@ -188,7 +188,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
-      alltags: '${_} .alltags .ti-tags'
+      alltags: '${_} .stateless-tags .tags'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations_dropdown: '${_}  .dataset-actions'
@@ -202,7 +202,7 @@ history_panel:
       form: '${_} [data-description="edit form"]'
       name_input: '${_} [data-description="name input"]'
       annotation_input: '${_} [data-description="annotation input"]'
-      tags_input: '${_} .tags input'
+      tags_input: '${_} .stateless-tags button'
       save_button: '${_} [data-description="editor save button"]'
 
   # history tags
