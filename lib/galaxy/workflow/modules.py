@@ -392,21 +392,50 @@ class WorkflowModule:
                 if multiple:
                     # multiple="true" data input, acts like "list" collection_type.
                     # just need to figure out subcollection_type_description
+                    effective_input_collection_type = ["list"]
+                    type_list = []
+                    if progress.subworkflow_collection_info:
+
+                        type_list = progress.subworkflow_collection_info.structure.collection_type_description.collection_type.split(
+                            ":"
+                        )
+                        leaf_type = type_list.pop(0)
+                        if type_list and type_list[-1] == effective_input_collection_type:
+                            effective_input_collection_type = (
+                                [":".join(type_list[:-1])] if ":".join(type_list[:-1]) else []
+                            )
                     history_query = HistoryQuery.from_collection_types(
-                        ["list"],
+                        effective_input_collection_type,
                         dataset_collection_type_descriptions,
                     )
                     subcollection_type_description = history_query.can_map_over(data)
+
+                    if subcollection_type_description:
+                        subcollection_type_description_list = subcollection_type_description.collection_type.split(":")
+                        for std in reversed(subcollection_type_description_list):
+                            if type_list:
+                                leaf_type = type_list.pop(0)
+                                assert std == leaf_type
+                        if not type_list:
+                            collections_to_match.add(name, data)
+                        else:
+                            subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                                ":".join(type_list)
+                            )
+
                     if subcollection_type_description:
                         collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
+                    else:
+                        collections_to_match.add(name, data)
                 else:
                     collections_to_match.add(name, data)
                 continue
 
             is_data_collection_param = input_dict["input_type"] == "dataset_collection"
             if is_data_collection_param:
+                effective_input_collection_type = input_dict.get("collection_types", None)
                 history_query = HistoryQuery.from_collection_types(
-                    input_dict.get("collection_types", None),
+                    effective_input_collection_type,
                     dataset_collection_type_descriptions,
                 )
                 subcollection_type_description = history_query.can_map_over(data)
@@ -576,7 +605,10 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        subworkflow_invoker = progress.subworkflow_invoker(trans, step, use_cached_job=use_cached_job)
+        collection_info = self.compute_collection_info(progress, step, self.get_all_inputs())
+        subworkflow_invoker = progress.subworkflow_invoker(
+            trans, step, use_cached_job=use_cached_job, collection_info=collection_info
+        )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
@@ -1890,7 +1922,7 @@ class ToolModule(WorkflowModule):
                 f"Tool {self.tool_id} missing. Cannot recover runtime state.", tool_id=self.tool_id
             )
 
-    def execute(self, trans, progress, invocation_step, use_cached_job=False):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False, collection_info=None):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
@@ -1907,11 +1939,12 @@ class ToolModule(WorkflowModule):
         all_inputs_by_name = {}
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
+        # do some magic here with incoming collection info
         collection_info = self.compute_collection_info(progress, step, all_inputs)
 
         param_combinations = []
         if collection_info:
-            iteration_elements_iter = collection_info.slice_collections()
+            iteration_elements_iter = list(collection_info.slice_collections())
         else:
             iteration_elements_iter = [None]
 
