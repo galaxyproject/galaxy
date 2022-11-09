@@ -5,6 +5,7 @@ from inspect import (
     signature,
 )
 
+from galaxy.util import asbool
 from ._util import is_datasource
 from ..verify import asserts
 
@@ -117,9 +118,16 @@ def lint_tests(tool_xml, lint_ctx):
                                 node=output,
                             )
 
-        if "expect_failure" in test.attrib and found_output_test:
-            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
-            continue
+        if "expect_failure" in test.attrib and asbool(test.attrib["expect_failure"]):
+            if found_output_test:
+                lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
+                continue
+            if "expect_num_outputs" in test.attrib:
+                lint_ctx.error(
+                    f"Test {test_idx}: Cannot make assumptions on the number of outputs in a test expecting failure.",
+                    node=test,
+                )
+                continue
 
         has_test = has_test or found_output_test
         if not has_test:
