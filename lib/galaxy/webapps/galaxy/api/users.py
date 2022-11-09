@@ -45,6 +45,7 @@ from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
     listify,
+    string_as_bool
 )
 from galaxy.web import (
     expose_api,
@@ -1077,7 +1078,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         """
         user = self._get_user(trans, id)
 
-        enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
+        enabled = string_as_bool(user.preferences["beacon_enabled"]) if "beacon_enabled" in user.preferences else False
 
         return {"enabled": enabled}
 
