@@ -135,6 +135,7 @@
   <tool file="section.xml" />
   <tool file="sam_to_unsorted_bam.xml" />
   <tool file="top_level_data.xml" />
+  <tool file="validation_regex.xml" />
   <tool file="validation_hdf5.xml" />
   <tool file="validation_zip.xml" />
   <tool file="validation_tar.xml" />
