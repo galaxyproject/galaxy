@@ -113,6 +113,7 @@ from ..item_attrs import (
     get_item_annotation_str,
 )
 from ... import model
+from .ro_crate_utils import InvocationCrateBuilder
 
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager
@@ -2428,18 +2429,29 @@ class WriteCrates:
                 )
 
         workflows_directory = self.workflows_directory
+        is_invocation_export = self._is_single_invocation_export()
         if os.path.exists(workflows_directory):
             for filename in os.listdir(workflows_directory):
-                workflow_cls = ComputationalWorkflow if not filename.endswith(".cwl") else WorkflowDescription
+                is_computational_wf = not filename.endswith(".cwl")
+                workflow_cls = ComputationalWorkflow if is_computational_wf else WorkflowDescription
                 lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
                 dest_path = os.path.join("workflows", filename)
+
+                is_main_entity = is_invocation_export and is_computational_wf
                 ro_crate.add_workflow(
                     source=os.path.join(workflows_directory, filename),
                     dest_path=dest_path,
-                    main=False,
+                    main=is_main_entity,
                     cls=workflow_cls,
                     lang=lang,
                 )
+
+                if is_main_entity:
+                    invocation = self.included_invocations[0]
+                    invocation_crate_builder = InvocationCrateBuilder(ro_crate, invocation)
+                    invocation_crate_builder.add_engine_run()
+                    invocation_crate_builder.add_actions()
+                    # invocation_crate_builder.add_param_connections()
 
         found_workflow_licenses = set()
         for workflow_invocation in self.included_invocations:
@@ -2941,6 +2953,7 @@ def source_to_import_store(
                     target_path, import_options=import_options, app=app, user=galaxy_user
                 )
             else:
+                # TODO: rocrate.zip is not supported here...
                 raise Exception(f"Unknown model_store_format type encountered {model_store_format}")
 
     return model_import_store
