@@ -337,7 +337,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     def __init__(
         self,
-        dataset: Optional[DatasetInstance],
+        dataset: Optional[Union[DatasetInstance, DatasetCollectionElement]],
         datatypes_registry: Optional["Registry"] = None,
         tool: Optional["Tool"] = None,
         name: Optional[str] = None,
@@ -368,6 +368,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             # Tool wrappers should not normally be accessing .dataset directly,
             # so we will wrap it and keep the original around for file paths
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
+            if isinstance(dataset, DatasetCollectionElement):
+                identifier = dataset.element_identifier
+                dataset = dataset.hda
             if formats:
                 direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(formats)
                 if not direct_match and target_ext and converted_dataset:
@@ -513,7 +516,9 @@ class HasDatasets:
     def __iter__(self) -> Iterator[Any]:
         pass
 
-    def _dataset_wrapper(self, dataset: DatasetInstance, **kwargs: Any) -> DatasetFilenameWrapper:
+    def _dataset_wrapper(
+        self, dataset: Union[DatasetInstance, DatasetCollectionElement], **kwargs: Any
+    ) -> DatasetFilenameWrapper:
         return DatasetFilenameWrapper(dataset, **kwargs)
 
     def paths_as_file(self, sep: str = "\n") -> str:

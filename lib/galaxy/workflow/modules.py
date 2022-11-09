@@ -1949,7 +1949,6 @@ class ToolModule(WorkflowModule):
                 input_dict = all_inputs_by_name[prefixed_name]
 
                 replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
-                dataset_instance: Optional[model.Dataset] = None
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
                 else:
@@ -1958,9 +1957,13 @@ class ToolModule(WorkflowModule):
                 if replacement is not NO_REPLACEMENT:
                     if not isinstance(input, BaseDataToolParameter):
                         # Probably a parameter that can be replaced
-                        dataset2: model.Dataset = cast(model.Dataset, dataset_instance or replacement)
-                        if getattr(dataset2, "extension", None) == "expression.json":
-                            with open(dataset2.file_name) as f:
+                        dataset_instance: Optional[model.DatasetInstance] = None
+                        if isinstance(replacement, model.DatasetCollectionElement):
+                            dataset_instance = replacement.hda
+                        elif isinstance(replacement, model.DatasetInstance):
+                            dataset_instance = replacement
+                        if dataset_instance and dataset_instance.extension == "expression.json":
+                            with open(dataset_instance.file_name) as f:
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 
