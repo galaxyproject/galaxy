@@ -341,12 +341,17 @@ def validate_crate_metadata(as_dict):
 
 
 def validate_has_pl_galaxy(ro_crate: ROCrate):
-    found = False
-    for e in ro_crate.get_entities():
-        if e.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy":
-            found = True
-            assert e.url == "https://galaxyproject.org/"
-    assert found
+    programming_language = ro_crate.mainEntity.get("programmingLanguage")
+    assert programming_language
+    assert programming_language.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy"
+    assert programming_language.name == "Galaxy"
+    assert programming_language.url == "https://galaxyproject.org/"
+    assert programming_language.version
+
+
+def validate_organize_action(ro_crate: ROCrate):
+    organize_action = next((x for x in ro_crate.contextual_entities if x.type == "OrganizeAction"), None)
+    assert organize_action
 
 
 def validate_has_mit_license(ro_crate: ROCrate):
@@ -385,7 +390,10 @@ def validate_history_crate_directory(crate_directory):
 
 def validate_invocation_crate_directory(crate_directory):
     crate = open_ro_crate(crate_directory)
+    workflow = crate.mainEntity
+    assert workflow
     validate_has_pl_galaxy(crate)
+    validate_organize_action(crate)
     validate_has_mit_license(crate)
     validate_has_readme(crate)
     # print(json.dumps(metadata_json, indent=4))
