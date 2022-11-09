@@ -428,7 +428,7 @@ class WorkflowModule:
                             ":".join(type_list)
                         )
                     collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
-                elif is_data_param:
+                elif is_data_param and progress.subworkflow_structure:
                     collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
                 continue
 
