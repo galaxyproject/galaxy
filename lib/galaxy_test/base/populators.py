@@ -2039,6 +2039,7 @@ class CwlPopulator:
         if os.path.exists(tool_id):
             raw_tool_id = os.path.basename(tool_id)
             index = self.dataset_populator._get("tools", data=dict(in_panel=False))
+            index.raise_for_status()
             tools = index.json()
             # In panels by default, so flatten out sections...
             tool_ids = [itemgetter("id")(_) for _ in tools]
@@ -2870,29 +2871,27 @@ class GiHttpMixin:
         return self._gi.url
 
     def _get(self, route, data=None, headers=None, admin=False) -> Response:
-        if data is None:
-            data = {}
-        return self._gi.make_get_request(self._url(route), data=data)
+        return self._gi.make_get_request(self._url(route), params=data)
 
     def _post(self, route, data=None, files=None, headers=None, admin=False, json: bool = False) -> Response:
-        if data is None:
-            data = {}
-        data = data.copy()
-        data["key"] = self._gi.key
+        if headers is None:
+            headers = {}
+        headers = headers.copy()
+        headers["x-api-key"] = self._gi.key
         return requests.post(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _put(self, route, data=None, headers=None, admin=False, json: bool = False):
-        if data is None:
-            data = {}
-        data = data.copy()
-        data["key"] = self._gi.key
+        if headers is None:
+            headers = {}
+        headers = headers.copy()
+        headers["x-api-key"] = self._gi.key
         return requests.put(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _delete(self, route, data=None, headers=None, admin=False, json: bool = False):
-        if data is None:
-            data = {}
-        data = data.copy()
-        data["key"] = self._gi.key
+        if headers is None:
+            headers = {}
+        headers = headers.copy()
+        headers["x-api-key"] = self._gi.key
         return requests.delete(self._url(route), data=data, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
 
     def _url(self, route):
