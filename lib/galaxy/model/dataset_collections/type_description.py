@@ -45,12 +45,13 @@ class CollectionTypeDescription:
     'paired'
     """
 
+    collection_type: str
+
     def __init__(self, collection_type: Union[str, "CollectionTypeDescription"], collection_type_description_factory):
-        self.collection_type = (
-            collection_type.collection_type
-            if isinstance(collection_type, CollectionTypeDescription)
-            else collection_type
-        )
+        if isinstance(collection_type, CollectionTypeDescription):
+            self.collection_type = collection_type.collection_type
+        else:
+            self.collection_type = collection_type
         self.collection_type_description_factory = collection_type_description_factory
         self.__has_subcollections = self.collection_type.find(":") > 0
 
