@@ -427,7 +427,9 @@ class WorkflowModule:
                         subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
                             ":".join(type_list)
                         )
-                collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
+                    collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
+                elif is_data_param:
+                    collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
                 continue
 
             if data is not NO_REPLACEMENT:
@@ -1908,7 +1910,7 @@ class ToolModule(WorkflowModule):
                 f"Tool {self.tool_id} missing. Cannot recover runtime state.", tool_id=self.tool_id
             )
 
-    def execute(self, trans, progress, invocation_step, use_cached_job=False, collection_info=None):
+    def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
