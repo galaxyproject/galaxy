@@ -1290,7 +1290,7 @@ def verify_tool(
             if job_output_exceptions:
                 job_data["output_problems"] = [util.unicodify(_) for _ in job_output_exceptions]
                 status = "failure"
-            if tool_execution_exception:
+            if tool_execution_exception and not expected_failure_occurred:
                 job_data["execution_problem"] = util.unicodify(tool_execution_exception)
                 dynamic_param_error = getattr(tool_execution_exception, "dynamic_param_error", False)
                 job_data["dynamic_param_error"] = dynamic_param_error
