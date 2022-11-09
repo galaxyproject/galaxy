@@ -115,6 +115,8 @@ class DefaultToolAction(ToolAction):
                 if formats is None:
                     formats = input.formats
 
+                data = getattr(data, "hda", data)
+
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
                     if converted_dataset:
@@ -291,8 +293,11 @@ class DefaultToolAction(ToolAction):
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
                         if isinstance(value, model.DatasetCollectionElement):
-                            # if we are mapping a collection over a tool, we only require the child_collection
-                            dataset_instances = value.child_collection.dataset_instances
+                            if value.child_collection:
+                                # if we are mapping a collection over a tool, we only require the child_collection
+                                dataset_instances = value.child_collection.dataset_instances
+                            else:
+                                continue
                         else:
                             # else the tool takes a collection as input so we need everything
                             dataset_instances = value.collection.dataset_instances

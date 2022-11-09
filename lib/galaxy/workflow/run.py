@@ -272,7 +272,10 @@ class WorkflowInvoker:
 
     def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
         incomplete_or_none = invocation_step.workflow_step.module.execute(
-            self.trans, self.progress, invocation_step, use_cached_job=self.progress.use_cached_job
+            self.trans,
+            self.progress,
+            invocation_step,
+            use_cached_job=self.progress.use_cached_job,
         )
         return incomplete_or_none
 
@@ -302,6 +305,7 @@ class WorkflowProgress:
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
         replacement_dict: Optional[Dict[str, str]] = None,
+        subworkflow_structure=None,
     ) -> None:
         self.outputs: Dict[int, Any] = {}
         self.module_injector = module_injector
@@ -313,6 +317,7 @@ class WorkflowProgress:
         self.copy_inputs_to_history = copy_inputs_to_history
         self.use_cached_job = use_cached_job
         self.replacement_dict = replacement_dict or {}
+        self.subworkflow_structure = subworkflow_structure
 
     @property
     def maximum_jobs_to_schedule_or_none(self) -> Optional[int]:
@@ -522,11 +527,17 @@ class WorkflowProgress:
         return subworkflow_invocation
 
     def subworkflow_invoker(
-        self, trans: "WorkRequestContext", step: "WorkflowStep", use_cached_job: bool = False
+        self,
+        trans: "WorkRequestContext",
+        step: "WorkflowStep",
+        use_cached_job: bool = False,
+        subworkflow_structure=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
         workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
-        subworkflow_progress = self.subworkflow_progress(subworkflow_invocation, step, workflow_run_config.param_map)
+        subworkflow_progress = self.subworkflow_progress(
+            subworkflow_invocation, step, workflow_run_config.param_map, subworkflow_structure=subworkflow_structure
+        )
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         return WorkflowInvoker(
             trans,
@@ -536,7 +547,11 @@ class WorkflowProgress:
         )
 
     def subworkflow_progress(
-        self, subworkflow_invocation: WorkflowInvocation, step: "WorkflowStep", param_map: Dict
+        self,
+        subworkflow_invocation: WorkflowInvocation,
+        step: "WorkflowStep",
+        param_map: Dict,
+        subworkflow_structure=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
@@ -564,6 +579,7 @@ class WorkflowProgress:
             param_map=param_map,
             use_cached_job=self.use_cached_job,
             replacement_dict=self.replacement_dict,
+            subworkflow_structure=subworkflow_structure,
         )
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:

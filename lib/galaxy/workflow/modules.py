@@ -387,33 +387,52 @@ class WorkflowModule:
                 continue
 
             is_data_param = input_dict["input_type"] == "dataset"
-            if is_data_param:
-                multiple = input_dict["multiple"]
-                if multiple:
-                    # multiple="true" data input, acts like "list" collection_type.
-                    # just need to figure out subcollection_type_description
-                    history_query = HistoryQuery.from_collection_types(
-                        ["list"],
-                        dataset_collection_type_descriptions,
-                    )
-                    subcollection_type_description = history_query.can_map_over(data)
-                    if subcollection_type_description:
-                        collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
-                else:
-                    collections_to_match.add(name, data)
-                continue
-
             is_data_collection_param = input_dict["input_type"] == "dataset_collection"
-            if is_data_collection_param:
+            if is_data_param or is_data_collection_param:
+                multiple = input_dict["multiple"]
+                if is_data_param:
+                    if multiple:
+                        # multiple="true" data input, acts like "list" collection_type.
+                        effective_input_collection_type = ["list"]
+                    else:
+                        collections_to_match.add(name, data)
+                        continue
+                else:
+                    effective_input_collection_type = input_dict.get("collection_types")
+                    if not effective_input_collection_type:
+                        if progress.subworkflow_structure:
+                            effective_input_collection_type = [
+                                progress.subworkflow_structure.collection_type_description.collection_type
+                            ]
+                        elif input_dict.get("collection_type"):
+                            effective_input_collection_type = [input_dict.get("collection_type")]
+                type_list = []
+                if progress.subworkflow_structure:
+                    # If we have progress.subworkflow_structure were mapping a subworkflow invocation over a higher-dimension input
+                    # e.g an outer list:list over an inner list. Whatever we do, the inner workflow cannot reduce the outer list.
+                    # This is what we're setting up here.
+                    type_list = progress.subworkflow_structure.collection_type_description.collection_type.split(":")
+                    leaf_type = type_list.pop(0)
+                    if type_list and type_list[-1] == effective_input_collection_type:
+                        effective_input_collection_type = [":".join(type_list[:-1])] if ":".join(type_list[:-1]) else []
                 history_query = HistoryQuery.from_collection_types(
-                    input_dict.get("collection_types", None),
+                    effective_input_collection_type,
                     dataset_collection_type_descriptions,
                 )
-                subcollection_type_description = history_query.can_map_over(data)
+                subcollection_type_description = history_query.can_map_over(data) or None
                 if subcollection_type_description:
-                    collections_to_match.add(
-                        name, data, subcollection_type=subcollection_type_description.collection_type
-                    )
+                    subcollection_type_list = subcollection_type_description.collection_type.split(":")
+                    for collection_type in reversed(subcollection_type_list):
+                        if type_list:
+                            leaf_type = type_list.pop(0)
+                            assert collection_type == leaf_type
+                    if type_list:
+                        subcollection_type_description = dataset_collection_type_descriptions.for_collection_type(
+                            ":".join(type_list)
+                        )
+                    collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
+                elif is_data_param and progress.subworkflow_structure:
+                    collections_to_match.add(name, data, subcollection_type=subcollection_type_description)
                 continue
 
             if data is not NO_REPLACEMENT:
@@ -576,7 +595,11 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        subworkflow_invoker = progress.subworkflow_invoker(trans, step, use_cached_job=use_cached_job)
+        collection_info = self.compute_collection_info(progress, step, self.get_all_inputs())
+        structure = collection_info.structure if collection_info else None
+        subworkflow_invoker = progress.subworkflow_invoker(
+            trans, step, use_cached_job=use_cached_job, subworkflow_structure=structure
+        )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
         subworkflow_progress = subworkflow_invoker.progress
@@ -1929,30 +1952,21 @@ class ToolModule(WorkflowModule):
                 input_dict = all_inputs_by_name[prefixed_name]
 
                 replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
-                dataset_instance: Optional[model.Dataset] = None
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
-                    dataset_instance = getattr(
-                        iteration_elements[prefixed_name], "dataset_instance", None  # noqa: B023
-                    )
-                    if isinstance(input, DataToolParameter) and dataset_instance:
-                        # Pull out dataset instance (=HDA) from element and set a temporary element_identifier attribute
-                        # See https://github.com/galaxyproject/galaxy/pull/1693 for context.
-                        replacement = dataset_instance
-                        temp = iteration_elements[prefixed_name]  # noqa: B023
-                        if hasattr(temp, "element_identifier") and temp.element_identifier:
-                            replacement.element_identifier = temp.element_identifier  # type: ignore[union-attr]
-                    else:
-                        # If collection - just use element model object.
-                        replacement = iteration_elements[prefixed_name]  # noqa: B023
+                    replacement = iteration_elements[prefixed_name]  # noqa: B023
                 else:
                     replacement = progress.replacement_for_input(step, input_dict)
 
                 if replacement is not NO_REPLACEMENT:
                     if not isinstance(input, BaseDataToolParameter):
                         # Probably a parameter that can be replaced
-                        dataset2: model.Dataset = cast(model.Dataset, dataset_instance or replacement)
-                        if getattr(dataset2, "extension", None) == "expression.json":
-                            with open(dataset2.file_name) as f:
+                        dataset_instance: Optional[model.DatasetInstance] = None
+                        if isinstance(replacement, model.DatasetCollectionElement):
+                            dataset_instance = replacement.hda
+                        elif isinstance(replacement, model.DatasetInstance):
+                            dataset_instance = replacement
+                        if dataset_instance and dataset_instance.extension == "expression.json":
+                            with open(dataset_instance.file_name) as f:
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 
