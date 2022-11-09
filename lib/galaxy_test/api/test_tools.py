@@ -4,6 +4,10 @@ import json
 import os
 import zipfile
 from io import BytesIO
+from typing import (
+    Any,
+    Dict,
+)
 
 import pytest
 from requests import (
@@ -773,7 +777,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         filtered_hdca = self.dataset_populator.get_history_collection_details(history_id, hid=filtered_hid, wait=False)
         return filtered_hdca
 
-    def _apply_rules_and_check(self, example):
+    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
         with self.dataset_populator.test_history() as history_id:
             inputs = stage_rules_example(self.galaxy_interactor, history_id, example)
             hdca = inputs["input"]

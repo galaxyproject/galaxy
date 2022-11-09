@@ -1,4 +1,8 @@
 import json
+from typing import (
+    Any,
+    Dict,
+)
 
 import pytest
 from selenium.webdriver.common.by import By
@@ -376,7 +380,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self.history_multi_view_display_collection_contents(32, "list:list")
         self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested")
 
-    def _apply_rules_and_check(self, example):
+    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
         rule_builder = self.components.rule_builder
 
         self.home()
