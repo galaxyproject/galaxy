@@ -1931,7 +1931,7 @@ class ToolModule(WorkflowModule):
 
         param_combinations = []
         if collection_info:
-            iteration_elements_iter = list(collection_info.slice_collections())
+            iteration_elements_iter = collection_info.slice_collections()
         else:
             iteration_elements_iter = [None]
 
