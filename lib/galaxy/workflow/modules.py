@@ -408,6 +408,9 @@ class WorkflowModule:
                             effective_input_collection_type = [input_dict.get("collection_type")]
                 type_list = []
                 if progress.subworkflow_structure:
+                    # If we have progress.subworkflow_structure were mapping a subworkflow invocation over a higher-dimension input
+                    # e.g an outer list:list over an inner list. Whatever we do, the inner workflow cannot reduce the outer list.
+                    # This is what we're setting up here.
                     type_list = progress.subworkflow_structure.collection_type_description.collection_type.split(":")
                     leaf_type = type_list.pop(0)
                     if type_list and type_list[-1] == effective_input_collection_type:
