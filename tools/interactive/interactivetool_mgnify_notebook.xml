@@ -13,8 +13,6 @@
         <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
-        <environment_variable name="DISABLE_AUTH">true</environment_variable>
-        <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
     <command><![CDATA[
         #import re
@@ -22,11 +20,6 @@
         mkdir -p ./jupyter/outputs/ &&
         mkdir -p ./jupyter/data &&
         mkdir -p ./jupyter/notebooks &&
-
-        #for $count, $file in enumerate($input):
-            #set $cleaned_name = str($count + 1) + '_' + re.sub('[^\w\-\.\s]', '_', str($file.element_identifier))
-            ln -sf '$file' './jupyter/data/${cleaned_name}.${file.ext}' &&
-        #end for
 
         ## change into the directory where the notebooks are located
         cd ./jupyter/ &&
@@ -40,7 +33,7 @@
             ## provide all rights to copied files
             jupyter trust ./home.ipynb &&
             jupyter trust ./notebooks/*/*.ipynb &&
-            jupyter lab --allow-root --no-browser --NotebookApp.token=''
+            jupyter lab --allow-root --no-browser --LabApp.token=''
         #else
             #set $noteboook_name = re.sub('[^\w\-\.\s]', '_', str($mode.ipynb.element_identifier))
             cp '$mode.ipynb' './${noteboook_name}.ipynb' &&
@@ -49,7 +42,7 @@
                 jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
                 #set $noteboook_name = 'ipython_galaxy_notebook'
             #else
-                jupyter lab --allow-root --no-browser --NotebookApp.token='' &&
+                jupyter lab --allow-root --no-browser --LabApp.token='' &&
             #end if
             cp './${noteboook_name}.ipynb' '$jupyter_notebook'
         #end if
@@ -88,7 +81,6 @@
                     help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
             </when>
         </conditional>
-        <!--<param name="input" multiple="true" type="data" optional="true" label="Include data into the environment"/>-->
     </inputs>
     <outputs>
         <data name="jupyter_notebook" format="ipynb" label="Executed Mgnify Notebook"></data>
@@ -102,6 +94,7 @@
         </test>
     </tests>
     <help><![CDATA[
+
 The notebooks in this Jupyter Lab environment allows to explore programmatic access to `MGnify <https://www.ebi.ac.uk/metagenomics/>`_'s datasets using Python or with R using the `MGnifyR <https://github.com/beadyallen/MGnifyR>`_ package.
 
 Why such notebooks?
@@ -118,5 +111,5 @@ The API can be explored interactively online, using the `API Browser <https://ww
 The `MGnify Notebook Server <http://notebooks.mgnify.org/>`_ and `MGnifyR package <https://github.com/beadyallen/MGnifyR>`_ are designed to bridge these gaps. Users can launch an online R and Python coding environment in their browser, without installing anything. The environment is hosted by EMBL's `Cell Biology and Biophysics Computational Support team <https://www.embl.org/research/units/cell-biology-biophysics/cbbcs/>`_, who support computational projects across EMBL. It already includes the main libraries needed for communicating with the MGnify API, analysing data, and making plots. It uses the popular `Jupyter Lab <https://jupyter.org/>`_ software, which means you can code inside `Notebooks <https://jupyter-notebook.readthedocs.io/en/latest/>`_: interactive code documents.
 
 There are example Notebooks written in both R and Python, so users can pick whichever they're more familiar with.
-]]></help>
+   ]]></help>
 </tool>
