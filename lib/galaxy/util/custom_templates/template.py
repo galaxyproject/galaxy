@@ -30,8 +30,18 @@ def _get_template_body(template: str) -> str:
 
 def _get_template_path(relpath: str, custom_templates_dir: str) -> str:
     """Return template file path."""
-    default_path = DEFAULT_TEMPLATES_DIR / relpath
+    default_path = _get_default_templates_dir() / relpath
     custom_path = os.path.join(custom_templates_dir, relpath)
     if os.path.exists(custom_path):
         return custom_path
     return default_path
+
+
+def _get_default_templates_dir() -> Path:
+    """Return path to default template dir.
+
+    Accounts for running in ./packages dir when running tests.
+    """
+    if DEFAULT_TEMPLATES_DIR.exists:
+        return DEFAULT_TEMPLATES_DIR
+    return ".." / DEFAULT_TEMPLATES_DIR
