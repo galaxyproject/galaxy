@@ -221,7 +221,7 @@ export default {
       try {
         await axios.get(`${this.root}api/users/${this.userId}/beacon`).then(
             response => {
-              this.enabled = response.data.enabled == true || response.data.enabled == "true" ;
+              this.enabled = response.data.enabled == true || response.data.enabled == "true";
             }
         );
       } catch (e) {
