@@ -1,4 +1,4 @@
-"""Render customizable templates e.g. emails with Jinja
+"""Render customizable templates e.g. emails with Jinja.
 
 Templates are preferentially read from the ``templates_dir`` directory.
 If the requested template path cannot be resolved with respect to this
@@ -12,6 +12,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 DEFAULT_TEMPLATES_DIR = Path("lib/galaxy/config/templates")
+PACKAGES_DEFAULT_TEMPLATES_DIR = Path('config/galaxy/config/templates')
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
@@ -42,6 +43,6 @@ def _get_default_templates_dir() -> Path:
 
     Accounts for running in ./packages dir when running tests.
     """
-    if DEFAULT_TEMPLATES_DIR.exists:
+    if DEFAULT_TEMPLATES_DIR.exists():
         return DEFAULT_TEMPLATES_DIR
-    return ".." / DEFAULT_TEMPLATES_DIR
+    return PACKAGES_DEFAULT_TEMPLATES_DIR
