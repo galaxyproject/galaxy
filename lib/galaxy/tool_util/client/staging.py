@@ -7,16 +7,31 @@ import abc
 import json
 import logging
 import os
+from typing import (
+    Any,
+    BinaryIO,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 import yaml
+from typing_extensions import Literal
 
 from galaxy.tool_util.cwl.util import (
     DirectoryUploadTarget,
     FileLiteralTarget,
     FileUploadTarget,
     galactic_job_json,
+    ObjectUploadTarget,
     path_or_uri_to_uri,
+    UploadTarget,
 )
+
+if TYPE_CHECKING:
+    from galaxy_test.base.api import ApiTestInteractor
 
 log = logging.getLogger(__name__)
 
@@ -36,20 +51,20 @@ class StagingInterface(metaclass=abc.ABCMeta):
     """
 
     @abc.abstractmethod
-    def _post(self, api_path, payload, files_attached=False):
+    def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         """Make a post to the Galaxy API along supplied path."""
 
-    def _attach_file(self, path):
+    def _attach_file(self, path: str) -> BinaryIO:
         return open(path, "rb")
 
-    def _tools_post(self, payload, files_attached=False):
-        tool_response = self._post("tools", payload, files_attached=files_attached)
+    def _tools_post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        tool_response = self._post("tools", payload)
         for job in tool_response.get("jobs", []):
             self._handle_job(job)
         return tool_response
 
-    def _fetch_post(self, payload, files_attached=False):
-        tool_response = self._post("tools/fetch", payload, files_attached=files_attached)
+    def _fetch_post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        tool_response = self._post("tools/fetch", payload)
         for job in tool_response.get("jobs", []):
             self._handle_job(job)
         return tool_response
@@ -60,24 +75,21 @@ class StagingInterface(metaclass=abc.ABCMeta):
 
     def stage(
         self,
-        tool_or_workflow,
-        history_id,
-        job=None,
-        job_path=None,
-        use_path_paste=LOAD_TOOLS_FROM_PATH,
-        to_posix_lines=True,
-        job_dir=".",
-    ):
-        files_attached = [False]
-
-        def upload_func_fetch(upload_target):
-            def _attach_file(upload_payload, uri, index=0):
+        tool_or_workflow: Literal["tool", "workflow"],
+        history_id: str,
+        job: Optional[Dict[str, Any]] = None,
+        job_path: Optional[str] = None,
+        use_path_paste: bool = LOAD_TOOLS_FROM_PATH,
+        to_posix_lines: bool = True,
+        job_dir: str = ".",
+    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+        def upload_func_fetch(upload_target: UploadTarget) -> Dict[str, Any]:
+            def _attach_file(upload_payload: Dict[str, Any], uri: str, index: int = 0) -> Dict[str, str]:
                 uri = path_or_uri_to_uri(uri)
                 is_path = uri.startswith("file://")
                 if not is_path or use_path_paste:
                     return {"src": "url", "url": uri}
                 else:
-                    files_attached[0] = True
                     path = uri[len("file://") :]
                     upload_payload["__files"][f"files_{index}|file_data"] = self._attach_file(path)
                     return {"src": "files"}
@@ -131,7 +143,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 tar_path = upload_target.tar_path
                 src = _attach_file(fetch_payload, tar_path)
                 fetch_payload["targets"][0]["elements_from"] = src
-            else:
+            elif isinstance(upload_target, ObjectUploadTarget):
                 content = json.dumps(upload_target.object)
                 fetch_payload = _fetch_payload(history_id, file_type="expression.json")
                 fetch_payload["targets"][0]["elements"][0].update(
@@ -141,18 +153,20 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     }
                 )
                 tags = upload_target.properties.get("tags")
-                fetch_payload["targets"][0]["elements"][0]["tags"] = tags
-            return self._fetch_post(fetch_payload, files_attached=files_attached[0])
+                if tags:
+                    fetch_payload["targets"][0]["elements"][0]["tags"] = tags
+            else:
+                raise ValueError(f"Unsupported type for upload_target: {type(upload_target)}")
+            return self._fetch_post(fetch_payload)
 
         # Save legacy upload_func to target older Galaxy servers
-        def upload_func(upload_target):
-            def _attach_file(upload_payload, uri, index=0):
+        def upload_func(upload_target: UploadTarget) -> Dict[str, Any]:
+            def _attach_file(upload_payload: Dict[str, Any], uri: str, index: int = 0) -> None:
                 uri = path_or_uri_to_uri(uri)
                 is_path = uri.startswith("file://")
                 if not is_path or use_path_paste:
                     upload_payload["inputs"]["files_%d|url_paste" % index] = uri
                 else:
-                    files_attached[0] = True
                     path = uri[len("file://") :]
                     upload_payload["__files"]["files_%d|file_data" % index] = self._attach_file(path)
 
@@ -187,7 +201,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                         _attach_file(upload_payload, composite_data, index=i)
 
                 self._log(f"upload_payload is {upload_payload}")
-                return self._tools_post(upload_payload, files_attached=files_attached[0])
+                return self._tools_post(upload_payload)
             elif isinstance(upload_target, FileLiteralTarget):
                 # For file literals - take them as is - never convert line endings.
                 payload = _upload_payload(history_id, file_type="auto", auto_decompress=False, to_posix_lines=False)
@@ -202,7 +216,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 )
                 upload_payload["inputs"]["files_0|auto_decompress"] = False
                 _attach_file(upload_payload, tar_path)
-                tar_upload_response = self._tools_post(upload_payload, files_attached=files_attached[0])
+                tar_upload_response = self._tools_post(upload_payload)
                 convert_payload = dict(
                     tool_id="CONVERTER_tar_to_directory",
                     tool_inputs={"input1": {"src": "hda", "id": tar_upload_response["outputs"][0]["id"]}},
@@ -211,13 +225,15 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 convert_response = self._tools_post(convert_payload)
                 assert "outputs" in convert_response, convert_response
                 return convert_response
-            else:
+            elif isinstance(upload_target, ObjectUploadTarget):
                 content = json.dumps(upload_target.object)
                 payload = _upload_payload(history_id, file_type="expression.json")
                 payload["files_0|url_paste"] = content
                 return self._tools_post(payload)
+            else:
+                raise ValueError(f"Unsupported type for upload_target: {type(upload_target)}")
 
-        def create_collection_func(element_identifiers, collection_type):
+        def create_collection_func(element_identifiers: List[Dict[str, Any]], collection_type: str) -> Dict[str, Any]:
             payload = {
                 "name": "dataset collection",
                 "instance_type": "history",
@@ -235,21 +251,19 @@ class StagingInterface(metaclass=abc.ABCMeta):
             job_dir = os.path.dirname(os.path.abspath(job_path))
         else:
             assert job is not None
-            assert job_dir is not None
 
         if self.use_fetch_api:
             upload = upload_func_fetch
         else:
             upload = upload_func
 
-        job_dict, datasets = galactic_job_json(
+        return galactic_job_json(
             job,
             job_dir,
             upload,
             create_collection_func,
             tool_or_workflow,
         )
-        return job_dict, datasets
 
     # extension point for planemo to override logging
     def _log(self, message):
@@ -261,11 +275,11 @@ class StagingInterface(metaclass=abc.ABCMeta):
 
 
 class InteractorStaging(StagingInterface):
-    def __init__(self, galaxy_interactor, use_fetch_api=DEFAULT_USE_FETCH_API):
+    def __init__(self, galaxy_interactor: "ApiTestInteractor", use_fetch_api: bool = DEFAULT_USE_FETCH_API) -> None:
         self.galaxy_interactor = galaxy_interactor
         self._use_fetch_api = use_fetch_api
 
-    def _post(self, api_path, payload, files_attached=False):
+    def _post(self, api_path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
         response = self.galaxy_interactor._post(api_path, payload, json=True)
         assert response.status_code == 200, response.text
         return response.json()
@@ -278,7 +292,7 @@ class InteractorStaging(StagingInterface):
         return self._use_fetch_api
 
 
-def _file_path_to_name(file_path):
+def _file_path_to_name(file_path: Optional[str]) -> str:
     if file_path is not None:
         name = os.path.basename(file_path)
     else:
@@ -286,12 +300,14 @@ def _file_path_to_name(file_path):
     return name
 
 
-def _upload_payload(history_id, tool_id=UPLOAD_TOOL_ID, file_type=DEFAULT_FILE_TYPE, dbkey=DEFAULT_DBKEY, **kwd):
-    """Adapted from bioblend tools client."""
-    payload = {}
+def _upload_payload(
+    history_id: str, file_type: str = DEFAULT_FILE_TYPE, dbkey: str = DEFAULT_DBKEY, **kwd
+) -> Dict[str, Any]:
+    """Adapted from BioBlend tools client."""
+    payload: Dict[str, Any] = {}
     payload["history_id"] = history_id
-    payload["tool_id"] = tool_id
-    tool_input = {}
+    payload["tool_id"] = UPLOAD_TOOL_ID
+    tool_input: Dict[str, Any] = {}
     tool_input["file_type"] = file_type
     tool_input["dbkey"] = dbkey
     if not kwd.get("to_posix_lines", True):

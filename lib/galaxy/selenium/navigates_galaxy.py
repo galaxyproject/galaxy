@@ -350,12 +350,12 @@ class NavigatesGalaxy(HasDriver):
             endpoint = f"histories/{history_id}?view={view}"
         return self.api_get(endpoint)
 
-    def current_history(self):
+    def current_history(self) -> Dict[str, Any]:
         full_url = self.build_url("history/current_history_json", for_selenium=False)
         response = requests.get(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         return response.json()
 
-    def current_history_id(self):
+    def current_history_id(self) -> str:
         return self.current_history()["id"]
 
     def latest_history_item(self):

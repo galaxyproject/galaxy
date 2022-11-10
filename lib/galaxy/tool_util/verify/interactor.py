@@ -24,6 +24,7 @@ from packaging.version import (
     parse as parse_version,
     Version,
 )
+from requests import Response
 from requests.cookies import RequestsCookieJar
 from typing_extensions import Protocol
 
@@ -118,7 +119,9 @@ def stage_data_in_history(
 
 
 class GalaxyInteractorApi:
+    # api_key and cookies can also be manually set by UsesApiTestCaseMixin._different_user()
     api_key: Optional[str]
+    cookies: Optional[RequestsCookieJar]
     keep_outputs_dir: Optional[str]
 
     def __init__(self, **kwds):
@@ -773,7 +776,9 @@ class GalaxyInteractorApi:
 
         return fetcher
 
-    def api_key_header(self, key, admin, anon, headers):
+    def api_key_header(
+        self, key: Optional[str], admin: bool, anon: bool, headers: Optional[Dict[str, Optional[str]]]
+    ) -> Dict[str, Optional[str]]:
         header = headers or {}
         if not anon:
             if not key:
@@ -781,7 +786,17 @@ class GalaxyInteractorApi:
             header["x-api-key"] = key
         return header
 
-    def _post(self, path, data=None, files=None, key=None, headers=None, admin=False, anon=False, json=False):
+    def _post(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        files: Optional[Dict[str, Any]] = None,
+        key: Optional[str] = None,
+        headers: Optional[Dict[str, Optional[str]]] = None,
+        admin: bool = False,
+        anon: bool = False,
+        json: bool = False,
+    ) -> Response:
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, files=files, as_json=json, headers=headers)
@@ -812,7 +827,7 @@ class GalaxyInteractorApi:
     def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
-        kwargs = {}
+        kwargs: Dict[str, Any] = {}
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for GET
@@ -827,12 +842,12 @@ class GalaxyInteractorApi:
 
     def _prepare_request_params(
         self,
-        data=None,
-        files=None,
+        data: Optional[Dict[str, Any]] = None,
+        files: Optional[Dict[str, Any]] = None,
         as_json: bool = False,
-        params: Optional[dict] = None,
-        headers: Optional[dict] = None,
-    ):
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, Optional[str]]] = None,
+    ) -> Dict[str, Any]:
         """Handle some Galaxy conventions and work around requests issues.
 
         This is admittedly kind of hacky, so the interface may change frequently - be
@@ -850,13 +865,13 @@ class GalaxyInteractorApi:
 
 
 def prepare_request_params(
-    data=None,
-    files=None,
+    data: Optional[Dict[str, Any]] = None,
+    files: Optional[Dict[str, Any]] = None,
     as_json: bool = False,
-    params: Optional[dict] = None,
-    headers: Optional[dict] = None,
+    params: Optional[Dict[str, Any]] = None,
+    headers: Optional[Dict[str, Optional[str]]] = None,
     cookies: Optional[RequestsCookieJar] = None,
-):
+) -> Dict[str, Any]:
     params = params or {}
     data = data or {}
 
@@ -864,13 +879,13 @@ def prepare_request_params(
     if files is None:
         # if not explicitly passed, check __files... convention used in tool testing
         # and API testing code
-        files = data.get("__files", None)
+        files = data.get("__files")
         if files is not None:
             del data["__files"]
 
     # files doesn't really work with json, so dump the parameters
     # and do a normal POST with request's data parameter.
-    if bool(files) and as_json:
+    if files and as_json:
         as_json = False
         new_items = {}
         for key, val in data.items():

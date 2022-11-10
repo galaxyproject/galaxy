@@ -231,7 +231,7 @@ class TestToolsUpload(ApiTestCase):
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
         assert tiff_metadata["file_ext"] == "tiff"
 
-    def test_newlines_stage_fetch(self, history_id):
+    def test_newlines_stage_fetch(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -240,28 +240,28 @@ class TestToolsUpload(ApiTestCase):
             }
         }
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline.
         assert content == "This is a line of text.\n"
 
-    def test_stage_object(self, history_id):
+    def test_stage_object(self, history_id: str) -> None:
         job = {"input1": "randomstr"}
         inputs, datasets = stage_inputs(
             self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False
         )
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert content.strip() == '"randomstr"'
 
-    def test_stage_object_fetch(self, history_id):
+    def test_stage_object_fetch(self, history_id: str) -> None:
         job = {"input1": "randomstr"}
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         assert content == '"randomstr"'
 
-    def test_newlines_stage_fetch_configured(self, history_id):
+    def test_newlines_stage_fetch_configured(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -273,7 +273,7 @@ class TestToolsUpload(ApiTestCase):
         inputs, datasets = stage_inputs(
             self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False
         )
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline, but we disabled with 'to_posix_lines=False' above.
         assert content == "This is a line of text."
@@ -415,7 +415,7 @@ class TestToolsUpload(ApiTestCase):
         assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
     @skip_without_datatype("velvet")
-    def test_composite_datatype_stage_fetch(self, history_id):
+    def test_composite_datatype_stage_fetch(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -427,11 +427,11 @@ class TestToolsUpload(ApiTestCase):
                 ],
             }
         }
-        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
-    def test_composite_datatype_pbed_stage_fetch(self, history_id):
+    def test_composite_datatype_pbed_stage_fetch(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -443,11 +443,11 @@ class TestToolsUpload(ApiTestCase):
                 ],
             }
         }
-        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
-    def test_composite_datatype_stage_upload1(self, history_id):
+    def test_composite_datatype_stage_upload1(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -459,9 +459,7 @@ class TestToolsUpload(ApiTestCase):
                 ],
             }
         }
-        inputs, datsets = stage_inputs(
-            self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False
-        )
+        stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
