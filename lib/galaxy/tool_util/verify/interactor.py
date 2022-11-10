@@ -1144,7 +1144,11 @@ def verify_tool(tool_id,
                 job_data["execution_problem"] = util.unicodify(tool_execution_exception)
                 dynamic_param_error = getattr(tool_execution_exception, "dynamic_param_error", False)
                 job_data["dynamic_param_error"] = dynamic_param_error
-                status = "error" if not skip_on_dynamic_param_errors or not dynamic_param_error else "skip"
+                if not expected_failure_occurred:
+                    if not skip_on_dynamic_param_errors or not dynamic_param_error:
+                        status = "error"
+                    else:
+                        status = "skip"
             if input_staging_exception:
                 job_data["execution_problem"] = f"Input staging problem: {util.unicodify(input_staging_exception)}"
                 status = "error"
