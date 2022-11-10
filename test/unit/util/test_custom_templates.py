@@ -2,7 +2,7 @@
 
 from galaxy.util.custom_templates import template
 
-TEMPLATE_RELPATH = 'mail/activation-email.html'
+TEMPLATE_RELPATH = "mail/activation-email.html"
 CONTEXT = {"name": "Jane Doe"}
 CUSTOM_TEMPLATE = """
 Here's my custom template. It starts with a comment section to let admins

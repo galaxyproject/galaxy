@@ -12,7 +12,7 @@ from pathlib import Path
 from jinja2 import Environment
 
 DEFAULT_TEMPLATES_DIR = Path("lib/galaxy/config/templates")
-PACKAGES_DEFAULT_TEMPLATES_DIR = Path('../config/galaxy/config/templates')
+PACKAGES_DEFAULT_TEMPLATES_DIR = Path("../config/galaxy/config/templates")
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
@@ -48,6 +48,6 @@ def _get_default_templates_dir() -> Path:
     if not PACKAGES_DEFAULT_TEMPLATES_DIR.exists():
         cwd = os.getcwd()
         raise FileNotFoundError(
-            f"Template directory {PACKAGES_DEFAULT_TEMPLATES_DIR} can not be"
-            f" located from PWD: {cwd}")
+            f"Template directory {PACKAGES_DEFAULT_TEMPLATES_DIR} can not be" f" located from PWD: {cwd}"
+        )
     return PACKAGES_DEFAULT_TEMPLATES_DIR
