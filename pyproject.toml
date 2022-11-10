@@ -45,7 +45,7 @@ Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/p
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
-cwltool = "==3.1.20211107152837"
+cwltool = "==3.1.20221109155812"
 dictobj = "*"
 dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
