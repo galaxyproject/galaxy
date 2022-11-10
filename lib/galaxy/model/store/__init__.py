@@ -107,13 +107,13 @@ from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisteTracker,
 )
+from .ro_crate_utils import WorkflowRunCrateProfileBuilder
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
     get_item_annotation_str,
 )
 from ... import model
-from .ro_crate_utils import InvocationCrateBuilder
 
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager
@@ -2396,8 +2396,12 @@ class WriteCrates:
         return len(self.included_invocations) == 1
 
     def _init_crate(self) -> ROCrate:
-        ro_crate = ROCrate()
+        is_invocation_export = self._is_single_invocation_export()
+        if is_invocation_export:
+            invocation_crate_builder = WorkflowRunCrateProfileBuilder(self)
+            return invocation_crate_builder.build_crate()
 
+        ro_crate = ROCrate()
         markdown_path = os.path.join(self.export_directory, "README.md")
         with open(markdown_path, "w") as f:
             f.write(self._generate_markdown_readme())
@@ -2429,7 +2433,7 @@ class WriteCrates:
                 )
 
         workflows_directory = self.workflows_directory
-        is_invocation_export = self._is_single_invocation_export()
+
         if os.path.exists(workflows_directory):
             for filename in os.listdir(workflows_directory):
                 is_computational_wf = not filename.endswith(".cwl")
@@ -2445,13 +2449,6 @@ class WriteCrates:
                     cls=workflow_cls,
                     lang=lang,
                 )
-
-                if is_main_entity:
-                    invocation = self.included_invocations[0]
-                    invocation_crate_builder = InvocationCrateBuilder(ro_crate, invocation)
-                    invocation_crate_builder.add_engine_run()
-                    invocation_crate_builder.add_actions()
-                    # invocation_crate_builder.add_param_connections()
 
         found_workflow_licenses = set()
         for workflow_invocation in self.included_invocations:
