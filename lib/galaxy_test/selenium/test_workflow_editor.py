@@ -102,10 +102,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
         # External (selenium-side) debounce hack for old backbone input
         # TODO: remove when form elements are all converted.
-        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter valu")
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("e")
-        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter value")
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])

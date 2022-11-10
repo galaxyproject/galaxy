@@ -31,6 +31,19 @@
                 :min="attrs.min"
                 :type="type"
                 :workflow-building-mode="workflowBuildingMode" />
+            <FormOptionalText
+                v-else-if="type === 'select' && attrs.is_workflow == true && attrs.optional"
+                :id="id"
+                v-model="currentValue"
+                :readonly="attrs.readonly"
+                :value="attrs.value"
+                :area="attrs.area"
+                :placeholder="attrs.placeholder"
+                :color="attrs.color"
+                :multiple="attrs.multiple"
+                :style="attrs.style"
+                :datalist="attrs.datalist"
+                :type="type" />
             <FormText
                 v-else-if="
                     type === 'text' ||
@@ -78,6 +91,7 @@ import FormColor from "./Elements/FormColor";
 import FormDirectory from "./Elements/FormDirectory";
 import FormNumber from "./Elements/FormNumber";
 import FormText from "./Elements/FormText";
+import FormOptionalText from "./Elements/FormOptionalText";
 
 export default {
     components: {
@@ -89,6 +103,7 @@ export default {
         FormColor,
         FormParameter,
         FormDirectory,
+        FormOptionalText,
     },
     props: {
         id: {
