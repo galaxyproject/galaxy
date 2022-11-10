@@ -383,6 +383,9 @@ class WorkflowModule:
         collections_to_match = matching.CollectionsToMatch()
         dataset_collection_type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
 
+        if progress.when:
+            collections_to_match.add("when_source", progress.when)
+
         for input_dict in all_inputs:
             name = input_dict["name"]
             data = progress.replacement_for_input(step, input_dict)
@@ -445,6 +448,17 @@ class WorkflowModule:
                 continue
 
         return collections_to_match
+
+    @staticmethod
+    def create_when_source_param():
+        return dict(
+            name="when_source",
+            label="when_source",
+            multiple=False,
+            input_type="parameter",
+            optional=False,
+            type="boolean",
+        )
 
 
 class SubWorkflowModule(WorkflowModule):
@@ -600,10 +614,18 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        collection_info = self.compute_collection_info(progress, step, self.get_all_inputs())
+        all_inputs = self.get_all_inputs()
+        if step.input_connections_by_name.get("when_source"):
+            param_dict = self.create_when_source_param()
+            all_inputs.append(param_dict)
+            # Maybe make this lazy with a callback ?
+            when = progress.replacement_for_input(step, param_dict)
+
+        collection_info = self.compute_collection_info(progress, step, all_inputs)
         structure = collection_info.structure if collection_info else None
+
         subworkflow_invoker = progress.subworkflow_invoker(
-            trans, step, use_cached_job=use_cached_job, subworkflow_structure=structure
+            trans, step, use_cached_job=use_cached_job, subworkflow_structure=structure, when=when
         )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
@@ -1641,18 +1663,6 @@ class ToolModule(WorkflowModule):
     def get_inputs(self):
         return self.tool.inputs if self.tool else {}
 
-    def get_conditional_param(self, inputs):
-        inputs.append(
-            dict(
-                name="when_source",
-                label="when_source",
-                multiple=False,
-                input_type="parameter",
-                optional=False,
-                type="boolean",
-            )
-        )
-
     def get_all_inputs(self, data_only=False, connectable_only=False):
         if data_only and connectable_only:
             raise Exception("Must specify at most one of data_only and connectable_only as True.")
@@ -1945,8 +1955,8 @@ class ToolModule(WorkflowModule):
             del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
 
         all_inputs = self.get_all_inputs()
-        if step.input_connections_by_name.get("when_source"):
-            self.get_conditional_param(all_inputs)
+        if progress.when is not None or step.input_connections_by_name.get("when_source"):
+            all_inputs.append(self.create_when_source_param())
             tool_inputs["when_source"] = ConditionalStepWhen(None, {"name": "when_source", "type": "boolean"})
         all_inputs_by_name = {}
         for input_dict in all_inputs:
@@ -1975,6 +1985,8 @@ class ToolModule(WorkflowModule):
                 replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
+                elif prefixed_name == "when_source" and progress.when is not None:
+                    replacement = progress.when
                 else:
                     replacement = progress.replacement_for_input(step, input_dict)
 
@@ -1991,7 +2003,9 @@ class ToolModule(WorkflowModule):
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 
-                    if isinstance(input, ConditionalStepWhen) and replacement is False:
+                    # bool cast should be fine, can only have true/false on ConditionalStepWhen
+                    # also terrible of course and it's not needed for API requests
+                    if isinstance(input, ConditionalStepWhen) and bool(replacement) is False:
                         raise SkipWorkflowStepEvaluation
 
                 return replacement

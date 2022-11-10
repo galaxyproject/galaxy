@@ -306,6 +306,7 @@ class WorkflowProgress:
         use_cached_job: bool = False,
         replacement_dict: Optional[Dict[str, str]] = None,
         subworkflow_structure=None,
+        when=None,
     ) -> None:
         self.outputs: Dict[int, Any] = {}
         self.module_injector = module_injector
@@ -318,6 +319,7 @@ class WorkflowProgress:
         self.use_cached_job = use_cached_job
         self.replacement_dict = replacement_dict or {}
         self.subworkflow_structure = subworkflow_structure
+        self.when = when
 
     @property
     def maximum_jobs_to_schedule_or_none(self) -> Optional[int]:
@@ -532,11 +534,16 @@ class WorkflowProgress:
         step: "WorkflowStep",
         use_cached_job: bool = False,
         subworkflow_structure=None,
+        when=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
         workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
         subworkflow_progress = self.subworkflow_progress(
-            subworkflow_invocation, step, workflow_run_config.param_map, subworkflow_structure=subworkflow_structure
+            subworkflow_invocation,
+            step,
+            workflow_run_config.param_map,
+            subworkflow_structure=subworkflow_structure,
+            when=when,
         )
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         return WorkflowInvoker(
@@ -552,6 +559,7 @@ class WorkflowProgress:
         step: "WorkflowStep",
         param_map: Dict,
         subworkflow_structure=None,
+        when=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
@@ -580,6 +588,7 @@ class WorkflowProgress:
             use_cached_job=self.use_cached_job,
             replacement_dict=self.replacement_dict,
             subworkflow_structure=subworkflow_structure,
+            when=when,
         )
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
