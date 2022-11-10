@@ -14,7 +14,7 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 warnings.filterwarnings("ignore", message=r"[\n.]DEPRECATION: Python 2", module="cwltool")
 
 try:
-    from cwltool import expression
+    from cwl_utils import expression
 except ImportError:
     expression = None  # type: ignore[assignment]
 
