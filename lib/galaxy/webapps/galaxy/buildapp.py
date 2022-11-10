@@ -1267,7 +1267,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # Merge the global and local configurations
     conf = global_conf.copy()
     conf.update(local_conf)
-    debug = asbool(conf.get("debug", False))
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
@@ -1325,20 +1324,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
 
         app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
-    # Various debug middleware that can only be turned on if the debug
-    # flag is set, either because they are insecure or greatly hurt
-    # performance
-    if debug:
-        # Middleware to check for WSGI compliance
-        if asbool(conf.get("use_lint", False)):
-            from paste import lint
-
-            app = wrap_if_allowed(app, stack, lint.make_middleware, name="paste.lint", args=(conf,))
-        # Middleware to run the python profiler on each request
-        if asbool(conf.get("use_profile", False)):
-            from paste.debug import profile
-
-            app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf,))
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)

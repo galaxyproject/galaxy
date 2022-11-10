@@ -144,15 +144,6 @@ tool_shed:
   # log your users out.
   #remote_user_logout_href: null
 
-  # Configuration for debugging middleware
-  #debug: false
-
-  # Check for WSGI compliance.
-  #use_lint: false
-
-  # Intercept print statements and show them on the returned page.
-  #use_printdebug: true
-
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
   # the Admin section of the server, and will have access to create
@@ -200,9 +191,6 @@ tool_shed:
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk  space rapidly!)
   #use_heartbeat: true
-
-  # Profiling middleware (cProfile based)
-  #use_profile: true
 
   # Enable creation of Galaxy flavor Docker Image
   #enable_galaxy_flavor_docker_image: false
