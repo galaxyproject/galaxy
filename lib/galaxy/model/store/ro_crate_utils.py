@@ -93,8 +93,8 @@ class WorkflowRunCrateProfileBuilder:
     def _add_actions(self, crate: ROCrate, file_entities: Dict[int, Any]):
 
         input_formal_params = []
-        for step in self.workflow.input_steps:
-            formal_param = self._add_formal_parameter(crate, step)
+        for output_step in self.workflow.input_steps:
+            formal_param = self._add_formal_parameter(crate, output_step)
             input_formal_params.append(formal_param)
 
         wf_input_values_ids = [{"@id": entity.id} for entity in input_formal_params]
@@ -102,34 +102,33 @@ class WorkflowRunCrateProfileBuilder:
 
         output_formal_params = []
         workflow_outputs = []
-        for output_step in self.workflow.workflow_outputs:
-            formal_param = self._add_formal_parameter(crate, step)
-            output_formal_params.append(formal_param)
-
-            output_obj = self.invocation.get_output_object(output_step.label)
-            output_file_entity = file_entities.get(output_obj.dataset.id)
-            if output_file_entity:
-                logger.debug(f"[FOUND] label: {output_step.label} -> obj.id: {output_obj.id}")
-                workflow_outputs.append(output_file_entity)
+        for output_step in self.invocation.steps:
+            for job in output_step.jobs:
+                for job_output in job.output_datasets:
+                    formal_param = self._add_formal_output_parameter(crate, output_step.workflow_step)
+                    output_formal_params.append(formal_param)
+                    dataset_id = job_output.dataset.dataset.id
+                    output_file_entity = file_entities.get(dataset_id)
+                    workflow_outputs.append(output_file_entity)
 
         wf_output_param_ids = [{"@id": entity.id} for entity in output_formal_params]
         crate.mainEntity["output"] = wf_output_param_ids
-        wf_output_ids = [{"@id": output.id} for output in workflow_outputs]
+        wf_output_ids = [{"@id": output.id} for output in workflow_outputs if output]
 
         input_values = []
-        for param in self.invocation.input_parameters:
-            input_param_value = crate.add(
-                ContextEntity(
-                    crate,
-                    properties={
-                        "@type": "PropertyValue",
-                        # "exampleOfWork": {"@id": "#verbose-param"},
-                        "name": param.name,
-                        "value": param.value,
-                    },
-                )
-            )
-            input_values.append(input_param_value)
+        # TODO: these are not the correct ones. We need to find the real runtime values
+        # for param in self.invocation.input_parameters:
+        #     input_param_value = crate.add(
+        #         ContextEntity(
+        #             crate,
+        #             properties={
+        #                 "@type": "PropertyValue",
+        #                 "name": param.name,
+        #                 "value": param.value,
+        #             },
+        #         )
+        #     )
+        #     input_values.append(input_param_value)
         wf_input_values_ids = [{"@id": entity.id} for entity in input_values]
 
         input_param_value = crate.add(
@@ -152,9 +151,23 @@ class WorkflowRunCrateProfileBuilder:
                 properties={
                     "@type": "FormalParameter",
                     "additionalType": self.input_type_to_param_type[step.input_type],
-                    "description": "TODO",  # ",".join(input_step.annotations),
+                    "description": step.annotations[0].annotation if step.annotations else "",
                     "name": step.label,
                     "valueRequired": not step.input_optional,
+                },
+            )
+        )
+
+    def _add_formal_output_parameter(self, crate: ROCrate, step: WorkflowStep):
+        # TODO: add more details for output formal definitions?
+        return crate.add(
+            ContextEntity(
+                crate,
+                properties={
+                    "@type": "FormalParameter",
+                    "additionalType": "File",  # TODO: always a dataset/File?
+                    "description": step.annotations[0].annotation if step.annotations else "",
+                    "name": step.label,
                 },
             )
         )
