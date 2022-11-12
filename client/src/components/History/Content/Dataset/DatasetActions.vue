@@ -64,6 +64,16 @@
                 <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
                     <span class="fa fa-question" />
                 </b-button>
+                <b-button
+                    v-if="isInteractive && isRunning"
+                    v-b-tooltip
+                    class="px-1"
+                    title="Open Interactive Tool"
+                    size="sm"
+                    variant="link"
+                    @click.stop="onInteractive">
+                    <span class="fa fa-external-link-alt" />
+                </b-button>
             </div>
         </div>
     </div>
@@ -74,6 +84,7 @@ import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath, prependPath } from "utils/redirect.js";
 import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
+import { getEntryPoint } from "./InteractiveToolEntry.js";
 
 export default {
     components: {
@@ -92,6 +103,9 @@ export default {
         },
         showError() {
             return this.item.state == "error";
+        },
+        isRunning(){
+            return this.item.state == "running";
         },
         showInfo() {
             return this.item.state != "noPermission";
@@ -120,6 +134,9 @@ export default {
         visualizeUrl() {
             return prependPath(this.itemUrls.visualize);
         },
+        isInteractive() {
+            return this.item.tool_type == "interactive";
+        },
     },
     methods: {
         onCopyLink() {
@@ -144,6 +161,9 @@ export default {
         },
         onHighlight() {
             this.$emit("toggleHighlights");
+        },
+        onInteractive(){
+            getEntryPoint(this.item.creating_job).then((data) => { window.open(data.data[0].target)})
         },
     },
 };

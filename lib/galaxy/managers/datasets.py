@@ -220,6 +220,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
                 "file_size",
                 "total_size",
                 "uuid",
+                "tool_type",
             ],
         )
         # could do visualizations and/or display_apps
@@ -584,6 +585,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             # derived (not mapped) attributes
             "data_type": lambda item, key, **context: f"{item.datatype.__class__.__module__}.{item.datatype.__class__.__name__}",
             "converted": self.serialize_converted_datasets,
+            "tool_type": self.serialize_tool_type,
             # TODO: metadata/extra files
         }
         self.serializers.update(serializers)
@@ -689,6 +691,13 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
             if not converted.deleted and converted.dataset:
                 id_map[converted.type] = self.serialize_id(converted.dataset, "id")
         return id_map
+
+    def serialize_tool_type(self, dataset, key, user=None, **context):
+        if dataset.creating_job:
+            tool = self.app.toolbox.get_tool(dataset.creating_job.tool_id, dataset.creating_job.tool_version)
+            if tool:
+                return tool.tool_type
+        return None
 
 
 class DatasetAssociationSerializer(_UnflattenedMetadataDatasetAssociationSerializer[T]):

@@ -347,6 +347,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "url",
                 "create_time",
                 "update_time",
+                "tool_type",
             ],
         )
         self.add_view(
@@ -387,6 +388,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "created_from_basename",
                 "hashes",
                 "sources",
+                "tool_type",
             ],
             include_keys_from="summary",
         )
