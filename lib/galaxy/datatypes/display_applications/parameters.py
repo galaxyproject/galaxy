@@ -100,6 +100,8 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         assert data, "Base dataset could not be found in values provided to DisplayApplicationDataParameter"
         if isinstance(data, DisplayDataValueWrapper):
             data = data.value
+        if data.state != data.states.OK:
+            return None
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
             assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
@@ -109,8 +111,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                 rval = data.get_converted_files_by_type(ext)
                 if rval:
                     return rval
-
-            direct_match, target_ext, converted_dataset = data.find_conversion_destination(self.formats)
+            direct_match, target_ext, _ = data.find_conversion_destination(self.formats)
             assert direct_match or target_ext is not None, f"No conversion path found for data param: {self.name}"
             return None
         return data
