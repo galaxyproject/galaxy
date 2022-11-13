@@ -1715,10 +1715,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_input.default_value_set = True
 
         if "when" in step_dict:
-            if isinstance(step_dict["when"], dict) and "source" in step_dict["when"]:
-                step.temp_input_connections["when_source"] = step_dict["when"]["source"]
-            else:
-                step.when_expression = step_dict["when"]
+            step.when_expression = step_dict["when"]
         if dry_run and step in trans.sa_session:
             trans.sa_session.expunge(step)
 

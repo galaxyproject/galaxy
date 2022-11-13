@@ -162,7 +162,7 @@ def execute(
             has_remaining_jobs = True
             break
         else:
-            skip = execution_slice.param_combination.get("when") is False
+            skip = execution_slice.param_combination.pop("__when_value__", None) is False
             execute_single_job(execution_slice, completed_jobs[i], skip=skip)
             history = execution_slice.history or history
             jobs_executed += 1

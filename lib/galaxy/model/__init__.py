@@ -7086,10 +7086,12 @@ class WorkflowStep(Base, RepresentById):
     def __init__(self):
         self.uuid = uuid4()
         self._input_connections_by_name = None
+        self._inputs_by_name = None
 
     @reconstructor
     def init_on_load(self):
         self._input_connections_by_name = None
+        self._inputs_by_name = None
 
     @property
     def tool_uuid(self):
@@ -7114,6 +7116,23 @@ class WorkflowStep(Base, RepresentById):
     def input_optional(self):
         tool_state = self.tool_inputs
         return tool_state.get("optional") or False
+
+    def setup_inputs_by_name(self):
+        # Ensure input_connections has already been set.
+
+        # Make connection information available on each step by input name.
+        inputs_by_name = {}
+        for step_input in self.inputs:
+            input_name = step_input.name
+            assert input_name not in inputs_by_name
+            inputs_by_name[input_name] = step_input
+        self._inputs_by_name = inputs_by_name
+
+    @property
+    def inputs_by_name(self):
+        if self._inputs_by_name is None:
+            self.setup_inputs_by_name()
+        return self._inputs_by_name
 
     def get_input(self, input_name):
         for step_input in self.inputs:

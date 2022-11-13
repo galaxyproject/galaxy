@@ -17,6 +17,7 @@ from typing import (
 )
 
 import packaging.version
+from cwl_utils.expression import do_eval
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -36,6 +37,7 @@ from galaxy.model import (
     WorkflowStepConnection,
 )
 from galaxy.model.dataset_collections import matching
+from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
@@ -106,6 +108,96 @@ NO_REPLACEMENT = NoReplacement()
 
 class ConditionalStepWhen(BooleanToolParameter):
     pass
+
+
+def evaluate_value_from_expressions(progress, step, execution_state, extra_step_state):
+    when_expression = step.when_expression
+    value_from_expressions = {}
+    replacements = {}
+
+    if execution_state:
+        for key in execution_state.inputs.keys():
+            step_input = step.inputs_by_name.get(key)
+            if step_input and step_input.value_from is not None:
+                value_from_expressions[key] = step_input.value_from
+
+    if not value_from_expressions and when_expression is None:
+        return replacements
+
+    hda_references = []
+
+    def to_cwl(value):
+        element_identifier = None
+        if isinstance(value, model.DatasetCollectionElement) and value.hda:
+            element_identifier = value.element_identifier
+            value = value.hda
+        if isinstance(value, model.HistoryDatasetAssociation):
+            # I think the following two checks are needed but they may
+            # not be needed.
+            if not value.dataset.in_ready_state():
+                why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
+                raise DelayedWorkflowEvaluation(why=why)
+            if not value.is_ok:
+                raise CancelWorkflowEvaluation()
+            if value.ext == "expression.json":
+                with open(value.file_name) as f:
+                    # OUR safe_loads won't work, will not load numbers, etc...
+                    return json.load(f)
+            else:
+                hda_references.append(value)
+                properties = {
+                    "class": "File",
+                    "location": "step_input://%d" % len(hda_references),
+                }
+                set_basename_and_derived_properties(
+                    properties, value.dataset.created_from_basename or element_identifier or value.name
+                )
+                return properties
+        elif hasattr(value, "collection"):
+            collection = value.collection
+            if collection.collection_type == "list":
+                return [to_cwl(dce) for dce in collection.dataset_elements]
+            else:
+                # Could be record or nested lists
+                rval = {}
+                for element in collection.elements:
+                    rval[element.element_identifier] = to_cwl(element.element_object)
+                return rval
+        else:
+            return value
+
+    def from_cwl(value):
+        # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
+        # file:// locations for instance.
+        if isinstance(value, dict) and "class" in value and "location" in value:
+            if value["class"] == "File":
+                # This is going to re-file -> HDA this each iteration I think, not a good
+                # implementation.
+                return progress.raw_to_galaxy(value)
+            assert value["location"].startswith("step_input://"), "Invalid location %s" % value
+            return hda_references[int(value["location"][len("step_input://") :]) - 1]
+        elif isinstance(value, dict):
+            raise NotImplementedError()
+        else:
+            return value
+
+    step_state = {}
+    for key, value in extra_step_state.items():
+        step_state[key] = to_cwl(value)
+    if execution_state:
+        for key, value in execution_state.inputs.items():
+            step_state[key] = to_cwl(value)
+
+    if when_expression is not None:
+        as_cwl_value = do_eval(
+            when_expression,
+            step_state,
+            [{"class": "InlineJavascriptRequirement"}],
+            None,
+            None,
+            {},
+        )
+        return from_cwl(as_cwl_value)
 
 
 class WorkflowModule:
@@ -365,11 +457,9 @@ class WorkflowModule:
         return []
 
     def compute_collection_info(self, progress, step, all_inputs):
-        """Use get_all_inputs (if implemented) to determine collection mapping for execution.
-
-        Hopefully this can be reused for Tool and Subworkflow modules.
         """
-
+        Use get_all_inputs (if implemented) to determine collection mapping for execution.
+        """
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
         # Have implicit collections...
         if collections_to_match.has_collections():
@@ -382,9 +472,6 @@ class WorkflowModule:
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
         dataset_collection_type_descriptions = self.trans.app.dataset_collection_manager.collection_type_descriptions
-
-        if progress.when:
-            collections_to_match.add("when_source", progress.when)
 
         for input_dict in all_inputs:
             name = input_dict["name"]
@@ -447,18 +534,21 @@ class WorkflowModule:
                 collections_to_match.add(name, data)
                 continue
 
-        return collections_to_match
+        known_input_names = {input_dict["name"] for input_dict in all_inputs}
 
-    @staticmethod
-    def create_when_source_param():
-        return dict(
-            name="when_source",
-            label="when_source",
-            multiple=False,
-            input_type="parameter",
-            optional=False,
-            type="boolean",
-        )
+        if step.when_expression:
+            for step_input in step.inputs:
+                step_input_name = step_input.name
+                input_in_execution_state = step_input_name not in known_input_names
+                if input_in_execution_state:
+                    maybe_collection = progress.replacement_for_connection(
+                        step.input_connections_by_name[step_input_name][0]
+                    )
+                    if hasattr(maybe_collection, "collection"):
+                        # Is that always right ?
+                        collections_to_match.add(step_input_name, maybe_collection)
+
+        return collections_to_match
 
 
 class SubWorkflowModule(WorkflowModule):
@@ -615,17 +705,38 @@ class SubWorkflowModule(WorkflowModule):
         """
         step = invocation_step.workflow_step
         all_inputs = self.get_all_inputs()
-        if step.input_connections_by_name.get("when_source"):
-            param_dict = self.create_when_source_param()
-            all_inputs.append(param_dict)
-            # Maybe make this lazy with a callback ?
-            when = progress.replacement_for_input(step, param_dict)
-
         collection_info = self.compute_collection_info(progress, step, all_inputs)
         structure = collection_info.structure if collection_info else None
 
+        if collection_info:
+            iteration_elements_iter = collection_info.slice_collections()
+        else:
+            iteration_elements_iter = [None]
+
+        when_values = []
+        if step.when_expression:
+            for iteration_elements in iteration_elements_iter:
+                extra_step_state = {}
+                for step_input in step.inputs:
+                    step_input_name = step_input.name
+                    if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                        value = iteration_elements[step_input_name]  # noqa: B023
+                    else:
+                        value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
+                    extra_step_state[step_input_name] = value
+
+                when_values.append(
+                    evaluate_value_from_expressions(
+                        progress, step, execution_state={}, extra_step_state=extra_step_state
+                    )
+                )
+
         subworkflow_invoker = progress.subworkflow_invoker(
-            trans, step, use_cached_job=use_cached_job, subworkflow_structure=structure, when=when
+            trans,
+            step,
+            use_cached_job=use_cached_job,
+            subworkflow_structure=structure,
+            when=when_values,
         )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
@@ -1955,9 +2066,7 @@ class ToolModule(WorkflowModule):
             del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
 
         all_inputs = self.get_all_inputs()
-        if progress.when is not None or step.input_connections_by_name.get("when_source"):
-            all_inputs.append(self.create_when_source_param())
-            tool_inputs["when_source"] = ConditionalStepWhen(None, {"name": "when_source", "type": "boolean"})
+
         all_inputs_by_name = {}
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
@@ -1970,7 +2079,7 @@ class ToolModule(WorkflowModule):
             iteration_elements_iter = [None]
 
         resource_parameters = invocation.resource_parameters
-        for iteration_elements in iteration_elements_iter:
+        for iteration_index, iteration_elements in enumerate(iteration_elements_iter):
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
             execution_state.inputs = make_dict_copy(execution_state.inputs)
@@ -1985,8 +2094,6 @@ class ToolModule(WorkflowModule):
                 replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
-                elif prefixed_name == "when_source" and progress.when is not None:
-                    replacement = progress.when
                 else:
                     replacement = progress.replacement_for_input(step, input_dict)
 
@@ -2019,13 +2126,53 @@ class ToolModule(WorkflowModule):
                     no_replacement_value=NO_REPLACEMENT,
                     replace_optional_connections=True,
                 )
-            except SkipWorkflowStepEvaluation:
-                skip_execution_state = execution_state.inputs
-                skip_execution_state["when"] = False
             except KeyError as k:
                 message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
                 message = message_template % (tool.name, unicodify(k))
                 raise exceptions.MessageException(message)
+
+            when_value = None
+            if progress.when and progress.when[iteration_index] is False:
+                when_value = False
+            elif step.when_expression:
+                extra_step_state = {}
+                for step_input in step.inputs:
+                    step_input_name = step_input.name
+                    input_in_execution_state = step_input_name not in execution_state.inputs
+                    if input_in_execution_state:
+                        if step_input_name in all_inputs_by_name:
+                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                                value = iteration_elements[step_input_name]  # noqa: B023
+                            else:
+                                value = progress.replacement_for_input(step, all_inputs_by_name[step_input_name])
+                            # TODO: only do this for values... is everything with a default
+                            # this way a field parameter? I guess not?
+                            extra_step_state[step_input_name] = value
+                        # Might be needed someday...
+                        # elif step_input.default_value_set:
+                        #    extra_step_state[step_input_name] = step_input.default_value
+                        else:
+                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                                value = iteration_elements[step_input_name]  # noqa: B023
+                            else:
+                                value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
+                            extra_step_state[step_input_name] = value
+
+                when_value = None
+                if progress.when is not None:
+                    if callable(progress.when):
+                        when_value = progress.when()
+                    else:
+                        when_value = progress.when
+
+                if when_value is not False:
+                    when_value = evaluate_value_from_expressions(
+                        progress, step, execution_state=execution_state, extra_step_state=extra_step_state
+                    )
+                    assert isinstance(when_value, bool)
+            if when_value is not None:
+                # Track this more formally ?
+                execution_state.inputs["__when_value__"] = when_value
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys
             if unmatched_input_connections:

@@ -1944,8 +1944,8 @@ steps:
     tool_id: cat1
     in:
       input1: some_file
-    when:
-      source: should_run
+      should_run: should_run
+    when: $(inputs.should_run)
 """,
                 test_data="""
 some_file:
@@ -1985,10 +1985,10 @@ steps:
             input1: some_file
     in:
       some_file: some_file
+      should_run: should_run
     outputs:
       inner_out: a_tool_step/out_file1
-    when:
-      source: should_run
+    when: $(inputs.should_run)
 outputs:
   outer_output:
     outputSource: subworkflow/inner_out
@@ -2033,11 +2033,11 @@ steps:
   tool_id: cat1
   in:
     input1: boolean_input_files
+    should_run: param_out/boolean_param
   out:
     out_file1:
       change_datatype: txt
-  when:
-    source: param_out/boolean_param
+  when: $(inputs.should_run)
 test_data:
   boolean_input_files:
     collection_type: list
@@ -2094,8 +2094,8 @@ steps:
           outputSource: consume_expression_parameter/out_file1
     in:
       boolean_input_file: boolean_input_files
-    when:
-      source: create_list_of_boolean/boolean_param
+      should_run: create_list_of_boolean/boolean_param
+    when: $(inputs.should_run)
 outputs:
   outer_output:
     outputSource: subworkflow/inner_output
@@ -2148,14 +2148,14 @@ steps:
   tool_id: cat1
   in:
     input1: boolean_input_files_1
-  when:
-    source: param_out_1/boolean_param
+    should_run: param_out_1/boolean_param
+  when: $(inputs.should_run)
 - label: consume_expression_parameter_2
   tool_id: cat1
   in:
     input1: boolean_input_files_2
-  when:
-    source: param_out_2/boolean_param
+    should_run: param_out_2/boolean_param
+  when: $(inputs.should_run)
 - label: pick_value
   tool_id: pick_value
   tool_state:
