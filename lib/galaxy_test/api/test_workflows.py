@@ -2120,6 +2120,70 @@ test_data:
             assert outer_hdca["job_state_summary"]["ok"] == 1
             assert outer_hdca["job_state_summary"]["skipped"] == 1
 
+    def test_run_workflow_conditional_subworkflow_step_map_over_expression_tool_with_extra_nesting(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files: collection
+steps:
+  create_list_of_boolean:
+    tool_id: param_value_from_file
+    in:
+       input1: boolean_input_files
+    state:
+      param_type: boolean
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        boolean_input_file: data
+      steps:
+        create_more_inputs:
+          tool_id: collection_creates_dynamic_nested
+        consume_expression_parameter:
+          tool_id: cat1
+          state:
+            input1:
+              $link: create_more_inputs/list_output
+            queries:
+              - input2:
+                $link: boolean_input_file
+          out:
+            out_file1:
+              change_datatype: txt
+      outputs:
+        inner_output:
+          outputSource: consume_expression_parameter/out_file1
+    in:
+      boolean_input_file: boolean_input_files
+      should_run: create_list_of_boolean/boolean_param
+    when: $(inputs.should_run)
+outputs:
+  outer_output:
+    outputSource: subworkflow/inner_output
+test_data:
+  boolean_input_files:
+    collection_type: list
+    elements:
+      - identifier: true
+        content: true
+      - identifier: false
+        content: false
+""",
+                history_id=history_id,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert "outer_output" in invocation_details["output_collections"]
+            outer_output = invocation_details["output_collections"]["outer_output"]
+            outer_hdca = self.dataset_populator.get_history_collection_details(
+                history_id, content_id=outer_output["id"]
+            )
+            assert outer_hdca["job_state_summary"]["all_jobs"] == 14  # true/false * (6 inner elements + 1)
+            assert outer_hdca["job_state_summary"]["ok"] == 7
+            assert outer_hdca["job_state_summary"]["skipped"] == 7
+
     def test_run_workflow_conditional_step_map_over_expression_tool_pick_value(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
