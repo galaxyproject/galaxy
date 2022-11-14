@@ -5,6 +5,11 @@ History
 
 .. to_doc
 
+22.1.5 (2022-11-14)
+-------------------
+
+* Set test status to success on expected failure
+
 22.1.4 (2022-10-28)
 -------------------
 
