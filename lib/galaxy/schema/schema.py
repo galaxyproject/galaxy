@@ -1439,11 +1439,12 @@ class ExportObjectRequestMetadata(Model):
     object_id: EncodedDatabaseIdField
     object_type: ExportObjectType
     user_id: Optional[EncodedDatabaseIdField]
-    payload: WriteStoreToPayload
+    payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload]
 
 
 class ExportObjectResultMetadata(Model):
-    import_uri: str
+    target_uri: Optional[str]
+    short_term_storage_request_id: Optional[str]
 
 
 class ExportObjectMetadata(Model):

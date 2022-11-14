@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -22,6 +22,7 @@ from galaxy.schema.schema import (
     ExportObjectType,
     HistoryContentType,
     WriteStoreToPayload,
+    ShortTermStoreExportPayload,
 )
 from galaxy.schema.tasks import (
     BcoGenerationTaskParametersMixin,
@@ -112,6 +113,7 @@ class ModelStoreManager:
                 short_term_storage_target.path
             ) as export_store:
                 export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
+            self.set_history_export_metadata(request)
 
     def prepare_history_content_download(self, request: GenerateHistoryContentDownload):
         model_store_format = request.model_store_format
@@ -207,16 +209,22 @@ class ModelStoreManager:
             )
             self.set_history_export_metadata(request)
 
-    def set_history_export_metadata(self, request: WriteHistoryTo):
+    def set_history_export_metadata(self, request: Union[WriteHistoryTo, GenerateHistoryDownload]):
         if request.export_association_id:
+            request_dict = request.dict()
+            request_payload = (
+                WriteStoreToPayload(**request_dict)
+                if isinstance(request, WriteHistoryTo)
+                else ShortTermStoreExportPayload(**request_dict)
+            )
             export_metadata = ExportObjectMetadata(
                 request_data=ExportObjectRequestMetadata(
                     object_id=request.history_id,
                     object_type=ExportObjectType.HISTORY,
                     user_id=request.user.user_id,
-                    payload=WriteStoreToPayload(**request.dict()),
+                    payload=request_payload,
                 ),
-                result_data=ExportObjectResultMetadata(import_uri=request.target_uri),
+                result_data=ExportObjectResultMetadata(**request_dict),
             )
             self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
 

@@ -338,14 +338,19 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             history.name,
             payload.model_store_format,
         )
+        export_association = self.history_export_manager.create_export_association(history.id)
         request = GenerateHistoryDownload(
             history_id=history.id,
             short_term_storage_request_id=short_term_storage_target.request_id,
             user=trans.async_request_user,
+            export_association_id=export_association.id,
             **payload.dict(),
         )
         result = prepare_history_download.delay(request=request)
-        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
+        task_summary = async_task_summary(result)
+        export_association.task_uuid = task_summary.id
+        trans.sa_session.flush()
+        return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=task_summary)
 
     def write_store(
         self, trans: ProvidesHistoryContext, history_id: DecodedDatabaseIdField, payload: WriteStoreToPayload
@@ -359,11 +364,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             **payload.dict(),
         )
         result = write_history_to.delay(request=request)
-        summary = async_task_summary(result)
-        # TODO: will this race?
-        export_association.task_uuid = summary.id
+        task_summary = async_task_summary(result)
+        export_association.task_uuid = task_summary.id
         trans.sa_session.flush()
-        return summary
+        return task_summary
 
     def update(
         self,

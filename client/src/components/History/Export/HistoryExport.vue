@@ -13,7 +13,7 @@ const service = new HistoryExportService();
 
 const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
 const { hasWritable: hasWritableFileSources } = useFileSources();
-const { isPreparing: isPreparingDownload, downloadHistory } = useShortTermStorage();
+const { isPreparing: isPreparingDownload, downloadHistory, downloadObjectByRequestId } = useShortTermStorage();
 
 const props = defineProps({
     historyId: {
@@ -70,11 +70,22 @@ async function exportToFileSource(exportDirectory, fileName) {
 }
 
 async function prepareDownload() {
-    downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: EXPORT_PARAMS });
-    // updateExports();
+    if (latestExportRecord.value?.isStsDownload && latestExportRecord.value.isUpToDate) {
+        console.debug("Existing STS download found");
+        downloadObjectByRequestId(latestExportRecord.value.stsDownloadId);
+        return;
+    }
+    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: EXPORT_PARAMS });
+    updateExports();
 }
 
-function reimportHistoryFromRecord(record) {
+function downloadFromRecord(record) {
+    if (record.isStsDownload) {
+        downloadObjectByRequestId(record.stsDownloadId);
+    }
+}
+
+function reimportFromRecord(record) {
     return service.reimportHistoryFromRecord(record);
 }
 </script>
@@ -111,7 +122,8 @@ function reimportHistoryFromRecord(record) {
             :record="latestExportRecord"
             object-type="history"
             class="mt-3"
-            @onReimport="reimportHistoryFromRecord" />
+            @onDownload="downloadFromRecord"
+            @onReimport="reimportFromRecord" />
         <b-alert v-else-if="errorMessage" variant="danger" class="mt-3" show>
             {{ errorMessage }}
         </b-alert>

@@ -21,11 +21,11 @@ export function useShortTermStorage() {
 
     const isPreparing = ref(false);
 
-    function downloadHistory(historyId, options = DEFAULT_OPTIONS) {
+    async function downloadHistory(historyId, options = DEFAULT_OPTIONS) {
         return prepareObjectDownload(historyId, "histories", options);
     }
 
-    function downloadWorkflowInvocation(invocationId, options = DEFAULT_OPTIONS) {
+    async function downloadWorkflowInvocation(invocationId, options = DEFAULT_OPTIONS) {
         return prepareObjectDownload(invocationId, "invocations", options);
     }
 
@@ -34,7 +34,7 @@ export function useShortTermStorage() {
         window.location.assign(url);
     }
 
-    function prepareObjectDownload(object_id, object_api, options = DEFAULT_OPTIONS) {
+    async function prepareObjectDownload(object_id, object_api, options = DEFAULT_OPTIONS) {
         const finalOptions = Object.assign(DEFAULT_OPTIONS, options);
         resetTimeout();
         isPreparing.value = true;
@@ -46,7 +46,9 @@ export function useShortTermStorage() {
             include_deleted: finalOptions.exportParams.includeDeleted,
             include_hidden: finalOptions.exportParams.includeHidden,
         };
-        axios.post(url, exportParams).then(handleInitialize).catch(handleError);
+
+        const response = await axios.post(url, exportParams).catch(handleError);
+        handleInitialize(response);
     }
 
     function handleInitialize(response) {

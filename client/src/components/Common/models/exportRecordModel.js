@@ -27,12 +27,23 @@ export class ExportRecordModel {
         return this._data.task_uuid;
     }
 
-    // import_uri doesn't work for downloads
     get canReimport() {
-        return this._data?.export_metadata?.result_data?.import_uri !== undefined;
+        return this.isReady && !!this._data?.export_metadata?.result_data?.target_uri;
     }
 
     get importLink() {
-        return this._data?.export_metadata?.result_data?.import_uri;
+        return this._data?.export_metadata?.result_data?.target_uri;
+    }
+
+    get isStsDownload() {
+        return !!this._data?.export_metadata?.result_data?.short_term_storage_request_id;
+    }
+
+    get stsDownloadId() {
+        return this._data?.export_metadata?.result_data?.short_term_storage_request_id;
+    }
+
+    get canDownload() {
+        return this.isReady && this.isStsDownload;
     }
 }

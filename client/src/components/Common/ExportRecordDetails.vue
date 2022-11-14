@@ -18,7 +18,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["onReimport"]);
+const emit = defineEmits(["onReimport", "onDownload"]);
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
 const elapsedTime = computed(() => formatDistanceToNow(parseISO(`${props.record.date}Z`), { addSuffix: true }));
@@ -38,6 +38,10 @@ const preparingMessage = computed(
 
 function reimportObject() {
     emit("onReimport", props.record);
+}
+
+function downloadObject() {
+    emit("onDownload", props.record);
 }
 </script>
 
@@ -60,6 +64,9 @@ function reimportObject() {
                 <p class="mt-3">
                     {{ readyMessage }}
                 </p>
+                <b-button v-if="props.record.canDownload" variant="primary" @click="downloadObject">
+                    Download
+                </b-button>
                 <b-button v-if="props.record.canReimport" variant="primary" @click="reimportObject">
                     Reimport
                 </b-button>
