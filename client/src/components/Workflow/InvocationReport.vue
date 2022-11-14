@@ -12,7 +12,7 @@
 <script>
 import { safePath } from "utils/redirect";
 import { urlData } from "utils/url";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import ConfigProvider from "components/providers/ConfigProvider";
 import Markdown from "components/Markdown/Markdown";
 import Vue from "vue";
