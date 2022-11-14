@@ -14,7 +14,7 @@ from logging import getLogger
 from typing import (
     Any,
     Dict,
-    Optional
+    Optional,
 )
 
 import requests
