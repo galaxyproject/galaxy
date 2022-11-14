@@ -316,6 +316,18 @@ class DatasetsApiTestCase(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_head(self):
+        history_id = self.history_id
+        hda1 = self.dataset_populator.new_dataset(history_id)
+        self.dataset_populator.wait_for_history(history_id)
+        display_response = self._head(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
+        self._assert_status_code_is(display_response, 200)
+        assert display_response.text == ""
+        display_response = self._head(
+            f"histories/{history_id}/contents/{hda1['id']}{hda1['id']}/display", {"raw": "True"}
+        )
+        self._assert_status_code_is(display_response, 400)
+
     def test_tag_change(self):
         hda_id = self.dataset_populator.new_dataset(self.history_id)["id"]
         payload = {

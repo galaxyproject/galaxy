@@ -150,6 +150,9 @@ class UsesApiTestCaseMixin:
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
 
+    def _head(self, *args, **kwds):
+        return self.galaxy_interactor.head(*args, **kwds)
+
     def _post(self, *args, **kwds):
         return self.galaxy_interactor.post(*args, **kwds)
 
@@ -200,6 +203,9 @@ class ApiTestInteractor(BaseInteractor):
     # testing.
     def get(self, *args, **kwds):
         return self._get(*args, **kwds)
+
+    def head(self, *args, **kwds):
+        return self._head(*args, **kwds)
 
     def post(self, *args, **kwds):
         return self._post(*args, **kwds)
