@@ -1,11 +1,11 @@
 <template>
     <div class="container">
         <div class="row justify-content-md-center">
-            <div class="col" :class="{ 'col-lg-6': !isAdmin }">
-                <b-alert :show="showRegistrationWarning" variant="info">
-                    {{ registration_warning_message }}
+            <div class="col col-lg-6">
+                <b-alert :show="!!registrationWarningMessage" variant="info">
+                    {{ registrationWarningMessage }}
                 </b-alert>
-                <b-alert :show="messageShow" :variant="messageVariant">
+                <b-alert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
                 </b-alert>
                 <b-form id="registration" @submit.prevent="submit()">
@@ -45,32 +45,32 @@
                                 </b-form-group>
                                 <b-form-group label="Public name">
                                     <b-form-input v-model="username" name="username" type="text" />
-                                    <b-form-text
-                                        >Your public name is an identifier that will be used to generate addresses for
+                                    <b-form-text>
+                                        Your public name is an identifier that will be used to generate addresses for
                                         information you share publicly. Public names must be at least three characters
                                         in length and contain only lower-case letters, numbers, dots, underscores, and
-                                        dashes ('.', '_', '-').</b-form-text
-                                    >
+                                        dashes ('.', '_', '-').
+                                    </b-form-text>
                                 </b-form-group>
                                 <b-form-group
-                                    v-if="mailing_join_addr && server_mail_configured"
+                                    v-if="mailingJoinAddr && serverMailConfigured"
                                     label="Subscribe to mailing list">
                                     <input v-model="subscribe" name="subscribe" type="checkbox" />
                                 </b-form-group>
                                 <b-button name="create" type="submit" :disabled="disableCreate">Create</b-button>
                             </b-card-body>
                         </b-collapse>
-                        <b-card-footer v-if="!isAdmin">
+                        <b-card-footer v-if="showLoginLink">
                             Already have an account?
-                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin"
-                                >Log in here.</a
-                            >
+                            <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="toggleLogin">
+                                Log in here.
+                            </a>
                         </b-card-footer>
                     </b-card>
                 </b-form>
             </div>
-            <div v-if="terms_url" class="col">
-                <b-embed type="iframe" :src="terms_url" aspect="1by1" />
+            <div v-if="termsUrl" class="col">
+                <b-embed type="iframe" :src="termsUrl" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -79,9 +79,8 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
+import { safePath } from "utils/redirect";
+import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 
 Vue.use(BootstrapVue);
 
@@ -90,29 +89,44 @@ export default {
         ExternalLogin,
     },
     props: {
-        registration_warning_message: {
-            type: String,
-            required: false,
-        },
-        server_mail_configured: {
+        enableOidc: {
             type: Boolean,
-            required: false,
+            default: false,
         },
-        mailing_join_addr: {
+        showLoginLink: {
+            type: Boolean,
+            default: false,
+        },
+        mailingJoinAddr: {
             type: String,
-            required: false,
+            default: null,
+        },
+        preferCustosLogin: {
+            type: Boolean,
+            default: false,
         },
         redirect: {
             type: String,
-            required: false,
+            default: null,
         },
-        terms_url: {
+        registrationWarningMessage: {
             type: String,
-            required: false,
+            default: null,
+        },
+        serverMailConfigured: {
+            type: Boolean,
+            default: false,
+        },
+        sessionCsrfToken: {
+            type: String,
+            required: true,
+        },
+        termsUrl: {
+            type: String,
+            default: null,
         },
     },
     data() {
-        const galaxy = getGalaxyInstance();
         return {
             disableCreate: false,
             email: null,
@@ -122,37 +136,33 @@ export default {
             subscribe: null,
             messageText: null,
             messageVariant: null,
-            session_csrf_token: galaxy.session_csrf_token,
-            isAdmin: galaxy.user.isAdmin(),
-            enable_oidc: galaxy.config.enable_oidc,
-            prefer_custos_login: galaxy.config.prefer_custos_login,
         };
     },
     computed: {
-        messageShow() {
-            return this.messageText != null;
-        },
-        showRegistrationWarning() {
-            return this.registration_warning_message != null;
-        },
         custosPreferred() {
-            return this.enable_oidc && this.prefer_custos_login;
+            return this.enableOidc && this.preferCustosLogin;
         },
     },
     methods: {
         toggleLogin() {
             this.$emit("toggle-login");
         },
-        submit(method) {
+        submit() {
             this.disableCreate = true;
-            const rootUrl = getAppRoot();
             axios
-                .post(`${rootUrl}user/create`, this.$data)
+                .post(safePath("/user/create"), {
+                    email: this.email,
+                    username: this.username,
+                    password: this.password,
+                    confirm: this.confirm,
+                    subscribe: this.subscribe,
+                    session_csrf_token: this.sessionCsrfToken,
+                })
                 .then((response) => {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    window.location = this.redirect || `${rootUrl}welcome/new`;
+                    window.location = this.redirect || safePath("/welcome/new");
                 })
                 .catch((error) => {
                     this.disableCreate = false;
