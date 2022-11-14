@@ -211,6 +211,16 @@ class FastAPIDatasets:
         tags=["histories"],
         response_class=StreamingResponse,
     )
+    @router.head(
+        "/api/datasets/{history_content_id}/display",
+        summary="Check if dataset content can be previewed or downloaded.",
+    )
+    @router.head(
+        "/api/histories/{history_id}/contents/{history_content_id}/display",
+        name="history_contents_display",
+        summary="Check if dataset content can be previewed or downloaded.",
+        tags=["histories"],
+    )
     def display(
         self,
         request: Request,

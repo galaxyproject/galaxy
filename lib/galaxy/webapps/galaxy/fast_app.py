@@ -121,11 +121,12 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             if not isinstance(response, FileResponse):
                 return response
             response = cast(FileResponse, response)
-            if nginx_x_accel_redirect_base:
-                full_path = Path(nginx_x_accel_redirect_base) / response.path
-                response.headers["X-Accel-Redirect"] = str(full_path)
-            if apache_xsendfile:
-                response.headers["X-Sendfile"] = str(response.path)
+            if not response.send_header_only:
+                if nginx_x_accel_redirect_base:
+                    full_path = Path(nginx_x_accel_redirect_base) / response.path
+                    response.headers["X-Accel-Redirect"] = str(full_path)
+                if apache_xsendfile:
+                    response.headers["X-Sendfile"] = str(response.path)
             return response
 
     if gx_app.config.get("allowed_origin_hostnames", None):

@@ -275,6 +275,7 @@ class BaseGalaxyAPIController(BaseAPIController):
 
 class RestVerb(str, Enum):
     get = "GET"
+    head = "HEAD"
     post = "POST"
     put = "PUT"
     patch = "PATCH"
@@ -356,6 +357,9 @@ class Router(InferringRouter):
 
     def options(self, *args, **kwd):
         return self.wrap_with_alias(RestVerb.options, *args, **kwd)
+
+    def head(self, *args, **kwd):
+        return self.wrap_with_alias(RestVerb.head, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
