@@ -27,7 +27,7 @@ if (!window.Galaxy) {
         },
     });
 } else {
-    console.error("Detected redefinition of window.Galaxy -- skipping, but this should be investigated.", serverPath());
+    console.debug("Skipping, window.Galaxy already exists.", serverPath());
 }
 
 export default window.Galaxy;

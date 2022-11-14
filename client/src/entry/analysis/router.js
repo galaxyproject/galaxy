@@ -37,7 +37,7 @@ import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
-import NewUserConfirmation from "components/login/NewUserConfirmation";
+import NewUserConfirmation from "components/Login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
@@ -255,6 +255,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "login/confirm",
                         component: NewUserConfirmation,
+                        props: {
+                            registrationWarningMessage: Galaxy.config.registration_warning_message,
+                            termsUrl: Galaxy.config.terms_url,
+                        },
                     },
                     {
                         path: "pages/create",

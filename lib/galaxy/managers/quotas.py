@@ -96,7 +96,7 @@ class QuotaManager:
             return None
         try:
             return util.size_to_bytes(amount)
-        except AssertionError:
+        except ValueError:
             return False
 
     def rename_quota(self, quota, params) -> str:
