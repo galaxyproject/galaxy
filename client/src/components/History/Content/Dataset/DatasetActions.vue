@@ -33,7 +33,7 @@
                     <span class="fa fa-info-circle" />
                 </b-button>
                 <b-button
-                    v-if="writable && showRerun"
+                    v-if="writable && showRerun && !isRunningInteractive"
                     class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
@@ -53,7 +53,7 @@
                     <span class="fa fa-bar-chart-o" />
                 </b-button>
                 <b-button
-                    v-if="showHighlight"
+                    v-if="showHighlight && !isRunningInteractive"
                     class="px-1"
                     title="Show Inputs for this item"
                     size="sm"
@@ -61,18 +61,18 @@
                     @click.stop="onHighlight">
                     <span class="fa fa-sitemap" />
                 </b-button>
-                <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
+                <b-button v-if="showRerun && !isRunningInteractive" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
                     <span class="fa fa-question" />
                 </b-button>
                 <b-button
-                    v-if="isInteractive && isRunning"
+                    v-if="isRunningInteractive"
                     v-b-tooltip
                     class="px-1"
                     title="Open Interactive Tool"
                     size="sm"
                     variant="link"
                     @click.stop="onInteractive">
-                    <span class="fa fa-external-link-alt" />
+                    interact <span class="fa fa-external-link-alt" />
                 </b-button>
             </div>
         </div>
@@ -136,6 +136,9 @@ export default {
         },
         isInteractive() {
             return this.item.tool_type == "interactive";
+        },
+        isRunningInteractive(){
+            return this.isInteractive && this.isRunning;
         },
     },
     methods: {
