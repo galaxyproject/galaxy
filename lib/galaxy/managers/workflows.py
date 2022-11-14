@@ -89,7 +89,10 @@ from galaxy.workflow.refactor.schema import (
 )
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
-from galaxy.workflow.steps import attach_ordered_steps
+from galaxy.workflow.steps import (
+    attach_ordered_steps,
+    has_cycles,
+)
 from .base import decode_id
 from .executables import artifact_class
 
@@ -854,7 +857,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if len(workflow.steps) == 0:
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
-        if attach_ordered_steps(workflow):
+        if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector(trans)
@@ -946,7 +949,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if len(workflow.steps) == 0:
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
-        if attach_ordered_steps(workflow):
+        if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
 
         # Ensure that the user has a history
