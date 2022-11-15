@@ -7,6 +7,7 @@ import sys
 import tempfile
 from typing import (
     Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 from urllib.parse import quote_plus
@@ -191,7 +192,13 @@ class Interval(Tabular):
         except Exception:
             return False
 
-    def get_estimated_display_viewport(self, dataset, chrom_col=None, start_col=None, end_col=None):
+    def get_estimated_display_viewport(
+        self,
+        dataset: "DatasetInstance",
+        chrom_col: Optional[int] = None,
+        start_col: Optional[int] = None,
+        end_col: Optional[int] = None,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
         max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
@@ -425,7 +432,13 @@ class BedGraph(Interval):
         """
         return open(dataset.file_name, "rb")
 
-    def get_estimated_display_viewport(self, dataset, chrom_col=0, start_col=1, end_col=2):
+    def get_estimated_display_viewport(
+        self,
+        dataset: "DatasetInstance",
+        chrom_col: Optional[int] = 0,
+        start_col: Optional[int] = 1,
+        end_col: Optional[int] = 2,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Set viewport based on dataset's first 100 lines.
         """
@@ -857,7 +870,9 @@ class Gff(Tabular, _RemoteCallMixin):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def get_estimated_display_viewport(self, dataset):
+    def get_estimated_display_viewport(
+        self, dataset: "DatasetInstance"
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
         formats.  This function should correctly handle both...
@@ -1271,7 +1286,9 @@ class Wiggle(Tabular, _RemoteCallMixin):
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
         self.add_display_app("gbrowse", "display in Gbrowse", "as_gbrowse_display_file", "gbrowse_links")
 
-    def get_estimated_display_viewport(self, dataset):
+    def get_estimated_display_viewport(
+        self, dataset: "DatasetInstance"
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
         max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
@@ -1463,7 +1480,13 @@ class CustomTrack(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=["track", "#"])
 
-    def get_estimated_display_viewport(self, dataset, chrom_col=None, start_col=None, end_col=None):
+    def get_estimated_display_viewport(
+        self,
+        dataset: "DatasetInstance",
+        chrom_col: Optional[int] = None,
+        start_col: Optional[int] = None,
+        end_col: Optional[int] = None,
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Return a chrom, start, stop tuple for viewing a file."""
         # FIXME: only BED and WIG custom tracks are currently supported
         # As per previously existing behavior, viewport will only be over the first intervals
