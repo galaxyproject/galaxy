@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 from json import dumps
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -335,7 +336,7 @@ class Tabular(TabularData):
 
     file_ext = "tabular"
 
-    def get_column_names(self, first_line=None):
+    def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return None
 
     def set_meta(
@@ -517,7 +518,7 @@ class SraManifest(Tabular):
         super().set_meta(dataset, **kwds)
         dataset.metadata.comment_lines = 1
 
-    def get_column_names(self, first_line):
+    def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
 

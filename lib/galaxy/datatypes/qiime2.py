@@ -3,7 +3,11 @@ import html
 import io
 import uuid as _uuid
 import zipfile
-from typing import TYPE_CHECKING
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 import yaml
 
@@ -104,9 +108,7 @@ class QIIME2Metadata(Tabular):
     _TYPES_DIRECTIVE = "#q2:types"
     _search_lines = 2
 
-    def get_column_names(self, first_line=None):
-        if first_line is None:
-            return None
+    def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
     def set_meta(self, dataset, **kwargs):
