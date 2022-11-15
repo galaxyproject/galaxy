@@ -47,7 +47,7 @@ def _get_range_header(range_header: str, file_size: int) -> typing.Tuple[int, in
         )
 
     try:
-        h = range_header.replace("bytes=", "").split("-")
+        h = range_header.replace("bytes=", "").rsplit("-", 1)
         start = int(h[0]) if h[0] != "" else 0
         end = int(h[1]) if h[1] != "" else file_size - 1
     except ValueError:
@@ -115,7 +115,7 @@ class GalaxyFileResponse(FileResponse):
                     http_range = value.decode("latin-1")
                     start, end = _get_range_header(http_range, stat_result.st_size)
                     self.headers["content-length"] = str(end - start + 1)
-                    self.headers["content_range"] = f"bytes {start}-{end}/{stat_result.st_size}"
+                    self.headers["content-range"] = f"bytes {start}-{end}/{stat_result.st_size}"
                     self.status_code = status.HTTP_206_PARTIAL_CONTENT
                     break
 
