@@ -47,6 +47,7 @@ from galaxy.model.orm.util import (
     add_object_to_session,
     get_object_session,
 )
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
@@ -96,6 +97,7 @@ class StoreAppProtocol(Protocol):
     datatypes_registry: Registry
     object_store: ObjectStore
     security: IdEncodingHelper
+    tag_handler: GalaxyTagHandler
     model: GalaxyModelMapping
     file_sources: ConfiguredFileSources
 
@@ -2255,6 +2257,7 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
+        tag_handler = app.tag_handler.create_tag_handler_session()
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
@@ -2273,7 +2276,7 @@ def source_to_import_store(
             )
         elif os.path.isdir(target_path):
             model_import_store = get_import_model_store_for_directory(
-                target_path, import_options=import_options, app=app, user=galaxy_user
+                target_path, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
             )
         else:
             model_store_format = model_store_format or "tgz"
@@ -2285,7 +2288,7 @@ def source_to_import_store(
                     if delete:
                         os.remove(target_path)
                 model_import_store = get_import_model_store_for_directory(
-                    target_dir, import_options=import_options, app=app, user=galaxy_user
+                    target_dir, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
                 )
             elif model_store_format in ["bag.gz", "bag.tar", "bag.zip"]:
                 model_import_store = BagArchiveImportModelStore(
