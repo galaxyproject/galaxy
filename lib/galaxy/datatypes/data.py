@@ -903,7 +903,7 @@ class Data(metaclass=DataMeta):
                 mime = DEFAULT_MIME_TYPE
         headers["content-type"] = mime
 
-    def handle_dataset_as_image(self, hda) -> str:
+    def handle_dataset_as_image(self, hda: "DatasetInstance") -> str:
         raise Exception("Unimplemented Method")
 
     def __getstate__(self):

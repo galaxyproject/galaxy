@@ -4,6 +4,7 @@ Image classes
 import base64
 import json
 import logging
+from typing import TYPE_CHECKING
 
 import mrcfile
 import numpy as np
@@ -23,6 +24,9 @@ from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
 from . import data
 from .xml import GenericXml
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +64,7 @@ class Image(data.Data):
         """Determine if the file is in this format"""
         return check_image_type(filename, self.image_formats)
 
-    def handle_dataset_as_image(self, hda):
+    def handle_dataset_as_image(self, hda: "DatasetInstance") -> str:
         dataset = hda.dataset
         name = hda.name or ""
         with open(dataset.file_name, "rb") as f:
