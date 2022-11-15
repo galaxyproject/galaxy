@@ -12,6 +12,10 @@ import shutil
 import subprocess
 import tempfile
 from json import dumps
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import pysam
 from markupsafe import escape
@@ -41,6 +45,9 @@ from galaxy.util.markdown import (
     pre_formatted_contents,
 )
 from . import dataproviders
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +114,7 @@ class TabularData(data.Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
@@ -1541,7 +1548,7 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
