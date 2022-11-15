@@ -74,8 +74,12 @@ class TestImportExportHistoryViaTasksIntegration(
         assert imported_history["name"] == history_name
         history_contents = self.dataset_populator.get_history_contents(imported_history_id)
         assert len(history_contents) == 2
+        # Only deleted datasets should appear as "discarded"
         for dataset in history_contents:
-            assert dataset["state"] == "ok"
+            if dataset["deleted"] is True:
+                assert dataset["state"] == "discarded"
+            else:
+                assert dataset["state"] == "ok"
 
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):
