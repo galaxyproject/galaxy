@@ -79,6 +79,7 @@ from galaxy.schema.bco.util import (
     get_contributors,
     write_to_file,
 )
+from galaxy.schema.schema import ModelStoreFormat
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -2648,7 +2649,7 @@ def source_to_import_store(
     app: StoreAppProtocol,
     galaxy_user: Optional[model.User],
     import_options: Optional[ImportOptions],
-    model_store_format: Optional[str] = None,
+    model_store_format: Optional[ModelStoreFormat] = None,
 ) -> ModelImportStore:
     if isinstance(source, dict):
         if model_store_format is not None:
@@ -2686,8 +2687,8 @@ def source_to_import_store(
                 target_path, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
             )
         else:
-            model_store_format = model_store_format or "tgz"
-            if model_store_format in ["tar.gz", "tgz", "tar"]:
+            model_store_format = model_store_format or ModelStoreFormat.TGZ
+            if ModelStoreFormat.is_compressed(model_store_format):
                 try:
                     temp_dir = mkdtemp()
                     target_dir = CompressedFile(target_path).extract(temp_dir)
@@ -2697,7 +2698,7 @@ def source_to_import_store(
                 model_import_store = get_import_model_store_for_directory(
                     target_dir, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
                 )
-            elif model_store_format in ["bag.gz", "bag.tar", "bag.zip"]:
+            elif ModelStoreFormat.is_bag(model_store_format):
                 model_import_store = BagArchiveImportModelStore(
                     target_path, import_options=import_options, app=app, user=galaxy_user
                 )
