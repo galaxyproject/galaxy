@@ -329,11 +329,11 @@ class DatasetsApiTestCase(ApiTestCase):
     def test_byte_range_support(self):
         history_id = self.history_id
         hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
-        display_response = self._head(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
-        self._assert_status_code_is(display_response, 200)
-        assert display_response.headers["content-length"] == "12"
-        assert display_response.text == ""
-        assert display_response.headers["accept-ranges"] == "bytes"
+        head_response = self._head(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
+        self._assert_status_code_is(head_response, 200)
+        assert head_response.headers["content-length"] == "12"
+        assert head_response.text == ""
+        assert head_response.headers["accept-ranges"] == "bytes"
         valid_headers = {"range": "bytes=0-0"}
         display_response = self._get(
             f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"}, headers=valid_headers
