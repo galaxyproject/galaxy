@@ -1541,29 +1541,35 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset, chunk):
-        ck_index = int(chunk)
-        f = open(dataset.file_name)
-        f.seek(ck_index * trans.app.config.display_chunk_size)
-        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
-        if f.tell() != 0:
-            cursor = f.read(1)
-            while cursor and cursor != "\n":
+    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+        with compression_utils.get_fileobj(dataset.file_name) as f:
+            f.seek(offset)
+            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
+            if ck_data and ck_data[-1] != "\n":
                 cursor = f.read(1)
-        ck_data = f.read(trans.app.config.display_chunk_size)
-        cursor = f.read(1)
-        while cursor and ck_data[-1] != "\n":
-            ck_data += cursor
-            cursor = f.read(1)
+                while cursor and cursor != "\n":
+                    ck_data += cursor
+                    cursor = f.read(1)
+            last_read = f.tell()
 
-        # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
-        # By converting these spaces back to tabs, chucks can still be interpreted by tab delimited file parsers
-        ck_data_header, ck_data_body = ck_data.split("\n", 1)
-        ck_data_header = re.sub("^([0-9]+)[ ]+", r"\1\t", ck_data_header)
-        ck_data_body = re.sub("\n[ \t]+", "\n", ck_data_body)
-        ck_data_body = re.sub("[ ]+", "\t", ck_data_body)
+        try:
+            # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
+            # By converting these spaces back to tabs, chunks can still be interpreted by tab delimited file parsers
+            ck_data_header, ck_data_body = ck_data.split("\n", 1)
+            ck_data_header = re.sub("^([0-9]+)[ ]+", r"\1\t", ck_data_header)
+            ck_data_body = re.sub("\n[ \t]+", "\n", ck_data_body)
+            ck_data_body = re.sub("[ ]+", "\t", ck_data_body)
+            ck_data = f"{ck_data_header}\n{ck_data_body}"
+        except ValueError:
+            pass  # 1 or 0 lines left
 
-        return dumps({"ck_data": util.unicodify(f"{ck_data_header}\n{ck_data_body}"), "ck_index": ck_index + 1})
+        return dumps(
+            {
+                "ck_data": util.unicodify(ck_data),
+                "offset": last_read,
+                "data_line_offset": self.data_line_offset,
+            }
+        )
 
 
 @build_sniff_from_prefix
