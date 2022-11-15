@@ -14,7 +14,9 @@ import tempfile
 import zipfile
 from json import dumps
 from typing import (
+    Any,
     Iterable,
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -307,7 +309,7 @@ class DynamicCompressedArchive(CompressedArchive):
     compressed_format: str
     uncompressed_datatype_instance: Data
 
-    def matches_any(self, target_datatypes) -> bool:
+    def matches_any(self, target_datatypes: List[Any]) -> bool:
         """Treat two aspects of compressed datatypes separately."""
         compressed_target_datatypes = []
         uncompressed_target_datatypes = []
