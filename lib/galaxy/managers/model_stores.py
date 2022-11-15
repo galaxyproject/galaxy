@@ -168,6 +168,7 @@ class ModelStoreManager:
             self._app,
             galaxy_user,
             import_options,
+            model_store_format=request.model_store_format,
         )
         new_history = history is None and not request.for_library
         if new_history:

@@ -278,6 +278,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             user=trans.async_request_user,
             source_uri=source_uri,
             for_library=False,
+            model_store_format=payload.model_store_format,
         )
         result = import_model_store.delay(request=request)
         return async_task_summary(result)
