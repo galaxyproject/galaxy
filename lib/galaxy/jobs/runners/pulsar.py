@@ -485,15 +485,17 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_working_directory = remote_job_config["working_directory"]
             remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
             remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
+            pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
             remote_command_params = dict(
                 working_directory=remote_job_config["metadata_directory"],
                 script_directory=remote_job_directory,
                 metadata_kwds=metadata_kwds,
                 dependency_resolution=dependency_resolution,
+                pulsar_version=pulsar_version,
             )
-            # TODO: Following directories work for Pulsar, always worked for Pulsar - but should be
-            # calculated at some other level.
-            job_wrapper.disable_commands_in_new_shell()
+            rewrite_paths = not PulsarJobRunner.__rewrite_parameters(client)
+            if pulsar_version < packaging.version.parse("0.14.999") and rewrite_paths:
+                job_wrapper.disable_commands_in_new_shell()
             container = None
             if remote_container is None:
                 container = self._find_container(
@@ -795,10 +797,15 @@ class PulsarJobRunner(AsynchronousJobRunner):
         return client_outputs
 
     @staticmethod
+    def pulsar_version(remote_job_config):
+        pulsar_version = packaging.version.parse(remote_job_config.get("pulsar_version", "0.6.0"))
+        return pulsar_version
+
+    @staticmethod
     def check_job_config(remote_job_config, check_features=None):
         check_features = check_features or {}
         # 0.6.0 was newest Pulsar version that did not report it's version.
-        pulsar_version = packaging.version.parse(remote_job_config.get("pulsar_version", "0.6.0"))
+        pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
         needed_version = packaging.version.parse("0.0.0")
         log.info(f"pulsar_version is {pulsar_version}")
         for feature, needed in list(check_features.items()) + [("_default_", True)]:

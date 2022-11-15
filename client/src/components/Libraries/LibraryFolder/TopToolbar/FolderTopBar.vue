@@ -125,7 +125,7 @@ import { initTopBarIcons } from "components/Libraries/icons";
 import mod_import_dataset from "./import-to-history/import-dataset";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_add_datasets from "./add-datasets";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";

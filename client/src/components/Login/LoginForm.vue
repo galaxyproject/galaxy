@@ -3,10 +3,10 @@
         <div class="row justify-content-md-center">
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
-                    <b-alert :show="messageShow" :variant="messageVariant">
+                    <b-alert :show="!!messageText" :variant="messageVariant">
                         {{ messageText }}
                     </b-alert>
-                    <b-form id="login" @submit.prevent="submitGalaxyLogin()">
+                    <b-form id="login" @submit.prevent="submitLogin()">
                         <b-card no-body header="Welcome to Galaxy, please log in">
                             <b-card-body>
                                 <div>
@@ -18,14 +18,14 @@
                                         <b-form-input v-model="password" name="password" type="password" />
                                         <b-form-text>
                                             Forgot password?
-                                            <a href="javascript:void(0)" role="button" @click="reset">
+                                            <a href="javascript:void(0)" role="button" @click.prevent="resetLogin">
                                                 Click here to reset your password.
                                             </a>
                                         </b-form-text>
                                     </b-form-group>
                                     <b-button name="login" type="submit">Login</b-button>
                                 </div>
-                                <div v-if="enable_oidc">
+                                <div v-if="enableOidc">
                                     <!-- OIDC login-->
                                     <external-login :login_page="true" />
                                 </div>
@@ -62,9 +62,12 @@
                 </div>
             </template>
             <template v-else>
-                <new-user-confirmation :redirect="redirect" @setRedirect="setRedirect" />
+                <new-user-confirmation
+                    :registration-warning-message="registrationWarningMessage"
+                    :terms-url="termsUrl"
+                    @setRedirect="setRedirect" />
             </template>
-            <div v-if="show_welcome_with_login" class="col">
+            <div v-if="showWelcomeWithLogin" class="col">
                 <b-embed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
             </div>
         </div>
@@ -76,8 +79,7 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { safePath } from "utils/redirect";
-import { getGalaxyInstance } from "app";
-import NewUserConfirmation from "components/login/NewUserConfirmation";
+import NewUserConfirmation from "./NewUserConfirmation";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 
 Vue.use(BootstrapVue);
@@ -88,51 +90,73 @@ export default {
         NewUserConfirmation,
     },
     props: {
-        show_welcome_with_login: {
+        allowUserCreation: {
             type: Boolean,
-            required: false,
+            default: false,
         },
-        welcome_url: {
+        enableOidc: {
+            type: Boolean,
+            default: false,
+        },
+        redirect: {
             type: String,
-            required: false,
+            default: null,
+        },
+        registrationWarningMessage: {
+            type: String,
+            default: null,
+        },
+        sessionCsrfToken: {
+            type: String,
+            required: true,
+        },
+        showWelcomeWithLogin: {
+            type: Boolean,
+            default: false,
+        },
+        termsUrl: {
+            type: String,
+            default: null,
+        },
+        welcomeUrl: {
+            type: String,
+            default: null,
         },
     },
     data() {
-        const galaxy = getGalaxyInstance();
         return {
             login: null,
             password: null,
             url: null,
             messageText: null,
             messageVariant: null,
-            allowUserCreation: galaxy.config.allow_user_creation,
-            redirect: galaxy.params.redirect,
-            session_csrf_token: galaxy.session_csrf_token,
-            enable_oidc: galaxy.config.enable_oidc,
         };
     },
     computed: {
-        messageShow() {
-            return this.messageText != null;
-        },
         confirmURL() {
             var urlParams = new URLSearchParams(window.location.search);
             return urlParams.has("confirm") && urlParams.get("confirm") == "true";
         },
         welcomeUrlWithRoot() {
-            return safePath(this.welcome_url);
+            return safePath(this.welcomeUrl);
         },
     },
     methods: {
         toggleLogin() {
             this.$emit("toggle-login");
         },
-        submitGalaxyLogin(method) {
+        submitLogin() {
+            let redirect = this.redirect;
             if (localStorage.getItem("redirect_url")) {
-                this.redirect = localStorage.getItem("redirect_url");
+                redirect = localStorage.getItem("redirect_url");
             }
             axios
-                .post(safePath(`/user/login`), this.$data)
+                .post(safePath("/user/login"), {
+                    login: this.login,
+                    password: this.password,
+                    redirect: redirect,
+                    session_csrf_token: this.sessionCsrfToken,
+                })
                 .then(({ data }) => {
                     if (data.message && data.status) {
                         alert(data.message);
@@ -154,10 +178,9 @@ export default {
         setRedirect(url) {
             localStorage.setItem("redirect_url", url);
         },
-        reset(ev) {
-            ev.preventDefault();
+        resetLogin() {
             axios
-                .post(safePath(`/user/reset_password`), { email: this.login })
+                .post(safePath("/user/reset_password"), { email: this.login })
                 .then((response) => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;

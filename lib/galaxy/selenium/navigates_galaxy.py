@@ -350,12 +350,12 @@ class NavigatesGalaxy(HasDriver):
             endpoint = f"histories/{history_id}?view={view}"
         return self.api_get(endpoint)
 
-    def current_history(self):
+    def current_history(self) -> Dict[str, Any]:
         full_url = self.build_url("history/current_history_json", for_selenium=False)
         response = requests.get(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         return response.json()
 
-    def current_history_id(self):
+    def current_history_id(self) -> str:
         return self.current_history()["id"]
 
     def latest_history_item(self):
@@ -1934,7 +1934,15 @@ class NavigatesGalaxy(HasDriver):
             # Wait for select2 options to load and then click to add this one.
             self.send_enter(text_element)
         else:
-            select_elem = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")[0]
+            candidate_elements = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")
+            # try to find exact match
+            for elem in candidate_elements:
+                if elem.text == value:
+                    select_elem = elem
+                    break
+            else:
+                # Pick first match. We're replacing select2 anyway ...
+                select_elem = elem
             action_chains = self.action_chains()
             action_chains.move_to_element(select_elem).click().perform()
         self.wait_for_selector_absent_or_hidden("#select2-drop")

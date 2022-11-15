@@ -202,6 +202,15 @@ galaxy:
   # if running Galaxy from source or `<config_dir>/data` otherwise.
   #data_dir: null
 
+  # The directory containing custom templates for Galaxy, such as
+  # HTML/text email templates. Defaults to 'templates'. Default
+  # templates can be found in the Galaxy root under config/templates.
+  # These can be copied to <templates_dir> if you wish to customize
+  # them.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #templates_dir: templates
+
   # Top level cache directory. Any other cache directories
   # (tool_cache_data_dir, template_cache_path, etc.) should be
   # subdirectories.

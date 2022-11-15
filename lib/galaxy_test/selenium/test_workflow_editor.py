@@ -1,5 +1,6 @@
 import json
 
+import pytest
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -618,6 +619,7 @@ steps:
         self.workflow_editor_connect("nested_workflow#workflow_output", "metadata_bam#input_bam")
         self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
 
+    @pytest.mark.xfail
     @selenium_test
     def test_edit_subworkflow(self):
         self.open_in_workflow_editor(

@@ -139,7 +139,7 @@ import { Services } from "components/Libraries/LibraryFolder/services";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 import download from "components/Libraries/LibraryFolder/TopToolbar/download";
 import CopyToClipboard from "components/CopyToClipboard";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
 import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";

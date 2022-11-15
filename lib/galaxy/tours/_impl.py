@@ -141,19 +141,17 @@ class ToursRegistryImpl:
         tour_id = get_tour_id_from_path(tour_path)
         try:
             tour = load_tour_from_path(tour_path)
-            self.tours[tour_id] = tour
-            log.info(f"Loaded tour '{tour_id}'")
         except OSError:
             log.exception(f"Tour '{tour_id}' could not be loaded, error reading file.")
         except yaml.error.YAMLError:
-            log.exception(
-                "Tour '%s' could not be loaded, error within file." " Please check your yaml syntax." % tour_id
-            )
+            log.exception(f"Tour '{tour_id}' could not be loaded, error within file. Please check your YAML syntax.")
         except TypeError:
             log.exception(
-                "Tour '%s' could not be loaded, error within file."
-                " Possibly spacing related. Please check your yaml syntax." % tour_id
+                f"Tour '{tour_id}' could not be loaded, error within file."
+                " Possibly spacing related. Please check your YAML syntax."
             )
+        self.tours[tour_id] = tour
+        log.info(f"Loaded tour '{tour_id}'")
 
     def _get_path_from_tour_id(self, tour_id):
         for tour_dir in self.tour_directories:

@@ -7431,7 +7431,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship("WorkflowInvocationStep", back_populates="workflow_invocation")
+    steps = relationship(
+        "WorkflowInvocationStep",
+        back_populates="workflow_invocation",
+        order_by=lambda: WorkflowInvocationStep.order_index,
+    )
     workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
@@ -7908,6 +7912,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         ),
         back_populates="workflow_invocation_step",
         viewonly=True,
+    )
+    order_index = column_property(
+        select([WorkflowStep.order_index]).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
 
     subworkflow_invocation_id: column_property

@@ -1,6 +1,6 @@
 <script setup>
 import TrsTool from "./TrsTool";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { Services } from "../services";
 import { getGalaxyInstance } from "app";
 import { safePath } from "utils/redirect";

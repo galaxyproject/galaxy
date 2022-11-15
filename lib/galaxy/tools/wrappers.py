@@ -337,7 +337,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
     def __init__(
         self,
-        dataset: Optional[DatasetInstance],
+        dataset: Optional[Union[DatasetInstance, DatasetCollectionElement]],
         datatypes_registry: Optional["Registry"] = None,
         tool: Optional["Tool"] = None,
         name: Optional[str] = None,
@@ -347,6 +347,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         formats: Optional[List[str]] = None,
     ) -> None:
         if not dataset:
+            dataset_instance: Optional[DatasetInstance] = None
             ext = "data"
             if tool is not None and name is not None:
                 try:
@@ -368,34 +369,41 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             # Tool wrappers should not normally be accessing .dataset directly,
             # so we will wrap it and keep the original around for file paths
             # Should we name this .value to maintain consistency with most other ToolParameterValueWrapper?
+            if isinstance(dataset, DatasetCollectionElement):
+                identifier = dataset.element_identifier
+                dataset_instance = dataset.hda
+            else:
+                dataset_instance = dataset
+            assert dataset_instance
             if formats:
-                direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(formats)
+                direct_match, target_ext, converted_dataset = dataset_instance.find_conversion_destination(formats)
                 if not direct_match and target_ext and converted_dataset:
-                    dataset = converted_dataset
-            self.unsanitized: DatasetInstance = dataset
-            self.dataset = wrap_with_safe_string(dataset, no_wrap_classes=ToolParameterValueWrapper)
-            assert dataset
-            self.metadata = self.MetadataWrapper(dataset, compute_environment)
-            if isinstance(dataset, HasTags):
-                self.groups = {tag.user_value.lower() for tag in dataset.tags if tag.user_tname == "group"}
+                    dataset_instance = converted_dataset
+            self.unsanitized: DatasetInstance = dataset_instance
+            self.dataset = wrap_with_safe_string(dataset_instance, no_wrap_classes=ToolParameterValueWrapper)
+            self.metadata = self.MetadataWrapper(dataset_instance, compute_environment)
+            if isinstance(dataset_instance, HasTags):
+                self.groups = {tag.user_value.lower() for tag in dataset_instance.tags if tag.user_tname == "group"}
             else:
                 # May be a 'FakeDatasetAssociation'
                 self.groups = set()
         self.compute_environment = compute_environment
         # TODO: lazy initialize this...
         self.__io_type = io_type
-        if self.__io_type == "input":
-            path_rewrite = compute_environment and dataset and compute_environment.input_path_rewrite(dataset)
-            if path_rewrite:
-                self.false_path = path_rewrite
+        self.false_path: Optional[str] = None
+        if dataset_instance:
+            if self.__io_type == "input":
+                path_rewrite = (
+                    compute_environment
+                    and dataset_instance
+                    and compute_environment.input_path_rewrite(dataset_instance)
+                )
+                if path_rewrite:
+                    self.false_path = path_rewrite
             else:
-                self.false_path = None
-        else:
-            path_rewrite = compute_environment and compute_environment.output_path_rewrite(dataset)
-            if path_rewrite:
-                self.false_path = path_rewrite
-            else:
-                self.false_path = None
+                path_rewrite = compute_environment and compute_environment.output_path_rewrite(dataset_instance)
+                if path_rewrite:
+                    self.false_path = path_rewrite
         self.datatypes_registry = datatypes_registry
         self._element_identifier = identifier
 
@@ -513,7 +521,9 @@ class HasDatasets:
     def __iter__(self) -> Iterator[Any]:
         pass
 
-    def _dataset_wrapper(self, dataset: DatasetInstance, **kwargs: Any) -> DatasetFilenameWrapper:
+    def _dataset_wrapper(
+        self, dataset: Union[DatasetInstance, DatasetCollectionElement], **kwargs: Any
+    ) -> DatasetFilenameWrapper:
         return DatasetFilenameWrapper(dataset, **kwargs)
 
     def paths_as_file(self, sep: str = "\n") -> str:
@@ -578,6 +588,8 @@ class DatasetListWrapper(List[DatasetFilenameWrapper], ToolParameterValueWrapper
             if dataset_instance_source is None:
                 dataset_instances.append(dataset_instance_source)
             elif getattr(dataset_instance_source, "history_content_type", None) == "dataset":
+                dataset_instances.append(dataset_instance_source)
+            elif getattr(dataset_instance_source, "hda", None):
                 dataset_instances.append(dataset_instance_source)
             elif hasattr(dataset_instance_source, "child_collection"):
                 dataset_instances.extend(dataset_instance_source.child_collection.dataset_elements)
