@@ -150,7 +150,6 @@ class ModelStoreManager:
 
     def import_model_store(self, request: ImportModelStoreTaskRequest):
         import_options = ImportOptions(
-            discarded_data=ImportDiscardedDataType.FORCE,
             allow_library_creation=request.for_library,
         )
         history_id = request.history_id
