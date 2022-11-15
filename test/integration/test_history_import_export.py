@@ -1,4 +1,5 @@
 import tarfile
+from uuid import uuid4
 
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -12,6 +13,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
 )
+from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
@@ -29,9 +31,16 @@ class TestImportExportHistoryOutputsToWorkingDirIntegration(ImportExportTests, I
         self._set_up_populators()
 
 
-class TestImportExportHistoryViaTasksIntegration(ImportExportTests, IntegrationTestCase, UsesCeleryTasks):
+class TestImportExportHistoryViaTasksIntegration(
+    ImportExportTests, IntegrationTestCase, UsesCeleryTasks, PosixFileSourceSetup
+):
     task_based = True
     framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
+        UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
     def setUp(self):
         super().setUp()
@@ -47,6 +56,26 @@ class TestImportExportHistoryViaTasksIntegration(ImportExportTests, IntegrationT
             async_history_name,
             "task based import history",
         )
+
+    def test_import_model_store_from_file_source_async_with_format(self):
+        history_name = f"for_export_format_async_{uuid4()}"
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+        model_store_format = "rocrate.zip"
+        target_uri = f"gxfiles://posix_test/history.{model_store_format}"
+
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
+        self.dataset_populator.import_history_from_uri_async(target_uri, model_store_format)
+
+        last_history = self._get("histories?limit=1").json()
+        assert len(last_history) == 1
+        imported_history = last_history[0]
+        imported_history_id = imported_history["id"]
+        assert imported_history_id != history_id
+        assert imported_history["name"] == history_name
+        history_contents = self.dataset_populator.get_history_contents(imported_history_id)
+        assert len(history_contents) == 2
+        for dataset in history_contents:
+            assert dataset["state"] == "ok"
 
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):
