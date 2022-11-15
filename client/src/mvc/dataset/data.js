@@ -8,6 +8,10 @@ import _l from "utils/localization";
 import mod_icon_btn from "mvc/ui/icon-button";
 import { getGalaxyInstance } from "app";
 
+//temporary
+import { appendVueComponent } from "utils/mountVueComponent";
+import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
+
 /**
  * Dataset metedata.
  */
@@ -639,4 +643,9 @@ export var createTabularDatasetChunkedView = (options) => {
     }
 
     return view;
+};
+
+export const createNewTabularDatasetChunkedView = (options) => {
+    // We'll always have a parent_elt in options, so create a div and insert it into that.
+    return appendVueComponent(options.parent_elt, TabularChunkedView, {options});
 };
