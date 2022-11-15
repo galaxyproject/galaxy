@@ -113,9 +113,9 @@ export default {
                 if (this.value == null) {
                     return;
                 } else if (this.value !== "") {
-                    if (this.multiple) {
+                    if (this.multiple && this.display != "checkboxes") {
                         return this.selectValueMultiple(this.value);
-                    } else if (this.display == "checkboxes") {
+                    } else if (this.multiple && this.display == "checkboxes") {
                         return this.selectValueCheckboxes(this.value);
                     } else if (this.display == "radio") {
                         return this.selectValueSingle(this.value);
@@ -167,7 +167,9 @@ export default {
         },
         selectDefaultLabelValue() {
             // Try to find a value labeled default in the options
-            return this.formattedOptions.filter((option) => option.default);
+            let formattedOption = [this.formattedOptions.find(option => option.default)];
+            let selectedOption = (formattedOption[0]) ?? this.formattedOptions[0];
+            return selectedOption;
         },
         selectFirstValue() {
             return this.formattedOptions[0];
@@ -179,6 +181,9 @@ export default {
             // A string is returned if single, but an array if zero or multiple
             return !Array.isArray(val) ? [val] : val;
         },
+        hasArrayData(data) {
+            return Array.isArray(data) && data.length > 0;
+        }
     },
 };
 </script>
