@@ -194,17 +194,16 @@ class TabularData(data.Text):
             markdown += indicate_data_truncated()
         return pre_formatted_contents(markdown)
 
-    def make_html_table(self, dataset, **kwargs):
+    def make_html_table(self, dataset: "DatasetInstance", **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
         try:
+            out = ['<table cellspacing="0" cellpadding="3">']
             out.append(self.make_html_peek_header(dataset, **kwargs))
             out.append(self.make_html_peek_rows(dataset, **kwargs))
             out.append("</table>")
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek: {util.unicodify(exc)}"
-        return out
+            return f"Can't create peek: {util.unicodify(exc)}"
 
     def make_html_peek_header(
         self,
@@ -1154,12 +1153,13 @@ class Eland(Tabular):
             "FILT",
         ]
 
-    def make_html_table(self, dataset, skipchars=None, peek=None):
+    def make_html_table(
+        self, dataset: "DatasetInstance", skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
+    ) -> str:
         """Create HTML table, used for displaying peek"""
-        if skipchars is None:
-            skipchars = []
-        out = ['<table cellspacing="0" cellpadding="3">']
+        skipchars = skipchars or []
         try:
+            out = ['<table cellspacing="0" cellpadding="3">']
             # Generate column header
             out.append("<tr>")
             for i, name in enumerate(self.column_names):
@@ -1171,10 +1171,9 @@ class Eland(Tabular):
                 out.append("</tr>")
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
             out.append("</table>")
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek {exc}"
-        return out
+            return f"Can't create peek {exc}"
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """

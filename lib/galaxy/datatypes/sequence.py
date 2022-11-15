@@ -11,6 +11,7 @@ import string
 import subprocess
 from itertools import islice
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
 )
@@ -1043,11 +1044,11 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset, skipchars=None):
+    def make_html_table(self, dataset: "DatasetInstance", skipchars: Optional[List] = None) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
-        out = ['<table cellspacing="0" cellpadding="3">']
         try:
+            out = ['<table cellspacing="0" cellpadding="3">']
             out.append("<tr><th>Species:&nbsp;")
             for species in dataset.metadata.species:
                 out.append(f"{species}&nbsp;")
@@ -1062,10 +1063,9 @@ class Maf(Alignment):
                     continue
                 out.append(f"<tr><td>{escape(line)}</td></tr>")
             out.append("</table>")
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek {exc}"
-        return out
+            return f"Can't create peek {exc}"
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """

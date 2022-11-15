@@ -137,17 +137,16 @@ class GenomeGraphs(Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def make_html_table(self, dataset):
+    def make_html_table(self, dataset: "DatasetInstance", **kwargs) -> str:
         """
         Create HTML table, used for displaying peek
         """
-        out = ['<table cellspacing="0" cellpadding="3">']
         try:
+            out = ['<table cellspacing="0" cellpadding="3">']
             with open(dataset.file_name) as f:
                 d = f.readlines()[:5]
             if len(d) == 0:
-                out = f"Cannot find anything to parse in {dataset.name}"
-                return out
+                return f"Cannot find anything to parse in {dataset.name}"
             hasheader = 0
             try:
                 [f"{x:f}" for x in d[0][1:]]  # first is name - see if starts all numerics
@@ -165,10 +164,9 @@ class GenomeGraphs(Tabular):
                 out.append("".join(f"<td>{x}</td>" for x in row.split()))
                 out.append("</tr>")
             out.append("</table>")
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek {exc}"
-        return out
+            return f"Can't create peek {exc}"
 
     def validate(self, dataset, **kwd):
         """
@@ -885,14 +883,12 @@ class RexpBase(Html):
             dataset.blurb = "R loadable BioC expression object for the Rexpression Galaxy toolkit"
         return True
 
-    def make_html_table(self, pp="nothing supplied from peek\n"):
+    def make_html_table(self, pp: str = "nothing supplied from peek\n") -> str:
         """
         Create HTML table, used for displaying peek
         """
-        out = [
-            '<table cellspacing="0" cellpadding="3">',
-        ]
         try:
+            out = ['<table cellspacing="0" cellpadding="3">']
             # Generate column header
             p = pp.split("\n")
             for i, row in enumerate(p):
@@ -907,10 +903,9 @@ class RexpBase(Html):
                     orow.append("</tr>")
                 out.append("".join(orow))
             out.append("</table>")
-            out = "\n".join(out)
+            return "\n".join(out)
         except Exception as exc:
-            out = f"Can't create html table {unicodify(exc)}"
-        return out
+            return f"Can't create html table {unicodify(exc)}"
 
     def display_peek(self, dataset: "DatasetInstance") -> str:
         """
