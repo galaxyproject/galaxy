@@ -2,7 +2,7 @@ import zipfile
 from io import BytesIO
 from typing import List
 
-from galaxy.tool_util.unittest_utils import skip_if_github_down
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,

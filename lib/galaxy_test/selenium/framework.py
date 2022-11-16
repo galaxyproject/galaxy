@@ -31,13 +31,13 @@ from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
 )
-from galaxy.tool_util.unittest_utils import skip_if_github_down
 from galaxy.tool_util.verify.interactor import prepare_request_params
 from galaxy.util import (
     asbool,
     classproperty,
     DEFAULT_SOCKET_TIMEOUT,
 )
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import populators
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,

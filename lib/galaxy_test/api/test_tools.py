@@ -15,8 +15,8 @@ from requests import (
     put,
 )
 
-from galaxy.tool_util.unittest_utils import skip_if_github_down
 from galaxy.util import galaxy_root_path
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.api_asserts import (
     assert_has_keys,

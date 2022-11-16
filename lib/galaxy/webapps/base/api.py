@@ -11,10 +11,6 @@ from fastapi import (
 )
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from starlette.middleware.base import (
-    BaseHTTPMiddleware,
-    RequestResponseEndpoint,
-)
 from starlette.responses import (
     FileResponse,
     Response,
@@ -154,21 +150,6 @@ class GalaxyFileResponse(FileResponse):
                     )
         if self.background is not None:
             await self.background()
-
-
-# Copied from https://stackoverflow.com/questions/71222144/runtimeerror-no-response-returned-in-fastapi-when-refresh-request/72677699#72677699
-class SuppressNoResponseReturnedMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
-        try:
-            return await call_next(request)
-        except RuntimeError as exc:
-            if str(exc) == "No response returned." and await request.is_disconnected():
-                return Response(status_code=status.HTTP_204_NO_CONTENT)
-            raise
-
-
-def add_empty_response_middleware(app: FastAPI) -> None:
-    app.add_middleware(SuppressNoResponseReturnedMiddleware)
 
 
 def add_exception_handler(app: FastAPI) -> None:
