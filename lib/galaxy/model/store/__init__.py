@@ -626,9 +626,14 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         else:
                             # Need a user to run library jobs to generate metadata...
                             pass
-                        self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                            dataset_instance, history, **regenerate_kwds
-                        )
+                        if self.app.datatypes_registry.set_external_metadata_tool:
+                            self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                                dataset_instance, history, **regenerate_kwds
+                            )
+                        else:
+                            # Try to set metadata directly. TODO: check efficiency of this?
+                            if dataset_instance.has_metadata_files:
+                                dataset_instance.datatype.set_meta(dataset_instance)
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
