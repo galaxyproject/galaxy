@@ -1,0 +1,66 @@
+<tool id="output_filter_select" name="output_filter_select" version="1.0.0">
+    <description>test for output filtering with selects</description>
+    <command><![CDATA[
+#if "A" in str($sel).split(",")
+    echo 'test' > A &&
+#end if
+#if "AA" in str($sel).split(",")
+    echo 'test' > AA &&
+#end if
+echo $sel 
+    ]]></command>
+    <inputs>
+        <param name="sel" type="select" multiple="true">
+            <option value="A">A</option>
+            <option value="AA">AA</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="A" format="txt" from_work_dir="A">
+            <filter>"A" in sel</filter>
+        </data>
+        <data name="AA" format="txt" from_work_dir="AA">
+            <filter>"AA" in sel</filter>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="sel" value="A" />
+            <output name="A">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <assert_stdout>
+                <has_line line="A"/>
+            </assert_stdout>
+        </test>
+        <test expect_num_outputs="1">
+            <param name="sel" value="AA" />
+            <output name="AA">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <assert_stdout>
+                <has_line line="AA"/>
+            </assert_stdout>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="sel" value="A,AA" />
+            <output name="A">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <output name="AA">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <assert_stdout>
+                <has_line line="A,AA"/>
+            </assert_stdout>
+        </test>
+    </tests>
+</tool>

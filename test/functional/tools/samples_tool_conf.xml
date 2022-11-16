@@ -107,6 +107,7 @@
   <tool file="output_format_deprecated_when.xml" />
   <tool file="output_format_collection.xml" />
   <tool file="output_filter.xml" />
+  <tool file="output_filter_select.xml" />
   <tool file="output_empty_work_dir.xml" />
   <tool file="output_filter_with_input.xml" />
   <tool file="output_filter_with_input_optional.xml" />
