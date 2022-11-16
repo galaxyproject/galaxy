@@ -14,10 +14,10 @@ addInitialization((Galaxy) => {
     const router = getRouter(Galaxy);
     new Vue({
         el: "#app",
-        render: (h) => h(App),
         setup() {
             provide("store", store);
         },
+        render: (h) => h(App),
         router: router,
         store: store,
         pinia: pinia,

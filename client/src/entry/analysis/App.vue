@@ -56,6 +56,12 @@ export default {
         Masthead,
         Toast,
     },
+    setup() {
+        const toastRef = ref(null);
+        setToastComponentRef(toastRef);
+
+        return { toastRef };
+    },
     data() {
         return {
             config: getGalaxyInstance().config,
@@ -63,12 +69,6 @@ export default {
             resendUrl: `${getAppRoot()}user/resend_verification`,
             windowManager: new WindowManager(),
         };
-    },
-    setup() {
-        const toastRef = ref(null);
-        setToastComponentRef(toastRef);
-
-        return { toastRef };
     },
     computed: {
         tabs() {
