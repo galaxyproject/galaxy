@@ -5,8 +5,8 @@ from contextlib import contextmanager
 from shutil import rmtree
 from tempfile import mkdtemp
 
-from galaxy.tool_util.unittest_utils import skip_if_github_down
 from galaxy.tools.data_fetch import main
+from galaxy.util.unittest_utils import skip_if_github_down
 
 
 def test_simple_path_get():

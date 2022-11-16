@@ -3,7 +3,7 @@ import requests
 import responses
 
 from galaxy.util import url_get
-from galaxy_test.base.populators import skip_if_site_down
+from galaxy.util.unittest_utils import skip_if_site_down
 
 
 @responses.activate
