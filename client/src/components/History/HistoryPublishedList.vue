@@ -1,5 +1,4 @@
 <script setup>
-import { Services } from "./services";
 import UtcDate from "components/UtcDate";
 import Tags from "components/Common/Tags";
 import { safePath } from "utils/redirect";
@@ -7,10 +6,9 @@ import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
 import LoadingSpan from "components/LoadingSpan";
 import DebouncedInput from "components/DebouncedInput";
+import { getPublishedHistories, updateTags } from "./services";
 import { getFilters, toAlias } from "store/historyStore/model/filtering";
 import { getFilterText } from "./CurrentHistory/HistoryFilters/filterConversion";
-
-const services = new Services();
 
 const query = ref("");
 const limit = ref(50);
@@ -56,14 +54,13 @@ const updateFilter = (newVal) => {
 
 const load = async () => {
     loading.value = true;
-    services
-        .getPublishedHistories({
-            query: query.value,
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-            offset: offset.value,
-            limit: limit.value,
-        })
+    getPublishedHistories({
+        query: query.value,
+        sortBy: sortBy.value,
+        sortDesc: sortDesc.value,
+        offset: offset.value,
+        limit: limit.value,
+    })
         .then((data) => {
             items.value = data;
         })
@@ -75,8 +72,9 @@ const load = async () => {
         });
 };
 
-const onTags = (val) => {
-    query.value = val;
+const onTagsUpdate = (newTags, row) => {
+    row.item.tags = newTags;
+    updateTags(row.item.id, "History", row.item.tags);
 };
 
 const onToggle = () => {
@@ -108,6 +106,7 @@ watch([sortBy, sortDesc], () => {
                         :class="filterText && 'font-weight-bold'"
                         :value="value"
                         :placeholder="'Search name, annotation, owner, and tags' | localize"
+                        title="clear search (esc)"
                         data-description="filter text input"
                         @input="input"
                         @keyup.esc="updateFilter('')" />
@@ -117,6 +116,7 @@ watch([sortBy, sortDesc], () => {
                         size="sm"
                         :pressed="showAdvanced"
                         :variant="showAdvanced ? 'info' : 'secondary'"
+                        title="show advanced filter"
                         data-description="show advanced filter toggle"
                         aria-label="Show advanced filter"
                         @click="onToggle">
@@ -177,7 +177,7 @@ watch([sortBy, sortDesc], () => {
                     </router-link>
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
+                    <Tags :index="row.index" :tags="row.item.tags" @input="onTagsUpdate($event, row)" />
                 </template>
 
                 <template v-slot:cell(update_time)="data">
