@@ -7,16 +7,16 @@ function applyRules(rules, data, sources) {
 }
 
 class State {
-    data: Array<Array<string>>
-    sources: Array<number>
+    data: Array<Array<string>>;
+    sources: Array<number>;
 }
 
 class SpecTestCase {
-    doc?: string
-    rules: Array<any>
-    error?: boolean
-    initial?: State
-    final?: State
+    doc?: string;
+    rules: Array<any>;
+    error?: boolean;
+    initial?: State;
+    final?: State;
 }
 
 function itShouldConform(specTestCase: SpecTestCase, i: number) {
@@ -24,7 +24,7 @@ function itShouldConform(specTestCase: SpecTestCase, i: number) {
     if (specTestCase.doc) {
         doc = " - " + specTestCase.doc;
     }
-    it(`should pass conformance test case ${ i } (from rules_dsl_spec.yml) ${ doc }`, () => {
+    it(`should pass conformance test case ${i} (from rules_dsl_spec.yml) ${doc}`, () => {
         expect(specTestCase).toHaveProperty("rules");
         if (specTestCase.initial) {
             expect(specTestCase).toHaveProperty("final");
@@ -44,7 +44,7 @@ function itShouldConform(specTestCase: SpecTestCase, i: number) {
 
 describe("Rules DSL", () => {
     for (const [i, testCaseJson] of Object.entries(SPEC_TEST_CASES)) {
-        const testCase:SpecTestCase = Object.assign(new SpecTestCase(), testCaseJson);
+        const testCase: SpecTestCase = Object.assign(new SpecTestCase(), testCaseJson);
         itShouldConform(testCase, parseInt(i));
     }
 });
