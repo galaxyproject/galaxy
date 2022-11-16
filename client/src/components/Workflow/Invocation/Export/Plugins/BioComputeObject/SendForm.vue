@@ -2,7 +2,7 @@
 import { ref, reactive, inject } from "vue";
 import { BModal } from "bootstrap-vue";
 import axios from "axios";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { safePath } from "utils/redirect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ExternalLink from "components/ExternalLink";

@@ -44,7 +44,7 @@ import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import PermissionsInputField from "components/Libraries/LibraryPermissions/PermissionsInputField";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";

@@ -798,8 +798,8 @@ libraries:
       input_folder_description: '.input_folder_description'
       download_button: '#download-btn'
       delete_btn: '.toolbtn-bulk-delete'
-      toast_msg: '.toast-message'
-      toast_warning: '.toast-warning'
+      toast_msg: '.b-toast'
+      toast_warning: '.b-toast-warning'
       select_import_dir_item: 'li[full_path="${name}"] .jstree-anchor'
       import_dir_btn:
         type: xpath
