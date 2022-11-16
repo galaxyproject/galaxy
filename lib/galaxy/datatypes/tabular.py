@@ -114,6 +114,16 @@ class TabularData(data.Text):
             return False
 
     def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None):
+        ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
+        return dumps(
+            {
+                "ck_data": util.unicodify(ck_data),
+                "offset": last_read,
+                "data_line_offset": self.data_line_offset,
+            }
+        )
+
+    def _read_chunk(self, trans, dataset: "DatasetInstance", offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
@@ -123,13 +133,7 @@ class TabularData(data.Text):
                     ck_data += cursor
                     cursor = f.read(1)
             last_read = f.tell()
-        return dumps(
-            {
-                "ck_data": util.unicodify(ck_data),
-                "offset": last_read,
-                "data_line_offset": self.data_line_offset,
-            }
-        )
+        return ck_data, last_read
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         headers = kwd.get("headers", {})
@@ -1548,16 +1552,7 @@ class ConnectivityTable(Tabular):
         return False
 
     def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None):
-        with compression_utils.get_fileobj(dataset.file_name) as f:
-            f.seek(offset)
-            ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
-            if ck_data and ck_data[-1] != "\n":
-                cursor = f.read(1)
-                while cursor and cursor != "\n":
-                    ck_data += cursor
-                    cursor = f.read(1)
-            last_read = f.tell()
-
+        ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
             # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
             # By converting these spaces back to tabs, chunks can still be interpreted by tab delimited file parsers
