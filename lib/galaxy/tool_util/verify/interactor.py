@@ -833,6 +833,15 @@ class GalaxyInteractorApi:
         # no data for GET
         return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
 
+    def _head(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
+        url = self.get_api_url(path)
+        kwargs: Dict[str, Any] = {}
+        if self.cookies:
+            kwargs["cookies"] = self.cookies
+        # no data for HEAD
+        return requests.head(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
+
     def get_api_url(self, path: str) -> str:
         if path.startswith("http"):
             return path

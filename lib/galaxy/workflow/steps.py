@@ -56,6 +56,14 @@ def order_workflow_steps(steps):
         return None
 
 
+def has_cycles(workflow):
+    try:
+        topsort(sorted(edgelist_for_workflow_steps(workflow.steps)))
+        return False
+    except CycleError:
+        return True
+
+
 def edgelist_for_workflow_steps(steps):
     """
     Create a list of tuples representing edges between ``WorkflowStep`` s based

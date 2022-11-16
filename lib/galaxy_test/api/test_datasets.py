@@ -321,11 +321,41 @@ class TestDatasetsApi(ApiTestCase):
         10  20  30  40
         """
         )
-        hda1 = self.dataset_populator.new_dataset(history_id, content=contents)
-        self.dataset_populator.wait_for_history(history_id)
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
         display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
+
+    def test_head(self, history_id):
+        hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
+        display_response = self._head(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
+        self._assert_status_code_is(display_response, 200)
+        assert display_response.text == ""
+        display_response = self._head(
+            f"histories/{history_id}/contents/{hda1['id']}{hda1['id']}/display", {"raw": "True"}
+        )
+        self._assert_status_code_is(display_response, 400)
+
+    def test_byte_range_support(self, history_id):
+        hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
+        head_response = self._head(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
+        self._assert_status_code_is(head_response, 200)
+        assert head_response.headers["content-length"] == "12"
+        assert head_response.text == ""
+        assert head_response.headers["accept-ranges"] == "bytes"
+        valid_headers = {"range": "bytes=0-0"}
+        display_response = self._get(
+            f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"}, headers=valid_headers
+        )
+        self._assert_status_code_is(display_response, 206)
+        assert len(display_response.text) == 1
+        assert display_response.headers["content-length"] == "1"
+        assert display_response.headers["content-range"] == "bytes 0-0/12"
+        invalid_headers = {"range": "bytes=-1-1"}
+        display_response = self._get(
+            f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"}, headers=invalid_headers
+        )
+        self._assert_status_code_is(display_response, 416)
 
     def test_tag_change(self, history_id):
         hda_id = self.dataset_populator.new_dataset(history_id)["id"]
