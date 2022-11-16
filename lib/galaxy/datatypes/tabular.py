@@ -113,7 +113,7 @@ class TabularData(data.Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None):
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
@@ -1551,7 +1551,7 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None):
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
             # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
