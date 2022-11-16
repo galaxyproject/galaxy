@@ -60,6 +60,10 @@ class TestImportExportHistoryViaTasksIntegration(
     def test_import_model_store_from_file_source_async_with_format(self):
         history_name = f"for_export_format_async_{uuid4()}"
         history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+        # Add bam dataset to test metadata generation on import
+        self.dataset_populator.new_dataset(
+            history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
+        )
         model_store_format = "rocrate.zip"
         target_uri = f"gxfiles://posix_test/history.{model_store_format}"
 
@@ -72,14 +76,22 @@ class TestImportExportHistoryViaTasksIntegration(
         imported_history_id = imported_history["id"]
         assert imported_history_id != history_id
         assert imported_history["name"] == history_name
+        self.dataset_populator.wait_for_history(imported_history_id)
         history_contents = self.dataset_populator.get_history_contents(imported_history_id)
-        assert len(history_contents) == 2
+        assert len(history_contents) == 3
         # Only deleted datasets should appear as "discarded"
         for dataset in history_contents:
             if dataset["deleted"] is True:
                 assert dataset["state"] == "discarded"
             else:
                 assert dataset["state"] == "ok"
+                # Check metadata generation
+            if dataset["extension"] == "bam":
+                imported_bam_details = self.dataset_populator.get_history_dataset_details(
+                    imported_history_id, dataset_id=dataset["id"]
+                )
+                bai_metadata = imported_bam_details["meta_files"][0]
+                assert bai_metadata["file_type"] == "bam_index"
 
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):

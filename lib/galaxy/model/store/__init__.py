@@ -632,8 +632,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             )
                         else:
                             # Try to set metadata directly. TODO: check efficiency of this?
-                            if dataset_instance.has_metadata_files:
-                                dataset_instance.datatype.set_meta(dataset_instance)
+                            try:
+                                if dataset_instance.has_metadata_files:
+                                    dataset_instance.datatype.set_meta(dataset_instance)
+                            except Exception:
+                                dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
