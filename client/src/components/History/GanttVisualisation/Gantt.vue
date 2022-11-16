@@ -24,6 +24,7 @@ export default {
             tasks: [],
             historyId: null,
             accountingArray: [],
+            colors: ['one', 'two', 'three', 'four']
         };
     },
     computed: {
@@ -42,6 +43,7 @@ export default {
                         start: row["startTime"],
                         end: row["endTime"],
                         progress: 100,
+                        custom_class: this.colors[idx%4]
                     });
                 });
                 this.gantt = new Gantt("#gantt", entries, {
@@ -49,6 +51,7 @@ export default {
                     view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
                     arrow_curve: 14,
                     date_format: "YYYY-MM-DD",
+                    popup_trigger:"mouseover",
                     custom_popup_html: function (task) {
                         return `
           <div class="details-container">
@@ -134,35 +137,35 @@ export default {
     stroke: #666;
 }
 
-.jenna .bar {
+.one .bar {
     fill: #ff8e76 !important;
 }
 
-.jenna .bar-progress {
+.one .bar-progress {
     fill: #d95b43 !important;
 }
 
-.jeff .bar {
+.two .bar {
     fill: #87576a !important;
 }
 
-.jeff .bar-progress {
+.two .bar-progress {
     fill: #542437 !important;
 }
 
-.eric .bar {
+.three .bar {
     fill: #86aaad !important;
 }
 
-.eric .bar-progress {
+.three .bar-progress {
     fill: #53777a !important;
 }
 
-.client .bar {
+.four .bar {
     fill: #f35c75 !important;
 }
 
-.client .bar-progress {
+.four .bar-progress {
     fill: #c02942 !important;
 }
 </style>
