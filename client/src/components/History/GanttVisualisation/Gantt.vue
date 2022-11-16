@@ -19,17 +19,17 @@ import { mapGetters } from "vuex";
 
 export default {
     name: "App",
-    computed: {
-        ...mapGetters({
-            currentHistory: "history/currentHistoryId",
-        }),
-    },
     data() {
         return {
             tasks: [],
             historyId: null,
             accountingArray: [],
         };
+    },
+    computed: {
+        ...mapGetters({
+            currentHistory: "history/currentHistoryId",
+        }),
     },
     watch: {
         accountingArray(newArray, oldArray) {
