@@ -35,6 +35,7 @@
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <div id="dd-helper" />
+        <Toast ref="toastRef" />
     </div>
 </template>
 <script>
@@ -46,10 +47,14 @@ import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy
 import { fetchMenu } from "entry/analysis/menu";
 import { WindowManager } from "layout/window-manager";
 import { safePath } from "utils/redirect";
+import Toast from "components/Toast";
+import { setToastComponentRef } from "composables/toast";
+import { ref } from "vue";
 
 export default {
     components: {
         Masthead,
+        Toast,
     },
     data() {
         return {
@@ -58,6 +63,12 @@ export default {
             resendUrl: `${getAppRoot()}user/resend_verification`,
             windowManager: new WindowManager(),
         };
+    },
+    setup() {
+        const toastRef = ref(null);
+        setToastComponentRef(toastRef);
+
+        return { toastRef };
     },
     computed: {
         tabs() {

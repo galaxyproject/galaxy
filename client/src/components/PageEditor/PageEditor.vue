@@ -11,7 +11,7 @@
 
 <script>
 import axios from "axios";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";

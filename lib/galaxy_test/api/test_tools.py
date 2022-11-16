@@ -170,7 +170,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("test_sam_to_bam_conversions")
     def test_requirements(self):
-        requirements_response = self._get(f"tools/{'test_sam_to_bam_conversions'}/requirements", admin=True)
+        requirements_response = self._get("tools/test_sam_to_bam_conversions/requirements", admin=True)
         self._assert_status_code_is_ok(requirements_response)
         requirements = requirements_response.json()
         assert len(requirements) == 1, requirements
@@ -376,19 +376,17 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("composite_output")
     def test_test_data_filepath_security(self):
-        test_data_response = self._get(
-            f"tools/{'composite_output'}/test_data_path?filename=../CONTRIBUTORS.md", admin=True
-        )
+        test_data_response = self._get("tools/composite_output/test_data_path?filename=../CONTRIBUTORS.md", admin=True)
         assert test_data_response.status_code == 404, test_data_response.text
 
     @skip_without_tool("composite_output")
     def test_test_data_admin_security(self):
-        test_data_response = self._get(f"tools/{'composite_output'}/test_data_path?filename=../CONTRIBUTORS.md")
+        test_data_response = self._get("tools/composite_output/test_data_path?filename=../CONTRIBUTORS.md")
         assert test_data_response.status_code == 403, test_data_response.text
 
     @skip_without_tool("dbkey_filter_multi_input")
     def test_data_table_requirement_annotated(self):
-        test_data_response = self._get(f"tools/{'dbkey_filter_multi_input'}/test_data")
+        test_data_response = self._get("tools/dbkey_filter_multi_input/test_data")
         assert test_data_response.status_code == 200
         test_case = test_data_response.json()[0]
         assert test_case["required_data_tables"][0] == "test_fasta_indexes"
@@ -396,7 +394,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("composite_output")
     def test_test_data_composite_output(self):
-        test_data_response = self._get(f"tools/{'composite_output'}/test_data")
+        test_data_response = self._get("tools/composite_output/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 1
@@ -407,7 +405,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("collection_two_paired")
     def test_test_data_collection_two_paired(self):
-        test_data_response = self._get(f"tools/{'collection_two_paired'}/test_data")
+        test_data_response = self._get("tools/collection_two_paired/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 2
@@ -419,7 +417,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("collection_nested_test")
     def test_test_data_collection_nested(self):
-        test_data_response = self._get(f"tools/{'collection_nested_test'}/test_data")
+        test_data_response = self._get("tools/collection_nested_test/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 2
@@ -427,9 +425,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
         self._assert_has_keys(test_case, "inputs", "outputs", "output_collections", "required_files")
         assert len(test_case["inputs"]) == 1, test_case
 
-    @skip_without_tool("expression_null_handling_1")
+    @skip_without_tool("expression_null_handling_boolean")
     def test_test_data_null_boolean_inputs(self):
-        test_data_response = self._get(f"tools/{'expression_null_handling_1'}/test_data")
+        test_data_response = self._get("tools/expression_null_handling_boolean/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 3
@@ -442,24 +440,24 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("simple_constructs_y")
     def test_test_data_yaml_tools(self):
-        test_data_response = self._get(f"tools/{'simple_constructs_y'}/test_data")
+        test_data_response = self._get("tools/simple_constructs_y/test_data")
         assert test_data_response.status_code == 200
         test_data = test_data_response.json()
         assert len(test_data) == 3
 
     @skip_without_tool("cat1")
     def test_test_data_download(self):
-        test_data_response = self._get(f"tools/{'cat1'}/test_data_download?filename=1.bed")
+        test_data_response = self._get("tools/cat1/test_data_download?filename=1.bed")
         assert test_data_response.status_code == 200, test_data_response.text.startswith("chr")
 
     @skip_without_tool("composite_output")
     def test_test_data_downloads_security(self):
-        test_data_response = self._get(f"tools/{'composite_output'}/test_data_download?filename=../CONTRIBUTORS.md")
+        test_data_response = self._get("tools/composite_output/test_data_download?filename=../CONTRIBUTORS.md")
         assert test_data_response.status_code == 404, test_data_response.text
 
     @skip_without_tool("composite_output")
     def test_test_data_download_composite(self):
-        test_data_response = self._get(f"tools/{'composite_output'}/test_data_download?filename=velveth_test1")
+        test_data_response = self._get("tools/composite_output/test_data_download?filename=velveth_test1")
         assert test_data_response.status_code == 200
         with zipfile.ZipFile(BytesIO(test_data_response.content)) as contents:
             namelist = contents.namelist()
@@ -924,13 +922,13 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     @skip_without_tool("multiple_versions")
     def test_test_by_versions(self, history_id):
-        test_data_response = self._get(f"tools/{'multiple_versions'}/test_data")
+        test_data_response = self._get("tools/multiple_versions/test_data")
         test_data_response.raise_for_status()
         test_data_dicts = test_data_response.json()
         assert len(test_data_dicts) == 1
         assert test_data_dicts[0]["tool_version"] == "0.2"
 
-        test_data_response = self._get(f"tools/{'multiple_versions'}/test_data?tool_version=*")
+        test_data_response = self._get("tools/multiple_versions/test_data?tool_version=*")
         test_data_response.raise_for_status()
         test_data_dicts = test_data_response.json()
         assert len(test_data_dicts) == 3
