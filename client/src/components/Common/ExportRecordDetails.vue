@@ -16,9 +16,17 @@ const props = defineProps({
         type: String,
         required: true,
     },
+    actionMessage: {
+        type: String,
+        default: null,
+    },
+    actionMessageVariant: {
+        type: String,
+        default: "info",
+    },
 });
 
-const emit = defineEmits(["onReimport", "onDownload"]);
+const emit = defineEmits(["onReimport", "onDownload", "onActionMessageDismissed"]);
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
 const elapsedTime = computed(() => formatDistanceToNow(parseISO(`${props.record.date}Z`), { addSuffix: true }));
@@ -43,6 +51,10 @@ function reimportObject() {
 function downloadObject() {
     emit("onDownload", props.record);
 }
+
+function onMessageDismissed() {
+    emit("onActionMessageDismissed");
+}
 </script>
 
 <template>
@@ -64,12 +76,23 @@ function downloadObject() {
                 <p class="mt-3">
                     {{ readyMessage }}
                 </p>
-                <b-button v-if="props.record.canDownload" variant="primary" @click="downloadObject">
-                    Download
-                </b-button>
-                <b-button v-if="props.record.canReimport" variant="primary" @click="reimportObject">
-                    Reimport
-                </b-button>
+                <b-alert
+                    v-if="props.actionMessage !== null"
+                    :variant="props.actionMessageVariant"
+                    show
+                    fade
+                    dismissible
+                    @dismissed="onMessageDismissed">
+                    {{ props.actionMessage }}
+                </b-alert>
+                <div v-else class="actions">
+                    <b-button v-if="props.record.canDownload" variant="primary" @click="downloadObject">
+                        Download
+                    </b-button>
+                    <b-button v-if="props.record.canReimport" variant="primary" @click="reimportObject">
+                        Reimport
+                    </b-button>
+                </div>
             </div>
         </div>
     </b-card>

@@ -31,7 +31,7 @@ export class ExportRecordModel {
         return this.isReady && !!this._data?.export_metadata?.result_data?.target_uri;
     }
 
-    get importLink() {
+    get importUri() {
         return this._data?.export_metadata?.result_data?.target_uri;
     }
 
@@ -45,5 +45,9 @@ export class ExportRecordModel {
 
     get canDownload() {
         return this.isReady && this.isStsDownload;
+    }
+
+    get modelStoreFormat() {
+        return this._data?.export_metadata?.request_data?.payload?.model_store_format;
     }
 }

@@ -63,6 +63,10 @@ export class HistoryExportService {
     }
 
     async reimportHistoryFromRecord(record) {
-        console.debug("TODO: Reimport from", record.importLink);
+        const writeStorePayload = {
+            store_content_uri: record.importUri,
+            model_store_format: record.modelStoreFormat,
+        };
+        return axios.post(`/api/histories/from_store_async`, writeStorePayload);
     }
 }

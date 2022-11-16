@@ -35,6 +35,8 @@ const availableRecordsMessage = computed(() =>
         : "This history has no export records yet. You can choose one of the export options above."
 );
 const errorMessage = ref(null);
+const actionMessage = ref(null);
+const actionMessageVariant = ref(null);
 
 onMounted(async () => {
     updateExports();
@@ -86,7 +88,23 @@ function downloadFromRecord(record) {
 }
 
 function reimportFromRecord(record) {
-    return service.reimportHistoryFromRecord(record);
+    // Add confirmation
+    service
+        .reimportHistoryFromRecord(record)
+        .then(() => {
+            actionMessageVariant.value = "info";
+            actionMessage.value =
+                "The history is being imported in the background. Check your histories after a while to find it.";
+        })
+        .catch((reason) => {
+            actionMessageVariant.value = "danger";
+            actionMessage.value = reason;
+        });
+}
+
+function onActionMessageDismissedFromRecord() {
+    actionMessage.value = null;
+    actionMessageVariant.value = null;
 }
 </script>
 <template>
@@ -122,8 +140,11 @@ function reimportFromRecord(record) {
             :record="latestExportRecord"
             object-type="history"
             class="mt-3"
+            :action-message="actionMessage"
+            :action-message-variant="actionMessageVariant"
             @onDownload="downloadFromRecord"
-            @onReimport="reimportFromRecord" />
+            @onReimport="reimportFromRecord"
+            @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
         <b-alert v-else-if="errorMessage" variant="danger" class="mt-3" show>
             {{ errorMessage }}
         </b-alert>
