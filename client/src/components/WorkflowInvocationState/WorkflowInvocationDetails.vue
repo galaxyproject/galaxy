@@ -36,49 +36,40 @@
         </b-tabs>
     </div>
 </template>
-<script>
+<script setup>
+import { computed, onMounted } from "vue";
+
+import { useWorkflowStore } from "stores/workflowStore";
+
 import ParameterStep from "./ParameterStep";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
 
-import { mapActions, mapState } from "pinia";
-import { useWorkflowStore } from "stores/workflowStore";
+const props = defineProps({
+    invocation: {
+        type: Object,
+        required: true,
+    },
+});
 
-export default {
-    components: {
-        GenericHistoryItem,
-        WorkflowInvocationStep,
-        ParameterStep,
-    },
-    props: {
-        invocation: {
-            type: Object,
-            required: true,
-        },
-    },
-    computed: {
-        ...mapState(useWorkflowStore, ["getWorkflowByInstanceId"]),
-        workflow() {
-            return this.getWorkflowByInstanceId(this.invocation.workflow_id);
-        },
-    },
-    created: function () {
-        this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
-    },
-    methods: {
-        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
-        dataInputStepLabel(key, input) {
-            const invocationStep = this.invocation.steps[key];
-            let label = invocationStep && invocationStep.workflow_step_label;
-            if (!label) {
-                if (input.src === "hda" || input.src === "ldda") {
-                    label = "Input dataset";
-                } else if (input.src === "hdca") {
-                    label = "Input dataset collection";
-                }
-            }
-            return label;
-        },
-    },
-};
+const workflowStore = useWorkflowStore();
+
+const workflow = computed(() => workflowStore.getWorkflowByInstanceId(props.invocation.workflow_id));
+
+onMounted(() => {
+    workflowStore.fetchWorkflowForInstanceId(props.invocation.workflow_id);
+});
+
+function dataInputStepLabel(key, input) {
+    const invocationStep = props.invocation.steps[key];
+    let label = invocationStep && invocationStep.workflow_step_label;
+    if (!label) {
+        if (input.src === "hda" || input.src === "ldda") {
+            label = "Input dataset";
+        } else if (input.src === "hdca") {
+            label = "Input dataset collection";
+        }
+    }
+    return label;
+}
 </script>
