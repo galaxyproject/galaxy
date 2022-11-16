@@ -1,13 +1,13 @@
 <template>
     <div>
         <svg id="gantt"></svg>
-        <button id="view" v-on:click="changeQDayView">Quarter Day View</button>
-        <button id="view" v-on:click="changeHDayView">Half Day View</button>
-        <button id="view" v-on:click="changeDayView">Day View</button>
-        <button id="view" v-on:click="changeWeekView">Week View</button>
-        <button id="view" v-on:click="changeMonthView">Month View</button>
-        <button id="view" v-on:click="changeHourView">Hour View</button>
-        <button id="view" v-on:click="changeMinuteView">Minute View</button>
+        <button id="view" @click="changeQDayView">Quarter Day View</button>
+        <button id="view" @click="changeHDayView">Half Day View</button>
+        <button id="view" @click="changeDayView">Day View</button>
+        <button id="view" @click="changeWeekView">Week View</button>
+        <button id="view" @click="changeMonthView">Month View</button>
+        <button id="view" @click="changeHourView">Hour View</button>
+        <button id="view" @click="changeMinuteView">Minute View</button>
     </div>
 </template>
 
