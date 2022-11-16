@@ -1910,16 +1910,17 @@ class H5MLM(H5):
     """
 
     file_ext = "h5mlm"
-    URL = "https://github.com/goeckslab/Galaxy-ML"
+    TARGET_URL = "https://github.com/goeckslab/Galaxy-ML"
 
     max_peek_size = 1000  # 1 KB
     max_preview_size = 1000000  # 1 MB
 
-    _CONFIG = '-model_config-'
-    _HTTP_REPR = '-http_repr-'
-    _HYPERPARAMETER = '-model_hyperparameters-'
-    _REPR = '-repr-'
-    _URL = '-URL-'
+    # reserved keys
+    CONFIG = "-model_config-"
+    HTTP_REPR = "-http_repr-"
+    HYPERPARAMETER = "-model_hyperparameters-"
+    REPR = "-repr-"
+    URL = "-URL-"
 
     MetadataElement(
         name="hyper_params",
@@ -1942,7 +1943,7 @@ class H5MLM(H5):
                     dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
                 )
             with h5py.File(dataset.file_name, "r") as handle:
-                hyper_params = handle[self._HYPERPARAMETER][()]
+                hyper_params = handle[self.HYPERPARAMETER][()]
             hyper_params = json.loads(util.unicodify(hyper_params))
             with open(params_file.file_name, "w") as f:
                 f.write("\tParameter\tValue\n")
@@ -1954,43 +1955,42 @@ class H5MLM(H5):
 
     def sniff(self, filename: str) -> bool:
         if super().sniff(filename):
-            keys = [self._CONFIG]
+            keys = [self.CONFIG]
             with h5py.File(filename, "r") as handle:
                 if not all(name in handle.keys() for name in keys):
                     return False
-                url = util.unicodify(handle.attrs.get(self._URL))
-            if url == self.URL:
+                url = util.unicodify(handle.attrs.get(self.URL))
+            if url == self.TARGET_URL:
                 return True
         return False
 
-    def get_repr(self, filename: str) -> str:
+    def get_attribute(self, filename: str, attr_key: str) -> str:
         try:
             with h5py.File(filename, "r") as handle:
-                repr_ = util.unicodify(handle.attrs.get(self._REPR))
-            if len(repr_) <= self.max_preview_size:
-                return repr_
-            else:
-                return "<p><strong>The model representation is too big to be displayed!</strong></p>"
+                attr = util.unicodify(handle.attrs.get(attr_key))
+            return attr
         except Exception as e:
-            log.warning("%s, get_repr Except: %s", self, e)
+            log.warning("%s, get_attribute Except: %s", self, e)
             return ""
 
+    def get_repr(self, filename: str) -> str:
+        repr = self.get_attribute(filename, self.REPR)
+        if len(repr) <= self.max_preview_size:
+            return repr
+        else:
+            return "<p><strong>The model representation is too big to be displayed!</strong></p>"
+
     def get_html_repr(self, filename: str) -> str:
-        try:
-            with h5py.File(filename, "r") as handle:
-                repr_ = util.unicodify(handle.attrs.get(self._HTTP_REPR))
-            if len(repr_) <= self.max_preview_size:
-                return repr_
-            else:
-                return "<p><strong>The model diagram is too big to be displayed!</strong></p>"
-        except Exception as e:
-            log.warning("%s, get_html_repr Except: %s", self, e)
-            return ""
+        repr = self.get_attribute(filename, self.HTTP_REPR)
+        if len(repr) <= self.max_preview_size:
+            return repr
+        else:
+            return "<p><strong>The model diagram is too big to be displayed!</strong></p>"
 
     def get_config_string(self, filename: str) -> str:
         try:
             with h5py.File(filename, "r") as handle:
-                config = util.unicodify(handle[self._CONFIG][()])
+                config = util.unicodify(handle[self.CONFIG][()])
             return config
         except Exception as e:
             log.warning("%s, get model configuration Except: %s", self, e)
@@ -1998,8 +1998,8 @@ class H5MLM(H5):
 
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
-            repr_ = self.get_repr(dataset.file_name)
-            dataset.peek = repr_[: self.max_peek_size]
+            repr = self.get_repr(dataset.file_name)
+            dataset.peek = repr[: self.max_peek_size]
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2032,7 +2032,7 @@ class H5MLM(H5):
             with h5py.File(dataset.file_name, "r") as handle:
                 out["Attributes"] = {}
                 attributes = handle.attrs
-                for k in set(attributes.keys()) - {self._HTTP_REPR, self._REPR, self._URL}:
+                for k in set(attributes.keys()) - {self.HTTP_REPR, self.REPR, self.URL}:
                     out["Attributes"][k] = util.unicodify(attributes.get(k))
         except Exception as e:
             log.warning(e)
@@ -2042,10 +2042,10 @@ class H5MLM(H5):
         out = json.dumps(out, sort_keys=True, indent=2)
         out = out[: self.max_preview_size]
 
-        repr_ = self.get_repr(dataset.file_name)
-        html_repr_ = self.get_html_repr(dataset.file_name)
+        repr = self.get_repr(dataset.file_name)
+        html_repr = self.get_html_repr(dataset.file_name)
 
-        return f"<div>{html_repr_}</div><div><pre>{repr_}</pre></div><div><pre>{out}</pre></div>", headers
+        return f"<div>{html_repr}</div><div><pre>{repr}</pre></div><div><pre>{out}</pre></div>", headers
 
 
 class LudwigModel(Html):
