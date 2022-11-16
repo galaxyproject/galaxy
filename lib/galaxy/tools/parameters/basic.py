@@ -1012,11 +1012,11 @@ class SelectToolParameter(ToolParameter):
             if is_runtime_value(value):
                 return None
             if value in legal_values:
-                return value
+                rval = value
             elif value in fallback_values:
-                return fallback_values[value]
+                rval = fallback_values[value]
             elif not require_legal_value:
-                return value
+                rval = value
             else:
                 raise ParameterValueError(
                     f"an invalid option ({value!r}) was selected (valid options: {','.join(legal_values)})",
@@ -1024,6 +1024,10 @@ class SelectToolParameter(ToolParameter):
                     value,
                     is_dynamic=self.is_dynamic,
                 )
+            if self.multiple:
+                return [rval]
+            else:
+                return rval
 
     def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
