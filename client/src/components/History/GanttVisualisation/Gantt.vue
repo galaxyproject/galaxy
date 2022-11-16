@@ -18,7 +18,7 @@ import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 
 export default {
-    name: "Gantt",
+    name: "App",
     computed: {
         ...mapGetters({
             currentHistory: "history/currentHistoryId",
@@ -121,6 +121,15 @@ export default {
 </script>
 
 <style>
+#app {
+    font-family: "Avenir", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-align: center;
+    color: #2c3e50;
+    margin-top: 60px;
+}
+
 .gantt .tick {
     stroke: #666;
 }

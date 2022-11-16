@@ -1,0 +1,286 @@
+diff --git a/node_modules/frappe-gantt/src/bar.js b/node_modules/frappe-gantt/src/bar.js
+index ee7ffda..0b0e453 100644
+--- a/node_modules/frappe-gantt/src/bar.js
++++ b/node_modules/frappe-gantt/src/bar.js
+@@ -5,7 +5,12 @@ export default class Bar {
+     constructor(gantt, task) {
+         this.set_defaults(gantt, task);
+         this.prepare();
+-        this.draw();
++        if(this.show_diamond == 1) {
++            this.drawDiamond()
++        }
++        else{
++            this.draw();
++        }
+         this.bind();
+     }
+ 
+@@ -26,9 +31,32 @@ export default class Bar {
+         this.x = this.compute_x();
+         this.y = this.compute_y();
+         this.corner_radius = this.gantt.options.bar_corner_radius;
+-        this.duration =
++        if (this.gantt.view_is('Minute')) {
++            this.duration =
++            date_utils.diff(this.task._end, this.task._start, 'minute') /
++            this.gantt.options.step;
++            if (this.duration < 1) {
++                this.duration =
++                (date_utils.diff(this.task._end, this.task._start, 'second') /
++                this.gantt.options.step) / (this.gantt.options.column_width / 3);
++                
++            }
++
++        }
++        else
++        {
++            this.duration =
+             date_utils.diff(this.task._end, this.task._start, 'hour') /
+             this.gantt.options.step;
++            if (this.duration < 1) {
++                this.duration =
++                (date_utils.diff(this.task._end, this.task._start, 'minute') /
++                this.gantt.options.step) / (this.gantt.options.column_width / 3);
++                if(this.duration < 1) {
++                    this.show_diamond = 1
++                }
++            }
++        }
+         this.width = this.gantt.options.column_width * this.duration;
+         this.progress_width =
+             this.gantt.options.column_width *
+@@ -73,6 +101,15 @@ export default class Bar {
+         this.draw_resize_handles();
+     }
+ 
++    drawDiamond() {
++        this.$bar = createSVG('polygon', {
++            points: `${this.x},${this.y} ${this.x+7},${this.y+7} ${this.x+14},${this.y} ${this.x+7},${this.y-7} ${this.x},${this.y}`,
++            fill: 'blue',
++            class: 'diamond',
++            append_to: this.bar_group,
++        });
++    }
++
+     draw_bar() {
+         this.$bar = createSVG('rect', {
+             x: this.x,
+@@ -101,7 +138,8 @@ export default class Bar {
+             height: this.height,
+             rx: this.corner_radius,
+             ry: this.corner_radius,
+-            class: 'bar-progress',
++            // class: 'bar-progress',
++            fill:'#ec7d82',
+             append_to: this.bar_group,
+         });
+ 
+@@ -315,6 +353,17 @@ export default class Bar {
+             const diff = date_utils.diff(task_start, gantt_start, 'day');
+             x = (diff * column_width) / 30;
+         }
++
++        if (this.gantt.view_is('Hour')) {
++            const diff = date_utils.diff(task_start, gantt_start, 'minute');
++            x = (diff);
++        }
++
++        if (this.gantt.view_is('Minute')) {
++            const diff = date_utils.diff(task_start, gantt_start, 'seconds');
++            x = (diff)*3;
++        }
++
+         return x;
+     }
+ 
+diff --git a/node_modules/frappe-gantt/src/date_utils.js b/node_modules/frappe-gantt/src/date_utils.js
+index f7d95b2..92444c2 100644
+--- a/node_modules/frappe-gantt/src/date_utils.js
++++ b/node_modules/frappe-gantt/src/date_utils.js
+@@ -242,6 +242,7 @@ export default {
+             date.getSeconds() + (scale === SECOND ? qty : 0),
+             date.getMilliseconds() + (scale === MILLISECOND ? qty : 0),
+         ];
++        // console.log('What we got in add is ', date, qty, scale, "And what we produced from that is ", vals)
+         return new Date(...vals);
+     },
+ 
+diff --git a/node_modules/frappe-gantt/src/gantt.scss b/node_modules/frappe-gantt/src/gantt.scss
+index 9c91dad..9e24bd3 100644
+--- a/node_modules/frappe-gantt/src/gantt.scss
++++ b/node_modules/frappe-gantt/src/gantt.scss
+@@ -18,6 +18,9 @@ $handle-color: #ddd !default;
+ 		fill: #ffffff;
+ 		stroke: $border-color;
+ 		stroke-width: 1.4;
++		position: -webkit-sticky;
++		position: sticky;
++		top: 0;
+ 	}
+ 	.grid-row {
+ 		fill: #ffffff;
+@@ -135,7 +138,7 @@ $handle-color: #ddd !default;
+ 
+ .gantt-container {
+ 	position: relative;
+-	overflow: auto;
++	overflow: visible;
+ 	font-size: 12px;
+ 
+ 	.popup-wrapper {
+diff --git a/node_modules/frappe-gantt/src/index.js b/node_modules/frappe-gantt/src/index.js
+index 6d005af..b9adf4e 100644
+--- a/node_modules/frappe-gantt/src/index.js
++++ b/node_modules/frappe-gantt/src/index.js
+@@ -13,6 +13,8 @@ const VIEW_MODE = {
+     WEEK: 'Week',
+     MONTH: 'Month',
+     YEAR: 'Year',
++    HOUR: 'Hour',
++    MINUTE: 'Minute'
+ };
+ 
+ export default class Gantt {
+@@ -79,11 +81,11 @@ export default class Gantt {
+             step: 24,
+             view_modes: [...Object.values(VIEW_MODE)],
+             bar_height: 20,
+-            bar_corner_radius: 3,
++            bar_corner_radius: 1,
+             arrow_curve: 5,
+             padding: 18,
+-            view_mode: 'Day',
+-            date_format: 'YYYY-MM-DD',
++            view_mode: 'Hour',
++            date_format: 'YYYY-MM-DD HH:mm:ss',
+             popup_trigger: 'click',
+             custom_popup_html: null,
+             language: 'en',
+@@ -200,6 +202,12 @@ export default class Gantt {
+         } else if (view_mode === VIEW_MODE.YEAR) {
+             this.options.step = 24 * 365;
+             this.options.column_width = 120;
++        } else if (view_mode === VIEW_MODE.HOUR) {
++            this.options.step = 1;
++            this.options.column_width = 60
++        } else if (view_mode === VIEW_MODE.MINUTE) {
++            this.options.step = 1;
++            this.options.column_width = 180
+         }
+     }
+ 
+@@ -234,7 +242,14 @@ export default class Gantt {
+         } else if (this.view_is(VIEW_MODE.YEAR)) {
+             this.gantt_start = date_utils.add(this.gantt_start, -2, 'year');
+             this.gantt_end = date_utils.add(this.gantt_end, 2, 'year');
+-        } else {
++        }  else if (this.view_is(VIEW_MODE.HOUR)) {
++            this.gantt_start = date_utils.start_of(this.gantt_start, -1, 'day');
++            this.gantt_end = date_utils.add(this.gantt_end, 2, 'day');
++        }  else if (this.view_is(VIEW_MODE.MINUTE)) {
++            this.gantt_start = date_utils.start_of(this.gantt_start, -5, 'hour');
++            this.gantt_end = date_utils.add(this.gantt_end, 1, 'day');
++        }
++        else {
+             this.gantt_start = date_utils.add(this.gantt_start, -1, 'month');
+             this.gantt_end = date_utils.add(this.gantt_end, 1, 'month');
+         }
+@@ -252,6 +267,8 @@ export default class Gantt {
+                     cur_date = date_utils.add(cur_date, 1, 'year');
+                 } else if (this.view_is(VIEW_MODE.MONTH)) {
+                     cur_date = date_utils.add(cur_date, 1, 'month');
++                } else if (this.view_is(VIEW_MODE.MINUTE)) {
++                    cur_date = date_utils.add(cur_date, 1, 'minute');
+                 } else {
+                     cur_date = date_utils.add(
+                         cur_date,
+@@ -270,6 +287,7 @@ export default class Gantt {
+     }
+ 
+     render() {
++        const scroll_pos = document.body.innerHTML.scrollLeft
+         this.clear();
+         this.setup_layers();
+         this.make_grid();
+@@ -278,7 +296,9 @@ export default class Gantt {
+         this.make_arrows();
+         this.map_arrows_on_bars();
+         this.set_width();
+-        this.set_scroll_position();
++
++        // document.getElementById('app').scrollLeft = scroll_pos
++        // this.set_scroll_position();
+     }
+ 
+     setup_layers() {
+@@ -496,6 +516,10 @@ export default class Gantt {
+                 'HH',
+                 this.options.language
+             ),
++            Minute_lower:
++                date_utils.format(date, 'DD MMM HH mm', this.options.language),   
++            Hour_lower:
++                 date_utils.format(date, 'HH', this.options.language),
+             Day_lower:
+                 date.getDate() !== last_date.getDate()
+                     ? date_utils.format(date, 'D', this.options.language)
+@@ -520,6 +544,14 @@ export default class Gantt {
+                           )
+                         : date_utils.format(date, 'D', this.options.language)
+                     : '',
++            Minute_upper:
++            date.getDate() !== last_date.getDate()
++                ? date_utils.format(date, 'D MMM HH', this.options.language)
++                : '',
++            Hour_upper:
++                date.getDate() !== last_date.getDate()
++                    ? date_utils.format(date, 'D MMM', this.options.language)
++                    : '',
+             Day_upper:
+                 date.getMonth() !== last_date.getMonth()
+                     ? date_utils.format(date, 'MMMM', this.options.language)
+@@ -549,6 +581,10 @@ export default class Gantt {
+             'Quarter Day_upper': 0,
+             'Half Day_lower': (this.options.column_width * 2) / 2,
+             'Half Day_upper': 0,
++            Minute_lower: 0,
++            Minute_upper: (this.options.column_width) / 2, 
++            Hour_lower: 0,
++            Hour_upper: (this.options.column_width * 24) / 2,
+             Day_lower: this.options.column_width / 2,
+             Day_upper: (this.options.column_width * 30) / 2,
+             Week_lower: 0,
+@@ -633,7 +669,6 @@ export default class Gantt {
+             (hours_before_first_task / this.options.step) *
+                 this.options.column_width -
+             this.options.column_width;
+-
+         parent_element.scrollLeft = scroll_pos;
+     }
+ 
+diff --git a/node_modules/frappe-gantt/src/svg_utils.js b/node_modules/frappe-gantt/src/svg_utils.js
+index f58c319..aed54ed 100644
+--- a/node_modules/frappe-gantt/src/svg_utils.js
++++ b/node_modules/frappe-gantt/src/svg_utils.js
+@@ -7,7 +7,19 @@ export function $(expr, con) {
+ export function createSVG(tag, attrs) {
+     const elem = document.createElementNS('http://www.w3.org/2000/svg', tag);
+     for (let attr in attrs) {
+-        if (attr === 'append_to') {
++        if(attr === 'class' && attrs['class'] == 'grid-header')
++        {
++            const parentDiv = document.createElement('div')
++            parentDiv.className = 'sticky-parent'
++            elem.setAttribute('class', 'grid-header')
++            parentDiv.appendChild(elem)
++            // if (attr === 'append_to') {
++                const parent = attrs.append_to;
++                parent.appendChild(parentDiv);
++                break
++            // }
++        }
++        else if (attr === 'append_to') {
+             const parent = attrs.append_to;
+             parent.appendChild(elem);
+         } else if (attr === 'innerHTML') {
