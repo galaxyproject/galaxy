@@ -2,11 +2,11 @@
 :orphan:
 
 ===========================================================
-September 2022 Galaxy Release (v 22.09)
+Early 2023 Galaxy Release (v 23.0)
 ===========================================================
 
 
 Schedule
 ===========================================================
- * Planned Freeze Date: 2022-09-05
- * Planned Release Date: 2022-09-26
+ * Planned Freeze Date: 2022-12-05
+ * Planned Release Date: 2023-01-16
