@@ -1515,13 +1515,7 @@ class NavigatesGalaxy(HasDriver):
 
     @edit_details
     def history_panel_add_tags(self, tags):
-        tag_icon = self.components.history_panel.tag_icon
-        tag_area = self.components.history_panel.tag_area
         tag_area_input = self.components.history_panel.tag_area_input
-
-        # if the tag editor is not present but the tag_icon is, then click it
-        if not tag_icon.is_absent and (tag_area.is_absent or not tag_area.is_displayed):
-            tag_icon.wait_for_and_click()
 
         input_element = tag_area_input.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)

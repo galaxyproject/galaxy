@@ -48,7 +48,7 @@ library.add(faTimes);
             v-if="editable"
             size="sm"
             variant="link"
-            class="px-1 py-0"
+            class="px-1 py-0 tag-delete-button"
             tabindex="-1"
             @click.prevent.stop="onDelete">
             <FontAwesomeIcon icon="fa-times"></FontAwesomeIcon>
