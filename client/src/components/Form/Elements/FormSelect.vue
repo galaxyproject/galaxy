@@ -67,7 +67,6 @@ export default {
         options: {
             type: Array,
             required: true,
-            default: undefined,
         },
         multiple: {
             type: Boolean,
