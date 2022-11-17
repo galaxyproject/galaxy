@@ -76,7 +76,7 @@
             v-if="!tagsDisabled || hasTags"
             :value="tags"
             :disabled="tagsDisabled"
-            :clickable="true"
+            :clickable="filterable"
             @input="onTags"
             @tag-click="onTagClick" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
@@ -126,6 +126,7 @@ export default {
         name: { type: String, required: true },
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },
+        filterable: { type: Boolean, default: false },
     },
     computed: {
         jobState() {
@@ -232,7 +233,9 @@ export default {
             updateContentFields(this.item, { tags: newTags });
         },
         onTagClick(tag) {
-            this.$emit("tag-click", tag);
+            if (this.filterable) {
+                this.$emit("tag-click", tag);
+            }
         },
         toggleHighlights() {
             this.$emit("toggleHighlights", this.item);
