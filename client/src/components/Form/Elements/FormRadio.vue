@@ -1,5 +1,4 @@
 <script setup>
-import Multiselect from "vue-multiselect";
 import { computed, defineProps, defineEmits } from "vue";
 
 const $emit = defineEmits(["input"]);
