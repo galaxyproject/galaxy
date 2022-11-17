@@ -1,4 +1,7 @@
-from typing import Optional, Union
+from typing import (
+    Optional,
+    Union,
+)
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
@@ -21,8 +24,8 @@ from galaxy.schema.schema import (
     ExportObjectResultMetadata,
     ExportObjectType,
     HistoryContentType,
-    WriteStoreToPayload,
     ShortTermStoreExportPayload,
+    WriteStoreToPayload,
 )
 from galaxy.schema.tasks import (
     BcoGenerationTaskParametersMixin,
