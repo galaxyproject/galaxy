@@ -1,18 +1,17 @@
 """Render customizable templates e.g. emails with Jinja.
 
-Templates are preferentially read from the ``templates_dir`` directory.
-If the requested template path cannot be resolved with respect to this
-directory, the default template will be read from ``DEFAULT_TEMPLATES_DIR`` in
-the Galaxy root (config/templates).
+Templates are preferentially read from a custom template directory (the value
+of `templates_dir`, passed to the `render` function). If the requested
+template path cannot be resolved with respect to this directory, the default
+template will be read from `config/templates` in the Galaxy root.
 """
 
-import os
 from pathlib import Path
 
 from jinja2 import Environment
 
-DEFAULT_TEMPLATES_DIR = Path("lib/galaxy/config/templates")
-PACKAGES_DEFAULT_TEMPLATES_DIR = Path("../config/galaxy/config/templates")
+from galaxy.util import galaxy_directory
+
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
 
@@ -31,23 +30,9 @@ def _get_template_body(template: str) -> str:
 
 def _get_template_path(relpath: str, custom_templates_dir: str) -> Path:
     """Return template file path."""
-    default_path = _get_default_templates_dir() / relpath
+    default_templates_dir = Path(galaxy_directory()) / "lib" / "galaxy" / "config" / "templates"
+    default_path = default_templates_dir / relpath
     custom_path = Path(custom_templates_dir) / relpath
     if custom_path.exists():
         return custom_path
     return default_path
-
-
-def _get_default_templates_dir() -> Path:
-    """Return path to default template dir.
-
-    Accounts for running in ./packages dir when running tests.
-    """
-    if DEFAULT_TEMPLATES_DIR.exists():
-        return DEFAULT_TEMPLATES_DIR
-    if not PACKAGES_DEFAULT_TEMPLATES_DIR.exists():
-        cwd = os.getcwd()
-        raise FileNotFoundError(
-            f"Template directory {PACKAGES_DEFAULT_TEMPLATES_DIR} can not be" f" located from PWD: {cwd}"
-        )
-    return PACKAGES_DEFAULT_TEMPLATES_DIR
