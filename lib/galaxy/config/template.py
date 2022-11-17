@@ -10,7 +10,7 @@ from pathlib import Path
 
 from jinja2 import Environment
 
-from galaxy.util import galaxy_directory
+from galaxy.util.resources import resource_path
 
 TEMPLATE_SEP = ">>>>>>"  # Used to split templates into doc/body sections
 
@@ -30,8 +30,7 @@ def _get_template_body(template: str) -> str:
 
 def _get_template_path(relpath: str, custom_templates_dir: str) -> Path:
     """Return template file path."""
-    default_templates_dir = Path(galaxy_directory()) / "lib" / "galaxy" / "config" / "templates"
-    default_path = default_templates_dir / relpath
+    default_path = resource_path("galaxy.config", "templates") / relpath
     custom_path = Path(custom_templates_dir) / relpath
     if custom_path.exists():
         return custom_path
