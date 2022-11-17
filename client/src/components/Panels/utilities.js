@@ -1,11 +1,25 @@
+/**
+ * Utilities file for Tool Search (panel/client search + advanced/backend search)
+ */
 import { orderBy } from "lodash";
 
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
 const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
 
+/*
+    createWhooshQuery()
+    - Takes filterSettings = {"name": "Tool Name", "section": "Collection", ...}
+    - Takes panelView (if not 'default', does ontology search at backend)
+    - Takes toolbox (to find ontology id if given ontology name)
+    - Returns parsed Whoosh query
+    
+    e.g. fn call: createWhooshQuery(filterSettings, 'ontology:edam_topics', toolbox)
+    can return:
+        query = "(name:(skew) name_exact:(skew) description:(skew)) AND (edam_topics:(topic_0797) AND )"
+*/
 export function createWhooshQuery(filterSettings, panelView, toolbox) {
     let query = "(";
-    // add description+name_exact fields = name, to do a combined AndGroup at backend
+    // add description+name_exact fields = name, to do a combined OrGroup at backend
     const name = filterSettings["name"];
     if (name) {
         query += "name:(" + name + ") ";
@@ -38,6 +52,10 @@ export function createWhooshQuery(filterSettings, panelView, toolbox) {
     return query;
 }
 
+/*
+    filterTools()
+    Given toolbox and search results, returns filtered tool results
+*/
 export function filterTools(tools, results) {
     let toolsResults = [];
     tools = normalizeTools(tools);
@@ -47,6 +65,10 @@ export function filterTools(tools, results) {
     return toolsResults;
 }
 
+/*
+    filterToolSections()
+    Given toolbox and search results, returns filtered tool results by sections
+*/
 export function filterToolSections(tools, results) {
     let toolsResults = [];
     let toolsResultsSection = [];
@@ -71,23 +93,37 @@ export function hasResults(results) {
     return Array.isArray(results) && results.length > 0;
 }
 
+/*
+    searchToolsByKeys()
+    Given toolbox, keys to sort/search results by and a search query, 
+    Returns tool ids sorted by order of keys that are being searched
+*/
 export function searchToolsByKeys(tools, keys, query) {
     const returnedTools = [];
     for (const section of tools) {
+        let elems = [];
         if (section.elems) {
-            for (const tool of section.elems) {
-                for (const key of keys) {
-                    const actualValue = tool[key];
-                    if (actualValue && actualValue.toLowerCase().match(query.toLowerCase())) {
-                        returnedTools.push({ id: tool.id, key: key });
-                        break;
+            elems = section.elems;
+        } else {
+            elems.push(section);
+        }
+        for (const tool of elems) {
+            for (const key of Object.keys(keys)) {
+                const actualValue = tool[key];
+                if (actualValue && actualValue.toLowerCase().match(query.toLowerCase())) {
+                    // do we care for exact matches && is it an exact match
+                    if (keys.exact && actualValue.toLowerCase() === query.toLowerCase()) {
+                        returnedTools.push({ id: tool.id, order: keys.exact });
+                    } else {
+                        returnedTools.push({ id: tool.id, order: keys[key] });
                     }
+                    break;
                 }
             }
         }
     }
-    // sorting results by indexed order of key in keys
-    return orderBy(returnedTools, ["key"], ["desc"]).map((tool) => tool.id);
+    // sorting results by indexed order of keys
+    return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
 }
 
 function normalizeTools(tools) {
