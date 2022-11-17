@@ -306,7 +306,7 @@ class WorkflowProgress:
         use_cached_job: bool = False,
         replacement_dict: Optional[Dict[str, str]] = None,
         subworkflow_collection_info=None,
-        when=None,
+        when_values=None,
     ) -> None:
         self.outputs: Dict[int, Any] = {}
         self.module_injector = module_injector
@@ -320,7 +320,7 @@ class WorkflowProgress:
         self.replacement_dict = replacement_dict or {}
         self.subworkflow_collection_info = subworkflow_collection_info
         self.subworkflow_structure = subworkflow_collection_info.structure if subworkflow_collection_info else None
-        self.when = when
+        self.when_values = when_values
 
     @property
     def maximum_jobs_to_schedule_or_none(self) -> Optional[int]:
@@ -535,7 +535,7 @@ class WorkflowProgress:
         step: "WorkflowStep",
         use_cached_job: bool = False,
         subworkflow_collection_info=None,
-        when=None,
+        when_values=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
         workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
@@ -544,7 +544,7 @@ class WorkflowProgress:
             step,
             workflow_run_config.param_map,
             subworkflow_collection_info=subworkflow_collection_info,
-            when=when,
+            when_values=when_values,
         )
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         return WorkflowInvoker(
@@ -560,7 +560,7 @@ class WorkflowProgress:
         step: "WorkflowStep",
         param_map: Dict,
         subworkflow_collection_info=None,
-        when=None,
+        when_values=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
@@ -589,7 +589,7 @@ class WorkflowProgress:
             use_cached_job=self.use_cached_job,
             replacement_dict=self.replacement_dict,
             subworkflow_collection_info=subworkflow_collection_info,
-            when=when,
+            when_values=when_values,
         )
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:

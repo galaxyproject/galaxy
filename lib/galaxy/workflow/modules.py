@@ -113,7 +113,6 @@ class ConditionalStepWhen(BooleanToolParameter):
 def evaluate_value_from_expressions(progress, step, execution_state, extra_step_state):
     when_expression = step.when_expression
     value_from_expressions = {}
-    replacements = {}
 
     if execution_state:
         for key in execution_state.inputs.keys():
@@ -122,7 +121,7 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
                 value_from_expressions[key] = step_input.value_from
 
     if not value_from_expressions and when_expression is None:
-        return replacements
+        return {}
 
     hda_references = []
 
@@ -463,6 +462,8 @@ class WorkflowModule:
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
         # Have implicit collections...
         collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
+        if collection_info and progress.subworkflow_collection_info:
+            collection_info.when_values = progress.subworkflow_collection_info.when_values
         return collection_info or progress.subworkflow_collection_info
 
     def _find_collections_to_match(self, progress, step, all_inputs):
@@ -706,11 +707,18 @@ class SubWorkflowModule(WorkflowModule):
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
         else:
-            iteration_elements_iter = [None]
+            if progress.when_values:
+                # If we have more than one item in when_values it must have come from an expression.json
+                # collection, so we'd have a collection_info instance ... I think.
+                assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
+            iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
         when_values = []
         if step.when_expression:
-            for iteration_elements in iteration_elements_iter:
+            for (iteration_elements, when_value) in iteration_elements_iter:
+                if when_value is False:
+                    when_values.append(when_value)
+                    continue
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
@@ -725,13 +733,15 @@ class SubWorkflowModule(WorkflowModule):
                         progress, step, execution_state={}, extra_step_state=extra_step_state
                     )
                 )
+            if collection_info:
+                collection_info.when_values = when_values
 
         subworkflow_invoker = progress.subworkflow_invoker(
             trans,
             step,
             use_cached_job=use_cached_job,
             subworkflow_collection_info=collection_info,
-            when=when_values,
+            when_values=when_values,
         )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
@@ -2071,10 +2081,12 @@ class ToolModule(WorkflowModule):
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
         else:
-            iteration_elements_iter = [None]
+            if progress.when_values:
+                assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
+            iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
         resource_parameters = invocation.resource_parameters
-        for iteration_index, iteration_elements in enumerate(iteration_elements_iter):
+        for (iteration_elements, when_value) in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
             execution_state.inputs = make_dict_copy(execution_state.inputs)
@@ -2126,10 +2138,7 @@ class ToolModule(WorkflowModule):
                 message = message_template % (tool.name, unicodify(k))
                 raise exceptions.MessageException(message)
 
-            when_value = None
-            if progress.when and progress.when[iteration_index] is False:
-                when_value = False
-            elif step.when_expression:
+            if step.when_expression and when_value is not False:
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
@@ -2152,13 +2161,6 @@ class ToolModule(WorkflowModule):
                             else:
                                 value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
                             extra_step_state[step_input_name] = value
-
-                when_value = None
-                if progress.when is not None:
-                    if callable(progress.when):
-                        when_value = progress.when()
-                    else:
-                        when_value = progress.when
 
                 if when_value is not False:
                     when_value = evaluate_value_from_expressions(
