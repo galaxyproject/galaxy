@@ -1,4 +1,4 @@
-**Notice** Consider using [Composables](composalbes.md) instead of Providers. They offer more functionality and need less boilerplate.
+**Notice** Consider using [Composables](composables.md) instead of Providers. They offer more functionality and need less boilerplate.
 
 ---
 
