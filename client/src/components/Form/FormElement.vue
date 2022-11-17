@@ -3,6 +3,7 @@ import FormBoolean from "./Elements/FormBoolean";
 import FormHidden from "./Elements/FormHidden";
 import FormInput from "./Elements/FormInput";
 import FormParameter from "./Elements/FormParameter";
+import FormRadio from "./Elements/FormRadio";
 import FormColor from "./Elements/FormColor";
 import FormDirectory from "./Elements/FormDirectory";
 import FormNumber from "./Elements/FormNumber";
@@ -255,6 +256,11 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 :min="attrs.min"
                 :type="type"
                 :workflow-building-mode="workflowBuildingMode" />
+            <FormRadio
+                v-else-if="props.type == 'select' && attrs.display == 'radio'"
+                v-model="currentValue"
+                :id="id"
+                :options="attrs.options" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormParameter
