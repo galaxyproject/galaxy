@@ -1,6 +1,7 @@
 import abc
 import contextlib
 import datetime
+import logging
 import os
 import shutil
 import tarfile
@@ -54,6 +55,7 @@ from galaxy.model.orm.util import (
     add_object_to_session,
     get_object_session,
 )
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
 from galaxy.schema.bco import (
     BioComputeObjectCore,
@@ -78,6 +80,7 @@ from galaxy.schema.bco.util import (
     get_contributors,
     write_to_file,
 )
+from galaxy.schema.schema import ModelStoreFormat
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -101,6 +104,7 @@ from ... import model
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager
 
+log = logging.getLogger(__name__)
 
 ObjectKeyType = Union[str, int]
 
@@ -134,6 +138,7 @@ class StoreAppProtocol(Protocol):
     datatypes_registry: Registry
     object_store: ObjectStore
     security: IdEncodingHelper
+    tag_handler: GalaxyTagHandler
     model: GalaxyModelMapping
     file_sources: ConfiguredFileSources
     workflow_contents_manager: "WorkflowContentsManager"
@@ -623,9 +628,18 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         else:
                             # Need a user to run library jobs to generate metadata...
                             pass
-                        self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                            dataset_instance, history, **regenerate_kwds
-                        )
+                        if self.app.datatypes_registry.set_external_metadata_tool:
+                            self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                                dataset_instance, history, **regenerate_kwds
+                            )
+                        else:
+                            # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
+                            try:
+                                if dataset_instance.has_metadata_files:
+                                    dataset_instance.datatype.set_meta(dataset_instance)
+                            except Exception:
+                                log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
+                                dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
@@ -2646,7 +2660,7 @@ def source_to_import_store(
     app: StoreAppProtocol,
     galaxy_user: Optional[model.User],
     import_options: Optional[ImportOptions],
-    model_store_format: Optional[str] = None,
+    model_store_format: Optional[ModelStoreFormat] = None,
 ) -> ModelImportStore:
     if isinstance(source, dict):
         if model_store_format is not None:
@@ -2662,6 +2676,7 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
+        tag_handler = app.tag_handler.create_tag_handler_session()
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
@@ -2680,11 +2695,11 @@ def source_to_import_store(
             )
         elif os.path.isdir(target_path):
             model_import_store = get_import_model_store_for_directory(
-                target_path, import_options=import_options, app=app, user=galaxy_user
+                target_path, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
             )
         else:
-            model_store_format = model_store_format or "tgz"
-            if model_store_format in ["tar.gz", "tgz", "tar"]:
+            model_store_format = model_store_format or ModelStoreFormat.TGZ
+            if ModelStoreFormat.is_compressed(model_store_format):
                 try:
                     temp_dir = mkdtemp()
                     target_dir = CompressedFile(target_path).extract(temp_dir)
@@ -2692,9 +2707,9 @@ def source_to_import_store(
                     if delete:
                         os.remove(target_path)
                 model_import_store = get_import_model_store_for_directory(
-                    target_dir, import_options=import_options, app=app, user=galaxy_user
+                    target_dir, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
                 )
-            elif model_store_format in ["bag.gz", "bag.tar", "bag.zip"]:
+            elif ModelStoreFormat.is_bag(model_store_format):
                 model_import_store = BagArchiveImportModelStore(
                     target_path, import_options=import_options, app=app, user=galaxy_user
                 )
