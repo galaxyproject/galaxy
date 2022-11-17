@@ -642,6 +642,8 @@ class DefaultToolAction(ToolAction):
         job, galaxy_session = self._new_job_for_session(trans, tool, history)
         if skip:
             job.state = job.states.SKIPPED
+            for output_collection in output_collections.out_collections.values():
+                output_collection.mark_as_populated()
             object_store_populator = ObjectStorePopulator(trans.app, trans.user)
             for data in out_data.values():
                 object_store_populator.set_object_store_id(data)
