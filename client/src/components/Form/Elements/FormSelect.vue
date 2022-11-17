@@ -114,22 +114,22 @@ export default {
                     return;
                 } else if (this.value !== "") {
                     if (this.multiple && this.display != "checkboxes") {
-                        return this.selectValueMultiple(this.value);
+                        return this.selectValueMultiple(this.formattedOptions, this.value);
                     } else if (this.multiple && this.display == "checkboxes") {
-                        return this.selectValueCheckboxes(this.value);
+                        return this.selectValueCheckboxes(this.formattedOptions, this.value);
                     } else if (this.display == "radio") {
-                        return this.selectValueSingle(this.value);
+                        return this.selectValueSingle(this.formattedOptions, this.value);
                     } else {
-                        return this.selectValue(this.value);
+                        return this.selectValue(this.formattedOptions, this.value);
                     }
                 } else if (this.defaultValue !== "") {
                     if (this.multiple || this.display == "checkboxes") {
-                        return this.selectValueMultiple(this.defaultValue);
+                        return this.selectValueMultiple(this.formattedOptions, this.defaultValue);
                     } else {
-                        return this.selectValue(this.defaultValue);
+                        return this.selectValue(this.formattedOptions, this.defaultValue);
                     }
                 } else {
-                    return this.selectDefaultLabelValue();
+                    return this.selectDefaultLabelValue(this.formattedOptions);
                 }
             },
             set(val) {
@@ -138,7 +138,7 @@ export default {
                     // This case can occur when single-select dropdown is re-selected
                     return;
                 } else if (this.multiple && this.display != "checkboxes") {
-                    const values = this.getValuesFromFormattedOptions(val);
+                    const values = this.buildValuesFromFormattedOptions(val);
                     this.$emit("input", values);
                 } else if (this.display == "radio" || this.display == "checkboxes") {
                     this.$emit("input", val);
@@ -149,32 +149,32 @@ export default {
         },
     },
     methods: {
-        selectValueMultiple(val) {
+        selectValueMultiple(formattedOptions, val) {
             const selectedValues = this.normalizeSelectedValues(val);
-            return this.formattedOptions.filter((option) => selectedValues.indexOf(option.value) > -1);
+            return formattedOptions.filter((option) => selectedValues.indexOf(option.value) > -1);
         },
-        selectValueCheckboxes(val) {
+        selectValueCheckboxes(formattedOptions, val) {
             const selectedValues = this.normalizeSelectedValues(val);
-            return this.formattedOptions
+            return formattedOptions
                 .filter((option) => selectedValues.indexOf(option.value) > -1)
                 .map((option) => option.value);
         },
-        selectValueSingle(val) {
-            return this.formattedOptions.find((option) => option.value === val).value;
+        selectValueSingle(formattedOptions, val) {
+            return formattedOptions.find((option) => option.value === val).value;
         },
-        selectValue(val) {
-            return this.formattedOptions.find((option) => option.value === val);
+        selectValue(formattedOptions, val) {
+            return formattedOptions.find((option) => option.value === val);
         },
-        selectDefaultLabelValue() {
+        selectDefaultLabelValue(formattedOptions) {
             // Try to find a value labeled default in the options
-            const formattedOption = [this.formattedOptions.find((option) => option.default)];
-            const selectedOption = formattedOption[0] ?? this.formattedOptions[0];
+            const formattedOption = [formattedOptions.find((option) => option.default)];
+            const selectedOption = formattedOption[0] ?? formattedOptions[0];
             return selectedOption;
         },
-        selectFirstValue() {
-            return this.formattedOptions[0];
+        selectFirstValue(formattedOptions) {
+            return formattedOptions[0];
         },
-        getValuesFromFormattedOptions(options) {
+        buildValuesFromFormattedOptions(options) {
             return Array.isArray(options) ? options.map((option) => option.value) : options;
         },
         normalizeSelectedValues(val) {
