@@ -832,7 +832,7 @@ class TestDriver:
         self.server_wrappers = []
         self.temp_directories = []
 
-    def setup(self):
+    def setup(self, config_object=None):
         """Called before tests are built."""
 
     def build_tests(self):

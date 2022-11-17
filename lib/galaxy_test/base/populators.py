@@ -57,6 +57,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     NamedTuple,
     Optional,
@@ -732,27 +733,25 @@ class BaseDatasetPopulator(BasePopulator):
         delete_response = self._delete(f"dynamic_tools/{uuid}", admin=True)
         return delete_response.json()
 
+    @abstractmethod
     def _summarize_history(self, history_id: str) -> None:
         """Abstract method for summarizing a target history - override to provide details."""
 
+    def _cleanup_history(self, history_id: str) -> None:
+        self.cancel_history_jobs(history_id)
+
     @contextlib.contextmanager
-    def test_history(self, cancel_executions: bool = True, **kwds):
-        cleanup = "GALAXY_TEST_NO_CLEANUP" not in os.environ
-        history_id = None
-
-        def wrap_up():
-            if cleanup and cancel_executions and history_id:
-                self.cancel_history_jobs(history_id)
-
-        try:
-            history_id = self.new_history()
+    def test_history(self, require_new: bool = True):
+        with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
             yield history_id
-            wrap_up()
+
+    @contextlib.contextmanager
+    def _test_history(self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None) -> Generator[str, None, None]:
+        history_id = self.new_history()
+        try:
+            yield history_id
         except Exception:
-            if history_id:
-                self._summarize_history(history_id)
-            wrap_up()
-            raise
+            cleanup_callback and cleanup_callback(history_id)
 
     def new_history(self, name="API Test History", **kwds) -> str:
         create_history_response = self._post("histories", data=dict(name=name))
@@ -1386,6 +1385,11 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
+
+    @contextlib.contextmanager
+    def _test_history(self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None) -> Generator[str, None, None]:
+        with self.galaxy_interactor.test_history(require_new=require_new, cleanup_callback=cleanup_callback) as history_id:
+            yield history_id
 
 
 # Things gxformat2 knows how to upload as workflows
@@ -2938,6 +2942,9 @@ class GiDatasetPopulator(GiHttpMixin, BaseDatasetPopulator):
     def __init__(self, gi):
         """Construct a dataset populator from a bioblend GalaxyInstance."""
         self._gi = gi
+
+    def _summarize_history(self, history_id: str) -> None:
+        pass
 
 
 class GiDatasetCollectionPopulator(GiHttpMixin, BaseDatasetCollectionPopulator):

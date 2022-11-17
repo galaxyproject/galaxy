@@ -735,6 +735,9 @@ class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.Ba
         """Construct a dataset populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
 
+    def _summarize_history(self, history_id: str) -> None:
+        pass
+
 
 class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):
 
