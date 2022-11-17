@@ -1,6 +1,7 @@
 import abc
 import contextlib
 import datetime
+import logging
 import os
 import shutil
 import tarfile
@@ -103,6 +104,7 @@ from ... import model
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager
 
+log = logging.getLogger(__name__)
 
 ObjectKeyType = Union[str, int]
 
@@ -631,11 +633,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                                 dataset_instance, history, **regenerate_kwds
                             )
                         else:
-                            # Try to set metadata directly. TODO: check efficiency of this?
+                            # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
                             try:
                                 if dataset_instance.has_metadata_files:
                                     dataset_instance.datatype.set_meta(dataset_instance)
                             except Exception:
+                                log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
                                 dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
