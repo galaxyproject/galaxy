@@ -137,8 +137,13 @@ def dburl_from_config(config: Config) -> str:
 
 
 def run_command(cmd: str) -> subprocess.CompletedProcess:
-    cmd = f"{galaxy_directory()}/{cmd}"
-    return subprocess.run(cmd.split(), capture_output=True, text=True)
+    # Example of incoming cmd: "scripts/db_dev.sh revision --message foo1".
+    # We need to make the path absolute, then build a sequence of args for subprocess.
+    cmd_as_list = cmd.split()
+    cmd_path, cmd_args = cmd_as_list[0], cmd_as_list[1:]
+    cmd_path = os.path.join(galaxy_directory(), cmd_path)
+    args = ["sh", cmd_path] + cmd_args
+    return subprocess.run(args, capture_output=True, text=True)
 
 
 def get_db_heads(config: Config) -> Tuple[str, ...]:
