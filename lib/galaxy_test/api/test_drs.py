@@ -23,7 +23,9 @@ HTTP_METHODS: List[Callable[[str], requests.Response]] = [requests.get, requests
 CHECKSUM_TEST_SLEEP_TIME = 3.0
 
 
-class DrsApiTestCase(ApiTestCase):
+class TestDrsApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
