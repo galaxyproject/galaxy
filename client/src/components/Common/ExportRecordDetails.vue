@@ -6,6 +6,9 @@ import LoadingSpan from "components/LoadingSpan";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ExportRecordModel } from "./models/exportRecordModel";
+import { useConfirmDialog } from "composables/confirmDialog";
+
+const { confirm } = useConfirmDialog();
 
 const props = defineProps({
     record: {
@@ -44,8 +47,13 @@ const preparingMessage = computed(
     () => `Preparing export. This may take some time depending on the size of your ${props.objectType}`
 );
 
-function reimportObject() {
-    emit("onReimport", props.record);
+async function reimportObject() {
+    const confirmed = await confirm(
+        `Do you really want to import a new copy of this history exported ${elapsedTime.value}?`
+    );
+    if (confirmed) {
+        emit("onReimport", props.record);
+    }
 }
 
 function downloadObject() {
