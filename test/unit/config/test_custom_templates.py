@@ -1,6 +1,6 @@
 """Test custom template configuration and rendering."""
 
-from galaxy.util.custom_templates import template
+from galaxy.config import template
 
 TEMPLATE_RELPATH = "mail/activation-email.html"
 CONTEXT = {"name": "Jane Doe"}

@@ -24,6 +24,7 @@ from galaxy import (
     schema,
     util,
 )
+from galaxy.config import template
 from galaxy.managers import (
     base,
     deletable,
@@ -38,7 +39,6 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
-from galaxy.util.custom_templates import template
 from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web import url_for
 
