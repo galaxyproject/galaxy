@@ -5,7 +5,7 @@ import Ui from "mvc/ui/ui-misc";
 export default Backbone.View.extend({
     initialize: function (app) {
         this.app = app;
-        this.model = new Backbone.Model({ visible: false });
+        this.model = new Backbone.Model({ visible: true });
         this.execute_button = new Ui.Button({
             icon: "fa-check-square",
             tooltip: "Confirm",
