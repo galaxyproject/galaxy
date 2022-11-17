@@ -462,12 +462,8 @@ class WorkflowModule:
         """
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
         # Have implicit collections...
-        if collections_to_match.has_collections():
-            collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
-        else:
-            collection_info = None
-
-        return collection_info
+        collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
+        return collection_info or progress.subworkflow_collection_info
 
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
@@ -706,7 +702,6 @@ class SubWorkflowModule(WorkflowModule):
         step = invocation_step.workflow_step
         all_inputs = self.get_all_inputs()
         collection_info = self.compute_collection_info(progress, step, all_inputs)
-        structure = collection_info.structure if collection_info else None
 
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
@@ -735,7 +730,7 @@ class SubWorkflowModule(WorkflowModule):
             trans,
             step,
             use_cached_job=use_cached_job,
-            subworkflow_structure=structure,
+            subworkflow_collection_info=collection_info,
             when=when_values,
         )
         subworkflow_invoker.invoke()

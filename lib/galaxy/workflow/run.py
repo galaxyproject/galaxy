@@ -305,7 +305,7 @@ class WorkflowProgress:
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
         replacement_dict: Optional[Dict[str, str]] = None,
-        subworkflow_structure=None,
+        subworkflow_collection_info=None,
         when=None,
     ) -> None:
         self.outputs: Dict[int, Any] = {}
@@ -318,7 +318,8 @@ class WorkflowProgress:
         self.copy_inputs_to_history = copy_inputs_to_history
         self.use_cached_job = use_cached_job
         self.replacement_dict = replacement_dict or {}
-        self.subworkflow_structure = subworkflow_structure
+        self.subworkflow_collection_info = subworkflow_collection_info
+        self.subworkflow_structure = subworkflow_collection_info.structure if subworkflow_collection_info else None
         self.when = when
 
     @property
@@ -533,7 +534,7 @@ class WorkflowProgress:
         trans: "WorkRequestContext",
         step: "WorkflowStep",
         use_cached_job: bool = False,
-        subworkflow_structure=None,
+        subworkflow_collection_info=None,
         when=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
@@ -542,7 +543,7 @@ class WorkflowProgress:
             subworkflow_invocation,
             step,
             workflow_run_config.param_map,
-            subworkflow_structure=subworkflow_structure,
+            subworkflow_collection_info=subworkflow_collection_info,
             when=when,
         )
         subworkflow_invocation = subworkflow_progress.workflow_invocation
@@ -558,7 +559,7 @@ class WorkflowProgress:
         subworkflow_invocation: WorkflowInvocation,
         step: "WorkflowStep",
         param_map: Dict,
-        subworkflow_structure=None,
+        subworkflow_collection_info=None,
         when=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
@@ -587,7 +588,7 @@ class WorkflowProgress:
             param_map=param_map,
             use_cached_job=self.use_cached_job,
             replacement_dict=self.replacement_dict,
-            subworkflow_structure=subworkflow_structure,
+            subworkflow_collection_info=subworkflow_collection_info,
             when=when,
         )
 
