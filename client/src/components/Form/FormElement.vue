@@ -144,6 +144,18 @@ function onConnect() {
     }
 }
 
+/** Format select options. */
+function formatOptions(options, data) {
+    if (options && options.length > 0) {
+        return options;
+    } else if (data && data.length > 0) {
+        return data.map((option) => {
+            return [option.label, option.value];
+        });
+    }
+    return [];
+}
+
 const isHidden = computed(() => attrs.value["hidden"]);
 const elementId = computed(() => `form-element-${props.id}`);
 const hasError = computed(() => Boolean(props.error));
@@ -260,7 +272,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 v-else-if="props.type == 'select' && attrs.display == 'radio'"
                 v-model="currentValue"
                 :id="id"
-                :options="attrs.options" />
+                :options="formatOptions(attrs.options, attrs.data)" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormParameter
