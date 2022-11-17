@@ -1,16 +1,19 @@
-import { computed, onMounted, inject, ref } from "vue";
+import { computed, onMounted, inject, ref, unref } from "vue";
 
 /**
  * composable user store wrapper
+ * @param { boolean | ref<boolean> } noFetch when true, the user will not be fetched from the server
  * @returns currentUser computed
  */
-export function useCurrentUser() {
+export function useCurrentUser(noFetch = false) {
     const store = inject("store");
 
     const currentUser = computed(() => store.getters["user/currentUser"]);
 
     onMounted(() => {
-        store.dispatch("user/loadUser");
+        if (!unref(noFetch)) {
+            store.dispatch("user/loadUser");
+        }
     });
 
     const addFavoriteTool = async (toolId) => await store.dispatch("user/addFavoriteTool", toolId);
@@ -26,7 +29,7 @@ const localTags = ref([]);
  * Keeps tracks of the tags the current user has used.
  */
 export function useUserTags() {
-    const { currentUser } = useCurrentUser();
+    const { currentUser } = useCurrentUser(true);
 
     const userTags = computed(() => {
         let tags;
