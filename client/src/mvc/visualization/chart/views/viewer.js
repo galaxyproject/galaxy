@@ -36,7 +36,10 @@ export default Backbone.View.extend({
                     self._draw(process, self.chart);
                 });
             } else {
-                self.chart.state("info", "Please confirm the settings before rendering the results.");
+                self.chart.state(
+                    "info",
+                    "Please review the chart settings in the menu to the right and select 'Confirm' to render the visualization."
+                );
             }
         });
         this.chart.on("set:state", function () {
