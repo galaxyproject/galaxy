@@ -4,6 +4,12 @@ Composables are way of splitting up your code into distinct, reusable chunks.
 They can replace providers, mixins and more. Any code you can put into a component, can also be written as a composable.
 Using them effectively can make your code more reusable, decoupled, and easier to follow.
 
+**More about Composables:**
+
+* [Composables Overview](https://vuejs.org/guide/reusability/composables.html)
+* [Composition API](https://vuejs.org/api/composition-api-setup.html)
+* [\<script setup\>](https://vuejs.org/api/sfc-script-setup.html)
+
 ## Using Composables in the Composition API
 
 Example: accessing the current user from the store
@@ -99,8 +105,3 @@ const filteredArray = useFilterObjectArray(
 
 It's a simple filtering function, but fully reactive.
 Whenever any of the inputs changes, the return value is re-computed, without having to call the function again.
-
-## Further Reading
-
-* [Composition API](https://vuejs.org/api/composition-api-setup.html)
-* [\<script setup\>](https://vuejs.org/api/sfc-script-setup.html)
