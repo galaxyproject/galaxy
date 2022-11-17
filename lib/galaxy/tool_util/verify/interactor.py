@@ -16,6 +16,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    NamedTuple,
     Optional,
 )
 
@@ -116,6 +117,13 @@ def stage_data_in_history(
                 tool_version=tool_version,
             )
             upload_wait()
+
+
+class RunToolResponse(NamedTuple):
+    inputs: Dict[str, Any]
+    outputs: OutputsDict
+    output_collections: Dict[str, Any]
+    jobs: List[Dict[str, Any]]
 
 
 class GalaxyInteractorApi:
@@ -509,7 +517,7 @@ class GalaxyInteractorApi:
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
-    def run_tool(self, testdef, history_id, resource_parameters=None):
+    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -550,7 +558,7 @@ class GalaxyInteractorApi:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
-            return Bunch(
+            return RunToolResponse(
                 inputs=inputs_tree,
                 outputs=self.__dictify_outputs(submit_response_object),
                 output_collections=self.__dictify_output_collections(submit_response_object),
@@ -593,13 +601,13 @@ class GalaxyInteractorApi:
             element_identifiers.append(element)
         return element_identifiers
 
-    def __dictify_output_collections(self, submit_response):
+    def __dictify_output_collections(self, submit_response) -> Dict[str, Any]:
         output_collections_dict = {}
         for output_collection in submit_response["output_collections"]:
             output_collections_dict[output_collection.get("output_name")] = output_collection
         return output_collections_dict
 
-    def __dictify_outputs(self, datasets_object):
+    def __dictify_outputs(self, datasets_object) -> OutputsDict:
         # Convert outputs list to a dictionary that can be accessed by
         # output_name so can be more flexible about ordering of outputs
         # but also allows fallback to legacy access as list mode.
