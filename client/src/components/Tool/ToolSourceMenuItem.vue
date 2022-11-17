@@ -1,6 +1,6 @@
 <script setup>
 import ToolSource from "./ToolSource.vue";
-import { useConfig } from "composables/useConfig";
+import { useConfig } from "composables/config";
 import { useCurrentUser } from "composables/user";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
