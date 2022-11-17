@@ -557,7 +557,9 @@ class GalaxyInteractorApi:
                 jobs=submit_response_object["jobs"],
             )
         except KeyError:
-            message = f"Error creating a job for these tool inputs - {submit_response_object['err_msg']}"
+            message = (
+                f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+            )
             raise RunToolException(message, inputs_tree)
 
     def _create_collection(self, history_id, collection_def):
