@@ -24,6 +24,7 @@ from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - ur
     url_factory,
 )
 from galaxy.util import galaxy_directory
+from galaxy.util.resources import resource_path
 
 DbUrl = NewType("DbUrl", str)
 
@@ -39,16 +40,21 @@ COMMANDS = [ADMIN_CMD, DEV_CMD]
 
 
 @pytest.fixture(scope="session")
-def alembic_env_dir() -> str:
-    """[galaxy-root]/lib/galaxy/model/migrations/alembic/"""
-    galaxy_root = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..")
-    return os.path.join(galaxy_root, "lib", "galaxy", "model", "migrations", "alembic")
+def migrations_dir():
+    """[galaxy-root]/lib/galaxy/model/migrations/"""
+    return resource_path("galaxy.model", "migrations")
 
 
 @pytest.fixture(scope="session")
-def alembic_config_text(alembic_env_dir) -> List[str]:
+def alembic_env_dir(migrations_dir) -> str:
+    """[galaxy-root]/lib/galaxy/model/migrations/alembic/"""
+    return migrations_dir / "alembic"
+
+
+@pytest.fixture(scope="session")
+def alembic_config_text(migrations_dir) -> List[str]:
     """Contents of production alembic.ini as list of lines"""
-    current_config_path = os.path.join(alembic_env_dir, "..", "alembic.ini")
+    current_config_path = migrations_dir / "alembic.ini"
     with open(current_config_path, "r") as f:
         return f.readlines()
 
