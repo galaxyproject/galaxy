@@ -1,14 +1,11 @@
 <script setup>
-import { computed, onMounted, ref } from "vue";
-import { storeToRefs } from "pinia";
+import { computed, onMounted } from "vue";
 
 import { useWorkflowStore } from "stores/workflowStore";
 
 import ParameterStep from "./ParameterStep";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import WorkflowInvocationStep from "./WorkflowInvocationStep";
-
-const workflow = ref(null);
 
 const props = defineProps({
     invocation: {
@@ -19,7 +16,9 @@ const props = defineProps({
 
 const workflowStore = useWorkflowStore();
 
-const { getWorkflowByInstanceId } = storeToRefs(workflowStore);
+const workflow = computed(() => {
+    return workflowStore.workflowsByInstanceId[props.invocation.workflow_id];
+});
 
 function dataInputStepLabel(key, input) {
     const invocationStep = props.invocation.steps[key];
@@ -35,10 +34,10 @@ function dataInputStepLabel(key, input) {
 }
 
 onMounted(async () => {
-    await workflowStore.fetchWorkflowForInstanceId(props.invocation.workflow_id);
-    workflow.value = getWorkflowByInstanceId(props.invocation.workflow_id);
+    if (!workflowStore.workflowsByInstanceId[props.invocation.workflow_id]) {
+        workflowStore.fetchWorkflowForInstanceId(props.invocation.workflow_id);
+    }
 });
-
 </script>
 <template>
     <div v-if="invocation">
