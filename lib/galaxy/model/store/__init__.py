@@ -63,7 +63,6 @@ from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import (
     BaseObjectStore,
     ObjectStore,
-)
 from galaxy.schema.bco import (
     BioComputeObjectCore,
     DescriptionDomain,
