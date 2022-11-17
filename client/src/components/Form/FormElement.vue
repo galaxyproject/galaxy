@@ -6,6 +6,7 @@ import FormParameter from "./Elements/FormParameter";
 import FormColor from "./Elements/FormColor";
 import FormDirectory from "./Elements/FormDirectory";
 import FormNumber from "./Elements/FormNumber";
+import FormSelect from "./Elements/FormSelect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
 
@@ -255,6 +256,15 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 :min="attrs.min"
                 :type="type"
                 :workflow-building-mode="workflowBuildingMode" />
+            <FormSelect
+                v-else-if="type == 'select'"
+                v-model="currentValue"
+                :id="id"
+                :options="attrs.options"
+                :default-value="attrs.default_value"
+                :multiple="attrs.multiple"
+                :display="attrs.display"
+                :optional="attrs.optional" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormParameter
