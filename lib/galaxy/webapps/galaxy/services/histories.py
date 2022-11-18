@@ -342,6 +342,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         request = GenerateHistoryDownload(
             history_id=history.id,
             short_term_storage_request_id=short_term_storage_target.request_id,
+            duration=short_term_storage_target.duration,
             user=trans.async_request_user,
             export_association_id=export_association.id,
             **payload.dict(),

@@ -61,6 +61,7 @@ JOB_MODEL_CLASS = Literal["Job"]
 STORED_WORKFLOW_MODEL_CLASS = Literal["StoredWorkflow"]
 PAGE_MODEL_CLASS = Literal["Page"]
 
+OptionalNumberT = Optional[Union[int, float]]
 
 # Generic and common Field annotations that can be reused across models
 
@@ -1350,6 +1351,7 @@ class StoreExportPayload(Model):
 
 class ShortTermStoreExportPayload(StoreExportPayload):
     short_term_storage_request_id: UUID
+    duration: OptionalNumberT
 
 
 class BcoGenerationParametersMixin(BaseModel):
