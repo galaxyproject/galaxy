@@ -76,6 +76,15 @@ class BaseAction(BaseModel):
 
 class Action(BaseAction):
     action_type: str
+    default: Any
+    input: Any
+    label: str
+    name: str
+    output: Any
+    optional: bool
+    step: Any
+    type: str
+    tool_state: Any
 
     @classmethod
     def __get_validators__(cls):
