@@ -15,7 +15,8 @@ class TestNginxAccelHeader(IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         config["nginx_x_accel_redirect_base"] = "/redirect"
 
-    def test_dataset_download(self, history_id):
+    def test_dataset_download(self, history_id_):
+        history_id = history_id_
         hda = self.dataset_populator.new_dataset(history_id=history_id, wait=True)
         head_response = self._head(f"histories/{history_id}/contents/{hda['id']}/display", {"raw": "True"})
         self._assert_status_code_is(head_response, 200)
@@ -37,7 +38,8 @@ class TestApacheSendFileHeader(IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         config["apache_xsendfile"] = True
 
-    def test_dataset_download(self, history_id):
+    def test_dataset_download(self, history_id_):
+        history_id = history_id_
         hda = self.dataset_populator.new_dataset(history_id=history_id, wait=True)
         head_response = self._head(f"histories/{history_id}/contents/{hda['id']}/display", {"raw": "True"})
         self._assert_status_code_is(head_response, 200)

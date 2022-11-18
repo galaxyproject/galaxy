@@ -23,7 +23,8 @@ class TestExtendedMetadataMappingIntegration(integration_util.IntegrationTestCas
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
-    def test_map_over_collection(self, history_id):
+    def test_map_over_collection(self, history_id_):
+        history_id = history_id_
         hdca_id = self._build_pair(history_id, ["123", "456"])
         inputs = {
             "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},

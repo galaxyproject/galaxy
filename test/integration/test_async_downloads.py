@@ -19,7 +19,8 @@ class TestAsyncDownloadsIntegration(IntegrationTestCase):
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     @pytest.mark.require_new_history
-    def test_async_collection_download(self, history_id):
+    def test_async_collection_download(self, history_id_):
+        history_id = history_id_
         fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, direct_upload=True).json()
         dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         returned_dce = dataset_collection["elements"]

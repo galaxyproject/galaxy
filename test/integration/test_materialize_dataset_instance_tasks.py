@@ -38,7 +38,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     @pytest.mark.require_new_history
-    def test_materialize_history_dataset(self, history_id: str):
+    def test_materialize_history_dataset(self, history_id_: str):
+        history_id = history_id_
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
             store_dict=deferred_hda_model_store_dict(),
@@ -58,7 +59,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert not new_hda_details["deleted"]
 
     @pytest.mark.require_new_history
-    def test_materialize_gxfiles_uri(self, history_id: str):
+    def test_materialize_gxfiles_uri(self, history_id_: str):
+        history_id = history_id_
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
             store_dict=deferred_hda_model_store_dict(source_uri="gxfiles://testdatafiles/2.bed"),
@@ -79,7 +81,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert not new_hda_details["deleted"]
 
     @pytest.mark.require_new_history
-    def test_materialize_history_dataset_bam(self, history_id: str):
+    def test_materialize_history_dataset_bam(self, history_id_: str):
+        history_id = history_id_
         as_list = self.dataset_populator.create_contents_from_store(
             history_id,
             store_dict=deferred_hda_model_store_dict_bam(),
@@ -111,7 +114,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert "metadata_bam_index" in new_hda_details
 
     @pytest.mark.require_new_history
-    def test_materialize_library_dataset(self, history_id: str):
+    def test_materialize_library_dataset(self, history_id_: str):
+        history_id = history_id_
         response = self.library_populator.create_from_store(store_dict=one_ld_library_deferred_model_store_dict())
         assert isinstance(response, list)
         assert len(response) == 1
@@ -130,7 +134,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert not new_hda_details["deleted"]
 
     @pytest.mark.require_new_history
-    def test_upload_vs_materialize_simplest_upload(self, history_id: str):
+    def test_upload_vs_materialize_simplest_upload(self, history_id_: str):
+        history_id = history_id_
         item = {"src": "url", "url": "gxfiles://testdatafiles//simple_line_no_newline.txt", "ext": "txt"}
         output = self.dataset_populator.fetch_hda(history_id, item)
         uploaded_details = self.dataset_populator.get_history_dataset_details(
@@ -145,7 +150,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert content == "This is a line of text."
 
     @pytest.mark.require_new_history
-    def test_upload_vs_materialize_to_posix_lines(self, history_id: str):
+    def test_upload_vs_materialize_to_posix_lines(self, history_id_: str):
+        history_id = history_id_
         item = {
             "src": "url",
             "url": "gxfiles://testdatafiles//simple_line_no_newline.txt",
@@ -171,7 +177,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert content == "This is a line of text.\n"
 
     @pytest.mark.require_new_history
-    def test_upload_vs_materialize_space_to_tab(self, history_id: str):
+    def test_upload_vs_materialize_space_to_tab(self, history_id_: str):
+        history_id = history_id_
         item = {
             "src": "url",
             "url": "gxfiles://testdatafiles//simple_line_no_newline.txt",
@@ -197,7 +204,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert content == "This\tis\ta\tline\tof\ttext."
 
     @pytest.mark.require_new_history
-    def test_upload_vs_materialize_to_posix_and_space_to_tab(self, history_id: str):
+    def test_upload_vs_materialize_to_posix_and_space_to_tab(self, history_id_: str):
+        history_id = history_id_
         item = {
             "src": "url",
             "url": "gxfiles://testdatafiles//simple_line_no_newline.txt",
@@ -224,7 +232,8 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
         assert content == "This\tis\ta\tline\tof\ttext.\n"
 
     @pytest.mark.require_new_history
-    def test_upload_vs_materialize_grooming(self, history_id: str):
+    def test_upload_vs_materialize_grooming(self, history_id_: str):
+        history_id = history_id_
         item = {
             "src": "url",
             "url": "gxfiles://testdatafiles/qname_sorted.bam",
