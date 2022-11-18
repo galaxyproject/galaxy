@@ -371,7 +371,8 @@ class JobConfiguration(ConfiguresHandlers):
                         log.warning(
                             "Implicit loading of job_conf.xml has been deprecated and will be removed in a future"
                             f" release of Galaxy. Please convert to YAML at {self.app.config.job_config_file} or"
-                            f" explicitly set `job_config_file` to {job_config_file} to remove this message")
+                            f" explicitly set `job_config_file` to {job_config_file} to remove this message"
+                        )
                 if ".xml" in job_config_file:
                     tree = load(job_config_file)
                     job_config_dict = self.__parse_job_conf_xml(tree)
