@@ -1779,3 +1779,79 @@ class CMAP(TabularData):
             dataset.metadata.column_types = cleaned_column_types
             dataset.metadata.columns = number_of_columns
             dataset.metadata.delimiter = "\t"
+
+
+class Tabix(Tabular):
+    """
+    Class describing the bgzip format (http://samtools.github.io/hts-specs/SAMv1.pdf)
+    As tabix is just a bgzip with an index
+    """
+
+    file_ext = "tabix"
+    edam_format = "format_3616"
+    compressed = True
+    compressed_format = "gzip"
+
+    # Add metadata elements
+    MetadataElement(
+        name="tabix_index",
+        desc="Tabix Index File",
+        param=metadata.FileParameter,
+        file_ext="tbi",
+        readonly=True,
+        visible=False,
+        optional=True,
+    )
+
+    MetadataElement(
+        name="chromCol",
+        default=1,
+        desc="Chrom column",
+        param=metadata.ColumnParameter
+    )
+    MetadataElement(
+        name="startCol",
+        default=2,
+        desc="Start column",
+        param=metadata.ColumnParameter
+    )
+    MetadataElement(
+        name="endCol",
+        default=3,
+        desc="End column",
+        param=metadata.ColumnParameter
+    )
+
+    def validate(self, dataset, **kwd):
+        # Assert it is bgzip
+        with open(dataset.file_name, "rb") as fh:
+            fh.seek(-28, 2)
+            last28 = fh.read()
+            return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
+
+    # Ideally the tabix_index would be regenerated when the metadataElements are updated
+    # As it is not the case for the moment, it is better not to set it wrongly
+    # def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
+    #     super().set_meta(dataset, **kwd)
+    #     # Try to create the index for the Tabix file.
+    #     # These metadata values are not accessible by users, always overwrite
+    #     index_file = dataset.metadata.tabix_index
+    #     if not index_file:
+    #         index_file = dataset.metadata.spec["tabix_index"].param.new_file(
+    #             dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+    #         )
+
+    #     try:
+    #         pysam.tabix_index(
+    #             dataset.file_name,
+    #             index=index_file.file_name,
+    #             seq_col=dataset.metadata.chromCol,
+    #             start_col=dataset.metadata.startCol,
+    #             end_col=dataset.metadata.endCol,
+    #             keep_original=True,
+    #             force=True
+    #         )
+    #     except Exception as e:
+    #         print(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
+    #     else:
+    #         dataset.metadata.tabix_index = index_file
