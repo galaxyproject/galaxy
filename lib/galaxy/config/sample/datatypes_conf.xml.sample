@@ -1198,6 +1198,7 @@
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
     <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
     <sniffer type="galaxy.datatypes.tabular:VcfGz"/>
+    <sniffer type="galaxy.datatypes.binary:Bcf"/>
     <sniffer type="galaxy.datatypes.tabular:Tabix"/>
   </sniffers>
 </datatypes>
