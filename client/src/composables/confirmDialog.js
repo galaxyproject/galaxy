@@ -3,6 +3,7 @@ import { ref } from "vue";
 let confirmDialogRef = ref(null);
 
 export const setConfirmDialogComponentRef = (newRef) => {
+    // eslint-disable-next-line vue/no-ref-as-operand
     confirmDialogRef = newRef;
 };
 
