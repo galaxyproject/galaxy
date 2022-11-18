@@ -476,6 +476,7 @@
     <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
     <datatype extension="onnx" type="galaxy.datatypes.binary:Binary" subclass="true" description="ONNX (Open neural network exchange) is data format for storing and sharing machine learning and deep learning models." display_in_upload="true"/>
     <datatype extension="tabix" type="galaxy.datatypes.tabular:Tabix" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="juicer.medium.tabix" type="galaxy.datatypes.tabular:JuicerMediumTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
       <display file="igv/vcf.xml"/>
@@ -1196,5 +1197,7 @@
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
     <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
+    <sniffer type="galaxy.datatypes.tabular:VcfGz"/>
+    <sniffer type="galaxy.datatypes.tabular:Tabix"/>
   </sniffers>
 </datatypes>
