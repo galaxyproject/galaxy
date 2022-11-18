@@ -187,7 +187,8 @@ class FastAPIJobs:
         self, trans: ProvidesHistoryContext = DependsOnTrans, job_request: JobRequest = Body(...)
     ) -> JobCreateResponse:
         validate_not_protected(job_request.tool_id)
-        return self.service.create(trans, job_request)
+        rval = self.service.create(trans, job_request)
+        return rval
 
     @router.get("/api/jobs/{id}")
     def show(

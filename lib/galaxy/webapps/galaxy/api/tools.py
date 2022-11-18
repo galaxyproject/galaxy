@@ -133,7 +133,9 @@ class FetchTools:
         id: DecodedDatabaseIdField,
         trans: ProvidesHistoryContext = DependsOnTrans,
     ) -> str:
-        return trans.app.model.context.query(ToolRequest).get(id).state
+        rval = trans.app.model.context.query(ToolRequest).get(id).state
+        log.info(f"RETURNING STATE OF {rval}")
+        return rval
 
     @router.get(
         "/api/tools/{tool_id}/inputs",
