@@ -66,7 +66,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 import UtcDate from "components/UtcDate";
 import { mapActions, mapState } from "pinia";
-import { useEntryPointStore } from "../../stores/entryPointStore"
+import { useEntryPointStore } from "../../stores/entryPointStore";
 
 export default {
     components: {
@@ -107,7 +107,7 @@ export default {
         };
     },
     computed: {
-        ...mapState(useEntryPointStore, {activeInteractiveTools: "entryPoints"}),
+        ...mapState(useEntryPointStore, { activeInteractiveTools: "entryPoints" }),
         showNotFound() {
             return this.nInteractiveTools === 0 && this.filter && !this.isActiveToolsListEmpty;
         },

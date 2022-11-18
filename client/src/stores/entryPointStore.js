@@ -6,7 +6,7 @@ import axios from "axios";
 export const useEntryPointStore = defineStore("entryPointStore", {
     state: () => ({
         entryPoints: [],
-        interval: null,
+        interval: undefined,
     }),
     getters: {
         getEntryPoints: (state) => {
@@ -15,17 +15,19 @@ export const useEntryPointStore = defineStore("entryPointStore", {
     },
     actions: {
         startPollingEntryPoints() {
-            this.fetchEntryPoints();
-            this.interval = setInterval(() => {
+            if (this.interval === undefined) {
                 this.fetchEntryPoints();
-            }, 5000);
+                this.interval = setInterval(() => {
+                    this.fetchEntryPoints();
+                }, 5000);
+            }
         },
         stopPollingEntryPoints() {
-            clearInterval(this.interval);
+            this.interval = clearInterval(this.interval);
         },
         async fetchEntryPoints() {
             const url = getAppRoot() + `api/entry_points`;
-            const params = {"running": true}
+            const params = { running: true };
             axios
                 .get(url, { params: params })
                 .then((response) => {
@@ -37,6 +39,5 @@ export const useEntryPointStore = defineStore("entryPointStore", {
                     rethrowSimple(e);
                 });
         },
-
     },
 });
