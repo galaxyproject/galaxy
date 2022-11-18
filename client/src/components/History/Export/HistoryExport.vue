@@ -5,7 +5,7 @@ import LoadingSpan from "components/LoadingSpan";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
 import { HistoryExportService } from "./services";
-import { useTaskMonitor } from "composables/useTaskMonitor";
+import { useTaskMonitor } from "composables/taskMonitor";
 import { useFileSources } from "composables/fileSources";
 import { useShortTermStorage } from "composables/shortTermStorage";
 

@@ -1,6 +1,7 @@
 export class ExportRecordModel {
     constructor(data) {
         this._data = data;
+        this._expirationDate = undefined;
     }
 
     get isReady() {
@@ -49,5 +50,22 @@ export class ExportRecordModel {
 
     get modelStoreFormat() {
         return this._data?.export_metadata?.request_data?.payload?.model_store_format;
+    }
+
+    get duration() {
+        return this._data?.export_metadata?.request_data?.payload?.duration;
+    }
+
+    get canExpire() {
+        return this.isStsDownload && !!this.duration;
+    }
+
+    get expirationDate() {
+        if (this._expirationDate === undefined) {
+            this._expirationDate = this.canExpire
+                ? new Date(new Date(this.date).getTime() + this.duration * 1000)
+                : null;
+        }
+        return this._expirationDate;
     }
 }

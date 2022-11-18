@@ -5,8 +5,12 @@ import UtcDate from "components/UtcDate";
 import LoadingSpan from "components/LoadingSpan";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock } from "@fortawesome/free-solid-svg-icons";
 import { ExportRecordModel } from "./models/exportRecordModel";
 import { useConfirmDialog } from "composables/confirmDialog";
+
+library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock);
 
 const { confirm } = useConfirmDialog();
 
@@ -33,6 +37,13 @@ const emit = defineEmits(["onReimport", "onDownload", "onActionMessageDismissed"
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
 const elapsedTime = computed(() => formatDistanceToNow(parseISO(`${props.record.date}Z`), { addSuffix: true }));
+const expirationTime = computed(() => formatDistanceToNow(props.record.expirationDate, { addSuffix: true }));
+const expirationMessage = computed(() => {
+    if (!!props.record.expirationDate && Date.now() > props.record.expirationDate) {
+        return "This download link has expired";
+    }
+    return `This download link expires ${expirationTime.value}`;
+});
 const statusMessage = computed(() => {
     if (props.record.hasFailed) {
         return `Something failed during this export. Please try again and if the problem persist contact your administrator.`;
@@ -80,6 +91,9 @@ function onMessageDismissed() {
             <span>
                 {{ statusMessage }}
             </span>
+            <p v-if="props.record.canExpire" class="mt-3">
+                <font-awesome-icon icon="clock" class="text-warning" /> {{ expirationMessage }}
+            </p>
             <div v-if="props.record.isReady">
                 <p class="mt-3">
                     {{ readyMessage }}
