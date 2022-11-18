@@ -108,7 +108,9 @@ library.add(faTags, faCheck, faTimes, faPlus);
                     @click="onTagClicked"></Tag>
             </template>
 
-            <template v-slot:noOptions> Type to add new tag </template>
+            <template v-slot:noOptions>
+                <span class="multiselect-option">Type to add new tag</span>
+            </template>
 
             <template v-slot:caret>
                 <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
