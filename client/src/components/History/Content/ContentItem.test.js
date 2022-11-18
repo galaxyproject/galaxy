@@ -30,6 +30,7 @@ describe("ContentItem", () => {
                 name: "name",
                 selected: false,
                 selectable: false,
+                filterable: true,
             },
             localVue,
             stubs: {
