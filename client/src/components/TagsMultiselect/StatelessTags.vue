@@ -4,6 +4,7 @@ import Tag from "./Tag.vue";
 import { ref, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useUserTags } from "composables/user";
+import { useToast } from "composables/toast";
 
 const props = defineProps({
     value: {
@@ -23,6 +24,7 @@ const props = defineProps({
 const emit = defineEmits(["input", "tag-click"]);
 
 const { userTags, addLocalTag } = useUserTags();
+const { warning } = useToast();
 
 function onAddTag(tag) {
     const newTag = tag.trim();
@@ -30,6 +32,8 @@ function onAddTag(tag) {
     if (isValid(newTag)) {
         addLocalTag(newTag);
         emit("input", [...props.value, newTag]);
+    } else {
+        warning(`"${newTag}" is not a valid tag.`, "Invalid Tag");
     }
 }
 
