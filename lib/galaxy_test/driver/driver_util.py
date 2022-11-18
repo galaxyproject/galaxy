@@ -762,11 +762,10 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         supervisord_socket = socket.name
     gravity_env = os.environ.copy()
     gravity_env["SUPERVISORD_SOCKET"] = supervisord_socket
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "register", config_fh.name], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "update"], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "start"], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "update"], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "start"], env=gravity_env)
     return state_dir, lambda: subprocess.check_output(
-        ["galaxyctl", "--state-dir", state_dir, "shutdown"], env=gravity_env
+        ["galaxyctl", "--config-file", config_fh.name, "shutdown"], env=gravity_env
     )
 
 
