@@ -33,6 +33,7 @@
         "vue/require-prop-types": "warn",
         "vue/require-default-prop": "warn",
         "vue/no-v-html": "warn",
+        "vue/attributes-order": "error",
 
         // Prettier compromises/workarounds -- mostly #wontfix?
         "vue/html-indent": "off",
