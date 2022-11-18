@@ -171,6 +171,10 @@ library.add(faTags, faCheck, faTimes, faPlus);
             padding: 0 0.25rem;
             z-index: 1;
             height: $font-size-base * 2;
+
+            &::before {
+                border-color: $text-color transparent transparent;
+            }
         }
 
         .multiselect__placeholder {
