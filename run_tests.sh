@@ -251,6 +251,15 @@ TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
 
+We're tyring annotate API and Selenium tests with the resources they require
+and create to make them more appropriate to run on established Galaxy instances.
+The following variables can be used to disable certain classes of properly tests.
+
+GALAXY_TEST_SKIP_IF_REQUIRES_ADMIN
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_HISTORY
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_LIBRARY
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_USER
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_PUBLISHED_OBJECTS
 EOF
 }
 

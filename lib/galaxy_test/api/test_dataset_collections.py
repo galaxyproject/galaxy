@@ -100,7 +100,9 @@ class TestDatasetCollectionsApi(ApiTestCase):
 
     def test_list_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
-            fetch_response = self.dataset_collection_populator.create_list_in_history(history_id, direct_upload=True).json()
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, direct_upload=True
+            ).json()
             dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
             returned_dce = dataset_collection["elements"]
             assert len(returned_dce) == 3, dataset_collection
@@ -115,7 +117,9 @@ class TestDatasetCollectionsApi(ApiTestCase):
 
     def test_pair_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
-            fetch_response = self.dataset_collection_populator.create_pair_in_history(history_id, direct_upload=True).json()
+            fetch_response = self.dataset_collection_populator.create_pair_in_history(
+                history_id, direct_upload=True
+            ).json()
             dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
             returned_dce = dataset_collection["elements"]
             assert len(returned_dce) == 2, dataset_collection

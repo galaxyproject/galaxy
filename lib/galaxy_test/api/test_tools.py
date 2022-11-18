@@ -22,6 +22,7 @@ from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,
 )
+from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import (
     BaseDatasetCollectionPopulator,
     DatasetCollectionPopulator,
@@ -372,7 +373,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
             sanitized_email = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][1])
             assert '"' not in sanitized_email
 
-            sanitized_address = self.dataset_populator.get_history_dataset_content(history_id, dataset=rval["outputs"][2])
+            sanitized_address = self.dataset_populator.get_history_dataset_content(
+                history_id, dataset=rval["outputs"][2]
+            )
             assert sanitized_address.strip() == cool_name_without_quote
 
     @skip_without_tool("composite_output")
@@ -523,7 +526,9 @@ class TestToolsApi(ApiTestCase, TestsTools):
                     ],
                 },
             ]
-            hdca1 = self.dataset_collection_populator.upload_collection(history_id, "list:paired", elements=data, wait=True)
+            hdca1 = self.dataset_collection_populator.upload_collection(
+                history_id, "list:paired", elements=data, wait=True
+            )
             self._assert_status_code_is(hdca1, 200)
 
             payload = {
@@ -881,17 +886,19 @@ class TestToolsApi(ApiTestCase, TestsTools):
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
             assert output1_content.strip() == "Cat1Test"
 
-    @pytest.mark.require_new_history
     @skip_without_tool("cat1")
+    @requires_new_history
     def test_run_cat1_use_cached_job(self):
-        with self.dataset_populator.test_history(require_new=True) as history_id:
+        with self.dataset_populator.test_history_for(self.test_run_cat1_use_cached_job) as history_id:
             # Run simple non-upload tool with an input data parameter.
             new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
             inputs = dict(
                 input1=dataset_to_param(new_dataset),
             )
             outputs_one = self._run_cat1(history_id, inputs=inputs, assert_ok=True, wait_for_job=True)
-            outputs_two = self._run_cat1(history_id, inputs=inputs, use_cached_job=False, assert_ok=True, wait_for_job=True)
+            outputs_two = self._run_cat1(
+                history_id, inputs=inputs, use_cached_job=False, assert_ok=True, wait_for_job=True
+            )
             outputs_three = self._run_cat1(
                 history_id, inputs=inputs, use_cached_job=True, assert_ok=True, wait_for_job=True
             )
@@ -904,32 +911,34 @@ class TestToolsApi(ApiTestCase, TestsTools):
             assert len(set(filenames)) <= 2, filenames
 
     @skip_without_tool("cat1")
-    def test_run_cat1_listified_param(self, history_id):
-        # Run simple non-upload tool with an input data parameter.
-        new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Testlistified")
-        inputs = dict(
-            input1=[dataset_to_param(new_dataset)],
-        )
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        assert len(outputs) == 1
-        output1 = outputs[0]
-        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        assert output1_content.strip() == "Cat1Testlistified"
-
-    @skip_without_tool("multiple_versions")
-    def test_run_by_versions(self, history_id):
-        for version in ["0.1", "0.2"]:
+    def test_run_cat1_listified_param(self):
+        with self.dataset_populator.test_history_for(self.test_run_cat1_listified_param) as history_id:
             # Run simple non-upload tool with an input data parameter.
-            outputs = self._run_and_get_outputs(
-                tool_id="multiple_versions", history_id=history_id, tool_version=version
+            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Testlistified")
+            inputs = dict(
+                input1=[dataset_to_param(new_dataset)],
             )
+            outputs = self._cat1_outputs(history_id, inputs=inputs)
             assert len(outputs) == 1
             output1 = outputs[0]
             output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-            assert output1_content.strip() == f"Version {version}"
+            assert output1_content.strip() == "Cat1Testlistified"
 
     @skip_without_tool("multiple_versions")
-    def test_test_by_versions(self, history_id):
+    def test_run_by_versions(self):
+        with self.dataset_populator.test_history_for(self.test_run_by_versions) as history_id:
+            for version in ["0.1", "0.2"]:
+                # Run simple non-upload tool with an input data parameter.
+                outputs = self._run_and_get_outputs(
+                    tool_id="multiple_versions", history_id=history_id, tool_version=version
+                )
+                assert len(outputs) == 1
+                output1 = outputs[0]
+                output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+                assert output1_content.strip() == f"Version {version}"
+
+    @skip_without_tool("multiple_versions")
+    def test_test_by_versions(self):
         test_data_response = self._get("tools/multiple_versions/test_data")
         test_data_response.raise_for_status()
         test_data_dicts = test_data_response.json()
@@ -942,55 +951,59 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert len(test_data_dicts) == 3
 
     @skip_without_tool("multiple_versions")
-    def test_show_with_wrong_tool_version_in_tool_id(self, history_id):
+    def test_show_with_wrong_tool_version_in_tool_id(self):
         tool_info = self._show_valid_tool("multiple_versions", tool_version="0.01")
         # Return last version
         assert tool_info["version"] == "0.2"
 
     @skip_without_tool("cat1")
     def test_run_cat1_single_meta_wrapper(self, history_id):
-        # Wrap input in a no-op meta parameter wrapper like Sam is planning to
-        # use for all UI API submissions.
-        new_dataset = self.dataset_populator.new_dataset(history_id, content="123")
-        inputs = dict(
-            input1={"batch": False, "values": [dataset_to_param(new_dataset)]},
-        )
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        assert len(outputs) == 1
-        output1 = outputs[0]
-        output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
-        assert output1_content.strip() == "123"
+        with self.dataset_populator.test_history_for(self.test_run_cat1_single_meta_wrapper) as history_id:
+            # Wrap input in a no-op meta parameter wrapper like Sam is planning to
+            # use for all UI API submissions.
+            new_dataset = self.dataset_populator.new_dataset(history_id, content="123")
+            inputs = dict(
+                input1={"batch": False, "values": [dataset_to_param(new_dataset)]},
+            )
+            outputs = self._cat1_outputs(history_id, inputs=inputs)
+            assert len(outputs) == 1
+            output1 = outputs[0]
+            output1_content = self.dataset_populator.get_history_dataset_content(history_id, dataset=output1)
+            assert output1_content.strip() == "123"
 
     @skip_without_tool("cat1")
-    def test_guess_derived_permissions(self, history_id):
-        def assert_inputs(inputs, can_be_used=True):
+    @requires_new_history
+    def test_guess_derived_permissions(self):
+        with self.dataset_populator.test_history_for(self.test_run_cat1_single_meta_wrapper) as history_id:
+
+            def assert_inputs(inputs, can_be_used=True):
+                # Until we make the dataset private, _different_user() can use it:
+                with self._different_user_and_history() as other_history_id:
+                    response = self._run("cat1", other_history_id, inputs)
+                    if can_be_used:
+                        assert response.status_code == 200
+                    else:
+                        self._assert_dataset_permission_denied_response(response)
+
+            new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
+            inputs = dict(
+                input1=dataset_to_param(new_dataset),
+            )
             # Until we make the dataset private, _different_user() can use it:
-            with self._different_user_and_history() as other_history_id:
-                response = self._run("cat1", other_history_id, inputs)
-                if can_be_used:
-                    assert response.status_code == 200
-                else:
-                    self._assert_dataset_permission_denied_response(response)
+            assert_inputs(inputs, can_be_used=True)
+            self.dataset_populator.make_private(history_id, new_dataset["id"])
+            # _different_user can no longer use the input dataset.
+            assert_inputs(inputs, can_be_used=False)
 
-        new_dataset = self.dataset_populator.new_dataset(history_id, content="Cat1Test")
-        inputs = dict(
-            input1=dataset_to_param(new_dataset),
-        )
-        # Until we make the dataset private, _different_user() can use it:
-        assert_inputs(inputs, can_be_used=True)
-        self.dataset_populator.make_private(history_id, new_dataset["id"])
-        # _different_user can no longer use the input dataset.
-        assert_inputs(inputs, can_be_used=False)
+            outputs = self._cat1_outputs(history_id, inputs=inputs)
+            assert len(outputs) == 1
+            output1 = outputs[0]
 
-        outputs = self._cat1_outputs(history_id, inputs=inputs)
-        assert len(outputs) == 1
-        output1 = outputs[0]
-
-        inputs_2 = dict(
-            input1=dataset_to_param(output1),
-        )
-        # _different_user cannot use datasets derived from the private input.
-        assert_inputs(inputs_2, can_be_used=False)
+            inputs_2 = dict(
+                input1=dataset_to_param(output1),
+            )
+            # _different_user cannot use datasets derived from the private input.
+            assert_inputs(inputs_2, can_be_used=False)
 
     @skip_without_tool("collection_creates_list")
     def test_guess_derived_permissions_collections(self, history_id):
@@ -1084,7 +1097,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             final_job_state = self.dataset_populator.wait_for_job(job["id"])
             assert final_job_state == "error"
 
-    @pytest.mark.require_new_history
+    @requires_new_history
     @skip_without_tool("collection_paired_test")
     def test_collection_parameter(self, history_id):
         hdca_id = self._build_pair(history_id, ["123\n", "456\n"])

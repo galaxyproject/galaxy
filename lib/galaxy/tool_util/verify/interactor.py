@@ -367,11 +367,13 @@ class GalaxyInteractorApi:
             return None
 
     @contextlib.contextmanager
-    def test_history(self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None) -> Generator[str, None, None]:
+    def test_history(
+        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+    ) -> Generator[str, None, None]:
+        history_id = None
         if not require_new:
             history_id = DEFAULT_TARGET_HISTORY
 
-        history_id = history_id or self.new_history()
         cleanup = CLEANUP_TEST_HISTORIES
         history_id = history_id or self.new_history()
         try:
