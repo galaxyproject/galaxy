@@ -1817,7 +1817,6 @@ class Tabix(Tabular):
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
     # Ideally the tabix_index would be regenerated when the metadataElements are updated
-    # As it is not the case for the moment, it is better not to set it wrongly
     def set_meta(self, dataset, metadata_tmp_files_dir=None, build_index=False, **kwd):
         super().set_meta(dataset, **kwd)
         if build_index:
