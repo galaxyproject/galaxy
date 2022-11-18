@@ -73,8 +73,8 @@ const props = defineProps({
 });
 const transform = reactive({ x: 0, y: 0, k: 1 });
 
-let draggingConnection = ref(null);
-let isDragging = ref(false);
+const draggingConnection = ref(null);
+const isDragging = ref(false);
 provide("isDragging", isDragging);
 provide("transform", transform);
 const scale = useScale();

@@ -47,11 +47,9 @@ const mutations = {
         }
     },
     deleteInputTerminalPosition: (state, { stepId, inputName }) => {
-        console.log("deleting output");
         delete state.inputTerminals[stepId][inputName];
     },
     deleteOutputTerminalPosition: (state, { stepId, outputName }) => {
-        console.log("deleting output");
         delete state.outputTerminals[stepId][outputName];
     },
     setConnection: (state, { source, target, connection }) => {
