@@ -129,8 +129,8 @@ export default {
     },
     props: {
         id: {
-            type: String,
-            default: "",
+            type: Number,
+            required: true,
         },
         contentId: {
             type: String,
@@ -157,8 +157,8 @@ export default {
             default: null,
         },
         activeNodeId: {
-            type: String,
-            default: null,
+            type: Number,
+            required: false,
         },
         rootOffset: {
             type: Object,

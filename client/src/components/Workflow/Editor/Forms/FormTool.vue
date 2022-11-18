@@ -75,16 +75,16 @@ export default {
     },
     props: {
         nodeId: {
-            type: String,
+            type: Number,
             required: true,
         },
         nodeAnnotation: {
             type: String,
-            required: true,
+            required: false,
         },
         nodeLabel: {
             type: String,
-            default: null,
+            required: false,
         },
         nodeInputs: {
             type: Array,
@@ -128,6 +128,9 @@ export default {
         },
         id() {
             return `${this.nodeId}:${this.configForm.id}`;
+        },
+        toolCardId() {
+            return `${this.nodeId}`;
         },
         hasData() {
             return !!this.configForm;

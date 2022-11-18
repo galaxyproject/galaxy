@@ -39,7 +39,7 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
+            <FormDisplay :id="formDisplayId" :inputs="inputs" @onChange="onChange" />
             <div v-if="isSubworkflow">
                 <FormOutputLabel
                     v-for="(output, index) in nodeOutputs"
@@ -73,7 +73,7 @@ export default {
             required: true,
         },
         nodeId: {
-            type: String,
+            type: Number,
             required: true,
         },
         nodeContentId: {
@@ -120,8 +120,8 @@ export default {
         workflow() {
             return this.getManager();
         },
-        id() {
-            return this.nodeId;
+        formDisplayId() {
+            return this.nodeId.toString();
         },
         inputs() {
             return this.configForm.inputs;

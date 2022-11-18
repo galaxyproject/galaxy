@@ -12,7 +12,7 @@
                     <WorkflowEdges :steps="steps" :dragging-connection="draggingConnection" />
                     <WorkflowNode
                         v-for="(step, key) in steps"
-                        :id="key"
+                        :id="step.id"
                         :key="key"
                         :name="step.name"
                         :type="step.type"
