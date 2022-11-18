@@ -267,11 +267,12 @@ export default {
 
     @each $state, $bg-color in $states {
         &.alert-#{$state}:hover {
-            &:focus {
+            &:focus,
+            &:focus-within {
                 background-color: scale-color($bg-color, $lightness: -5%);
             }
 
-            &:not(:focus) {
+            &:not(:focus, :focus-within) {
                 background-color: lighten($bg-color, 5%);
             }
         }
