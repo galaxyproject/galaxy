@@ -1833,27 +1833,68 @@ class Tabix(Tabular):
 
     # Ideally the tabix_index would be regenerated when the metadataElements are updated
     # As it is not the case for the moment, it is better not to set it wrongly
-    # def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
-    #     super().set_meta(dataset, **kwd)
-    #     # Try to create the index for the Tabix file.
-    #     # These metadata values are not accessible by users, always overwrite
-    #     index_file = dataset.metadata.tabix_index
-    #     if not index_file:
-    #         index_file = dataset.metadata.spec["tabix_index"].param.new_file(
-    #             dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
-    #         )
+    def set_meta(self, dataset, metadata_tmp_files_dir=None, build_index=False, **kwd):
+        super().set_meta(dataset, **kwd)
+        if build_index:
+            # Try to create the index for the Tabix file.
+            # These metadata values are not accessible by users, always overwrite
+            index_file = dataset.metadata.tabix_index
+            if not index_file:
+                index_file = dataset.metadata.spec["tabix_index"].param.new_file(
+                    dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+                )
 
-    #     try:
-    #         pysam.tabix_index(
-    #             dataset.file_name,
-    #             index=index_file.file_name,
-    #             seq_col=dataset.metadata.chromCol,
-    #             start_col=dataset.metadata.startCol,
-    #             end_col=dataset.metadata.endCol,
-    #             keep_original=True,
-    #             force=True
-    #         )
-    #     except Exception as e:
-    #         print(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
-    #     else:
-    #         dataset.metadata.tabix_index = index_file
+            try:
+                pysam.tabix_index(
+                    dataset.file_name,
+                    index=index_file.file_name,
+                    seq_col=dataset.metadata.chromCol,
+                    start_col=dataset.metadata.startCol,
+                    end_col=dataset.metadata.endCol,
+                    keep_original=True,
+                    force=True
+                )
+            except Exception as e:
+                raise Exception(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
+            else:
+                dataset.metadata.tabix_index = index_file
+
+class JuicerMediumTabix(Tabix):
+    """
+    Class describing a tabix file built from a juicer medium format:
+    https://github.com/aidenlab/juicer/wiki/Pre#medium-format
+    <readname> <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <mapq1> <mapq2>
+
+    str = strand (0 for forward, anything else for reverse)
+    chr = chromosome (must be a chromosome in the genome)
+    pos = position
+    frag = restriction site fragment
+    mapq = mapping quality score
+    """
+
+    file_ext = "juicer.medium.tabix"
+
+    MetadataElement(
+        name="chromCol",
+        default=3,
+        desc="Chrom column",
+        param=metadata.ColumnParameter
+    )
+    MetadataElement(
+        name="startCol",
+        default=4,
+        desc="Start column",
+        param=metadata.ColumnParameter
+    )
+    MetadataElement(
+        name="endCol",
+        default=4,
+        desc="End column",
+        param=metadata.ColumnParameter
+    )
+
+    def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
+        super().set_meta(dataset,
+                         metadata_tmp_files_dir=metadata_tmp_files_dir,
+                         build_index=True,
+                         **kwd)
