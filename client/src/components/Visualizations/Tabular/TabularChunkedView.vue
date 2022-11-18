@@ -1,7 +1,10 @@
 <script setup>
-import { computed, onMounted, inject } from "vue";
+import { computed, onMounted } from "vue";
 
-// Needs to resolve a dataset.  This should be a composable, usesDataset
+import useDataset from "@/composables/useDataset";
+
+console.debug(useDataset)
+// Needs to resolve a dataset.  This should be a composable, useDataset
 
 const props = defineProps({
     options: {
@@ -11,6 +14,12 @@ const props = defineProps({
 });
 
 console.debug("loaded");
+
+const dataset = useDataset(props.options.datasetId);
+
+const headers = computed(() => {
+    return props.options.headers;
+});
 
 onMounted(() => {
     console.debug("All done, mounted");
@@ -23,6 +32,20 @@ onMounted(() => {
         <div v-if="props.options">
             <pre>{{ props.options }}</pre>
         </div>
+        <table>
+            <tr>
+                <th>Column 1</th>
+                <th>Column 2</th>
+            </tr>
+            <tr>
+                <td>Row 1, Column 1</td>
+                <td>Row 1, Column 2</td>
+            </tr>
+            <tr>
+                <td>Row 2, Column 1</td>
+                <td>Row 2, Column 2</td>
+            </tr>
+        </table>
         <!-- 
             <script type="text/javascript">
                 config.addInitialization(function(galaxy) {
