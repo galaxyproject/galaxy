@@ -1822,9 +1822,11 @@ class Tabix(Tabular):
         param=metadata.ColumnParameter
     )
 
-    def validate(self, dataset, **kwd):
-        # Assert it is bgzip
-        with open(dataset.file_name, "rb") as fh:
+    def sniff(self, filename):
+        # Check that the file is compressed with bgzip (not gzip), i.e. the
+        # compressed format is BGZF, as explained in
+        # http://samtools.github.io/hts-specs/SAMv1.pdf
+        with open(filename, "rb") as fh:
             fh.seek(-28, 2)
             last28 = fh.read()
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
