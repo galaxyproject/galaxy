@@ -1,53 +1,84 @@
 <tool id="output_filter_select" name="output_filter_select" version="1.0.0">
+    <!-- this tests output filtering based on a select parameter.
+
+         for multiple="false" 
+
+         for `mutiple="true"` the select is accessed as a list (containing the
+         selected options). if the options would be a comma separated string
+         then selecting a value that contains another value as substring
+         (eg AA contains A) would produce an error.
+         for optional selects it should be `None` if nothing is selected.
+         -->
     <description>test for output filtering with selects</description>
     <command><![CDATA[
-#if "A" in str($sel).split(",")
+#if "A" in str($sel_mult).split(",")
     echo 'test' > A &&
 #end if
-#if "AA" in str($sel).split(",")
+#if "AA" in str($sel_mult).split(",")
     echo 'test' > AA &&
 #end if
-echo $sel 
+echo sel_mult $sel_mult &&
+echo sel_mult_opt $sel_mult_opt
     ]]></command>
     <inputs>
-        <param name="sel" type="select" multiple="true">
+        <param name="sel_mult" type="select" multiple="true">
             <option value="A">A</option>
             <option value="AA">AA</option>
+        </param>
+        <param name="sel_mult_opt" type="select" multiple="true" optional="true">
+            <option value="B">B</option>
+            <option value="BB">BB</option>
         </param>
     </inputs>
     <outputs>
         <data name="A" format="txt" from_work_dir="A">
-            <filter>"A" in sel</filter>
+            <filter>"A" in sel_mult</filter>
         </data>
         <data name="AA" format="txt" from_work_dir="AA">
-            <filter>"AA" in sel</filter>
+            <filter>"AA" in sel_mult</filter>
+        </data>
+        <data name="B" format="txt" from_work_dir="A">
+            <filter>"B" in sel_mult_opt</filter>
+        </data>
+        <data name="BB" format="txt" from_work_dir="AA">
+            <filter>"BB" in sel_mult_opt</filter>
         </data>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="sel" value="A" />
+            <param name="sel_mult" value="A" />
+            <param name="sel_mult_opt" value="" />
             <output name="A">
                 <assert_contents>
                     <has_line line="test" />
                 </assert_contents>
             </output>
             <assert_stdout>
-                <has_line line="A"/>
-            </assert_stdout>
-        </test>
-        <test expect_num_outputs="1">
-            <param name="sel" value="AA" />
-            <output name="AA">
-                <assert_contents>
-                    <has_line line="test" />
-                </assert_contents>
-            </output>
-            <assert_stdout>
-                <has_line line="AA"/>
+                <has_line line="sel_mult A"/>
+                <has_line line="sel_mult_opt "/>
             </assert_stdout>
         </test>
         <test expect_num_outputs="2">
-            <param name="sel" value="A,AA" />
+            <param name="sel_mult" value="AA" />
+            <param name="sel_mult_opt" value="BB" />
+            <output name="AA">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <output name="BB">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <assert_stdout>
+                <has_line line="sel_mult AA"/>
+                <has_line line="sel_mult_opt BB"/>
+            </assert_stdout>
+        </test>
+        <test expect_num_outputs="2">
+            <param name="sel_mult" value="A,AA" />
+            <param name="sel_mult_opt" value="B,BB" />
             <output name="A">
                 <assert_contents>
                     <has_line line="test" />
@@ -58,8 +89,19 @@ echo $sel
                     <has_line line="test" />
                 </assert_contents>
             </output>
+            <output name="B">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <output name="BB">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
             <assert_stdout>
-                <has_line line="A,AA"/>
+                <has_line line="sel_mult A,AA"/>
+                <has_line line="sel_mult_opt B,BB"/>
             </assert_stdout>
         </test>
     </tests>
