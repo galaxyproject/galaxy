@@ -65,6 +65,8 @@
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "./services";
 import UtcDate from "components/UtcDate";
+import { mapActions, mapState } from "pinia";
+import { useEntryPointStore } from "../../stores/entryPointStore"
 
 export default {
     components: {
@@ -102,10 +104,10 @@ export default {
             filter: "",
             messages: [],
             nInteractiveTools: 0,
-            activeInteractiveTools: [],
         };
     },
     computed: {
+        ...mapState(useEntryPointStore, {activeInteractiveTools: "entryPoints"}),
         showNotFound() {
             return this.nInteractiveTools === 0 && this.filter && !this.isActiveToolsListEmpty;
         },
@@ -122,16 +124,10 @@ export default {
         this.load();
     },
     methods: {
+        ...mapActions(useEntryPointStore, ["startPollingEntryPoints"]),
         load() {
+            this.startPollingEntryPoints();
             this.filter = "";
-            this.services
-                .getActiveInteractiveTools()
-                .then((activeInteractiveTools) => {
-                    this.activeInteractiveTools = activeInteractiveTools;
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
         },
         filtered: function (items) {
             this.nInteractiveTools = items.length;

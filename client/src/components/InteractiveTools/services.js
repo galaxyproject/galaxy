@@ -7,16 +7,6 @@ export class Services {
         this.root = options.root || getAppRoot();
     }
 
-    async getActiveInteractiveTools() {
-        const url = `${this.root}api/entry_points?running=true`;
-        try {
-            const response = await axios.get(url);
-            return response.data;
-        } catch (e) {
-            rethrowSimple(e);
-        }
-    }
-
     async stopInteractiveTool(id) {
         const url = `${this.root}api/entry_points/${id}`;
         const response = await axios.delete(url);
