@@ -1515,10 +1515,10 @@ class NavigatesGalaxy(HasDriver):
 
     @edit_details
     def history_panel_add_tags(self, tags):
-        tag_area_input = self.components.history_panel.tag_area_input
+        tag_area_button = self.components.history_panel.tag_area_button
 
-        input_element = tag_area_input.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        tag_area_button.wait_for_and_click()
+        input_element = self.components.history_panel.tag_area_input.wait_for_visible()
 
         for tag in tags:
             input_element.send_keys(tag)

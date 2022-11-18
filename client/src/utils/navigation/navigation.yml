@@ -237,7 +237,8 @@ history_panel:
       title_input: '.dataset-collection-panel .controls .title input'
       subtitle: '.dataset-collection-panel .controls .title .subtitle'
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
-      tag_area_input: '.controls .tags-display .tags-input input'
+      tag_area_button: '.details .stateless-tags .multiselect button'
+      tag_area_input: '.details .stateless-tags .multiselect input'
       list_items: '.dataset-collection-panel .listing .content-item'
 
   selectors:
@@ -252,7 +253,8 @@ history_panel:
     empty_message: '.empty-message'
     size: '.history-size'
     tag_area: '.details .stateless-tags'
-    tag_area_input: '.details .stateless-tags .multiselect button'
+    tag_area_button: '.details .stateless-tags .multiselect button'
+    tag_area_input: '.details .stateless-tags .multiselect input'
     tag_close_btn: '.tags-display .tag-delete-button'
     tags: '.tag span'
 
