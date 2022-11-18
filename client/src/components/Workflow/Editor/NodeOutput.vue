@@ -146,7 +146,8 @@ export default {
         },
         dragPosition() {
             if (this.isDragging) {
-                this.$emit("onDragConnector", this.dragPosition);
+                const dragConnection = { ...this.dragPosition, datatypes: this.extensions };
+                this.$emit("onDragConnector", dragConnection);
             }
         },
         label() {

@@ -75,6 +75,7 @@ const transform = reactive({ x: 0, y: 0, k: 1 });
 
 const draggingConnection = ref(null);
 const isDragging = ref(false);
+provide("draggingConnection", draggingConnection);
 provide("isDragging", isDragging);
 provide("transform", transform);
 const scale = useScale();

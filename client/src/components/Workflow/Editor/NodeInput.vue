@@ -10,14 +10,16 @@
 
 <script>
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { inject, reactive, ref } from "vue";
+import { inject, ref } from "vue";
+import Terminals from "components/Workflow/Editor/modules/terminals";
 
 export default {
     setup(props) {
         const el = ref(null);
         const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
         const isDragging = inject("isDragging");
-        return { el, position, isDragging };
+        const draggingConnection = inject("draggingConnection");
+        return { el, position, isDragging, draggingConnection };
     },
     props: {
         input: {
@@ -72,12 +74,24 @@ export default {
         label() {
             return this.input.label || this.input.name;
         },
+        canAccept() {
+            // TODO: put producesAcceptableDatatype ... in datatypesMapper ?
+            return Terminals.producesAcceptableDatatype(
+                this.datatypesMapper,
+                this.input.extensions,
+                this.draggingConnection.datatypes
+            ).canAccept;
+        },
         terminalClass() {
             const classes = ["terminal", "input-terminal"];
             if (this.isDragging) {
                 // TODO: check input compatible
                 classes.push("input-terminal-active");
-                classes.push("can-accept");
+                if (this.canAccept) {
+                    classes.push("can-accept");
+                } else {
+                    classes.push("cannot-accept");
+                }
             }
             if (this.isMultiple) {
                 classes.push("multiple");
