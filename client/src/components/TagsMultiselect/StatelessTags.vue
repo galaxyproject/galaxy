@@ -94,6 +94,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
             :options="userTags"
             :multiple="true"
             :taggable="true"
+            :closeOnSelect="false"
             @tag="onAddTag"
             @input="onInput"
             @open="onOpen"
