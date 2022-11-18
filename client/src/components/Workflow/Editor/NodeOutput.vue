@@ -28,7 +28,7 @@
 import DraggableWrapper from "./DraggablePan";
 import WorkflowConnector from "./Connector";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { reactive, ref } from "vue";
+import { ref } from "vue";
 
 export default {
     setup(props) {
@@ -62,7 +62,6 @@ export default {
         },
         parentOffset: {
             type: Object,
-            default: {},
         },
     },
     data() {

@@ -99,10 +99,6 @@ export default {
             return classes;
         },
     },
-    beforeDestroy() {
-        this.$emit("onRemove", this.input);
-        this.onRemove();
-    },
     watch: {
         terminalPosition(position) {
             this.$store.commit("workflowState/setInputTerminalPosition", {
