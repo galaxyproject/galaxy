@@ -1803,24 +1803,9 @@ class Tabix(Tabular):
         optional=True,
     )
 
-    MetadataElement(
-        name="chromCol",
-        default=1,
-        desc="Chrom column",
-        param=metadata.ColumnParameter
-    )
-    MetadataElement(
-        name="startCol",
-        default=2,
-        desc="Start column",
-        param=metadata.ColumnParameter
-    )
-    MetadataElement(
-        name="endCol",
-        default=3,
-        desc="End column",
-        param=metadata.ColumnParameter
-    )
+    MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter)
+    MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter)
+    MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter)
 
     def sniff(self, filename):
         # Check that the file is compressed with bgzip (not gzip), i.e. the
@@ -1852,12 +1837,13 @@ class Tabix(Tabular):
                     start_col=dataset.metadata.startCol,
                     end_col=dataset.metadata.endCol,
                     keep_original=True,
-                    force=True
+                    force=True,
                 )
             except Exception as e:
                 raise Exception(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
             else:
                 dataset.metadata.tabix_index = index_file
+
 
 class JuicerMediumTabix(Tabix):
     """
@@ -1874,27 +1860,9 @@ class JuicerMediumTabix(Tabix):
 
     file_ext = "juicer.medium.tabix"
 
-    MetadataElement(
-        name="chromCol",
-        default=3,
-        desc="Chrom column",
-        param=metadata.ColumnParameter
-    )
-    MetadataElement(
-        name="startCol",
-        default=4,
-        desc="Start column",
-        param=metadata.ColumnParameter
-    )
-    MetadataElement(
-        name="endCol",
-        default=4,
-        desc="End column",
-        param=metadata.ColumnParameter
-    )
+    MetadataElement(name="chromCol", default=3, desc="Chrom column", param=metadata.ColumnParameter)
+    MetadataElement(name="startCol", default=4, desc="Start column", param=metadata.ColumnParameter)
+    MetadataElement(name="endCol", default=4, desc="End column", param=metadata.ColumnParameter)
 
     def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
-        super().set_meta(dataset,
-                         metadata_tmp_files_dir=metadata_tmp_files_dir,
-                         build_index=True,
-                         **kwd)
+        super().set_meta(dataset, metadata_tmp_files_dir=metadata_tmp_files_dir, build_index=True, **kwd)
