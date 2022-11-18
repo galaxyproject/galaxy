@@ -80,6 +80,14 @@ function redirectAnon() {
     }
 }
 
+// redirect logged in users
+function redirectLoggedIn() {
+    const Galaxy = getGalaxyInstance();
+    if (Galaxy.user.id) {
+        return "/";
+    }
+}
+
 // produces the client router
 export function getRouter(Galaxy) {
     const router = new VueRouter({
@@ -90,7 +98,11 @@ export function getRouter(Galaxy) {
             ...LibraryRoutes,
             ...StorageDashboardRoutes,
             /** Login entry route */
-            { path: "/login/start", component: Login },
+            {
+                path: "/login/start",
+                component: Login,
+                redirect: redirectLoggedIn(),
+            },
             /** Page editor */
             {
                 path: "/pages/editor",
@@ -277,6 +289,7 @@ export function getRouter(Galaxy) {
                             registrationWarningMessage: Galaxy.config.registration_warning_message,
                             termsUrl: Galaxy.config.terms_url,
                         },
+                        redirect: redirectLoggedIn(),
                     },
                     {
                         path: "pages/create",

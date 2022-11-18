@@ -14,10 +14,7 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
-from galaxy import (
-    exceptions,
-    util,
-)
+from galaxy import util
 from galaxy.model import (
     CustosAuthnzToken,
     User,
@@ -146,10 +143,11 @@ class CustosAuthnz(IdentityProvider):
                         user = existing_user
                     else:
                         message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
-                        log.exception(message)
-                        raise exceptions.AuthenticationFailed(message)
+                        log.info(message)
+                        login_redirect_url = f"{login_redirect_url}login/start?connect_external={email}"
+                        return login_redirect_url, None
                 elif self.config["provider"] == "custos":
-                    login_redirect_url = f"{login_redirect_url}root/login?confirm=true&custos_token={json.dumps(token)}"
+                    login_redirect_url = f"{login_redirect_url}login/start?confirm=true&custos_token={json.dumps(token)}"
                     return login_redirect_url, None
                 else:
                     username = self._username_from_userinfo(trans, userinfo)

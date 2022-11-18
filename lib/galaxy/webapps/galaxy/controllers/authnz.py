@@ -120,6 +120,8 @@ class OIDC(JSAppLauncher):
             return trans.show_error_message(message)
         if "?confirm" in redirect_url:
             return trans.response.send_redirect(url_for(redirect_url))
+        if "?connect_external" in redirect_url:
+            return trans.response.send_redirect(url_for(redirect_url))
         elif redirect_url is None:
             redirect_url = url_for("/")
 

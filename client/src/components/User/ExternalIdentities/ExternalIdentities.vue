@@ -1,5 +1,9 @@
 <template>
     <section class="external-id">
+        <b-alert :show="!!connectExternal" variant="info">
+            You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
+            >, to your preferred external provider.
+        </b-alert>
         <header>
             <b-alert
                 dismissible
@@ -105,9 +109,14 @@ export default {
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
             cilogonOrCustos: null,
+            userEmail: galaxy.user.get("email"),
         };
     },
     computed: {
+        connectExternal() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.has("connect_external") && urlParams.get("connect_external") == "true";
+        },
         deleteButtonVariant() {
             return this.showDeleted ? "primary" : "secondary";
         },
