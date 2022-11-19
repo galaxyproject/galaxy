@@ -59,24 +59,11 @@ jobs:
       - name: Lint converters
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
-          for CONVERTER in "${TOOL_ARRAY[@]}"; do
-            planemo lint --skip citations,stdio,help --report_level warn "$CONVERTER"
-          done
+          planemo lint --skip citations,stdio,help --report_level warn "${TOOL_ARRAY[@]}"
       - name: Run tests
         run: |
-          mkdir -p json_output
-          EXIT_CODE=0
           mapfile -t TOOL_ARRAY < tool_list.txt
-          for CONVERTER in "${TOOL_ARRAY[@]}"; do
-            json=$(mktemp -u -p json_output --suff .json)
-            planemo test --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "$CONVERTER" || EXIT_CODE=$?
-          done
-          planemo merge_test_reports json_output/*.json tool_test_output.json
-          planemo test_reports tool_test_output.json --test_output tool_test_output.html
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo "Unsuccessful tests found, inspect the 'Converter test results' artifact for details."
-            exit $EXIT_CODE
-          fi
+          planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
       - uses: actions/upload-artifact@v3
         if: failure()
         with:

@@ -161,6 +161,7 @@
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
+  <tool file="identifier_all_collection_types.xml"/>
   <tool file="identifier_in_actions.xml" />
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />

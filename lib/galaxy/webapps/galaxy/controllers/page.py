@@ -549,25 +549,12 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         # Encode page identifier.
         page_id = trans.security.encode_id(page.id)
 
-        # Get rating data.
-        user_item_rating = 0
-        if trans.get_user():
-            user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), page)
-            if user_item_rating:
-                user_item_rating = user_item_rating.rating
-            else:
-                user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, page)
-
         # Redirect to client.
         return trans.response.send_redirect(
             web.url_for(
                 controller="published",
                 action="page",
                 id=page_id,
-                user_item_rating=user_item_rating,
-                ave_item_rating=ave_item_rating,
-                num_ratings=num_ratings,
             )
         )
 
@@ -586,21 +573,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 page.importable = importable
             trans.sa_session.flush()
         return
-
-    @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a page asynchronously and return updated community data."""
-
-        page = self.get_page(trans, id, check_ownership=False, check_accessible=True)
-        if not page:
-            return trans.show_error_message("The specified page does not exist.")
-
-        # Rate page.
-        self.rate_item(trans.sa_session, trans.get_user(), page, rating)
-
-        return self.get_ave_item_rating_data(trans.sa_session, page)
 
     @web.expose
     def get_embed_html_async(self, trans, id):

@@ -202,7 +202,6 @@ class MockHistoryDatasetAssociation:
         self.name = name
         self.hid = id
         self.id = id
-        self.children = []
         self.tags = []
         self.metadata = None
 

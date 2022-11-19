@@ -10,6 +10,7 @@ from typing import (
     Dict,
     List,
     Set,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -31,6 +32,9 @@ from galaxy.tools.parameters.basic import (
 from galaxy.tools.parameters.wrapped import WrappedParameters
 from galaxy.util import ExecutionTimer
 from galaxy.util.template import fill_template
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -110,6 +114,8 @@ class DefaultToolAction(ToolAction):
                     return None
                 if formats is None:
                     formats = input.formats
+
+                data = getattr(data, "hda", data)
 
                 direct_match, target_ext, converted_dataset = data.find_conversion_destination(formats)
                 if not direct_match and target_ext:
@@ -287,8 +293,11 @@ class DefaultToolAction(ToolAction):
                         # record collection which should be enought for workflow
                         # extraction and tool rerun.
                         if isinstance(value, model.DatasetCollectionElement):
-                            # if we are mapping a collection over a tool, we only require the child_collection
-                            dataset_instances = value.child_collection.dataset_instances
+                            if value.child_collection:
+                                # if we are mapping a collection over a tool, we only require the child_collection
+                                dataset_instances = value.child_collection.dataset_instances
+                            else:
+                                continue
                         else:
                             # else the tool takes a collection as input so we need everything
                             dataset_instances = value.collection.dataset_instances
@@ -428,7 +437,7 @@ class DefaultToolAction(ToolAction):
         # wrapped params are used by change_format action and by output.label; only perform this wrapping once, as needed
         wrapped_params = self._wrapped_params(trans, tool, incoming, inp_data)
 
-        out_data = {}
+        out_data: Dict[str, "DatasetInstance"] = {}
         input_collections = {k: v[0][0] for k, v in inp_dataset_collections.items()}
         output_collections = OutputCollections(
             trans,
@@ -445,16 +454,9 @@ class DefaultToolAction(ToolAction):
             hdca_tags=preserved_hdca_tags,
         )
 
-        # Keep track of parent / child relationships, we'll create all the
-        # datasets first, then create the associations
-        parent_to_child_pairs = []
-        child_dataset_names = set()
         async_tool = tool.tool_type == "data_source_async"
 
         def handle_output(name, output, hidden=None):
-            if output.parent:
-                parent_to_child_pairs.append((output.parent, name))
-                child_dataset_names.add(name)
             if async_tool and name in incoming:
                 # HACK: output data has already been created as a result of the async controller
                 dataid = incoming[name]
@@ -543,6 +545,8 @@ class DefaultToolAction(ToolAction):
             # Flush all datasets at once.
             return data
 
+        child_dataset_names = set()
+
         for name, output in tool.outputs.items():
             if not filter_output(tool, output, incoming):
                 handle_output_timer = ExecutionTimer()
@@ -591,13 +595,13 @@ class DefaultToolAction(ToolAction):
                             )
 
                         effective_output_name = output_part_def.effective_output_name
+                        child_dataset_names.add(effective_output_name)
                         element = handle_output(effective_output_name, output_part_def.output_def, hidden=True)
                         history.stage_addition(element)
                         # TODO: this shouldn't exist in the top-level of the history at all
                         # but for now we are still working around that by hiding the contents
                         # there.
                         # Following hack causes dataset to no be added to history...
-                        child_dataset_names.add(effective_output_name)
                         trans.sa_session.add(element)
                         current_element_identifiers.append(
                             {
@@ -625,17 +629,10 @@ class DefaultToolAction(ToolAction):
         )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name, data in out_data.items():
-            if (
-                name not in child_dataset_names and name not in incoming
-            ):  # don't add children; or already existing datasets, i.e. async created
+            if name not in incoming and name not in child_dataset_names:
+                # don't add already existing datasets, i.e. async created
                 history.stage_addition(data)
         history.add_pending_items(set_output_hid=set_output_hid)
-
-        # Add all the children to their parents
-        for parent_name, child_name in parent_to_child_pairs:
-            parent_dataset = out_data[parent_name]
-            child_dataset = out_data[child_name]
-            parent_dataset.children.append(child_dataset)
 
         log.info(add_datasets_timer)
         job_setup_timer = ExecutionTimer()

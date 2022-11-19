@@ -37,6 +37,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~
+``templates_dir``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    The directory containing custom templates for Galaxy, such as
+    HTML/text email templates. Defaults to 'templates'. Default
+    templates can be found in the Galaxy root under config/templates.
+    These can be copied to <templates_dir> if you wish to customize
+    them.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``templates``
+:Type: str
+
+
 ~~~~~~~~~~~~~
 ``cache_dir``
 ~~~~~~~~~~~~~

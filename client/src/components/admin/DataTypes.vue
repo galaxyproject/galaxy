@@ -1,5 +1,6 @@
 <template>
-    <div>
+    <div aria-labelledby="data-types-heading">
+        <h1 id="data-types-heading" class="h-lg">Data Types</h1>
         <Message :message="message" :status="status" />
         <BaseGrid
             v-if="status !== 'error'"

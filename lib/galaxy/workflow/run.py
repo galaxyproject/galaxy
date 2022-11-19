@@ -272,7 +272,10 @@ class WorkflowInvoker:
 
     def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
         incomplete_or_none = invocation_step.workflow_step.module.execute(
-            self.trans, self.progress, invocation_step, use_cached_job=self.progress.use_cached_job
+            self.trans,
+            self.progress,
+            invocation_step,
+            use_cached_job=self.progress.use_cached_job,
         )
         return incomplete_or_none
 
@@ -282,6 +285,12 @@ STEP_OUTPUT_DELAYED = object()
 
 class ModuleInjector(Protocol):
     def inject(self, step, step_args=None, steps=None, **kwargs):
+        pass
+
+    def inject_all(self, workflow: "Workflow", param_map=None, ignore_tool_missing_exception=True, **kwargs):
+        pass
+
+    def compute_runtime_state(self, step, step_args=None):
         pass
 
 
@@ -296,6 +305,7 @@ class WorkflowProgress:
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
         replacement_dict: Optional[Dict[str, str]] = None,
+        subworkflow_structure=None,
     ) -> None:
         self.outputs: Dict[int, Any] = {}
         self.module_injector = module_injector
@@ -307,6 +317,7 @@ class WorkflowProgress:
         self.copy_inputs_to_history = copy_inputs_to_history
         self.use_cached_job = use_cached_job
         self.replacement_dict = replacement_dict or {}
+        self.subworkflow_structure = subworkflow_structure
 
     @property
     def maximum_jobs_to_schedule_or_none(self) -> Optional[int]:
@@ -329,17 +340,18 @@ class WorkflowProgress:
         # steps we are no where near ready to schedule?
         remaining_steps = []
         step_invocations_by_id = self.workflow_invocation.step_invocations_by_step_id()
+        self.module_injector.inject_all(self.workflow_invocation.workflow, param_map=self.param_map)
         for step in steps:
             step_id = step.id
-            if not hasattr(step, "module"):
-                self.module_injector.inject(step, step_args=self.param_map.get(step.id, {}))
-                if step_id not in step_states:
-                    raise Exception(
-                        f"Workflow invocation [{self.workflow_invocation.id}] has no step state for step {step.log_str()}. States ids are {list(step_states.keys())}."
-                    )
-                runtime_state = step_states[step_id].value
-                assert step.module
-                step.state = step.module.decode_runtime_state(runtime_state)
+            step_args = self.param_map.get(step_id, {})
+            self.module_injector.compute_runtime_state(step, step_args=step_args)
+            if step_id not in step_states:
+                raise Exception(
+                    f"Workflow invocation [{self.workflow_invocation.id}] has no step state for step {step.log_str()}. States ids are {list(step_states.keys())}."
+                )
+            runtime_state = step_states[step_id].value
+            assert step.module
+            step.state = step.module.decode_runtime_state(runtime_state)
 
             invocation_step = step_invocations_by_id.get(step_id, None)
             if invocation_step and invocation_step.state == "scheduled":
@@ -515,11 +527,17 @@ class WorkflowProgress:
         return subworkflow_invocation
 
     def subworkflow_invoker(
-        self, trans: "WorkRequestContext", step: "WorkflowStep", use_cached_job: bool = False
+        self,
+        trans: "WorkRequestContext",
+        step: "WorkflowStep",
+        use_cached_job: bool = False,
+        subworkflow_structure=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
         workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
-        subworkflow_progress = self.subworkflow_progress(subworkflow_invocation, step, workflow_run_config.param_map)
+        subworkflow_progress = self.subworkflow_progress(
+            subworkflow_invocation, step, workflow_run_config.param_map, subworkflow_structure=subworkflow_structure
+        )
         subworkflow_invocation = subworkflow_progress.workflow_invocation
         return WorkflowInvoker(
             trans,
@@ -529,7 +547,11 @@ class WorkflowProgress:
         )
 
     def subworkflow_progress(
-        self, subworkflow_invocation: WorkflowInvocation, step: "WorkflowStep", param_map: Dict
+        self,
+        subworkflow_invocation: WorkflowInvocation,
+        step: "WorkflowStep",
+        param_map: Dict,
+        subworkflow_structure=None,
     ) -> "WorkflowProgress":
         subworkflow = subworkflow_invocation.workflow
         subworkflow_inputs = {}
@@ -557,6 +579,7 @@ class WorkflowProgress:
             param_map=param_map,
             use_cached_job=self.use_cached_job,
             replacement_dict=self.replacement_dict,
+            subworkflow_structure=subworkflow_structure,
         )
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:

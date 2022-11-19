@@ -90,6 +90,15 @@ def md5_hash_file(path: Union[str, os.PathLike]) -> Optional[str]:
         return None
 
 
+def md5_hash_str(s):
+    """
+    Return hex encoded md5 hash of string s
+    """
+    m = hashlib.md5()
+    m.update(smart_str(s))
+    return m.hexdigest()
+
+
 def new_secure_hash_v2(text_type: Union[bytes, str]) -> str:
     """More modern version of new_secure_hash.
 

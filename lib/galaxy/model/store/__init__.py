@@ -1,6 +1,7 @@
 import abc
 import contextlib
 import datetime
+import logging
 import os
 import shutil
 import tarfile
@@ -54,6 +55,7 @@ from galaxy.model.orm.util import (
     add_object_to_session,
     get_object_session,
 )
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
 from galaxy.schema.bco import (
     BioComputeObjectCore,
@@ -78,6 +80,7 @@ from galaxy.schema.bco.util import (
     get_contributors,
     write_to_file,
 )
+from galaxy.schema.schema import ModelStoreFormat
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -101,6 +104,7 @@ from ... import model
 if TYPE_CHECKING:
     from galaxy.managers.workflows import WorkflowContentsManager
 
+log = logging.getLogger(__name__)
 
 ObjectKeyType = Union[str, int]
 
@@ -134,6 +138,7 @@ class StoreAppProtocol(Protocol):
     datatypes_registry: Registry
     object_store: ObjectStore
     security: IdEncodingHelper
+    tag_handler: GalaxyTagHandler
     model: GalaxyModelMapping
     file_sources: ConfiguredFileSources
     workflow_contents_manager: "WorkflowContentsManager"
@@ -215,7 +220,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         user=None,
         object_store=None,
         tag_handler=None,
-    ):
+    ) -> None:
         if object_store is None:
             if app is not None:
                 object_store = app.object_store
@@ -231,6 +236,10 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.import_options = import_options or ImportOptions()
         self.dataset_state_serialized = True
         self.tag_handler = tag_handler
+        if self.defines_new_history():
+            self.import_history_encoded_id = self.new_history_properties().get("encoded_id")
+        else:
+            self.import_history_encoded_id = None
 
     @abc.abstractmethod
     def defines_new_history(self) -> bool:
@@ -269,8 +278,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         """Source of valid file data."""
         return None
 
-    def trust_hid(self, obj_attrs) -> bool:
+    def trust_hid(self, obj_attrs: Dict[str, Any]) -> bool:
         """Trust HID when importing objects into a new History."""
+        return (
+            self.import_history_encoded_id is not None
+            and obj_attrs.get("history_encoded_id") == self.import_history_encoded_id
+        )
 
     @contextlib.contextmanager
     def target_history(self, default_history=None, legacy_history_naming=True):
@@ -615,9 +628,18 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         else:
                             # Need a user to run library jobs to generate metadata...
                             pass
-                        self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                            dataset_instance, history, **regenerate_kwds
-                        )
+                        if self.app.datatypes_registry.set_external_metadata_tool:
+                            self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                                dataset_instance, history, **regenerate_kwds
+                            )
+                        else:
+                            # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
+                            try:
+                                if dataset_instance.has_metadata_files:
+                                    dataset_instance.datatype.set_meta(dataset_instance)
+                            except Exception:
+                                log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
+                                dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
@@ -1306,11 +1328,13 @@ def get_import_model_store_for_dict(as_dict, **kwd):
 
 
 class BaseDirectoryImportModelStore(ModelImportStore):
+    archive_dir: str
+
     @property
     def file_source_root(self):
         return self.archive_dir
 
-    def defines_new_history(self):
+    def defines_new_history(self) -> bool:
         new_history_attributes = os.path.join(self.archive_dir, ATTRS_FILENAME_HISTORY)
         return os.path.exists(new_history_attributes)
 
@@ -1415,17 +1439,15 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
     object_key = "hid"
 
     def __init__(self, archive_dir, **kwd):
-        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
-
-        # Bioblend previous to 17.01 exported histories with an extra subdir.
+        # BioBlend previous to 17.01 exported histories with an extra subdir.
         if not os.path.exists(os.path.join(archive_dir, ATTRS_FILENAME_HISTORY)):
             for d in os.listdir(archive_dir):
                 if os.path.isdir(os.path.join(archive_dir, d)):
                     archive_dir = os.path.join(archive_dir, d)
                     break
-
         self.archive_dir = archive_dir
+        super().__init__(**kwd)
 
     def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         for output_key in job_attrs["output_datasets"]:
@@ -1464,13 +1486,9 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     object_key = "encoded_id"
 
     def __init__(self, archive_dir, **kwd):
-        super().__init__(**kwd)
         archive_dir = os.path.realpath(archive_dir)
         self.archive_dir = archive_dir
-        if self.defines_new_history():
-            self.import_history_encoded_id = self.new_history_properties().get("encoded_id")
-        else:
-            self.import_history_encoded_id = None
+        super().__init__(**kwd)
 
     def _connect_job_io(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         if imported_job.command_line is None:
@@ -1518,9 +1536,6 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
                     output_hdca = _find_hdca(output_key)
                     if output_hdca:
                         imported_job.add_output_dataset_collection(output_name, output_hdca)
-
-    def trust_hid(self, obj_attrs):
-        return self.import_history_encoded_id and obj_attrs.get("history_encoded_id") == self.import_history_encoded_id
 
     def _normalize_job_parameters(self, imported_job, job_attrs, _find_hda, _find_hdca, _find_dce):
         def remap_objects(p, k, obj):
@@ -1572,12 +1587,22 @@ class BagArchiveImportModelStore(DirectoryImportModelStoreLatest):
 
 class ModelExportStore(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def export_history(self, history: model.History, include_hidden: bool = False, include_deleted: bool = False):
+    def export_history(
+        self, history: model.History, include_hidden: bool = False, include_deleted: bool = False
+    ) -> None:
         """Export history to store."""
 
     @abc.abstractmethod
-    def export_library(self, history, include_hidden=False, include_deleted=False):
+    def export_library(
+        self, library: model.Library, include_hidden: bool = False, include_deleted: bool = False
+    ) -> None:
         """Export library to store."""
+
+    @abc.abstractmethod
+    def export_library_folder(
+        self, library_folder: model.LibraryFolder, include_hidden: bool = False, include_deleted: bool = False
+    ) -> None:
+        """Export library folder to store."""
 
     @abc.abstractmethod
     def export_workflow_invocation(self, workflow_invocation, include_hidden=False, include_deleted=False):
@@ -2635,7 +2660,7 @@ def source_to_import_store(
     app: StoreAppProtocol,
     galaxy_user: Optional[model.User],
     import_options: Optional[ImportOptions],
-    model_store_format: Optional[str] = None,
+    model_store_format: Optional[ModelStoreFormat] = None,
 ) -> ModelImportStore:
     if isinstance(source, dict):
         if model_store_format is not None:
@@ -2651,6 +2676,7 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
+        tag_handler = app.tag_handler.create_tag_handler_session()
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
@@ -2669,11 +2695,11 @@ def source_to_import_store(
             )
         elif os.path.isdir(target_path):
             model_import_store = get_import_model_store_for_directory(
-                target_path, import_options=import_options, app=app, user=galaxy_user
+                target_path, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
             )
         else:
-            model_store_format = model_store_format or "tgz"
-            if model_store_format in ["tar.gz", "tgz", "tar"]:
+            model_store_format = model_store_format or ModelStoreFormat.TGZ
+            if ModelStoreFormat.is_compressed(model_store_format):
                 try:
                     temp_dir = mkdtemp()
                     target_dir = CompressedFile(target_path).extract(temp_dir)
@@ -2681,9 +2707,9 @@ def source_to_import_store(
                     if delete:
                         os.remove(target_path)
                 model_import_store = get_import_model_store_for_directory(
-                    target_dir, import_options=import_options, app=app, user=galaxy_user
+                    target_dir, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
                 )
-            elif model_store_format in ["bag.gz", "bag.tar", "bag.zip"]:
+            elif ModelStoreFormat.is_bag(model_store_format):
                 model_import_store = BagArchiveImportModelStore(
                     target_path, import_options=import_options, app=app, user=galaxy_user
                 )

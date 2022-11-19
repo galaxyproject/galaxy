@@ -30,10 +30,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.web import (
-    error,
-    url_for,
-)
+from galaxy.web import url_for
 from galaxy.web.framework.helpers import (
     grids,
     time_ago,
@@ -271,16 +268,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         for step in stored_workflow.latest_workflow.steps:
             step.annotation = self.get_item_annotation_str(trans.sa_session, stored_workflow.user, step)
 
-        # Get rating data.
-        user_item_rating = 0
-        if trans.get_user():
-            user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), stored_workflow)
-            if user_item_rating:
-                user_item_rating = user_item_rating.rating
-            else:
-                user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, stored_workflow)
-
         # Encode page identifier.
         workflow_id = trans.security.encode_id(stored_workflow.id)
 
@@ -290,9 +277,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 controller="published",
                 action="workflow",
                 id=workflow_id,
-                user_item_rating=user_item_rating,
-                ave_item_rating=ave_item_rating,
-                num_ratings=num_ratings,
             )
         )
 
@@ -348,21 +332,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored, new_annotation)
             trans.sa_session.flush()
             return new_annotation
-
-    @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a workflow asynchronously and return updated community data."""
-
-        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
-        if not stored:
-            return trans.show_error_message("The specified workflow does not exist.")
-
-        # Rate workflow.
-        self.rate_item(trans.sa_session, trans.get_user(), stored, rating)
-
-        return self.get_ave_item_rating_data(trans.sa_session, stored)
 
     @web.expose
     def get_embed_html_async(self, trans, id):
@@ -510,9 +479,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             if workflow_id:
                 stored_workflow = self.app.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=False)
                 self.security_check(trans, stored_workflow, True, False)
-                stored_workflow_id = trans.security.encode_id(stored_workflow.id)
-                return trans.response.send_redirect(f'{url_for("/")}workflows/edit?id={stored_workflow_id}')
-            error("Invalid workflow id")
+                id = trans.security.encode_id(stored_workflow.id)
         stored = self.get_stored_workflow(trans, id)
         # The following query loads all user-owned workflows,
         # So that they can be copied or inserted in the workflow editor.

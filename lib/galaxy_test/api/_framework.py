@@ -1,10 +1,16 @@
-from typing import Optional
+from typing import (
+    Iterator,
+    Optional,
+)
 from unittest import SkipTest
+
+import pytest
 
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -18,6 +24,7 @@ except ImportError:
 class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
     galaxy_driver_class = GalaxyTestDriver
     _test_driver: Optional[GalaxyTestDriver]
+    dataset_populator: Optional[DatasetPopulator]
 
     def setUp(self):
         super().setUp()
@@ -27,6 +34,12 @@ class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
         if self._test_driver is None:
             raise SkipTest("This test does not work with remote Galaxy instances.")
         return self._test_driver
+
+    @pytest.fixture
+    def history_id(self) -> Iterator[str]:
+        assert self.dataset_populator
+        with self.dataset_populator.test_history() as history_id:
+            yield history_id
 
 
 __all__ = ("ApiTestCase",)

@@ -23,11 +23,11 @@ class TestManageInformation(SeleniumTestCase):
         api_key_input = self.components.preferences.api_key_input.wait_for_visible()
         new_api_key = self.get_api_key()
         input_value = api_key_input.get_property("value")
-        self.assertEqual(new_api_key, input_value)
+        assert new_api_key == input_value
         # Hover the input to view the key
         self.action_chains().move_to_element(api_key_input).perform()
         hover_value = api_key_input.get_property("value")
-        self.assertEqual(new_api_key, hover_value)
+        assert new_api_key == hover_value
 
     @selenium_test
     def test_change_email(self):

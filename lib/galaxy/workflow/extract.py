@@ -52,8 +52,9 @@ def extract_workflow(
     # Workflow to populate
     workflow = model.Workflow()
     workflow.name = workflow_name
+    workflow.steps = steps
     # Order the steps if possible
-    attach_ordered_steps(workflow, steps)
+    attach_ordered_steps(workflow)
     # And let's try to set up some reasonable locations on the canvas
     # (these are pretty arbitrary values)
     levorder = order_workflow_steps_with_levels(steps)

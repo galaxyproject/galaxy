@@ -73,6 +73,7 @@ class ToolSource(metaclass=ABCMeta):
         """Parse list of edam topic codes."""
         return []
 
+    @abstractmethod
     def parse_xrefs(self) -> List[Dict[str, str]]:
         """Parse list of external resource URIs and types."""
 

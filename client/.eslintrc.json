@@ -54,6 +54,29 @@
         "vuejs-accessibility/mouse-events-have-key-events": "warn",
         "vuejs-accessibility/no-autofocus": "error",
         "vuejs-accessibility/tabindex-no-positive": "error"
+
     },
-    "ignorePatterns": ["src/qunit", "src/mocha", "src/libs", "src/nls", "src/legacy"]
+    "ignorePatterns": ["src/qunit", "src/mocha", "src/libs", "src/nls", "src/legacy"],
+    "overrides": [{
+        "files": ["**/*.ts", "**/*.tsx"],
+        "extends": [
+            "eslint:recommended",
+            "plugin:vue/recommended",
+            "plugin:compat/recommended",
+            "plugin:vuejs-accessibility/recommended",
+            "plugin:@typescript-eslint/eslint-recommended",
+            "plugin:@typescript-eslint/recommended"
+          ],
+          "parser": "@typescript-eslint/parser",
+          "parserOptions": {
+            "ecmaFeatures": { "jsx": true },
+            "ecmaVersion": 2018,
+            "sourceType": "module",
+            "project": "./tsconfig.json"
+          },
+          "rules": {
+            "@typescript-eslint/no-explicit-any": 0
+          },
+          "plugins": ["@typescript-eslint"]
+    }]
 }

@@ -217,6 +217,9 @@ class TestUserManager(BaseTestCase):
             == ignore_email_capitalization_user
         )
 
+    def test_register_user_activation(self):
+        pass
+
 
 # =============================================================================
 class TestUserSerializer(BaseTestCase):

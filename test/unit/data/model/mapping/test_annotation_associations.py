@@ -1,17 +1,15 @@
 import pytest
 
 from galaxy import model
-from ..testing_utils import (  # noqa: F401
+from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401
     create_and_drop_database,
     dbcleanup,
     disposing_engine,
-    get_plugin_full_name,
     get_stored_obj,
     url,
 )
 
-model_fixtures = get_plugin_full_name("mapping.testing_utils.gxy_model_fixtures")
-pytest_plugins = [model_fixtures]
+pytest_plugins = ["galaxy.model.unittest_utils.gxy_model_fixtures"]
 
 
 @pytest.fixture(scope="module")

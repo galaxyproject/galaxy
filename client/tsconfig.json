@@ -1,9 +1,14 @@
 {
     "compilerOptions": {
+        "target": "ES6",
         "allowJs": true,
         "baseUrl": "./src",
         "jsx": "preserve",
-        "noEmit": true
+        "resolveJsonModule": true,
+        "moduleResolution": "node",
+        "isolatedModules": true,
+        "noEmit": false,
+        "esModuleInterop": true
     },
-    "exclude": ["tests", "node_modules"]
+    "exclude": ["node_modules"]
 }

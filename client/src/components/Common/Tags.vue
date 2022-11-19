@@ -1,5 +1,5 @@
 <template>
-    <StatelessTags :value="tags" @input="onInput" @tag-click="onTagClick" />
+    <StatelessTags :value="tags" :disabled="disabled" @input="onInput" @tag-click="onTagClick" />
 </template>
 <script>
 import StatelessTags from "components/Tags/StatelessTags";
@@ -13,6 +13,10 @@ export default {
         },
         tags: {
             type: Array,
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
         },
     },
     methods: {

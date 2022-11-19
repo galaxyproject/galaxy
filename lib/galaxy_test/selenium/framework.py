@@ -37,6 +37,7 @@ from galaxy.util import (
     classproperty,
     DEFAULT_SOCKET_TIMEOUT,
 )
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import populators
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
@@ -49,7 +50,6 @@ from galaxy_test.base.env import (
 )
 from galaxy_test.base.populators import (
     load_data_dict,
-    skip_if_github_down,
     YamlContentT,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
@@ -98,13 +98,6 @@ SETUP_LOGGING_JS = """
 window.localStorage && window.localStorage.setItem("galaxy:debug", true);
 window.localStorage && window.localStorage.setItem("galaxy:debug:flatten", true);
 """
-
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
 
 
 def managed_history(f):
@@ -170,7 +163,6 @@ def dump_test_information(self, name_prefix):
                 continue
 
 
-@nottest
 def selenium_test(f):
     test_name = f.__name__
 
@@ -241,7 +233,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
 
 
 class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, UsesCeleryTasks):
-    # If run one-off via nosetests, the next line ensures test
+    # If run one-off via pytest, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
 

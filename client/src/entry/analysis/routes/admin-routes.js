@@ -15,7 +15,7 @@ import ErrorStack from "components/admin/ErrorStack";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
 import Jobs from "components/admin/Jobs";
-import RegisterForm from "components/login/RegisterForm";
+import RegisterForm from "components/Login/RegisterForm";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import Toolshed from "components/Toolshed/Index";
@@ -55,9 +55,10 @@ export default [
                     const Galaxy = getGalaxyInstance();
                     return {
                         redirect: "/admin/users",
-                        registration_warning_message: Galaxy.config.registration_warning_message,
-                        mailing_join_addr: Galaxy.config.mailing_join_addr,
-                        server_mail_configured: Galaxy.config.server_mail_configured,
+                        registrationWarningMessage: Galaxy.config.registration_warning_message,
+                        mailingJoinAddr: Galaxy.config.mailing_join_addr,
+                        serverMailConfigured: Galaxy.config.server_mail_configured,
+                        sessionCsrfToken: Galaxy.session_csrf_token,
                     };
                 },
             },

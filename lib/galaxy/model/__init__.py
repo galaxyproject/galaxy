@@ -146,7 +146,10 @@ from galaxy.util.form_builder import (
     WorkflowField,
     WorkflowMappingField,
 )
-from galaxy.util.hash_util import new_insecure_hash
+from galaxy.util.hash_util import (
+    md5_hash_str,
+    new_insecure_hash,
+)
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -7428,7 +7431,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship("WorkflowInvocationStep", back_populates="workflow_invocation")
+    steps = relationship(
+        "WorkflowInvocationStep",
+        back_populates="workflow_invocation",
+        order_by=lambda: WorkflowInvocationStep.order_index,
+    )
     workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
@@ -7905,6 +7912,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         ),
         back_populates="workflow_invocation_step",
         viewonly=True,
+    )
+    order_index = column_property(
+        select([WorkflowStep.order_index]).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
 
     subworkflow_invocation_id: column_property
@@ -8836,7 +8846,7 @@ class CloudAuthz(Base, _HasTable):
         )
 
 
-class Page(Base, Dictifiable, RepresentById):
+class Page(Base, HasTags, Dictifiable, RepresentById):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -8892,6 +8902,7 @@ class Page(Base, Dictifiable, RepresentById):
         "importable",
         "deleted",
         "username",
+        "email_hash",
     ]
 
     def to_dict(self, view="element"):
@@ -8906,6 +8917,11 @@ class Page(Base, Dictifiable, RepresentById):
     @property
     def username(self):
         return self.user.username
+
+    # email needed for hash generation
+    @property
+    def email_hash(self):
+        return md5_hash_str(self.user.email)
 
 
 class PageRevision(Base, Dictifiable, RepresentById):
@@ -8942,7 +8958,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page = relationship("Page", back_populates="users_shared_with")
 
 
-class Visualization(Base, RepresentById):
+class Visualization(Base, HasTags, RepresentById):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),
