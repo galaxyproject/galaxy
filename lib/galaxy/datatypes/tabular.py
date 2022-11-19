@@ -1829,17 +1829,18 @@ class Tabix(Tabular):
                 )
 
             try:
+                # tabix_index columns are 0-based while in the command line it is 1-based
                 pysam.tabix_index(
                     dataset.file_name,
                     index=index_file.file_name,
-                    seq_col=dataset.metadata.chromCol,
-                    start_col=dataset.metadata.startCol,
-                    end_col=dataset.metadata.endCol,
+                    seq_col=dataset.metadata.chromCol - 1,
+                    start_col=dataset.metadata.startCol - 1,
+                    end_col=dataset.metadata.endCol - 1,
                     keep_original=True,
                     force=True,
                 )
             except Exception as e:
-                raise Exception(f"Error setting VCF.gz metadata: {util.unicodify(e)}")
+                raise Exception(f"Error setting tabix metadata: {util.unicodify(e)}")
             else:
                 dataset.metadata.tabix_index = index_file
 
