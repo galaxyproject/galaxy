@@ -6,6 +6,7 @@
         <b-row align-v="center">
             <b-col>
                 <component
+                    class="text-input"
                     :is="componentName"
                     :id="id"
                     v-model="currentValue"

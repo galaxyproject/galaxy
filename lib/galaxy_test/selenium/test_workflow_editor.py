@@ -1,5 +1,5 @@
 import json
-
+import time
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -100,21 +100,22 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         node = editor.node._(label="select_from_dataset_optional")
         node.title.wait_for_and_click()
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
-        # External (selenium-side) debounce hack for old backbone input
-        # TODO: remove when form elements are all converted.
         self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter value")
+        time.sleep(5) # TODO: fix the race condition
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
         assert tool_state["select_single"] == "parameter value"
         # Disable optional button, resets value to null
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
+        time.sleep(5)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
         assert tool_state["select_single"] is None
         # Enable button but don't provide a value
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
+        time.sleep(5) # TODO: fix the race condition
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])

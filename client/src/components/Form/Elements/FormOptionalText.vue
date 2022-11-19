@@ -1,10 +1,15 @@
 <template>
     <div>
-        <b-form-checkbox v-model="status" value="optional_text" unchecked-value="no_optional_text" switch
-            >Set value for this optinonal select field?</b-form-checkbox
+        <b-form-checkbox
+            class="ui-switch"
+            v-model="currentStatus"
+            value="optional_text"
+            unchecked-value="no_optional_text"
+            switch
+            >Set value for this optional select field?</b-form-checkbox
         >
         <FormText
-            v-if="status == 'optional_text'"
+            v-if="textEnabled"
             :id="id"
             v-model="currentValue"
             :readonly="readonly"
@@ -24,6 +29,11 @@ import FormText from "./FormText";
 export default {
     components: {
         FormText,
+    },
+    data() {
+        return {
+            status: "no_optional_text"
+        }
     },
     props: {
         value: {
@@ -70,10 +80,8 @@ export default {
             required: false,
         },
     },
-    data() {
-        return {
-            status: "no_optional_text",
-        };
+    created() {
+        this.status = "no_optional_text";
     },
     computed: {
         currentValue: {
@@ -83,6 +91,29 @@ export default {
             set(val) {
                 this.setValue(val);
             },
+        },
+        currentStatus: {
+            get() {
+                return this.status;
+            },
+            set(val) {
+                this.status = val;
+                if (val == "no_optional_text") {
+                    this.currentValue = null;
+                } else {
+                    this.currentValue = "";
+                }
+            },
+        },
+        textEnabled() {
+            return this.currentStatus == "optional_text";
+        }
+    },
+    methods: {
+        /** Submits a changed value. */
+        setValue(value) {
+            this.$emit("input", value, this.id);
+            this.$emit("change", this.refreshOnChange);
         },
     },
 };
