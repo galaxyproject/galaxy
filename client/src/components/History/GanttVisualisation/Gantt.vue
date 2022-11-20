@@ -19,25 +19,33 @@ import { mapGetters } from "vuex";
 
 export default {
     name: "Gantt",
-    computed: {
-        ...mapGetters({
-            currentHistory: "history/currentHistoryId",
-        }),
-    },
     data() {
         return {
             tasks: [],
             historyId: null,
             accountingArray: [],
+            historyItems: [],
             colors: ['one', 'two', 'three', 'four']
         };
     },
-    computed: {
-        ...mapGetters({
-            currentHistory: "history/currentHistoryId",
-        }),
-    },
     watch: {
+        currentHistoryId (newHistoryId, oldHistoryId) {
+            if(newHistoryId !== oldHistoryId)
+            {
+              this.historyId = newHistoryId
+              this.accountingArray = []
+              if (this.historyId !== undefined) { 
+                    this.getHistoryItems()  
+                } 
+            }
+        },
+        historyContent (newContent, oldContent) {
+            if(newContent && newContent.length > 0) {
+                this.accountingArray = []
+                this.historyItems = newContent
+                this.getData()
+            }
+        },
         accountingArray(newArray, oldArray) {
             if (newArray.length > 0) {
                 var entries = [];
@@ -72,21 +80,35 @@ export default {
         },
     },
     mounted() {
-        this.historyId = this.currentHistory;
         this.getData();
     },
-
+    computed: {
+        ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
+        history() {
+            return this.currentHistoryId;
+        },
+        historyContent() {
+            return this.$store.state.historyItems.items[this.historyId]
+        }
+    },
     methods: {
-        ...mapCacheActions(["fetchJobMetricsForJobId", "storeIntoAccountingArray"]),
-        getData: function () {
-            const historyItems = store.getters.getHistoryItems({ historyId: this.historyId, filterText: "" });
-            historyItems
-                ? historyItems.forEach(async (job) => {
+        ...mapCacheActions(["fetchJobMetricsForDatasetId","fetchHistoryItems"]),
+        getHistoryItems: async function() {
+            if (this.historyId)
+                await this.fetchHistoryItems({ historyId: this.historyId, filterText: '', offset:0 }) 
+        },
+        getData: async function () {
+            this.historyId = this.history
+            this.historyItems = store.getters.getHistoryItems({ historyId: this.historyId, filterText: "" });
+            if (this.historyItems.length == 0) {
+                this.getHistoryItems()
+            }
+            this.historyItems
+                ? this.historyItems.forEach(async (job) => {
                       var Accounting = {};
-                      // console.log('Job is ', job)
                       if (job.id) {
-                          await this.fetchJobMetricsForJobId(job.id);
-                          const metrics = await this.$store.state?.jobMetrics?.jobMetricsByJobId[`${job.id}`];
+                          await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: 'hda' });
+                          const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
                           if (metrics && metrics[1] && metrics[2]) {
                               Accounting = {
                                   label: job.name,
@@ -97,11 +119,9 @@ export default {
                               };
                               this.accountingArray.push(Accounting);
                           }
-                          // console.log('Accounting and array ', Accounting, this.accountingArray)
                       }
                   })
                 : null;
-            // console.log('Accounting Items from Gantt.vue are ', this.accountingArray)
         },
         changeQDayView: function () {
             this.gantt.change_view_mode("Quarter Day");
