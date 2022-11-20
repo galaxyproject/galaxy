@@ -17,7 +17,6 @@ class TestJobRecoveryBeforeHandledIntegeration(integration_util.IntegrationTestC
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

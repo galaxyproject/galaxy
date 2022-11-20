@@ -58,10 +58,12 @@ TEST_CASES = collect_test_data(registry)
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
 def test_upload_datatype_auto(instance, test_data, temp_file, celery_session_worker, celery_session_app):
-    upload_datatype_helper(instance, test_data, temp_file)
+    assert instance.dataset_populator
+    with instance.dataset_populator.test_history() as history_id:
+        upload_datatype_helper(instance, test_data, temp_file, history_id)
 
 
-def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=False):
+def upload_datatype_helper(instance, test_data, temp_file, history_id: str, delete_cache_dir=False):
     is_compressed = False
     for is_method in (is_bz2, is_gzip, is_zip):
         is_compressed = is_method(test_data.path)
@@ -73,15 +75,13 @@ def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=Fals
         else:
             file_type = test_data.datatype.file_ext
         dataset = instance.dataset_populator.new_dataset(
-            instance.history_id,
+            history_id,
             content=content,
             wait=False,
             file_type=file_type,
             auto_decompress=True,
         )
-    dataset = instance.dataset_populator.get_history_dataset_details(
-        instance.history_id, dataset=dataset, assert_ok=False
-    )
+    dataset = instance.dataset_populator.get_history_dataset_details(history_id, dataset=dataset, assert_ok=False)
     expected_file_ext = test_data.datatype.file_ext
     # State might be error if the datatype can't be uploaded
     if dataset["state"] == "error" and not test_data.uploadable:
@@ -114,7 +114,7 @@ def upload_datatype_helper(instance, test_data, temp_file, delete_cache_dir=Fals
         # download file and verify it hasn't been manipulated
         temp_file.write(
             instance.dataset_populator.get_history_dataset_content(
-                history_id=instance.history_id, dataset=dataset, type="bytes", assert_ok=False, raw=True
+                history_id=history_id, dataset=dataset, type="bytes", assert_ok=False, raw=True
             )
         )
         temp_file.flush()
