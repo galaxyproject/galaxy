@@ -59,6 +59,10 @@ def idfn(val: ToolTest):
 
 
 class TestFrameworkTools(ApiTestCase):
+
+    conda_auto_init = True
+    conda_auto_install = True
+
     @pytest.mark.parametrize("testcase", cases(), ids=idfn)
     def test_tool(self, testcase: ToolTest):
         self._test_driver.run_tool_test(testcase.tool_id, testcase.test_index, tool_version=testcase.tool_version)
