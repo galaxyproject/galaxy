@@ -174,7 +174,7 @@ def new_clean_env():
     Returns a minimal environment to use when invoking a subprocess
     """
     env = {}
-    for k in ("HOME", "PATH", "TMPDIR"):
+    for k in ("HOME", "LC_CTYPE", "PATH", "TMPDIR"):
         if k in os.environ:
             env[k] = os.environ[k]
     if "TMPDIR" not in env:
@@ -183,7 +183,8 @@ def new_clean_env():
     # This is needed e.g. for Python < 3.7 where
     # `locale.getpreferredencoding()` (also used by open() to determine the
     # default file encoding) would return `ANSI_X3.4-1968` without this.
-    env["LC_CTYPE"] = "C.UTF-8"
+    if not env.get("LC_CTYPE", "").endswith("UTF-8"):
+        env["LC_CTYPE"] = "C.UTF-8"
     return env
 
 

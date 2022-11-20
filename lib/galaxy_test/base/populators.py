@@ -86,7 +86,6 @@ from galaxy.tool_util.cwl.util import (
     output_to_cwl_json,
     tool_response_to_output,
 )
-from galaxy.tool_util.unittest_utils import skip_if_site_down
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.tool_util.verify.wait import (
     timeout_type,
@@ -98,6 +97,7 @@ from galaxy.util import (
     galaxy_root_path,
 )
 from galaxy.util.resources import resource_string
+from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy_test.base.json_schema_utils import JsonSchemaValidator
 from . import api_asserts
 from .api import ApiTestInteractor
@@ -477,17 +477,23 @@ class BaseDatasetPopulator(BasePopulator):
         return create_response
 
     def create_from_store(
-        self, store_dict: Optional[Dict[str, Any]] = None, store_path: Optional[str] = None
+        self,
+        store_dict: Optional[Dict[str, Any]] = None,
+        store_path: Optional[str] = None,
+        model_store_format: Optional[str] = None,
     ) -> Dict[str, Any]:
-        payload = _store_payload(store_dict=store_dict, store_path=store_path)
+        payload = _store_payload(store_dict=store_dict, store_path=store_path, model_store_format=model_store_format)
         create_response = self.create_from_store_raw(payload)
         api_asserts.assert_status_code_is_ok(create_response)
         return create_response.json()
 
     def create_from_store_async(
-        self, store_dict: Optional[Dict[str, Any]] = None, store_path: Optional[str] = None
+        self,
+        store_dict: Optional[Dict[str, Any]] = None,
+        store_path: Optional[str] = None,
+        model_store_format: Optional[str] = None,
     ) -> Dict[str, Any]:
-        payload = _store_payload(store_dict=store_dict, store_path=store_path)
+        payload = _store_payload(store_dict=store_dict, store_path=store_path, model_store_format=model_store_format)
         create_response = self.create_from_store_raw_async(payload)
         create_response.raise_for_status()
         return create_response.json()
@@ -1223,7 +1229,9 @@ class BaseDatasetPopulator(BasePopulator):
 
     def wait_on_task(self, async_task_response: Response):
         task_id = async_task_response.json()["id"]
+        return self.wait_on_task_id(task_id)
 
+    def wait_on_task_id(self, task_id: str):
         def state():
             state_response = self._get(f"tasks/{task_id}/state")
             state_response.raise_for_status()
@@ -1323,6 +1331,27 @@ class BaseDatasetPopulator(BasePopulator):
             content_format=content_format,
         )
         return request
+
+    def export_history_to_uri_async(
+        self, history_id: str, target_uri: str, model_store_format: str = "tgz", include_files: bool = True
+    ):
+        url = f"histories/{history_id}/write_store"
+        download_response = self._post(
+            url,
+            dict(target_uri=target_uri, include_files=include_files, model_store_format=model_store_format),
+            json=True,
+        )
+        api_asserts.assert_status_code_is_ok(download_response)
+        task_ok = self.wait_on_task(download_response)
+        assert task_ok, f"Task: Writing history to {target_uri} task failed"
+
+    def import_history_from_uri_async(self, target_uri: str, model_store_format: str):
+        import_async_response = self.create_from_store_async(
+            store_path=target_uri, model_store_format=model_store_format
+        )
+        task_id = import_async_response["id"]
+        task_ok = self.wait_on_task_id(task_id)
+        assert task_ok, f"Task: Import history from {target_uri} failed"
 
 
 class GalaxyInteractorHttpMixin:

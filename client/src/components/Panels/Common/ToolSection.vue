@@ -53,7 +53,7 @@ import ToolPanelLabel from "./ToolPanelLabel";
 import ariaAlert from "utils/ariaAlert";
 import ToolPanelLinks from "./ToolPanelLinks";
 
-import { useConfig } from "composables/useConfig";
+import { useConfig } from "composables/config";
 
 export default {
     name: "ToolSection",

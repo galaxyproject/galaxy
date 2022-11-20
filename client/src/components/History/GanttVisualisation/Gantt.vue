@@ -25,25 +25,24 @@ export default {
             historyId: null,
             accountingArray: [],
             historyItems: [],
-            colors: ['one', 'two', 'three', 'four']
+            colors: ["one", "two", "three", "four"],
         };
     },
     watch: {
-        currentHistoryId (newHistoryId, oldHistoryId) {
-            if(newHistoryId !== oldHistoryId)
-            {
-              this.historyId = newHistoryId
-              this.accountingArray = []
-              if (this.historyId !== undefined) { 
-                    this.getHistoryItems()  
-                } 
+        currentHistoryId(newHistoryId, oldHistoryId) {
+            if (newHistoryId !== oldHistoryId) {
+                this.historyId = newHistoryId;
+                this.accountingArray = [];
+                if (this.historyId !== undefined) {
+                    this.getHistoryItems();
+                }
             }
         },
-        historyContent (newContent, oldContent) {
-            if(newContent && newContent.length > 0) {
-                this.accountingArray = []
-                this.historyItems = newContent
-                this.getData()
+        historyContent(newContent, oldContent) {
+            if (newContent && newContent.length > 0) {
+                this.accountingArray = [];
+                this.historyItems = newContent;
+                this.getData();
             }
         },
         accountingArray(newArray, oldArray) {
@@ -56,7 +55,7 @@ export default {
                         start: row["startTime"],
                         end: row["endTime"],
                         progress: 100,
-                        custom_class: this.colors[idx%4]
+                        custom_class: this.colors[idx % 4],
                     });
                 });
                 this.gantt = new Gantt("#gantt", entries, {
@@ -64,7 +63,7 @@ export default {
                     view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
                     arrow_curve: 14,
                     date_format: "YYYY-MM-DD",
-                    popup_trigger:"mouseover",
+                    popup_trigger: "mouseover",
                     custom_popup_html: function (task) {
                         return `
           <div class="details-container">
@@ -88,26 +87,27 @@ export default {
             return this.currentHistoryId;
         },
         historyContent() {
-            return this.$store.state.historyItems.items[this.historyId]
-        }
+            return this.$store.state.historyItems.items[this.historyId];
+        },
     },
     methods: {
-        ...mapCacheActions(["fetchJobMetricsForDatasetId","fetchHistoryItems"]),
-        getHistoryItems: async function() {
-            if (this.historyId)
-                await this.fetchHistoryItems({ historyId: this.historyId, filterText: '', offset:0 }) 
+        ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchHistoryItems"]),
+        getHistoryItems: async function () {
+            if (this.historyId) {
+                await this.fetchHistoryItems({ historyId: this.historyId, filterText: "", offset: 0 });
+            }
         },
         getData: async function () {
-            this.historyId = this.history
+            this.historyId = this.history;
             this.historyItems = store.getters.getHistoryItems({ historyId: this.historyId, filterText: "" });
             if (this.historyItems.length == 0) {
-                this.getHistoryItems()
+                this.getHistoryItems();
             }
             this.historyItems
                 ? this.historyItems.forEach(async (job) => {
                       var Accounting = {};
                       if (job.id) {
-                          await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: 'hda' });
+                          await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: "hda" });
                           const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
                           if (metrics && metrics[1] && metrics[2]) {
                               Accounting = {
