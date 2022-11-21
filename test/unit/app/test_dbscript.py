@@ -23,11 +23,15 @@ from sqlalchemy import create_engine
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
-from galaxy.util import galaxy_directory
+from galaxy.util import (
+    galaxy_directory,
+    in_packages,
+)
 from galaxy.util.resources import resource_path
 
-DbUrl = NewType("DbUrl", str)
+pytestmark = pytest.mark.skipif(in_packages(), reason="Running from packages")
 
+DbUrl = NewType("DbUrl", str)
 
 GXY_BRANCH_LABEL = "gxy"
 TSI_BRANCH_LABEL = "tsi"
