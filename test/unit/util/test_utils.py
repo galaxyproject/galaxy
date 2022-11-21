@@ -111,11 +111,14 @@ def test_in_packages(monkeypatch):
 
 
 def test_galaxy_directory(monkeypatch):
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b")
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b")  # a/b
     path1 = util.galaxy_directory()
 
-    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages")
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/c/..")  # a/b
     path2 = util.galaxy_directory()
 
-    assert path1 == path2
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages/c/..")  # a/b/packages
+    path3 = util.galaxy_directory()
+
+    assert path1 == path2 == path3
     assert os.path.isabs(path1)

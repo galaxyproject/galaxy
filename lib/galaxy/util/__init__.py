@@ -1641,7 +1641,8 @@ def galaxy_directory():
 
 
 def in_packages():
-    return os.path.basename(galaxy_root_path) == "packages"
+    # Normalize first; otherwise basename will be `..`
+    return os.path.basename(os.path.normpath(galaxy_root_path)) == "packages"
 
 
 def galaxy_samples_directory():
