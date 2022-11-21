@@ -1858,11 +1858,13 @@ class Psl(Tabular):
         >>> Psl().sniff( fname )
         False
         """
+
         def check_items(s):
             s_items = s.split(",")
             for item in s_items:
                 if int(item) < 0:
                     raise Exception("Out of range")
+
         count = 0
         for line in file_prefix.line_iterator():
             line = line.strip()
