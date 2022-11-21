@@ -1,13 +1,17 @@
 <tool id="output_filter_select" name="output_filter_select" version="1.0.0">
-    <!-- this tests output filtering based on a select parameter.
+    <!-- this tests output filtering based on a select parameter, ie the focus
+         is on the output filter and the test outputs. the command is just used
+         to examplify how to use selects.
 
-         for multiple="false" 
-
+         the main motivation for the test is to ensure that
          for `mutiple="true"` the select is accessed as a list (containing the
-         selected options). if the options would be a comma separated string
+         selected options). if the option(s) would be a comma separated string
          then selecting a value that contains another value as substring
          (eg AA contains A) would produce an error.
-         for optional selects it should be `None` if nothing is selected.
+         
+         In addition also other cases are tested: 
+         - for optional selects it should be `None` if nothing is selected.
+         - for completeness also multiple="false" is tested
          -->
     <description>test for output filtering with selects</description>
     <command><![CDATA[
@@ -17,8 +21,29 @@
 #if "AA" in str($sel_mult).split(",")
     echo 'test' > AA &&
 #end if
+#if $sel_mult_opt and "B" in str($sel_mult_opt).split(",")
+    echo 'test' > B &&
+#end if
+#if $sel_mult_opt and "BB" in str($sel_mult_opt).split(",")
+    echo 'test' > BB &&
+#end if
+#if $sel == "C"
+    echo 'test' > C &&
+#end if
+#if $sel == "CC"
+    echo 'test' > CC &&
+#end if
+#if $sel_opt == "D"
+    echo 'test' > D &&
+#end if
+#if $sel_opt == "DD"
+    echo 'test' > DD &&
+#end if
+
 echo sel_mult $sel_mult &&
-echo sel_mult_opt $sel_mult_opt
+echo sel_mult_opt $sel_mult_opt &&
+echo sel $sel &&
+echo sel_opt $sel_opt
     ]]></command>
     <inputs>
         <param name="sel_mult" type="select" multiple="true">
@@ -29,38 +54,78 @@ echo sel_mult_opt $sel_mult_opt
             <option value="B">B</option>
             <option value="BB">BB</option>
         </param>
-    </inputs>
+        <param name="sel" type="select">
+            <option value="C">C</option>
+            <option value="CC">CC</option>
+        </param>
+        <param name="sel_opt" type="select" optional="true">
+            <option value="D">D</option>
+            <option value="DD">DD</option>
+        </param> </inputs>
     <outputs>
+        <!-- filtering with mandatory, multiple selects use `in` 
+             to check if the option is in the list -->
         <data name="A" format="txt" from_work_dir="A">
             <filter>"A" in sel_mult</filter>
         </data>
         <data name="AA" format="txt" from_work_dir="AA">
             <filter>"AA" in sel_mult</filter>
         </data>
-        <data name="B" format="txt" from_work_dir="A">
-            <filter>"B" in sel_mult_opt</filter>
+        <!-- filtering with optional, multiple selects 
+             need to check for `None` in addition -->
+        <data name="B" format="txt" from_work_dir="B">
+            <filter>sel_mult_opt and "B" in sel_mult_opt</filter>
         </data>
-        <data name="BB" format="txt" from_work_dir="AA">
-            <filter>"BB" in sel_mult_opt</filter>
+        <data name="BB" format="txt" from_work_dir="BB">
+            <filter>sel_mult_opt and "BB" in sel_mult_opt</filter>
+        </data>
+        <!-- filtering with selects allowing a single option
+             can simply check with `==`, no check for `None`
+             is necessary -->
+        <data name="C" format="txt" from_work_dir="C">
+            <filter>sel == "C"</filter>
+        </data>
+        <data name="CC" format="txt" from_work_dir="CC">
+            <filter>sel == "CC"</filter>
+        </data>
+        <data name="D" format="txt" from_work_dir="D">
+            <filter>sel_opt == "D"</filter>
+        </data>
+        <data name="DD" format="txt" from_work_dir="DD">
+            <filter>sel_opt == "DD"</filter>
         </data>
     </outputs>
     <tests>
-        <test expect_num_outputs="1">
+        <!-- A and C are selected (by default)
+             which implies outputs A and C -->
+        <test expect_num_outputs="2">
             <param name="sel_mult" value="A" />
-            <param name="sel_mult_opt" value="" />
+            <param name="sel" value="C" />
             <output name="A">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <output name="C">
                 <assert_contents>
                     <has_line line="test" />
                 </assert_contents>
             </output>
             <assert_stdout>
                 <has_line line="sel_mult A"/>
-                <has_line line="sel_mult_opt "/>
+                <has_line line="sel_mult_opt None"/>
+                <has_line line="sel C"/>
+                <has_line line="sel_opt None"/>
             </assert_stdout>
         </test>
-        <test expect_num_outputs="2">
+        <!-- make sure that selecting AA, ... does not imply that A, ...
+             are is in the output as well which happens if the select
+             would be a (comma separated) string in the output filter -->
+        <test expect_num_outputs="4">
             <param name="sel_mult" value="AA" />
             <param name="sel_mult_opt" value="BB" />
+            <param name="sel" value="CC" />
+            <param name="sel_opt" value="DD" />
             <output name="AA">
                 <assert_contents>
                     <has_line line="test" />
@@ -71,12 +136,24 @@ echo sel_mult_opt $sel_mult_opt
                     <has_line line="test" />
                 </assert_contents>
             </output>
+            <output name="CC">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
+            <output name="DD">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
             <assert_stdout>
                 <has_line line="sel_mult AA"/>
                 <has_line line="sel_mult_opt BB"/>
+                <has_line line="sel CC"/>
+                <has_line line="sel_opt DD"/>
             </assert_stdout>
         </test>
-        <test expect_num_outputs="2">
+        <test expect_num_outputs="5">
             <param name="sel_mult" value="A,AA" />
             <param name="sel_mult_opt" value="B,BB" />
             <output name="A">
@@ -99,9 +176,16 @@ echo sel_mult_opt $sel_mult_opt
                     <has_line line="test" />
                 </assert_contents>
             </output>
+            <output name="C">
+                <assert_contents>
+                    <has_line line="test" />
+                </assert_contents>
+            </output>
             <assert_stdout>
                 <has_line line="sel_mult A,AA"/>
                 <has_line line="sel_mult_opt B,BB"/>
+                <has_line line="sel C"/>
+                <has_line line="sel_opt None"/>
             </assert_stdout>
         </test>
     </tests>
