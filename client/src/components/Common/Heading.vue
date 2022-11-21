@@ -42,8 +42,8 @@ if (props.size) {
         <div class="stripe"></div>
     </div>
     <component
-        v-else
         :is="element"
+        v-else
         class="heading"
         :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.inline ? 'inline' : '']">
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />

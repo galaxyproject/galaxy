@@ -13,8 +13,8 @@
         </div>
         <b>{{ l("New Type") }}: </b>
         <multiselect
-            class="datatype-dropdown"
             v-model="selectedDatatype"
+            class="datatype-dropdown"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"
