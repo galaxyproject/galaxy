@@ -1420,7 +1420,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "456\n789" in outputs_contents
 
     @skip_without_tool("dbkey_output_action")
-    def test_dynamic_parameter_error_handling(self):
+    def test_dynamic_parameter_error_handling(self) -> None:
         # Run test with valid index once, then supply invalid dbkey and invalid table
         # entry to ensure dynamic param errors are register.
         job_data_list = []

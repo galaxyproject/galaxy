@@ -1,9 +1,13 @@
 import logging
 import os
 from typing import (
-    Any,
     Optional,
+    Generic,
+    Type,
+    TypeVar,
+    TYPE_CHECKING,
 )
+from unittest import SkipTest
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.unittest import TestCase
@@ -12,10 +16,20 @@ from galaxy_test.base.env import (
     target_url_parts,
 )
 
+if TYPE_CHECKING:
+    from galaxy_test.driver.driver_util import (
+        GalaxyTestDriver,
+        TestDriver,
+    )
+
+
 log = logging.getLogger(__name__)
 
 
-class FunctionalTestCase(TestCase):
+TestDriverType = TypeVar("TestDriverType", bound="TestDriver")
+
+
+class FunctionalTestCase(TestCase, Generic[TestDriverType]):
     """Base class for tests targetting actual Galaxy servers.
 
     Subclass should override galaxy_driver_class if a Galaxy server
@@ -23,13 +37,13 @@ class FunctionalTestCase(TestCase):
     server is already running.
     """
 
-    galaxy_driver_class: Optional[type] = None
+    galaxy_driver_class: Optional[Type[TestDriverType]] = None
     host: str
     port: Optional[str]
     url: str
     keepOutdir: str
     test_data_resolver: TestDataResolver
-    _test_driver: Optional[Any]
+    _test_driver: Optional[TestDriverType]
 
     def setUp(self) -> None:
         self.host, self.port, self.url = target_url_parts()
@@ -61,3 +75,16 @@ class FunctionalTestCase(TestCase):
     def get_filename(self, filename: str) -> str:
         # No longer used by tool tests - drop if isn't used else where.
         return self.test_data_resolver.get_filename(filename)
+
+    def driver_or_skip_test_if_remote(self) -> TestDriverType:
+        if self._test_driver is None:
+            raise SkipTest("This test does not work with remote Galaxy instances.")
+        return self._test_driver
+
+
+class GalaxyFunctionalTestCase(FunctionalTestCase["GalaxyTestDriver"]):
+    """A functional test case with Galaxy test drivers.
+
+    The base class is also used by the tool shed test framework to driver tool
+    shed test servers for instance.
+    """

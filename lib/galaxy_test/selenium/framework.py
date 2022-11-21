@@ -52,12 +52,8 @@ from galaxy_test.base.populators import (
     load_data_dict,
     YamlContentT,
 )
-from galaxy_test.base.testcase import FunctionalTestCase
+from galaxy_test.base.testcase import GalaxyFunctionalTestCase
 
-try:
-    from galaxy_test.driver.driver_util import GalaxyTestDriver
-except ImportError:
-    GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
 DEFAULT_TIMEOUT_MULTIPLIER = 1
 DEFAULT_TEST_ERRORS_DIRECTORY = os.path.abspath("database/test_errors")
@@ -423,8 +419,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
             )
 
 
-class SeleniumTestCase(FunctionalTestCase, TestWithSeleniumMixin):
-    galaxy_driver_class = GalaxyTestDriver
+class SeleniumTestCase(GalaxyFunctionalTestCase, TestWithSeleniumMixin):
 
     def setUp(self):
         super().setUp()
