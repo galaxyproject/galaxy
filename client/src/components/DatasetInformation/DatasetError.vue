@@ -62,11 +62,8 @@
                         >{{ resultMessage[0] }}</b-alert
                     >
                     <div v-if="showForm" id="fieldsAndButton">
-                        <FormElement
-                            v-if="!jobDetails.user_email"
-                            id="dataset-error-email"
-                            v-model="email"
-                            title="Please provide your email:" />
+                        <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
+                        <span>{{ currentUserEmail }}</span>
                         <FormElement
                             id="dataset-error-message"
                             v-model="message"
@@ -87,6 +84,8 @@
 </template>
 
 <script>
+import _l from "utils/localization";
+import { mapGetters } from "vuex";
 import DatasetErrorDetails from "./DatasetErrorDetails";
 import FormElement from "components/Form/FormElement";
 import { DatasetProvider } from "components/providers";
@@ -116,12 +115,16 @@ export default {
     data() {
         return {
             message: null,
-            email: null,
             errorMessage: null,
             resultMessages: [],
+            emailTitle: this.l("Your email address"),
         };
     },
     computed: {
+        ...mapGetters("user", ["currentUser"]),
+        currentUserEmail() {
+            return this.currentUser.email;
+        },
         showForm() {
             const noResult = !this.resultMessages.length;
             const hasError = this.resultMessages.some((msg) => msg[1] === "danger");
@@ -132,8 +135,8 @@ export default {
         onError(err) {
             this.errorMessage = err;
         },
-        submit(dataset, userEmail) {
-            const email = this.email || userEmail;
+        submit(dataset, userEmailJob) {
+            const email = userEmailJob || this.currentUserEmail;
             const message = this.message;
             sendErrorReport(dataset, message, email).then(
                 (resultMessages) => {

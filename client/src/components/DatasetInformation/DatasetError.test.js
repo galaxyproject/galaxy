@@ -48,7 +48,6 @@ describe("DatasetError", () => {
         expect(messages.at(1).text()).toBe("message_2");
         expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
         expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();
-        expect(wrapper.findAll("#dataset-error-email").length).toBe(1);
     });
 
     it("check props without common problems", async () => {
