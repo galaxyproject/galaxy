@@ -28,6 +28,15 @@ export default {
             colors: ["one", "two", "three", "four"],
         };
     },
+    computed: {
+        ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
+        history() {
+            return this.currentHistoryId;
+        },
+        historyContent() {
+            return this.$store.state.historyItems.items[this.historyId];
+        },
+    },
     watch: {
         currentHistoryId(newHistoryId, oldHistoryId) {
             if (newHistoryId !== oldHistoryId) {
@@ -42,6 +51,9 @@ export default {
             if (newContent && newContent.length > 0) {
                 this.accountingArray = [];
                 this.historyItems = newContent;
+                if (this.accountingArray.length > 0) {
+                    this.accountingArray = [];
+                }
                 this.getData();
             }
         },
@@ -51,6 +63,7 @@ export default {
                 newArray.map((row, idx) => {
                     entries.push({
                         id: idx.toString(),
+                        job_id: row["id"],
                         name: row["label"],
                         start: row["startTime"],
                         end: row["endTime"],
@@ -66,11 +79,15 @@ export default {
                     popup_trigger: "mouseover",
                     custom_popup_html: function (task) {
                         return `
-          <div class="details-container">
-            <h5>${task.name}</h5>
-            <p>Started At: ${task.start}</p>
-            <p>Finished At: ${task.end}</p>
-            <p>100% completed!</p>
+          <div class="popover-container">
+            <div class="popover-header">
+              ${task.job_id}: ${task.name}  
+            </div>
+            <div class="popover-body">
+             Started At: ${task.start}
+             <br>
+              Finished At: ${task.end}
+            </div>  
           </div>
         `;
                     },
@@ -80,15 +97,6 @@ export default {
     },
     mounted() {
         this.getData();
-    },
-    computed: {
-        ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
-        history() {
-            return this.currentHistoryId;
-        },
-        historyContent() {
-            return this.$store.state.historyItems.items[this.historyId];
-        },
     },
     methods: {
         ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchHistoryItems"]),
@@ -149,6 +157,27 @@ export default {
 </script>
 
 <style>
+.popover-container {
+    width: max-content;
+}
+
+.popover-header {
+    padding: 0.5rem 1rem;
+    margin-bottom: 0;
+    border: 1px solid black;
+    background-color: #948f8fe2;
+    color: white;
+    border-top-left-radius: calc(0.3rem - 1px);
+    border-top-right-radius: calc(0.3rem - 1px);
+}
+
+.popover-body {
+    padding: 1rem 1rem;
+    color: #212529;
+    background-color: white;
+    border: 1px solid;
+}
+
 .gantt .tick {
     stroke: #666;
 }
