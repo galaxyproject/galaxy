@@ -112,6 +112,7 @@ function compare(attribute, variant, converter = null) {
 
 /** Valid filter fields and handlers which can be used for text searches. */
 const validFilters = {
+    annotation: contains("annotation"),
     create_time: compare("create_time", "le", toDate),
     create_time_ge: compare("create_time", "ge", toDate),
     create_time_gt: compare("create_time", "gt", toDate),
@@ -156,7 +157,7 @@ export function checkFilter(filterText, filterName, filterValue) {
 }
 
 /** Parses single text input into a dict of field->value pairs. */
-export function getFilters(filterText) {
+export function getFilters(filterText, useDefaultFilters = true) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const matches = filterText.match(pairSplitRE);
     let result = {};
@@ -199,7 +200,7 @@ export function getFilters(filterText) {
         }
     }
     // use default filters if none of the default filters has been explicitly specified
-    if (!hasDefaults) {
+    if (!hasDefaults && useDefaultFilters) {
         result = { ...result, ...defaultFilters };
     }
     return Object.entries(result);
@@ -207,10 +208,11 @@ export function getFilters(filterText) {
 
 /** Returns a dictionary with query key and values.
  * @param {String} filterText The raw filter text
+ * @param {Boolean} useDefaultFilters The default filters are set if true
  */
-export function getQueryDict(filterText) {
+export function getQueryDict(filterText, useDefaultFilters = true) {
     const queryDict = {};
-    const filters = getFilters(filterText);
+    const filters = getFilters(filterText, useDefaultFilters);
     for (const [key, value] of filters) {
         const query = validFilters[key].query;
         const converter = validFilters[key].converter;
