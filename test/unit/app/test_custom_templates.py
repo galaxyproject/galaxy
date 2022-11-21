@@ -1,6 +1,6 @@
 """Test custom template configuration and rendering."""
 
-from galaxy.config import template
+from galaxy.config import templates
 
 TEMPLATE_RELPATH = "mail/activation-email.html"
 CONTEXT = {"name": "Jane Doe"}
@@ -20,7 +20,7 @@ CUSTOM_TEMPLATE_OUTPUT = "This is my custom template!\n" f"Name: {CONTEXT['name'
 def test_it_can_render_a_default_template(tmp_path):
     """It should fall back on codebase default."""
     custom_templates_dir = tmp_path
-    output = template.render(
+    output = templates.render(
         TEMPLATE_RELPATH,
         CONTEXT,
         custom_templates_dir,
@@ -39,7 +39,7 @@ def test_it_can_render_a_custom_template(tmp_path):
     with open(template_path, "w") as f:
         f.write(CUSTOM_TEMPLATE)
     # It should find the custom template
-    output = template.render(
+    output = templates.render(
         TEMPLATE_RELPATH,
         CONTEXT,
         custom_templates_dir,
