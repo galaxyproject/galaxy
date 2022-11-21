@@ -1,5 +1,18 @@
 <template>
     <span class="align-self-start btn-group">
+        <!-- Special case for collections -->
+        <b-button
+            v-if="isCollection && canShowCollectionDetails"
+            class="collection-info-btn px-1"
+            title="Show Details"
+            size="sm"
+            variant="link"
+            :href="showCollectionDetailsUrl"
+            @click.prevent.stop="$emit('showCollectionInfo')">
+            <icon icon="info-circle" />
+        </b-button>
+
+        <!-- Common for all content items -->
         <b-button
             v-if="isDataset"
             :disabled="displayDisabled"
@@ -87,6 +100,15 @@ export default {
         },
         editUrl() {
             return prependPath(this.itemUrls.edit);
+        },
+        isCollection() {
+            return !this.isDataset;
+        },
+        canShowCollectionDetails() {
+            return !!this.itemUrls.showDetails;
+        },
+        showCollectionDetailsUrl() {
+            return prependPath(this.itemUrls.showDetails);
         },
     },
 };
