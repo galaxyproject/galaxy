@@ -62,7 +62,7 @@
                         >{{ resultMessage[0] }}</b-alert
                     >
                     <div v-if="showForm" id="fieldsAndButton">
-                        <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
+                        <span class="mr-2 font-weight-bold">{{ emailTitle | l }}</span>
                         <span>{{ currentUserEmail }}</span>
                         <FormElement
                             id="dataset-error-message"
@@ -84,7 +84,6 @@
 </template>
 
 <script>
-import _l from "utils/localization";
 import { mapGetters } from "vuex";
 import DatasetErrorDetails from "./DatasetErrorDetails";
 import FormElement from "components/Form/FormElement";
