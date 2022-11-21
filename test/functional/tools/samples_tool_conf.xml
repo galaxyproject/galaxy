@@ -66,6 +66,7 @@
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
+  <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_bed.xml" />
   <tool file="metadata_biom1.xml" />

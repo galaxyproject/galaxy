@@ -430,12 +430,14 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     )
                 else:
                     raise Exception("Unknown dataset instance type encountered")
+                metadata = replace_metadata_file(metadata, dataset_instance, self.sa_session)
                 if self.sessionless:
                     dataset_instance._metadata_collection = MetadataCollection(
                         dataset_instance, session=self.sa_session
                     )
-                    metadata = replace_metadata_file(metadata, dataset_instance, self.sa_session)
-                dataset_instance._metadata = metadata
+                    dataset_instance._metadata = metadata
+                else:
+                    dataset_instance.metadata = metadata
                 self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 
                 # Older style...
@@ -578,9 +580,11 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         else:
                             # Need a user to run library jobs to generate metadata...
                             pass
-                        self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                            dataset_instance, history, **regenerate_kwds
-                        )
+                        if not self.import_options.allow_edit:
+                            # external import, metadata files need to be regenerated (as opposed to extended metadata dataset import)
+                            self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                                dataset_instance, history, **regenerate_kwds
+                            )
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
