@@ -13,8 +13,8 @@
         </div>
         <b>{{ l("Database/Build") }}: </b>
         <multiselect
-            class="database-dropdown"
             v-model="selectedGenome"
+            class="database-dropdown"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"

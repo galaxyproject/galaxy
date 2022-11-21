@@ -67,14 +67,14 @@ export default {
             selectedCollections: [],
         };
     },
-    created() {
-        this.$store.dispatch("history/loadHistoryById", this.id);
-    },
     computed: {
         ...mapGetters({ getHistoryById: "history/getHistoryById" }),
         history() {
             return this.getHistoryById(this.id);
         },
+    },
+    created() {
+        this.$store.dispatch("history/loadHistoryById", this.id);
     },
     methods: {
         onViewCollection(collection) {
