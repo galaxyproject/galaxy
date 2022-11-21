@@ -1,23 +1,23 @@
 import axios from "axios";
 import { safePath } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
+import { getQueryDict } from "store/historyStore/model/filtering";
 
-export async function getPublishedHistories(options = {}) {
-    let params = "view=summary&keys=username,username_and_slug&";
-    if (options.sortBy) {
-        const sortPrefix = options.sortDesc ? "-dsc" : "-asc";
-        params += `order=${options.sortBy}${sortPrefix}&`;
+const getQueryString = (filterText) => {
+    const filterDict = getQueryDict(filterText, false);
+    return Object.entries(filterDict)
+        .map(([f, v]) => `q=${f}&qv=${v}`)
+        .join("&");
+};
+
+export async function getPublishedHistories({ limit, offset, sortBy, sortDesc, filterText }) {
+    const queryString = getQueryString(filterText);
+    let params = `view=summary&keys=username,username_and_slug&offset=${offset}&limit=${limit}`;
+    if (sortBy) {
+        const sortPrefix = sortDesc ? "-dsc" : "-asc";
+        params += `&order=${sortBy}${sortPrefix}`;
     }
-    if (options.limit) {
-        params += `limit=${options.limit}&`;
-    }
-    if (options.offset) {
-        params += `offset=${options.offset}&`;
-    }
-    if (options.query) {
-        params += `q=name-contains&qv=${options.query}&`;
-    }
-    const url = `/api/histories/published?${params}`;
+    const url = `/api/histories/published?${params}&${queryString}`;
     try {
         const { data } = await axios.get(safePath(url));
         return data;
