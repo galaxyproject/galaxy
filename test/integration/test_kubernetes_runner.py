@@ -219,6 +219,7 @@ class BaseKubernetesIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase, M
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
 
+    @pytest.mark.xfail(reason="mktemp -d does not work in default kubernetes setup")
     @skip_without_tool("job_environment_default")
     def test_job_environment(self):
         job_env = self._run_and_get_environment_properties()
