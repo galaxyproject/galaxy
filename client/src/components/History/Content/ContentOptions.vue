@@ -3,7 +3,7 @@
         <!-- Special case for collections -->
         <b-button
             v-if="isCollection && canShowCollectionDetails"
-            class="collection-info-btn px-1"
+            class="collection-job-details-btn px-1"
             title="Show Details"
             size="sm"
             variant="link"

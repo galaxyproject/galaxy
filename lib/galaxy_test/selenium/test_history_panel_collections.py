@@ -133,6 +133,21 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
                 self.dataset_populator.cancel_job(job["id"])
 
     @selenium_test
+    def test_collection_job_details(self):
+        input_collection, failed_collection = self._generate_partially_failed_collection_with_input()
+        ok_hid = input_collection["hid"]
+        failed_hid = failed_collection["hid"]
+        self.home()
+
+        ok_collection_element = self.history_panel_wait_for_hid_state(ok_hid, "ok")
+        failed_collection_element = self.history_panel_wait_for_hid_state(failed_hid, "error")
+
+        ok_collection_element.collection_job_details_button.wait_for_and_click()
+        self.screenshot("history_panel_collections_job_details_ok")
+        failed_collection_element.collection_job_details_button.wait_for_and_click()
+        self.screenshot("history_panel_collections_job_details_failed")
+
+    @selenium_test
     def test_back_to_history_button(self):
         input_collection = self._populated_paired_and_wait_for_it()
         collection_hid = input_collection["hid"]
