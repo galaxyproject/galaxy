@@ -1817,10 +1817,6 @@ class Psl(Tabular):
             "tStarts",
         ]
 
-    def display_peek(self, dataset):
-        """Returns formated html of peek"""
-        return self.make_html_table(dataset, column_names=self.column_names)
-
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
         PSL lines represent alignments, and are typically generated
@@ -1862,6 +1858,11 @@ class Psl(Tabular):
         >>> Psl().sniff( fname )
         False
         """
+        def check_items(s):
+            s_items = s.split(",")
+            for item in s_items:
+                if int(item) < 0:
+                    raise Exception("Out of range")
         count = 0
         for line in file_prefix.line_iterator():
             line = line.strip()
@@ -1874,72 +1875,24 @@ class Psl(Tabular):
                 items = line.split("\t")
                 if len(items) != 21:
                     return False
-                # matches
-                if int(items[0]) < 0:
-                    raise Exception("Out of range")
-                # misMatches
-                if int(items[1]) < 0:
-                    raise Exception("Out of range")
-                # repMatches
-                if int(items[2]) < 0:
-                    raise Exception("Out of range")
-                # nCount
-                if int(items[3]) < 0:
-                    raise Exception("Out of range")
-                # qNumInsert
-                if int(items[4]) < 0:
-                    raise Exception("Out of range")
-                # qBaseInsert
-                if int(items[5]) < 0:
-                    raise Exception("Out of range")
-                # tNumInsert
-                if int(items[6]) < 0:
-                    raise Exception("Out of range")
-                # tBaseInsert
-                if int(items[7]) < 0:
-                    raise Exception("Out of range")
+                # tName is a string
+                items.pop(13)
+                # qName is a string
+                items.pop(9)
                 # strand
-                if items[8] not in ["-", "+", "+-", "-+"]:
+                if items.pop(8) not in ["-", "+", "+-", "-+"]:
                     raise Exception("Invalid strand")
-                # qSize
-                if int(items[10]) < 0:
-                    raise Exception("Out of range")
-                # qStart
-                if int(items[11]) < 0:
-                    raise Exception("Out of range")
-                # qEnd
-                if int(items[12]) < 0:
-                    raise Exception("Out of range")
-                # tSize
-                if int(items[14]) < 0:
-                    raise Exception("Out of range")
-                # tStart
-                if int(items[15]) < 0:
-                    raise Exception("Out of range")
-                # tEnd
-                if int(items[16]) < 0:
-                    raise Exception("Out of range")
-                # blockCount
-                if int(items[17]) < 0:
-                    raise Exception("Out of range")
                 # blockSizes
-                s = items[18].rstrip(",")
-                s_items = s.split(",")
-                for item in s_items:
-                    if int(item) < 0:
-                        raise Exception("Out of range")
+                s = items.pop(15).rstrip(",")
+                check_items(s)
                 # qStarts
-                s = items[19].rstrip(",")
-                s_items = s.split(",")
-                for item in s_items:
-                    if int(item) < 0:
-                        raise Exception("Out of range")
+                s = items.pop(15).rstrip(",")
+                check_items(s)
                 # tStarts
-                s = items[20].rstrip(",")
-                s_items = s.split(",")
-                for item in s_items:
-                    if int(item) < 0:
-                        raise Exception("Out of range")
+                s = items.pop(15).rstrip(",")
+                check_items(s)
+                if any(int(item) < 0 for item in items):
+                    raise Exception("Out of range")
                 count += 1
                 if count == 10:
                     break
