@@ -26,6 +26,7 @@ import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetList from "components/Dataset/DatasetList";
 import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import FormGeneric from "components/Form/FormGeneric";
+import GanttVue from "components/History/GanttVisualisation/Gantt.vue";
 import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
@@ -230,6 +231,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "histories/:historyId/export",
                         component: HistoryExport,
+                        props: true,
+                    },
+                    {
+                        path: "visualizations/gantt",
+                        component: GanttVue,
                         props: true,
                     },
                     {

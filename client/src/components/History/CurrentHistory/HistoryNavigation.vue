@@ -58,6 +58,15 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
+                        :title="l('Export Citations for all Tools used in this History')"
+                        @click="$router.push(`/visualizations/gantt`)">
+                        <Icon fixed-width icon="stream" class="mr-1" />
+                        <span v-localize>Gantt Visualization</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-divider></b-dropdown-divider>
+
+                    <b-dropdown-item
                         :title="l('Resume all Paused Jobs in this History')"
                         @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
                         <Icon fixed-width icon="play" class="mr-1" />
