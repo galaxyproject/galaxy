@@ -371,10 +371,10 @@ class BaseDatasetPopulator(BasePopulator):
         to_posix_lines=True,
         auto_decompress=True,
         **kwds,
-    ) -> dict:
-        """Create a new history dataset instance (HDA) and return its ID.
+    ) -> Dict[str, Any]:
+        """Create a new history dataset instance (HDA).
 
-        :returns: the HDA id of the new object
+        :returns: a dictionary describing the new HDA
         """
         run_response = self.new_dataset_request(
             history_id,
@@ -916,7 +916,7 @@ class BaseDatasetPopulator(BasePopulator):
         assert isinstance(transform, list)
         return {t["action"] for t in transform}
 
-    def get_history_dataset_details(self, history_id: str, **kwds) -> dict:
+    def get_history_dataset_details(self, history_id: str, **kwds) -> Dict[str, Any]:
         dataset_id = self.__history_content_id(history_id, **kwds)
         details_response = self.get_history_dataset_details_raw(history_id, dataset_id)
         details_response.raise_for_status()

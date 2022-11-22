@@ -1,6 +1,7 @@
 import collections
 import os
 import shutil
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -57,13 +58,24 @@ TEST_CASES = collect_test_data(registry)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_auto(instance, test_data, temp_file, celery_session_worker, celery_session_app):
-    assert instance.dataset_populator
+def test_upload_datatype_auto(
+    instance: UploadTestDatatypeDataTestCase,
+    test_data: TestData,
+    temp_file,
+    celery_session_worker,
+    celery_session_app,
+) -> None:
     with instance.dataset_populator.test_history() as history_id:
         upload_datatype_helper(instance, test_data, temp_file, history_id)
 
 
-def upload_datatype_helper(instance, test_data, temp_file, history_id: str, delete_cache_dir=False):
+def upload_datatype_helper(
+    instance: UploadTestDatatypeDataTestCase,
+    test_data: TestData,
+    temp_file,
+    history_id: str,
+    delete_cache_dir: bool = False,
+) -> None:
     is_compressed = False
     for is_method in (is_bz2, is_gzip, is_zip):
         is_compressed = is_method(test_data.path)
@@ -106,6 +118,10 @@ def upload_datatype_helper(instance, test_data, temp_file, history_id: str, dele
         if delete_cache_dir:
             # Delete cache directory and then re-create it. This way we confirm
             # that dataset is fetched from the object store, not from the cache
+            if TYPE_CHECKING:
+                from .objectstore.test_objectstore_datatype_upload import BaseObjectstoreUploadTest
+
+                assert isinstance(instance, BaseObjectstoreUploadTest)
             temp_dir = instance.get_object_store_kwargs()["temp_directory"]
             cache_dir = temp_dir + "/object_store_cache"
             shutil.rmtree(cache_dir)
