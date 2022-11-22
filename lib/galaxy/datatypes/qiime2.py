@@ -4,6 +4,7 @@ import io
 import uuid as _uuid
 import zipfile
 from typing import (
+    Dict,
     List,
     Optional,
     TYPE_CHECKING,
@@ -63,14 +64,14 @@ class _QIIME2ResultBase(CompressedZipArchive):
             peek.append(("Version", dataset.metadata.version))
         return peek
 
-    def _sniff(self, filename):
+    def _sniff(self, filename: str) -> Optional[Dict]:
         """Helper method for use in inherited datatypes"""
         try:
             if not zipfile.is_zipfile(filename):
                 raise Exception()
             return _get_metadata_from_archive(filename)
         except Exception:
-            return False
+            return None
 
 
 class QIIME2Artifact(_QIIME2ResultBase):

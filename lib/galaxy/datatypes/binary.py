@@ -3167,7 +3167,7 @@ class RDS(CompressedArchive):
 
 class OxliBinary(Binary):
     @staticmethod
-    def _sniff(filename, oxlitype):
+    def _sniff(filename: str, oxlitype: bytes) -> bool:
         try:
             with open(filename, "rb") as fileobj:
                 header = fileobj.read(4)

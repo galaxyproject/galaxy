@@ -16,6 +16,7 @@ from typing import (
     List,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 
 import pysam
@@ -957,7 +958,7 @@ class BaseVcf(Tabular):
         name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[]
     )
 
-    def _sniff(self, fname_or_file_prefix):
+    def _sniff(self, fname_or_file_prefix: Union[str, FilePrefix]) -> bool:
         # Because this sniffer is run on compressed files that might be BGZF (due to the VcfGz subclass), we should
         # handle unicode decode errors. This should ultimately be done in get_headers(), but guess_ext() currently
         # relies on get_headers() raising this exception.
