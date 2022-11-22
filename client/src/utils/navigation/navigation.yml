@@ -945,3 +945,9 @@ charts:
   selectors:
     visualize_button: '.ui-portlet .button i.fa-line-chart'  # without icon - it waits on other buttons that aren't visible, need more specific class
     viewport_canvas: 'svg.charts-viewport-canvas'
+
+job_details:
+  selectors:
+    galaxy_tool_id: '#galaxy-tool-id'
+    tool_exit_code: '#exit-code'
+
