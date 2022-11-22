@@ -37,7 +37,6 @@ class TestFolderContentsApi(ApiTestCase):
         ldda = self._create_content_in_folder_with_payload(self.root_folder_id, data)
         self._assert_has_keys(ldda, "name", "id")
 
-
     @requires_new_library
     def test_create_hdca_with_ldda_message(self, history_id):
         contents = ["dataset01", "dataset02"]
