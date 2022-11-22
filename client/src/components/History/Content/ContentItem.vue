@@ -177,7 +177,10 @@ export default {
             if (this.isCollection) {
                 return {
                     edit: `collection/edit/${id}`,
-                    showDetails: this.item.job_source_id ? `jobs/${this.item.job_source_id}/view` : null,
+                    showDetails:
+                        this.item.job_source_id && this.item.job_source_type === "Job"
+                            ? `jobs/${this.item.job_source_id}/view`
+                            : null,
                 };
             }
             return {
