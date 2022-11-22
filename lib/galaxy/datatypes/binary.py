@@ -13,7 +13,10 @@ import tarfile
 import tempfile
 import zipfile
 from json import dumps
-from typing import Optional
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import h5py
 import numpy as np
@@ -55,6 +58,9 @@ from . import (
     data,
     dataproviders,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
@@ -571,7 +577,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
@@ -579,8 +585,8 @@ class BamNative(CompressedArchive, _BamOrSam):
                     ck_data = ""
                     header_line_count = 0
                     if offset == 0:
-                        ck_data = bamfile.text.replace("\t", " ")
-                        header_line_count = bamfile.text.count("\n")
+                        ck_data = bamfile.text.replace("\t", " ")  # type: ignore[attr-defined]
+                        header_line_count = bamfile.text.count("\n")  # type: ignore[attr-defined]
                     else:
                         bamfile.seek(offset)
                     for line_number, alignment in enumerate(bamfile):
