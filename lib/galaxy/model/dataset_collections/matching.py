@@ -1,3 +1,5 @@
+from typing import Optional
+
 from galaxy import exceptions
 from galaxy.util import bunch
 from .structure import (
@@ -87,7 +89,7 @@ class MatchingCollections:
         return input_name in self.collections
 
     @staticmethod
-    def for_collections(collections_to_match, collection_type_descriptions):
+    def for_collections(collections_to_match, collection_type_descriptions) -> Optional["MatchingCollections"]:
         if not collections_to_match.has_collections():
             return None
 
