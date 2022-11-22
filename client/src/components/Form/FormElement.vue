@@ -258,8 +258,8 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 :workflow-building-mode="workflowBuildingMode" />
             <FormSelection
                 v-else-if="props.type == 'select' && attrs.display == 'radio'"
-                v-model="currentValue"
                 :id="id"
+                v-model="currentValue"
                 :data="attrs.data"
                 :display="attrs.display"
                 :options="attrs.options"
