@@ -7,6 +7,8 @@ import sys
 import tempfile
 from urllib.parse import quote_plus
 
+import pysam
+
 from bx.intervals.io import (
     GenomicIntervalReader,
     ParseError,
@@ -1727,6 +1729,113 @@ class ScIdx(Tabular):
         if count >= 1:
             return True
         return False
+
+
+class IntervalTabix(Interval):
+    """
+    Class describing the bgzip format (http://samtools.github.io/hts-specs/SAMv1.pdf)
+    As tabix is just a bgzip with an index
+    """
+
+    file_ext = "tabix"
+    edam_format = "format_3616"
+    compressed = True
+    compressed_format = "gzip"
+
+    # The MetadataElements are readonly so the user cannot change them (as the index is generated only once)
+    MetadataElement(name="chromCol", default=1, desc="Chrom column", param=metadata.ColumnParameter, readonly=True)
+    MetadataElement(name="startCol", default=2, desc="Start column", param=metadata.ColumnParameter, readonly=True)
+    MetadataElement(name="endCol", default=3, desc="End column", param=metadata.ColumnParameter, readonly=True)
+
+    # Add metadata elements
+    MetadataElement(
+        name="tabix_index",
+        desc="Tabix Index File",
+        param=metadata.FileParameter,
+        file_ext="tbi",
+        readonly=True,
+        visible=False,
+        optional=True,
+    )
+
+    # We don't want to define sniff as the index would be created before the metadata on columns set.
+    # def sniff(self, filename):
+    #     # Check that the file is compressed with bgzip (not gzip), i.e. the
+    #     # compressed format is BGZF, as explained in
+    #     # http://samtools.github.io/hts-specs/SAMv1.pdf
+    #     with open(filename, "rb") as fh:
+    #         fh.seek(-28, 2)
+    #         last28 = fh.read()
+    #         return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
+
+    # Ideally the tabix_index would be regenerated when the metadataElements are updated
+    def set_meta(self, dataset, overwrite=True, first_line_is_header=False, metadata_tmp_files_dir=None, **kwd):
+        # We don't use the method Interval.set_meta as we don't want to guess the columns for chr start end
+        Tabular.set_meta(self, dataset, overwrite=overwrite, skip=0)
+        # Try to create the index for the Tabix file.
+        # These metadata values are not accessible by users, always overwrite
+        index_file = dataset.metadata.tabix_index
+        if not index_file:
+            index_file = dataset.metadata.spec["tabix_index"].param.new_file(
+                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+            )
+
+        try:
+            # tabix_index columns are 0-based while in the command line it is 1-based
+            pysam.tabix_index(
+                dataset.file_name,
+                index=index_file.file_name,
+                seq_col=dataset.metadata.chromCol - 1,
+                start_col=dataset.metadata.startCol - 1,
+                end_col=dataset.metadata.endCol - 1,
+                keep_original=True,
+                force=True,
+            )
+        except Exception as e:
+            raise Exception(f"Error setting tabix metadata: {util.unicodify(e)}")
+        else:
+            dataset.metadata.tabix_index = index_file
+
+
+class JuicerMediumTabix(IntervalTabix):
+    """
+    Class describing a tabix file built from a juicer medium format:
+    https://github.com/aidenlab/juicer/wiki/Pre#medium-format
+    <readname> <str1> <chr1> <pos1> <frag1> <str2> <chr2> <pos2> <frag2> <mapq1> <mapq2>
+
+    str = strand (0 for forward, anything else for reverse)
+    chr = chromosome (must be a chromosome in the genome)
+    pos = position
+    frag = restriction site fragment
+    mapq = mapping quality score
+    """
+
+    file_ext = "juicer.medium.tabix"
+
+    # The MetadataElements are readonly so the user cannot change them (as the index is generated only once)
+    MetadataElement(name="chromCol", default=3, desc="Chrom column", param=metadata.ColumnParameter, readonly=True)
+    MetadataElement(name="startCol", default=4, desc="Start column", param=metadata.ColumnParameter, readonly=True)
+    MetadataElement(name="endCol", default=4, desc="End column", param=metadata.ColumnParameter, readonly=True)
+
+
+class BedTabix(IntervalTabix):
+    """
+    Class describing a tabix file built from a bed file
+    """
+
+    file_ext = "bed.tabix"
+
+
+class GffTabix(IntervalTabix):
+    """
+    Class describing a tabix file built from a bed file
+    """
+
+    file_ext = "gff.tabix"
+
+    # The MetadataElements are readonly so the user cannot change them (as the index is generated only once)
+    MetadataElement(name="startCol", default=4, desc="Start column", param=metadata.ColumnParameter, readonly=True)
+    MetadataElement(name="endCol", default=5, desc="End column", param=metadata.ColumnParameter, readonly=True)
 
 
 if __name__ == "__main__":
