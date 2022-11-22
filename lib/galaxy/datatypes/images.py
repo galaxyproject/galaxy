@@ -60,7 +60,7 @@ class Image(data.Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Determine if the file is in this format"""
         return check_image_type(filename, self.image_formats)
 
@@ -116,7 +116,7 @@ class OMETiff(Tiff):
             json.dump(offsets, f)
         dataset.metadata.offsets = offsets_file
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         with tifffile.TiffFile(filename) as tif:
             if tif.is_ome:
                 return True
@@ -213,7 +213,7 @@ class Pdf(Image):
     edam_format = "format_3508"
     file_ext = "pdf"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Determine if the file is in pdf format."""
         with open(filename, "rb") as fh:
             return fh.read(4) == b"%PDF"
@@ -333,7 +333,7 @@ class Mrc2014(Binary):
 
     file_ext = "mrc"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         try:
             # An exception is thrown
             # if the file is not an

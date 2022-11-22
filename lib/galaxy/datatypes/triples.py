@@ -30,7 +30,7 @@ class Triples(data.Data):
     edam_format = "format_2376"
     file_ext = "triples"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """
@@ -79,7 +79,7 @@ class N3(data.Text, Triples):
     edam_format = "format_3257"
     file_ext = "n3"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """
@@ -186,10 +186,11 @@ class HDT(binary.Binary, Triples):
     edam_format = "format_2376"
     file_ext = "hdt"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         with open(filename, "rb") as f:
             if f.read(4) == b"$HDT":
                 return True
+        return False
 
     def set_peek(self, dataset):
         """Set the peek and blurb text"""

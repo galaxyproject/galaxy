@@ -68,7 +68,7 @@ class Augustus(CompressedArchive):
         except Exception:
             return f"Augustus model ({nice_size(dataset.get_size())})"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Augustus archives always contain the same files
         """

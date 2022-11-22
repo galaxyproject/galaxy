@@ -1128,7 +1128,7 @@ class Newick(Text):
     edam_format = "format_1910"
     file_ext = "newick"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Returning false as the newick format is too general and cannot be sniffed."""
         return False
 

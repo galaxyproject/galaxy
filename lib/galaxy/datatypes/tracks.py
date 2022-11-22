@@ -60,5 +60,5 @@ class UCSCTrackHub(Html):
         except Exception:
             return "Track Hub structure: Visualization in UCSC Track Hub"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         return False

@@ -74,8 +74,11 @@ class HDF5SummarizedExperiment(Data):
               </html>
               """
 
-    def sniff(self, filename):
-        """Not sure whether this is necessary (or possible) with binaries."""
+    def sniff(self, filename: str) -> bool:
+        """
+        Returns false and the user must manually set.
+        """
+        return False
 
     def get_mime(self) -> str:
         """Return the mime type of the datatype."""

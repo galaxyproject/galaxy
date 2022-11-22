@@ -77,17 +77,17 @@ class _QIIME2ResultBase(CompressedZipArchive):
 class QIIME2Artifact(_QIIME2ResultBase):
     file_ext = "qza"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         metadata = self._sniff(filename)
-        return metadata and metadata["semantic_type"] != "Visualization"
+        return bool(metadata) and metadata["semantic_type"] != "Visualization"  # type: ignore[index]
 
 
 class QIIME2Visualization(_QIIME2ResultBase):
     file_ext = "qzv"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         metadata = self._sniff(filename)
-        return metadata and metadata["semantic_type"] == "Visualization"
+        return bool(metadata) and metadata["semantic_type"] == "Visualization"  # type: ignore[index]
 
 
 @build_sniff_from_prefix
