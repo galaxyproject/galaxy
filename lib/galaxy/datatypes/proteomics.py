@@ -3,7 +3,11 @@ Proteomics Datatypes
 """
 import logging
 import re
-from typing import TYPE_CHECKING
+from typing import (
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
@@ -450,7 +454,7 @@ class Dta2d(TabularData):
             return "\t"
         return None
 
-    def _parse_dataline(self, line):
+    def _parse_dataline(self, line: List) -> bool:
         try:
             line = [float(_) for _ in line]
         except ValueError:
@@ -545,7 +549,7 @@ class Edta(TabularData):
             return "\t"
         return None
 
-    def _parse_type(self, line):
+    def _parse_type(self, line: List) -> Optional[int]:
         """
         parse the type from the header line
         types 1-3 as in the class docs, 0: type 1 wo/wrong header
@@ -565,7 +569,7 @@ class Edta(TabularData):
         else:
             return 3
 
-    def _parse_dataline(self, line, tpe):
+    def _parse_dataline(self, line: List, tpe: Optional[int]) -> bool:
         if tpe == 2 or tpe == 3:
             idx = 4
         else:
