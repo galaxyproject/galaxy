@@ -13,7 +13,7 @@ from rocrate.model.contextentity import ContextEntity
 from rocrate.model.softwareapplication import SoftwareApplication
 from rocrate.rocrate import ROCrate
 
-from galaxy.model import Workflow, WorkflowInvocation, WorkflowStep
+from galaxy.model import Workflow, WorkflowInvocation, WorkflowStep, JobParameter
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +22,8 @@ class WorkflowRunCrateProfileBuilder:
     def __init__(self, model_store: Any):
         self.model_store = model_store
         self.invocation: WorkflowInvocation = model_store.included_invocations[0]
+        logger.info(self.invocation.input_parameters)
+        logger.info(self.invocation.input_step_parameters)
         self.workflow: Workflow = self.invocation.workflow
         self.input_type_to_param_type = {
             "parameter": "parameter-type#TODO",
@@ -102,6 +104,7 @@ class WorkflowRunCrateProfileBuilder:
 
         output_formal_params = []
         workflow_outputs = []
+        input_values = []
         for output_step in self.invocation.steps:
             for job in output_step.jobs:
                 for job_output in job.output_datasets:
@@ -110,12 +113,16 @@ class WorkflowRunCrateProfileBuilder:
                     dataset_id = job_output.dataset.dataset.id
                     output_file_entity = file_entities.get(dataset_id)
                     workflow_outputs.append(output_file_entity)
+                for param in job.parameters:
+                    property_value = self._add_property_value(crate, param)
+                    input_values.append(property_value)
+
 
         wf_output_param_ids = [{"@id": entity.id} for entity in output_formal_params]
         crate.mainEntity["output"] = wf_output_param_ids
         wf_output_ids = [{"@id": output.id} for output in workflow_outputs if output]
-
-        input_values = []
+        wf_input_values_ids = [{"@id": entity.id} for entity in input_values]
+        
         # TODO: these are not the correct ones. We need to find the real runtime values
         # for param in self.invocation.input_parameters:
         #     input_param_value = crate.add(
@@ -129,7 +136,7 @@ class WorkflowRunCrateProfileBuilder:
         #         )
         #     )
         #     input_values.append(input_param_value)
-        wf_input_values_ids = [{"@id": entity.id} for entity in input_values]
+        
 
         input_param_value = crate.add(
             ContextEntity(
@@ -171,3 +178,16 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
+
+    def _add_property_value(self, crate: ROCrate, param: JobParameter):
+        # TODO: 
+        return crate.add(
+                ContextEntity(
+                    crate,
+                    properties={
+                        "@type": "PropertyValue",
+                        "name": param.name,
+                        "value": param.value,
+                    },
+                )
+            )
