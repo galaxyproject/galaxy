@@ -8,13 +8,18 @@ import logging
 import typing
 from abc import abstractmethod
 from typing import (
+    Any,
+    Callable,
     Dict,
     List,
+    NamedTuple,
+    Optional,
 )
 
 from boltons.iterutils import remap
 
 from galaxy import model
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
@@ -41,28 +46,31 @@ class PartialJobExecution(Exception):
         self.execution_tracker = execution_tracker
 
 
-MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
+class MappingParameters(NamedTuple):
+    param_template: Dict[str, Any]
+    param_combinations: List[Dict[str, Any]]
 
 
 def execute(
     trans,
     tool: "Tool",
-    mapping_params,
+    mapping_params: MappingParameters,
     history: model.History,
-    rerun_remap_job_id=None,
-    collection_info=None,
-    workflow_invocation_uuid=None,
-    invocation_step=None,
-    max_num_jobs=None,
-    job_callback=None,
-    completed_jobs=None,
-    workflow_resource_parameters=None,
-    validate_outputs=False,
+    rerun_remap_job_id: Optional[int] = None,
+    collection_info: Optional[MatchingCollections] = None,
+    workflow_invocation_uuid: Optional[str] = None,
+    invocation_step: Optional[model.WorkflowInvocationStep] = None,
+    max_num_jobs: Optional[int] = None,
+    job_callback: Optional[Callable] = None,
+    completed_jobs: Optional[Dict[int, Optional[model.Job]]] = None,
+    workflow_resource_parameters: Optional[Dict[str, Any]] = None,
+    validate_outputs: bool = False,
 ):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
+    completed_jobs = completed_jobs or {}
     if max_num_jobs is not None:
         assert invocation_step is not None
     if rerun_remap_job_id:

@@ -1834,7 +1834,7 @@ class Tool(Dictifiable):
         self.handle_incoming_errors(all_errors)
 
         mapping_params = MappingParameters(incoming, all_params)
-        completed_jobs = {}
+        completed_jobs: Dict[int, Optional[model.Job]] = {}
         for i, param in enumerate(all_params):
             if use_cached_job:
                 completed_jobs[i] = self.job_search.by_tool_input(
