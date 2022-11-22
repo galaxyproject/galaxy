@@ -68,12 +68,6 @@ export default {
 
         return { toastRef, confirmDialogRef };
     },
-    setup() {
-        const toastRef = ref(null);
-        setToastComponentRef(toastRef);
-
-        return { toastRef };
-    },
     data() {
         return {
             config: getGalaxyInstance().config,
