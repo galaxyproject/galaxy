@@ -139,17 +139,15 @@ class HistoryPanelCollectionsTestCase(SeleniumTestCase):
         failed_collection_element = self.history_panel_wait_for_hid_state(failed_collection_hid, "error")
 
         ok_collection_element.collection_job_details_button.wait_for_and_click()
-        tool_id_component = self.components.job_details.galaxy_tool_id.wait_for_visible()
+        self.components.job_details.galaxy_tool_with_id(tool_id="collection_creates_list").wait_for_visible()
         tool_exit_code_component = self.components.job_details.tool_exit_code.wait_for_visible()
         self.screenshot("history_panel_collections_job_details_ok")
-        assert tool_id_component.text == "collection_creates_list"
         assert int(tool_exit_code_component.text) == 0
 
         failed_collection_element.collection_job_details_button.wait_for_and_click()
-        tool_id_component = self.components.job_details.galaxy_tool_id.wait_for_visible()
+        self.components.job_details.galaxy_tool_with_id(tool_id="collection_creates_list_fail").wait_for_visible()
         tool_exit_code_component = self.components.job_details.tool_exit_code.wait_for_visible()
         self.screenshot("history_panel_collections_job_details_failed")
-        assert tool_id_component.text == "collection_creates_list_fail"
         assert int(tool_exit_code_component.text) > 0
 
     @selenium_test

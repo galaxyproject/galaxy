@@ -948,6 +948,8 @@ charts:
 
 job_details:
   selectors:
-    galaxy_tool_id: '#galaxy-tool-id'
+    galaxy_tool_with_id:
+      type: xpath
+      selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
 
