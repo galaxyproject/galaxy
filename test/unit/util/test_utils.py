@@ -1,4 +1,5 @@
 import errno
+import os
 import tempfile
 from io import StringIO
 from typing import Dict
@@ -99,3 +100,25 @@ def test_safe_loads():
     assert "foo" not in d
     s = '{"foo": "bar"}'
     assert safe_loads(s) == {"foo": "bar"}
+
+
+def test_in_packages(monkeypatch):
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b")
+    assert not util.in_packages()
+
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages")
+    assert util.in_packages()
+
+
+def test_galaxy_directory(monkeypatch):
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b")  # a/b
+    path1 = util.galaxy_directory()
+
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/c/..")  # a/b
+    path2 = util.galaxy_directory()
+
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages/c/..")  # a/b/packages
+    path3 = util.galaxy_directory()
+
+    assert path1 == path2 == path3
+    assert os.path.isabs(path1)
