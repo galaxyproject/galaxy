@@ -1766,9 +1766,16 @@ class Tool(Dictifiable):
 
         # Remapping a single job to many jobs doesn't make sense, so disable
         # remap if multi-runs of tools are being used.
-        if rerun_remap_job_id and len(expanded_incomings) > 1:
-            raise exceptions.MessageException(
+        produces_multiple_jobs = len(expanded_incomings) > 1
+        if rerun_remap_job_id and produces_multiple_jobs:
+            raise exceptions.RequestParameterInvalidException(
                 "Failure executing tool with id '%s' (cannot create multiple jobs when remapping existing job).",
+                self.id,
+            )
+
+        if self.input_translator and produces_multiple_jobs:
+            raise exceptions.RequestParameterInvalidException(
+                "Failure executing tool with id '%s' (cannot create multiple jobs with this type of data source tool).",
                 self.id,
             )
 
