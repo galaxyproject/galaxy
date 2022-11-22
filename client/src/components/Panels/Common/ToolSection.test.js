@@ -2,9 +2,9 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import ToolSection from "./ToolSection";
 
-import { useConfig } from "composables/useConfig";
+import { useConfig } from "composables/config";
 
-jest.mock("composables/useConfig");
+jest.mock("composables/config");
 useConfig.mockReturnValue({
     config: {
         toolbox_auto_sort: true,

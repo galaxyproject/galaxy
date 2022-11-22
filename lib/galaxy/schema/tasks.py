@@ -10,6 +10,7 @@ from .schema import (
     BcoGenerationParametersMixin,
     DatasetSourceType,
     HistoryContentType,
+    ModelStoreFormat,
     StoreExportPayload,
     WriteStoreToPayload,
 )
@@ -88,6 +89,7 @@ class ImportModelStoreTaskRequest(BaseModel):
     history_id: Optional[int]
     source_uri: str
     for_library: bool
+    model_store_format: Optional[ModelStoreFormat]
 
 
 class MaterializeDatasetInstanceTaskRequest(BaseModel):

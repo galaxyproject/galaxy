@@ -84,8 +84,10 @@
     </div>
 </template>
 <script>
+import { useWorkflowStore } from "stores/workflowStore";
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters, mapActions } from "vuex";
+import { mapGetters, mapActions as vuexMapActions } from "vuex";
+import { mapState, mapActions } from "pinia";
 import WorkflowIcons from "components/Workflow/icons";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
@@ -114,7 +116,8 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
+        ...mapState(useWorkflowStore, ["getWorkflowByInstanceId"]),
+        ...mapGetters(["getToolForId", "getToolNameById", "getInvocationStepById"]),
         isReady() {
             return this.invocation.steps.length > 0;
         },
@@ -142,8 +145,9 @@ export default {
         this.fetchSubworkflow();
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId", "fetchWorkflowForInstanceId"]),
-        ...mapActions(["fetchInvocationStepById"]),
+        ...mapCacheActions(["fetchToolForId"]),
+        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
+        ...vuexMapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
                 this.fetchToolForId(this.workflowStep.tool_id);

@@ -1,4 +1,4 @@
-import Invocations from "./Invocations";
+import InvocationsList from "./InvocationsList";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
@@ -6,11 +6,14 @@ import { getLocalVue } from "jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
 import { parseISO, formatDistanceToNow } from "date-fns";
 
+import { createPinia } from "pinia";
+
 import "jest-location-mock";
 
 const localVue = getLocalVue();
 
-describe("Invocations.vue", () => {
+const pinia = createPinia();
+describe("InvocationsList.vue", () => {
     let axiosMock;
     let wrapper;
 
@@ -28,7 +31,7 @@ describe("Invocations.vue", () => {
             const propsData = {
                 ownerGrid: false,
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
             });
@@ -49,9 +52,10 @@ describe("Invocations.vue", () => {
             const propsData = {
                 ownerGrid: false,
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
+                pinia,
             });
         });
 
@@ -68,9 +72,10 @@ describe("Invocations.vue", () => {
                 storedWorkflowName: "My Workflow",
                 storedWorkflowId: "abcde145678",
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
+                pinia,
             });
         });
 
@@ -92,7 +97,7 @@ describe("Invocations.vue", () => {
                 ownerGrid: false,
                 loading: false,
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
                     getWorkflowNameByInstanceId: (state) => (id) => "workflow name",
@@ -113,6 +118,7 @@ describe("Invocations.vue", () => {
                     },
                 },
                 localVue,
+                pinia,
             });
         });
 

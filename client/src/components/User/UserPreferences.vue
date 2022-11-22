@@ -1,6 +1,6 @@
 <template>
     <b-container fluid class="p-0">
-        <h1 class="h-lg" v-localize>User preferences</h1>
+        <h1 v-localize class="h-lg">User preferences</h1>
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>

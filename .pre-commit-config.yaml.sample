@@ -1,11 +1,10 @@
 repos:
   - repo: https://github.com/psf/black
-    rev: 22.1.0
+    rev: 22.10.0
     hooks:
     - id: black
-      language_version: python3.7
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 4.0.1
+  - repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
     hooks:
     - id: flake8
   - repo: https://github.com/pre-commit/mirrors-prettier
@@ -15,20 +14,21 @@ repos:
         types: [file]
         types_or: [javascript, jsx, ts, tsx, vue]
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.1.0  # Use the ref you want to point at
+    rev: v4.3.0  # Use the ref you want to point at
     hooks:
       - id: trailing-whitespace
       - id: check-merge-conflict
       - id: check-symlinks
       - id: destroyed-symlinks
       - id: end-of-file-fixer
+      - id: name-tests-test
   - repo: https://github.com/detailyang/pre-commit-shell
-    rev: v1.0.6
+    rev: 1.0.5
     hooks:
     - id: shell-lint
       args: [--format=json]
   - repo: https://github.com/python-jsonschema/check-jsonschema
-    rev: 0.14.0
+    rev: 0.19.2
     hooks:
       - id: check-github-workflows
   - repo: local
