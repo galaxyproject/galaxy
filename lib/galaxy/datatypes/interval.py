@@ -1737,7 +1737,7 @@ class IntervalTabix(Interval):
     As tabix is just a bgzip with an index
     """
 
-    file_ext = "tabix"
+    file_ext = "interval_tabix"
     edam_format = "format_3616"
     compressed = True
     compressed_format = "gzip"
@@ -1810,7 +1810,7 @@ class JuicerMediumTabix(IntervalTabix):
     mapq = mapping quality score
     """
 
-    file_ext = "juicer.medium.tabix"
+    file_ext = "juicer_medium_tabix"
 
     # The MetadataElements are readonly so the user cannot change them (as the index is generated only once)
     MetadataElement(name="chromCol", default=3, desc="Chrom column", param=metadata.ColumnParameter, readonly=True)
@@ -1823,7 +1823,7 @@ class BedTabix(IntervalTabix):
     Class describing a tabix file built from a bed file
     """
 
-    file_ext = "bed.tabix"
+    file_ext = "bed_tabix"
 
 
 class GffTabix(IntervalTabix):
@@ -1831,7 +1831,7 @@ class GffTabix(IntervalTabix):
     Class describing a tabix file built from a bed file
     """
 
-    file_ext = "gff.tabix"
+    file_ext = "gff_tabix"
 
     # The MetadataElements are readonly so the user cannot change them (as the index is generated only once)
     MetadataElement(name="startCol", default=4, desc="Start column", param=metadata.ColumnParameter, readonly=True)
