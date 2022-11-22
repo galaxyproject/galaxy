@@ -357,7 +357,7 @@ class Interval(Tabular):
                 except StopIteration:
                     return DatatypeValidation.validated()
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for 'intervalness'
 
@@ -556,7 +556,7 @@ class Bed(Interval):
         except Exception:
             return "This item contains no content"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for 'bedness'
 
@@ -973,7 +973,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in gff format
 
@@ -1106,7 +1106,7 @@ class Gff3(Gff):
                             break
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in GFF version 3 format
 
@@ -1201,7 +1201,7 @@ class Gtf(Gff):
         visible=False,
     )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in gtf format
 
@@ -1407,7 +1407,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
             max_data_lines = 100
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i, max_data_lines=max_data_lines)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines wether the file is in wiggle format
 
@@ -1562,7 +1562,7 @@ class CustomTrack(Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in customtrack format.
 
@@ -1723,7 +1723,7 @@ class ScIdx(Tabular):
         # line of the dataset displays them.
         self.column_names = ["chrom", "index", "forward", "reverse", "value"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for 'scidx-ness.'
         """

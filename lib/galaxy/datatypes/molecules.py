@@ -210,7 +210,7 @@ class MOL(GenericMolFile):
 class SDF(GenericMolFile):
     file_ext = "sdf"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a SDF2 file.
 
@@ -312,7 +312,7 @@ class SDF(GenericMolFile):
 class MOL2(GenericMolFile):
     file_ext = "mol2"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a MOL2 file.
 
@@ -403,7 +403,7 @@ class FPS(GenericMolFile):
 
     file_ext = "fps"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a FPS file.
 
@@ -593,7 +593,7 @@ class PDB(GenericMolFile):
     file_ext = "pdb"
     MetadataElement(name="chain_ids", default=[], desc="Chain IDs", readonly=False, visible=True)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a PDB file.
 
@@ -664,7 +664,7 @@ class PDBQT(GenericMolFile):
 
     file_ext = "pdbqt"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a PDBQT file.
 
@@ -754,7 +754,7 @@ class PQR(GenericMolFile):
         )
         return re.compile(pat)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a PQR file.
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -852,7 +852,7 @@ class Cell(GenericMolFile):
         visible=True,
     )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a CASTEP CELL file.
 
@@ -1001,7 +1001,7 @@ class CIF(GenericMolFile):
         visible=True,
     )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a CIF file.
 
@@ -1037,6 +1037,7 @@ class CIF(GenericMolFile):
                 return file_prefix.search_str("_atom_site_fract_")
             else:  # line has some other content
                 return False
+        return False
 
     def set_meta(self, dataset, **kwd):
         """
@@ -1165,7 +1166,7 @@ class XYZ(GenericMolFile):
         visible=True,
     )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a XYZ file.
 
@@ -1332,7 +1333,7 @@ class ExtendedXYZ(XYZ):
 
     file_ext = "extxyz"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is an Extended XYZ file.
 
@@ -1506,7 +1507,7 @@ class InChI(Tabular):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a InChI file.
 
@@ -1607,7 +1608,7 @@ class CML(GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a CML file.
 
@@ -1729,7 +1730,7 @@ class GRO(GenericMolFile):
 
     file_ext = "gro"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a GRO file.
 

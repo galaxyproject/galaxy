@@ -70,7 +70,7 @@ class BlastXml(GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is blastxml
 
         >>> from galaxy.datatypes.sniff import get_test_fname

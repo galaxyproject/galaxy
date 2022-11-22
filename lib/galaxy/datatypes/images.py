@@ -236,7 +236,7 @@ class Tck(Binary):
 
     file_ext = "tck"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         format_def = [
             [b"mrtrix tracks"],
             [b"datatype: Float32LE", b"datatype: Float32BE", b"datatype: Float64BE", b"datatype: Float64LE"],
@@ -272,7 +272,7 @@ class Trk(Binary):
 
     file_ext = "trk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # quick check
         header_raw = None
         header_raw = file_prefix.contents_header_bytes[:1000]
@@ -412,7 +412,7 @@ class Nifti1(Binary):
 
     file_ext = "nii1"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         magic = file_prefix.contents_header_bytes[344:348]
         if magic == b"n+1\0":
             return True
@@ -436,7 +436,7 @@ class Nifti2(Binary):
 
     file_ext = "nii2"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         magic = file_prefix.contents_header_bytes[4:8]
         if magic in [b"n+2\0", b"ni2\0"]:
             return True
@@ -449,7 +449,7 @@ class Gifti(GenericXml):
 
     file_ext = "gii"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a Gifti file
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -496,7 +496,7 @@ class Star(data.Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Each file must have one or more data blocks.
         The start of a data block is defined by the keyword
         ``data_`` followed by an optional string for

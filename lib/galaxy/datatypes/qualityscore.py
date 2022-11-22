@@ -31,7 +31,7 @@ class QualityScoreSOLiD(QualityScore):
     edam_format = "format_3610"
     file_ext = "qualsolid"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -81,7 +81,7 @@ class QualityScore454(QualityScore):
     edam_format = "format_3611"
     file_ext = "qual454"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )

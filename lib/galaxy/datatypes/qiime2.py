@@ -14,7 +14,10 @@ import yaml
 
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.tabular import Tabular
 
 if TYPE_CHECKING:
@@ -146,7 +149,7 @@ class QIIME2Metadata(Tabular):
                     if q2_type == "categorical" and col_type in ("float", "int", "list"):
                         dataset.metadata.column_types[idx] = "str"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         for _, line in zip(range(self._search_lines), file_prefix.line_iterator()):
             if line.startswith(self._TYPES_DIRECTIVE):
                 return True

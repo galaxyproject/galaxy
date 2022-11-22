@@ -101,7 +101,7 @@ class Gal(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gal"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a Gal file.
 
@@ -143,7 +143,7 @@ class Gpr(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gpr"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a Gpr file.
 

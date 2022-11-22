@@ -180,7 +180,7 @@ class GenomeGraphs(Tabular):
                     x = float(x)
         return DatatypeValidation.validated()
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in gg format
 
@@ -1008,7 +1008,7 @@ class GenotypeMatrix(LinkageStudies):
 
         return True
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> classname = GenotypeMatrix
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1069,7 +1069,7 @@ class MarkerMap(LinkageStudies):
 
         return False
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> classname = MarkerMap
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1126,7 +1126,7 @@ class DataIn(LinkageStudies):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> classname = DataIn
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1201,7 +1201,7 @@ class AllegroLOD(LinkageStudies):
 
         return False
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> classname = AllegroLOD
         >>> from galaxy.datatypes.sniff import get_test_fname

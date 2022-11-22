@@ -55,7 +55,7 @@ class NTriples(data.Text, Triples):
     edam_format = "format_3256"
     file_ext = "nt"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # <http://example.org/dir/relfile> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/type> .
         if re.compile(r"<[^>]*>\s<[^>]*>\s<[^>]*>\s\.").search(file_prefix.contents_header):
             return True
@@ -104,7 +104,7 @@ class Turtle(data.Text, Triples):
     edam_format = "format_3255"
     file_ext = "ttl"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
         if file_prefix.search(TURTLE_PREFIX_PATTERN):
             return True
@@ -133,7 +133,7 @@ class Rdf(xml.GenericXml, Triples):
     edam_format = "format_3261"
     file_ext = "rdf"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" ...
         match = re.compile(r'xmlns:([^=]*)="http://www.w3.org/1999/02/22-rdf-syntax-ns#"').search(
             file_prefix.contents_header
@@ -162,7 +162,7 @@ class Jsonld(text.Json, Triples):
     edam_format = "format_3464"
     file_ext = "jsonld"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         if self._looks_like_json(file_prefix):
             if '"@id"' in file_prefix.contents_header or '"@context"' in file_prefix.contents_header:
                 return True

@@ -286,8 +286,8 @@ class Bref3(Binary):
         super().__init__(**kwd)
         self._magic = binascii.unhexlify("7a8874f400156272")
 
-    def sniff_prefix(self, sniff_prefix):
-        return sniff_prefix.startswith_bytes(self._magic)
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.startswith_bytes(self._magic)
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -1517,7 +1517,7 @@ class Grib(Binary):
         super().__init__(**kwd)
         self._magic = b"GRIB"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # The first 4 bytes of any GRIB file are GRIB
         try:
             if file_prefix.startswith_bytes(self._magic):
@@ -1569,9 +1569,9 @@ class GmxBinary(Binary):
     magic_number: Optional[int] = None  # variables to be overwritten in the child class
     file_ext = ""
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # The first 4 bytes of any GROMACS binary file containing the magic number
-        return sniff_prefix.magic_header(">1i") == self.magic_number
+        return file_prefix.magic_header(">1i") == self.magic_number
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -2122,10 +2122,10 @@ class Sff(Binary):
     edam_data = "data_0924"
     file_ext = "sff"
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # The first 4 bytes of any sff file is '.sff', and the file is binary. For details
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
-        return sniff_prefix.startswith_bytes(b".sff")
+        return file_prefix.startswith_bytes(b".sff")
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -2161,8 +2161,8 @@ class BigWig(Binary):
         self._magic = 0x888FFC26
         self._name = "BigWig"
 
-    def sniff_prefix(self, sniff_prefix):
-        return sniff_prefix.magic_header("I") == self._magic
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.magic_header("I") == self._magic
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -2201,8 +2201,8 @@ class TwoBit(Binary):
     edam_data = "data_0848"
     file_ext = "twobit"
 
-    def sniff_prefix(self, sniff_prefix):
-        magic = sniff_prefix.magic_header(">L")
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        magic = file_prefix.magic_header(">L")
         return magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP
 
     def set_peek(self, dataset):
@@ -2936,9 +2936,9 @@ class Xlsx(Binary):
     file_ext = "xlsx"
     compressed = True
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # Xlsx is compressed in zip format and must not be uncompressed in Galaxy.
-        return sniff_prefix.compressed_mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        return file_prefix.compressed_mime_type == "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 @build_sniff_from_prefix
@@ -2948,8 +2948,8 @@ class ExcelXls(Binary):
     file_ext = "excel.xls"
     edam_format = "format_3468"
 
-    def sniff_prefix(self, sniff_prefix):
-        return sniff_prefix.mime_type == self.get_mime()
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.mime_type == self.get_mime()
 
     def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
@@ -2976,11 +2976,11 @@ class Sra(Binary):
 
     file_ext = "sra"
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """The first 8 bytes of any NCBI sra file is 'NCBI.sra', and the file is binary.
         For details about the format, see http://www.ncbi.nlm.nih.gov/books/n/helpsra/SRA_Overview_BK/#SRA_Overview_BK.4_SRA_Data_Structure
         """
-        return sniff_prefix.startswith_bytes(b"NCBI.sra")
+        return file_prefix.startswith_bytes(b"NCBI.sra")
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:
@@ -3041,8 +3041,8 @@ class RData(CompressedArchive):
         finally:
             fh.close()
 
-    def sniff_prefix(self, sniff_prefix):
-        return sniff_prefix.startswith_bytes((self.VERSION_2_PREFIX, self.VERSION_3_PREFIX))
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.startswith_bytes((self.VERSION_2_PREFIX, self.VERSION_3_PREFIX))
 
     def _parse_rdata_header(self, fh):
         header = fh.read(7)
@@ -3129,9 +3129,9 @@ class RDS(CompressedArchive):
         finally:
             fh.close()
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         try:
-            self._parse_rds_header(sniff_prefix.contents_header_bytes[:14])
+            self._parse_rds_header(file_prefix.contents_header_bytes[:14])
         except Exception:
             return False
         return True
@@ -3579,8 +3579,8 @@ class NetCDF(Binary):
         except Exception:
             return f"Binary netCDF file ({nice_size(dataset.get_size())})"
 
-    def sniff_prefix(self, sniff_prefix):
-        return sniff_prefix.startswith_bytes(b"CDF")
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.startswith_bytes(b"CDF")
 
 
 class Dcd(Binary):
@@ -3708,9 +3708,9 @@ class DAA(Binary):
         super().__init__(**kwd)
         self._magic = binascii.unhexlify("6be33e6d47530e3c")
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # The first 8 bytes of any daa file are 0x3c0e53476d3ee36b
-        return sniff_prefix.startswith_bytes(self._magic)
+        return file_prefix.startswith_bytes(self._magic)
 
 
 @build_sniff_from_prefix
@@ -3733,8 +3733,8 @@ class RMA6(Binary):
         super().__init__(**kwd)
         self._magic = binascii.unhexlify("000003f600000006")
 
-    def sniff_prefix(self, sniff_prefix):
-        return sniff_prefix.startswith_bytes(self._magic)
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.startswith_bytes(self._magic)
 
 
 @build_sniff_from_prefix
@@ -3757,9 +3757,9 @@ class DMND(Binary):
         super().__init__(**kwd)
         self._magic = binascii.unhexlify("6d18ee15a4f84a02")
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # The first 8 bytes of any dmnd file are 0x24af8a415ee186d
-        return sniff_prefix.startswith_bytes(self._magic)
+        return file_prefix.startswith_bytes(self._magic)
 
 
 class ICM(Binary):
@@ -3812,8 +3812,8 @@ class Parquet(Binary):
         super().__init__(**kwd)
         self._magic = b"PAR1"  # Defined at https://parquet.apache.org/documentation/latest/
 
-    def sniff_prefix(self, sniff_prefix):
-        return sniff_prefix.startswith_bytes(self._magic)
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        return file_prefix.startswith_bytes(self._magic)
 
 
 class BafTar(CompressedArchive):
@@ -3950,10 +3950,10 @@ class Pretext(Binary):
 
     file_ext = "pretext"
 
-    def sniff_prefix(self, sniff_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         # The first 4 bytes of any pretext file is 'pstm', and the rest of the
         # file contains binary data.
-        return sniff_prefix.startswith_bytes(b"pstm")
+        return file_prefix.startswith_bytes(b"pstm")
 
     def set_peek(self, dataset):
         if not dataset.dataset.purged:

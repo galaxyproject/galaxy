@@ -1147,7 +1147,7 @@ class Nexus(Text):
     edam_format = "format_1912"
     file_ext = "nex"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """All Nexus Files Simply puts a '#NEXUS' in its first line"""
         return file_prefix.string_io().read(6).upper() == "#NEXUS"
 

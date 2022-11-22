@@ -39,7 +39,7 @@ class Smat(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         The use of ESTScan implies the creation of scores matrices which
         reflect the codons preferences in the studied organisms.  The

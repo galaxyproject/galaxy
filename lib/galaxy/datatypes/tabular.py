@@ -650,7 +650,7 @@ class Sam(Tabular, _BamOrSam):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in SAM format
 
@@ -865,7 +865,7 @@ class Pileup(Tabular):
             dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
         )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for 'pileup-ness'
 
@@ -1021,7 +1021,7 @@ class BaseVcf(Tabular):
 class Vcf(BaseVcf):
     file_ext = "vcf"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return self._sniff(file_prefix)
 
 
@@ -1176,7 +1176,7 @@ class Eland(Tabular):
         except Exception as exc:
             return f"Can't create peek {exc}"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in ELAND export format
 
@@ -1212,6 +1212,7 @@ class Eland(Tabular):
                     break
         if count > 0:
             return True
+        return False
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
         if dataset.has_data():
@@ -1273,7 +1274,7 @@ class Eland(Tabular):
 class ElandMulti(Tabular):
     file_ext = "elandmulti"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return False
 
 
@@ -1490,7 +1491,7 @@ class ConnectivityTable(Tabular):
 
         dataset.metadata.data_lines = data_lines
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
@@ -1611,7 +1612,7 @@ class MatrixMarket(TabularData):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("%%MatrixMarket matrix coordinate")
 
     def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
@@ -1726,7 +1727,7 @@ class CMAP(TabularData):
         no_value=[],
     )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         handle = file_prefix.string_io()
         for line in handle:
             if not line.startswith("#"):
