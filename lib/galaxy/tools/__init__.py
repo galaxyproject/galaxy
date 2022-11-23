@@ -281,6 +281,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Show beginning1": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.2")),
     "Show tail1": safe_update(packaging.version.parse("1.0.0"), packaging.version.parse("1.0.1")),
     "sort1": safe_update(packaging.version.parse("1.1.0"), packaging.version.parse("1.2.0")),
+    "CONVERTER_interval_to_bgzip_0": safe_update(packaging.version.parse("1.0.1"), packaging.version.parse("1.0.2"))
 }
 
 
