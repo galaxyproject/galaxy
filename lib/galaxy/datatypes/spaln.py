@@ -4,7 +4,10 @@ spaln Composite Dataset
 
 import logging
 import os.path
-from typing import TYPE_CHECKING
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
@@ -149,7 +152,8 @@ class _SpalnDb(Data):
             headers,
         )
 
-    def merge(split_files, output_file):
+    @staticmethod
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merge spaln databases (not implemented)."""
         raise NotImplementedError("Merging spaln databases is not possible")
 

@@ -33,7 +33,10 @@ Covers the ``blastxml`` format and the BLAST databases.
 import logging
 import os
 from time import sleep
-from typing import TYPE_CHECKING
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -100,7 +103,7 @@ class BlastXml(GenericXml):
         return True
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) == 1:
             # For one file only, use base class method (move/copy)
@@ -233,7 +236,8 @@ class _BlastDb(Data):
         # Galaxy assumes HTML for the display of composite datatypes,
         return smart_str(f"<html><head><title>{title}</title></head><body><pre>{msg}</pre></body></html>"), headers
 
-    def merge(split_files, output_file):
+    @staticmethod
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merge BLAST databases (not implemented for now)."""
         raise NotImplementedError("Merging BLAST databases is non-trivial (do this via makeblastdb?)")
 

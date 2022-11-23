@@ -63,7 +63,7 @@ class GenericXml(data.Text):
         return file_prefix.startswith("<?xml ")
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) > 1:
             raise NotImplementedError(

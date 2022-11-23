@@ -1,7 +1,10 @@
 import logging
 import os
 import re
-from typing import TYPE_CHECKING
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.binary import Binary
@@ -475,7 +478,7 @@ class FPS(GenericMolFile):
             raise
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Merging fps files requires merging the header manually.
         We take the header from the first file.
@@ -546,7 +549,8 @@ class OBFS(Binary):
         """Returns the mime type of the datatype (pretend it is text for peek)"""
         return "text/plain"
 
-    def merge(split_files, output_file, extra_merge_args):
+    @staticmethod
+    def merge(split_files: List[str], output_file: str, extra_merge_args) -> None:
         """Merging Fastsearch indices is not supported."""
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
@@ -1687,7 +1691,7 @@ class CML(GenericXml):
             raise
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Merging CML files.
         """

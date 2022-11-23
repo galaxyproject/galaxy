@@ -2,6 +2,7 @@
 Graph content classes.
 """
 import logging
+from typing import List
 
 from galaxy.util import simplegraph
 from . import (
@@ -41,7 +42,7 @@ class Xgmml(xml.GenericXml):
         return False
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
@@ -89,7 +90,7 @@ class Sif(tabular.Tabular):
         return False
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", dataproviders.column.ColumnarDataProvider.settings)

@@ -768,7 +768,7 @@ class Sam(Tabular, _BamOrSam):
             _BamOrSam().set_meta(dataset)
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
@@ -987,7 +987,7 @@ class BaseVcf(Tabular):
             dataset.metadata.sample_names = line.split()[9:]
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
         stderr_name = stderr_f.name
         command = ["bcftools", "concat"] + split_files + ["-o", output_file]
@@ -997,7 +997,7 @@ class BaseVcf(Tabular):
             stderr = f.read().strip()
         # Did merge succeed?
         if exit_code != 0:
-            raise Exception(f"Error merging VCF files: {stderr}")
+            raise Exception(f"Error merging VCF files: {stderr!r}")
 
     def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         def validate_row(row):

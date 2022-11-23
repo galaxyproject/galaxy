@@ -852,7 +852,7 @@ class Data(metaclass=DataMeta):
         return isinstance(self, datatype_classes)
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Merge files with copy.copyfileobj() will not hit the
         max argument limitation of cat. gz and bz2 files are also working.
