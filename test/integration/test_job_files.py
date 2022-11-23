@@ -32,7 +32,7 @@ TEST_INPUT_TEXT = "test input content\n"
 TEST_FILE_IO = io.StringIO("some initial text data")
 
 
-class TestJobFilesIntegeration(integration_util.IntegrationTestCase):
+class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     initialized = False
 
     @classmethod
@@ -46,14 +46,14 @@ class TestJobFilesIntegeration(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        if not TestJobFilesIntegeration.initialized:
+        if not TestJobFilesIntegration.initialized:
             history_id = self.dataset_populator.new_history()
             sa_session = self.sa_session
             assert len(sa_session.query(model.HistoryDatasetAssociation).all()) == 0
             self.dataset_populator.new_dataset(history_id, content=TEST_INPUT_TEXT, wait=True)
             assert len(sa_session.query(model.HistoryDatasetAssociation).all()) == 1
             self.input_hda = sa_session.query(model.HistoryDatasetAssociation).all()[0]
-            TestJobFilesIntegeration.initialized = True
+            TestJobFilesIntegration.initialized = True
 
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")

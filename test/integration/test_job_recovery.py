@@ -10,25 +10,24 @@ DELAY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "delay_job_conf.yml")
 SIMPLE_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "simple_job_conf.xml")
 
 
-class TestJobRecoveryBeforeHandledIntegeration(integration_util.IntegrationTestCase):
+class TestJobRecoveryBeforeHandledIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE
         config["server_name"] = "moo"
 
-    def handle_reconfigure_galaxy_config_kwds(self, config):
+    def handle_reconfigure_galaxy_config_kwds(self, config) -> None:
         config["server_name"] = "main"
 
-    def test_recovery(self):
+    def test_recovery(self) -> None:
         history_id = self.dataset_populator.new_history()
         self.dataset_populator.run_tool_raw(
             "exit_code_oom",
@@ -40,23 +39,23 @@ class TestJobRecoveryBeforeHandledIntegeration(integration_util.IntegrationTestC
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
 
-class TestJobRecoveryAfterHandledIntegeration(integration_util.IntegrationTestCase):
+class TestJobRecoveryAfterHandledIntegration(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
-    def setUp(self):
+    def setUp(self) -> None:
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = DELAY_JOB_CONFIG_FILE
 
-    def handle_reconfigure_galaxy_config_kwds(self, config):
+    def handle_reconfigure_galaxy_config_kwds(self, config) -> None:
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE
 
-    def test_recovery(self):
+    def test_recovery(self) -> None:
         history_id = self.dataset_populator.new_history()
         self.dataset_populator.run_tool_raw(
             "exit_code_oom",
