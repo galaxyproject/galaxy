@@ -182,6 +182,7 @@ export default {
         },
         dragStart(e) {
             console.log("dragStart", e);
+            e.preventDefault();
         },
         inputDragEnter(e) {},
         inputDragLeave(e) {},

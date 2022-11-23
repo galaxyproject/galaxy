@@ -1,7 +1,7 @@
 <template>
-    <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
+    <div class="form-row dataRow input-data-row" @mouseleave="mouseLeave">
         <div :id="id" :input-name="input.name" :class="terminalClass" @drop="onDrop">
-            <div ref="el" class="icon" @mouseover="debugHandler" @dragover.capture="dragOverHandler" />
+            <div ref="el" class="icon" @dragover="debugHandler" @dragenter="debugHandler" @mouseover="mouseOver" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
@@ -116,7 +116,7 @@ export default {
     },
     methods: {
         debugHandler(event) {
-            // console.log("mouseover input", event);
+            console.log("mouseover input", event);
         },
         dragOverHandler(event) {
             console.log("dragover ipnut", event);
@@ -128,7 +128,9 @@ export default {
         onRemove() {
             this.$emit("onDisconnect", this.input.name);
         },
-        mouseOver(e) {},
+        mouseOver(e) {
+            console.log("mouseover");
+        },
         mouseLeave() {
             this.showRemove = false;
         },
