@@ -1734,7 +1734,7 @@ class ScIdx(Tabular):
 class IntervalTabix(Interval):
     """
     Class describing the bgzip format (http://samtools.github.io/hts-specs/SAMv1.pdf)
-    As tabix is just a bgzip with an index
+    As tabix is just a bgzip sorted for chr,start,end with an index
     """
 
     file_ext = "interval_tabix"
@@ -1758,8 +1758,9 @@ class IntervalTabix(Interval):
         optional=True,
     )
 
-    # We don't want to define sniff as the index would be created before the metadata on columns set.
-    # def sniff(self, filename):
+    # We don't want to have a good sniff as the index would be created before the metadata on columns is set.
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        return False
     #     # Check that the file is compressed with bgzip (not gzip), i.e. the
     #     # compressed format is BGZF, as explained in
     #     # http://samtools.github.io/hts-specs/SAMv1.pdf
