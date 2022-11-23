@@ -11,7 +11,6 @@ class TestHistoryImportExportFtpSeleniumIntegration(SeleniumIntegrationTestCase)
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
-        super().handle_galaxy_config_kwds(config)
         ftp_dir = cls.ftp_dir()
         os.makedirs(ftp_dir)
         config["ftp_upload_dir"] = ftp_dir

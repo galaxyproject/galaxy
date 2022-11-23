@@ -7,6 +7,10 @@ from .framework import (
 class TestHistoryExport(SeleniumTestCase):
     ensure_registered = True
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["enable_celery_tasks"] = False
+
     @selenium_test
     def test_history_export(self):
         self.perform_upload_of_pasted_content("my cool content")
