@@ -224,7 +224,7 @@ class _Isa(data.Data):
     # Groom dataset content {{{2
     ################################################################
 
-    def groom_dataset_content(self, file_name):
+    def groom_dataset_content(self, file_name: str) -> None:
         """This method is called by Galaxy to extract files contained in a composite data type."""
         # XXX Is the right place to extract files? Should this step not be a cleaning step instead?
         # Could extracting be done earlier and composite files declared as files contained inside the archive

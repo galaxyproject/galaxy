@@ -358,6 +358,7 @@ def _fetch_target(upload_config: "UploadConfig", target):
                 transform.append(
                     {"action": "datatype_groom", "datatype_ext": ext, "datatype_class": datatype.__class__.__name__}
                 )
+                assert path
                 datatype.groom_dataset_content(path)
 
             if len(transform) > 0:

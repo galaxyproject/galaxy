@@ -549,7 +549,7 @@ class BamNative(CompressedArchive, _BamOrSam):
             file_paths.append(dataset.metadata.bam_index.file_name)
         return zip(file_paths, rel_paths)
 
-    def groom_dataset_content(self, file_name):
+    def groom_dataset_content(self, file_name: str) -> None:
         """
         Ensures that the BAM file contents are coordinate-sorted.  This function is called
         on an output dataset after the content is initially generated.

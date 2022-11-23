@@ -215,7 +215,7 @@ class Data(metaclass=DataMeta):
         """This function is called on an output dataset file after the content is initially generated."""
         return False
 
-    def groom_dataset_content(self, file_name):
+    def groom_dataset_content(self, file_name: str) -> None:
         """This function is called on an output dataset file if dataset_content_needs_grooming returns True."""
 
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
