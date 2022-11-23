@@ -1760,13 +1760,6 @@ class IntervalTabix(Interval):
     # We don't want to have a good sniff as the index would be created before the metadata on columns is set.
     def sniff_prefix(self, file_prefix: FilePrefix):
         return False
-    #     # Check that the file is compressed with bgzip (not gzip), i.e. the
-    #     # compressed format is BGZF, as explained in
-    #     # http://samtools.github.io/hts-specs/SAMv1.pdf
-    #     with open(filename, "rb") as fh:
-    #         fh.seek(-28, 2)
-    #         last28 = fh.read()
-    #         return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
     # Ideally the tabix_index would be regenerated when the metadataElements are updated
     def set_meta(self, dataset, overwrite=True, first_line_is_header=False, metadata_tmp_files_dir=None, **kwd):
