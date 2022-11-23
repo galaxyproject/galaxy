@@ -1,8 +1,8 @@
 <template>
     <span class="zoom-control float-right btn-group-horizontal">
         <b-button
-            :disabled="isMin"
             v-b-tooltip.hover
+            :disabled="isMin"
             role="button"
             class="fa fa-minus"
             title="Zoom Out"
@@ -21,8 +21,8 @@
             {{ zoomPercentage }}%
         </b-button>
         <b-button
-            :disabled="isMax"
             v-b-tooltip.hover
+            :disabled="isMax"
             role="button"
             class="fa fa-plus"
             title="Zoom In"

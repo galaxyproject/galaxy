@@ -7,7 +7,7 @@
             @reset-all="onResetAll"
             @update:pan="onPan" />
         <div ref="el" class="canvas-viewport" @drop.prevent>
-            <d3-zoom ref="d3Zoom" id="canvas-container" @transform="onTransform">
+            <d3-zoom id="canvas-container" ref="zoom" @transform="onTransform">
                 <div ref="nodes" class="node-area" :style="nodesStyle">
                     <WorkflowEdges :steps="steps" :dragging-connection="draggingConnection" />
                     <WorkflowNode
@@ -20,13 +20,14 @@
                         :step="step"
                         :datatypes-mapper="datatypesMapper"
                         :get-manager="getManager"
-                        :activeNodeId="activeNodeId"
+                        :active-node-id="activeNodeId"
                         :root-offset="position"
                         :scale="scale"
                         @pan-by="onPan"
                         @stopDragging="onStopDragging"
                         @onDragConnector="onDragConnector"
                         @onActivate="onActivate"
+                        @onDeactivate="onDeactivate"
                         @onRemove="onRemove"
                         v-on="$listeners" />
                 </div>
@@ -53,7 +54,7 @@ import D3Zoom from "./D3Zoom.vue";
 import { provide } from "vue";
 import { useScale, setScale, useActiveNodeId, setActiveNodeId } from "./composables/useWorkflowState";
 
-const props = defineProps({
+defineProps({
     steps: {
         type: Object,
         required: true,
@@ -81,21 +82,21 @@ provide("transform", transform);
 const scale = useScale();
 const activeNodeId = useActiveNodeId();
 const el = ref(null);
-const d3Zoom = ref(null);
+const zoom = ref(null);
 const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
 
 function onPan(pan) {
-    d3Zoom.value.panBy(pan);
+    zoom.value.panBy(pan);
 }
 function onZoom(zoomLevel, panTo = null) {
-    d3Zoom.value.setZoom(zoomLevel);
+    zoom.value.setZoom(zoomLevel);
     if (panTo) {
         onPan({ x: panTo.x - this.transform.x, y: panTo.y - this.transform.y });
     }
     setScale(zoomLevel);
 }
 function onMoveTo(moveTo) {
-    d3Zoom.value.moveTo(moveTo);
+    zoom.value.moveTo(moveTo);
 }
 function onResetAll() {
     onZoom(1, { x: 0, y: 0 });

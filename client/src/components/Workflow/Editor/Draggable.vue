@@ -7,6 +7,14 @@ const props = defineProps({
         type: Object,
         required: true,
     },
+    preventDefault: {
+        type: Boolean,
+        default: true,
+    },
+    stopPropagation: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const emit = defineEmits(["mousedown", "mouseup", "move"]);
@@ -33,8 +41,8 @@ const onEnd = (position, event) => {
 };
 
 useDraggable(draggable, {
-    preventDefault: true,
-    stopPropagation: true,
+    preventDefault: props.preventDefault,
+    stopPropagation: props.stopPropagation,
     useCapture: false,
     onStart: onStart,
     onMove: onMove,

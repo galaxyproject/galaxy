@@ -1,5 +1,11 @@
 <template>
-    <Draggable :root-offset="rootOffset" @move="onMove" @mouseup="onMouseUp" v-on="$listeners">
+    <Draggable
+        :root-offset="rootOffset"
+        :prevent-default="preventDefault"
+        :stop-propagation="stopPropagation"
+        @move="onMove"
+        @mouseup="onMouseUp"
+        v-on="$listeners">
         <slot></slot>
     </Draggable>
 </template>
@@ -21,6 +27,14 @@ export default {
             required: false,
             default: 1,
         },
+        preventDefault: {
+            type: Boolean,
+            default: true,
+        },
+        stopPropagation: {
+            type: Boolean,
+            default: true,
+        },
     },
     data() {
         return {
@@ -32,6 +46,9 @@ export default {
             panBy: {},
             timeout: null,
         };
+    },
+    beforeDestroy() {
+        clearTimeout(this.timeout);
     },
     methods: {
         emitPan(position) {
@@ -77,9 +94,6 @@ export default {
             this.isPanning = false;
             this.$emit("mouseup", e);
         },
-    },
-    beforeDestroy() {
-        clearTimeout(this.timeout);
     },
 };
 </script>

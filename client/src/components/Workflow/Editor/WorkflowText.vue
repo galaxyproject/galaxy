@@ -17,7 +17,7 @@ const props = defineProps({
 
 const emit = defineEmits(["new-steps"]);
 
-let code = ref(null);
+const code = ref(null);
 
 watchEffect(() => {
     const cleanSteps = {};
@@ -28,7 +28,7 @@ watchEffect(() => {
         cleanSteps[stepId] = cleanStep;
     });
     code.value = JSON.stringify(cleanSteps, null, 2);
-    const editor = unref(editorRef)?.editor;
+    unref(editorRef)?.editor;
     // const range = {startLineNumber: 140, endLineNumber: 150, startColumn: 1, endColumn: 1000}
     // editor?.revealRangeInCenter(range);
     // editor?.deltaDecorations([],
@@ -51,13 +51,13 @@ const emitSteps = (val) => {
     <div ref="editorContainer">
         <MonacoEditor
             ref="editorRef"
-            @change="emitSteps"
-            class="editor"
             v-model="code"
+            class="editor"
             language="js"
             :options="{ automaticLayout: true, fixedOverflowWidgets: true }"
             :width="position.width + 'px'"
-            height="50vh" />
+            height="50vh"
+            @change="emitSteps" />
     </div>
 </template>
 <style>

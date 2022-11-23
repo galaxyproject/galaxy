@@ -1,7 +1,7 @@
 <template>
     <div class="form-row dataRow input-data-row" @mouseover="mouseOver" @mouseleave="mouseLeave">
         <div :id="id" :input-name="input.name" :class="terminalClass" @drop="onDrop">
-            <div ref="el" class="icon" />
+            <div ref="el" class="icon" @mouseover="debugHandler" @dragover.capture="dragOverHandler" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
@@ -14,13 +14,6 @@ import { inject, ref } from "vue";
 import Terminals from "components/Workflow/Editor/modules/terminals";
 
 export default {
-    setup(props) {
-        const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
-        const isDragging = inject("isDragging");
-        const draggingConnection = inject("draggingConnection");
-        return { el, position, isDragging, draggingConnection };
-    },
     props: {
         input: {
             type: Object,
@@ -47,15 +40,19 @@ export default {
             required: true,
         },
     },
+    setup(props) {
+        const el = ref(null);
+        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
+        const isDragging = inject("isDragging");
+        const draggingConnection = inject("draggingConnection");
+        return { el, position, isDragging, draggingConnection };
+    },
     data() {
         return {
             showRemove: false,
             isMultiple: false,
             nodeId: null,
         };
-    },
-    created() {
-        this.nodeId = this.getNode().id;
     },
     computed: {
         terminalPosition() {
@@ -108,7 +105,22 @@ export default {
             });
         },
     },
+    created() {
+        this.nodeId = this.getNode().id;
+    },
+    beforeDestroy() {
+        this.$store.commit("workflowState/deleteInputTerminalPosition", {
+            stepId: this.nodeId,
+            inputName: this.input.name,
+        });
+    },
     methods: {
+        debugHandler(event) {
+            // console.log("mouseover input", event);
+        },
+        dragOverHandler(event) {
+            console.log("dragover ipnut", event);
+        },
         onChange() {
             this.isMultiple = this.terminal.isMappedOver();
             this.$emit("onChange");
@@ -121,12 +133,6 @@ export default {
             this.showRemove = false;
         },
         onDrop(e) {},
-    },
-    beforeDestroy() {
-        this.$store.commit("workflowState/deleteInputTerminalPosition", {
-            stepId: this.nodeId,
-            inputName: this.input.name,
-        });
     },
 };
 </script>

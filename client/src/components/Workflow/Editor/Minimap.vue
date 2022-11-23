@@ -3,15 +3,14 @@
         <div class="workflow-overview-body" @click="onClick">
             <svg width="100%" height="100%" :viewBox="viewBox">
                 <MinimapNode
+                    v-for="node of Object.values(nodes)"
+                    :key="node.id"
                     class="mini-node"
                     :node="node"
-                    :step="steps[node.id]"
-                    v-for="node of Object.values(nodes)"
-                    :key="node.id" />
+                    :step="steps[node.id]" />
                 <rect
-                    @click.stop
-                    class="viewport"
                     ref="rect"
+                    class="viewport"
                     :x="visible.x"
                     :y="visible.y"
                     :width="visible.width"
@@ -19,18 +18,52 @@
                     stroke-width="1%"
                     rx="1%"
                     fill="white"
-                    fill-opacity="0.5" />
+                    fill-opacity="0.5"
+                    @click.stop />
             </svg>
         </div>
     </div>
 </template>
 <script>
 import MinimapNode from "./MinimapNode.vue";
-import Draggable from "./Draggable.vue";
 import { computed, reactive, ref } from "vue";
 import { useDraggable } from "@vueuse/core";
 
 export default {
+    components: {
+        MinimapNode,
+    },
+    props: {
+        nodes: {
+            type: Object,
+            required: true,
+        },
+        steps: {
+            type: Object,
+            required: true,
+        },
+        width: {
+            type: Number,
+            default: 200,
+        },
+        height: {
+            type: Number,
+            default: 200,
+        },
+        scale: {
+            type: Number,
+            default: 1,
+        },
+        pan: {
+            type: Object,
+            default() {
+                return { x: 0, y: 0 };
+            },
+        },
+        rootOffset: {
+            type: Object,
+        },
+    },
     setup(props, { emit }) {
         const overview = ref(null);
         const overviewPosition = reactive(useDraggable(overview, { preventDefault: true, exact: true }));
@@ -107,46 +140,11 @@ export default {
             startY,
         };
     },
-    components: {
-        Draggable,
-        MinimapNode,
-    },
     data() {
         return {
             maxSize: 300,
             minSize: 50,
         };
-    },
-    props: {
-        nodes: {
-            type: Object,
-            required: true,
-        },
-        steps: {
-            type: Object,
-            required: true,
-        },
-        width: {
-            type: Number,
-            default: 200,
-        },
-        height: {
-            type: Number,
-            default: 200,
-        },
-        scale: {
-            type: Number,
-            default: 1,
-        },
-        pan: {
-            type: Object,
-            default() {
-                return { x: 0, y: 0 };
-            },
-        },
-        rootOffset: {
-            type: Object,
-        },
     },
     computed: {
         style() {
@@ -163,7 +161,7 @@ export default {
                 if (!this.overviewPosition.isDragging) {
                     localStorage.setItem("overview-size", newSize);
                 }
-                this.size = newSize;
+                this.setSize(newSize);
             }
             return { width: `${this.size}px`, height: `${this.size}px` };
         },
@@ -172,6 +170,9 @@ export default {
         },
     },
     methods: {
+        setSize(size) {
+            this.size = size;
+        },
         onClick(e) {
             const x = e.offsetX * this.scaleFactorX;
             const y = e.offsetY * this.scaleFactorY;

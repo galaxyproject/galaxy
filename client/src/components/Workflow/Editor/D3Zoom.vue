@@ -26,8 +26,8 @@ const transform = { x: 0, y: 0, zoom: props.zoom };
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
 const filter = (event) => {
-    console.log(event);
     const preventZoom = event.srcElement.classList.contains("prevent-zoom");
+    console.log("preventZoon", preventZoom, event);
     return !preventZoom;
 };
 
@@ -57,9 +57,6 @@ onMounted(() => {
 
     d3Selection
         .on("wheel", (event) => {
-            event.preventDefault();
-            event.stopImmediatePropagation();
-
             const currentZoom = d3Selection.property("__zoom").k || 1;
 
             const pinchDelta = -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002) * 10;

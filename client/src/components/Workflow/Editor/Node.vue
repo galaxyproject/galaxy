@@ -1,17 +1,17 @@
 <template>
     <draggable-wrapper
+        :id="idString"
         ref="el"
         :scale="scale"
         :root-offset="rootOffset"
-        @updatePosition="onUpdatePosition"
-        @mouseup="makeActive"
-        @move="onMoveTo"
-        @pan-by="onPanBy"
-        :id="idString"
         :name="name"
         :node-label="title"
         :class="classes"
-        :style="style">
+        :style="style"
+        @updatePosition="onUpdatePosition"
+        @mouseup="makeActive"
+        @move="onMoveTo"
+        @pan-by="onPanBy">
         <div class="node-header unselectable clearfix">
             <b-button
                 v-b-tooltip.hover
@@ -113,13 +113,6 @@ import { useElementBounding } from "@vueuse/core";
 Vue.use(BootstrapVue);
 
 export default {
-    setup() {
-        const nodeIOKey = (key, position) => key + position?.left + position?.right;
-        const el = ref(null);
-        const position = reactive(useElementBounding(el, { windowResize: false }));
-        const transform = inject("transform");
-        return { el, position, transform, nodeIOKey };
-    },
     components: {
         DraggableWrapper,
         LoadingSpan,
@@ -168,6 +161,13 @@ export default {
             type: Number,
         },
     },
+    setup() {
+        const nodeIOKey = (key, position) => key + position?.left + position?.right;
+        const el = ref(null);
+        const position = reactive(useElementBounding(el, { windowResize: false }));
+        const transform = inject("transform");
+        return { el, position, transform, nodeIOKey };
+    },
     data() {
         return {
             popoverShow: false,
@@ -187,17 +187,6 @@ export default {
                 y: 0,
             },
         };
-    },
-    created() {
-        this.$store.commit("workflowState/setNode", this);
-        this.activeOutputs = new ActiveOutputs();
-        this.content_id = this.contentId;
-        // initialize node data
-        if (this.step.config_form) {
-            this.initData(this.step);
-        } else {
-            this.$emit("onUpdate", this);
-        }
     },
     computed: {
         title() {
@@ -251,6 +240,20 @@ export default {
             }
             return { top: this.step.position.top + "px", left: this.step.position.left + "px" };
         },
+    },
+    created() {
+        this.$store.commit("workflowState/setNode", this);
+        this.activeOutputs = new ActiveOutputs();
+        this.content_id = this.contentId;
+        // initialize node data
+        if (this.step.config_form) {
+            this.initData(this.step);
+        } else {
+            this.$emit("onUpdate", this);
+        }
+    },
+    beforeDestroy() {
+        this.$store.commit("workflowState/deleteNode", this.id);
     },
     methods: {
         onMoveTo(position, event) {
@@ -361,9 +364,6 @@ export default {
         makeActive() {
             this.$emit("onActivate", this.id);
         },
-    },
-    beforeDestroy() {
-        this.$store.commit("workflowState/deleteNode", this.id);
     },
 };
 </script>

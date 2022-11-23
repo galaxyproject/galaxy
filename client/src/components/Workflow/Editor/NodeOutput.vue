@@ -15,11 +15,13 @@
             :class="terminalClass"
             :output-name="output.name"
             :root-offset="rootOffset"
+            :prevent-default="false"
+            :stop-propagation="true"
             @pan-by="onPanBy"
             @start="isDragging = true"
             @stop="onStopDragging"
             @move="onMove">
-            <div ref="terminal" class="icon prevent-zoom"></div>
+            <div ref="terminal" class="icon prevent-zoom" draggable="true" @dragstart="dragStart"></div>
         </draggable-wrapper>
     </div>
 </template>
@@ -162,6 +164,9 @@ export default {
         this.$emit("onRemove", this.output);
     },
     methods: {
+        debugHandler(event) {
+            console.log("debug", event);
+        },
         onPanBy(panBy) {
             this.$emit("pan-by", panBy);
         },
@@ -175,7 +180,9 @@ export default {
             this.dragY = 0;
             this.$emit("stopDragging");
         },
-        inputDragStart(e) {},
+        dragStart(e) {
+            console.log("dragStart", e);
+        },
         inputDragEnter(e) {},
         inputDragLeave(e) {},
         onDrop(e) {},
