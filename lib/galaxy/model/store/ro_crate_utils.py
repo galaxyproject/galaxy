@@ -22,8 +22,6 @@ class WorkflowRunCrateProfileBuilder:
     def __init__(self, model_store: Any):
         self.model_store = model_store
         self.invocation: WorkflowInvocation = model_store.included_invocations[0]
-        logger.info(self.invocation.input_parameters)
-        logger.info(self.invocation.input_step_parameters)
         self.workflow: Workflow = self.invocation.workflow
         self.input_type_to_param_type = {
             "parameter": "parameter-type#TODO",
@@ -41,6 +39,8 @@ class WorkflowRunCrateProfileBuilder:
     def _add_files(self, crate: ROCrate) -> Dict[int, Any]:
         file_entities = {}
         for dataset, _ in self.model_store.included_datasets.values():
+            logger.info("dataset: %s" % (dataset.dataset.id,))
+            logger.info("dataset_id_to_path: %s" % str(self.model_store.dataset_id_to_path))
             if dataset.dataset.id in self.model_store.dataset_id_to_path:
                 file_name, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
                 name = dataset.name
@@ -55,6 +55,8 @@ class WorkflowRunCrateProfileBuilder:
                     properties=properties,
                 )
                 file_entities[dataset.dataset.id] = file_entity
+                logger.info("FN:",file_name)
+                logger.info("NAME:",name)
         return file_entities
 
     def _add_workflows(self, crate: ROCrate):
@@ -122,21 +124,6 @@ class WorkflowRunCrateProfileBuilder:
         crate.mainEntity["output"] = wf_output_param_ids
         wf_output_ids = [{"@id": output.id} for output in workflow_outputs if output]
         wf_input_values_ids = [{"@id": entity.id} for entity in input_values]
-        
-        # TODO: these are not the correct ones. We need to find the real runtime values
-        # for param in self.invocation.input_parameters:
-        #     input_param_value = crate.add(
-        #         ContextEntity(
-        #             crate,
-        #             properties={
-        #                 "@type": "PropertyValue",
-        #                 "name": param.name,
-        #                 "value": param.value,
-        #             },
-        #         )
-        #     )
-        #     input_values.append(input_param_value)
-        
 
         input_param_value = crate.add(
             ContextEntity(
