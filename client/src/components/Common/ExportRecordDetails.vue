@@ -1,18 +1,13 @@
 <script setup>
 import { computed } from "vue";
 import { BCard, BCardTitle } from "bootstrap-vue";
-import UtcDate from "components/UtcDate";
 import LoadingSpan from "components/LoadingSpan";
-import { formatDistanceToNow, parseISO } from "date-fns";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock } from "@fortawesome/free-solid-svg-icons";
 import { ExportRecordModel } from "./models/exportRecordModel";
-import { useConfirmDialog } from "composables/confirmDialog";
 
 library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock);
-
-const { confirm } = useConfirmDialog();
 
 const props = defineProps({
     record: {
@@ -36,13 +31,11 @@ const props = defineProps({
 const emit = defineEmits(["onReimport", "onDownload", "onActionMessageDismissed"]);
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
-const elapsedTime = computed(() => formatDistanceToNow(parseISO(`${props.record.date}Z`), { addSuffix: true }));
-const expirationTime = computed(() => formatDistanceToNow(props.record.expirationDate, { addSuffix: true }));
 const expirationMessage = computed(() => {
-    if (!!props.record.expirationDate && Date.now() > props.record.expirationDate) {
+    if (props.record.hasExpired) {
         return "This download link has expired";
     }
-    return `This download link expires ${expirationTime.value}`;
+    return `This download link expires ${props.record.expirationElapsedTime}`;
 });
 const statusMessage = computed(() => {
     if (props.record.hasFailed) {
@@ -51,7 +44,7 @@ const statusMessage = computed(() => {
     if (props.record.isUpToDate) {
         return `This export contains the latest changes of the ${props.objectType}.`;
     }
-    return `This export is outdated and contains the changes of this ${props.objectType} from ${elapsedTime.value}.`;
+    return `This export is outdated and contains the changes of this ${props.objectType} from ${props.record.elapsedTime}.`;
 });
 const readyMessage = computed(() => `You can do the following actions with this ${props.objectType} export:`);
 const preparingMessage = computed(
@@ -59,12 +52,7 @@ const preparingMessage = computed(
 );
 
 async function reimportObject() {
-    const confirmed = await confirm(
-        `Do you really want to import a new copy of this history exported ${elapsedTime.value}?`
-    );
-    if (confirmed) {
-        emit("onReimport", props.record);
-    }
+    emit("onReimport", props.record);
 }
 
 function downloadObject() {
@@ -79,7 +67,7 @@ function onMessageDismissed() {
 <template>
     <b-card>
         <b-card-title>
-            <b>{{ title }}</b> <UtcDate :date="props.record.date" mode="elapsed" />
+            <b>{{ title }}</b> {{ props.record.elapsedTime }}
         </b-card-title>
         <span v-if="props.record.isPreparing">
             <loading-span :message="preparingMessage" />

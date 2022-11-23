@@ -8,12 +8,14 @@ import { HistoryExportService } from "./services";
 import { useTaskMonitor } from "composables/taskMonitor";
 import { useFileSources } from "composables/fileSources";
 import { useShortTermStorage } from "composables/shortTermStorage";
+import { useConfirmDialog } from "composables/confirmDialog";
 
 const service = new HistoryExportService();
 
 const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
 const { hasWritable: hasWritableFileSources } = useFileSources();
 const { isPreparing: isPreparingDownload, downloadHistory, downloadObjectByRequestId } = useShortTermStorage();
+const { confirm } = useConfirmDialog();
 
 const props = defineProps({
     historyId: {
@@ -72,7 +74,11 @@ async function exportToFileSource(exportDirectory, fileName) {
 }
 
 async function prepareDownload() {
-    if (latestExportRecord.value?.isStsDownload && latestExportRecord.value.isUpToDate) {
+    if (
+        latestExportRecord.value?.isStsDownload &&
+        latestExportRecord.value.isUpToDate &&
+        !latestExportRecord.value.hasExpired
+    ) {
         console.debug("Existing STS download found");
         downloadObjectByRequestId(latestExportRecord.value.stsDownloadId);
         return;
@@ -87,19 +93,23 @@ function downloadFromRecord(record) {
     }
 }
 
-function reimportFromRecord(record) {
-    // Add confirmation
-    service
-        .reimportHistoryFromRecord(record)
-        .then(() => {
-            actionMessageVariant.value = "info";
-            actionMessage.value =
-                "The history is being imported in the background. Check your histories after a while to find it.";
-        })
-        .catch((reason) => {
-            actionMessageVariant.value = "danger";
-            actionMessage.value = reason;
-        });
+async function reimportFromRecord(record) {
+    const confirmed = await confirm(
+        `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`
+    );
+    if (confirmed) {
+        service
+            .reimportHistoryFromRecord(record)
+            .then(() => {
+                actionMessageVariant.value = "info";
+                actionMessage.value =
+                    "The history is being imported in the background. Check your histories after a while to find it.";
+            })
+            .catch((reason) => {
+                actionMessageVariant.value = "danger";
+                actionMessage.value = reason;
+            });
+    }
 }
 
 function onActionMessageDismissedFromRecord() {

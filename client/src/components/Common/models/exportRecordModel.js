@@ -1,3 +1,5 @@
+import { formatDistanceToNow, parseISO } from "date-fns";
+
 export class ExportRecordModel {
     constructor(data) {
         this._data = data;
@@ -21,7 +23,11 @@ export class ExportRecordModel {
     }
 
     get date() {
-        return this._data.create_time;
+        return parseISO(`${this._data.create_time}Z`);
+    }
+
+    get elapsedTime() {
+        return formatDistanceToNow(this.date, { addSuffix: true });
     }
 
     get taskUUID() {
@@ -45,7 +51,7 @@ export class ExportRecordModel {
     }
 
     get canDownload() {
-        return this.isReady && this.isStsDownload;
+        return this.isReady && this.isStsDownload && !this.hasExpired;
     }
 
     get modelStoreFormat() {
@@ -62,10 +68,16 @@ export class ExportRecordModel {
 
     get expirationDate() {
         if (this._expirationDate === undefined) {
-            this._expirationDate = this.canExpire
-                ? new Date(new Date(this.date).getTime() + this.duration * 1000)
-                : null;
+            this._expirationDate = this.canExpire ? new Date(this.date.getTime() + this.duration * 1000) : null;
         }
         return this._expirationDate;
+    }
+
+    get expirationElapsedTime() {
+        return this.canExpire ? formatDistanceToNow(this.expirationDate, { addSuffix: true }) : null;
+    }
+
+    get hasExpired() {
+        return this.canExpire && Date.now() > this.expirationDate;
     }
 }
