@@ -8,6 +8,7 @@ from inspect import isclass
 from typing import (
     Any,
     Dict,
+    Generator,
     Iterable,
     List,
     Optional,
@@ -50,6 +51,7 @@ from . import (
 
 if TYPE_CHECKING:
     from galaxy.datatypes.display_applications.application import DisplayApplication
+    from galaxy.datatypes.registry import Registry
     from galaxy.model import DatasetInstance
 
 XSS_VULNERABLE_MIME_TYPES = [
@@ -104,7 +106,9 @@ def validate(dataset_instance: "DatasetInstance") -> DatatypeValidation:
     return datatype_validation
 
 
-def get_params_and_input_name(converter, deps, target_context=None):
+def get_params_and_input_name(
+    converter, deps: Optional[Dict], target_context: Optional[Dict] = None
+) -> Tuple[Dict, str]:
     # Generate parameter dictionary
     params = {}
     # determine input parameter name and add to params
@@ -202,7 +206,7 @@ class Data(metaclass=DataMeta):
         self.display_applications = {}
 
     @classmethod
-    def is_datatype_change_allowed(cls):
+    def is_datatype_change_allowed(cls) -> bool:
         """
         Returns the value of the `allow_datatype_change` class attribute if set
         in a subclass, or True iff the datatype is not composite.
@@ -261,14 +265,14 @@ class Data(metaclass=DataMeta):
                 return key
         return False
 
-    def set_max_optional_metadata_filesize(self, max_value):
+    def set_max_optional_metadata_filesize(self, max_value: int) -> None:
         try:
             max_value = int(max_value)
         except (TypeError, ValueError):
             return
         self.__class__._max_optional_metadata_filesize = max_value
 
-    def get_max_optional_metadata_filesize(self):
+    def get_max_optional_metadata_filesize(self) -> int:
         rval = self.__class__._max_optional_metadata_filesize
         if rval is None:
             return -1
@@ -305,7 +309,9 @@ class Data(metaclass=DataMeta):
         except Exception as exc:
             return f"Can't create peek: {unicodify(exc)}"
 
-    def _archive_main_file(self, archive, display_name, data_filename):
+    def _archive_main_file(
+        self, archive: ZipstreamWrapper, display_name: str, data_filename: str
+    ) -> Tuple[bool, str, str]:
         """Called from _archive_composite_dataset to add central file to archive.
 
         Unless subclassed, this will add the main dataset file (argument data_filename)
@@ -325,7 +331,9 @@ class Data(metaclass=DataMeta):
             messagetype = "error"
         return error, msg, messagetype
 
-    def _archive_composite_dataset(self, trans, data, headers: Headers, do_action="zip"):
+    def _archive_composite_dataset(
+        self, trans, data: "DatasetInstance", headers: Headers, do_action: str = "zip"
+    ) -> Tuple[Union[ZipstreamWrapper, str], Headers]:
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
         outfname = "".join(c in FILENAME_VALID_CHARS and c or "_" for c in outfname)
@@ -361,7 +369,7 @@ class Data(metaclass=DataMeta):
             return archive, headers
         return trans.show_error_message(msg), headers
 
-    def __archive_extra_files_path(self, extra_files_path):
+    def __archive_extra_files_path(self, extra_files_path: str) -> Generator[Tuple[str, str], None, None]:
         """Yield filepaths and relative filepaths for files in extra_files_path"""
         for root, _, files in os.walk(extra_files_path):
             for fname in files:
@@ -461,7 +469,7 @@ class Data(metaclass=DataMeta):
                         mime = trans.app.datatypes_registry.get_mimetype_by_extension(file_path.split(".")[-1])
                     except Exception:
                         mime = "text/plain"
-                self._clean_and_set_mime_type(trans, mime, headers)
+                self._clean_and_set_mime_type(trans, mime, headers)  # type: ignore[arg-type]
                 return self._yield_user_file_content(trans, data, file_path, headers), headers
             else:
                 raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
@@ -613,7 +621,7 @@ class Data(metaclass=DataMeta):
         """Returns the mime type of the datatype"""
         return "application/octet-stream"
 
-    def add_display_app(self, app_id, label, file_function, links_function):
+    def add_display_app(self, app_id: str, label: str, file_function: str, links_function: str) -> None:
         """
         Adds a display app to the datatype.
         app_id is a unique id
@@ -628,7 +636,7 @@ class Data(metaclass=DataMeta):
             "links_function": links_function,
         }
 
-    def remove_display_app(self, app_id):
+    def remove_display_app(self, app_id: str) -> None:
         """Removes a display app from the datatype"""
         self.supported_display_apps = self.supported_display_apps.copy()
         try:
@@ -640,15 +648,15 @@ class Data(metaclass=DataMeta):
                 self.__class__.__name__,
             )
 
-    def clear_display_apps(self):
+    def clear_display_apps(self) -> None:
         self.supported_display_apps = {}
 
-    def add_display_application(self, display_application):
+    def add_display_application(self, display_application: "DisplayApplication") -> None:
         """New style display applications"""
         assert display_application.id not in self.display_applications, "Attempted to add a display application twice"
         self.display_applications[display_application.id] = display_application
 
-    def get_display_application(self, key, default=None):
+    def get_display_application(self, key: str, default: Optional["DisplayApplication"] = None) -> "DisplayApplication":
         return self.display_applications.get(key, default)
 
     def get_display_applications_by_dataset(self, dataset: "DatasetInstance", trans) -> Dict[str, "DisplayApplication"]:
@@ -659,11 +667,11 @@ class Data(metaclass=DataMeta):
                 rval[key] = value
         return rval
 
-    def get_display_types(self):
+    def get_display_types(self) -> List[str]:
         """Returns display types available"""
         return list(self.supported_display_apps.keys())
 
-    def get_display_label(self, type):
+    def get_display_label(self, type: str) -> str:
         """Returns primary label for display app"""
         try:
             return self.supported_display_apps[type]["label"]
@@ -684,7 +692,9 @@ class Data(metaclass=DataMeta):
             )
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
-    def get_display_links(self, dataset, type, app, base_url, target_frame="_blank", **kwd):
+    def get_display_links(
+        self, dataset: "DatasetInstance", type: str, app, base_url: str, target_frame: str = "_blank", **kwd
+    ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
         'access' permissions is done here - if you can view the dataset, you can also save it
@@ -705,7 +715,9 @@ class Data(metaclass=DataMeta):
             )
         return target_frame, []
 
-    def get_converter_types(self, original_dataset, datatypes_registry):
+    def get_converter_types(
+        self, original_dataset: "DatasetInstance", datatypes_registry: "Registry"
+    ) -> Dict[str, Dict]:
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
@@ -756,26 +768,26 @@ class Data(metaclass=DataMeta):
     # We need to clear associated files before we set metadata
     # so that as soon as metadata starts to be set, e.g. implicitly converted datasets are deleted and no longer available 'while' metadata is being set, not just after
     # We'll also clear after setting metadata, for backwards compatibility
-    def after_setting_metadata(self, dataset):
+    def after_setting_metadata(self, dataset: "DatasetInstance") -> None:
         """This function is called on the dataset after metadata is set."""
         dataset.clear_associated_files(metadata_safe=True)
 
-    def before_setting_metadata(self, dataset):
+    def before_setting_metadata(self, dataset: "DatasetInstance") -> None:
         """This function is called on the dataset before metadata is set."""
         dataset.clear_associated_files(metadata_safe=True)
 
     def __new_composite_file(
         self,
-        name,
-        optional=False,
-        mimetype=None,
-        description=None,
-        substitute_name_with_metadata=None,
-        is_binary=False,
-        to_posix_lines=True,
-        space_to_tab=False,
+        name: str,
+        optional: bool = False,
+        mimetype: Optional[str] = None,
+        description: Optional[str] = None,
+        substitute_name_with_metadata: Optional[str] = None,
+        is_binary: bool = False,
+        to_posix_lines: bool = True,
+        space_to_tab: bool = False,
         **kwds,
-    ):
+    ) -> Bunch:
         kwds["name"] = name
         kwds["optional"] = optional
         kwds["mimetype"] = mimetype
@@ -788,7 +800,7 @@ class Data(metaclass=DataMeta):
         composite_file = Bunch(**kwds)
         return composite_file
 
-    def add_composite_file(self, name, **kwds):
+    def add_composite_file(self, name: str, **kwds) -> None:
         # self.composite_files = self.composite_files.copy()
         self.composite_files[name] = self.__new_composite_file(name, **kwds)
 
@@ -864,13 +876,13 @@ class Data(metaclass=DataMeta):
         return []
 
     # ------------- Dataproviders
-    def has_dataprovider(self, data_format):
+    def has_dataprovider(self, data_format: str) -> bool:
         """
         Returns True if `data_format` is available in `dataproviders`.
         """
         return data_format in self.dataproviders
 
-    def dataprovider(self, dataset, data_format, **settings):
+    def dataprovider(self, dataset: "DatasetInstance", data_format: str, **settings):
         """
         Base dataprovider factory for all datatypes that returns the proper provider
         for the given `data_format` or raises a `NoProviderAvailable`.
@@ -883,21 +895,23 @@ class Data(metaclass=DataMeta):
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")
-    def base_dataprovider(self, dataset, **settings):
+    def base_dataprovider(self, dataset: "DatasetInstance", **settings) -> p_dataproviders.base.DataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.base.DataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk", p_dataproviders.chunk.ChunkDataProvider.settings)
-    def chunk_dataprovider(self, dataset, **settings):
+    def chunk_dataprovider(self, dataset: "DatasetInstance", **settings) -> p_dataproviders.chunk.ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.ChunkDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk64", p_dataproviders.chunk.Base64ChunkDataProvider.settings)
-    def chunk64_dataprovider(self, dataset, **settings):
+    def chunk64_dataprovider(
+        self, dataset: "DatasetInstance", **settings
+    ) -> p_dataproviders.chunk.Base64ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
-    def _clean_and_set_mime_type(self, trans, mime, headers: Headers):
+    def _clean_and_set_mime_type(self, trans, mime: str, headers: Headers) -> None:
         if mime.lower() in XSS_VULNERABLE_MIME_TYPES:
             if not getattr(trans.app.config, "serve_xss_vulnerable_mimetypes", True):
                 mime = DEFAULT_MIME_TYPE
@@ -906,7 +920,7 @@ class Data(metaclass=DataMeta):
     def handle_dataset_as_image(self, hda: "DatasetInstance") -> str:
         raise Exception("Unimplemented Method")
 
-    def __getstate__(self):
+    def __getstate__(self) -> Dict[str, Any]:
         state = self.__dict__.copy()
         state.pop("display_applications", None)
         return state
@@ -941,7 +955,7 @@ class Text(Data):
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
 
-    def estimate_file_lines(self, dataset):
+    def estimate_file_lines(self, dataset: "DatasetInstance") -> Optional[int]:
         """
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
@@ -955,7 +969,7 @@ class Text(Data):
             log.error(f"Unable to estimate lines in file {dataset.file_name}")
             return None
 
-    def count_data_lines(self, dataset):
+    def count_data_lines(self, dataset: "DatasetInstance") -> Optional[int]:
         """
         Count the number of lines of data in dataset,
         skipping all blank lines and comments.
