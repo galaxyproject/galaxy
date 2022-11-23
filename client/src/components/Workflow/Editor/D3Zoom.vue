@@ -23,7 +23,13 @@ const emit = defineEmits(["transform"]);
 const viewport = ref(null);
 const transform = { x: 0, y: 0, zoom: props.zoom };
 
-const d3Zoom = zoom().scaleExtent([props.minZoom, props.maxZoom]);
+// if element is draggable it may implement its own drag handler,
+// but d3zoom would call preventDefault
+const filter = (event) => {
+    return !event.srcElement.draggable;
+};
+
+const d3Zoom = zoom().filter(filter).scaleExtent([props.minZoom, props.maxZoom]);
 
 function setZoom(zoom) {
     const d3Selection = select(viewport.value).call(d3Zoom);
