@@ -26,9 +26,9 @@ const transform = { x: 0, y: 0, zoom: props.zoom };
 // if element is draggable it may implement its own drag handler,
 // but d3zoom would call preventDefault
 const filter = (event) => {
-    const isDraggable = event.srcElement.draggable;
     console.log(event);
-    return !isDraggable;
+    const preventZoom = event.srcElement.classList.contains("prevent-zoom");
+    return !preventZoom;
 };
 
 const d3Zoom = zoom().filter(filter).scaleExtent([props.minZoom, props.maxZoom]);

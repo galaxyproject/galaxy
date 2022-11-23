@@ -10,8 +10,8 @@
         </div>
         {{ label }}
         <draggable-wrapper
-            ref="el"
             :id="id"
+            ref="el"
             :class="terminalClass"
             :output-name="output.name"
             :root-offset="rootOffset"
@@ -19,26 +19,19 @@
             @start="isDragging = true"
             @stop="onStopDragging"
             @move="onMove">
-            <div class="icon" ref="terminal"></div>
+            <div ref="terminal" class="icon prevent-zoom"></div>
         </draggable-wrapper>
     </div>
 </template>
 
 <script>
 import DraggableWrapper from "./DraggablePan";
-import WorkflowConnector from "./Connector";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { ref } from "vue";
 
 export default {
-    setup(props) {
-        const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
-        return { el, position };
-    },
     components: {
         DraggableWrapper,
-        WorkflowConnector,
     },
     props: {
         output: {
@@ -63,6 +56,11 @@ export default {
         parentOffset: {
             type: Object,
         },
+    },
+    setup(props) {
+        const el = ref(null);
+        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
+        return { el, position };
     },
     data() {
         return {
