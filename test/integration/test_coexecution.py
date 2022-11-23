@@ -17,6 +17,10 @@ import random
 import string
 import tempfile
 import time
+from typing import (
+    Any,
+    Dict,
+)
 
 import yaml
 
@@ -24,7 +28,10 @@ from galaxy.jobs.runners.util.pykube_util import (
     Job,
     pykube_client_from_dict,
 )
-from galaxy_test.base.populators import skip_without_tool
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    skip_without_tool,
+)
 from galaxy_test.driver import integration_util
 from .test_containerized_jobs import (
     EXTENDED_TIMEOUT,
@@ -102,8 +109,9 @@ tools:
 """
 
 
-def job_config(template_str, jobs_directory):
+def job_config(template_str: str, jobs_directory: str) -> str:
     job_conf_template = string.Template(template_str)
+    assert AMQP_URL
     container_amqp_url = to_infrastructure_uri(AMQP_URL)
     instance_id = "".join(random.choice(string.ascii_lowercase) for i in range(8))
     job_conf_str = job_conf_template.substitute(
@@ -178,8 +186,9 @@ tools:
 """
 
 
-def tes_job_config(template_str, jobs_directory):
+def tes_job_config(template_str: str, jobs_directory: str) -> str:
     job_conf_template = string.Template(template_str)
+    assert AMQP_URL
     container_amqp_url = to_infrastructure_uri(AMQP_URL)
     instance_id = "".join(random.choice(string.ascii_lowercase) for i in range(8))
     tes_url = os.environ.get("FUNNEL_SERVER_TARGET")
@@ -199,13 +208,15 @@ def tes_job_config(template_str, jobs_directory):
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
 class TestCoexecution(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases):
-    def setUp(self):
+    dataset_populator: DatasetPopulator
+    jobs_directory: str
+
+    def setUp(self) -> None:
         super().setUp()
         self.dataset_populator = KubernetesDatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
         super().setUpClass()
@@ -213,8 +224,11 @@ class TestCoexecution(BaseJobEnvironmentIntegrationTestCase, MulledJobTestCases)
 
 @integration_util.skip_unless_kubernetes()
 class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
+    dataset_populator: DatasetPopulator
+    job_config_file: str
+
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         cls.job_config_file = job_config(CONTAINERIZED_TEMPLATE, cls.jobs_directory)
@@ -225,13 +239,13 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
         set_infrastucture_url(config)
 
     @property
-    def instance_id(self):
+    def instance_id(self) -> str:
         with open(self.job_config_file) as fh:
             config = yaml.safe_load(fh)
         return config["execution"]["environments"]["pulsar_k8s_environment"]["k8s_galaxy_instance_id"]
 
     @skip_without_tool("cat_data_and_sleep")
-    def test_job_cancel(self):
+    def test_job_cancel(self) -> None:
         with self.dataset_populator.test_history() as history_id:
             job_id = self._setup_cat_data_and_sleep(history_id)
             self._wait_for_job_running(job_id)
@@ -246,12 +260,12 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
             assert self._active_kubernetes_jobs == 0
 
     @skip_without_tool("job_environment_default")
-    def test_job_environment(self):
+    def test_job_environment(self) -> None:
         job_env = self._run_and_get_environment_properties()
         assert job_env.some_env == "42"
 
     @property
-    def _active_kubernetes_jobs(self):
+    def _active_kubernetes_jobs(self) -> int:
         pykube_api = pykube_client_from_dict({})
         # TODO: namespace.
         jobs = Job.objects(pykube_api).filter()
@@ -267,7 +281,7 @@ class TestKubernetesStagingContainerIntegration(CancelsJob, TestCoexecution):
 @integration_util.skip_unless_kubernetes()
 class TestKubernetesDependencyResolutionIntegration(TestCoexecution):
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = job_config(DEPENDENCY_RESOLUTION_TEMPLATE, cls.jobs_directory)
@@ -277,17 +291,17 @@ class TestKubernetesDependencyResolutionIntegration(TestCoexecution):
         config["tool_dependency_dir"] = "none"
         set_infrastucture_url(config)
 
-    def test_mulled_simple(self):
-        self.dataset_populator.run_tool("mulled_example_simple", {}, self.history_id)
-        self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
-        output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
+    def test_mulled_simple(self, history_id: str) -> None:
+        self.dataset_populator.run_tool("mulled_example_simple", {}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output = self.dataset_populator.get_history_dataset_content(history_id, timeout=EXTENDED_TIMEOUT)
         assert "0.7.15-r1140" in output
 
 
 @integration_util.skip_unless_environ("FUNNEL_SERVER_TARGET")
 class TestTesCoexecutionContainerIntegration(TestCoexecution):
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = tes_job_config(TES_CONTAINERIZED_TEMPLATE, cls.jobs_directory)
@@ -301,7 +315,7 @@ class TestTesCoexecutionContainerIntegration(TestCoexecution):
 @integration_util.skip_unless_environ("FUNNEL_SERVER_TARGET")
 class TestTesDependencyResolutionIntegration(TestCoexecution):
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         config["jobs_directory"] = cls.jobs_directory
         config["file_path"] = cls.jobs_directory
         config["job_config_file"] = tes_job_config(TES_DEPENDENCY_RESOLUTION_TEMPLATE, cls.jobs_directory)
@@ -311,14 +325,14 @@ class TestTesDependencyResolutionIntegration(TestCoexecution):
         config["tool_dependency_dir"] = "none"
         set_infrastucture_url(config)
 
-    def test_mulled_simple(self):
-        self.dataset_populator.run_tool("mulled_example_simple", {}, self.history_id)
-        self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
-        output = self.dataset_populator.get_history_dataset_content(self.history_id, timeout=EXTENDED_TIMEOUT)
+    def test_mulled_simple(self, history_id: str) -> None:
+        self.dataset_populator.run_tool("mulled_example_simple", {}, history_id)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
+        output = self.dataset_populator.get_history_dataset_content(history_id, timeout=EXTENDED_TIMEOUT)
         assert "0.7.15-r1140" in output
 
 
-def set_infrastucture_url(config):
+def set_infrastucture_url(config: Dict[str, Any]) -> None:
     hostname = to_infrastructure_uri("0.0.0.0")
     infrastructure_url = f"http://{hostname}:$GALAXY_WEB_PORT"
     config["galaxy_infrastructure_url"] = infrastructure_url
