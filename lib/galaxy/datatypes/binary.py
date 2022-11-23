@@ -700,7 +700,7 @@ class Bam(BamNative):
             pass
         return index_flag
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """
         Check if file_name is a coordinate-sorted BAM file
         """
@@ -868,7 +868,7 @@ class BamInputSorted(BamNative):
         # We never want to sniff to this datatype
         return False
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """
         Groom if the file is coordinate sorted
         """
@@ -888,7 +888,7 @@ class BamQuerynameSorted(BamInputSorted):
     def sniff(self, filename: str) -> bool:
         return BamNative().sniff(filename) and not self.dataset_content_needs_grooming(filename)
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """
         Check if file_name is a queryname-sorted BAM file
         """

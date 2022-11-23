@@ -217,7 +217,7 @@ class _Isa(data.Data):
     # Dataset content needs grooming {{{2
     ################################################################
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """This function is called on an output dataset file after the content is initially generated."""
         return os.path.basename(file_name) == ISA_ARCHIVE_NAME
 

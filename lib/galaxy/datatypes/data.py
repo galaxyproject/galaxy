@@ -211,7 +211,7 @@ class Data(metaclass=DataMeta):
             return cls.allow_datatype_change
         return cls.composite_type is None
 
-    def dataset_content_needs_grooming(self, file_name):
+    def dataset_content_needs_grooming(self, file_name: str) -> bool:
         """This function is called on an output dataset file after the content is initially generated."""
         return False
 
