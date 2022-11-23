@@ -504,7 +504,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         :param split_files: List of bam file paths to merge
         :param output_file: Write merged bam file to this location
         """
-        pysam.merge("-O", "BAM", output_file, *split_files)
+        pysam.merge("-O", "BAM", output_file, *split_files)  # type: ignore[attr-defined]
 
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
@@ -572,7 +572,7 @@ class BamNative(CompressedArchive, _BamOrSam):
             [f"-@{slots}", file_name, "-T", tmp_sorted_dataset_file_name_prefix, "-O", "BAM", "-o", sorted_file_name]
         )
         try:
-            pysam.sort(*sort_args)
+            pysam.sort(*sort_args)  # type: ignore[attr-defined]
         except Exception:
             shutil.rmtree(tmp_dir, ignore_errors=True)
             raise
@@ -876,7 +876,7 @@ class BamInputSorted(BamNative):
         # is to actually index them.
         with pysam.AlignmentFile(filename=file_name) as f:
             # The only sure thing we know here is that the sort order can't be coordinate
-            return f.header.get("HD", {}).get("SO") == "coordinate"
+            return f.header.get("HD", {}).get("SO") == "coordinate"  # type: ignore[attr-defined]
 
 
 class BamQuerynameSorted(BamInputSorted):
@@ -895,7 +895,7 @@ class BamQuerynameSorted(BamInputSorted):
         # The best way to ensure that BAM files are coordinate-sorted and indexable
         # is to actually index them.
         with pysam.AlignmentFile(filename=file_name) as f:
-            return f.header.get("HD", {}).get("SO") != "queryname"
+            return f.header.get("HD", {}).get("SO") != "queryname"  # type: ignore[attr-defined]
 
 
 class CRAM(Binary):
