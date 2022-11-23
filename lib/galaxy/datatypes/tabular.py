@@ -29,6 +29,10 @@ from galaxy.datatypes import (
     metadata,
 )
 from galaxy.datatypes.binary import _BamOrSam
+from galaxy.datatypes.data import (
+    DatatypeValidation,
+    Text,
+)
 from galaxy.datatypes.metadata import (
     MetadataElement,
     MetadataParameter,
@@ -56,7 +60,7 @@ MAX_DATA_LINES = 100000
 
 
 @dataproviders.decorators.has_dataproviders
-class TabularData(data.Text):
+class TabularData(Text):
     """Generic tabular data"""
 
     edam_format = "format_3475"
@@ -995,13 +999,13 @@ class BaseVcf(Tabular):
         if exit_code != 0:
             raise Exception(f"Error merging VCF files: {stderr}")
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
                 raise Exception("Not enough columns in row %s" % row.join("\t"))
 
         validate_tabular(dataset.file_name, sep="\t", validate_row=validate_row, comment_designator="#")
-        return data.DatatypeValidation.validated()
+        return DatatypeValidation.validated()
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory(

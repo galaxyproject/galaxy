@@ -168,7 +168,7 @@ class GenomeGraphs(Tabular):
         except Exception as exc:
             return f"Can't create peek {exc}"
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         """
         Validate a gg file - all numeric after header row
         """
@@ -177,7 +177,7 @@ class GenomeGraphs(Tabular):
             for row in infile:
                 ll = row.strip().split("\t")[1:]  # first is alpha feature identifier
                 for x in ll:
-                    x = float(x)
+                    float(x)
         return DatatypeValidation.validated()
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:

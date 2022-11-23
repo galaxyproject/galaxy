@@ -647,7 +647,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                 headers,
             )
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         if not BamNative.is_bam(dataset.file_name):
             return DatatypeValidation.invalid("This dataset does not appear to a BAM file.")
         elif self.dataset_content_needs_grooming(dataset.file_name):

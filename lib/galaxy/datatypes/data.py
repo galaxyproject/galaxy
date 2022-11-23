@@ -76,27 +76,27 @@ class DatatypeConverterNotFoundException(Exception):
 
 
 class DatatypeValidation:
-    def __init__(self, state, message):
+    def __init__(self, state: str, message: str) -> None:
         self.state = state
         self.message = message
 
     @staticmethod
-    def validated():
+    def validated() -> "DatatypeValidation":
         return DatatypeValidation("ok", "Dataset validated by datatype validator.")
 
     @staticmethod
-    def invalid(message):
+    def invalid(message: str) -> "DatatypeValidation":
         return DatatypeValidation("invalid", message)
 
     @staticmethod
-    def unvalidated():
+    def unvalidated() -> "DatatypeValidation":
         return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
 
 
-def validate(dataset_instance):
+def validate(dataset_instance: "DatasetInstance") -> DatatypeValidation:
     try:
         datatype_validation = dataset_instance.datatype.validate(dataset_instance)
     except Exception as e:
@@ -879,7 +879,7 @@ class Data(metaclass=DataMeta):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise p_dataproviders.exceptions.NoProviderAvailable(self, data_format)
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")

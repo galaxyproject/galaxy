@@ -853,7 +853,7 @@ class BaseFastq(Sequence):
                     return True
         return False
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         headers = iter_headers(dataset.file_name, sep="\n", count=-1)
         # check to see if the base qualities match
         if not self.quality_check(headers):
