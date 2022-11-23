@@ -229,6 +229,7 @@ import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import Vue from "vue";
+import { ConfirmDialog } from "composables/confirmDialog";
 
 export default {
     components: {
@@ -541,7 +542,7 @@ export default {
             if (stepCount < 10) {
                 this.copyIntoWorkflow(workflowId);
             } else {
-                const confirmed = await this.$bvModal.msgBoxConfirm(
+                const confirmed = await ConfirmDialog.confirm(
                     `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
                 );
                 if (confirmed) {

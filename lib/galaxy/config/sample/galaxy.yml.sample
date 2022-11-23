@@ -2431,8 +2431,8 @@ galaxy:
   #    galaxy.set_job_metadata: galaxy.external
 
   # Offload long-running tasks to a Celery task queue. Activate this
-  # only if you have setup a Celery worker for Galaxy. For details, see
-  # https://docs.galaxyproject.org/en/master/admin/production.html
+  # only if you have setup a Celery worker for Galaxy in the gravity section.
+  # This is a beta feature that is actively being worked on.
   #enable_celery_tasks: false
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.

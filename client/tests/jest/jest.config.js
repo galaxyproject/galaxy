@@ -70,7 +70,7 @@ module.exports = {
     // ],
 
     // An array of file extensions your modules use
-    moduleFileExtensions: ["js", "json", "vue", "yml", "txt"],
+    moduleFileExtensions: ["js", "json", "vue", "yml", "txt", "ts"],
 
     modulePaths: ["<rootDir>/src/", "<rootDir>/node_modules/", "<rootDir>/tests/"],
 
@@ -95,7 +95,7 @@ module.exports = {
     // notifyMode: "failure-change",
 
     // A preset that is used as a base for Jest's configuration
-    // preset: undefined,
+    preset: "ts-jest",
 
     // Run tests from one or more projects
     // projects: undefined,
@@ -174,7 +174,7 @@ module.exports = {
         // [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
         "^.+\\.js$": "babel-jest",
         ".*\\.(vue)$": "@vue/vue2-jest",
-        "\\.yml$": "jest-transform-yaml",
+        "\\.yml$": "yaml-jest",
         "\\.txt$": "jest-raw-loader",
     },
 

@@ -17,29 +17,28 @@ class TestPageJsonEncodingIntegration(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
-    def test_page_encoding(self):
+    def test_page_encoding(self, history_id: str):
         request = dict(
             slug="mypage",
             title="MY PAGE",
-            content=f"""<p>Page!<div class="embedded-item" id="History-{self.history_id}"></div></p>""",
+            content=f"""<p>Page!<div class="embedded-item" id="History-{history_id}"></div></p>""",
         )
         page_response = self._post("pages", request, json=True)
         api_asserts.assert_status_code_is_ok(page_response)
         sa_session = self._app.model.context
         page_revision = sa_session.query(model.PageRevision).filter_by(content_format="html").all()[0]
         assert '''id="History-1"''' in page_revision.content, page_revision.content
-        assert f'''id="History-{self.history_id}"''' not in page_revision.content, page_revision.content
+        assert f'''id="History-{history_id}"''' not in page_revision.content, page_revision.content
 
         show_page_response = self._get("pages/{}".format(page_response.json()["id"]))
         api_asserts.assert_status_code_is_ok(show_page_response)
         content = show_page_response.json()["content"]
         assert '''id="History-1"''' not in content, content
-        assert f'''id="History-{self.history_id}"''' in content, content
+        assert f'''id="History-{history_id}"''' in content, content
 
-    def test_page_encoding_markdown(self):
-        dataset = self.dataset_populator.new_dataset(self.history_id)
+    def test_page_encoding_markdown(self, history_id: str):
+        dataset = self.dataset_populator.new_dataset(history_id)
         dataset_id = dataset["id"]
         request = dict(
             slug="mypage-markdown",

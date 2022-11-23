@@ -23,31 +23,42 @@ from sqlalchemy import create_engine
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
+from galaxy.util import (
+    galaxy_directory,
+    in_packages,
+)
+from galaxy.util.resources import resource_path
+
+pytestmark = pytest.mark.skipif(in_packages(), reason="Running from packages")
 
 DbUrl = NewType("DbUrl", str)
-
 
 GXY_BRANCH_LABEL = "gxy"
 TSI_BRANCH_LABEL = "tsi"
 GXY_BASE_ID = "gxy0"
 TSI_BASE_ID = "tsi0"
 
-ADMIN_CMD = "./manage_db.sh"
-DEV_CMD = "./scripts/db_dev.sh"
+ADMIN_CMD = "manage_db.sh"
+DEV_CMD = "scripts/db_dev.sh"
 COMMANDS = [ADMIN_CMD, DEV_CMD]
 
 
 @pytest.fixture(scope="session")
-def alembic_env_dir() -> str:
-    """[galaxy-root]/lib/galaxy/model/migrations/alembic/"""
-    galaxy_root = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "..")
-    return os.path.join(galaxy_root, "lib", "galaxy", "model", "migrations", "alembic")
+def migrations_dir():
+    """[galaxy-root]/lib/galaxy/model/migrations/"""
+    return resource_path("galaxy.model", "migrations")
 
 
 @pytest.fixture(scope="session")
-def alembic_config_text(alembic_env_dir) -> List[str]:
+def alembic_env_dir(migrations_dir) -> str:
+    """[galaxy-root]/lib/galaxy/model/migrations/alembic/"""
+    return migrations_dir / "alembic"
+
+
+@pytest.fixture(scope="session")
+def alembic_config_text(migrations_dir) -> List[str]:
     """Contents of production alembic.ini as list of lines"""
-    current_config_path = os.path.join(alembic_env_dir, "..", "alembic.ini")
+    current_config_path = migrations_dir / "alembic.ini"
     with open(current_config_path, "r") as f:
         return f.readlines()
 
@@ -130,19 +141,13 @@ def dburl_from_config(config: Config) -> str:
 
 
 def run_command(cmd: str) -> subprocess.CompletedProcess:
-    if in_packages():
-        cmd = f"../.{cmd}"  # if this is run from `packages`, manage_db.sh is in parent directory
-
-    completed_process = subprocess.run(cmd.split(), capture_output=True, text=True)
-
-    return completed_process
-
-
-def in_packages() -> bool:
-    """Checks if test is run from the packages directory."""
-    path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
-    path = os.path.normpath(path)
-    return os.path.split(path)[1] == "packages"
+    # Example of incoming cmd: "scripts/db_dev.sh revision --message foo1".
+    # We need to make the path absolute, then build a sequence of args for subprocess.
+    cmd_as_list = cmd.split()
+    cmd_path, cmd_args = cmd_as_list[0], cmd_as_list[1:]
+    cmd_path = os.path.join(galaxy_directory(), cmd_path)
+    args = ["sh", cmd_path] + cmd_args
+    return subprocess.run(args, capture_output=True, text=True)
 
 
 def get_db_heads(config: Config) -> Tuple[str, ...]:

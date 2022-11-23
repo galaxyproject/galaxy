@@ -1305,6 +1305,14 @@ class ModelStoreFormat(str, Enum):
     ROCRATE_ZIP = "rocrate.zip"
     BCO_JSON = "bco.json"
 
+    @classmethod
+    def is_compressed(cls, value: "ModelStoreFormat"):
+        return value in [cls.TAR_DOT_GZ, cls.TGZ, cls.TAR, cls.ROCRATE_ZIP]
+
+    @classmethod
+    def is_bag(cls, value: "ModelStoreFormat"):
+        return value in [cls.BAG_DOT_TAR, cls.BAG_DOT_TGZ, cls.BAG_DOT_ZIP]
+
 
 class StoreContentSource(Model):
     store_content_uri: Optional[str]
