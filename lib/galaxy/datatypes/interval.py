@@ -8,7 +8,6 @@ import tempfile
 from urllib.parse import quote_plus
 
 import pysam
-
 from bx.intervals.io import (
     GenomicIntervalReader,
     ParseError,
