@@ -3,6 +3,7 @@ import { computed, ref, onMounted, watch } from "vue";
 import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
+import ExportRecordTable from "components/Common/ExportRecordTable.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
 import { HistoryExportService } from "./services";
 import { useTaskMonitor } from "composables/taskMonitor";
@@ -31,6 +32,7 @@ const isLoadingRecords = ref(true);
 const latestExportRecord = ref(null);
 const isLatestExportReady = ref(false);
 const previousExportRecords = ref(null);
+const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
 const availableRecordsMessage = computed(() =>
     isLoadingRecords.value
         ? "Loading export records..."
@@ -161,5 +163,12 @@ function onActionMessageDismissedFromRecord() {
         <b-alert v-else variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
         </b-alert>
+
+        <export-record-table
+            v-if="hasPreviousExports"
+            :records="previousExportRecords"
+            class="mt-3"
+            @onDownload="downloadFromRecord"
+            @onReimport="reimportFromRecord" />
     </span>
 </template>
