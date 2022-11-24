@@ -83,27 +83,19 @@ export function hasResults(results) {
     return Array.isArray(results) && results.length > 0;
 }
 
-// Given toolbox, keys to sort/search results by and a search query, 
+// Given toolbox, keys to sort/search results by and a search query,
 // Returns tool ids sorted by order of keys that are being searched
 export function searchToolsByKeys(tools, keys, query) {
     const returnedTools = [];
-    for (const section of tools) {
-        let elems = [];
-        if (section.elems) {
-            elems = section.elems;
-        } else {
-            elems.push(section);
-        }
-        for (const tool of elems) {
-            for (const key of Object.keys(keys)) {
-                const actualValue = tool[key] ? tool[key].toLowerCase() : "";
-                const queryLowerCase = query.toLowerCase();
-                if (actualValue.match(queryLowerCase)) {
-                    // do we care for exact matches && is it an exact match ?
-                    const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
-                    returnedTools.push({ id: tool.id, order });
-                    break;
-                }
+    for (const tool of tools) {
+        for (const key of Object.keys(keys)) {
+            const actualValue = tool[key] ? tool[key].toLowerCase() : "";
+            const queryLowerCase = query.toLowerCase();
+            if (actualValue.match(queryLowerCase)) {
+                // do we care for exact matches && is it an exact match ?
+                const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
+                returnedTools.push({ id: tool.id, order });
+                break;
             }
         }
     }
@@ -111,7 +103,7 @@ export function searchToolsByKeys(tools, keys, query) {
     return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
 }
 
-function normalizeTools(tools) {
+export function normalizeTools(tools) {
     tools = hideToolsSection(tools);
     tools = flattenTools(tools);
     return tools;

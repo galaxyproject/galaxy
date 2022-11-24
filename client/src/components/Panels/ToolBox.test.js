@@ -25,10 +25,10 @@ describe("ToolBox", () => {
     let axiosMock;
 
     const searches = {
-        "join": ["join1", "join_collections", "find1"],
-        "find": ["find1"],
-        "remove": ["remove1", "remove_duplicate"],
-        "fi": null,
+        join: ["join1", "join_collections", "find1"],
+        find: ["find1"],
+        remove: ["remove1", "remove_duplicate"],
+        fi: null,
     };
 
     let wrapper;
@@ -37,7 +37,7 @@ describe("ToolBox", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        
+
         store = new Vuex.Store({
             modules: {
                 user: {
@@ -73,12 +73,12 @@ describe("ToolBox", () => {
             .replyOnce(200, resultsMock);
         const toolsResults = filterTools(toolsMock, resultsMock);
         const toolsResultsSection = filterToolSections(toolsMock, resultsMock);
-        expect(toolsResults.length).toBe(2);
+        expect(toolsResults.length).toBe(3);
         expect(toolsResultsSection.length).toBe(2);
     });
 
-    it("test toolbox client search", async() => {
-        for (const [query, results]  of Object.entries(searches)){
+    it("test toolbox client search", async () => {
+        for (const [query, results] of Object.entries(searches)) {
             await wrapper.setData({ query: query });
             expect(wrapper.vm.results).toEqual(results);
         }

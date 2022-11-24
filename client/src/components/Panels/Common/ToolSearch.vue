@@ -43,7 +43,7 @@
 <script>
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
-import { searchToolsByKeys } from "../utilities.js";
+import { normalizeTools, searchToolsByKeys } from "../utilities.js";
 
 export default {
     name: "ToolSearch",
@@ -96,6 +96,9 @@ export default {
         sectionLabel() {
             return this.currentPanelView === "default" ? "section" : "ontology";
         },
+        toolsList() {
+            return normalizeTools(this.toolbox);
+        },
     },
     methods: {
         checkQuery(q) {
@@ -107,7 +110,7 @@ export default {
                 } else {
                     // keys with sorting order
                     const keys = { exact: 2, name: 1, description: 0 };
-                    this.$emit("onResults", searchToolsByKeys(this.toolbox, keys, q));
+                    this.$emit("onResults", searchToolsByKeys(this.toolsList, keys, q));
                 }
             } else {
                 this.$emit("onResults", null);
