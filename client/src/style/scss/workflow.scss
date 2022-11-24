@@ -103,7 +103,6 @@
                 @extend .mt-1;
                 color: $brand-light;
                 position: absolute;
-                z-index: 101;
                 .icon {
                     @extend .fa;
                     @extend .fa-chevron-circle-right;
@@ -145,7 +144,6 @@
                 @extend .fa-circle;
                 color: $brand-success;
                 position: absolute;
-                z-index: 101;
             }
             .mark-terminal {
                 @extend .far;
