@@ -138,8 +138,9 @@ function onActionMessageDismissedFromRecord() {
                 </b-tab>
                 <b-tab v-if="hasWritableFileSources" title="to remote file" title-link-class="tab-export-to-file">
                     <p>
-                        If you need a `more permanent` way of storing your exported history you can export it directly
-                        to one of the available remote file sources here.
+                        If you need a "more permanent" way of storing your exported history you can export it directly
+                        to one of the available remote file sources here. You will be able to re-import it later as long
+                        as it remains available on the remote server.
                     </p>
                     <export-to-file-source-form what="history" @export="exportToFileSource" />
                 </b-tab>
