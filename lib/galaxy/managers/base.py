@@ -227,7 +227,7 @@ class ModelManager(Generic[U]):
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def _session_setattr(self, item: model._HasTable, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(self, item: model.Base, attr: str, val: Any, flush: bool = True):
         setattr(item, attr, val)
 
         self.session().add(item)

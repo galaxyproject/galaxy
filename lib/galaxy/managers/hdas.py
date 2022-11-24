@@ -101,14 +101,14 @@ class HDAManager(
         #     return True
         return super().is_accessible(item, user, **kwargs)
 
-    def is_owner(self, item: model._HasTable, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
-        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
-            return True
         if not isinstance(item, model.HistoryDatasetAssociation):
             raise TypeError('"item" must be of type HistoryDatasetAssociation.')
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
+            return True
         history = item.history
         if history is None:
             raise HistoryDatasetAssociationNoHistoryException
