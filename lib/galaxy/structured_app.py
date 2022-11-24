@@ -47,6 +47,7 @@ if TYPE_CHECKING:
     from galaxy.managers.hdas import HDAManager
     from galaxy.managers.histories import HistoryManager
     from galaxy.managers.workflows import WorkflowsManager
+    from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
     from galaxy.tools import ToolBox
     from galaxy.tools.cache import ToolCache
     from galaxy.tools.data import ToolDataTableManager
@@ -104,7 +105,7 @@ class MinimalManagerApp(MinimalApp):
     library_folder_manager: Any  # 'galaxy.managers.folders.FolderManager'
     library_manager: Any  # 'galaxy.managers.libraries.LibraryManager'
     role_manager: Any  # 'galaxy.managers.roles.RoleManager'
-    installed_repository_manager: Any  # 'galaxy.tool_shed.galaxy_install.installed_repository_manager.InstalledRepositoryManager'
+    installed_repository_manager: "InstalledRepositoryManager"
     user_manager: Any
     job_config: "JobConfiguration"
     job_manager: Any  # galaxy.jobs.manager.JobManager
@@ -113,6 +114,7 @@ class MinimalManagerApp(MinimalApp):
     genomes: "Genomes"
     error_reports: "ErrorReports"
     object_store: BaseObjectStore
+    tool_shed_registry: ToolShedRegistry
 
     @property
     @abc.abstractmethod
@@ -146,7 +148,6 @@ class StructuredApp(MinimalManagerApp):
     data_provider_registry: Any  # 'galaxy.visualization.data_providers.registry.DataProviderRegistry'
     tool_data_tables: "ToolDataTableManager"
     tool_cache: "ToolCache"
-    tool_shed_registry: ToolShedRegistry
     tool_shed_repository_cache: Optional[ToolShedRepositoryCache]
     watchers: "ConfigWatchers"
     workflow_scheduling_manager: Any  # 'galaxy.workflow.scheduling_manager.WorkflowSchedulingManager'
