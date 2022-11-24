@@ -6,10 +6,12 @@
     </requirements>
     <command><![CDATA[
         python '$__tool_directory__/bgzip.py'
-        #if $input1.ext in ['bed', 'gff', 'vcf']
-            -P $input1.ext
-        #elif $input1.ext in ['gtf', 'gff3']
-            -P 'gff'
+        #if $input1.is_of_type('bed')
+            -P bed
+        #elif $input1.is_of_type('vcf')
+            -P vcf
+        #elif $input1.is_of_type('gff')
+            -P gff
         #else
             -c ${input1.metadata.chromCol}
             -s ${input1.metadata.startCol}
