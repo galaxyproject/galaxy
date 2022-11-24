@@ -1,5 +1,5 @@
 <script setup>
-import { computed, defineProps, defineEmits } from "vue";
+import { computed } from "vue";
 import FormRadio from "./FormRadio";
 
 const $emit = defineEmits(["input"]);
