@@ -36,20 +36,6 @@ export class HistoryExportService {
         }
     }
 
-    /**
-     * Gets the latest export record for the given history.
-     * @param {String} historyId
-     * @returns {Promise<ExportRecordModel|null>}
-     */
-    async getLatestExportRecord(historyId) {
-        try {
-            const records = await this.getExportRecords(historyId, { limit: 1 });
-            return records.length ? records.at(0) : null;
-        } catch (e) {
-            rethrowSimple(e);
-        }
-    }
-
     async exportToFileSource(historyId, exportDirectory, fileName, exportParams = DEFAULT_EXPORT_PARAMS) {
         const exportDirectoryUri = `${exportDirectory}/${fileName}.${exportParams.modelStoreFormat}`;
         const writeStorePayload = {

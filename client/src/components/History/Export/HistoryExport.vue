@@ -29,9 +29,9 @@ const props = defineProps({
 const EXPORT_PARAMS = service.defaultExportParams;
 
 const isLoadingRecords = ref(true);
-const latestExportRecord = ref(null);
-const isLatestExportReady = ref(false);
-const previousExportRecords = ref(null);
+const exportRecords = ref(null);
+const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
+const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : null));
 const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
 const availableRecordsMessage = computed(() =>
     isLoadingRecords.value
@@ -46,28 +46,26 @@ onMounted(async () => {
     updateExports();
 });
 
-watch(isExportTaskRunning, async () => {
-    console.debug("Updating latest export after task finished");
-    updateLatestExport();
+watch(isExportTaskRunning, (newValue, oldValue) => {
+    const hasFinished = oldValue && !newValue;
+    if (hasFinished) {
+        updateExports();
+    }
 });
 
-async function updateLatestExport() {
+async function updateExports() {
     isLoadingRecords.value = true;
-    const latestExport = await service.getLatestExportRecord(props.historyId);
-    latestExportRecord.value = latestExport;
-    isLatestExportReady.value = latestExport?.isReady;
-    if (latestExport?.isPreparing) {
-        isLatestExportReady.value = false;
-        waitForTask(latestExport.taskUUID, 3000);
+    try {
+        errorMessage.value = null;
+        exportRecords.value = await service.getExportRecords(props.historyId);
+        const shouldWaitForTask = latestExportRecord.value?.isPreparing && !isExportTaskRunning.value;
+        if (shouldWaitForTask) {
+            waitForTask(latestExportRecord.value.taskUUID, 3000);
+        }
+    } catch (error) {
+        errorMessage.value = error;
     }
     isLoadingRecords.value = false;
-}
-
-async function updateExports() {
-    updateLatestExport();
-    service.getExportRecords(props.historyId, { offset: 1, limit: 10 }).then((records) => {
-        previousExportRecords.value = records;
-    });
 }
 
 async function exportToFileSource(exportDirectory, fileName) {
@@ -90,7 +88,7 @@ async function prepareDownload() {
 }
 
 function downloadFromRecord(record) {
-    if (record.isStsDownload) {
+    if (record.canDownload) {
         downloadObjectByRequestId(record.stsDownloadId);
     }
 }
