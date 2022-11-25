@@ -24,7 +24,7 @@ class TestJobRecoveryBeforeHandledIntegration(integration_util.IntegrationTestCa
         config["job_config_file"] = SIMPLE_JOB_CONFIG_FILE
         config["server_name"] = "moo"
 
-    def handle_reconfigure_galaxy_config_kwds(self, config) -> None:
+    def handle_reconfigure_galaxy_config_kwds(self, config):
         config["server_name"] = "main"
 
     def test_recovery(self) -> None:
