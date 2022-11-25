@@ -17,7 +17,7 @@
                                 <b-row align-v="center">
                                     <b-col cols="auto">
                                         <b-button v-b-tooltip.hover :title="buttonLabel" @click="reload()">
-                                            <span class="fa fa-sync" />
+                                            <FontAwesomeIcon class="fa-sync" />
                                         </b-button>
                                     </b-col>
                                     <b-col>
@@ -43,10 +43,16 @@
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSync } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSync);
 
 export default {
     components: {
         Alert,
+        FontAwesomeIcon,
     },
     props: {
         name: {

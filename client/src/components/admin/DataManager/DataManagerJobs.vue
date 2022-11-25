@@ -41,14 +41,14 @@
                 <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
-                            <span class="fa fa-redo" />
+                            <FontAwesomeIcon class="fa-redo" />
                         </b-button>
                         <b-button
                             :id="'job-' + jobs[row.index]['encId']"
                             v-b-tooltip.hover
                             title="View Info"
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
-                            <span class="fa fa-info-circle" />
+                            <FontAwesomeIcon class="fa-info-circle" />
                         </b-button>
                         <b-button
                             v-if="!showCommandLine"
@@ -76,10 +76,16 @@
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faRedo, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faRedo, faInfoCircle);
 
 export default {
     components: {
         Alert,
+        FontAwesomeIcon,
     },
     props: {
         id: {

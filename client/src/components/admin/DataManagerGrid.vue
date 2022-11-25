@@ -9,7 +9,7 @@
                         href="javascript:void(0)"
                         :title="`Reload ${dataManagerTableName} tool data table`"
                         @click="handleReloadButtonClick"
-                        ><span class="fa fa-sync"></span
+                        ><FontAwesomeIcon icon="fa-sync"></FontAwesomeIcon
                     ></a>
                 </th>
             </tr>
@@ -28,7 +28,16 @@
 </template>
 
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSync } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSync);
+
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         dataManagerTableName: {
             type: String,

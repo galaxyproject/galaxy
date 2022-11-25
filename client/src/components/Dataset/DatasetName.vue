@@ -16,16 +16,16 @@
                 v-b-tooltip.hover
                 class="dataset-icon pause fa fa-pause text-info"
                 title="The creation of this dataset has been paused." />
-            <span v-else class="dataset-icon fa fa-caret-down" />
+            <FontAwesomeIcon v-else icon="fa-caret-down" class="dataset-icon" />
             <span class="name">{{ getName }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">
-                <span class="fa fa-eye fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-eye" fixed-width class="mr-1" />
                 <span>Show in History</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="copyDataset">
-                <span class="fa fa-copy fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-copy" fixed-width class="mr-1" />
                 <span>Copy to History</span>
             </a>
         </div>
@@ -34,10 +34,16 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faEye, faCopy } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCaretDown, faEye, faCopy);
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         item: Object,
     },

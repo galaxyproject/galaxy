@@ -19,7 +19,7 @@
                                 <b-row align-v="center">
                                     <b-col cols="auto">
                                         <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
-                                            <span class="fa fa-redo" />
+                                            <FontAwesomeIcon icon="fa-redo" />
                                         </b-button>
                                     </b-col>
                                     <b-col>
@@ -40,7 +40,7 @@
                                                         title="View complete info"
                                                         :href="hdaInfo[i]['infoUrl']"
                                                         target="galaxy_main">
-                                                        <span class="fa fa-info-circle" />
+                                                        <FontAwesomeIcon icon="fa-info-circle" />
                                                     </b-button>
                                                 </b-col>
                                                 <b-col>
@@ -76,10 +76,16 @@
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faRedo, faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faRedo, faInfoCircle);
 
 export default {
     components: {
         Alert,
+        FontAwesomeIcon,
     },
     props: {
         id: {

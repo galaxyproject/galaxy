@@ -10,15 +10,21 @@
             <span class="reverse-dataset-name flex-column">{{ pair.reverse.name }}</span>
         </li>
         <button class="unpair-btn" @click="unlinkFn">
-            <span class="fa fa-unlink" :title="unpairButtonTitle"></span>
+            <FontAwesomeIcon icon="fa-unlink" :title="unpairButtonTitle"></FontAwesomeIcon>
         </button>
     </div>
 </template>
 <script>
 import ClickToEdit from "./common/ClickToEdit.vue";
 import _l from "utils/localization";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUnlink } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faUnlink);
+
 export default {
-    components: { ClickToEdit },
+    components: { ClickToEdit, FontAwesomeIcon },
     props: {
         pair: {
             required: true,

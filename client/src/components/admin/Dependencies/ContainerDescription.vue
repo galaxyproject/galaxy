@@ -1,7 +1,9 @@
 <template>
     <span class="container-description">
         <span v-if="containerDescription" :title="title">
-            <a v-if="externalUrl" class="icon-btn" :href="externalUrl"><span class="fa fa-link"></span></a>
+            <a v-if="externalUrl" class="icon-btn" :href="externalUrl"
+                ><FontAwesomeIcon icon="fa-link"></FontAwesomeIcon
+            ></a>
             {{ containerDescription.identifier }}
             <span v-if="!compact">
                 <i>{{ description }}</i>
@@ -15,9 +17,14 @@
 </template>
 <script>
 import DisplayRaw from "./DisplayRaw";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faLink } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faLink);
 
 export default {
-    components: { DisplayRaw },
+    components: { DisplayRaw, FontAwesomeIcon },
     props: {
         containerDescription: {
             type: Object,

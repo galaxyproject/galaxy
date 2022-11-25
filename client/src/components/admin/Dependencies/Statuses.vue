@@ -1,6 +1,8 @@
 <template>
     <span class="dependency-statuses">
-        <b v-if="statuses.length == 0"> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
+        <b v-if="statuses.length == 0">
+            <FontAwesomeIcon icon="fa-times" class="text-danger"></FontAwesomeIcon><i>unresolved</i>
+        </b>
         <span v-else-if="merged">
             <status-display :status="statuses[0]" :all-statuses="statuses" />
         </span>
@@ -11,9 +13,14 @@
 </template>
 <script>
 import StatusDisplay from "./StatusDisplay";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
 
 export default {
-    components: { StatusDisplay },
+    components: { StatusDisplay, FontAwesomeIcon },
     props: {
         statuses: {
             type: Array,

@@ -202,7 +202,7 @@
                             {{ l("To unpair individual dataset pairs, click the ") }}
                             <i data-target=".unpair-btn">
                                 {{ l("unpair buttons (") }}
-                                <span class="fa fa-unlink"></span>
+                                <FontAwesomeIcon icon="fa-unlink"></FontAwesomeIcon>
                                 {{ ")" }}
                             </i>
                             {{ l("Click the") }}
@@ -419,6 +419,11 @@ import { Splitpanes, Pane } from "splitpanes";
 import draggable from "vuedraggable";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUnlink } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faUnlink);
 
 Vue.use(BootstrapVue);
 export default {
@@ -428,6 +433,7 @@ export default {
         Splitpanes,
         Pane,
         draggable,
+        FontAwesomeIcon,
     },
     mixins: [mixin],
     data: function () {

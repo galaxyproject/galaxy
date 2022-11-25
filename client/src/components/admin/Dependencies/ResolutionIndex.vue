@@ -60,21 +60,21 @@
         <template v-slot:actions>
             <b-row class="m-1">
                 <b-button class="m-1" @click="installSelected">
-                    <span class="fa fa-plus" />
+                    <FontAwesomeIcon icon="fa-plus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
                     Install
                 </b-button>
                 <b-button class="m-1" @click="uninstallSelected">
-                    <span class="fa fa-minus" />
+                    <FontAwesomeIcon icon="fa-minus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
                     Uninstall
                 </b-button>
                 <b-button v-if="!expandToolIds" class="m-1" @click="setExpandToolIds(true)">
-                    <span class="fa fa-chevron-down" />
+                    <FontAwesomeIcon icon="fa-chevron-down" />
                     Expand Tools
                 </b-button>
                 <b-button v-if="expandToolIds" class="m-1" @click="setExpandToolIds(false)">
-                    <span class="fa fa-chevron-up" />
+                    <FontAwesomeIcon icon="fa-chevron-up" />
                     Group by Requirements
                 </b-button>
             </b-row>
@@ -88,6 +88,11 @@ import BootstrapVue from "bootstrap-vue";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus, faMinus, faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faPlus, faMinus, faChevronDown, faChevronUp);
 
 Vue.use(BootstrapVue);
 
@@ -105,7 +110,7 @@ const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map((resolverType) =
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { ResolutionDetails },
+    components: { ResolutionDetails, FontAwesomeIcon },
     mixins: [DependencyIndexMixin],
     data() {
         return {

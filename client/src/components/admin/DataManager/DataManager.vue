@@ -64,7 +64,7 @@
                             :variant="dataTable['managed'] === true ? 'primary' : 'link'">
                             {{ dataTable["name"] }}
                             <b-badge v-if="dataTable['managed'] === true" variant="primary" pill
-                                ><span class="fa fa-exchange"
+                                ><FontAwesomeIcon icon="fa-exchange-alt"
                             /></b-badge>
                         </b-list-group-item>
                     </b-list-group>
@@ -79,10 +79,16 @@ import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import Alert from "components/Alert.vue";
 import { debounce } from "underscore";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExchangeAlt } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faExchangeAlt);
 
 export default {
     components: {
         Alert,
+        FontAwesomeIcon,
     },
     beforeRouteEnter(to, from, next) {
         console.log("beforeRouteEnter");

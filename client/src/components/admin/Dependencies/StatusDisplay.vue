@@ -2,15 +2,21 @@
     <span class="dependency-status">
         <span v-if="status.dependency_type" :title="title">
             <b>
-                <span class="fa fa-check text-success"></span>{{ status.dependency_type }}
+                <FontAwesomeIcon icon="fa-check" class="text-success"></FontAwesomeIcon>{{ status.dependency_type }}
                 <span v-if="mergedMultiple">(merged)</span>
             </b>
             <span v-if="!compact">{{ description }} <display-raw :object="status" /></span>
         </span>
-        <b v-else> <span class="fa fa-times text-danger"></span><i>unresolved</i> </b>
+        <b v-else> <FontAwesomeIcon icon="fa-times" class="text-danger"></FontAwesomeIcon><i>unresolved</i> </b>
     </span>
 </template>
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCheck, faTimes);
+
 const DESCRIPTIONS = {
     conda: "The Conda package manager will be used for resolution. ",
     galaxy_package: "A manually configured Galaxy package directory will be used for resolution. ",
@@ -37,7 +43,7 @@ function describeRequirement(status) {
 import DisplayRaw from "./DisplayRaw";
 
 export default {
-    components: { DisplayRaw },
+    components: { DisplayRaw, FontAwesomeIcon },
     props: {
         status: {
             type: Object,

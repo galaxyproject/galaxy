@@ -302,9 +302,8 @@
                                     type="button"
                                     class="dropdown-toggle btn btn-primary mr-1"
                                     data-toggle="dropdown">
-                                    <span class="fa fa-plus rule-add-mapping"></span>
+                                    <FontAwesomeIcon icon="fa-plus" class="rule-add-mapping"></FontAwesomeIcon>
                                     {{ "Add Definition" }}
-                                    <span class="caret"></span>
                                 </button>
                                 <div class="dropdown-menu" role="menu">
                                     <a
@@ -379,9 +378,8 @@
                                         :title="titleRulesMenu"
                                         class="rule-menu-rules-button primary-button dropdown-toggle"
                                         data-toggle="dropdown">
-                                        <span class="fa fa-plus"></span>
+                                        <FontAwesomeIcon icon="fa-plus"></FontAwesomeIcon>
                                         {{ l("Rules") }}
-                                        <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="sort" />
@@ -403,9 +401,8 @@
                                         :title="titleFilterMenu"
                                         class="rule-menu-filter-button primary-button dropdown-toggle"
                                         data-toggle="dropdown">
-                                        <span class="fa fa-plus"></span>
+                                        <FontAwesomeIcon icon="fa-plus"></FontAwesomeIcon>
                                         {{ l("Filter") }}
-                                        <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_filter_regex" />
@@ -422,9 +419,8 @@
                                         :title="titleColumMenu"
                                         class="rule-menu-column-button primary-button dropdown-toggle"
                                         data-toggle="dropdown">
-                                        <span class="fa fa-plus"></span>
+                                        <FontAwesomeIcon icon="fa-plus"></FontAwesomeIcon>
                                         {{ l("Column") }}
-                                        <span class="caret"></span>
                                     </button>
                                     <div class="dropdown-menu" role="menu">
                                         <rule-target-component :builder="this" rule-type="add_column_basename" />
@@ -592,6 +588,11 @@ import StateDiv from "components/RuleBuilder/StateDiv";
 import SavedRulesSelector from "components/RuleBuilder/SavedRulesSelector";
 import SaveRules from "components/RuleBuilder/SaveRules";
 import TooltipOnHover from "components/TooltipOnHover.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faPlus);
 
 Vue.use(BootstrapVue);
 
@@ -622,6 +623,7 @@ export default {
         RuleModalMiddle,
         RuleModalFooter,
         Select2,
+        FontAwesomeIcon,
     },
     mixins: [SaveRules],
     props: {
