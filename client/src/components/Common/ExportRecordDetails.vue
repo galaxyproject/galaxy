@@ -53,6 +53,9 @@ function onMessageDismissed() {
         <b-card-title>
             <b>{{ title }}</b> {{ props.record.elapsedTime }}
         </b-card-title>
+        <p>
+            Format: <b>{{ props.record.modelStoreFormat }}</b>
+        </p>
         <span v-if="props.record.isPreparing">
             <loading-span :message="preparingMessage" />
         </span>

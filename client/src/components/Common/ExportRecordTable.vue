@@ -1,6 +1,6 @@
 <script setup>
 import { computed, ref } from "vue";
-import { BCard, BButton, BButtonGroup, BButtonToolbar, BCollapse, BTable } from "bootstrap-vue";
+import { BCard, BButton, BButtonGroup, BButtonToolbar, BCollapse, BTable, BLink } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
@@ -24,6 +24,7 @@ const emit = defineEmits(["onReimport", "onDownload"]);
 
 const fields = [
     { key: "elapsedTime", label: "Exported" },
+    { key: "format", label: "Format" },
     { key: "expires", label: "Expires" },
     { key: "isUpToDate", label: "Up to date", class: "text-center" },
     { key: "isReady", label: "Ready", class: "text-center" },
@@ -44,18 +45,21 @@ function downloadObject(record) {
 
 <template>
     <div>
-        <b-button
+        <b-link
             :class="isExpanded ? null : 'collapsed'"
             :aria-expanded="isExpanded ? 'true' : 'false'"
             aria-controls="collapse-previous"
             @click="isExpanded = !isExpanded">
             {{ title }}
-        </b-button>
+        </b-link>
         <b-collapse id="collapse-previous" v-model="isExpanded">
             <b-card>
                 <b-table :items="props.records" :fields="fields">
                     <template v-slot:cell(elapsedTime)="row">
                         <span :title="row.item.date">{{ row.value }}</span>
+                    </template>
+                    <template v-slot:cell(format)="row">
+                        <span>{{ row.item.modelStoreFormat }}</span>
                     </template>
                     <template v-slot:cell(expires)="row">
                         <span v-if="row.item.hasExpired">Expired</span>
