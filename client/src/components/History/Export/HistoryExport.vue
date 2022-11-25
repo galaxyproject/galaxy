@@ -144,7 +144,7 @@ function onActionMessageDismissedFromRecord() {
                     </p>
                     <export-to-file-source-form
                         what="history"
-                        clear-input-after-export="true"
+                        :clear-input-after-export="true"
                         @export="exportToFileSource" />
                 </b-tab>
             </b-tabs>
