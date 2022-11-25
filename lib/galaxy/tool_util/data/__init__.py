@@ -20,6 +20,7 @@ from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     BinaryIO,
+    Callable,
     Dict,
     List,
     Optional,
@@ -40,6 +41,7 @@ from galaxy.util import (
 )
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.filelock import FileLock
+from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from ._schema import (
     ToolDataEntry,
@@ -48,6 +50,7 @@ from ._schema import (
 
 if TYPE_CHECKING:
     from galaxy.config import GalaxyAppConfiguration
+    from galaxy.tools.data_manager.manager import DataManager
 
 log = logging.getLogger(__name__)
 
@@ -99,12 +102,9 @@ class ToolDataPathFiles:
             return os.path.exists(path)
 
 
-ConfigFilesT = Union[str, os.PathLike, List[Union[str, os.PathLike]]]
-
-
 class ToolDataTable(Dictifiable):
     type_key: str
-    data: List
+    data: List[List[str]]
 
     @classmethod
     def from_dict(cls, d):
@@ -119,10 +119,10 @@ class ToolDataTable(Dictifiable):
     def __init__(
         self,
         config_element: Element,
-        tool_data_path: Union[str, os.PathLike],
+        tool_data_path: Optional[StrPath],
+        tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
-        filename: Optional[Union[str, os.PathLike]] = None,
-        tool_data_path_files: Optional[ToolDataPathFiles] = None,
+        filename: Optional[StrPath] = None,
         other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
     ) -> None:
         self.name = config_element.get("name")
@@ -140,7 +140,7 @@ class ToolDataTable(Dictifiable):
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
         self._load_info = (
-            [config_element, tool_data_path],
+            (config_element, tool_data_path),
             {
                 "from_shed_config": from_shed_config,
                 "tool_data_path_files": self.tool_data_path_files,
@@ -148,7 +148,7 @@ class ToolDataTable(Dictifiable):
                 "filename": filename,
             },
         )
-        self._merged_load_info: List[Tuple[Type[ToolDataTable], Tuple[List[Any], Dict[str, Any]]]] = []
+        self._merged_load_info: List[Tuple[Type[ToolDataTable], Tuple[Tuple[Element, StrPath], Dict[str, Any]]]] = []
 
     def _update_version(self, version: Optional[int] = None) -> int:
         if version is not None:
@@ -160,14 +160,30 @@ class ToolDataTable(Dictifiable):
     def get_empty_field_by_name(self, name):
         return self.empty_field_values.get(name, self.empty_field_value)
 
-    def _add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+    def _add_entry(
+        self,
+        entry: Union[List[str], Dict[str, str]],
+        allow_duplicates: bool = True,
+        persist: bool = False,
+        entry_source=None,
+        **kwd,
+    ) -> None:
         raise NotImplementedError("Abstract method")
 
-    def add_entry(self, entry, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+    def add_entry(
+        self,
+        entry: Union[List[str], Dict[str, str]],
+        allow_duplicates: bool = True,
+        persist: bool = False,
+        entry_source=None,
+        **kwd,
+    ) -> int:
         self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
         return self._update_version()
 
-    def add_entries(self, entries, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+    def add_entries(
+        self, entries: List[List[str]], allow_duplicates: bool = True, persist: bool = False, entry_source=None, **kwd
+    ) -> int:
         for entry in entries:
             try:
                 self.add_entry(
@@ -187,7 +203,14 @@ class ToolDataTable(Dictifiable):
     def is_current_version(self, other_version):
         return self._loaded_content_version == other_version
 
-    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+    def merge_tool_data_table(
+        self,
+        other_table: "ToolDataTable",
+        allow_duplicates: bool = True,
+        persist: bool = False,
+        entry_source=None,
+        **kwd,
+    ) -> int:
         raise NotImplementedError("Abstract method")
 
     def reload_from_files(self) -> int:
@@ -224,18 +247,18 @@ class TabularToolDataTable(ToolDataTable):
     def __init__(
         self,
         config_element: Element,
-        tool_data_path: Union[str, os.PathLike],
+        tool_data_path: Optional[StrPath],
+        tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
-        filename: Optional[Union[str, os.PathLike]] = None,
-        tool_data_path_files: Optional[ToolDataPathFiles] = None,
+        filename: Optional[StrPath] = None,
         other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
     ) -> None:
         super().__init__(
             config_element,
             tool_data_path,
+            tool_data_path_files,
             from_shed_config,
             filename,
-            tool_data_path_files,
             other_config_dict=other_config_dict,
         )
         self.config_element = config_element
@@ -245,9 +268,9 @@ class TabularToolDataTable(ToolDataTable):
     def configure_and_load(
         self,
         config_element: Element,
-        tool_data_path: Union[str, os.PathLike],
+        tool_data_path: Optional[StrPath],
         from_shed_config: bool = False,
-        url_timeout: int = 10,
+        url_timeout: float = 10,
     ) -> None:
         """
         Configure and load table from an XML element.
@@ -313,7 +336,7 @@ class TabularToolDataTable(ToolDataTable):
                 # directory which is hard-coded into the tool_data_table_conf.xml entries.
                 filename = os.path.split(file_path)[1]
                 filename = os.path.join(tool_data_path, filename)
-            if self.tool_data_path_files and self.tool_data_path_files.exists(filename):
+            if self.tool_data_path_files.exists(filename):
                 found = True
             elif not os.path.isabs(filename):
                 # Since the path attribute can include a hard-coded path to a specific directory
@@ -322,15 +345,12 @@ class TabularToolDataTable(ToolDataTable):
                 # in self.tool_data_path.
                 file_path, file_name = os.path.split(filename)
                 if file_path != self.tool_data_path:
+                    assert self.tool_data_path
                     corrected_filename = os.path.join(self.tool_data_path, file_name)
-                    if self.tool_data_path_files and self.tool_data_path_files.exists(corrected_filename):
+                    if self.tool_data_path_files.exists(corrected_filename):
                         filename = corrected_filename
                         found = True
-                    elif (
-                        not from_shed_config
-                        and self.tool_data_path_files
-                        and self.tool_data_path_files.exists(f"{corrected_filename}.sample")
-                    ):
+                    elif not from_shed_config and self.tool_data_path_files.exists(f"{corrected_filename}.sample"):
                         log.info(f"Could not find tool data {corrected_filename}, reading sample")
                         filename = f"{corrected_filename}.sample"
                         found = True
@@ -394,7 +414,8 @@ class TabularToolDataTable(ToolDataTable):
         self.missing_index_file = None
         self.extend_data_with(filename)
 
-    def get_fields(self):
+    # This method is used in tools, so need to keep its API stable
+    def get_fields(self) -> List[List[str]]:
         return self.data
 
     def get_field(self, value):
@@ -404,7 +425,8 @@ class TabularToolDataTable(ToolDataTable):
                 rval = TabularToolDataField(i)
         return rval
 
-    def get_named_fields_list(self):
+    # This method is used in tools, so need to keep its API stable
+    def get_named_fields_list(self) -> List[Dict[Union[str, int], str]]:
         rval = []
         named_columns = self.get_column_name_list()
         for fields in self.get_fields():
@@ -412,7 +434,7 @@ class TabularToolDataTable(ToolDataTable):
             for i, field in enumerate(fields):
                 if i == len(named_columns):
                     break
-                field_name = named_columns[i]
+                field_name: Optional[Union[str, int]] = named_columns[i]
                 if field_name is None:
                     field_name = i  # check that this is supposed to be 0 based.
                 field_dict[field_name] = field
@@ -431,7 +453,7 @@ class TabularToolDataTable(ToolDataTable):
 
         A column named 'value' is required.
         """
-        self.columns = {}
+        self.columns: Dict[str, int] = {}
         if config_element.find("columns") is not None:
             column_names = util.xml_text(config_element.find("columns"))
             column_names = [n.strip() for n in column_names.split(",")]
@@ -456,7 +478,7 @@ class TabularToolDataTable(ToolDataTable):
         if "name" not in self.columns:
             self.columns["name"] = self.columns["value"]
 
-    def extend_data_with(self, filename: str, errors: Optional[List[Any]] = None) -> None:
+    def extend_data_with(self, filename: str, errors: Optional[List[str]] = None) -> None:
         here = os.path.dirname(os.path.abspath(filename))
         self.data.extend(self.parse_file_fields(filename, errors=errors, here=here))
         if not self.allow_duplicate_entries:
@@ -493,8 +515,9 @@ class TabularToolDataTable(ToolDataTable):
         log.debug("Loaded %i lines from '%s' for '%s'", len(rval), filename, self.name)
         return rval
 
-    def get_column_name_list(self):
-        rval = []
+    # This method is used in tools, so need to keep its API stable
+    def get_column_name_list(self) -> List[Union[str, None]]:
+        rval: List[Union[str, None]] = []
         for i in range(self.largest_index + 1):
             found_column = False
             for name, index in self.columns.items():
@@ -509,26 +532,27 @@ class TabularToolDataTable(ToolDataTable):
                 rval.append(None)
         return rval
 
-    def get_entry(self, query_attr, query_val, return_attr, default=None):
+    # This method is used in tools, so need to keep its API stable
+    def get_entry(self, query_attr: str, query_val: str, return_attr: str, default: None = None):
         """
         Returns table entry associated with a col/val pair.
         """
-        rval = self.get_entries(query_attr, query_val, return_attr, default=default, limit=1)
+        rval = self.get_entries(query_attr, query_val, return_attr, limit=1)
         if rval:
             return rval[0]
         return default
 
-    def get_entries(self, query_attr, query_val, return_attr, default=None, limit=None):
+    def get_entries(self, query_attr: str, query_val: str, return_attr: str, limit=None) -> List:
         """
-        Returns table entry associated with a col/val pair.
+        Returns table entries associated with a col/val pair.
         """
         query_col = self.columns.get(query_attr, None)
         if query_col is None:
-            return default
+            return []
         if return_attr is not None:
             return_col = self.columns.get(return_attr, None)
             if return_col is None:
-                return default
+                return []
         rval = []
         # Look for table entry.
         for fields in self.get_fields():
@@ -542,9 +566,12 @@ class TabularToolDataTable(ToolDataTable):
                     rval.append(fields[return_col])
                 if limit is not None and len(rval) == limit:
                     break
-        return rval or default
+        return rval
 
-    def get_filename_for_source(self, source, default=None):
+    # This method is used in tools, so need to keep its API stable
+    def get_filename_for_source(
+        self, source: Optional[Union[Dict, "DataManager"]], default: Optional[str] = None
+    ) -> Optional[str]:
         if source:
             # if dict, assume is compatible info dict, otherwise call method
             if isinstance(source, dict):
@@ -555,7 +582,7 @@ class TabularToolDataTable(ToolDataTable):
             source_repo_info = None
         filename = default
         for name, value in self.filenames.items():
-            repo_info = value.get("tool_shed_repository", None)
+            repo_info = value.get("tool_shed_repository")
             if (not source_repo_info and not repo_info) or (
                 source_repo_info and repo_info and source_repo_info == repo_info
             ):
@@ -564,7 +591,12 @@ class TabularToolDataTable(ToolDataTable):
         return filename
 
     def _add_entry(
-        self, entry: Union[List[str], Dict[str, str]], allow_duplicates=True, persist=False, entry_source=None, **kwd
+        self,
+        entry: Union[List[str], Dict[str, str]],
+        allow_duplicates: bool = True,
+        persist: bool = False,
+        entry_source=None,
+        **kwd,
     ) -> None:
         # accepts dict or list of columns
         if isinstance(entry, dict):
@@ -700,8 +732,8 @@ class TabularToolDataTable(ToolDataTable):
     def xml_string(self):
         return util.xml_to_string(self.config_element)
 
-    def to_dict(self, view="collection"):
-        rval = super().to_dict(view=view)
+    def to_dict(self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
+        rval = super().to_dict(view, value_mapper)
         if view == "element":
             rval["columns"] = sorted(self.columns.keys(), key=lambda x: self.columns[x])
             rval["fields"] = self.get_fields()
@@ -712,7 +744,7 @@ class TabularToolDataField(Dictifiable):
 
     dict_collection_visible_keys: List[str] = []
 
-    def __init__(self, data):
+    def __init__(self, data: Dict):
         self.data = data
 
     def __getitem__(self, key):
@@ -750,8 +782,8 @@ class TabularToolDataField(Dictifiable):
             sha1.update(util.smart_str(fmap[k]))
         return sha1.hexdigest()
 
-    def to_dict(self):
-        rval = super().to_dict()
+    def to_dict(self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
+        rval = super().to_dict(view, value_mapper)
         rval["name"] = self.data["value"]
         rval["fields"] = self.data
         rval["base_dir"] = (self.get_base_dir(),)
@@ -779,7 +811,7 @@ class ToolDataTableManager(Dictifiable):
     def __init__(
         self,
         tool_data_path: str,
-        config_filename: Optional[ConfigFilesT] = None,
+        config_filename: Optional[Union[StrPath, List[StrPath]]] = None,
         tool_data_table_config_path_set=None,
         other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
     ) -> None:
@@ -802,10 +834,10 @@ class ToolDataTableManager(Dictifiable):
     def __getitem__(self, key: str) -> ToolDataTable:
         return self.data_tables.__getitem__(key)
 
-    def __setitem__(self, key: str, value):
+    def __setitem__(self, key: str, value) -> None:
         return self.data_tables.__setitem__(key, value)
 
-    def __contains__(self, key: str):
+    def __contains__(self, key: str) -> bool:
         return self.data_tables.__contains__(key)
 
     def get(self, name: str, default=None):
@@ -814,22 +846,27 @@ class ToolDataTableManager(Dictifiable):
         except KeyError:
             return default
 
-    def set(self, name: str, value):
+    def set(self, name: str, value: ToolDataTable) -> None:
         self[name] = value
 
     def get_tables(self) -> Dict[str, "ToolDataTable"]:
         return self.data_tables
 
-    def to_dict(self, view: str = "collection", value_mapper=None):
-        return {name: data_table.to_dict(view="export") for name, data_table in self.data_tables.items()}
+    def to_dict(
+        self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None
+    ) -> Dict[str, Dict[str, Any]]:
+        return {
+            name: data_table.to_dict(view="export", value_mapper=value_mapper)
+            for name, data_table in self.data_tables.items()
+        }
 
-    def to_json(self, path: Union[str, os.PathLike]) -> None:
+    def to_json(self, path: StrPath) -> None:
         with open(path, "w") as out:
             out.write(json.dumps(self.to_dict()))
 
     def load_from_config_file(
-        self, config_filename: ConfigFilesT, tool_data_path: Union[str, os.PathLike], from_shed_config: bool = False
-    ):
+        self, config_filename: StrPath, tool_data_path: Optional[StrPath], from_shed_config: bool = False
+    ) -> List[Element]:
         """
         This method is called under 3 conditions:
 
@@ -840,45 +877,39 @@ class ToolDataTableManager(Dictifiable):
            Galaxy instance.  In this case, we have 2 entry types to handle, files whose root tag is <tables>, for example:
         """
         table_elems = []
-        config_filenames: List[Union[str, os.PathLike]]
-        if not isinstance(config_filename, list):
-            config_filenames = [config_filename]
-        else:
-            config_filenames = config_filename
-        for filename in config_filenames:
-            tree = util.parse_xml(filename)
-            root = tree.getroot()
-            for table_elem in root.findall("table"):
-                table = self.from_elem(
-                    table_elem,
-                    tool_data_path,
-                    from_shed_config,
-                    filename=filename,
-                    tool_data_path_files=self.tool_data_path_files,
-                    other_config_dict=self.other_config_dict,
+        tree = util.parse_xml(config_filename)
+        root = tree.getroot()
+        for table_elem in root.findall("table"):
+            table = self.from_elem(
+                table_elem,
+                tool_data_path,
+                from_shed_config,
+                filename=config_filename,
+                tool_data_path_files=self.tool_data_path_files,
+                other_config_dict=self.other_config_dict,
+            )
+            table_elems.append(table_elem)
+            if table.name not in self.data_tables:
+                self.data_tables[table.name] = table
+                log.debug("Loaded tool data table '%s' from file '%s'", table.name, config_filename)
+            else:
+                log.debug(
+                    "Loading another instance of data table '%s' from file '%s', attempting to merge content.",
+                    table.name,
+                    config_filename,
                 )
-                table_elems.append(table_elem)
-                if table.name not in self.data_tables:
-                    self.data_tables[table.name] = table
-                    log.debug("Loaded tool data table '%s' from file '%s'", table.name, filename)
-                else:
-                    log.debug(
-                        "Loading another instance of data table '%s' from file '%s', attempting to merge content.",
-                        table.name,
-                        filename,
-                    )
-                    self.data_tables[table.name].merge_tool_data_table(
-                        table, allow_duplicates=False
-                    )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
-                    # FIXME: This does not account for an entry with the same unique build ID, but a different path.
+                self.data_tables[table.name].merge_tool_data_table(
+                    table, allow_duplicates=False
+                )  # only merge content, do not persist to disk, do not allow duplicate rows when merging
+                # FIXME: This does not account for an entry with the same unique build ID, but a different path.
         return table_elems
 
     def from_elem(
         self,
         table_elem: Element,
-        tool_data_path: Union[str, os.PathLike],
+        tool_data_path: Optional[StrPath],
         from_shed_config: bool,
-        filename: Union[str, os.PathLike],
+        filename: StrPath,
         tool_data_path_files: ToolDataPathFiles,
         other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
     ) -> ToolDataTable:
@@ -887,15 +918,19 @@ class ToolDataTableManager(Dictifiable):
         return self.tool_data_table_types[table_type](
             table_elem,
             tool_data_path,
+            tool_data_path_files=tool_data_path_files,
             from_shed_config=from_shed_config,
             filename=filename,
-            tool_data_path_files=tool_data_path_files,
             other_config_dict=other_config_dict,
         )
 
     def add_new_entries_from_config_file(
-        self, config_filename, tool_data_path, shed_tool_data_table_config, persist=False
-    ):
+        self,
+        config_filename: StrPath,
+        tool_data_path: Optional[StrPath],
+        shed_tool_data_table_config: StrPath,
+        persist: bool = False,
+    ) -> Tuple[List[Element], str]:
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
         installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example::
@@ -933,7 +968,12 @@ class ToolDataTableManager(Dictifiable):
             self.to_xml_file(shed_tool_data_table_config, table_elems)
         return table_elems, error_message
 
-    def to_xml_file(self, shed_tool_data_table_config, new_elems=None, remove_elems=None):
+    def to_xml_file(
+        self,
+        shed_tool_data_table_config: StrPath,
+        new_elems: Optional[List[Element]] = None,
+        remove_elems: Optional[List[Element]] = None,
+    ) -> None:
         """
         Write the current in-memory version of the shed_tool_data_table_conf.xml file to disk.
         remove_elems are removed before new_elems are added.

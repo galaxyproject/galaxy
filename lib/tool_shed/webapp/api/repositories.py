@@ -5,6 +5,10 @@ import tarfile
 from collections import namedtuple
 from io import StringIO
 from time import strftime
+from typing import (
+    Callable,
+    Dict,
+)
 
 from sqlalchemy import (
     and_,
@@ -289,7 +293,7 @@ class RepositoriesController(BaseAPIController):
             return []
         return repository.installable_revisions(self.app)
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {
             "id": trans.security.encode_id,
             "repository_id": trans.security.encode_id,

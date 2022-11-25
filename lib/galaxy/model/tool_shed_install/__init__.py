@@ -1,7 +1,13 @@
 import logging
 import os
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from sqlalchemy import (
     Boolean,
@@ -170,7 +176,7 @@ class ToolShedRepository(Base):
         self.status = status
         self.error_message = error_message
 
-    def as_dict(self, value_mapper=None):
+    def as_dict(self, value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         return self.to_dict(view="element", value_mapper=value_mapper)
 
     @property
@@ -515,7 +521,7 @@ class ToolShedRepository(Base):
             return asbool(self.tool_shed_status.get("revision_update", False))
         return False
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view="collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         if value_mapper is None:
             value_mapper = {}
         rval = {}

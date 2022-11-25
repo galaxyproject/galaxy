@@ -3830,6 +3830,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     purged: bool
+    creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"

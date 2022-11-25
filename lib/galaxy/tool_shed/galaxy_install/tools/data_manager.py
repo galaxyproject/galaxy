@@ -73,7 +73,7 @@ class DataManagerHandler:
         relative_install_dir: StrPath,
         repository,
         repository_tools_tups,
-    ):
+    ) -> List["DataManager"]:
         rval: List["DataManager"] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
