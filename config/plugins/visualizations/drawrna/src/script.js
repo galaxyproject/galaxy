@@ -3,8 +3,10 @@ window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     var chart = options.chart;
     var dataset = options.dataset;
+    const slash_cleanup = /(\/)+/g;
+    const safe_download_url = `${options.root}/${dataset.download_url}`.replace(slash_cleanup, "/");
     $.ajax({
-        url: dataset.download_url,
+        url: safe_download_url,
         success: function(response) {
             var input = response.split('\n');
             var app = new DrawRNA({

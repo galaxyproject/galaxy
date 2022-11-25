@@ -14,7 +14,9 @@ Object.assign(window.bundleEntries || {}, {
             menu: "small",
             bootstrapMenu: "true" == settings.get("menu"),
         });
-        msaViz.u.file.importURL(dataset.download_url, () => {
+        const slash_cleanup = /(\/)+/g;
+        const safe_download_url = `${options.root}/${dataset.download_url}`.replace(slash_cleanup, "/");
+        msaViz.u.file.importURL(safe_download_url, () => {
             msaViz.render();
             chart.state("ok", "Chart drawn.");
             options.process.resolve();
