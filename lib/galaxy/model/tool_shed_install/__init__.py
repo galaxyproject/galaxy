@@ -533,7 +533,7 @@ class ToolShedRepository(Base):
             try:
                 rval[key] = self.__getattribute__(key)
                 if key in value_mapper:
-                    rval[key] = value_mapper.get(key, rval[key])
+                    rval[key] = value_mapper[key](rval[key])
             except AttributeError:
                 rval[key] = None
         return rval
