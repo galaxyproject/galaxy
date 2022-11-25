@@ -17,11 +17,13 @@
             :root-offset="rootOffset"
             :prevent-default="false"
             :stop-propagation="true"
+            draggable="true"
+            @dragstart="dragStart"
             @pan-by="onPanBy"
             @start="isDragging = true"
             @stop="onStopDragging"
             @move="onMove">
-            <div ref="terminal" class="icon prevent-zoom" draggable="true" @dragstart="dragStart"></div>
+            <div ref="terminal" class="icon prevent-zoom"></div>
         </draggable-wrapper>
     </div>
 </template>
@@ -145,7 +147,12 @@ export default {
         },
         dragPosition() {
             if (this.isDragging) {
-                const dragConnection = { ...this.dragPosition, datatypes: this.extensions };
+                const dragConnection = {
+                    ...this.dragPosition,
+                    datatypes: this.extensions,
+                    id: this.getNode().id,
+                    name: this.output.name,
+                };
                 this.$emit("onDragConnector", dragConnection);
             }
         },
@@ -174,7 +181,7 @@ export default {
             this.dragX = position.x + this.position.width / 2;
             this.dragY = position.y + this.position.height / 2;
         },
-        onStopDragging() {
+        onStopDragging(e) {
             this.isDragging = false;
             this.dragX = 0;
             this.dragY = 0;
@@ -182,7 +189,6 @@ export default {
         },
         dragStart(e) {
             console.log("dragStart", e);
-            e.preventDefault();
         },
         inputDragEnter(e) {},
         inputDragLeave(e) {},

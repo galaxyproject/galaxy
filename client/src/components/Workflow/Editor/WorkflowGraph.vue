@@ -6,7 +6,7 @@
             @onZoom="onZoom"
             @reset-all="onResetAll"
             @update:pan="onPan" />
-        <div ref="el" class="canvas-viewport" @drop.prevent>
+        <div ref="el" class="canvas-viewport" @drop.prevent @dragover.prevent>
             <d3-zoom id="canvas-container" ref="zoom" @transform="onTransform">
                 <div ref="nodes" class="node-area" :style="nodesStyle">
                     <WorkflowEdges :steps="steps" :dragging-connection="draggingConnection" />

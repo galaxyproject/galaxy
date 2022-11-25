@@ -1,7 +1,7 @@
 <template>
-    <div class="form-row dataRow input-data-row" @mouseleave="mouseLeave">
-        <div :id="id" :input-name="input.name" :class="terminalClass" @drop="onDrop">
-            <div ref="el" class="icon" @dragover="debugHandler" @dragenter="debugHandler" @mouseover="mouseOver" />
+    <div class="form-row dataRow input-data-row" @mouseleave="mouseLeave" @mouseover="mouseOver">
+        <div :id="id" :input-name="input.name" :class="terminalClass">
+            <div ref="el" class="icon" @dragenter="dragOverHandler" @drop="onDrop" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
         {{ label }}
@@ -80,7 +80,7 @@ export default {
             ).canAccept;
         },
         terminalClass() {
-            const classes = ["terminal", "input-terminal"];
+            const classes = ["terminal", "input-terminal", "prevent-zoom"];
             if (this.isDragging) {
                 // TODO: check input compatible
                 classes.push("input-terminal-active");
@@ -115,11 +115,8 @@ export default {
         });
     },
     methods: {
-        debugHandler(event) {
-            console.log("mouseover input", event);
-        },
         dragOverHandler(event) {
-            console.log("dragover ipnut", event);
+            console.log("dragover input", event);
         },
         onChange() {
             this.isMultiple = this.terminal.isMappedOver();
@@ -129,12 +126,20 @@ export default {
             this.$emit("onDisconnect", this.input.name);
         },
         mouseOver(e) {
+            // Need (store?) logic for connections, so we can ask if there are any attached connectors.
             console.log("mouseover");
         },
         mouseLeave() {
             this.showRemove = false;
         },
-        onDrop(e) {},
+        onDrop(e) {
+            if (this.canAccept) {
+                this.$emit("onConnect", {
+                    input: { stepId: this.nodeId, name: this.input.name },
+                    output: { stepId: this.draggingConnection.id, name: this.draggingConnection.name },
+                });
+            }
+        },
     },
 };
 </script>

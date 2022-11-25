@@ -72,6 +72,7 @@
                 :step-position="step.position"
                 :root-offset="rootOffset"
                 :parent-offset="position"
+                v-on="$listeners"
                 @onAdd="onAddInput"
                 @onRemove="onRemoveInput"
                 @onDisconnect="onDisconnect"

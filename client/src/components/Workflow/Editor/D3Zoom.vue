@@ -27,7 +27,6 @@ const transform = { x: 0, y: 0, zoom: props.zoom };
 // but d3zoom would call preventDefault
 const filter = (event) => {
     const preventZoom = event.srcElement.classList.contains("prevent-zoom");
-    console.log("preventZoon", preventZoom, event);
     return !preventZoom;
 };
 

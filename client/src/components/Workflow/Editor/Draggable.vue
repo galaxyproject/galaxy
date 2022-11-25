@@ -1,6 +1,7 @@
 <script setup>
 import { ref, inject, reactive } from "vue";
-import { useDraggable, useElementSize } from "@vueuse/core";
+import { useElementSize } from "@vueuse/core";
+import { useDraggable } from "./composables/useDraggable.js";
 
 const props = defineProps({
     rootOffset: {
@@ -17,7 +18,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["mousedown", "mouseup", "move"]);
+const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart"]);
 
 const draggable = ref();
 const size = reactive(useElementSize(draggable));
@@ -26,9 +27,18 @@ const transform = inject("transform");
 const onStart = (position, event) => {
     emit("start");
     emit("mousedown", event);
+    if (event.type == "dragstart") {
+        // I guess better than copy ?
+        event.dataTransfer.effectAllowed = "link";
+        emit("dragstart", event);
+    }
 };
 
 const onMove = (position, event) => {
+    if (event.type == "drag" && event.x == 0 && event.y == 0) {
+        // the last drag event has no coordinate ... this is obviously a hack!
+        return;
+    }
     position.unscaled = { ...position, ...size };
     position.x = (position.x - props.rootOffset.x - transform.x) / transform.k;
     position.y = (position.y - props.rootOffset.y - transform.y) / transform.k;

@@ -76,6 +76,7 @@
                     @onClone="onClone"
                     @onCreate="onInsertTool"
                     @onChange="onChange"
+                    @onConnect="onConnect"
                     @onDisconnect="onDisconnect"
                     @onRemove="onRemove"
                     @onUpdateStep="onUpdateStep"
@@ -378,6 +379,12 @@ export default {
         onUpdateStepPosition(stepId, position) {
             this.steps[stepId].position.top = position.top;
             this.steps[stepId].position.left = position.left;
+        },
+        onConnect(connection) {
+            Vue.set(this.steps[connection.input.stepId].input_connections, connection.input.name, {
+                id: connection.output.stepId,
+                output_name: connection.output.name,
+            });
         },
         onDisconnect(nodeId, inputName) {
             delete this.steps[nodeId].input_connections[inputName];
