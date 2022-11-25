@@ -1445,13 +1445,13 @@ class ExportObjectRequestMetadata(Model):
 
 
 class ExportObjectResultMetadata(Model):
-    target_uri: Optional[str]
-    short_term_storage_request_id: Optional[str]
+    success: bool
+    error: Optional[str]
 
 
 class ExportObjectMetadata(Model):
     request_data: ExportObjectRequestMetadata
-    result_data: ExportObjectResultMetadata
+    result_data: Optional[ExportObjectResultMetadata]
 
 
 class ObjectExportTaskResponse(ObjectExportResponseBase):

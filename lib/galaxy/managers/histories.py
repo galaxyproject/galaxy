@@ -4,7 +4,6 @@ Manager and Serializer for histories.
 Histories are containers for datasets or dataset collections
 created (or copied) by users over the course of an analysis.
 """
-import json
 import logging
 from typing import (
     Any,
@@ -38,9 +37,9 @@ from galaxy.managers.base import (
     SortableManager,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
-from galaxy.managers.tasks import AsyncTasksManager
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    ExportObjectMetadata,
     ExportObjectType,
     HDABasicInfo,
     ShareHistoryExtra,
@@ -358,10 +357,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 class HistoryExportManager:
     export_object_type = ExportObjectType.HISTORY
 
-    def __init__(self, app: MinimalManagerApp, export_tracker: StoreExportTracker, task_manager: AsyncTasksManager):
+    def __init__(self, app: MinimalManagerApp, export_tracker: StoreExportTracker):
         self.app = app
         self.export_tracker = export_tracker
-        self.task_manager = task_manager
 
     def get_task_exports(self, trans, history_id: int, limit: Optional[int] = None, offset: Optional[int] = None):
         """Returns task-based exports associated with this history"""
@@ -379,12 +377,13 @@ class HistoryExportManager:
         export_date = export.create_time
         history_has_changed = history.update_time > export_date
         json_metadata = export.export_metadata
-        is_export_up_to_date = not self.task_manager.has_failed(task_uuid) and not history_has_changed
-        export_metadata = json.loads(json_metadata) if json_metadata else None
+        export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
+        is_ready = export_metadata is not None and export_metadata.result_data and export_metadata.result_data.success
+        is_export_up_to_date = is_ready and not history_has_changed
         return {
             "id": export.id,
-            "ready": self.task_manager.is_successful(task_uuid),
-            "preparing": self.task_manager.is_pending(task_uuid),
+            "ready": is_ready,
+            "preparing": export_metadata is None or export_metadata.result_data is None,
             "up_to_date": is_export_up_to_date,
             "task_uuid": task_uuid,
             "create_time": export_date,

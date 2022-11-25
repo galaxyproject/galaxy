@@ -34,20 +34,20 @@ export class ExportRecordModel {
         return this._data.task_uuid;
     }
 
-    get canReimport() {
-        return this.isReady && !!this._data?.export_metadata?.result_data?.target_uri;
-    }
-
     get importUri() {
-        return this._data?.export_metadata?.result_data?.target_uri;
+        return this._data?.export_metadata?.request_data?.payload?.target_uri;
     }
 
-    get isStsDownload() {
-        return !!this._data?.export_metadata?.result_data?.short_term_storage_request_id;
+    get canReimport() {
+        return this.isReady && !!this.importUri;
     }
 
     get stsDownloadId() {
-        return this._data?.export_metadata?.result_data?.short_term_storage_request_id;
+        return this._data?.export_metadata?.request_data?.payload?.short_term_storage_request_id;
+    }
+
+    get isStsDownload() {
+        return !!this.stsDownloadId;
     }
 
     get canDownload() {

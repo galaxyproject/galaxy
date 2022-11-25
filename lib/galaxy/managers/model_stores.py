@@ -109,14 +109,21 @@ class ModelStoreManager:
         export_files = "symlink" if request.include_files else None
         include_hidden = request.include_hidden
         include_deleted = request.include_deleted
-        with storage_context(
-            request.short_term_storage_request_id, self._short_term_storage_monitor
-        ) as short_term_storage_target:
-            with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-                short_term_storage_target.path
-            ) as export_store:
-                export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
-            self.set_history_export_metadata(request)
+        export_metadata = self.set_history_export_request_metadata(request)
+        try:
+            with storage_context(
+                request.short_term_storage_request_id, self._short_term_storage_monitor
+            ) as short_term_storage_target:
+                with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
+                    short_term_storage_target.path
+                ) as export_store:
+                    export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
+                self.set_history_export_result_metadata(request.export_association_id, export_metadata, success=True)
+        except Exception as e:
+            self.set_history_export_result_metadata(
+                request.export_association_id, export_metadata, success=False, error=str(e)
+            )
+            raise
 
     def prepare_history_content_download(self, request: GenerateHistoryContentDownload):
         model_store_format = request.model_store_format
@@ -203,33 +210,54 @@ class ModelStoreManager:
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
         user_context = self._build_user_context(request.user.user_id)
-        with model.store.get_export_store_factory(
-            self._app, model_store_format, export_files=export_files, user_context=user_context
-        )(target_uri) as export_store:
-            history = self._history_manager.by_id(request.history_id)
-            export_store.export_history(
-                history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+        export_metadata = self.set_history_export_request_metadata(request)
+        try:
+            with model.store.get_export_store_factory(
+                self._app, model_store_format, export_files=export_files, user_context=user_context
+            )(target_uri) as export_store:
+                history = self._history_manager.by_id(request.history_id)
+                export_store.export_history(
+                    history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+                )
+                self.set_history_export_result_metadata(request.export_association_id, export_metadata, success=True)
+        except Exception as e:
+            self.set_history_export_result_metadata(
+                request.export_association_id, export_metadata, success=False, error=str(e)
             )
-            self.set_history_export_metadata(request)
+            raise
 
-    def set_history_export_metadata(self, request: Union[WriteHistoryTo, GenerateHistoryDownload]):
-        if request.export_association_id:
-            request_dict = request.dict()
-            request_payload = (
-                WriteStoreToPayload(**request_dict)
-                if isinstance(request, WriteHistoryTo)
-                else ShortTermStoreExportPayload(**request_dict)
-            )
-            export_metadata = ExportObjectMetadata(
-                request_data=ExportObjectRequestMetadata(
-                    object_id=request.history_id,
-                    object_type=ExportObjectType.HISTORY,
-                    user_id=request.user.user_id,
-                    payload=request_payload,
-                ),
-                result_data=ExportObjectResultMetadata(**request_dict),
-            )
-            self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
+    def set_history_export_request_metadata(
+        self, request: Union[WriteHistoryTo, GenerateHistoryDownload]
+    ) -> Optional[ExportObjectMetadata]:
+        if request.export_association_id is None:
+            return None
+        request_dict = request.dict()
+        request_payload = (
+            WriteStoreToPayload(**request_dict)
+            if isinstance(request, WriteHistoryTo)
+            else ShortTermStoreExportPayload(**request_dict)
+        )
+        export_metadata = ExportObjectMetadata(
+            request_data=ExportObjectRequestMetadata(
+                object_id=request.history_id,
+                object_type=ExportObjectType.HISTORY,
+                user_id=request.user.user_id,
+                payload=request_payload,
+            ),
+        )
+        self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
+        return export_metadata
+
+    def set_history_export_result_metadata(
+        self,
+        export_association_id: Optional[int],
+        export_metadata: Optional[ExportObjectMetadata],
+        success: bool,
+        error: Optional[str] = None,
+    ):
+        if export_association_id is not None and export_metadata is not None:
+            export_metadata.result_data = ExportObjectResultMetadata(success=success, error=error)
+            self._export_tracker.set_export_association_metadata(export_association_id, export_metadata)
 
     def import_model_store(self, request: ImportModelStoreTaskRequest):
         import_options = ImportOptions(
