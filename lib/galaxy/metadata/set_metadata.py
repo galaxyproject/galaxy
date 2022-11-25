@@ -275,17 +275,13 @@ def set_metadata_portable(
             strip_metadata_files=False,
             serialize_jobs=True,
         )
-    try:
-        import_model_store = store.imported_store_for_metadata(
-            tool_job_working_directory / "metadata/outputs_new", object_store=object_store
-        )
-    except AssertionError:
-        # Remove in 21.09, this should only happen for jobs that started on <= 20.09 and finish now
-        import_model_store = None
+    import_model_store = store.imported_store_for_metadata(
+        tool_job_working_directory / "metadata/outputs_new", object_store=object_store
+    )
 
     tool_script_file = tool_job_working_directory / "tool_script.sh"
     job = None
-    if import_model_store and export_store:
+    if export_store:
         job = next(iter(import_model_store.sa_session.objects[Job].values()))
 
     job_context = SessionlessJobContext(
@@ -361,15 +357,7 @@ def set_metadata_portable(
     for output_name, output_dict in outputs.items():
         dataset_instance_id = output_dict["id"]
         klass = getattr(galaxy.model, output_dict.get("model_class", "HistoryDatasetAssociation"))
-        dataset = None
-        if import_model_store:
-            dataset = import_model_store.sa_session.query(klass).find(dataset_instance_id)
-        if dataset is None:
-            # legacy check for jobs that started before 21.01, remove on 21.05
-            filename_in = os.path.join(f"metadata/metadata_in_{output_name}")
-            import pickle
-
-            dataset = pickle.load(open(filename_in, "rb"))  # load DatasetInstance
+        dataset = import_model_store.sa_session.query(klass).find(dataset_instance_id)
         assert dataset is not None
 
         filename_kwds = tool_job_working_directory / f"metadata/metadata_kwds_{output_name}"
