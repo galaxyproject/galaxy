@@ -1769,14 +1769,12 @@ class Tool(Dictifiable):
         produces_multiple_jobs = len(expanded_incomings) > 1
         if rerun_remap_job_id and produces_multiple_jobs:
             raise exceptions.RequestParameterInvalidException(
-                "Failure executing tool with id '%s' (cannot create multiple jobs when remapping existing job).",
-                self.id,
+                f"Failure executing tool with id '{self.id}' (cannot create multiple jobs when remapping existing job)."
             )
 
         if self.input_translator and produces_multiple_jobs:
             raise exceptions.RequestParameterInvalidException(
-                "Failure executing tool with id '%s' (cannot create multiple jobs with this type of data source tool).",
-                self.id,
+                f"Failure executing tool with id '{self.id}' (cannot create multiple jobs with this type of data source tool)."
             )
 
         # Process incoming data

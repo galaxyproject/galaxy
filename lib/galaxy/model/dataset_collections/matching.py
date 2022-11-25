@@ -39,7 +39,7 @@ class MatchingCollections:
     overkill but I suspect in the future plugins will be subtypable for
     instance so matching collections will need to make heavy use of the
     dataset collection type registry managed by the dataset collections
-    sevice - hence the complexity now.
+    service - hence the complexity now.
     """
 
     def __init__(self):

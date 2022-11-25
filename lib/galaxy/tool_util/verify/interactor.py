@@ -604,7 +604,7 @@ class GalaxyInteractorApi:
     def __dictify_output_collections(self, submit_response) -> Dict[str, Any]:
         output_collections_dict = {}
         for output_collection in submit_response["output_collections"]:
-            output_collections_dict[output_collection.get("output_name")] = output_collection
+            output_collections_dict[output_collection["output_name"]] = output_collection
         return output_collections_dict
 
     def __dictify_outputs(self, datasets_object) -> OutputsDict:
