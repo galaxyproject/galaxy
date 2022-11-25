@@ -33,9 +33,9 @@ export default Backbone.View.extend({
         this.chart.plugin = options.visualization_plugin;
         this.chart.plugin.specs = this.chart.plugin.specs || {};
         if (Object.keys(this.chart.plugin.specs).length === 0) {
-          this.chart.requiresConfirmation = false;
+            this.chart.requiresConfirmation = false;
         } else {
-          this.chart.requiresConfirmation = asBoolean(this.chart.plugin.specs.confirm);
+            this.chart.requiresConfirmation = asBoolean(this.chart.plugin.specs.confirm);
         }
         this.chart_load = options.chart_load;
         this.message = new Ui.Message();
