@@ -166,10 +166,10 @@ find_server() {
             ;;
         reports)
             # TODO: is this really the only way to configure the port?
-            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9001 --config lib/galaxy/web_stack/gunicorn_config.py"}
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=::1:9001 --config lib/galaxy/web_stack/gunicorn_config.py"}
             ;;
         tool_shed)
-            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=localhost:9009 --config lib/galaxy/web_stack/gunicorn_config.py"}
+            GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-"--bind=::1:9009 --config lib/galaxy/web_stack/gunicorn_config.py"}
     esac
 
     APP_WEBSERVER=${APP_WEBSERVER:-$default_webserver}

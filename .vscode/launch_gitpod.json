@@ -6,7 +6,7 @@
             "type": "python",
             "request": "launch",
             "module": "uvicorn",
-            "args": ["--app-dir", "lib", "--factory", "galaxy.webapps.galaxy.fast_factory:factory"],
+            "args": ["--app-dir", "lib", "--factory", "galaxy.webapps.galaxy.fast_factory:factory", "--host", "::1"],
             "env": {
                 "GALAXY_CONFIG_FILE": "${workspaceFolder}/config/galaxy.yml",
                 "GALAXY_CONDA_AUTO_INIT": "false",
