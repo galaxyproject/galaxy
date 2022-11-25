@@ -10,6 +10,33 @@ const DEFAULT_EXPORT_PARAMS = {
     includeHidden: false,
 };
 
+export const AVAILABLE_EXPORT_FORMATS = [
+    { id: "rocrate.zip", name: "RO-Crate" },
+    { id: "tar.gz", name: "Compressed TGZ" },
+];
+
+export class ExportParamsModel {
+    constructor(params = DEFAULT_EXPORT_PARAMS) {
+        this._params = params;
+    }
+
+    get modelStoreFormat() {
+        return this._params.modelStoreFormat;
+    }
+
+    get includeFiles() {
+        return this._params.includeFiles;
+    }
+
+    get includeDeleted() {
+        return this._params.includeDeleted;
+    }
+
+    get includeHidden() {
+        return this._params.includeHidden;
+    }
+}
+
 export class HistoryExportService {
     /**
      * Gets the default options to export a history.

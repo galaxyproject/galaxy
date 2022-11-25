@@ -1,9 +1,10 @@
 <script setup>
-import { computed, ref, onMounted, watch } from "vue";
+import { computed, ref, reactive, onMounted, watch } from "vue";
 import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";
+import ExportOptions from "./ExportOptions.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
 import { HistoryExportService } from "./services";
 import { useTaskMonitor } from "composables/taskMonitor";
@@ -25,9 +26,7 @@ const props = defineProps({
     },
 });
 
-// TODO: make this configurable by the user?
-const EXPORT_PARAMS = service.defaultExportParams;
-
+const exportParams = reactive(service.defaultExportParams);
 const isLoadingRecords = ref(true);
 const exportRecords = ref(null);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
@@ -69,7 +68,7 @@ async function updateExports() {
 }
 
 async function exportToFileSource(exportDirectory, fileName) {
-    await service.exportToFileSource(props.historyId, exportDirectory, fileName, EXPORT_PARAMS);
+    await service.exportToFileSource(props.historyId, exportDirectory, fileName, exportParams.value);
     updateExports();
 }
 
@@ -80,7 +79,7 @@ async function prepareDownload() {
         downloadObjectByRequestId(upToDateDownloadRecord.stsDownloadId);
         return;
     }
-    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: EXPORT_PARAMS });
+    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: exportParams.value });
     updateExports();
 }
 
@@ -117,12 +116,21 @@ function onActionMessageDismissedFromRecord() {
     actionMessage.value = null;
     actionMessageVariant.value = null;
 }
+
+function updateExportParams(newParams) {
+    exportParams.modelStoreFormat = newParams.modelStoreFormat;
+    exportParams.includeFiles = newParams.includeFiles;
+    exportParams.includeDeleted = newParams.includeDeleted;
+    exportParams.includeHidden = newParams.includeHidden;
+}
 </script>
 <template>
     <span class="history-export-component">
         <h1 class="h-lg">Export history {{ props.historyId }}</h1>
 
-        <b-card no-body>
+        <export-options :export-params="exportParams" @onValueChanged="updateExportParams" />
+
+        <b-card no-body class="mt-3">
             <b-tabs pills card>
                 <b-tab title="to direct download" title-link-class="tab-export-to-link" active>
                     <p>
