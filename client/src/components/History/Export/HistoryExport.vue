@@ -142,7 +142,10 @@ function onActionMessageDismissedFromRecord() {
                         to one of the available remote file sources here. You will be able to re-import it later as long
                         as it remains available on the remote server.
                     </p>
-                    <export-to-file-source-form what="history" @export="exportToFileSource" />
+                    <export-to-file-source-form
+                        what="history"
+                        clear-input-after-export="true"
+                        @export="exportToFileSource" />
                 </b-tab>
             </b-tabs>
         </b-card>
