@@ -87,8 +87,17 @@
                 .ribbon-outer {
                     stroke: $brand-primary;
                 }
+                .ribbon-outer:hover {
+                    stroke: $brand-success;
+                }
                 .ribbon-inner {
                     stroke: $white;
+                }
+                .ribbon-inner:hover {
+                    stroke: $brand-success;
+                }
+                .ribbon-inner:active {
+                    stroke: $brand-success;
                 }
                 .ribbon-inner-valid {
                     stroke: $brand-success;
