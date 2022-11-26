@@ -37,6 +37,9 @@ from typing import (
     List,
     Optional,
     overload,
+    Tuple,
+    TypeVar,
+    Union,
 )
 from urllib.parse import (
     urlencode,
@@ -1052,7 +1055,32 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip: bool = False) -> List[Any]:
+ItemType = TypeVar("ItemType")
+
+
+@overload
+def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List:
+    ...
+
+
+@overload
+def listify(item: str, do_strip: bool = False) -> List[str]:
+    ...
+
+
+@overload
+def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]:
+    ...
+
+
+# Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
+# because then that would also match Union types.
+@overload
+def listify(item: Any, do_strip: bool = False) -> List:
+    ...
+
+
+def listify(item: Any, do_strip: bool = False) -> List:
     """
     Make a single item a single item list.
 
@@ -1071,9 +1099,7 @@ def listify(item, do_strip: bool = False) -> List[Any]:
     """
     if not item:
         return []
-    elif isinstance(item, list):
-        return item
-    elif isinstance(item, tuple):
+    elif isinstance(item, (list, tuple)):
         return list(item)
     elif isinstance(item, str) and item.count(","):
         if do_strip:
