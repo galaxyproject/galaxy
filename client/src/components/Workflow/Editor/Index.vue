@@ -202,6 +202,7 @@ import WorkflowAttributes from "./Attributes";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import WorkflowText from "./WorkflowText";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
+import { useConnectionStore } from "stores/workflowConnectionStore";
 
 import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
@@ -247,6 +248,10 @@ export default {
             type: Array,
             required: true,
         },
+    },
+    setup() {
+        const connectionsStore = useConnectionStore();
+        return { connectionsStore };
     },
     data() {
         return {
@@ -381,10 +386,7 @@ export default {
             this.steps[stepId].position.left = position.left;
         },
         onConnect(connection) {
-            Vue.set(this.steps[connection.input.stepId].input_connections, connection.input.name, {
-                id: connection.output.stepId,
-                output_name: connection.output.name,
-            });
+            this.connectionsStore.addConnection(connection);
         },
         onDisconnect(nodeId, inputName) {
             delete this.steps[nodeId].input_connections[inputName];

@@ -12,17 +12,18 @@ export default {
     props: {
         connection: {
             type: Object,
+            required: true,
         },
     },
     computed: {
         position() {
             const outputPos = this.$store.getters["workflowState/getOutputTerminalPosition"](
-                this.connection.outputStepId,
-                this.connection.outputName
+                this.connection.output.stepId,
+                this.connection.output.name
             );
             const inputPos = this.$store.getters["workflowState/getInputTerminalPosition"](
-                this.connection.inputStepId,
-                this.connection.inputName
+                this.connection.input.stepId,
+                this.connection.input.name
             );
             if (inputPos && outputPos) {
                 return {
@@ -30,6 +31,7 @@ export default {
                     ...outputPos,
                 };
             }
+            return {};
         },
     },
 };

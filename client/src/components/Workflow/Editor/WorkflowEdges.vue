@@ -1,11 +1,13 @@
 <script setup>
-import { computed } from "vue";
 import RawConnector from "./Connector";
 import TerminalConnector from "./TerminalConnector";
+import { computed } from "vue";
+import { useConnectionStore } from "stores/workflowConnectionStore";
 
 const props = defineProps({
     steps: {
         type: Object,
+        required: true,
     },
     draggingConnection: {
         type: Object,
@@ -13,28 +15,30 @@ const props = defineProps({
     },
 });
 
-const connections = computed(() => {
-    const connections = [];
-    Object.entries(props.steps).forEach(([stepId, step]) => {
-        if (step.input_connections) {
-            Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
-                if (!Array.isArray(outputArray)) {
-                    outputArray = [outputArray];
-                }
-                outputArray.forEach((output) => {
-                    const connection = {
-                        id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
-                        inputStepId: step.id,
-                        inputName: input_name,
-                        outputStepId: output.id,
-                        outputName: output.output_name,
-                    };
-                    connections.push(connection);
-                });
+const connectionStore = useConnectionStore();
+
+Object.entries(props.steps).forEach(([stepId, step]) => {
+    if (step.input_connections) {
+        Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
+            if (!Array.isArray(outputArray)) {
+                outputArray = [outputArray];
+            }
+            outputArray.forEach((output) => {
+                const connection = {
+                    id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
+                    input: {
+                        stepId: step.id,
+                        name: input_name,
+                    },
+                    output: {
+                        stepId: output.id,
+                        name: output.output_name,
+                    },
+                };
+                connectionStore.addConnection(connection);
             });
-        }
-    });
-    return connections;
+        });
+    }
 });
 
 const dragStyle = computed(() => {
@@ -55,7 +59,7 @@ const dragStyle = computed(() => {
         <svg class="canvas-svg node-area">
             <raw-connector v-if="draggingConnection" :position="draggingConnection"></raw-connector>
             <terminal-connector
-                v-for="connection in connections"
+                v-for="connection in connectionStore.connections"
                 :key="connection.id"
                 :connection="connection"></terminal-connector>
         </svg>

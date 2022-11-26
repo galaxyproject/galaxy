@@ -1,16 +1,23 @@
 <template>
-    <div class="form-row dataRow input-data-row" @mouseleave="mouseLeave" @mouseover="mouseOver">
+    <div
+        class="form-row dataRow input-data-row"
+        @mouseleave="leave"
+        @mouseenter="enter"
+        @focusin="enter"
+        @focusout="leave">
         <div :id="id" :input-name="input.name" :class="terminalClass">
             <div ref="el" class="icon" @dragenter="dragOverHandler" @drop="onDrop" />
         </div>
-        <div v-if="showRemove" class="delete-terminal" @click="onRemove" />
+        <div v-if="showRemove" class="delete-terminal" @click="onRemove" @keyup.delete="onRemove" />
         {{ label }}
     </div>
 </template>
 
 <script>
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { inject, ref } from "vue";
+import { useConnectionStore } from "stores/workflowConnectionStore";
+import { computed } from "@vue/reactivity";
+import { inject, ref, watchEffect } from "vue";
 import Terminals from "components/Workflow/Editor/modules/terminals";
 
 export default {
@@ -45,16 +52,23 @@ export default {
         const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
         const isDragging = inject("isDragging");
         const draggingConnection = inject("draggingConnection");
-        return { el, position, isDragging, draggingConnection };
+        const id = computed(() => `node-${props.getNode().id}-input-${props.input.name}`);
+        const connectionStore = useConnectionStore();
+        const connectedTerminals = ref([]);
+        watchEffect(() => (connectedTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value)));
+        return { el, position, isDragging, draggingConnection, connectionStore, id, connectedTerminals };
     },
     data() {
         return {
-            showRemove: false,
             isMultiple: false,
             nodeId: null,
+            showRemove: false,
         };
     },
     computed: {
+        terminal() {
+            return { stepId: this.nodeId, name: this.input.name, connectorType: "input" };
+        },
         terminalPosition() {
             return Object.freeze({ endX: this.startX, endY: this.startY });
         },
@@ -63,10 +77,6 @@ export default {
         },
         startY() {
             return this.position.top + this.position.height / 2;
-        },
-        id() {
-            const node = this.getNode();
-            return `node-${node.id}-input-${this.input.name}`;
         },
         label() {
             return this.input.label || this.input.name;
@@ -94,6 +104,9 @@ export default {
                 classes.push("multiple");
             }
             return classes;
+        },
+        hasTerminals() {
+            return this.connectedTerminals.length > 0;
         },
     },
     watch: {
@@ -123,21 +136,26 @@ export default {
             this.$emit("onChange");
         },
         onRemove() {
-            this.$emit("onDisconnect", this.input.name);
+            this.connectionStore.removeConnection(this.terminal);
+            this.showRemove = false;
         },
-        mouseOver(e) {
-            // Need (store?) logic for connections, so we can ask if there are any attached connectors.
-            console.log("mouseover");
+        enter() {
+            if (this.hasTerminals) {
+                this.showRemove = true;
+            } else {
+                this.showRemove = false;
+            }
         },
-        mouseLeave() {
+        leave() {
             this.showRemove = false;
         },
         onDrop(e) {
             if (this.canAccept) {
                 this.$emit("onConnect", {
-                    input: { stepId: this.nodeId, name: this.input.name },
+                    input: this.terminal,
                     output: { stepId: this.draggingConnection.id, name: this.draggingConnection.name },
                 });
+                this.showRemove = true;
             }
         },
     },
