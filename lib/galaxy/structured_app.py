@@ -1,4 +1,5 @@
 """Typed description of Galaxy's app object."""
+import abc
 from typing import (
     Any,
     Optional,
@@ -114,8 +115,9 @@ class MinimalManagerApp(MinimalApp):
     object_store: BaseObjectStore
 
     @property
+    @abc.abstractmethod
     def is_job_handler(self) -> bool:
-        pass
+        ...
 
     def wait_for_toolbox_reload(self, old_toolbox: "ToolBox") -> None:
         ...

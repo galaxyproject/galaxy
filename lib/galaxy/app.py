@@ -498,7 +498,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
     def __init__(self, configure_logging=True, use_converters=True, use_display_applications=True, **kwargs):
         super().__init__(**kwargs)
-        self._register_singleton(MinimalManagerApp, self)
+        self._register_singleton(MinimalManagerApp, self)  # type: ignore[type-abstract]
         self.execution_timer_factory = self._register_singleton(
             ExecutionTimerFactory, ExecutionTimerFactory(self.config)
         )
@@ -526,8 +526,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         short_term_storage_config = ShortTermStorageConfiguration(**short_term_storage_config_kwds)
         short_term_storage_manager = ShortTermStorageManager(config=short_term_storage_config)
-        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)  # type: ignore[misc]
-        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)  # type: ignore[misc]
+        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)  # type: ignore[type-abstract]
+        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)  # type: ignore[type-abstract]
 
         # Tag handler
         self.tag_handler = self._register_singleton(GalaxyTagHandler)
@@ -550,7 +550,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
             ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config)
         )
 
-        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[misc]
+        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[type-abstract]
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
@@ -574,6 +574,12 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         self.configure_sentry_client()
 
+    @property
+    def is_job_handler(self) -> bool:
+        return (
+            self.config.track_jobs_in_database and self.job_config.is_handler
+        ) or not self.config.track_jobs_in_database
+
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication):
     """Encapsulates the state of a Universe application"""
@@ -595,7 +601,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             ("database connection", self._shutdown_model),
             ("application stack", self._shutdown_application_stack),
         ]
-        self._register_singleton(StructuredApp, self)
+        self._register_singleton(StructuredApp, self)  # type: ignore[type-abstract]
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
@@ -674,12 +680,11 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
-            if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat(
-                    self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log
-                )
-                self.heartbeat.daemon = True
-                self.application_stack.register_postfork_function(self.heartbeat.start)
+            self.heartbeat = heartbeat.Heartbeat(
+                self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log
+            )
+            self.heartbeat.daemon = True
+            self.application_stack.register_postfork_function(self.heartbeat.start)
 
         self.authnz_manager = None
         if self.config.enable_oidc:
@@ -769,12 +774,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
     def _shutdown_application_stack(self):
         self.application_stack.shutdown()
-
-    @property
-    def is_job_handler(self) -> bool:
-        return (
-            self.config.track_jobs_in_database and self.job_config.is_handler
-        ) or not self.config.track_jobs_in_database
 
 
 class StatsdStructuredExecutionTimer(StructuredExecutionTimer):

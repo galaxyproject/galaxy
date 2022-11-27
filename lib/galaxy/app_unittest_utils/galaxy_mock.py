@@ -109,8 +109,8 @@ class MockApp(di.Container, GalaxyDataTestApp):
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
         self[BasicSharedApp] = cast(BasicSharedApp, self)
-        self[MinimalManagerApp] = cast(MinimalManagerApp, self)
-        self[StructuredApp] = cast(StructuredApp, self)
+        self[MinimalManagerApp] = cast(MinimalManagerApp, self)  # type: ignore[type-abstract]
+        self[StructuredApp] = cast(StructuredApp, self)  # type: ignore[type-abstract]
         self[idencoding.IdEncodingHelper] = self.security
         self.name = kwargs.get("name", "galaxy")
         self[SharedModelMapping] = self.model
