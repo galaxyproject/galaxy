@@ -26,6 +26,7 @@ export default {
             historyId: null,
             accountingArray: [],
             historyItems: [],
+            currentlyProcessing: false
         };
     },
     computed: {
@@ -40,62 +41,19 @@ export default {
     watch: {
         currentHistoryId(newHistoryId, oldHistoryId) {
             if (newHistoryId !== oldHistoryId) {
+                // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
+                this.currentlyProcessing = false
                 this.historyId = newHistoryId;
-                this.accountingArray = [];
+                // this.accountingArray = [];
                 if (this.historyId !== undefined) {
                     this.getHistoryItems();
                 }
             }
         },
         historyContent(newContent, oldContent) {
-            if (newContent && newContent.length > 0) {
-                this.accountingArray = [];
+            if ( newContent && !this.currentlyProcessing ) {
                 this.historyItems = newContent;
-                if (this.accountingArray.length > 0) {
-                    this.accountingArray = [];
-                }
                 this.getData();
-            }
-        },
-        accountingArray(newArray, oldArray) {
-            if (newArray.length > 0) {
-                var entries = [];
-                newArray.map((row, idx) => {
-                    createClassWithCSS(
-                        `.class-${row["id"]} .bar-progress`,
-                        `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
-                    );
-                    entries.push({
-                        id: idx.toString(),
-                        job_id: row["id"],
-                        name: row["label"],
-                        start: row["startTime"],
-                        end: row["endTime"],
-                        progress: 100,
-                        custom_class: `class-${row["id"]}`,
-                    });
-                });
-                this.gantt = new Gantt("#gantt", entries, {
-                    view_mode: "Day",
-                    view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
-                    arrow_curve: 14,
-                    date_format: "YYYY-MM-DD",
-                    popup_trigger: "mouseover",
-                    custom_popup_html: function (task) {
-                        return `
-          <div class="popover-container">
-            <div class="popover-header">
-              ${task.job_id}: ${task.name}  
-            </div>
-            <div class="popover-body">
-             Started At: ${task.start}
-             <br>
-              Finished At: ${task.end}
-            </div>  
-          </div>
-        `;
-                    },
-                });
             }
         },
     },
@@ -109,31 +67,77 @@ export default {
                 await this.fetchHistoryItems({ historyId: this.historyId, filterText: "", offset: 0 });
             }
         },
+        makeGantt: function () {
+            var entries = [];
+            this.accountingArray.map((row, idx) => {
+                createClassWithCSS(
+                    `.class-${row["id"]} .bar-progress`,
+                    `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
+                );
+                entries.push({
+                    id: idx.toString(),
+                    job_id: row["id"],
+                    name: row["label"],
+                    start: row["startTime"],
+                    end: row["endTime"],
+                    progress: 100,
+                    custom_class: `class-${row["id"]}`,
+                });
+            });
+            this.gantt = new Gantt("#gantt", entries, {
+                view_mode: "Day",
+                view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
+                arrow_curve: 14,
+                date_format: "YYYY-MM-DD",
+                popup_trigger: "mouseover",
+                custom_popup_html: function (task) {
+                return `
+                <div class="popover-container">
+                <div class="popover-header">
+                    ${task.job_id}: ${task.name}  
+                </div>
+                <div class="popover-body">
+                    Started At: ${task.start}
+                    <br>
+                    Finished At: ${task.end}
+                </div>  
+                </div>
+            `;
+        },
+    });
+},
         getData: async function () {
+            this.currentlyProcessing = true
             this.historyId = this.history;
+            this.accountingArray = []
             this.historyItems = store.getters.getHistoryItems({ historyId: this.historyId, filterText: "" });
             if (this.historyItems.length == 0) {
+                this.currentlyProcessing = false
                 this.getHistoryItems();
             }
-            this.historyItems
-                ? this.historyItems.forEach(async (job) => {
-                      var Accounting = {};
+            if( this.historyItems && this.historyItems.length > 0) {
+                    for await (const job of this.historyItems) {
+                    var Accounting = {};
                       if (job.id) {
-                          await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: "hda" });
-                          const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
-                          if (metrics && metrics[1] && metrics[2]) {
-                              Accounting = {
-                                  label: job.name,
-                                  id: job.hid,
-                                  jobid: job.id,
-                                  startTime: metrics[1].value,
-                                  endTime: metrics[2].value,
-                              };
-                              this.accountingArray.push(Accounting);
-                          }
+                        await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: "hda" });
+                        const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
+                        if (metrics && metrics[1] && metrics[2]) {
+                            Accounting = {
+                                label: job.name,
+                                id: job.hid,
+                                jobid: job.id,
+                                startTime: metrics[1].value,
+                                endTime: metrics[2].value,
+                            };
+                            this.accountingArray.push(Accounting);
+                        }
                       }
-                  })
-                : null;
+                    }
+                    if(this.accountingArray.length > 0) {
+                        this.currentlyProcessing = false
+                        this.makeGantt()
+                    }
+            }
         },
         changeQDayView: function () {
             this.gantt.change_view_mode("Quarter Day");
@@ -160,7 +164,6 @@ export default {
 };
 
 function createClassWithCSS(selector, style) {
-    console.log(" callled with", selector);
     if (!document.styleSheets) return;
     if (document.getElementsByTagName("head").length == 0) return;
 
