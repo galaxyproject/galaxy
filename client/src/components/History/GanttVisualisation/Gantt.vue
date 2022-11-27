@@ -1,13 +1,15 @@
 <template>
     <div>
         <svg id="gantt"></svg>
-        <button id="view" @click="changeQDayView">Quarter Day View</button>
-        <button id="view" @click="changeHDayView">Half Day View</button>
-        <button id="view" @click="changeDayView">Day View</button>
-        <button id="view" @click="changeWeekView">Week View</button>
-        <button id="view" @click="changeMonthView">Month View</button>
-        <button id="view" @click="changeHourView">Hour View</button>
-        <button id="view" @click="changeMinuteView">Minute View</button>
+        <div class="test">
+            <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
+            <button id="HDayView" @click="changeHDayView">Half Day View</button>
+            <button id="dayView" @click="changeDayView">Day View</button>
+            <button id="weekView" @click="changeWeekView">Week View</button>
+            <button id="monthView" @click="changeMonthView">Month View</button>
+            <button id="hourView" @click="changeHourView">Hour View</button>
+            <button id="minuteView" @click="changeMinuteView">Minute View</button>
+        </div>
     </div>
 </template>
 
@@ -59,6 +61,7 @@ export default {
     },
     mounted() {
         this.getData();
+        this.createKeyedColorForButtons();
     },
     methods: {
         ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchHistoryItems"]),
@@ -160,6 +163,57 @@ export default {
         changeMinuteView: function () {
             this.gantt.change_view_mode("Minute");
         },
+        createKeyedColorForButtons: function () {
+            createClassWithCSS(
+                ".QDayView",
+                `background : ${keyedColorScheme("QDayView")["primary"]}; border-color : ${
+                    keyedColorScheme("QDayView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('QDayView').className = 'QDayView';
+            createClassWithCSS(
+                ".HDayView",
+                `background : ${keyedColorScheme("HDayView")["primary"]}; border-color : ${
+                    keyedColorScheme("HDayView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('HDayView').className = 'HDayView';
+            createClassWithCSS(
+                ".dayView",
+                `background : ${keyedColorScheme("dayView")["primary"]}; border-color : ${
+                    keyedColorScheme("dayView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('dayView').className = 'dayView';
+            createClassWithCSS(
+                ".weekView",
+                `background : ${keyedColorScheme("weekView")["primary"]}; border-color : ${
+                    keyedColorScheme("weekView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('weekView').className = 'weekView';
+            createClassWithCSS(
+                ".monthView",
+                `background : ${keyedColorScheme("monthView")["primary"]}; border-color : ${
+                    keyedColorScheme("monthView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('monthView').className = 'monthView';
+            createClassWithCSS(
+                ".hourView",
+                `background : ${keyedColorScheme("hourView")["primary"]}; border-color : ${
+                    keyedColorScheme("hourView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('hourView').className = 'hourView';
+            createClassWithCSS(
+                ".minuteView",
+                `background : ${keyedColorScheme("minuteView")["primary"]}; border-color : ${
+                    keyedColorScheme("minuteView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('minuteView').className = 'minuteView';
+        },
     },
 };
 
@@ -255,5 +309,11 @@ function createClassWithCSS(selector, style) {
 
 .gantt .tick {
     stroke: #666;
+}
+.gantt{
+    margin-top: 50px;
+}
+.test {
+    position: fixed;
 }
 </style>
