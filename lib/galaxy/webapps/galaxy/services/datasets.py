@@ -21,7 +21,7 @@ from galaxy import (
     web,
 )
 from galaxy.celery.tasks import compute_dataset_hash
-from galaxy.datatypes import dataproviders
+from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.datasets import DatasetAssociationManager
@@ -824,7 +824,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 return DataResult(data=list(dataset.datatype.dataprovider(dataset, provider, **kwargs)))
 
             else:
-                raise dataproviders.exceptions.NoProviderAvailable(dataset.datatype, provider)
+                raise NoProviderAvailable(dataset.datatype, provider)
 
         # no provider name: look up by datatype
         else:

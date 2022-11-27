@@ -1436,7 +1436,6 @@ class Tool(Dictifiable):
                         temp_value_from = getattr(temp_value_from, attr)
                     group_c.value_from = temp_value_from  # type: ignore[assignment]
                     # ^^ due to https://github.com/python/mypy/issues/2427
-                    assert group_c.value_from
                     for case_value, case_inputs in group_c.value_from(context, group_c, self).items():
                         case = ConditionalWhen()
                         case.value = case_value

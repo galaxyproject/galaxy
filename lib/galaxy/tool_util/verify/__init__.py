@@ -65,8 +65,6 @@ def verify(
                 f.write(file_content)
             return local_name
 
-    assert get_filename
-
     # Check assertions...
     assertions = attributes.get("assert_list", None)
     if attributes is not None and assertions is not None:

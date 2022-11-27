@@ -97,7 +97,6 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import exists
 from typing_extensions import Protocol
 
@@ -176,6 +175,12 @@ YIELD_PER_ROWS = 100
 
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
+
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
+
     from galaxy.datatypes.data import Data
     from galaxy.tools import DefaultToolState
     from galaxy.workflow.modules import WorkflowModule
@@ -185,6 +190,8 @@ if TYPE_CHECKING:
         __table__: Table
 
 else:
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
+
     _HasTable = object
 
 
@@ -196,7 +203,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     return UUID(str(uuid))
 
 
-class Base(metaclass=DeclarativeMeta):
+class Base(_HasTable, metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata
@@ -207,7 +214,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class RepresentById(_HasTable):
+class RepresentById:
     id: int
 
     def __repr__(self):
@@ -384,7 +391,7 @@ class UsesCreateAndUpdateTime:
         self.update_time = now()
 
 
-class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
+class WorkerProcess(Base, UsesCreateAndUpdateTime):
     __tablename__ = "worker_process"
     __table_args__ = (UniqueConstraint("server_name", "hostname"),)
 
@@ -860,7 +867,7 @@ class User(Base, Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken(Base, _HasTable):
+class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
@@ -3348,7 +3355,7 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(Base, StorableObject, Serializable, _HasTable):
+class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
 
     id = Column(Integer, primary_key=True)
@@ -8810,7 +8817,7 @@ class CustosAuthnzToken(Base, RepresentById):
     user = relationship("User", back_populates="custos_auth")
 
 
-class CloudAuthz(Base, _HasTable):
+class CloudAuthz(Base):
     __tablename__ = "cloudauthz"
 
     id = Column(Integer, primary_key=True)
