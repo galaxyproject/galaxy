@@ -185,7 +185,7 @@ export default {
                     edit: `/collection/${id}/edit`,
                     showDetails:
                         this.item.job_source_id && this.item.job_source_type === "Job"
-                            ? `jobs/${this.item.job_source_id}/view`
+                            ? `/jobs/${this.item.job_source_id}/view`
                             : null,
                 };
             }
