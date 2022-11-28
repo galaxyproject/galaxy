@@ -131,11 +131,14 @@ function updateExportParams(newParams) {
     <span class="history-export-component">
         <h1 class="h-lg">Export history {{ props.historyId }}</h1>
 
-        <export-options :export-params="exportParams" @onValueChanged="updateExportParams" />
+        <export-options
+            id="history-export-options"
+            :export-params="exportParams"
+            @onValueChanged="updateExportParams" />
 
         <b-card no-body class="mt-3">
             <b-tabs pills card>
-                <b-tab title="to direct download" title-link-class="tab-export-to-link" active>
+                <b-tab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
                     <p>
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
@@ -147,7 +150,11 @@ function updateExportParams(newParams) {
                         <loading-span message="Galaxy is preparing your download, this will likely take a while" />
                     </span>
                 </b-tab>
-                <b-tab v-if="hasWritableFileSources" title="to remote file" title-link-class="tab-export-to-file">
+                <b-tab
+                    v-if="hasWritableFileSources"
+                    id="file-source-tab"
+                    title="to remote file"
+                    title-link-class="tab-export-to-file">
                     <p>
                         If you need a "more permanent" way of storing your exported history you can export it directly
                         to one of the available remote file sources here. You will be able to re-import it later as long
@@ -163,6 +170,7 @@ function updateExportParams(newParams) {
 
         <export-record-details
             v-if="latestExportRecord"
+            id="last-export-record-details"
             :record="latestExportRecord"
             object-type="history"
             class="mt-3"
@@ -171,15 +179,16 @@ function updateExportParams(newParams) {
             @onDownload="downloadFromRecord"
             @onReimport="reimportFromRecord"
             @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
-        <b-alert v-else-if="errorMessage" variant="danger" class="mt-3" show>
+        <b-alert v-else-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}
         </b-alert>
-        <b-alert v-else variant="info" class="mt-3" show>
+        <b-alert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
         </b-alert>
 
         <export-record-table
             v-if="hasPreviousExports"
+            id="previous-export-records"
             :records="previousExportRecords"
             class="mt-3"
             @onDownload="downloadFromRecord"
