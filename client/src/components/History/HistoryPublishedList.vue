@@ -5,10 +5,9 @@ import { safePath } from "utils/redirect";
 import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
 import LoadingSpan from "components/LoadingSpan";
-import { getFilterText } from "utils/filterConversion";
 import DebouncedInput from "components/DebouncedInput";
 import { getPublishedHistories, updateTags } from "./services";
-import { getFilters, toAlias } from "store/historyStore/model/filtering";
+import { getFilters, getFilterText, toAlias } from "utils/filterConversion";
 
 const limit = ref(50);
 const offset = ref(0);

@@ -1,17 +1,10 @@
 import axios from "axios";
 import { safePath } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
-import { getQueryDict } from "store/historyStore/model/filtering";
-
-const getQueryString = (filterText) => {
-    const filterDict = getQueryDict(filterText, false);
-    return Object.entries(filterDict)
-        .map(([f, v]) => `q=${f}&qv=${v}`)
-        .join("&");
-};
+import { getQueryString } from "utils/filterConversion";
 
 export async function getPublishedHistories({ limit, offset, sortBy, sortDesc, filterText }) {
-    const queryString = getQueryString(filterText);
+    const queryString = getQueryString(filterText, false);
     let params = `view=summary&keys=username,username_and_slug&offset=${offset}&limit=${limit}`;
     if (sortBy) {
         const sortPrefix = sortDesc ? "-dsc" : "-asc";
