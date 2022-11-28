@@ -9,7 +9,7 @@
                 :title="tooltipAll"
                 data-placement="bottom"
                 @click.prevent="executeAll()">
-                <FontAwesomeIcon :class="icon" />
+                <FontAwesomeIcon :icon="icon" />
             </b-button>
             {{ plural }} available.
         </div>
@@ -21,7 +21,7 @@
                     :title="tooltip"
                     data-placement="bottom"
                     @click.prevent="execute([data.item.id])">
-                    <FontAwesomeIcon :class="icon" />
+                    <FontAwesomeIcon :icon="icon" />
                 </b-button>
             </template>
             <template v-slot:cell(links)="data">

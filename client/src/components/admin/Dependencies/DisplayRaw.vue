@@ -1,5 +1,5 @@
 <template>
-    <FontAwesomeIcon class="fa-code" :title="asJson" />
+    <FontAwesomeIcon icon="fa-code" :title="asJson" />
 </template>
 
 <script>

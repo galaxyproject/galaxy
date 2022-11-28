@@ -1,6 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import BaseList from "./BaseList";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCaretDown);
 
 const localVue = getLocalVue();
 

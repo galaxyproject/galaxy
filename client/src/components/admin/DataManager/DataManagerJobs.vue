@@ -41,14 +41,14 @@
                 <template v-slot:cell(actions)="row">
                     <b-button-group>
                         <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
-                            <FontAwesomeIcon class="fa-redo" />
+                            <FontAwesomeIcon icon="fa-redo" />
                         </b-button>
                         <b-button
                             :id="'job-' + jobs[row.index]['encId']"
                             v-b-tooltip.hover
                             title="View Info"
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
-                            <FontAwesomeIcon class="fa-info-circle" />
+                            <FontAwesomeIcon icon="fa-info-circle" />
                         </b-button>
                         <b-button
                             v-if="!showCommandLine"

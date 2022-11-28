@@ -17,7 +17,7 @@
                                 <b-row align-v="center">
                                     <b-col cols="auto">
                                         <b-button v-b-tooltip.hover :title="buttonLabel" @click="reload()">
-                                            <FontAwesomeIcon class="fa-sync" />
+                                            <FontAwesomeIcon icon="fa-sync" />
                                         </b-button>
                                     </b-col>
                                     <b-col>
