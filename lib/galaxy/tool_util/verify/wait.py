@@ -22,7 +22,7 @@ def wait_on(
     timeout: timeout_type,
     delta: timeout_type = DEFAULT_POLLING_DELTA,
     polling_backoff: timeout_type = DEFAULT_POLLING_BACKOFF,
-    _sleep: Optional[Callable] = None,  # only used in tests
+    sleep_: Optional[Callable] = None,  # only used in tests
 ):
     """Wait for function to return non-None value.
 
@@ -31,8 +31,10 @@ def wait_on(
 
     Throw a TimeoutAssertionError if the supplied timeout is reached without
     supplied function ever returning a non-None value.
+
+    The sleep_ parameter is used by the unit tests to "mock" out sleeping
     """
-    sleep_foo = _sleep or sleep
+    sleep_foo = sleep_ or sleep
     start = time()
     while True:
         total_wait = time() - start
