@@ -6,8 +6,8 @@ import ActionButton from "./ActionButton.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
 import ExportToRemoteButton from "components/Workflow/Invocation/Export/ExportToRemoteButton.vue";
 import ExportToRemoteModal from "components/Workflow/Invocation/Export/ExportToRemoteModal.vue";
-import { useMarkdown } from "composables/useMarkdown";
-import { Toast } from "ui/toast";
+import { useMarkdown } from "composables/markdown";
+import { Toast } from "composables/toast";
 import axios from "axios";
 
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });

@@ -435,19 +435,15 @@ class BaseJobRunner:
                             dependency_shell_commands = "&&".join(dependency_shell_commands)
                         external_metadata_script = f"{dependency_shell_commands}&&{external_metadata_script}"
                 log.debug(
-                    "executing external set_meta script for job %d: %s" % (job_wrapper.job_id, external_metadata_script)
+                    "executing external set_meta script for job %d: %s", job_wrapper.job_id, external_metadata_script
                 )
-                external_metadata_proc = subprocess.Popen(
+                subprocess.call(
                     args=external_metadata_script,
                     shell=True,
                     cwd=job_wrapper.working_directory,
                     env=os.environ,
                     preexec_fn=os.setpgrp,
                 )
-                job_wrapper.external_output_metadata.set_job_runner_external_pid(
-                    external_metadata_proc.pid, self.sa_session
-                )
-                external_metadata_proc.wait()
             log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds) -> str:

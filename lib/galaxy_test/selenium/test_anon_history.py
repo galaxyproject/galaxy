@@ -9,7 +9,7 @@ class TestAnonymousHistories(SeleniumTestCase):
     def test_anon_history_landing(self):
         self.home()
         self.assert_initial_history_panel_state_correct()
-        self.history_element("editor toggle").assert_absent()
+        self.history_element("editor toggle").wait_for_present()
         self.history_element("name display").wait_for_present()
 
     @selenium_test

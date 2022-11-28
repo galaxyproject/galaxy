@@ -4,13 +4,13 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_ld_library_model_store_dict,
     TEST_LIBRARY_NAME,
 )
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     FILE_URL,
     LibraryPopulator,
-    skip_if_github_down,
     skip_without_asgi,
 )
 from ._framework import ApiTestCase

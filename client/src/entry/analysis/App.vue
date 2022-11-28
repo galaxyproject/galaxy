@@ -35,6 +35,8 @@
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <div id="dd-helper" />
+        <Toast ref="toastRef" />
+        <ConfirmDialog ref="confirmDialogRef" />
         <UploadModal ref="uploadModal" />
     </div>
 </template>
@@ -47,14 +49,30 @@ import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy
 import { fetchMenu } from "entry/analysis/menu";
 import { WindowManager } from "layout/window-manager";
 import { safePath } from "utils/redirect";
-import { setGlobalUploadModal } from "composables/useGlobalUploadModal";
-import UploadModal from "components/Upload/UploadModal";
+import Toast from "components/Toast";
+import ConfirmDialog from "components/ConfirmDialog";
+import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
+import { setToastComponentRef } from "composables/toast";
+import { setConfirmDialogComponentRef } from "composables/confirmDialog";
+import { setGlobalUploadModal } from "composables/useGlobalUploadModal";
 
 export default {
     components: {
         Masthead,
+        Toast,
+        ConfirmDialog,
         UploadModal,
+    },
+    setup() {
+        const toastRef = ref(null);
+        setToastComponentRef(toastRef);
+        const confirmDialogRef = ref(null);
+        setConfirmDialogComponentRef(confirmDialogRef);
+        const uploadModal = ref(null);
+        setGlobalUploadModal(uploadModal);
+
+        return { toastRef, confirmDialogRef, uploadModal };
     },
     data() {
         return {
@@ -63,12 +81,6 @@ export default {
             resendUrl: `${getAppRoot()}user/resend_verification`,
             windowManager: new WindowManager(),
         };
-    },
-    setup() {
-        const uploadModal = ref(null);
-        setGlobalUploadModal(uploadModal);
-
-        return { uploadModal };
     },
     computed: {
         tabs() {

@@ -2,6 +2,7 @@
 Mixins for Annotatable model managers and serializers.
 """
 
+import abc
 import logging
 from typing import Dict
 
@@ -32,6 +33,7 @@ class AnnotatableManagerMixin:
     #: class of AnnotationAssociation (e.g. HistoryAnnotationAssociation)
     annotation_assoc: type
 
+    @abc.abstractmethod
     def session(self) -> galaxy_scoped_session:
         ...
 

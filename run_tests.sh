@@ -2,8 +2,6 @@
 
 cd "$(dirname "$0")"
 
-rm -f run_functional_tests.log
-
 show_help() {
 cat <<EOF
 '${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
@@ -27,7 +25,7 @@ cat <<EOF
 '${0##*/} -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
 
 This wrapper script largely serves as a point documentation and convenience for
-running Galaxy's Python tests. Most Python tests shipped with Galaxy can be run with
+running Galaxy's Python tests. All Python tests shipped with Galaxy can be run with
 pytest directly. Galaxy's client unit tests can be run with ``make client-test``
 or ``yarn`` directly as documented in detail in ``client/README.md``.
 
@@ -52,7 +50,7 @@ The main test types are as follows:
    framework twill to test ToolShed related functionality. These are
    located in lib/tool_shed/test.
 
-Python testing is mostly done via pytest. Specific tests can be selected
+Python testing is done via pytest. Specific tests can be selected
 using the syntax described at https://docs.pytest.org/en/latest/how-to/usage.html .
 A few examples are shown below.
 
@@ -150,8 +148,8 @@ Extra options:
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
  --coverage            Generate a test coverage report. This option currently
-                       should work with every test that uses pytest, but the
-                       results may not be reliable with selenium or other
+                       works with every Python test, but the
+                       results may not be reliable with Selenium or other
                        frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
@@ -177,6 +175,11 @@ can be used to control the Galaxy functional testing processing. Command-line
 options above like (--external_url) will set environment variables - in such
 cases the command line argument takes precedent over environment variables set
 at the time of running this script.
+
+General Test Environment Variables
+
+GALAXY_TEST_COVERAGE            If set, it is equivalent to passing the
+                                --coverage option.
 
 Functional Test Environment Variables
 
@@ -236,9 +239,6 @@ GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
 GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 config/shed_tool_conf.xml) used when testing
                                 installed to tools with -installed.
-GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
-                                is fairly limited and not compatible with parrallel testing
-                                so should be limited to debugging one off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.
@@ -247,11 +247,6 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
-
-Unit Test Environment Variables
-
-GALAXY_TEST_INCLUDE_SLOW - Used in unit tests to trigger slower tests that
-                           aren't included by default with --unit/-u.
 
 EOF
 }
@@ -267,23 +262,26 @@ exists() {
     type "$1" >/dev/null 2>/dev/null
 }
 
-test_script="./scripts/functional_tests.py"
+debug=""
+test_script="pytest"
 report_file="run_functional_tests.html"
-coverage_arg=""
+if [ -n "$GALAXY_TEST_COVERAGE" ]; then
+    coverage_arg="--with-coverage"
+else
+    coverage_arg=""
+fi
 xunit_report_file=""
 structured_data_report_file=""
 structured_data_html=0
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-1}
-if [ "$SKIP_CLIENT_BUILD" = "1" ];
-then
+if [ "$SKIP_CLIENT_BUILD" = "1" ]; then
     skip_client_build="--skip-client-build"
 else
     skip_client_build=""
 fi
 
 # If in Jenkins environment, create xunit-${BUILD_NUMBER}.xml by default.
-if [ -n "$BUILD_NUMBER" ];
-then
+if [ -n "$BUILD_NUMBER" ]; then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
 
@@ -324,7 +322,6 @@ do
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           marker="not cwl_conformance"
-          test_script="pytest"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
               api_script=$2
@@ -339,7 +336,6 @@ do
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
           marker="cwl_conformance"
-          test_script="pytest"
           report_file="./run_cwl_tests.html"
           generate_cwl_conformance_tests=1
           if [ $# -gt 1 ]; then
@@ -352,7 +348,6 @@ do
           ;;
       -selenium|--selenium)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-          test_script="pytest"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
           if [ $# -gt 1 ]; then
@@ -364,7 +359,6 @@ do
           fi
           ;;
       -t|-toolshed|--toolshed)
-          test_script="./lib/tool_shed/test/functional_tests.py"
           report_file="run_toolshed_tests.html"
           if [ $# -gt 1 ]; then
               toolshed_script=$2
@@ -399,7 +393,6 @@ do
       -f|-framework|--framework)
           GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
           marker="tool"
-          test_script="pytest"
           report_file="run_framework_tests.html"
           framework_test=1;
           shift 1
@@ -407,14 +400,12 @@ do
       -main|-main_tools|--main_tools)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample"
           marker="tool"
-          test_script="pytest"
           report_file="run_framework_tests.html"
           framework_test=1;
           shift 1
           ;;
       -d|-data_managers|--data_managers)
           marker="data_manager"
-          test_script="pytest"
           report_file="run_data_managers_tests.html"
           data_managers_test=1;
           shift 1
@@ -422,7 +413,6 @@ do
       -m|-migrated|--migrated)
           GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
           marker="tool"
-          test_script="pytest"
           report_file="run_migrated_tests.html"
           migrated_test=1;
           shift
@@ -430,7 +420,6 @@ do
       -installed|--installed)
           GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
           marker="tool"
-          test_script="pytest"
           report_file="run_installed_tests.html"
           installed_test=1;
           shift
@@ -493,14 +482,11 @@ do
           shift
           ;;
       --debug)
-          #TODO ipdb would be nicer.
-          NOSE_PDB=True
-          export NOSE_PDB
+          debug="--pdb"
           shift
           ;;
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
-          test_script="pytest"
           unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/tool_shed/webapp/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/tool_shed/webapp/model/migrate --ignore lib/galaxy/tools/bundled --ignore lib/galaxy_test --ignore lib/tool_shed/test --ignore lib/galaxy/model/migrations/alembic'
           generate_cwl_conformance_tests=1
           if [ $# -gt 1 ]; then
@@ -513,7 +499,6 @@ do
           ;;
       -i|-integration|--integration)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
-          test_script="pytest"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
               integration_extra=$2
@@ -620,20 +605,12 @@ else
 fi
 
 if [ -n "$xunit_report_file" ]; then
-    if [ "$test_script" = 'pytest' ]; then
-        xunit_args="--junit-xml $xunit_report_file"
-    else
-        xunit_args="--with-xunit --xunit-file $xunit_report_file"
-    fi
+    xunit_args="--junit-xml $xunit_report_file"
 else
     xunit_args=""
 fi
 if [ -n "$structured_data_report_file" ]; then
-    if [ "$test_script" = 'pytest' ]; then
-        structured_data_args="--json-report --json-report-file $structured_data_report_file"
-    else
-        structured_data_args="--with-structureddata --structured-data-file $structured_data_report_file"
-    fi
+    structured_data_args="--json-report --json-report-file $structured_data_report_file"
 else
     structured_data_args=""
 fi
@@ -641,20 +618,16 @@ if [ -n "$generate_cwl_conformance_tests" ]; then
     make generate-cwl-conformance-tests
 fi
 export GALAXY_TEST_TOOL_CONF
-if [ "$test_script" = 'pytest' ]; then
-    if [ "$coverage_arg" = '--with-coverage' ]; then
-        coverage_arg="--cov-report xml --cov-report term --cov=lib"
-    fi
-    if [ -n "$marker" ]; then
-        marker_args=(-m "$marker")
-    else
-        marker_args=()
-    fi
-    args=(-v $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
-    "$test_script" "${args[@]}"
-else
-    python "$test_script" $coverage_arg -v --with-nosehtml --html-report-file $report_file $xunit_args $structured_data_args $extra_args "$@"
+if [ "$coverage_arg" = '--with-coverage' ]; then
+    coverage_arg="--cov-report xml --cov-report term --cov=lib"
 fi
+if [ -n "$marker" ]; then
+    marker_args=(-m "$marker")
+else
+    marker_args=()
+fi
+args=(-v $debug $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
+"$test_script" "${args[@]}"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
 if [ "$structured_data_html" = '1' ]; then

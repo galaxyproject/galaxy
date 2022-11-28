@@ -35,11 +35,11 @@ def main(argv=None):
         except OSError:
             message = f"Tour '{tour_id}' could not be loaded, error reading file."
         except yaml.error.YAMLError:
-            message = f"Tour '{tour_id}' could not be loaded, error within file." " Please check your yaml syntax."
+            message = f"Tour '{tour_id}' could not be loaded, error within file. Please check your YAML syntax."
         except TypeError:
             message = (
                 f"Tour '{tour_id}' could not be loaded, error within file."
-                " Possibly spacing related. Please check your yaml syntax."
+                " Possibly spacing related. Please check your YAML syntax."
             )
         if tour:
             try:

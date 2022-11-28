@@ -11,6 +11,7 @@ import { iconPlugin } from "components/plugins/icons";
 import BootstrapVue from "bootstrap-vue";
 import Vuex from "vuex";
 import _l from "utils/localization";
+import { PiniaVuePlugin } from "pinia";
 
 const defaultComparator = (a, b) => a == b;
 
@@ -153,6 +154,7 @@ export function getLocalVue(instrumentLocalization = false) {
     const mockedDirective = {
         bind() {},
     };
+    localVue.use(PiniaVuePlugin);
     localVue.use(Vuex);
     localVue.use(BootstrapVue);
     const l = instrumentLocalization ? testLocalize : _l;

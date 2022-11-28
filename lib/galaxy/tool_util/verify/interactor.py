@@ -16,6 +16,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    NamedTuple,
     Optional,
 )
 
@@ -24,16 +25,9 @@ from packaging.version import (
     parse as parse_version,
     Version,
 )
+from requests import Response
 from requests.cookies import RequestsCookieJar
 from typing_extensions import Protocol
-
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import (
@@ -125,8 +119,17 @@ def stage_data_in_history(
             upload_wait()
 
 
+class RunToolResponse(NamedTuple):
+    inputs: Dict[str, Any]
+    outputs: OutputsDict
+    output_collections: Dict[str, Any]
+    jobs: List[Dict[str, Any]]
+
+
 class GalaxyInteractorApi:
+    # api_key and cookies can also be manually set by UsesApiTestCaseMixin._different_user()
     api_key: Optional[str]
+    cookies: Optional[RequestsCookieJar]
     keep_outputs_dir: Optional[str]
 
     def __init__(self, **kwds):
@@ -374,13 +377,11 @@ class GalaxyInteractorApi:
         response = self._put(f"histories/{history_id}", json.dumps({"published": True}))
         response.raise_for_status()
 
-    @nottest
     def test_data_path(self, tool_id, filename, tool_version=None):
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
         return response.json()
 
-    @nottest
     def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
         result = None
         local_path = None
@@ -516,7 +517,7 @@ class GalaxyInteractorApi:
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
-    def run_tool(self, testdef, history_id, resource_parameters=None):
+    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -557,14 +558,16 @@ class GalaxyInteractorApi:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
-            return Bunch(
+            return RunToolResponse(
                 inputs=inputs_tree,
                 outputs=self.__dictify_outputs(submit_response_object),
                 output_collections=self.__dictify_output_collections(submit_response_object),
                 jobs=submit_response_object["jobs"],
             )
         except KeyError:
-            message = f"Error creating a job for these tool inputs - {submit_response_object['err_msg']}"
+            message = (
+                f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+            )
             raise RunToolException(message, inputs_tree)
 
     def _create_collection(self, history_id, collection_def):
@@ -598,13 +601,13 @@ class GalaxyInteractorApi:
             element_identifiers.append(element)
         return element_identifiers
 
-    def __dictify_output_collections(self, submit_response):
+    def __dictify_output_collections(self, submit_response) -> Dict[str, Any]:
         output_collections_dict = {}
         for output_collection in submit_response["output_collections"]:
-            output_collections_dict[output_collection.get("output_name")] = output_collection
+            output_collections_dict[output_collection["output_name"]] = output_collection
         return output_collections_dict
 
-    def __dictify_outputs(self, datasets_object):
+    def __dictify_outputs(self, datasets_object) -> OutputsDict:
         # Convert outputs list to a dictionary that can be accessed by
         # output_name so can be more flexible about ordering of outputs
         # but also allows fallback to legacy access as list mode.
@@ -783,7 +786,9 @@ class GalaxyInteractorApi:
 
         return fetcher
 
-    def api_key_header(self, key, admin, anon, headers):
+    def api_key_header(
+        self, key: Optional[str], admin: bool, anon: bool, headers: Optional[Dict[str, Optional[str]]]
+    ) -> Dict[str, Optional[str]]:
         header = headers or {}
         if not anon:
             if not key:
@@ -791,7 +796,17 @@ class GalaxyInteractorApi:
             header["x-api-key"] = key
         return header
 
-    def _post(self, path, data=None, files=None, key=None, headers=None, admin=False, anon=False, json=False):
+    def _post(
+        self,
+        path: str,
+        data: Optional[Dict[str, Any]] = None,
+        files: Optional[Dict[str, Any]] = None,
+        key: Optional[str] = None,
+        headers: Optional[Dict[str, Optional[str]]] = None,
+        admin: bool = False,
+        anon: bool = False,
+        json: bool = False,
+    ) -> Response:
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
         kwd = self._prepare_request_params(data=data, files=files, as_json=json, headers=headers)
@@ -822,11 +837,20 @@ class GalaxyInteractorApi:
     def _get(self, path, data=None, key=None, headers=None, admin=False, anon=False):
         headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
         url = self.get_api_url(path)
-        kwargs = {}
+        kwargs: Dict[str, Any] = {}
         if self.cookies:
             kwargs["cookies"] = self.cookies
         # no data for GET
         return requests.get(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
+
+    def _head(self, path, data=None, key=None, headers=None, admin=False, anon=False):
+        headers = self.api_key_header(key=key, admin=admin, anon=anon, headers=headers)
+        url = self.get_api_url(path)
+        kwargs: Dict[str, Any] = {}
+        if self.cookies:
+            kwargs["cookies"] = self.cookies
+        # no data for HEAD
+        return requests.head(url, params=data, headers=headers, timeout=util.DEFAULT_SOCKET_TIMEOUT, **kwargs)
 
     def get_api_url(self, path: str) -> str:
         if path.startswith("http"):
@@ -837,12 +861,12 @@ class GalaxyInteractorApi:
 
     def _prepare_request_params(
         self,
-        data=None,
-        files=None,
+        data: Optional[Dict[str, Any]] = None,
+        files: Optional[Dict[str, Any]] = None,
         as_json: bool = False,
-        params: Optional[dict] = None,
-        headers: Optional[dict] = None,
-    ):
+        params: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, Optional[str]]] = None,
+    ) -> Dict[str, Any]:
         """Handle some Galaxy conventions and work around requests issues.
 
         This is admittedly kind of hacky, so the interface may change frequently - be
@@ -860,13 +884,13 @@ class GalaxyInteractorApi:
 
 
 def prepare_request_params(
-    data=None,
-    files=None,
+    data: Optional[Dict[str, Any]] = None,
+    files: Optional[Dict[str, Any]] = None,
     as_json: bool = False,
-    params: Optional[dict] = None,
-    headers: Optional[dict] = None,
+    params: Optional[Dict[str, Any]] = None,
+    headers: Optional[Dict[str, Optional[str]]] = None,
     cookies: Optional[RequestsCookieJar] = None,
-):
+) -> Dict[str, Any]:
     params = params or {}
     data = data or {}
 
@@ -874,13 +898,13 @@ def prepare_request_params(
     if files is None:
         # if not explicitly passed, check __files... convention used in tool testing
         # and API testing code
-        files = data.get("__files", None)
+        files = data.get("__files")
         if files is not None:
             del data["__files"]
 
     # files doesn't really work with json, so dump the parameters
     # and do a normal POST with request's data parameter.
-    if bool(files) and as_json:
+    if files and as_json:
         as_json = False
         new_items = {}
         for key, val in data.items():
@@ -1304,7 +1328,11 @@ def verify_tool(
                 job_data["execution_problem"] = util.unicodify(tool_execution_exception)
                 dynamic_param_error = getattr(tool_execution_exception, "dynamic_param_error", False)
                 job_data["dynamic_param_error"] = dynamic_param_error
-                status = "error" if not skip_on_dynamic_param_errors or not dynamic_param_error else "skip"
+                if not expected_failure_occurred:
+                    if skip_on_dynamic_param_errors and dynamic_param_error:
+                        status = "skip"
+                    else:
+                        status = "error"
             if input_staging_exception:
                 job_data["execution_problem"] = f"Input staging problem: {util.unicodify(input_staging_exception)}"
                 status = "error"
@@ -1585,7 +1613,6 @@ class ToolTestDescription:
         }
 
 
-@nottest
 def test_data_iter(required_files):
     for fname, extra in required_files:
         data_dict = dict(

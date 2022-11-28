@@ -33,7 +33,6 @@ from sqlalchemy.orm import (
     registry,
     relationship,
 )
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 import tool_shed.repository_types.util as rt_util
 from galaxy import util
@@ -60,13 +59,14 @@ log = logging.getLogger(__name__)
 WEAK_HG_REPO_CACHE: Mapping["Repository", Any] = weakref.WeakKeyDictionary()
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
 
-    class _HasTable:
-        table: Table
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
 
 else:
-    _HasTable = object
-
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 mapper_registry = registry()
 
@@ -82,7 +82,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class APIKeys(Base, _HasTable):
+class APIKeys(Base):
     __tablename__ = "api_keys"
 
     id = Column(Integer, primary_key=True)
@@ -93,7 +93,7 @@ class APIKeys(Base, _HasTable):
     deleted = Column(Boolean, index=True, default=False)
 
 
-class User(Base, Dictifiable, _HasTable):
+class User(Base, Dictifiable):
     __tablename__ = "galaxy_user"
 
     id = Column(Integer, primary_key=True)
@@ -173,7 +173,7 @@ class User(Base, Dictifiable, _HasTable):
         self.password = new_insecure_hash(text_type=cleartext)
 
 
-class PasswordResetToken(Base, _HasTable):
+class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
@@ -191,7 +191,7 @@ class PasswordResetToken(Base, _HasTable):
         self.expiration_time = now() + timedelta(hours=24)
 
 
-class Group(Base, Dictifiable, _HasTable):
+class Group(Base, Dictifiable):
     __tablename__ = "galaxy_group"
 
     id = Column(Integer, primary_key=True)
@@ -210,7 +210,7 @@ class Group(Base, Dictifiable, _HasTable):
         self.deleted = False
 
 
-class Role(Base, Dictifiable, _HasTable):
+class Role(Base, Dictifiable):
     __tablename__ = "role"
 
     id = Column(Integer, primary_key=True)
@@ -245,7 +245,7 @@ class Role(Base, Dictifiable, _HasTable):
         return False
 
 
-class UserGroupAssociation(Base, _HasTable):
+class UserGroupAssociation(Base):
     __tablename__ = "user_group_association"
 
     id = Column(Integer, primary_key=True)
@@ -262,7 +262,7 @@ class UserGroupAssociation(Base, _HasTable):
         self.group = group
 
 
-class UserRoleAssociation(Base, _HasTable):
+class UserRoleAssociation(Base):
     __tablename__ = "user_role_association"
 
     id = Column(Integer, primary_key=True)
@@ -280,7 +280,7 @@ class UserRoleAssociation(Base, _HasTable):
         self.role = role
 
 
-class GroupRoleAssociation(Base, _HasTable):
+class GroupRoleAssociation(Base):
     __tablename__ = "group_role_association"
 
     id = Column(Integer, primary_key=True)
@@ -296,7 +296,7 @@ class GroupRoleAssociation(Base, _HasTable):
         self.role = role
 
 
-class RepositoryRoleAssociation(Base, _HasTable):
+class RepositoryRoleAssociation(Base):
     __tablename__ = "repository_role_association"
 
     id = Column(Integer, primary_key=True)
@@ -313,7 +313,7 @@ class RepositoryRoleAssociation(Base, _HasTable):
         self.role = role
 
 
-class GalaxySession(Base, _HasTable):
+class GalaxySession(Base):
     __tablename__ = "galaxy_session"
 
     id = Column(Integer, primary_key=True)
@@ -337,7 +337,7 @@ class GalaxySession(Base, _HasTable):
         self.last_action = self.last_action or datetime.now()
 
 
-class Repository(Base, Dictifiable, _HasTable):
+class Repository(Base, Dictifiable):
     __tablename__ = "repository"
 
     id = Column(Integer, primary_key=True)
@@ -538,7 +538,7 @@ class Repository(Base, Dictifiable, _HasTable):
         return rval
 
 
-class ItemRatingAssociation(_HasTable):
+class ItemRatingAssociation:
     def __init__(self, id=None, user=None, item=None, rating=0, comment=""):
         self.id = id
         self.user = user
@@ -550,7 +550,7 @@ class ItemRatingAssociation(_HasTable):
         """Set association's item."""
 
 
-class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
+class RepositoryRatingAssociation(Base, ItemRatingAssociation):
     __tablename__ = "repository_rating_association"
 
     id = Column(Integer, primary_key=True)
@@ -567,7 +567,7 @@ class RepositoryRatingAssociation(Base, ItemRatingAssociation, _HasTable):
         self.repository = repository
 
 
-class Category(Base, Dictifiable, _HasTable):
+class Category(Base, Dictifiable):
     __tablename__ = "category"
 
     id = Column(Integer, primary_key=True)
@@ -586,7 +586,7 @@ class Category(Base, Dictifiable, _HasTable):
         self.deleted = deleted
 
 
-class RepositoryCategoryAssociation(Base, _HasTable):
+class RepositoryCategoryAssociation(Base):
     __tablename__ = "repository_category_association"
 
     id = Column(Integer, primary_key=True)
@@ -600,7 +600,7 @@ class RepositoryCategoryAssociation(Base, _HasTable):
         self.category = category
 
 
-class Tag(Base, _HasTable):
+class Tag(Base):
     __tablename__ = "tag"
     __table_args__ = (UniqueConstraint("name"),)
 
@@ -619,7 +619,7 @@ class Tag(Base, _HasTable):
 # TLDR: a declaratively-mapped class cannot have a .metadata attribute (it is used by SQLAlchemy's DeclarativeBase).
 
 
-class RepositoryMetadata(Dictifiable, _HasTable):
+class RepositoryMetadata(Dictifiable):
     # Once the class has been mapped, all Column items in this table will be available
     # as instrumented class attributes on RepositoryMetadata.
     table = Table(

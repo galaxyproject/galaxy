@@ -1212,12 +1212,14 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow):
+    def get_stored_workflow_steps(self, trans, stored_workflow: model.StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
-        for step in stored_workflow.latest_workflow.steps:
+        workflow = stored_workflow.latest_workflow
+        module_injector.inject_all(workflow, exact_tools=False, ignore_tool_missing_exception=True)
+        for step in workflow.steps:
             try:
-                module_injector.inject(step, exact_tools=False)
+                module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException:
                 pass
 

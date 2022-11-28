@@ -259,27 +259,6 @@ mapping:
           If use_remote_user is enabled, you can set this to a URL that will log your
           users out.
 
-      debug:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Configuration for debugging middleware
-
-      use_lint:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Check for WSGI compliance.
-
-      use_printdebug:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Intercept print statements and show them on the returned page.
-
       admin_users:
         type: str
         required: false
@@ -370,13 +349,6 @@ mapping:
         desc: |
           Write thread status periodically to 'heartbeat.log' (careful, uses disk
            space rapidly!)
-
-      use_profile:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Profiling middleware (cProfile based)
 
       enable_galaxy_flavor_docker_image:
         type: bool

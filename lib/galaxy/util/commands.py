@@ -5,6 +5,13 @@ import shlex
 import subprocess
 import sys as _sys
 import tempfile
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
 
 from galaxy.util import (
     unicodify,
@@ -48,7 +55,7 @@ def redirect_aware_commmunicate(p, sys=_sys):
     return out, err
 
 
-def shell(cmds, env=None, **kwds):
+def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]) -> int:
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
@@ -61,14 +68,16 @@ def shell(cmds, env=None, **kwds):
         return p.wait()
 
 
-def shell_process(cmds, env=None, **kwds):
+def shell_process(
+    cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]
+) -> subprocess.Popen:
     """A high-level method wrapping subprocess.Popen.
 
     Handles details such as environment extension and in process I/O
     redirection.
     """
     sys = kwds.get("sys", _sys)
-    popen_kwds = dict()
+    popen_kwds: Dict[str, Any] = dict()
     if isinstance(cmds, str):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
         popen_kwds["shell"] = True
@@ -165,7 +174,7 @@ def new_clean_env():
     Returns a minimal environment to use when invoking a subprocess
     """
     env = {}
-    for k in ("HOME", "PATH", "TMPDIR"):
+    for k in ("HOME", "LC_CTYPE", "PATH", "TMPDIR"):
         if k in os.environ:
             env[k] = os.environ[k]
     if "TMPDIR" not in env:
@@ -174,7 +183,8 @@ def new_clean_env():
     # This is needed e.g. for Python < 3.7 where
     # `locale.getpreferredencoding()` (also used by open() to determine the
     # default file encoding) would return `ANSI_X3.4-1968` without this.
-    env["LC_CTYPE"] = "C.UTF-8"
+    if not env.get("LC_CTYPE", "").endswith("UTF-8"):
+        env["LC_CTYPE"] = "C.UTF-8"
     return env
 
 

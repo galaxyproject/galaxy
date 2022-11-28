@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 
 // Rendering parameters
 const zIndex = 1000;

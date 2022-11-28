@@ -9,7 +9,9 @@ from typing import (
     ClassVar,
     Iterator,
     Optional,
+    Type,
     TYPE_CHECKING,
+    TypeVar,
 )
 from unittest import (
     skip,
@@ -199,8 +201,11 @@ class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
-def integration_module_instance(clazz):
-    def _instance():
+IntegrationInstanceObject = TypeVar("IntegrationInstanceObject", bound=IntegrationInstance)
+
+
+def integration_module_instance(clazz: Type[IntegrationInstanceObject]):
+    def _instance() -> Iterator[IntegrationInstanceObject]:
         instance = clazz()
         instance.setUpClass()
         instance.setUp()

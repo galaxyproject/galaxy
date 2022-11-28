@@ -2005,7 +2005,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     except OSError as e:
                         if e.errno != errno.ENOENT:
                             raise
-                self.external_output_metadata.cleanup_external_metadata(self.sa_session)
             if delete_files:
                 self.object_store.delete(
                     self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
@@ -2141,16 +2140,6 @@ class MinimalJobWrapper(HasResourceParameters):
         if meta:
             return ExpressionContext(meta, job_context)
         return job_context
-
-    def invalidate_external_metadata(self):
-        job = self.get_job()
-        self.external_output_metadata.invalidate_external_metadata(
-            [
-                output_dataset_assoc.dataset
-                for output_dataset_assoc in job.output_datasets + job.output_library_datasets
-            ],
-            self.sa_session,
-        )
 
     def setup_external_metadata(
         self,

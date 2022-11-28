@@ -43,7 +43,7 @@ module.exports = (env = {}, argv = {}) => {
             filename: "[name].bundled.js",
         },
         resolve: {
-            extensions: [".js", ".json", ".vue", ".scss"],
+            extensions: [".js", ".json", ".vue", ".scss", ".ts"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
@@ -94,6 +94,11 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.mjs$/,
                     include: /node_modules/,
                     type: "javascript/auto",
+                },
+                {
+                    test: /\.tsx?$/,
+                    use: 'ts-loader',
+                    exclude: /node_modules/,
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,

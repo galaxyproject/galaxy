@@ -3,12 +3,12 @@
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h2 v-if="!showAdvanced" v-localize id="toolbox-heading" class="m-1 h-sm">Tools</h2>
-                    <h2 v-else v-localize id="toolbox-heading" class="m-1 h-sm">Advanced Tool Search</h2>
+                    <h2 v-if="!showAdvanced" id="toolbox-heading" v-localize class="m-1 h-sm">Tools</h2>
+                    <h2 v-else id="toolbox-heading" v-localize class="m-1 h-sm">Advanced Tool Search</h2>
 
-                    <div v-if="!showAdvanced" class="panel-header-buttons">
+                    <div class="panel-header-buttons">
                         <b-button-group>
-                            <favorites-button :query="query" @onFavorites="onQuery" />
+                            <favorites-button v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"
@@ -21,9 +21,11 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search
+                enable-advanced
                 :current-panel-view="currentPanelView"
                 :placeholder="titleSearchTools"
                 :show-advanced.sync="showAdvanced"
+                :toolbox="toolbox"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
@@ -72,7 +74,7 @@ import { UploadButton } from "components/Upload";
 import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
-import { filterToolSections, filterTools } from "./utilities";
+import { filterToolSections, filterTools, hasResults } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -133,7 +135,7 @@ export default {
             if (this.showSections) {
                 return filterToolSections(this.toolbox, this.results);
             } else {
-                return filterTools(this.toolbox, this.results);
+                return hasResults(this.results) ? filterTools(this.toolbox, this.results) : this.toolbox;
             }
         },
         isUser() {

@@ -37,15 +37,17 @@ jobs:
         with:
           path: ~/.cache/pip
           key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('galaxy root/requirements.txt') }}
-      - name: Cache galaxy venv
+      - name: Cache tox env
         uses: actions/cache@v3
         with:
-          path: 'galaxy root/.venv'
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unit
+          path: .tox
+          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-unit
       - name: Install ffmpeg
         run: sudo apt-get update && sudo apt-get -y install ffmpeg
+      - name: Install tox
+        run: pip install tox
       - name: Run tests
-        run: ./run_tests.sh --coverage -u
+        run: tox -e unit-coverage
         working-directory: 'galaxy root'
       - uses: codecov/codecov-action@v3
         with:

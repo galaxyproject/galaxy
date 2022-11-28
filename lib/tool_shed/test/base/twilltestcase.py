@@ -1,6 +1,8 @@
 import logging
 import os
+import shutil
 import string
+import tarfile
 import tempfile
 import time
 from json import loads
@@ -541,23 +543,31 @@ class ShedTwillTestCase(ShedApiTestCase):
         )
         assert response.status_code != 403, response.content
 
-    def delete_files_from_repository(
-        self, repository: Repository, filenames=None, strings_displayed=None, strings_not_displayed=None
-    ):
-        filenames = filenames or []
-        files_to_delete = []
-        if strings_displayed is None:
-            strings_displayed = ["were deleted from the repository"]
-        basepath = self.get_repo_path(repository)
-        repository_files = self.get_repository_file_list(repository=repository, base_path=basepath, current_path=None)
-        # Verify that the files to delete actually exist in the repository.
-        for filename in repository_files:
-            if filename in filenames:
-                files_to_delete.append(os.path.join(basepath, filename))
-        self.browse_repository(repository)
-        tc.fv("2", "selected_files_to_delete", ",".join(files_to_delete))
-        tc.submit("select_files_to_delete_button")
-        self.check_for_strings(strings_displayed, strings_not_displayed)
+    def delete_files_from_repository(self, repository: Repository, filenames: List[str]):
+        temp_directory = tempfile.mkdtemp(prefix="toolshedrepowithoutfiles")
+        try:
+            self.clone_repository(repository, temp_directory)
+            for filename in filenames:
+                to_delete = os.path.join(temp_directory, filename)
+                os.remove(to_delete)
+            shutil.rmtree(os.path.join(temp_directory, ".hg"))
+            tf = tempfile.NamedTemporaryFile()
+            with tarfile.open(tf.name, "w:gz") as tar:
+                tar.add(temp_directory, arcname="repo")
+            target = os.path.abspath(tf.name)
+            self.upload_file(
+                repository,
+                filename=os.path.basename(target),
+                filepath=os.path.dirname(target),
+                valid_tools_only=True,
+                uncompress_file=True,
+                remove_repo_files_not_in_tar=True,
+                commit_message="Uploaded revision with deleted files.",
+                strings_displayed=[],
+                strings_not_displayed=[],
+            )
+        finally:
+            shutil.rmtree(temp_directory)
 
     def delete_repository(self, repository: Repository) -> None:
         repository_id = repository.id

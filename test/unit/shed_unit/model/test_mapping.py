@@ -10,12 +10,12 @@ from sqlalchemy import (
 )
 
 import tool_shed.webapp.model.mapping as mapping
-from ...data.model.mapping.testing_utils import (
+from galaxy.model.unittest_utils.mapping_testing_utils import (
     collection_consists_of_objects,
     get_unique_value,
     has_unique_constraint,
 )
-from ...data.model.testing_utils import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     dbcleanup,
     dbcleanup_wrapper,
     delete_from_database,

@@ -436,21 +436,6 @@ class VisualizationController(
         return
 
     @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a visualization asynchronously and return updated community data."""
-
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-        if not visualization:
-            return trans.show_error_message("The specified visualization does not exist.")
-
-        # Rate visualization.
-        self.rate_item(trans.sa_session, trans.get_user(), visualization, rating)
-
-        return self.get_ave_item_rating_data(trans.sa_session, visualization)
-
-    @web.expose
     @web.require_login("share Galaxy visualizations")
     def imp(self, trans, id):
         """Import a visualization into user's workspace."""
@@ -511,25 +496,12 @@ class VisualizationController(
         # Encode page identifier.
         visualization_id = trans.security.encode_id(visualization.id)
 
-        # Get rating data.
-        user_item_rating = 0
-        if trans.get_user():
-            user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), visualization)
-            if user_item_rating:
-                user_item_rating = user_item_rating.rating
-            else:
-                user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, visualization)
-
         # Redirect to client.
         return trans.response.send_redirect(
             web.url_for(
                 controller="published",
                 action="visualization",
                 id=visualization_id,
-                user_item_rating=user_item_rating,
-                ave_item_rating=ave_item_rating,
-                num_ratings=num_ratings,
             )
         )
 

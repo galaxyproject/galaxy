@@ -9,8 +9,7 @@ from ._util import is_datasource
 from ..verify import asserts
 
 
-# Misspelled so as not be picked up by nosetests.
-def lint_tsts(tool_xml, lint_ctx):
+def lint_tests(tool_xml, lint_ctx):
     # determine node to report for general problems with tests
     tests = tool_xml.findall("./tests/test")
     general_node = tool_xml.find("./tests")

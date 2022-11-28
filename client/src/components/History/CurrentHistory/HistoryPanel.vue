@@ -144,7 +144,7 @@
 
 <script>
 import Vue from "vue";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { mapActions } from "vuex";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";

@@ -12,7 +12,7 @@
             <FormElement
                 :id="actionNames.ChangeDatatypeAction__newtype"
                 :value="formData[actionNames.ChangeDatatypeAction__newtype]"
-                :options="datatypeExtensions"
+                :attributes="{ options: datatypeExtensions }"
                 title="Change datatype"
                 type="select"
                 backbonejs

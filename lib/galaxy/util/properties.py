@@ -8,7 +8,7 @@ import sys
 from configparser import (
     BasicInterpolation,
     ConfigParser,
-    Error,
+    InterpolationError,
 )
 from functools import partial
 from itertools import (
@@ -159,18 +159,12 @@ def nice_config_parser(path):
     return parser
 
 
-class _InterpolateWrapper:
-    def __init__(self, original: Optional[BasicInterpolation] = None):
-        self._original = original or BasicInterpolation()
-
-    def __getattr__(self, name):
-        return getattr(self._original, name)
-
+class _InterpolateWrapper(BasicInterpolation):
     def before_get(self, parser, section, option, value, defaults):
         try:
-            return self._original.before_get(parser, section, option, value, defaults)
-        except Error:
-            e = cast(Error, sys.exc_info()[1])
+            return super().before_get(parser, section, option, value, defaults)
+        except InterpolationError:
+            e = cast(InterpolationError, sys.exc_info()[1])
             args = list(e.args)
             args[0] = f"Error in file {parser.filename}: {e}"
             e.args = tuple(args)

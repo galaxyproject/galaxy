@@ -105,15 +105,13 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["job_config_file"] = config_file(WORKFLOW_HANDLER_JOB_CONFIG_TEMPLATE, assign_with=cls.assign_with)
 
-    def _invoke_n_workflows(self, n):
+    def _invoke_n_workflows(self, n, history_id: str):
         workflow_id = self.workflow_populator.upload_yaml_workflow(PAUSE_WORKFLOW)
-        history_id = self.history_id
         hda1 = self.dataset_populator.new_dataset(history_id, content="1 2 3")
         index_map = {"0": dict(src="hda", id=hda1["id"])}
         request = {}
@@ -124,11 +122,11 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
         for _ in range(n):
             self._post(url, data=request)
 
-    def _get_workflow_invocations(self):
+    def _get_workflow_invocations(self, history_id: str):
         # Consider exposing handler via the API to reduce breaking
         # into Galaxy's internal state.
         app = self._app
-        history_id = app.security.decode_id(self.history_id)
+        history_id = app.security.decode_id(history_id)
         sa_session = app.model.context.current
         history = sa_session.query(app.model.History).get(history_id)
         workflow_invocations = history.workflow_invocations
@@ -144,9 +142,9 @@ class TestHistoryRestrictionConfiguration(BaseWorkflowHandlerConfigurationTestCa
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
     assign_with = "db-preassign"
 
-    def test_history_to_handler_restriction(self):
-        self._invoke_n_workflows(10)
-        workflow_invocations = self._get_workflow_invocations()
+    def test_history_to_handler_restriction(self, history_id: str):
+        self._invoke_n_workflows(10, history_id)
+        workflow_invocations = self._get_workflow_invocations(history_id)
         assert len(workflow_invocations) == 10
         # Verify all 10 assigned to same handler - there would be a
         # 1 in 10^10 chance for this to occur randomly.
@@ -166,9 +164,9 @@ class TestHistoryParallelConfiguration(BaseWorkflowHandlerConfigurationTestCase)
         super().handle_galaxy_config_kwds(config)
         config["parallelize_workflow_scheduling_within_histories"] = True
 
-    def test_workflows_spread_across_multiple_handlers(self):
-        self._invoke_n_workflows(20)
-        workflow_invocations = self._get_workflow_invocations()
+    def test_workflows_spread_across_multiple_handlers(self, history_id: str):
+        self._invoke_n_workflows(20, history_id)
+        workflow_invocations = self._get_workflow_invocations(history_id)
         assert len(workflow_invocations) == 20
         handlers = set()
         for workflow_invocation in workflow_invocations:
@@ -192,9 +190,9 @@ class TestWorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTes
             WORKFLOW_SCHEDULERS_CONFIG_TEMPLATE, assign_with=cls.assign_with
         )
 
-    def test_handler_assignment(self):
-        self._invoke_n_workflows(1)
-        workflow_invocations = self._get_workflow_invocations()
+    def test_handler_assignment(self, history_id: str):
+        self._invoke_n_workflows(1, history_id)
+        workflow_invocations = self._get_workflow_invocations(history_id)
         assert WORKFLOW_SCHEDULER_HANDLER_PATTERN.match(workflow_invocations[0].handler)
 
 
@@ -236,10 +234,10 @@ class TestJobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigu
         super().handle_galaxy_config_kwds(config)
         config["server_name"] = "handler0"
 
-    def test_handler_assignment(self):
-        self._invoke_n_workflows(1)
+    def test_handler_assignment(self, history_id: str):
+        self._invoke_n_workflows(1, history_id)
         time.sleep(2)
-        workflow_invocations = self._get_workflow_invocations()
+        workflow_invocations = self._get_workflow_invocations(history_id)
         assert JOB_HANDLER_PATTERN.match(workflow_invocations[0].handler)
 
     def test_default_job_handler_is_workflow_handler(self):
@@ -285,10 +283,10 @@ class TestWorkflowSchedulerHandlerAssignmentDbSkipLocked(TestExplicitWorkflowHan
 
     assign_with = "db-skip-locked"
 
-    def test_handler_assignment(self):
-        self._invoke_n_workflows(1)
+    def test_handler_assignment(self, history_id: str):
+        self._invoke_n_workflows(1, history_id)
         time.sleep(2)
-        workflow_invocations = self._get_workflow_invocations()
+        workflow_invocations = self._get_workflow_invocations(history_id)
         assert WORKFLOW_SCHEDULER_HANDLER_PATTERN.match(workflow_invocations[0].handler)
 
 

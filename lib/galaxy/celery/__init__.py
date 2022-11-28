@@ -47,6 +47,8 @@ serialization.register(
 
 
 class GalaxyCelery(Celery):
+    fork_pool: pebble.ProcessPool
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
