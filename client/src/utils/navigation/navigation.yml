@@ -179,6 +179,7 @@ history_panel:
       edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
       rerun_button: '${_} .rerun-btn'
+      collection_job_details_button: '${_} .collection-job-details-btn'
 
       # Action buttons...
       download_button: '${_} .download-btn'
@@ -944,3 +945,11 @@ charts:
   selectors:
     visualize_button: '.ui-portlet .button i.fa-line-chart'  # without icon - it waits on other buttons that aren't visible, need more specific class
     viewport_canvas: 'svg.charts-viewport-canvas'
+
+job_details:
+  selectors:
+    galaxy_tool_with_id:
+      type: xpath
+      selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
+    tool_exit_code: '#exit-code'
+
