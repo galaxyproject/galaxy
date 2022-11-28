@@ -12,7 +12,7 @@
         class="download-btn"
         data-description="dataset download">
         <template v-slot:button-content>
-            <span class="fa fa-save" />
+            <FontAwesomeIcon icon="fa-save" />
         </template>
         <b-dropdown-item v-localize :href="downloadUrl" @click.prevent.stop="onDownload(downloadUrl)">
             Download Dataset
@@ -34,15 +34,21 @@
         variant="link"
         :href="downloadUrl"
         @click.prevent.stop="onDownload(downloadUrl)">
-        <span class="fa fa-save" />
+        <FontAwesomeIcon icon="fa-save" />
     </b-button>
 </template>
 
 <script>
 import { prependPath } from "utils/redirect";
 import { downloadUrlMixin } from "./mixins.js";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSave } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSave);
 
 export default {
+    components: { FontAwesomeIcon },
     mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },

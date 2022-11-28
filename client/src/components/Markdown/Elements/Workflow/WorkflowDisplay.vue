@@ -12,7 +12,7 @@
                     type="button"
                     class="py-0 px-1"
                     data-description="workflow download">
-                    <span class="fa fa-download" />
+                    <FontAwesomeIcon icon="fa-download" />
                 </b-button>
                 <b-button
                     v-b-tooltip.hover
@@ -23,7 +23,7 @@
                     type="button"
                     class="py-0 px-1"
                     data-description="workflow import">
-                    <span class="fa fa-file-import" />
+                    <FontAwesomeIcon icon="fa-file-import" />
                 </b-button>
             </span>
             <span>
@@ -48,10 +48,17 @@ import { safePath } from "utils/redirect";
 import { urlData } from "utils/url";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowTree from "./WorkflowTree";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDownload, faFileImport } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faDownload, faFileImport);
+
 export default {
     components: {
         LoadingSpan,
         WorkflowTree,
+        FontAwesomeIcon,
     },
     props: {
         args: {

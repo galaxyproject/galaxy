@@ -12,7 +12,7 @@
             >
         </b-button>
         <b-button v-if="previousName" size="sm" class="text-decoration-none" variant="link" @click="back">
-            <span class="fa fa-angle-left mr-1" /><span>{{ previousName }}</span>
+            <FontAwesomeIcon icon="fa-angle-left" class="mr-1" /><span>{{ previousName }}</span>
         </b-button>
     </div>
 </template>
@@ -20,9 +20,9 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faAngleDoubleLeft } from "@fortawesome/free-solid-svg-icons";
+import { faAngleDoubleLeft, faAngleLeft } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faAngleDoubleLeft);
+library.add(faAngleDoubleLeft, faAngleLeft);
 
 export default {
     components: { FontAwesomeIcon },

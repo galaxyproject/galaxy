@@ -17,7 +17,7 @@
                     <span :class="submitIconClass" />{{ submitTitle | l }}
                 </b-button>
                 <b-button v-if="cancelRedirect" @click="onCancel()">
-                    <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
+                    <FontAwesomeIcon icon="fa-times" class="mr-1" />{{ "Cancel" | l }}
                 </b-button>
             </div>
         </div>
@@ -31,12 +31,18 @@ import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { visitInputs } from "components/Form/utilities";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
 
 export default {
     components: {
         FormCard,
         FormDisplay,
         UrlDataProvider,
+        FontAwesomeIcon,
     },
     props: {
         id: {

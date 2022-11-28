@@ -25,7 +25,7 @@
                             title="Add datasets to current folder"
                             class="dropdown add-library-items add-library-items-datasets mr-1">
                             <button type="button" class="btn btn-secondary dropdown-toggle" data-toggle="dropdown">
-                                <span class="fa fa-plus"></span> Datasets <span class="caret" />
+                                <FontAwesomeIcon icon="fa-plus" /> Datasets <span class="caret" />
                             </button>
                             <div class="dropdown-menu">
                                 <a class="dropdown-item cursor-pointer" @click="addDatasets('history')">

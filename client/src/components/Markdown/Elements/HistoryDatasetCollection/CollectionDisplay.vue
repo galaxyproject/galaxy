@@ -11,7 +11,7 @@
                     title="Download Collection"
                     type="button"
                     class="py-0 px-1">
-                    <span class="fa fa-download" />
+                    <FontAwesomeIcon icon="fa-download" />
                 </b-button>
                 <CurrentUser v-slot="{ user }">
                     <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
@@ -25,7 +25,7 @@
                             type="button"
                             class="py-0 px-1"
                             @click="onCopyCollection(currentHistoryId)">
-                            <span class="fa fa-file-import" />
+                            <FontAwesomeIcon icon="fa-file-import" />
                         </b-button>
                     </UserHistories>
                 </CurrentUser>
@@ -55,6 +55,11 @@ import LoadingSpan from "components/LoadingSpan";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import { copyCollection } from "components/Markdown/services";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDownload, faFileImport } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faDownload, faFileImport);
 
 export default {
     components: {
@@ -62,6 +67,7 @@ export default {
         CurrentUser,
         LoadingSpan,
         UserHistories,
+        FontAwesomeIcon,
     },
     props: {
         args: {

@@ -11,7 +11,7 @@
                     title="Download Dataset"
                     type="button"
                     class="py-0 px-1">
-                    <span class="fa fa-download" />
+                    <FontAwesomeIcon icon="fa-download" />
                 </b-button>
                 <b-button
                     v-b-tooltip.hover
@@ -21,7 +21,7 @@
                     title="Import Dataset"
                     type="button"
                     class="py-0 px-1">
-                    <span class="fa fa-file-import" />
+                    <FontAwesomeIcon icon="fa-file-import" />
                 </b-button>
                 <b-button
                     v-if="expanded"
@@ -33,7 +33,7 @@
                     type="button"
                     class="py-0 px-1"
                     @click="onExpand">
-                    <span class="fa fa-angle-double-up" />
+                    <FontAwesomeIcon icon="fa-angle-double-up" />
                 </b-button>
                 <b-button
                     v-else
@@ -45,7 +45,7 @@
                     type="button"
                     class="py-0 px-1"
                     @click="onExpand">
-                    <span class="fa fa-angle-double-down" />
+                    <FontAwesomeIcon icon="fa-angle-double-down" />
                 </b-button>
             </span>
             <span>
@@ -98,11 +98,17 @@ import { getAppRoot } from "onload/loadConfig";
 import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { DatatypesMapperModel } from "components/Datatypes/model";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDownload, faFileImport, faAngleDoubleDown, faAngleDoubleUp } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faDownload, faFileImport, faAngleDoubleDown, faAngleDoubleUp);
 
 export default {
     components: {
         LoadingSpan,
         UrlDataProvider,
+        FontAwesomeIcon,
     },
     props: {
         args: {

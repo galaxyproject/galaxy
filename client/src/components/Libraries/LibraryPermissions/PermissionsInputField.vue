@@ -19,7 +19,7 @@
                         @search-change="searchChanged">
                         <template slot="afterList">
                             <div v-if="hasMorePages" v-observe-visibility="reachedEndOfList">
-                                <span class="spinner fa fa-spinner fa-spin fa-1x" />
+                                <font-awesome-icon icon="fa-spinner" spin class="spinner fa-1x" />
                             </div>
                         </template>
                     </multiselect>
@@ -42,10 +42,17 @@ import Multiselect from "vue-multiselect";
 import { Services } from "components/Libraries/LibraryPermissions/services";
 import "vue-multiselect/dist/vue-multiselect.min.css";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSpinner);
+
 Vue.use(VueObserveVisibility);
 export default {
     components: {
         Multiselect,
+        FontAwesomeIcon,
     },
     props: {
         id: {

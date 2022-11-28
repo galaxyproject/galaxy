@@ -59,19 +59,19 @@
                     <div class="clearfix">
                         <div class="btn-group float-left">
                             <button disabled class="btn px-1 btn-link btn-sm">
-                                <span class="fa fa-save"></span>
+                                <FontAwesomeIcon icon="fa-save" />
                             </button>
                             <button disabled class="btn px-1 btn-link btn-sm">
-                                <span class="fa fa-link"></span>
+                                <FontAwesomeIcon icon="fa-link" />
                             </button>
                             <button disabled class="btn px-1 btn-link btn-sm">
-                                <span class="fa fa-info-circle"></span>
+                                <FontAwesomeIcon icon="fa-info-circle" />
                             </button>
                             <button disabled class="btn px-1 btn-link btn-sm">
-                                <span class="fa fa-bar-chart-o"></span>
+                                <FontAwesomeIcon icon="fa-chart-bar" />
                             </button>
                             <button disabled class="btn px-1 btn-link btn-sm">
-                                <span class="fa fa-sitemap"></span>
+                                <FontAwesomeIcon icon="fa-sitemap" />
                             </button>
                         </div>
                     </div>
@@ -89,12 +89,18 @@ import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
 import DatasetActions from "./DatasetActions";
 import { BLink } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSave, faLink, faInfoCircle, faChartBar, faSitemap } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSave, faLink, faInfoCircle, faChartBar, faSitemap);
 
 export default {
     components: {
         DatasetActions,
         DatasetProvider,
         BLink,
+        FontAwesomeIcon,
     },
     props: {
         dataset: { type: Object, required: true },

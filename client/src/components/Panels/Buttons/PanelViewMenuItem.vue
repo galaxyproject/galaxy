@@ -1,11 +1,26 @@
 <template>
     <b-dropdown-item :data-panel-id="panelView.id" :active="isSelected" @click="onClick">
-        <span :class="['fa', `fa-${icon}`]" fixed-width />
+        <FontAwesomeIcon :icon="`fa-${icon}`" fixed-width />
         <span v-localize class="ml-1" :title="title">{{ name }}</span>
     </b-dropdown-item>
 </template>
 
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faUndo,
+    faFilter,
+    faSitemap,
+    faProjectDiagram,
+    faNewspaper,
+    faGraduationCap,
+    faCheck,
+    faEye,
+} from "@fortawesome/free-solid-svg-icons";
+
+library.add(faUndo, faFilter, faSitemap, faProjectDiagram, faNewspaper, faGraduationCap, faCheck, faEye);
+
 const types_to_icons = {
     default: "undo",
     generic: "filter",
@@ -16,6 +31,7 @@ const types_to_icons = {
 };
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         currentPanelView: {
             type: String,

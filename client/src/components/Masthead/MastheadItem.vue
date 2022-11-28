@@ -14,7 +14,7 @@
             <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
             <span class="sr-only">{{ tab.tooltip || tab.id }}</span>
             <span :class="iconClasses" />
-            <span v-if="toggle" class="nav-note fa fa-check" />
+            <FontAwesomeIcon v-if="toggle" icon="fa-check" class="nav-note" />
         </template>
         <template v-else>
             {{ tab.title }}
@@ -53,6 +53,11 @@ import Vue from "vue";
 import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
 import { safePath } from "utils/redirect";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCheck);
 
 Vue.use(VBPopoverPlugin);
 Vue.use(VBTooltipPlugin);
@@ -63,6 +68,7 @@ export default {
         BNavItem,
         BNavItemDropdown,
         BDropdownItem,
+        FontAwesomeIcon,
     },
     props: {
         tab: {

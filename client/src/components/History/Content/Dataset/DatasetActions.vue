@@ -10,7 +10,7 @@
                     variant="link"
                     :href="reportErrorUrl"
                     @click.prevent.stop="onError">
-                    <span class="fa fa-bug" />
+                    <FontAwesomeIcon icon="fa-bug" />
                 </b-button>
                 <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
@@ -20,7 +20,7 @@
                     size="sm"
                     variant="link"
                     @click.stop="onCopyLink">
-                    <span class="fa fa-link" />
+                    <FontAwesomeIcon icon="fa-link" />
                 </b-button>
                 <b-button
                     v-if="showInfo"
@@ -30,7 +30,7 @@
                     variant="link"
                     :href="showDetailsUrl"
                     @click.prevent.stop="onInfo">
-                    <span class="fa fa-info-circle" />
+                    <FontAwesomeIcon icon="fa-info-circle" />
                 </b-button>
                 <b-button
                     v-if="writable && showRerun"
@@ -40,7 +40,7 @@
                     variant="link"
                     :href="rerunUrl"
                     @click.prevent.stop="onRerun">
-                    <span class="fa fa-redo" />
+                    <FontAwesomeIcon icon="fa-redo" />
                 </b-button>
                 <b-button
                     v-if="showVisualizations"
@@ -50,7 +50,7 @@
                     variant="link"
                     :href="visualizeUrl"
                     @click.prevent.stop="onVisualize">
-                    <span class="fa fa-bar-chart-o" />
+                    <FontAwesomeIcon icon="fa-chart-bar" />
                 </b-button>
                 <b-button
                     v-if="showHighlight"
@@ -59,10 +59,10 @@
                     size="sm"
                     variant="link"
                     @click.stop="onHighlight">
-                    <span class="fa fa-sitemap" />
+                    <FontAwesomeIcon icon="fa-sitemap" />
                 </b-button>
                 <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
-                    <span class="fa fa-question" />
+                    <FontAwesomeIcon icon="fa-question" />
                 </b-button>
             </div>
         </div>
@@ -74,10 +74,24 @@ import { copy as sendToClipboard } from "utils/clipboard";
 import { absPath, prependPath } from "utils/redirect.js";
 import { downloadUrlMixin } from "./mixins.js";
 import DatasetDownload from "./DatasetDownload";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faBug,
+    faLink,
+    faInfoCircle,
+    faRedo,
+    faChartBar,
+    faSitemap,
+    faQuestion,
+} from "@fortawesome/free-solid-svg-icons";
+
+library.add(faBug, faLink, faInfoCircle, faRedo, faChartBar, faSitemap, faQuestion);
 
 export default {
     components: {
         DatasetDownload,
+        FontAwesomeIcon,
     },
     mixins: [downloadUrlMixin],
     props: {

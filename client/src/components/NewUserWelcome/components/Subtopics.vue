@@ -20,14 +20,21 @@
             </b-card-group>
         </b-row>
         <b-button class="mt-auto" variant="primary" role="link" @click="$emit('back')">
-            <span class="fa fa-caret-left mr-1" />
+            <FontAwesomeIcon icon="fa-caret-left" class="mr-1" />
             <span>Return</span>
         </b-button>
     </div>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCaretLeft);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         topics: { type: Array, required: true },
         title: { type: String, required: true },
