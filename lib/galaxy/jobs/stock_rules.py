@@ -1,4 +1,4 @@
-""" Stock job 'dynamic' rules for use in job_conf.xml - these may cover some
+""" Stock job 'dynamic' rules for use in the job config file - these may cover some
 simple use cases but will just proxy into functions in rule_helper so similar
 functionality - but more tailored and composable can be utilized in custom
 rules.
