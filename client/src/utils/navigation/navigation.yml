@@ -158,7 +158,7 @@ history_panel:
       info_button: '${_} .params-btn'
       tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .rerun-btn'
-      alltags: '${_} .alltags .ti-tags'
+      alltags: '${_} .stateless-tags .tag'
 
   # history content item
   content_item:
@@ -188,7 +188,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
-      alltags: '${_} .stateless-tags .tags'
+      alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations_dropdown: '${_}  .dataset-actions'
