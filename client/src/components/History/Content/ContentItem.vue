@@ -219,7 +219,7 @@ export default {
             this.$router.push(this.itemUrls.edit);
         },
         onShowCollectionInfo() {
-            backboneRoute(this.itemUrls.showDetails);
+            this.$router.push(this.itemUrls.showDetails);
         },
         onTags(newTags) {
             this.$emit("tag-change", this.item, newTags);
