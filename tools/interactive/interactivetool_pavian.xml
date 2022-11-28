@@ -10,13 +10,30 @@
         </entry_point>
     </entry_points>
     <command><![CDATA[
-        mkdir -p /srv/shiny-server/data/ &&
-        cp '$infile' /srv/shiny-server/data/inputdata.txt &&
-        /usr/bin/shiny-server.sh
+#import re
+#if $infile
+    #for $input in $infile
+        #set link_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
+        ln -s '$input' '/home/shiny/$link_name' &&
+    #end for
+#end if
+cat '$shiny' /srv/shiny-server/app.R > /tmp/foo.R &&
+mv /tmp/foo.R /srv/shiny-server/app.R &&
+/usr/bin/shiny-server.sh
     ]]>
     </command>
+    <configfiles>
+        <configfile name="shiny"><![CDATA[
+options(pavian.load_server_directory=TRUE);
+options(pavian.server_access=TRUE);
+options(shiny.maxRequestSize=500*1024^2);
+options(pavian.server_dir="/home/shiny/")
+        ]]></configfile>
+    </configfiles>
     <inputs>
-        <param name="infile" type="data" multiple="true" optional="true" format="tabular" label="Input biodiversity data file(s)"/>
+        <param name="infile" type="data" multiple="true" optional="true" format="tabular" 
+            label="Kraken and MetaPhlAn-style report(s)" 
+            help="Centrifuge results can be used after running centrifuge-kreport on Centrifuge output files, and Kaiju results by running kraken-report on Kaiju output file"/>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />
@@ -28,7 +45,7 @@
 
 `Pavian <https://github.com/fbreitwieser/pavian>`_  is a interactive browser application for analyzing and visualization metagenomics classification results from classifiers such as Kraken, KrakenUniq, Kraken 2, Centrifuge and MetaPhlAn. Pavian also provides an alignment viewer for validation of matches to a particular genome.
 
-pavian natively supports the Kraken and MetaPhlAn-style report formats. In extension, you can use Centrifuge results by running centrifuge-kreport on Centrifuge output files, and Kaiju results by running kraken-report on Kaiju output files.
+pavian natively supports the Kraken and MetaPhlAn-style report formats. In extension, you can use Centrifuge results by running centrifuge-report on Centrifuge output files, and Kaiju results by running kraken-report on Kaiju output files.
 ]]>
     </help>
     <citations>
