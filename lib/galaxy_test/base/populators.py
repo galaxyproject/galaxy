@@ -1378,6 +1378,12 @@ class BaseDatasetPopulator(BasePopulator):
         task_ok = self.wait_on_task_id(task_id)
         assert task_ok, f"Task: Import history from {target_uri} failed"
 
+    def get_history_export_tasks(self, history_id: str):
+        headers = {"accept": "application/vnd.galaxy.task.export+json"}
+        response = self._get(f"histories/{history_id}/exports", headers=headers)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor

@@ -119,6 +119,37 @@ class TestImportExportHistoryViaTasksIntegration(
         assert imported_history_id != history_id
         assert imported_history["name"] == history_name
 
+    def test_export_tracking(self):
+        history_name = f"for_export_tracking_{uuid4()}"
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+        model_store_format = "rocrate.zip"
+        target_uri = f"gxfiles://posix_test/history.{model_store_format}"
+
+        # Initially there are no export records
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) == 0
+
+        # Export to a remote file source
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) == 1
+        last_record = export_records[0]
+
+        # Wait for export to finish if not ready yet
+        if last_record["preparing"]:
+            assert last_record["task_uuid"]
+            self.dataset_populator.wait_on_task_id(last_record["task_uuid"])
+
+        # It should be ready now
+        assert last_record["ready"] is True
+        # Check metadata
+        assert last_record["export_metadata"]
+        assert last_record["export_metadata"]["request_data"]
+        assert last_record["export_metadata"]["request_data"]["payload"]
+        assert last_record["export_metadata"]["request_data"]["payload"]["target_uri"] == target_uri
+        assert last_record["export_metadata"]["result_data"]
+        assert last_record["export_metadata"]["result_data"]["success"] is True
+
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):
     dataset_populator: DatasetPopulator
