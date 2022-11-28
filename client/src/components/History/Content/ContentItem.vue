@@ -61,6 +61,7 @@
                     :item-urls="itemUrls"
                     @delete="$emit('delete')"
                     @display="onDisplay"
+                    @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
                     @undelete="$emit('undelete')"
                     @unhide="$emit('unhide')" />
@@ -182,6 +183,10 @@ export default {
             if (this.isCollection) {
                 return {
                     edit: `/collection/${id}/edit`,
+                    showDetails:
+                        this.item.job_source_id && this.item.job_source_type === "Job"
+                            ? `jobs/${this.item.job_source_id}/view`
+                            : null,
                 };
             }
             return {
@@ -212,6 +217,9 @@ export default {
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);
+        },
+        onShowCollectionInfo() {
+            backboneRoute(this.itemUrls.showDetails);
         },
         onTags(newTags) {
             this.$emit("tag-change", this.item, newTags);

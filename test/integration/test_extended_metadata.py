@@ -28,6 +28,7 @@ TEST_TOOL_IDS = [
     "composite_output_tests",
     "metadata",
     "metadata_bam",
+    "discover_metadata_files",
     "output_format",
     "output_auto_format",
     "collection_paired_test",
@@ -127,7 +128,6 @@ class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCa
 
 
 class ExtendedMetadataIntegrationInstance(integration_util.IntegrationInstance):
-    """Describe a Galaxy test instance with embedded pulsar configured."""
 
     framework_tool_and_types = True
 

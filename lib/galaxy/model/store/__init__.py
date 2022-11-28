@@ -480,12 +480,14 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     )
                 else:
                     raise Exception("Unknown dataset instance type encountered")
+                metadata = replace_metadata_file(metadata, dataset_instance, self.sa_session)
                 if self.sessionless:
                     dataset_instance._metadata_collection = MetadataCollection(
                         dataset_instance, session=self.sa_session
                     )
-                    metadata = replace_metadata_file(metadata, dataset_instance, self.sa_session)
-                dataset_instance._metadata = metadata
+                    dataset_instance._metadata = metadata
+                else:
+                    dataset_instance.metadata = metadata
                 self._attach_raw_id_if_editing(dataset_instance, dataset_attrs)
 
                 # Older style...
@@ -628,18 +630,20 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         else:
                             # Need a user to run library jobs to generate metadata...
                             pass
-                        if self.app.datatypes_registry.set_external_metadata_tool:
-                            self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                                dataset_instance, history, **regenerate_kwds
-                            )
-                        else:
-                            # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
-                            try:
-                                if dataset_instance.has_metadata_files:
-                                    dataset_instance.datatype.set_meta(dataset_instance)
-                            except Exception:
-                                log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
-                                dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
+                        if not self.import_options.allow_edit:
+                            # external import, metadata files need to be regenerated (as opposed to extended metadata dataset import)
+                            if self.app.datatypes_registry.set_external_metadata_tool:
+                                self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                                    dataset_instance, history, **regenerate_kwds
+                                )
+                            else:
+                                # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
+                                try:
+                                    if dataset_instance.has_metadata_files:
+                                        dataset_instance.datatype.set_meta(dataset_instance)
+                                except Exception:
+                                    log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
+                                    dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
