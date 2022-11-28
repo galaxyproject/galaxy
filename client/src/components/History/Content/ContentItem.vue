@@ -77,6 +77,7 @@
             :value="tags"
             :disabled="tagsDisabled"
             :clickable="filterable"
+            :useToggleLink="false"
             @input="onTags"
             @tag-click="onTagClick" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->

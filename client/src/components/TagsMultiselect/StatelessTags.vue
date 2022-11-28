@@ -5,6 +5,7 @@ import { ref, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useUserTags } from "composables/user";
 import { useToast } from "composables/toast";
+import { useUid } from "composables/utils/uid";
 
 const props = defineProps({
     value: {
@@ -18,6 +19,14 @@ const props = defineProps({
     clickable: {
         type: Boolean,
         default: false,
+    },
+    useToggleLink: {
+        type: Boolean,
+        default: true,
+    },
+    maxVisibleTags: {
+        type: Number,
+        default: 5,
     },
 });
 
@@ -65,6 +74,25 @@ function openMultiselect() {
 }
 
 const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#")));
+
+const toggledOpen = ref(false);
+const toggleButtonId = useUid("toggle-link-");
+
+const trimmedTags = computed(() => {
+    if (!props.useToggleLink || toggledOpen.value) {
+        return tags.value;
+    } else {
+        return tags.value.slice(0, props.maxVisibleTags);
+    }
+});
+
+const slicedTags = computed(() => {
+    if (!props.useToggleLink) {
+        return [];
+    } else {
+        return tags.value.slice(props.maxVisibleTags);
+    }
+});
 
 const invalidTagRegex = /([.:\s][.:\s])|(^[.:])|([.:]$)|(^[\s]*$)/;
 
@@ -149,12 +177,30 @@ library.add(faTags, faCheck, faTimes, faPlus);
         <div v-else class="pl-1 pb-2">
             <div class="d-inline">
                 <Tag
-                    v-for="tag in tags"
+                    v-for="tag in trimmedTags"
                     :key="tag"
                     :option="tag"
                     :editable="false"
                     :clickable="props.clickable"
                     @click="onTagClicked"></Tag>
+                <b-button
+                    v-if="slicedTags.length > 0 && !toggledOpen"
+                    variant="link"
+                    class="toggle-link"
+                    :id="toggleButtonId"
+                    @click="() => (toggledOpen = true)">
+                    {{ slicedTags.length }} more...
+                </b-button>
+
+                <b-tooltip :target="toggleButtonId" placement="bottom">
+                    <Tag
+                        v-for="tag in slicedTags"
+                        :key="tag"
+                        :option="tag"
+                        :editable="false"
+                        :clickable="props.clickable"
+                        @click="onTagClicked"></Tag>
+                </b-tooltip>
             </div>
         </div>
     </div>
@@ -164,6 +210,16 @@ library.add(faTags, faCheck, faTimes, faPlus);
 @import "scss/theme/blue.scss";
 
 .stateless-tags {
+    .toggle-link {
+        padding: 0;
+        border: none;
+
+        &:hover {
+            background-color: transparent;
+            border: none;
+        }
+    }
+
     &:deep(.multiselect) {
         min-height: unset;
         display: flex;
