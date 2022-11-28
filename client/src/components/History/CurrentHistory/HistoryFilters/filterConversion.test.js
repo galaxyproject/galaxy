@@ -1,5 +1,5 @@
 import { defaultFilters } from "store/historyStore/model/filtering";
-import { containsDefaults, getDefaults, getFilterText } from "./filterConversion";
+import { containsDefaults, getDefaults, getFilterText } from "utils/filterConversion";
 
 describe("test filtering helpers to convert settings to filter text", () => {
     it("conversion from settings to new filter text", async () => {
