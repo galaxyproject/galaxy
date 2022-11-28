@@ -28,7 +28,7 @@ import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 library.add(faUpload);
 

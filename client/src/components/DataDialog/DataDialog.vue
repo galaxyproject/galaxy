@@ -46,7 +46,7 @@ import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
-import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 Vue.use(BootstrapVue);
 

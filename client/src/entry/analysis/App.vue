@@ -55,7 +55,7 @@ import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
-import { setGlobalUploadModal } from "composables/useGlobalUploadModal";
+import { setGlobalUploadModal } from "composables/globalUploadModal";
 
 export default {
     components: {

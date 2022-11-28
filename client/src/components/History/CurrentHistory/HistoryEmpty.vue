@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 export default {
     props: {

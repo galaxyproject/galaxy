@@ -5,8 +5,8 @@ import { ref } from "vue";
 import { getAppRoot } from "onload";
 
 import { useCurrentUser } from "composables/user";
-import { useUserHistories } from "composables/useUserHistories";
-import { useConfig } from "composables/useConfig";
+import { useUserHistories } from "composables/userHistories";
+import { useConfig } from "composables/config";
 
 const { currentUser } = useCurrentUser();
 const { currentHistoryId } = useUserHistories(currentUser);

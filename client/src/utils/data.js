@@ -9,7 +9,7 @@ import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import { submitUpload } from "utils/uploadbox";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
-import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary

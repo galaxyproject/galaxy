@@ -71,7 +71,7 @@
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { UploadButton } from "components/Upload";
-import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import { filterToolSections, filterTools, hasResults } from "./utilities";

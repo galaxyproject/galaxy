@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from "vue";
-import { useFileDrop } from "composables/useFileDrop";
-import { useGlobalUploadModal } from "composables/useGlobalUploadModal";
+import { useFileDrop } from "composables/fileDrop";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 const modalContentElement = ref(null);
 const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, true);
