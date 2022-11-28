@@ -4,7 +4,13 @@
         :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
         :data-hid="id"
         :data-state="state">
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick" @keypress="onClick">
+        <div
+            class="p-1 cursor-pointer"
+            draggable
+            tabindex="0"
+            @dragstart="onDragStart"
+            @click.stop="onClick"
+            @keypress="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
                     <span v-if="selectable" class="selector">
@@ -25,6 +31,7 @@
                         v-if="highlight == 'input'"
                         v-b-tooltip.hover
                         title="Input"
+                        tabindex="0"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <font-awesome-icon class="text-info" icon="arrow-circle-up" />
@@ -33,6 +40,7 @@
                         v-else-if="highlight == 'noInputs'"
                         v-b-tooltip.hover
                         title="No Inputs for this item"
+                        tabindex="0"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <font-awesome-icon icon="minus-circle" />
@@ -41,6 +49,7 @@
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
                         title="Inputs highlighted for this item"
+                        tabindex="0"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <font-awesome-icon icon="check-circle" />
