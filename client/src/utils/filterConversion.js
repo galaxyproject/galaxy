@@ -287,7 +287,7 @@ export function getQueryDict(filterText, useDefaultFilters = true) {
  * @param {String} filterText The raw filter text
  * @param {Boolean} useDefaultFilters The default filters are set if true
  * */
-export const getQueryString = (filterText, useDefaultFilters) => {
+export const getQueryString = (filterText, useDefaultFilters = true) => {
     const filterDict = getQueryDict(filterText, useDefaultFilters);
     return Object.entries(filterDict)
         .map(([f, v]) => `q=${f}&qv=${v}`)
