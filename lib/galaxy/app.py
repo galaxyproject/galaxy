@@ -232,7 +232,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.name = "galaxy"
         self.is_webapp = False
         # Read config file and check for errors
-        self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
+        self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
         self.config.check()
         self._configure_object_store(fsmon=True)
         self._register_singleton(BaseObjectStore, self.object_store)
@@ -392,13 +392,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
     def _configure_security(self):
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         BaseDatabaseIdField.security = self.security
-
-    def _configure_tool_shed_registry(self):
-        # Set up the tool sheds registry
-        if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed_registry.Registry(self.config.tool_sheds_config_file)
-        else:
-            self.tool_shed_registry = tool_shed_registry.Registry()
 
     def _configure_engines(self, db_url, install_db_url, combined_install_database):
         trace_logger = getattr(self, "trace_logger", None)
@@ -574,6 +567,16 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         self.configure_sentry_client()
 
+        self._configure_tool_shed_registry()
+        self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
+
+    def _configure_tool_shed_registry(self) -> None:
+        # Set up the tool sheds registry
+        if os.path.isfile(self.config.tool_sheds_config_file):
+            self.tool_shed_registry = tool_shed_registry.Registry(self.config.tool_sheds_config_file)
+        else:
+            self.tool_shed_registry = tool_shed_registry.Registry()
+
     @property
     def is_job_handler(self) -> bool:
         return (
@@ -609,9 +612,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
-
-        self._configure_tool_shed_registry()
-        self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)
@@ -672,7 +672,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Tours registry
         tour_registry = build_tours_registry(self.config.tour_config_dir)
         self.tour_registry = tour_registry
-        self[ToursRegistry] = tour_registry  # type: ignore[misc]
+        self[ToursRegistry] = tour_registry  # type: ignore[type-abstract]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
         # Heartbeat for thread profiling

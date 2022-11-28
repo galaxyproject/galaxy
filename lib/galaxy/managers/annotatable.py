@@ -6,7 +6,8 @@ import abc
 import logging
 from typing import Dict
 
-from galaxy.model.scoped_session import galaxy_scoped_session
+from sqlalchemy.orm import scoped_session
+
 from .base import (
     Deserializer,
     FunctionFilterParsersType,
@@ -34,7 +35,7 @@ class AnnotatableManagerMixin:
     annotation_assoc: type
 
     @abc.abstractmethod
-    def session(self) -> galaxy_scoped_session:
+    def session(self) -> scoped_session:
         ...
 
     def annotation(self, item):

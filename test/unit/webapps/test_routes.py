@@ -1,5 +1,8 @@
+from typing import cast
+
 from routes import request_config
 
+from galaxy.structured_app import MinimalApp
 from galaxy.util.bunch import Bunch
 from galaxy.web import url_for
 from galaxy.webapps.base.webapp import WebApplication
@@ -22,7 +25,7 @@ class MockWebApplication(WebApplication):
 
 def test_galaxy_routes():
     test_config = Bunch(template_cache_path="/tmp")
-    app = Bunch(config=test_config, security=object(), trace_logger=None, name="galaxy")
+    app = cast(MinimalApp, Bunch(config=test_config, security=object(), trace_logger=None, name="galaxy"))
     test_webapp = MockWebApplication(app)
 
     galaxy_buildapp.populate_api_routes(test_webapp, app)

@@ -187,8 +187,8 @@ class ModelStoreManager:
             import_options,
             model_store_format=request.model_store_format,
         )
-        new_history = history is None and not request.for_library
-        if new_history:
+        create_new_history = history is None and not request.for_library
+        if create_new_history:
             if not model_import_store.defines_new_history():
                 raise RequestParameterInvalidException("Supplied model store doesn't define new history to import.")
             with model_import_store.target_history(legacy_history_naming=False) as new_history:
@@ -197,7 +197,7 @@ class ModelStoreManager:
         else:
             object_tracker = model_import_store.perform_import(
                 history=history,
-                new_history=new_history,
+                new_history=create_new_history,
             )
         return object_tracker
 
@@ -220,8 +220,8 @@ def create_objects_from_store(
         import_options=import_options,
         model_store_format=payload.model_store_format,
     )
-    new_history = history is None and not for_library
-    if new_history:
+    create_new_history = history is None and not for_library
+    if create_new_history:
         if not model_import_store.defines_new_history():
             raise RequestParameterInvalidException("Supplied model store doesn't define new history to import.")
         with model_import_store.target_history(legacy_history_naming=False) as new_history:
@@ -230,6 +230,6 @@ def create_objects_from_store(
     else:
         object_tracker = model_import_store.perform_import(
             history=history,
-            new_history=new_history,
+            new_history=create_new_history,
         )
     return object_tracker

@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Callable,
+    Dict,
+)
 
 from galaxy import (
     util,
@@ -28,7 +32,7 @@ class GroupsController(BaseAPIController):
         super().__init__(app)
         self.group_manager = groups.GroupManager()
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {"id": trans.security.encode_id}
         return value_mapper
 
