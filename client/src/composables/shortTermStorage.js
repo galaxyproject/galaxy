@@ -3,13 +3,14 @@ import axios from "axios";
 import { safePath } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
-const DEFAULT_POLL_DELAY = 1000;
-const DEFAULT_EXPORT_PARAMS = {
+export const DEFAULT_EXPORT_PARAMS = {
     modelStoreFormat: "rocrate.zip",
     includeFiles: true,
     includeDeleted: false,
     includeHidden: false,
 };
+
+const DEFAULT_POLL_DELAY = 1000;
 const DEFAULT_OPTIONS = { exportParams: DEFAULT_EXPORT_PARAMS, pollDelayInMs: DEFAULT_POLL_DELAY };
 
 /**

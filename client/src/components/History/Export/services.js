@@ -2,40 +2,12 @@ import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
 import { safePath } from "utils/redirect";
 import { ExportRecordModel } from "components/Common/models/exportRecordModel";
-
-const DEFAULT_EXPORT_PARAMS = {
-    modelStoreFormat: "rocrate.zip",
-    includeFiles: true,
-    includeDeleted: false,
-    includeHidden: false,
-};
+import { DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
 
 export const AVAILABLE_EXPORT_FORMATS = [
     { id: "rocrate.zip", name: "RO-Crate" },
     { id: "tar.gz", name: "Compressed TGZ" },
 ];
-
-export class ExportParamsModel {
-    constructor(params = DEFAULT_EXPORT_PARAMS) {
-        this._params = params;
-    }
-
-    get modelStoreFormat() {
-        return this._params.modelStoreFormat;
-    }
-
-    get includeFiles() {
-        return this._params.includeFiles;
-    }
-
-    get includeDeleted() {
-        return this._params.includeDeleted;
-    }
-
-    get includeHidden() {
-        return this._params.includeHidden;
-    }
-}
 
 export class HistoryExportService {
     /**

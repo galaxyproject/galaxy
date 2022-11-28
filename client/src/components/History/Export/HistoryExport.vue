@@ -68,18 +68,17 @@ async function updateExports() {
 }
 
 async function exportToFileSource(exportDirectory, fileName) {
-    await service.exportToFileSource(props.historyId, exportDirectory, fileName, exportParams.value);
+    await service.exportToFileSource(props.historyId, exportDirectory, fileName, exportParams);
     updateExports();
 }
 
 async function prepareDownload() {
     const upToDateDownloadRecord = findValidUpToDateDownloadRecord();
     if (upToDateDownloadRecord) {
-        console.debug("Existing STS download found", upToDateDownloadRecord);
         downloadObjectByRequestId(upToDateDownloadRecord.stsDownloadId);
         return;
     }
-    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: exportParams.value });
+    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: exportParams });
     updateExports();
 }
 
@@ -90,7 +89,11 @@ function downloadFromRecord(record) {
 }
 
 function findValidUpToDateDownloadRecord() {
-    return exportRecords.value ? exportRecords.value.find((record) => record.canDownload && record.isUpToDate) : null;
+    return exportRecords.value
+        ? exportRecords.value.find(
+              (record) => record.canDownload && record.isUpToDate && record.exportParams?.equals(exportParams)
+          )
+        : null;
 }
 
 async function reimportFromRecord(record) {

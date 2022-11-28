@@ -85,7 +85,7 @@ function downloadObject(record) {
                             v-if="row.item.isReady"
                             icon="check-circle"
                             class="text-success"
-                            title="Ready to download or import" />
+                            title="Ready to download or import." />
                         <font-awesome-icon
                             v-else-if="row.item.isPreparing"
                             icon="spinner"
@@ -93,10 +93,15 @@ function downloadObject(record) {
                             class="text-info"
                             title="Exporting in progress..." />
                         <font-awesome-icon
+                            v-else-if="row.item.hasExpired"
+                            icon="exclamation-circle"
+                            class="text-danger"
+                            title="The export has expired." />
+                        <font-awesome-icon
                             v-else
                             icon="exclamation-circle"
                             class="text-danger"
-                            title="The export failed" />
+                            title="The export failed." />
                     </template>
                     <template v-slot:cell(actions)="row">
                         <b-button-toolbar aria-label="Actions">

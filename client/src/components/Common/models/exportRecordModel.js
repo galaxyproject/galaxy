@@ -1,13 +1,50 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
 
+export class ExportParamsModel {
+    constructor(params = {}) {
+        this._params = params;
+    }
+
+    get modelStoreFormat() {
+        return this._params?.model_store_format;
+    }
+
+    get includeFiles() {
+        return this._params?.include_files;
+    }
+
+    get includeDeleted() {
+        return this._params?.include_deleted;
+    }
+
+    get includeHidden() {
+        return this._params?.include_hidden;
+    }
+}
+
+ExportParamsModel.prototype.equals = function (otherExportParams) {
+    if (!otherExportParams) {
+        return false;
+    }
+    return (
+        this.modelStoreFormat == otherExportParams.modelStoreFormat &&
+        this.includeFiles == otherExportParams.includeFiles &&
+        this.includeDeleted == otherExportParams.includeDeleted &&
+        this.includeHidden == otherExportParams.includeHidden
+    );
+};
+
 export class ExportRecordModel {
     constructor(data) {
         this._data = data;
         this._expirationDate = undefined;
+        this._exportParams = data.export_metadata?.request_data?.payload
+            ? new ExportParamsModel(data.export_metadata.request_data.payload)
+            : null;
     }
 
     get isReady() {
-        return this._data.ready || false;
+        return (this._data.ready && !this.hasExpired) || false;
     }
 
     get isPreparing() {
@@ -56,6 +93,10 @@ export class ExportRecordModel {
 
     get modelStoreFormat() {
         return this._data?.export_metadata?.request_data?.payload?.model_store_format;
+    }
+
+    get exportParams() {
+        return this._exportParams;
     }
 
     get duration() {
