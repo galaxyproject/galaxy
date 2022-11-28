@@ -120,8 +120,8 @@ library.add(faTags, faCheck, faTimes, faPlus);
     <div class="stateless-tags px-1">
         <Multiselect
             v-if="!disabled"
-            placeholder="Add Tags"
             ref="multiselectElement"
+            placeholder="Add Tags"
             :value="tags"
             :options="userTags"
             :multiple="true"
@@ -185,9 +185,9 @@ library.add(faTags, faCheck, faTimes, faPlus);
                     @click="onTagClicked"></Tag>
                 <b-button
                     v-if="slicedTags.length > 0 && !toggledOpen"
+                    :id="toggleButtonId"
                     variant="link"
                     class="toggle-link"
-                    :id="toggleButtonId"
                     @click="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
                 </b-button>
