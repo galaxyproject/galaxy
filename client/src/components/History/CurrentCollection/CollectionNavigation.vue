@@ -7,7 +7,7 @@
             style="text-overflow: ellipsis"
             variant="link"
             @click="close">
-            <icon icon="angle-double-left" class="mr-1" data-description="back to history" /><span
+            <FontAwesomeIcon icon="fa-angle-double-left" class="mr-1" data-description="back to history" /><span
                 >History: {{ historyName }}</span
             >
         </b-button>
@@ -18,7 +18,14 @@
 </template>
 
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleLeft } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faAngleDoubleLeft);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         historyName: { type: String, required: true },
         selectedCollections: { type: Array, required: true, validate: (val) => val.length > 0 },

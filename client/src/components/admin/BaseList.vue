@@ -9,7 +9,7 @@
                 :title="tooltipAll"
                 data-placement="bottom"
                 @click.prevent="executeAll()">
-                <span :class="icon" />
+                <FontAwesomeIcon :class="icon" />
             </b-button>
             {{ plural }} available.
         </div>
@@ -21,7 +21,7 @@
                     :title="tooltip"
                     data-placement="bottom"
                     @click.prevent="execute([data.item.id])">
-                    <span :class="icon" />
+                    <FontAwesomeIcon :class="icon" />
                 </b-button>
             </template>
             <template v-slot:cell(links)="data">
@@ -35,10 +35,12 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         icon: {
             type: String,

@@ -4,6 +4,7 @@ import svc from "./model/service";
 import APIKeyItem from "./APIKeyItem";
 import { getGalaxyInstance } from "app";
 import LoadingSpan from "components/LoadingSpan";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const apiKey = ref(null);
 const loading = ref(false);
@@ -30,6 +31,13 @@ const createNewAPIKey = () => {
 getAPIKey();
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlus, faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faPlus, faSpinner);
+</script>
+
 <template>
     <section class="api-key d-flex flex-column">
         <h1 v-localize class="h-lg">Manage API Key</h1>
@@ -53,8 +61,8 @@ getAPIKey();
             class="create-button"
             variant="primary"
             @click.prevent="createNewAPIKey">
-            <icon v-if="!createLoading" icon="plus" />
-            <icon v-else icon="spinner" spin />
+            <FontAwesomeIcon v-if="!createLoading" icon="plus" />
+            <FontAwesomeIcon v-else icon="spinner" spin />
             <span v-localize>Create a new key</span>
         </b-button>
 

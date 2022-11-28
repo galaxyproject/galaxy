@@ -1,7 +1,7 @@
 <template>
     <BaseList
         :fields="fields"
-        icon="fa fa-trash-o"
+        icon="far fa-trash-alt"
         tooltip="Reset"
         plural="metadata entries"
         success="successful"
@@ -11,6 +11,10 @@
 <script>
 import BaseList from "./BaseList";
 import { getInstalledRepositories, resetRepositoryMetadata } from "./AdminServices";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faTrashAlt);
 
 export default {
     components: {

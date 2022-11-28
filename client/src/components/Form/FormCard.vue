@@ -17,12 +17,12 @@
                 </b-button>
             </div>
             <b-link v-if="collapsible" class="portlet-title" href="#" @click="onCollapse">
-                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
+                <FontAwesomeIcon v-if="icon" :icon="icon" class="portlet-title-icon mr-1" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>
             </b-link>
             <span v-else class="portlet-title">
-                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
+                <FontAwesomeIcon v-if="icon" :icon="icon" class="portlet-title-icon mr-1" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>
             </span>

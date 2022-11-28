@@ -19,7 +19,7 @@
                         </DebouncedInput>
                         <b-input-group-append>
                             <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
-                                <icon icon="times" />
+                                <FontAwesomeIcon icon="times" />
                             </b-button>
                         </b-input-group-append>
                     </b-input-group>
@@ -43,6 +43,7 @@ import DebouncedInput from "components/DebouncedInput";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import MultipleViewList from "./MultipleViewList";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
@@ -55,6 +56,7 @@ export default {
         CurrentUser,
         UserHistories,
         MultipleViewList,
+        FontAwesomeIcon,
     },
     data() {
         return {

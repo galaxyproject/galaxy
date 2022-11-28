@@ -19,8 +19,8 @@
                 :title="titleAdvanced | l"
                 data-description="toggle advanced search"
                 @click="onToggle">
-                <icon v-if="showAdvanced" icon="angle-double-up" />
-                <icon v-else icon="angle-double-down" />
+                <FontAwesomeIcon v-if="showAdvanced" icon="fa-angle-double-up" />
+                <FontAwesomeIcon v-else icon="fa-angle-double-down" />
             </b-button>
             <b-button
                 class="search-clear"
@@ -28,14 +28,22 @@
                 :title="titleClear | l"
                 data-description="reset query"
                 @click="clearBox">
-                <icon v-if="loading" icon="spinner" spin />
-                <icon v-else icon="times" />
+                <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
+                <FontAwesomeIcon v-else icon="fa-times" />
             </b-button>
         </b-input-group-append>
     </b-input-group>
 </template>
+
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faAngleDoubleDown, faAngleDoubleUp, faSpinner, faTimes);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         query: {
             type: String,

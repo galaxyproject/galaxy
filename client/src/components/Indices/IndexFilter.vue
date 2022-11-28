@@ -20,7 +20,7 @@
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
-                    <icon icon="question" />
+                    <FontAwesomeIcon icon="question" />
                 </b-button>
             </b-input-group-append>
         </b-input-group>
@@ -34,6 +34,11 @@
 import DebouncedInput from "components/DebouncedInput";
 
 import { BInputGroup, BInputGroupAppend, BButton, BModal } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faQuestion);
 
 /**
  * Component for the search/filter button on the top of Galaxy object index grids.
@@ -45,6 +50,7 @@ export default {
         BInputGroupAppend,
         BButton,
         BModal,
+        FontAwesomeIcon,
     },
     props: {
         id: {

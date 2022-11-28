@@ -19,15 +19,15 @@
                     data-description="show advanced filter toggle"
                     aria-label="Show advanced filter"
                     @click="onToggle">
-                    <icon v-if="showAdvanced" icon="angle-double-up" />
-                    <icon v-else icon="angle-double-down" />
+                    <FontAwesomeIcon v-if="showAdvanced" icon="angle-double-up" />
+                    <FontAwesomeIcon v-else icon="angle-double-down" />
                 </b-button>
                 <b-button
                     size="sm"
                     aria-label="Clear filters"
                     data-description="clear filters"
                     @click="updateFilter('')">
-                    <icon icon="times" />
+                    <FontAwesomeIcon icon="times" />
                 </b-button>
             </b-input-group-append>
         </b-input-group>
@@ -69,11 +69,11 @@
             <history-filters-default :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
-                    <icon icon="search" />
+                    <FontAwesomeIcon icon="search" />
                     <span>{{ "Search" | localize }}</span>
                 </b-button>
                 <b-button size="sm" @click="onToggle">
-                    <icon icon="redo" />
+                    <FontAwesomeIcon icon="redo" />
                     <span>{{ "Cancel" | localize }}</span>
                 </b-button>
             </div>
@@ -87,11 +87,17 @@ import DebouncedInput from "components/DebouncedInput";
 import { STATES } from "components/History/Content/model/states";
 import { getFilterText } from "./filterConversion";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleUp, faAngleDoubleDown, faTimes, faSearch, faRedo } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faAngleDoubleUp, faAngleDoubleDown, faTimes, faSearch, faRedo);
 
 export default {
     components: {
         DebouncedInput,
         HistoryFiltersDefault,
+        FontAwesomeIcon,
     },
     props: {
         filterText: { type: String, default: null },

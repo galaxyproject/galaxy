@@ -9,7 +9,7 @@
                     variant="link"
                     :href="downloadUrl"
                     @click="onDownload">
-                    <Icon class="mr-1" icon="download" />
+                    <FontAwesomeIcon class="mr-1" icon="fa-download" />
                     <span>Download</span>
                 </b-button>
             </b-button-group>
@@ -18,7 +18,14 @@
 </template>
 
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDownload } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faDownload);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         dsc: { type: Object, required: true },
     },

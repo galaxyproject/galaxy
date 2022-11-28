@@ -9,7 +9,7 @@
             data-description="history action menu">
             <template v-slot:button-content>
                 <span class="sr-only">History actions</span>
-                <Icon icon="cog" />
+                <FontAwesomeIcon icon="cog" />
             </template>
             <b-dropdown-text id="history-op-all-content">
                 <span v-localize>With entire history...</span>
@@ -45,8 +45,14 @@
 import { unhideAllHiddenContent, deleteAllHiddenContent, purgeAllDeletedContent } from "components/History/model/crud";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCog);
 
 export default {
+    components: { FontAwesomeIcon },
     mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },

@@ -28,11 +28,11 @@
             <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
                 <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
-                    <icon icon="search" />
+                    <FontAwesomeIcon icon="search" />
                     <span>{{ "Search" | localize }}</span>
                 </b-button>
                 <b-button size="sm" @click="onToggle(false)">
-                    <icon icon="redo" />
+                    <FontAwesomeIcon icon="redo" />
                     <span>{{ "Cancel" | localize }}</span>
                 </b-button>
             </div>
@@ -44,11 +44,17 @@
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
 import { normalizeTools, searchToolsByKeys } from "../utilities.js";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSearch, faRedo } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSearch, faRedo);
 
 export default {
     name: "ToolSearch",
     components: {
         DelayedInput,
+        FontAwesomeIcon,
     },
     props: {
         currentPanelView: {

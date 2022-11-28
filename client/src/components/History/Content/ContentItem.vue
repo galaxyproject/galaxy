@@ -47,7 +47,7 @@
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">
                     <b-badge variant="secondary" title="This dataset has been permanently deleted">
-                        <icon icon="burn" /> Purged
+                        <font-awesome-icon icon="fire-alt" /> Purged
                     </b-badge>
                 </span>
                 <ContentOptions
@@ -105,9 +105,9 @@ import { updateContentFields } from "components/History/model/queries";
 import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { faArrowCircleUp, faMinusCircle, faCheckCircle, faFireAlt } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
+library.add(faArrowCircleUp, faMinusCircle, faCheckCircle, faFireAlt);
 
 export default {
     components: {

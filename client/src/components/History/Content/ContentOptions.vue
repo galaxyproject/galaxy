@@ -9,7 +9,7 @@
             variant="link"
             :href="displayUrl"
             @click.prevent.stop="$emit('display')">
-            <icon icon="eye" />
+            <FontAwesomeIcon icon="fa-eye" />
         </b-button>
         <b-button
             v-if="writable && isHistoryItem"
@@ -20,7 +20,7 @@
             variant="link"
             :href="editUrl"
             @click.prevent.stop="$emit('edit')">
-            <icon icon="pen" />
+            <FontAwesomeIcon icon="fa-pen" />
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && !isDeleted"
@@ -29,7 +29,7 @@
             size="sm"
             variant="link"
             @click.stop="$emit('delete')">
-            <icon icon="trash" />
+            <FontAwesomeIcon icon="fa-trash" />
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && isDeleted"
@@ -38,7 +38,7 @@
             size="sm"
             variant="link"
             @click.stop="$emit('undelete')">
-            <icon icon="trash-restore" />
+            <FontAwesomeIcon icon="fa-trash-restore" />
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && !isVisible"
@@ -47,14 +47,21 @@
             size="sm"
             variant="link"
             @click.stop="$emit('unhide')">
-            <icon icon="eye-slash" />
+            <FontAwesomeIcon icon="fa-eye-slash" />
         </b-button>
     </span>
 </template>
 
 <script>
 import { prependPath } from "utils/redirect.js";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye, faPen, faTrash, faTrashRestore, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEye, faPen, faTrash, faTrashRestore, faEyeSlash);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         writable: { type: Boolean, default: true },
         isDataset: { type: Boolean, required: true },

@@ -8,6 +8,7 @@ import { redirectOnImport } from "../utils";
 import LoadingSpan from "components/LoadingSpan";
 import TrsServerSelection from "./TrsServerSelection";
 import DebouncedInput from "components/DebouncedInput";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const fields = [
     { key: "name", label: "Name" },
@@ -98,6 +99,13 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
 };
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faQuestion, faTimes);
+</script>
+
 <template>
     <b-card title="GA4GH Tool Registry Server (TRS) Workflow Search">
         <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
@@ -128,10 +136,10 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
                         size="sm"
                         data-description="show help toggle"
                         :title="searchHelp">
-                        <icon icon="question" />
+                        <FontAwesomeIcon icon="question" />
                     </b-button>
                     <b-button size="sm" data-description="show deleted filter toggle" @click="query = ''">
-                        <icon icon="times" />
+                        <FontAwesomeIcon icon="times" />
                     </b-button>
                 </b-input-group-append>
             </b-input-group>

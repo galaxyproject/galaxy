@@ -1,4 +1,6 @@
 <script setup>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 const props = defineProps({
     trsTool: {
         type: Object,
@@ -12,6 +14,13 @@ const importVersion = (version) => {
     const version_id = version.id.includes(`:${version.name}`) ? version.name : version.id;
     emit("onImport", version_id);
 };
+</script>
+
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faUpload);
 </script>
 
 <template>
@@ -37,7 +46,7 @@ const importVersion = (version) => {
                         :data-version-name="version.name"
                         @click="importVersion(version)">
                         {{ version.name }}
-                        <icon icon="upload" />
+                        <FontAwesomeIcon icon="upload" />
                     </b-button>
                 </li>
             </ul>

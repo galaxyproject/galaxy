@@ -4,6 +4,7 @@ import svc from "./model/service";
 import { getGalaxyInstance } from "app";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 defineProps({
     item: {
@@ -30,6 +31,13 @@ const deleteKey = () => {
 };
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faKey, faTrash } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faKey, faTrash);
+</script>
+
 <template>
     <b-card title="Current API key">
         <div class="d-flex justify-content-between w-100">
@@ -42,7 +50,7 @@ const deleteKey = () => {
                     @mouseleave="hover = false">
                     <b-input-group-prepend>
                         <b-input-group-text>
-                            <icon icon="key" />
+                            <FontAwesomeIcon icon="key" />
                         </b-input-group-text>
                     </b-input-group-prepend>
 
@@ -60,7 +68,7 @@ const deleteKey = () => {
                                 title="Copy key" />
                         </b-input-group-text>
                         <b-button title="Delete api key" @click="toggleDeleteModal">
-                            <icon icon="trash" />
+                            <FontAwesomeIcon icon="trash" />
                         </b-button>
                     </b-input-group-append>
                 </b-input-group>

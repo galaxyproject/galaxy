@@ -1,7 +1,10 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import FormCard from "./FormCard";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faUser } from "@fortawesome/free-solid-svg-icons";
 
+library.add(faUser);
 const localVue = getLocalVue();
 
 describe("FormCard", () => {
@@ -12,7 +15,7 @@ describe("FormCard", () => {
             propsData: {
                 title: "title",
                 description: "description",
-                icon: "icon-class",
+                icon: "fa-user",
             },
             localVue,
         });
@@ -24,6 +27,6 @@ describe("FormCard", () => {
         const description = wrapper.find(".portlet-title-description");
         expect(description.text()).toBe("description");
         const icon = wrapper.find(".portlet-title-icon");
-        expect(icon.classes()).toContain("icon-class");
+        expect(icon.classes()).toContain("fa-user");
     });
 });

@@ -10,7 +10,7 @@
                     :disabled="!hasMatches"
                     :pressed="showSelection"
                     @click="toggleSelection">
-                    <Icon icon="check-square" />
+                    <FontAwesomeIcon icon="check-square" />
                 </b-button>
                 <b-button
                     title="Collapse Items"
@@ -19,7 +19,7 @@
                     variant="link"
                     :disabled="!expandedCount"
                     @click="$emit('collapse-all')">
-                    <Icon icon="compress" />
+                    <FontAwesomeIcon icon="compress" />
                 </b-button>
             </b-button-group>
             <b-button-group v-show="showSelection">
@@ -35,10 +35,16 @@
 
 <script>
 import DefaultOperations from "./Operations";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheckSquare, faCompress } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCheckSquare, faCompress);
 
 export default {
     components: {
         DefaultOperations,
+        FontAwesomeIcon,
     },
     props: {
         history: { type: Object, required: true },

@@ -7,7 +7,7 @@
             size="sm"
             class="rounded-0 text-decoration-none"
             @click="onDashboard">
-            <icon icon="database" />
+            <FontAwesomeIcon icon="fa-database" />
             <span>{{ historySize | niceFileSize }}</span>
         </b-button>
         <b-button-group>
@@ -18,7 +18,7 @@
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('')">
-                <span class="fa fa-map-marker" />
+                <FontAwesomeIcon icon="fa-map-marker" />
                 <span>{{ numItemsActive }}</span>
             </b-button>
             <b-button
@@ -29,7 +29,7 @@
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('deleted:true')">
-                <icon icon="trash" />
+                <FontAwesomeIcon icon="fa-trash" />
                 <span>{{ numItemsDeleted }}</span>
             </b-button>
             <b-button
@@ -40,7 +40,7 @@
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('visible:false')">
-                <icon icon="eye-slash" />
+                <FontAwesomeIcon icon="fa-eye-slash" />
                 <span>{{ numItemsHidden }}</span>
             </b-button>
             <b-button
@@ -50,7 +50,7 @@
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="reloadContents()">
-                <span :class="reloadButtonCls" />
+                <FontAwesomeIcon icon="fa-sync" :spin="reloadButtonSpin" />
             </b-button>
         </b-button-group>
     </div>
@@ -60,8 +60,14 @@
 import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
 import { usesDetailedHistoryMixin } from "./usesDetailedHistoryMixin.js";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faDatabase, faTrash, faEyeSlash, faMapMarker, faSync } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faDatabase, faTrash, faEyeSlash, faMapMarker, faSync);
 
 export default {
+    components: { FontAwesomeIcon },
     filters: {
         niceFileSize(rawSize = 0) {
             return prettyBytes(rawSize);
@@ -75,7 +81,7 @@ export default {
     },
     data() {
         return {
-            reloadButtonCls: "fa fa-sync",
+            reloadButtonSpin: false,
             reloadButtonTitle: "",
             reloadButtonVariant: "link",
         };
@@ -106,9 +112,9 @@ export default {
         },
         async reloadContents() {
             this.$emit("reloadContents");
-            this.reloadButtonCls = "fa fa-sync fa-spin";
+            this.reloadButtonSpin = true;
             setTimeout(() => {
-                this.reloadButtonCls = "fa fa-sync";
+                this.reloadButtonSpin = false;
             }, 1000);
         },
     },

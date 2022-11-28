@@ -2,6 +2,7 @@
 import { computed } from "vue";
 import { useCurrentUser } from "composables/user";
 import ariaAlert from "utils/ariaAlert";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const props = defineProps({
     id: {
@@ -80,7 +81,7 @@ library.add(fasStar, farStar);
 
 <template>
     <b-button v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
-        <icon v-if="showAddFavorite" icon="far fa-star" />
-        <icon v-if="showRemoveFavorite" icon="fas fa-star" />
+        <FontAwesomeIcon v-if="showAddFavorite" icon="far fa-star" />
+        <FontAwesomeIcon v-if="showRemoveFavorite" icon="fas fa-star" />
     </b-button>
 </template>

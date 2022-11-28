@@ -112,6 +112,13 @@ async function submitForm() {
 defineExpose({ showModal });
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSpinner);
+</script>
+
 <template>
     <b-modal ref="sendBCOModal" title="Submit To BCODB" title-tag="h2" centered hide-footer>
         <div>

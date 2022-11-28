@@ -9,7 +9,7 @@
             :title="editButtonTitle"
             :pressed="editing"
             @click="onToggle">
-            <Icon icon="pen" />
+            <FontAwesomeIcon icon="pen" />
         </b-button>
         <slot name="name" />
 
@@ -48,16 +48,11 @@
                 variant="primary"
                 :disabled="!localProps.name"
                 @click="onSave">
-                <Icon icon="save" />
+                <FontAwesomeIcon icon="save" />
                 <span v-localize>Save</span>
             </b-button>
-            <b-button
-                class="cancel-button mb-1"
-                data-description="editor cancel button"
-                size="sm"
-                icon="undo"
-                @click="onToggle">
-                <Icon icon="undo" />
+            <b-button class="cancel-button mb-1" data-description="editor cancel button" size="sm" @click="onToggle">
+                <FontAwesomeIcon icon="undo" />
                 <span v-localize>Cancel</span>
             </b-button>
         </div>
@@ -68,10 +63,16 @@
 import { mapGetters } from "vuex";
 import short from "components/directives/v-short";
 import { StatelessTags } from "components/Tags";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPen, faSave, faUndo } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faPen, faSave, faUndo);
 
 export default {
     components: {
         StatelessTags,
+        FontAwesomeIcon,
     },
     directives: {
         short,
