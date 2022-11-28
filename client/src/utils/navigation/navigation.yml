@@ -208,12 +208,12 @@ history_panel:
   # history tags
   tag_editor:
     selectors:
-      _: '${scope} .details .tags'
+      _: '${scope} .details .stateless-tags'
       toggle: '${_} .toggle-link'
-      display: '${_} .tag-area .tag-name'
+      display: '${_} .tag span'
       input: '${_} input'
-      tag_area: '${_} .tag-area'
-      tag_close_btn: '${_} .ti-icon-close'
+      tag_area: '${_} .multiselect__tags'
+      tag_close_btn: '${_} .tag-delete-button'
 
   multi_operations:
     selectors:
