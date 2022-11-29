@@ -6,7 +6,7 @@ import Vue from "vue";
 import Vuex from "vuex";
 import BootstrapVue from "bootstrap-vue";
 import store from "../store";
-import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin, iconPlugin } from "components/plugins";
+import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 
 Vue.use(Vuex);
 
@@ -23,9 +23,6 @@ Vue.use(localizationPlugin);
 
 // rxjs utilities
 Vue.use(vueRxShortcutPlugin);
-
-// font-awesome svg icon registration/loading
-Vue.use(iconPlugin);
 
 export const mountVueComponent = (ComponentDefinition) => {
     const component = Vue.extend(ComponentDefinition);
