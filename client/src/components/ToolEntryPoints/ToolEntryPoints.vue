@@ -6,9 +6,9 @@
         <p v-else-if="entryPointsForJob(jobId).length == 1">
             <span v-if="entryPointsForJob(jobId)[0].active">
                 There is an InteractiveTool result view available,
-                <a :href="entryPointsForJob(jobId)[0].target" target="_blank">
+                <a v-b-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
                     Open
-                    <font-awesome-icon v-b-tooltip title="Open Interactive Tool" icon="external-link-alt" />
+                    <font-awesome-icon icon="external-link-alt" />
                 </a>
             </span>
             <span v-else>
@@ -21,9 +21,9 @@
                 <li v-for="entryPoint of entryPointsForJob(jobId)" :key="entryPoint.id">
                     {{ entryPoint.name }}
                     <span v-if="entryPoint.active">
-                        <a :href="entryPoint.target" target="_blank">
+                        <a v-b-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
                             (Open
-                            <font-awesome-icon v-b-tooltip title="Open Interactive Tool" icon="external-link-alt" />)
+                            <font-awesome-icon icon="external-link-alt" />)
                         </a>
                     </span>
                     <span v-else> (waiting to become active...) </span>
