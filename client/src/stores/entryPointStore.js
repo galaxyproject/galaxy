@@ -9,8 +9,8 @@ export const useEntryPointStore = defineStore("entryPointStore", {
         interval: undefined,
     }),
     getters: {
-        getEntryPoints: (state) => {
-            return state.entryPoints;
+        entryPointsForJob: (state) => {
+            return (jobId) => state.entryPoints.filter((entryPoint) => entryPoint["job_id"] === jobId);
         },
     },
     actions: {

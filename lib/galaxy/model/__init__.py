@@ -2347,8 +2347,8 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     modified_time = Column(DateTime, default=now, onupdate=now)
     job = relationship("Job", back_populates="interactivetool_entry_points", uselist=False)
 
-    dict_collection_visible_keys = ["id", "name", "active", "created_time", "modified_time"]
-    dict_element_visible_keys = ["id", "name", "active", "created_time", "modified_time"]
+    dict_collection_visible_keys = ["id", "job_id", "name", "active", "created_time", "modified_time"]
+    dict_element_visible_keys = ["id", "job_id", "name", "active", "created_time", "modified_time"]
 
     def __init__(self, requires_domain=True, configured=False, deleted=False, **kwd):
         super().__init__(**kwd)
