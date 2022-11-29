@@ -14,7 +14,7 @@ export const useEntryPointStore = defineStore("entryPointStore", {
         },
     },
     actions: {
-        startPollingEntryPoints() {
+        ensurePollingEntryPoints() {
             if (this.interval === undefined) {
                 this.fetchEntryPoints();
                 this.interval = setInterval(() => {

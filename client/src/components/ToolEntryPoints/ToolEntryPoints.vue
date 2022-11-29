@@ -63,10 +63,10 @@ export default {
         },
     },
     created: function () {
-        this.startPollingEntryPoints();
+        this.ensurePollingEntryPoints();
     },
     methods: {
-        ...mapActions(useEntryPointStore, ["startPollingEntryPoints"]),
+        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints"]),
     },
 };
 </script>

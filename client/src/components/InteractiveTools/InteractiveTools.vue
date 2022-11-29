@@ -124,9 +124,9 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useEntryPointStore, ["startPollingEntryPoints"]),
+        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints"]),
         load() {
-            this.startPollingEntryPoints();
+            this.ensurePollingEntryPoints();
             this.filter = "";
         },
         filtered: function (items) {
