@@ -26,7 +26,7 @@
             </select2>
             <FontAwesomeIcon
                 ref="footerExtensionInfo"
-                icon="faSearch"
+                icon="fa-search"
                 class="upload-footer-extension-info upload-icon-button" />
             <span class="upload-footer-title">Genome/Build:</span>
             <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
