@@ -342,6 +342,13 @@ TESTS = [
         TEXT_DATA_HAS_TEXT_NEG,
         lambda x: "Expected text 'test text' in output ('desired content\nis not here\n')" in x,
     ),
+    # test has_text .. negative test with "very" long input
+    (
+        TEXT_HAS_TEXT_ASSERTION,
+        100 * TEXT_DATA_HAS_TEXT_NEG,
+        lambda x: "Expected text 'test text' in output ('desired content\nis not here\nde\n********\nSNIP (2740 characters not shown)\n******** e\ndesired content\nis not here\n')"
+        in x,
+    ),
     # test has_text with None output
     (TEXT_HAS_TEXT_ASSERTION, TEXT_DATA_NONE, lambda x: "Checking has_text assertion on empty output (None)" in x),
     # test has_text with empty output
@@ -914,6 +921,7 @@ TEST_IDS = [
     "has_n_columns with comments",
     "has_text success",
     "has_text failure",
+    "has_text failure with long text",
     "has_text None output",
     "has_text empty output",
     "has_text n success",
