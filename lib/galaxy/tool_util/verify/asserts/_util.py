@@ -1,4 +1,5 @@
 from math import inf
+from typing import Optional
 
 from galaxy.util import asbool
 from galaxy.util.bytesize import parse_bytesize
@@ -59,9 +60,24 @@ def _assert_presence_number(
     expected = "Expected" if not negate else "Did not expect"
     if n is None and min is None and max is None:
         assert (not negate) == check_presence_foo(output, text), presence_text.format(
-            expected=expected, output=output, text=text
+            expected=expected, output=_nice_output(output), text=text
         )
     try:
         _assert_number(count_foo(output, text), n, delta, min, max, negate, n_text, min_max_text)
     except AssertionError as e:
-        raise AssertionError(str(e).format(output=output, text=text))
+        raise AssertionError(str(e).format(output=_nice_output(output), text=text))
+
+
+def _nice_output(output: Optional[str]):
+    """
+    shorten output if to long
+    """
+    if not output:
+        return output
+    if len(output) < 60:
+        return output
+    else:
+        return f"""{output[:30]}
+********
+SNIP ({len(output) - 60} characters not shown)
+******** {output[-30:]}"""
