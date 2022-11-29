@@ -25,6 +25,10 @@ import axios from "axios";
 import SelectionDialogMixin from "./SelectionDialogMixin";
 import { getGalaxyInstance } from "app";
 import { errorMessageAsString } from "utils/simple-error";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faFolder } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faFolder);
 
 export default {
     mixins: [SelectionDialogMixin],

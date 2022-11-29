@@ -16,7 +16,8 @@
                                 aria-label="Instructions"
                                 title="Instructions"
                                 @click.prevent="showHelp = !showHelp">
-                                <span>Instructions</span>
+                                <FontAwesomeIcon icon="fa-info-circle" />
+                                <span class="sr-only">Instructions</span>
                             </a>
                         </li>
                         <li class="cloudKeyFilter">
@@ -26,7 +27,8 @@
                                 aria-label="Filter Results"
                                 title="Filter Results"
                                 @click.prevent="showFilter = !showFilter">
-                                <span>Filter</span>
+                                <FontAwesomeIcon icon="fa-filter" />
+                                <span class="sr-only">Filter</span>
                             </a>
                         </li>
                         <li class="createCloudKey">
@@ -35,7 +37,8 @@
                                 aria-label="Create New Key"
                                 title="Create New Key"
                                 @click.prevent="onCreate">
-                                <span>Create New Key</span>
+                                <FontAwesomeIcon icon="fa-plus" />
+                                <span class="sr-only">Create New Key</span>
                             </a>
                         </li>
                     </ul>
@@ -95,12 +98,18 @@ import BootstrapVue from "bootstrap-vue";
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
 import svc from "./model/service";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faInfoCircle, faFilter, faPlus } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faInfoCircle, faFilter, faPlus);
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         CloudAuthItem,
+        FontAwesomeIcon,
     },
     data() {
         return {
@@ -255,16 +264,6 @@ export default {
                     color: $brand-primary;
                 }
             }
-
-            .cloudKeyHelp a {
-                @include fontawesome($fa-var-info-circle);
-            }
-            .cloudKeyFilter a {
-                @include fontawesome($fa-var-filter);
-            }
-            .createCloudKey a {
-                @include fontawesome($fa-var-plus);
-            }
         }
     }
 }
@@ -316,32 +315,6 @@ export default {
             button:not(:first-child) {
                 @extend .ml-1;
             }
-        }
-    }
-
-    // icon menu
-
-    .operations {
-        .save a {
-            @include fontawesome($fa-var-save);
-        }
-        .delete a {
-            @include fontawesome($fa-var-times);
-        }
-        .details a {
-            @include fontawesome($fa-var-window-minimize);
-            &:hover {
-                @include fontawesome($fa-var-window-maximize);
-            }
-        }
-    }
-
-    // reverse icons when key is expanded
-
-    &.expanded .details a {
-        @include fontawesome($fa-var-window-maximize);
-        &:hover {
-            @include fontawesome($fa-var-window-minimize);
         }
     }
 }

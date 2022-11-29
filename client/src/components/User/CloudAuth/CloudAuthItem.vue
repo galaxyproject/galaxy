@@ -12,7 +12,8 @@
                                     aria-label="Save Key"
                                     title="Save Key"
                                     @click.prevent="$emit('save', credential)">
-                                    <span>Save Key</span>
+                                    <FontAwesomeIcon icon="fa-save" />
+                                    <span class="sr-only">Save Key</span>
                                 </a>
                             </li>
                         </transition>
@@ -22,7 +23,8 @@
                                 aria-label="Delete Key"
                                 title="Delete Key"
                                 @click.prevent="$emit('delete', credential)">
-                                <span>Delete Key</span>
+                                <FontAwesomeIcon icon="fa-times" />
+                                <span class="sr-only">Delete Key</span>
                             </a>
                         </li>
                         <li class="details">
@@ -31,7 +33,9 @@
                                 aria-label="Show Details"
                                 title="Show Details"
                                 @click.prevent="expand()">
-                                <span>Details</span>
+                                <FontAwesomeIcon icon="fa-window-minimize" class="minimize" />
+                                <FontAwesomeIcon icon="fa-window-maximize" class="maximize" />
+                                <span class="sr-only">Details</span>
                             </a>
                         </li>
                     </ul>
@@ -55,9 +59,16 @@
 import { Credential } from "./model";
 import CredentialForm from "./CredentialForm";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSave, faTimes, faWindowMinimize, faWindowMaximize } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSave, faTimes, faWindowMinimize, faWindowMaximize);
+
 export default {
     components: {
         CredentialForm,
+        FontAwesomeIcon,
     },
     props: {
         credential: { type: Credential, required: true },
@@ -91,3 +102,43 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+.cloud-auth-key {
+    &:deep(.minimize) {
+        display: inline-block;
+
+        &:hover {
+            display: none;
+        }
+    }
+
+    &:deep(.maximize) {
+        display: none;
+
+        &:hover {
+            display: inline-block;
+        }
+    }
+
+    // reverse icons when key is expanded
+
+    &.expanded {
+        &:deep(.minimize) {
+            display: none;
+
+            &:hover {
+                display: inline-block;
+            }
+        }
+
+        &:deep(.maximize) {
+            display: inline-block;
+
+            &:hover {
+                display: none;
+            }
+        }
+    }
+}
+</style>

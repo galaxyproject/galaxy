@@ -3,7 +3,7 @@
         <b-container class="p-0">
             <b-row>
                 <b-col>{{ description }}</b-col>
-                <b-col cols="auto"><i :class="icon"></i></b-col>
+                <b-col cols="auto"><FontAwesomeIcon :icon="icon" :class="icon" /></b-col>
             </b-row>
         </b-container>
         <b-button variant="primary" @click="onButtonClick">{{ buttonText }}</b-button>
@@ -11,10 +11,13 @@
 </template>
 
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 /** A generic Card, used as a template, that displays an action button,
  * an icon (font-awesome), along with a title and description.
  * Clicking the button emits an "onButtonClick" event. */
 export default {
+    components: { FontAwesomeIcon },
     props: {
         title: {
             type: String,

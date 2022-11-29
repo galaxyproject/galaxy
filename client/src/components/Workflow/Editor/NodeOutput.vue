@@ -6,7 +6,8 @@
             :class="['callout-terminal', output.name]"
             title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
             @click="onToggle">
-            <i :class="['mark-terminal', activeClass]" />
+            <FontAwesomeIcon v-if="output.activeOutput" icon="fa-check-square" class="mark-terminal" />
+            <FontAwesomeIcon v-else icon="far fa-square" class="mark-terminal" />
         </div>
         {{ label }}
         <div :id="id" ref="terminal" :output-name="output.name" :class="terminalClass">
@@ -19,8 +20,15 @@
 import Terminals from "./modules/terminals";
 import { OutputDragging } from "./modules/dragging";
 import Connector from "./modules/connector";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSquare, faCheckSquare);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         output: {
             type: Object,
@@ -52,9 +60,6 @@ export default {
         label() {
             const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
             return `${activeLabel} (${this.extensions.join(", ")})`;
-        },
-        activeClass() {
-            return this.output.activeOutput && "mark-terminal-active";
         },
         showCallout() {
             const node = this.getNode();

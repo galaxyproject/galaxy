@@ -30,7 +30,7 @@
                         :title="`label-${data.item.labelTitle}`"><code>{{ data.value ? data.value : "-" }}</code></pre>
                     <span v-else>
                         <div v-if="data.item.isLeaf">
-                            <i :class="leafIcon" />
+                            <FontAwesomeIcon :icon="leafIcon" :class="leafIcon" />
                             <span :title="`label-${data.item.labelTitle}`">{{ data.value ? data.value : "-" }}</span>
                         </div>
                         <div v-else @click.stop="open(data.item)">
@@ -73,14 +73,14 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { faCheckSquare, faSquare, faMinusSquare } from "@fortawesome/free-regular-svg-icons";
+import { faCheckSquare, faSquare, faMinusSquare, faFile } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 
 Vue.use(BootstrapVue);
-library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
+library.add(faCheckSquare, faSquare, faFolder, faMinusSquare, faFile);
 
 const LABEL_FIELD = { key: "label", sortable: true };
 const DETAILS_FIELD = { key: "details", sortable: true };
@@ -110,7 +110,7 @@ export default {
         },
         leafIcon: {
             type: String,
-            default: "fa fa-file-o",
+            default: "far fa-file",
         },
         showDetails: {
             type: Boolean,

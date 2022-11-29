@@ -42,7 +42,7 @@
                 @click="onClone">
                 <FontAwesomeIcon icon="far fa-copy" />
             </b-button>
-            <i :class="iconClass" />
+            <FontAwesomeIcon :icon="iconClass" :class="iconClass" />
             <span
                 v-b-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."

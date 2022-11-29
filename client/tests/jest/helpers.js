@@ -7,7 +7,6 @@ import { createLocalVue, shallowMount } from "@vue/test-utils";
 import { localizationPlugin } from "components/plugins/localization";
 import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
 import { eventHubPlugin } from "components/plugins/eventHub";
-import { iconPlugin } from "components/plugins/icons";
 import BootstrapVue from "bootstrap-vue";
 import Vuex from "vuex";
 import _l from "utils/localization";
@@ -161,7 +160,6 @@ export function getLocalVue(instrumentLocalization = false) {
     localVue.use(localizationPlugin, l);
     localVue.use(vueRxShortcutPlugin);
     localVue.use(eventHubPlugin);
-    localVue.use(iconPlugin);
     localVue.directive("b-tooltip", mockedDirective);
     localVue.directive("b-popover", mockedDirective);
     return localVue;

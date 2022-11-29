@@ -1,7 +1,7 @@
 <template>
     <div class="clickToEdit" :class="{ empty: !value.length }">
         <component :is="tagName" v-if="!editing" class="m-0" @click="toggleEdit(true)">
-            <span class="editable"></span>
+            <FontAwesomeIcon icon="fa-edit" class="editable" />
             <span>{{ displayValue }}</span>
             <slot name="tooltip" :editing="editing" :local-value="localValue"></slot>
         </component>
@@ -30,6 +30,11 @@
 
 <script>
 import DebouncedInput from "./DebouncedInput";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEdit);
 
 const defaultStateValidator = (val, origVal) => {
     if (val === origVal) {
@@ -41,6 +46,7 @@ const defaultStateValidator = (val, origVal) => {
 export default {
     components: {
         DebouncedInput,
+        FontAwesomeIcon,
     },
     props: {
         value: { type: String, required: true },
@@ -85,14 +91,20 @@ export default {
 
 .clickToEdit {
     position: relative;
+
+    .editable {
+        display: none;
+    }
+
     &:hover .editable {
-        @include fontawesome($fa-var-edit);
+        display: inline;
         position: absolute;
         top: 0;
         right: 0;
         color: $brand-info;
         font-size: 0.8rem;
     }
+
     /* changes placeholder text, it's a brittle and ugly selector
     but bootstrap-vue doesn't give us much to work with */
     &.empty > p > span {

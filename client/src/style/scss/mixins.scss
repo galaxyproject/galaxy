@@ -1,10 +1,3 @@
-//$fa-font-path: "~font-awesome/fonts/";
-//@import "~font-awesome/scss/font-awesome.scss";
-//@import "~font-awesome/scss/_mixins";
-$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-
 @mixin user-select($select) {
     -webkit-touch-callout: #{$select};
     @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
@@ -101,19 +94,4 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
     list-style: none;
     padding: 0 0 0 0;
     margin: 0 0 0 0;
-}
-
-// font awesome as a mixin
-// icon variables come from ~font-awesome/scss/_variables.scss
-
-@mixin fontawesome($icon) {
-    @include fa-icon();
-    &:before {
-        content: $icon;
-    }
-    span {
-        // Span for text readers
-        // <a><span>Label</span></a>
-        @include sr-only();
-    }
 }

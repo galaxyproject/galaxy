@@ -1020,12 +1020,8 @@ export default {
     },
 };
 </script>
+
 <style lang="scss">
-$fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "~@fortawesome/fontawesome-free/scss/solid";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/brands";
 .paired-column {
     text-align: center;
     // mess with these two to make center more/scss priority
@@ -1075,11 +1071,6 @@ li.dataset.paired {
                 text-align: right;
                 border-right: 1px solid grey;
                 padding-right: 8px;
-                &:after {
-                    @extend .fas;
-                    margin-left: 8px;
-                    content: fa-content($fa-var-arrow-right);
-                }
             }
             .pair-name-column {
                 text-align: center;
@@ -1090,11 +1081,6 @@ li.dataset.paired {
             .reverse-dataset-name {
                 border-left: 1px solid grey;
                 padding-left: 8px;
-                &:before {
-                    @extend .fas;
-                    margin-right: 8px;
-                    content: fa-content($fa-var-arrow-left);
-                }
             }
         }
         &:hover {

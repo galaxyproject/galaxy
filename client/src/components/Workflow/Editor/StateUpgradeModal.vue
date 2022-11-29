@@ -5,7 +5,7 @@
             <ul class="workflow-state-upgrade-step-summaries">
                 <li v-for="(stateMessage, index) in stateMessages" :key="index">
                     <b>
-                        <i :class="iconClass(stateMessage)" />
+                        <FontAwesomeIcon :icon="iconClass(stateMessage)" :class="iconClass(stateMessage)" />
                         Step {{ humanIndex(stateMessage) }}: {{ nodeTitle(stateMessage) }}
                     </b>
                     <ul class="workflow-state-upgrade-step-details">
@@ -21,9 +21,10 @@
 
 <script>
 import { BModal } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 export default {
-    components: { BModal },
+    components: { BModal, FontAwesomeIcon },
     props: {
         stateMessages: {
             type: Array,

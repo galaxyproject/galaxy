@@ -8,16 +8,23 @@
         :disabled="currentUser.isAnonymous"
         :title="tooltipText"
         @click="onFavorites">
-        <icon v-if="toggle" :icon="['fas', 'star']" />
-        <icon v-else :icon="['far', 'star']" />
+        <FontAwesomeIcon v-if="toggle" :icon="['fas', 'star']" />
+        <FontAwesomeIcon v-else :icon="['far', 'star']" />
     </b-button>
 </template>
 
 <script>
 import { mapGetters } from "vuex";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faStar as fasStar } from "@fortawesome/free-solid-svg-icons";
+import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
+
+library.add(fasStar, farStar);
 
 export default {
     name: "FavoritesButton",
+    components: { FontAwesomeIcon },
     props: {
         query: {
             type: String,

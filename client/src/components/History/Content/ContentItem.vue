@@ -8,13 +8,13 @@
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
                     <span v-if="selectable" class="selector">
-                        <icon
+                        <FontAwesomeIcon
                             v-if="selected"
                             fixed-width
                             size="lg"
                             :icon="['far', 'check-square']"
                             @click.stop="$emit('update:selected', false)" />
-                        <icon
+                        <FontAwesomeIcon
                             v-else
                             fixed-width
                             size="lg"
@@ -39,7 +39,7 @@
                         <font-awesome-icon icon="check-circle" />
                     </span>
                     <span v-if="hasStateIcon" class="state-icon">
-                        <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
+                        <font-awesome-icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
                     <span class="id hid">{{ id }}</span>
                     <span>:</span>
@@ -226,6 +226,7 @@ export default {
     },
 };
 </script>
+
 <style lang="scss">
 .content-item:hover {
     filter: brightness(105%);

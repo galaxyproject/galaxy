@@ -69,6 +69,10 @@ import MarkdownVisualization from "./MarkdownVisualization";
 import DataDialog from "components/DataDialog/DataDialog";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
 import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSitemap } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSitemap);
 
 Vue.use(BootstrapVue);
 

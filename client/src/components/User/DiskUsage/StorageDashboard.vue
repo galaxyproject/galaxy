@@ -21,6 +21,10 @@
 import _l from "utils/localization";
 import DiskUsageSummary from "components/User/DiskUsage/DiskUsageSummary";
 import IconCard from "components/IconCard";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBroom } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faBroom);
 
 export default {
     components: {

@@ -134,14 +134,8 @@
                 z-index: 101;
             }
             .mark-terminal {
-                @extend .far;
-                @extend .fa-square;
                 color: $brand-primary;
                 cursor: pointer;
-                &.mark-terminal-active {
-                    @extend .fa;
-                    @extend .fa-check-square;
-                }
             }
             .delete-terminal {
                 @extend .btn;

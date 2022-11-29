@@ -284,7 +284,6 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
 
 <style lang="scss" scoped>
 @import "theme/blue.scss";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
 
 .ui-form-element {
     margin-top: $margin-v * 0.25;

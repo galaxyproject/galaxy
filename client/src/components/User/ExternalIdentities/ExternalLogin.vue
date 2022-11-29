@@ -80,7 +80,7 @@
                 </span>
                 <span v-else>
                     <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
-                        <i :class="oidc_idps[idp]" />
+                        <FontAwesomeIcon :icon="oidc_idps[idp]" :class="oidc_idps[idp]" />
                         Sign in with
                         {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
                     </b-button>
@@ -97,12 +97,18 @@ import Multiselect from "vue-multiselect";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faGoogle } from "@fortawesome/free-brands-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faGoogle);
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         Multiselect,
+        FontAwesomeIcon,
     },
     props: {
         login_page: {

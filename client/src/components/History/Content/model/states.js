@@ -1,3 +1,8 @@
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExclamationTriangle, faCloud, faClock, faPause, faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faExclamationTriangle, faCloud, faClock, faPause, faSpinner);
+
 /*
     Client representation of state and state messages. See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
     for a list of available states.
@@ -7,12 +12,12 @@ export const STATES = {
     discarded: {
         status: "danger",
         text: "This dataset is discarded - the job creating it may have been cancelled or it may have been imported without file data.",
-        icon: "exclamation-triangle",
+        icon: "fa-exclamation-triangle",
     },
     deferred: {
         status: "info",
         text: "This dataset is remote, has not been ingested by Galaxy, and full metadata may not be available.",
-        icon: "cloud",
+        icon: "fa-cloud",
     },
     /** has no data */
     empty: {
@@ -23,23 +28,23 @@ export const STATES = {
     error: {
         status: "danger",
         text: "An error occurred with this dataset:",
-        icon: "exclamation-triangle",
+        icon: "fa-exclamation-triangle",
     },
     /** the job has failed, this is not a dataset but a job state used in the collection job state summary. */
     failed: {
         status: "danger",
-        icon: "exclamation-triangle",
+        icon: "fa-exclamation-triangle",
     },
     /** metadata discovery/setting failed or errored (but otherwise ok) */
     failed_metadata: {
         status: "danger",
-        icon: "exclamation-triangle",
+        icon: "fa-exclamation-triangle",
     },
     /** was created without a tool */
     new: {
         status: "warning",
         text: "This is a new dataset and not all of its data are available yet.",
-        icon: "clock",
+        icon: "fa-clock",
     },
     /** has successfully completed running */
     ok: {
@@ -49,33 +54,33 @@ export const STATES = {
     paused: {
         status: "info",
         text: "This job is paused. Use the 'Resume Paused Jobs' in the history menu to resume.",
-        icon: "pause",
+        icon: "fa-pause",
     },
     /** the job that will produce the dataset queued in the runner */
     queued: {
         status: "warning",
         text: "This job is waiting to run.",
-        icon: "clock",
+        icon: "fa-clock",
     },
     /** the job that will produce the dataset is running */
     running: {
         status: "warning",
         text: "This job is currently running.",
-        icon: "spinner",
+        icon: "fa-spinner",
         spin: true,
     },
     /** metadata for the dataset is being discovered/set */
     setting_metadata: {
         status: "warning",
         text: "Metadata is being auto-detected.",
-        icon: "spinner",
+        icon: "fa-spinner",
         spin: true,
     },
     /** is uploading and not ready */
     upload: {
         status: "warning",
         text: "This dataset is currently uploading.",
-        icon: "spinner",
+        icon: "fa-spinner",
         spin: true,
     },
 };
