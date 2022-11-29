@@ -134,6 +134,9 @@ release-check-blocking-prs: ## Check github for release blocking PRs
 release-bootstrap-history: ## bootstrap history for a new release
 	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
 
+update-typecheck-requirements:
+	./lib/galaxy/dependencies/update_typecheck_requirements.sh
+
 update-lint-requirements:
 	./lib/galaxy/dependencies/update_lint_requirements.sh
 
