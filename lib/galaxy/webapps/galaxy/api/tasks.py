@@ -17,7 +17,7 @@ router = Router(tags=["tasks"])
 
 @router.cbv
 class FastAPITasks:
-    manager: AsyncTasksManager = depends(AsyncTasksManager)  # type: ignore[misc]
+    manager: AsyncTasksManager = depends(AsyncTasksManager)  # type: ignore[type-abstract]
 
     @router.get(
         "/api/tasks/{task_id}/state",
