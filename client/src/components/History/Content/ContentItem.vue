@@ -235,9 +235,6 @@ export default {
 };
 </script>
 <style lang="scss">
-.content-item:hover {
-    filter: brightness(105%);
-}
 .content-item {
     .name {
         word-break: break-all;

@@ -398,6 +398,7 @@ $galaxy-state-border: (
     "error": $state-danger-border,
     "deleted": darken($state-default-border, 30%),
     "hidden": $state-default-border,
+    "setting_metadata": $state-warning-border,
 );
 
 $galaxy-state-bg: (
@@ -410,17 +411,27 @@ $galaxy-state-bg: (
     "error": $state-danger-bg,
     "deleted": darken($state-default-bg, 30%),
     "hidden": $state-default-bg,
+    "setting_metadata": $state-warning-bg,
 );
 
 @each $state in map-keys($galaxy-state-border) {
     .state-color-#{$state},
     [data-state="#{$state}"] {
         border-color: map-get($galaxy-state-border, $state);
-        background-color: map-get($galaxy-state-bg, $state);
+        background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 50%);
+
+        &:hover {
+            background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 66%);
+        }
 
         &:focus,
         &:focus-within {
-            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
+            background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 33%);
+        }
+
+        &:focus:hover,
+        &:focus-within:hover {
+            background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 40%);
         }
 
         &.selected {
