@@ -435,7 +435,7 @@ QUnit.test("init_field_data data", function (assert) {
         assert.equal(this.$(".input-terminal").length, 1);
         assert.equal(this.$(".rule").length, 1);
         assert.equal(this.$(".node-title").text(), "newnode");
-        assert.ok(this.$(".node-header").find("i").hasClass("fa-wrench"));
+        assert.ok(this.$(".node-header").find("svg").hasClass("fa-wrench"));
     });
 });
 
