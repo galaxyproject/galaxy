@@ -143,7 +143,16 @@ function updateExportParams(newParams) {
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
                     </p>
-                    <b-button :disabled="isPreparingDownload" variant="primary" @click="prepareDownload">
+                    <b-alert show variant="warning">
+                        History archive downloads can expire and are removed at regular intervals. For permanent
+                        storage, export to a <b>remote file</b> or download and then import the archive on another
+                        Galaxy server.
+                    </b-alert>
+                    <b-button
+                        class="direct-download-btn"
+                        :disabled="isPreparingDownload"
+                        variant="primary"
+                        @click="prepareDownload">
                         Download
                     </b-button>
                     <span v-if="isPreparingDownload">
@@ -156,9 +165,9 @@ function updateExportParams(newParams) {
                     title="to remote file"
                     title-link-class="tab-export-to-file">
                     <p>
-                        If you need a "more permanent" way of storing your exported history you can export it directly
-                        to one of the available remote file sources here. You will be able to re-import it later as long
-                        as it remains available on the remote server.
+                        If you need a "more permanent" way of storing your history archive you can export it directly to
+                        one of the available remote file sources here. You will be able to re-import it later as long as
+                        it remains available on the remote server.
                     </p>
                     <export-to-file-source-form
                         what="history"
@@ -170,7 +179,6 @@ function updateExportParams(newParams) {
 
         <export-record-details
             v-if="latestExportRecord"
-            id="last-export-record-details"
             :record="latestExportRecord"
             object-type="history"
             class="mt-3"

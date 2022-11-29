@@ -49,30 +49,33 @@ function onMessageDismissed() {
 </script>
 
 <template>
-    <b-card>
+    <b-card class="export-record-details">
         <b-card-title>
             <b>{{ title }}</b> {{ props.record.elapsedTime }}
         </b-card-title>
         <p v-if="!props.record.isPreparing">
-            Format: <b>{{ props.record.modelStoreFormat }}</b>
+            Format: <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b>
         </p>
         <span v-if="props.record.isPreparing">
             <loading-span :message="preparingMessage" />
         </span>
         <div v-else>
             <div v-if="props.record.hasFailed">
-                <font-awesome-icon icon="exclamation-circle" class="text-danger" title="Export failed" />
+                <font-awesome-icon
+                    icon="exclamation-circle"
+                    class="text-danger record-failed-icon"
+                    title="Export failed" />
                 <span>
                     Something failed during this export. Please try again and if the problem persist contact your
                     administrator.
                 </span>
             </div>
             <div v-else-if="props.record.isUpToDate" title="Up to date">
-                <font-awesome-icon icon="check-circle" class="text-success" />
+                <font-awesome-icon icon="check-circle" class="text-success record-up-to-date-icon" />
                 <span> This export record contains the latest changes of the {{ props.objectType }}. </span>
             </div>
             <div v-else>
-                <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
+                <font-awesome-icon icon="exclamation-triangle" class="text-warning record-outdated-icon" />
                 <span>
                     This export is outdated and contains the changes of this {{ props.objectType }} from
                     {{ props.record.elapsedTime }}.
@@ -81,11 +84,12 @@ function onMessageDismissed() {
 
             <p v-if="props.record.canExpire" class="mt-3">
                 <span v-if="props.record.hasExpired">
-                    <font-awesome-icon icon="clock" class="text-danger" /> This download link has expired.
+                    <font-awesome-icon icon="clock" class="text-danger record-expired-icon" /> This download link has
+                    expired.
                 </span>
                 <span v-else>
-                    <font-awesome-icon icon="clock" class="text-warning" /> This download link expires
-                    {{ props.record.expirationElapsedTime }}.
+                    <font-awesome-icon icon="clock" class="text-warning record-expiration-warning-icon" /> This download
+                    link expires {{ props.record.expirationElapsedTime }}.
                 </span>
             </p>
 
@@ -101,10 +105,18 @@ function onMessageDismissed() {
                     {{ props.actionMessage }}
                 </b-alert>
                 <div v-else class="actions">
-                    <b-button v-if="props.record.canDownload" variant="primary" @click="downloadObject">
+                    <b-button
+                        v-if="props.record.canDownload"
+                        class="record-download-btn"
+                        variant="primary"
+                        @click="downloadObject">
                         Download
                     </b-button>
-                    <b-button v-if="props.record.canReimport" variant="primary" @click="reimportObject">
+                    <b-button
+                        v-if="props.record.canReimport"
+                        class="record-reimport-btn"
+                        variant="primary"
+                        @click="reimportObject">
                         Reimport
                     </b-button>
                 </div>

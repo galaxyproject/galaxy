@@ -87,8 +87,7 @@ describe("HistoryExport.vue", () => {
         expect(wrapper.find("#file-source-tab").exists()).toBe(true);
     });
 
-    it("should only display direct download tab if there are no file sources available", async () => {
-        axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, []);
+    it("should not display file sources tab if there are no file sources available", async () => {
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#direct-download-tab").exists()).toBe(true);

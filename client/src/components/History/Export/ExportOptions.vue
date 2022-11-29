@@ -29,6 +29,7 @@ function onValueChanged() {
 <template>
     <div>
         <b-link
+            id="toggle-options-link"
             :class="isExpanded ? null : 'collapsed'"
             :aria-expanded="isExpanded ? 'true' : 'false'"
             aria-controls="collapse-options"
@@ -39,7 +40,7 @@ function onValueChanged() {
             <b-card>
                 <b-form-group label="Export Format:" label-for="format">
                     <b-form-select
-                        id="format"
+                        id="format-selector"
                         v-model="localOptions.modelStoreFormat"
                         :options="AVAILABLE_EXPORT_FORMATS"
                         value-field="id"

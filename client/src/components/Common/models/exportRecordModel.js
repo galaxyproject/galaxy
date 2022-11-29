@@ -56,7 +56,7 @@ export class ExportRecordModel {
     }
 
     get hasFailed() {
-        return !this.isReady && !this.isPreparing;
+        return !this.isReady && !this.isPreparing && !this.hasExpired;
     }
 
     get date() {

@@ -420,6 +420,28 @@ history_export:
     export_button: '.export-button'
     success_message: '.history-export-component .alert-success'
 
+history_export_tasks:
+  selectors:
+    direct_download: '.direct-download-btn'
+    file_source_tab: '.tab-export-to-file'
+    remote_file_name_input: '#file-source-tab #name'
+    toggle_options_link: '#toggle-options-link'
+    export_format_selector: '#format-selector'
+    select_format:
+        type: xpath
+        selector: '//select[@id="format-selector"]/option[@value="${format}"]'
+
+last_export_record:
+  selectors:
+    details: '.export-record-details'
+    preparing_export: '.export-record-details .loading-icon'
+    export_format: '.record-archive-format'
+    up_to_date_icon: '.record-up-to-date-icon'
+    outdated_icon: '.record-outdated-icon'
+    expiration_warning_icon: '.record-expiration-warning-icon'
+    download_btn: '.record-download-btn'
+    reimport_btn: '.record-reimport-btn'
+
 history_import:
   selectors:
     radio_button_remote_files: '.history-import-component .fa-folder-open'
@@ -918,4 +940,3 @@ job_details:
       type: xpath
       selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
-
