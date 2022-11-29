@@ -7,18 +7,45 @@ from abc import (
 )
 from os.path import join
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
     Tuple,
+    Union,
 )
 
 import packaging.version
+from typing_extensions import TypedDict
 
 from galaxy.util.path import safe_walk
 from .util import _parse_name
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+
+AssertionDict = TypedDict(
+    "AssertionDict", {"tag": str, "attributes": Dict[str, Any], "children": Optional[List[Dict[str, Any]]]}
+)
+AssertionList = Optional[List[AssertionDict]]
+XmlInt = Union[str, int]
+ToolSourceTest = TypedDict(
+    "ToolSourceTest",
+    {
+        "inputs": Any,
+        "outputs": Any,
+        "output_collections": List[Any],
+        "stdout": AssertionList,
+        "stderr": AssertionList,
+        "expect_exit_code": Optional[XmlInt],
+        "expect_failure": bool,
+        "expect_test_failure": bool,
+        "maxseconds": Optional[XmlInt],
+        "expect_num_outputs": Optional[XmlInt],
+        "command": AssertionList,
+        "command_version": AssertionList,
+    },
+)
+ToolSourceTests = TypedDict("ToolSourceTests", {"tests": List[ToolSourceTest]})
 
 
 class ToolSource(metaclass=ABCMeta):
@@ -268,7 +295,7 @@ class ToolSource(metaclass=ABCMeta):
             paths_and_modtimes[self.source_path] = os.path.getmtime(self.source_path)
         return paths_and_modtimes
 
-    def parse_tests_to_dict(self):
+    def parse_tests_to_dict(self) -> ToolSourceTests:
         return {"tests": []}
 
     def __str__(self):
