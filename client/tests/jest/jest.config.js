@@ -78,6 +78,7 @@ module.exports = {
     // Some of these should turn into true mocks, instead of this module name mapping hack.
     moduleNameMapper: {
         "\\.(css|scss)$": "<rootDir>/tests/jest/__mocks__/style.js",
+        "^@fontsource/.*": "<rootDir>/tests/jest/__mocks__/font.js",
         "^config$": "<rootDir>/tests/jest/__mocks__/config.js",
         "utils/localization$": "<rootDir>/tests/jest/__mocks__/localization.js",
         "viz/trackster$": "<rootDir>/tests/jest/__mocks__/trackster.js",
