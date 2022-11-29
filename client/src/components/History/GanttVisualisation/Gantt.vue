@@ -1,7 +1,7 @@
 <template>
     <div>
         <svg id="gantt"></svg>
-        <div class="test">
+        <div class="sticky">
             <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
             <button id="HDayView" @click="changeHDayView">Half Day View</button>
             <button id="dayView" @click="changeDayView">Day View</button>
@@ -9,6 +9,39 @@
             <button id="monthView" @click="changeMonthView">Month View</button>
             <button id="hourView" @click="changeHourView">Hour View</button>
             <button id="minuteView" @click="changeMinuteView">Minute View</button>
+            <button class="btn btn-info" @click="showModal">show modal</button>
+            <div v-if="myModal">
+                <transition name="modal">
+                    <div class="modal-mask">
+                        <div class="modal-wrapper">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h4 class="modal-title">Choose time</h4>
+                                        <button type="button" class="close" @click="myModal = false">
+                                            <span aria-hidden="true">&times;</span>
+                                        </button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="modal-datetime">
+                                            <h2>Choose a starting date</h2>
+                                            <b-container class="bv-example-row">
+                                                <b-row>
+                                                    <b-col><datetime
+                                                    format="DD/MM/YYYY H:i:s"
+                                                    width="300px"
+                                                    v-model="dateTimeVal"></datetime></b-col>
+                                                    <b-col><button @click="alertVal">Alert current date value</button></b-col>
+                                                </b-row>
+                                            </b-container>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </transition>
+            </div>
         </div>
     </div>
 </template>
@@ -19,6 +52,8 @@ import store from "../../../store";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 import { keyedColorScheme } from "utils/color";
+//import exampleModal from "./exampleModal";
+import datetime from "vuejs-datetimepicker";
 
 export default {
     name: "Gantt",
@@ -28,9 +63,14 @@ export default {
             historyId: null,
             accountingArray: [],
             historyItems: [],
-            currentlyProcessing: false
+            currentlyProcessing: false,
+            myModal: false,
+            date: null,
+            dateTime: false,
+            dateTimeVal: new Date().toLocaleString(),
         };
     },
+    components: { datetime },
     computed: {
         ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
         history() {
@@ -142,6 +182,12 @@ export default {
                     }
             }
         },
+        alertVal() {
+            console.log("The dateTime Value is : ", this.dateTimeVal);
+        },
+        showModal() {
+            this.myModal = true;
+        },
         changeQDayView: function () {
             this.gantt.change_view_mode("Quarter Day");
         },
@@ -161,6 +207,7 @@ export default {
             this.gantt.change_view_mode("Hour");
         },
         changeMinuteView: function () {
+            this.dateTime = true;
             this.gantt.change_view_mode("Minute");
         },
         createKeyedColorForButtons: function () {
@@ -170,49 +217,49 @@ export default {
                     keyedColorScheme("QDayView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById('QDayView').className = 'QDayView';
+            document.getElementById("QDayView").className = "QDayView";
             createClassWithCSS(
                 ".HDayView",
                 `background : ${keyedColorScheme("HDayView")["primary"]}; border-color : ${
                     keyedColorScheme("HDayView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById('HDayView').className = 'HDayView';
+            document.getElementById("HDayView").className = "HDayView";
             createClassWithCSS(
                 ".dayView",
                 `background : ${keyedColorScheme("dayView")["primary"]}; border-color : ${
                     keyedColorScheme("dayView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById('dayView').className = 'dayView';
+            document.getElementById("dayView").className = "dayView";
             createClassWithCSS(
                 ".weekView",
                 `background : ${keyedColorScheme("weekView")["primary"]}; border-color : ${
                     keyedColorScheme("weekView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById('weekView').className = 'weekView';
+            document.getElementById("weekView").className = "weekView";
             createClassWithCSS(
                 ".monthView",
                 `background : ${keyedColorScheme("monthView")["primary"]}; border-color : ${
                     keyedColorScheme("monthView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById('monthView').className = 'monthView';
+            document.getElementById("monthView").className = "monthView";
             createClassWithCSS(
                 ".hourView",
                 `background : ${keyedColorScheme("hourView")["primary"]}; border-color : ${
                     keyedColorScheme("hourView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById('hourView').className = 'hourView';
+            document.getElementById("hourView").className = "hourView";
             createClassWithCSS(
                 ".minuteView",
                 `background : ${keyedColorScheme("minuteView")["primary"]}; border-color : ${
                     keyedColorScheme("minuteView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById('minuteView').className = 'minuteView';
+            document.getElementById("minuteView").className = "minuteView";
         },
     },
 };
@@ -310,10 +357,32 @@ function createClassWithCSS(selector, style) {
 .gantt .tick {
     stroke: #666;
 }
-.gantt{
+.gantt {
     margin-top: 50px;
 }
-.test {
+.sticky {
     position: fixed;
+}
+.modal-mask {
+    position: fixed;
+    z-index: 10000;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: table;
+}
+
+.modal-wrapper {
+    display: table-cell;
+    vertical-align: middle;
+}
+.modal-dialog,
+.modal-content {
+    /* 80% of window height */
+    height: 70%;
+}
+.gantt-container{
+    position: inherit !important;
 }
 </style>
