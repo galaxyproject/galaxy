@@ -6,15 +6,17 @@
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false">
-            <span
+            <FontAwesomeIcon
                 v-if="isError"
                 v-b-tooltip.hover
-                class="dataset-icon error fa fa-times-circle text-danger"
+                icon="fa-times-circle"
+                class="dataset-icon error text-danger"
                 title="An error occurred for this dataset." />
-            <span
+            <FontAwesomeIcon
                 v-else-if="isPaused"
                 v-b-tooltip.hover
-                class="dataset-icon pause fa fa-pause text-info"
+                icon="fa-pause"
+                class="dataset-icon pause text-info"
                 title="The creation of this dataset has been paused." />
             <FontAwesomeIcon v-else icon="fa-caret-down" class="dataset-icon" />
             <span class="name">{{ getName }}</span>
@@ -36,9 +38,9 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faEye, faCopy } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faEye, faCopy, faTimesCircle, faPause } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faCaretDown, faEye, faCopy);
+library.add(faCaretDown, faEye, faCopy, faTimesCircle, faPause);
 
 Vue.use(BootstrapVue);
 

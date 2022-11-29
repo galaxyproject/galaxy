@@ -18,11 +18,11 @@
         </template>
         <template v-slot:buttons>
             <b-btn v-if="undoShow" size="sm" class="float-left" @click="load()">
-                <div class="fa fa-caret-left mr-1" />
+                <FontAwesomeIcon icon="fa-caret-left" class="mr-1" />
                 Back
             </b-btn>
             <b-btn v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
-                <div class="fa fa-upload ml-1" />
+                <FontAwesomeIcon icon="fa-upload" class="ml-1" />
                 Upload
             </b-btn>
             <b-btn
@@ -47,10 +47,16 @@ import { Model } from "./model";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
 import { mountUploadModal } from "components/Upload";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretLeft, faUpload } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCaretLeft, faUpload);
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: { FontAwesomeIcon },
     mixins: [SelectionDialogMixin],
     props: {
         multiple: {

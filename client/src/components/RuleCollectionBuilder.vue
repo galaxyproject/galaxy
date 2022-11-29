@@ -289,11 +289,11 @@
                                     :multiple="mappingTargets()[map.type].multiple"
                                     :ordered="true"
                                     :value-as-list="true">
-                                    <span
+                                    <FontAwesomeIcon
                                         v-b-tooltip.hover
                                         :title="titleRemoveMapping"
-                                        class="fa fa-times"
-                                        @click="removeMapping(index)"></span>
+                                        icon="fa-times"
+                                        @click="removeMapping(index)" />
                                 </column-selector>
                             </div>
                             <div class="buttons rule-edit-buttons d-flex justify-content-end">
@@ -330,11 +330,12 @@
                         <div v-if="displayRuleType == null" class="rule-summary">
                             <span class="title">
                                 {{ l("Rules") }}
-                                <span
+                                <FontAwesomeIcon
                                     v-b-tooltip.hover
-                                    class="fa fa-wrench rule-builder-view-source"
+                                    icon="fa-wrench"
+                                    class="rule-builder-view-source"
                                     :title="titleViewSource"
-                                    @click="viewSource"></span>
+                                    @click="viewSource" />
                                 <saved-rules-selector
                                     ref="savedRulesSelector"
                                     :saved-rules="savedRules"
@@ -590,9 +591,9 @@ import SaveRules from "components/RuleBuilder/SaveRules";
 import TooltipOnHover from "components/TooltipOnHover.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPlus, faTimes, faWrench } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faPlus);
+library.add(faPlus, faTimes, faWrench);
 
 Vue.use(BootstrapVue);
 

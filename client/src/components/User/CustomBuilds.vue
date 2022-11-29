@@ -14,7 +14,7 @@
                             href="javascript:void(0)"
                             title="Delete build"
                             @click="deleteBuild(row.item.id)">
-                            <i class="icon fa fa-lg fa-trash-o" />
+                            <FontAwesomeIcon icon="far fa-trash" class="icon" size="lg" />
                         </a>
                     </template>
                 </b-table>
@@ -100,7 +100,7 @@
                             type="submit"
                             variant="primary"
                             title="Create new build">
-                            <i class="icon fa fa-save" /> Save
+                            <FontAwesomeIcon icon="fa-save" class="icon" /> Save
                         </b-button>
                     </b-form>
                 </b-card>
@@ -153,11 +153,19 @@ import axios from "axios";
 import { getGalaxyInstance } from "app";
 import Multiselect from "vue-multiselect";
 import "vue-multiselect/dist/vue-multiselect.min.css";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSave } from "@fortawesome/free-solid-svg-icons";
+import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faSave, faTrashAlt);
+
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         Multiselect,
+        FontAwesomeIcon,
     },
     data() {
         const Galaxy = getGalaxyInstance();

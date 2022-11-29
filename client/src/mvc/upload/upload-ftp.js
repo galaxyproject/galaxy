@@ -7,9 +7,10 @@ import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
 
 import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { faFileAlt, faHdd } from "@fortawesome/free-regular-svg-icons";
 
-library.add(faFileAlt, faHdd);
+library.add(faSpinner, faFileAlt, faHdd);
 dom.watch();
 
 export default Backbone.View.extend({
@@ -196,7 +197,7 @@ export default Backbone.View.extend({
     /** Template of main view */
     _template: function () {
         return `<div class="${this.model.get("cls")}">
-                    <div class="upload-ftp-wait fa fa-spinner fa-spin"/>
+                    <i class="upload-ftp-wait fa fa-spinner fa-spin"/>
                     <div class="upload-ftp-help">${this.model.get("help_text")}</div>
                     <div class="upload-ftp-content">
                         <span style="whitespace: nowrap; float: left;">Available files: </span>

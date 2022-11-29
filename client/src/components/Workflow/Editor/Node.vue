@@ -13,7 +13,7 @@
                 aria-label="destroy node"
                 title="Remove"
                 @click="onRemove">
-                <i class="fa fa-times" />
+                <FontAwesomeIcon icon="fa-times" />
             </b-button>
             <b-button
                 v-if="isEnabled"
@@ -22,7 +22,7 @@
                 variant="primary"
                 size="sm"
                 aria-label="tool recommendations">
-                <i class="fa fa-arrow-right" />
+                <FontAwesomeIcon icon="fa-arrow-right" />
             </b-button>
             <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
                 <Recommendations
@@ -40,7 +40,7 @@
                 aria-label="clone node"
                 title="Duplicate"
                 @click="onClone">
-                <i class="fa fa-files-o" />
+                <FontAwesomeIcon icon="far fa-copy" />
             </b-button>
             <i :class="iconClass" />
             <span
@@ -92,6 +92,13 @@ import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import { ActiveOutputs } from "./modules/outputs";
 import { attachDragging } from "./modules/dragging";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes, faArrowRight } from "@fortawesome/free-solid-svg-icons";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faTimes, faArrowRight, faCopy);
+
 Vue.use(BootstrapVue);
 
 const OFFSET_RANGE = 100;
@@ -102,6 +109,7 @@ export default {
         Recommendations,
         NodeInput,
         NodeOutput,
+        FontAwesomeIcon,
     },
     props: {
         id: {

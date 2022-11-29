@@ -9,7 +9,7 @@
             >.
         </p>
         <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
-            <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
+            <FontAwesomeIcon :icon="link.icon" class="pref-icon pt-1" size="lg" />
             <div class="pref-content pr-1">
                 <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick"
                     ><b>{{ link.title }}</b></a
@@ -23,7 +23,7 @@
             </div>
         </b-row>
         <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
+            <FontAwesomeIcon icon="far fa-plus-square" class="pref-icon pt-1" size="lg" />
             <div class="pref-content pr-1">
                 <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
                 <div v-localize class="form-text text-muted">
@@ -65,6 +65,11 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPlusSquare } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faPlusSquare);
 
 import "@fortawesome/fontawesome-svg-core";
 
@@ -74,6 +79,7 @@ export default {
     components: {
         ConfigProvider,
         UserDeletion,
+        FontAwesomeIcon,
     },
     props: {
         userId: {

@@ -1,13 +1,8 @@
 <template>
     <span class="zoom-control float-right btn-group-horizontal">
-        <b-button
-            v-b-tooltip.hover
-            role="button"
-            class="fa fa-minus"
-            title="Zoom Out"
-            size="sm"
-            aria-label="Zoom Out"
-            @click="onZoomOut" />
+        <b-button v-b-tooltip.hover role="button" title="Zoom Out" size="sm" aria-label="Zoom Out" @click="onZoomOut">
+            <FontAwesomeIcon icon="fa-minus" />
+        </b-button>
         <b-button
             v-b-tooltip.hover
             role="button"
@@ -19,14 +14,9 @@
             @click="onZoomReset">
             {{ zoomPercentage }}%
         </b-button>
-        <b-button
-            v-b-tooltip.hover
-            role="button"
-            class="fa fa-plus"
-            title="Zoom In"
-            size="sm"
-            aria-label="Zoom In"
-            @click="onZoomIn" />
+        <b-button v-b-tooltip.hover role="button" title="Zoom In" size="sm" aria-label="Zoom In" @click="onZoomIn">
+            <FontAwesomeIcon icon="fa-plus" />
+        </b-button>
     </span>
 </template>
 
@@ -34,10 +24,16 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { zoomLevels, defaultZoomLevel } from "./modules/canvas";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faMinus, faPlus } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faMinus, faPlus);
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         zoomLevel: {
             type: Number,

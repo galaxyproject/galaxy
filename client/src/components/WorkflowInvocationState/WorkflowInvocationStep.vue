@@ -2,7 +2,7 @@
     <div class="d-flex" :data-step="workflowStep.id">
         <div class="ui-portlet-section" style="width: 100%">
             <div class="portlet-header portlet-title portlet-operations" @click="toggleStep">
-                <i :class="'portlet-title-icon fa mr-1 ' + stepIcon"></i>
+                <FontAwesomeIcon :icon="stepIcon" :class="'portlet-title-icon mr-1 ' + stepIcon" />
                 <span class="portlet-title-text">
                     <u class="step-title">{{ stepLabel }}</u>
                 </span>
@@ -95,6 +95,8 @@ import GenericHistoryItem from "components/History/Content/GenericItem";
 import { InvocationStepProvider } from "components/providers";
 import LoadingSpan from "components/LoadingSpan";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+
 export default {
     components: {
         LoadingSpan,
@@ -103,6 +105,7 @@ export default {
         InvocationStepProvider,
         GenericHistoryItem,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
+        FontAwesomeIcon,
     },
     props: {
         invocation: Object,

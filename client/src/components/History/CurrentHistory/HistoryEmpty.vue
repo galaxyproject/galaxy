@@ -1,7 +1,7 @@
 <template>
     <b-alert show>
         <h4 class="mb-1">
-            <i class="fa fa-info-circle empty-message"></i>
+            <FontAwesomeIcon icon="fa-info-circle" class="empty-message" />
             <span>{{ message | l }}</span>
         </h4>
         <p>
@@ -14,8 +14,14 @@
 
 <script>
 import { openGlobalUploadModal } from "components/Upload";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faInfoCircle);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         message: { type: String, default: "This history is empty." },
     },

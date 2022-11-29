@@ -207,7 +207,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
         class="ui-form-element section-row"
         :class="{ alert: hasError, 'alert-info': hasError }">
         <div v-if="hasError" class="ui-form-error">
-            <FontAwesomeIcon class="mr-1" icon="fa-exclamation" />
+            <FontAwesomeIcon icon="fa-exclamation" class="mr-1" />
             <span class="ui-form-error-text" v-html="props.error" />
         </div>
 

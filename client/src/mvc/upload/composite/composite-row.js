@@ -9,6 +9,12 @@ import UploadFtp from "mvc/upload/upload-ftp";
 import Popover from "mvc/ui/ui-popover";
 import Ui from "mvc/ui/ui-misc";
 import "utils/uploadbox";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCog);
+dom.watch();
+
 export default Backbone.View.extend({
     /** Dictionary of upload states and associated icons */
     status_classes: {
@@ -308,7 +314,7 @@ export default Backbone.View.extend({
                     <div class="upload-file-size upload-size"/>
                 </td>
                 <td>
-                    <div class="upload-settings upload-icon-button fa fa-gear"/>
+                    <i class="upload-settings upload-icon-button fa fa-cog"/>
                 </td>
                 <td>
                     <div class="upload-info">

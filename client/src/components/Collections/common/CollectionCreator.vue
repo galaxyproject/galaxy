@@ -9,10 +9,10 @@
                     :title="titleForHelp"
                     @click="_clickForHelp">
                     <div v-if="!isExpanded">
-                        <i class="fas fa-chevron-down"></i>
+                        <FontAwesomeIcon icon="fa-chevron-down" />
                     </div>
                     <div v-else>
-                        <i class="fas fa-chevron-up"></i>
+                        <FontAwesomeIcon icon="fa-chevron-up" />
                     </div>
                 </a>
                 <div class="help-content">
@@ -78,7 +78,14 @@
 
 <script>
 import _l from "utils/localization";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faChevronDown, faChevronUp);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         oncancel: {
             type: Function,
@@ -141,11 +148,6 @@ export default {
 </script>
 
 <style lang="scss">
-$fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
-@import "~@fortawesome/fontawesome-free/scss/_variables";
-@import "~@fortawesome/fontawesome-free/scss/solid";
-@import "~@fortawesome/fontawesome-free/scss/fontawesome";
-@import "~@fortawesome/fontawesome-free/scss/brands";
 .collection-creator {
     height: 100%;
     overflow: hidden;
@@ -351,22 +353,6 @@ $fa-font-path: "../../../../node_modules/@fortawesome/fontawesome-free/webfonts/
         // NOT setting the above will give a full-height page
         border: 1px solid lightgrey;
         border-width: 1px 0 1px 0;
-    }
-    .element-drop-placeholder {
-        width: 60px;
-        height: 3px;
-        margin: 2px 0px 0px 14px;
-        background: black;
-        &:before {
-            @extend .fas;
-            float: left;
-            font-size: 120%;
-            margin: -9px 0px 0px -8px;
-            content: fa-content($fa-var-caret-right);
-        }
-        &:last-child {
-            margin-bottom: 8px;
-        }
     }
     // ------------------------------------------------------------------------ footer
     .footer {

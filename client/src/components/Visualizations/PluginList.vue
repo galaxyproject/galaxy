@@ -17,7 +17,7 @@
                                 alt="ui thumbnails"
                                 class="ui-thumbnails-image"
                                 :src="plugin.logo" />
-                            <div v-else class="ui-thumbnails-icon fa fa-eye" />
+                            <FontAwesomeIcon v-else icon="fa-eye" class="ui-thumbnails-icon" />
                         </td>
                         <td>
                             <div class="ui-thumbnails-title font-weight-bold">{{ plugin.html }}</div>
@@ -35,13 +35,13 @@
                                             {{ file.name }}
                                         </option>
                                     </select>
-                                    <div class="icon-dropdown fa fa-caret-down" />
+                                    <FontAwesomeIcon icon="fa-caret-down" class="icon-dropdown" />
                                 </div>
                                 <button
                                     type="button"
                                     class="ui-button-default float-left mt-3 btn btn-primary"
                                     @click="create(plugin)">
-                                    <i class="icon fa fa-check" />
+                                    <FontAwesomeIcon icon="fa-check" class="icon" />
                                     <span class="title">{{ titleCreateVisualization }}</span>
                                 </button>
                             </div>
@@ -62,10 +62,16 @@ import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import DelayedInput from "components/Common/DelayedInput";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEye, faCaretDown, faCheck } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEye, faCaretDown, faCheck);
 
 export default {
     components: {
         DelayedInput,
+        FontAwesomeIcon,
     },
     props: {
         datasetId: {

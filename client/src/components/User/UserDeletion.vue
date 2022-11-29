@@ -1,6 +1,6 @@
 <template>
     <b-row class="ml-3 mb-1">
-        <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
+        <FontAwesomeIcon icon="fa-radiation" class="pref-icon pt-1" size="lg" />
         <div class="pref-content pr-1">
             <a id="delete-account" href="javascript:void(0)"
                 ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
@@ -41,10 +41,16 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { userLogoutClient } from "utils/logout";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faRadiation } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faRadiation);
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         root: {
             type: String,

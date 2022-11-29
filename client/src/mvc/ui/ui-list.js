@@ -2,6 +2,13 @@ import $ from "jquery";
 import Backbone from "backbone";
 import Utils from "utils/utils";
 import Ui from "mvc/ui/ui-misc";
+
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faSignInAlt, faTrash } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSignInAlt, faTrash);
+dom.watch();
+
 var View = Backbone.View.extend({
     initialize: function (options) {
         this.options = options;
@@ -18,7 +25,7 @@ var View = Backbone.View.extend({
         this.select = new Ui.Select.View({ optional: options.optional });
 
         // create insert new list element button
-        this.$button = $(`<button class="fa fa-sign-in"/>`);
+        this.$button = $(`<button><i class="fa fa-sign-in-alt" /></button>`);
         this.$button.on("click", () => {
             this.add({
                 id: this.select.value(),
@@ -136,7 +143,7 @@ var View = Backbone.View.extend({
     /** Row Template */
     _templateRow: function (options) {
         return `<div id="${options.id}" class="ui-list-id row mt-2">
-                    <button class="ui-list-delete fa fa-trash mr-3"/>
+                    <button class="ui-list-delete mr-3"><i class="fa fa-trash"/></button>
                     <div class="ui-list-name">${options.name}</span>
                 </div>`;
     },

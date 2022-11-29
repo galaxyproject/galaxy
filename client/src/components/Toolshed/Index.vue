@@ -12,7 +12,7 @@
                     @keydown.esc="setQuery()" />
                 <b-input-group-append v-b-tooltip.hover :title="titleClearSearch">
                     <b-btn @click="setQuery()">
-                        <i class="fa fa-times" />
+                        <FontAwesomeIcon icon="fa-times" />
                     </b-btn>
                 </b-input-group-append>
             </b-input-group>
@@ -26,15 +26,22 @@
         </div>
     </div>
 </template>
+
 <script>
 import _l from "utils/localization";
 import SearchList from "./SearchList/Index.vue";
 import InstalledList from "./InstalledList/Index.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
 
 export default {
     components: {
         SearchList,
         InstalledList,
+        FontAwesomeIcon,
     },
     data() {
         return {

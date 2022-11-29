@@ -6,12 +6,19 @@
         title="Scroll To Top"
         variant="info"
         @click="$emit('click')">
-        <i class="fa fa-arrow-up" />
+        <FontAwesomeIcon icon="fa-arrow-up" />
     </b-button>
 </template>
 
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faArrowUp } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faArrowUp);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         offset: {
             type: Number,

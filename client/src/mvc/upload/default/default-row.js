@@ -6,6 +6,12 @@ import Utils from "utils/utils";
 import UploadExtension from "mvc/upload/upload-extension";
 import UploadBoxRow from "mvc/upload/uploadbox-row";
 import Select from "mvc/ui/ui-select";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faSearch, faCog } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSearch, faCog);
+dom.watch();
+
 export default UploadBoxRow.extend({
     initialize: function (app, options) {
         var self = this;
@@ -215,13 +221,13 @@ export default UploadBoxRow.extend({
                     </td>
                     <td>
                         <div class="upload-extension float-left mr-1"/>
-                        <div class="upload-extension-info upload-icon-button fa fa-search"/>
+                        <i class="upload-extension-info upload-icon-button fa fa-search"/>
                     </td>
                     <td>
                         <div class="upload-genome"/>
                     </td>
                     <td>
-                        <div class="upload-settings upload-icon-button fa fa-gear"/>
+                        <i class="upload-settings upload-icon-button fa fa-cog"/>
                     </td>
                     <td>
                         <div class="upload-info">

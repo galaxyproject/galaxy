@@ -5,6 +5,11 @@ import $ from "jquery";
 import Backbone from "backbone";
 import _ from "underscore";
 import Utils from "utils/utils";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faTimesCircle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimesCircle);
+dom.watch();
 
 export default Backbone.View.extend({
     initialize: function (options) {

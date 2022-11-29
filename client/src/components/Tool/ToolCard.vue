@@ -6,6 +6,7 @@ import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import Heading from "components/Common/Heading";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import { computed, ref, watch } from "vue";
 import { useCurrentUser } from "composables/user";
@@ -73,6 +74,13 @@ const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faWrench);
+</script>
+
 <template>
     <div class="position-relative">
         <div class="underlay sticky-top" />
@@ -80,7 +88,7 @@ const showVersions = computed(() => props.options.versions?.length > 1);
             <div class="d-flex justify-content-between">
                 <div class="py-1 d-flex flex-wrap flex-gapx-1">
                     <span>
-                        <icon icon="wrench" class="fa-fw" />
+                        <FontAwesomeIcon icon="wrench" fixed-width />
                         <Heading h1 inline bold size="text" itemprop="name">{{ props.title }}</Heading>
                     </span>
                     <span itemprop="description">{{ props.description }}</span>

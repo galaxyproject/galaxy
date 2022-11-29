@@ -6,7 +6,7 @@
         <LoadingSpan v-if="showLoading" message="Loading recommendations" />
         <div v-if="compatibleTools.length > 0 && !isDeprecated">
             <div v-for="tool in compatibleTools" :key="tool.id">
-                <i class="fa mr-1 fa-wrench"></i>
+                <FontAwesomeIcon icon="fa-wrench" class="mr-1" />
                 <a :id="tool.id" href="#" title="Open tool" @click="$emit('onCreate', tool.id, tool.name, $event)">{{
                     tool.name
                 }}</a>
@@ -23,10 +23,16 @@ import { getCompatibleRecommendations } from "./modules/utilities";
 import LoadingSpan from "components/LoadingSpan";
 import { toSimple } from "./modules/model";
 import _l from "utils/localization";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faWrench } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faWrench);
 
 export default {
     components: {
         LoadingSpan,
+        FontAwesomeIcon,
     },
     props: {
         getNode: {

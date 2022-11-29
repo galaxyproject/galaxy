@@ -7,6 +7,12 @@ import Ui from "mvc/ui/ui-misc";
 import Select from "mvc/ui/ui-select-default";
 import { getGalaxyInstance } from "app";
 
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faSitemap } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSitemap);
+dom.watch();
+
 /** Batch mode variations */
 const Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 

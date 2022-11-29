@@ -32,14 +32,18 @@
                     v-if="!data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Show Invocation Details"
-                    class="btn-sm fa fa-chevron-down toggle-invocation-details"
-                    @click.stop="swapRowDetails(data)" />
+                    class="btn-sm toggle-invocation-details"
+                    @click.stop="swapRowDetails(data)">
+                    <FontAwesomeIcon icon="fa-chevron-down" />
+                </b-link>
                 <b-link
                     v-if="data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Hide Invocation Details"
-                    class="btn-sm fa fa-chevron-up toggle-invocation-details"
-                    @click.stop="swapRowDetails(data)" />
+                    class="btn-sm toggle-invocation-details"
+                    @click.stop="swapRowDetails(data)">
+                    <FontAwesomeIcon icon="fa-chevron-up" />
+                </b-link>
             </template>
             <template v-slot:cell(workflow_id)="data">
                 <div v-b-tooltip.hover.top :title="getWorkflowNameByInstanceId(data.item.workflow_id)" class="truncate">
@@ -93,11 +97,18 @@ import UtcDate from "components/UtcDate";
 import { useWorkflowStore } from "stores/workflowStore";
 import paginationMixin from "./paginationMixin";
 
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faChevronDown, faChevronUp);
+
 export default {
     components: {
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,
+        FontAwesomeIcon,
     },
     mixins: [paginationMixin],
     props: {

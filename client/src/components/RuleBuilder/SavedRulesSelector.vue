@@ -1,12 +1,13 @@
 <template>
     <div class="btn-group dropdown">
-        <span
+        <FontAwesomeIcon
             id="savedRulesButton"
             v-b-tooltip.hover.bottom
-            class="fas fa-history rule-builder-view-source"
+            icon="fa-history"
+            class="rule-builder-view-source"
             :class="{ disabled: numOfSavedRules == 0 }"
             :title="savedRulesMenu"
-            data-toggle="dropdown"></span>
+            data-toggle="dropdown" />
         <div class="dropdown-menu" role="menu">
             <a
                 v-for="(session, index) in sortSavedRules"
@@ -28,11 +29,17 @@ import _l from "utils/localization";
 import BootstrapVue from "bootstrap-vue";
 import { RULES, MAPPING_TARGETS } from "./rule-definitions";
 import UtcDate from "components/UtcDate";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faHistory } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faHistory);
 
 Vue.use(BootstrapVue);
 export default {
     components: {
         UtcDate,
+        FontAwesomeIcon,
     },
     props: {
         savedRules: {

@@ -9,7 +9,7 @@
                     variant="link"
                     :href="downloadUrl"
                     @click="onDownload">
-                    <FontAwesomeIcon class="mr-1" icon="fa-download" />
+                    <FontAwesomeIcon icon="fa-download" class="mr-1" />
                     <span>Download</span>
                 </b-button>
             </b-button-group>

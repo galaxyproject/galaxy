@@ -1,5 +1,21 @@
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faUser,
+    faUnlockAlt,
+    faUsers,
+    faLock,
+    faKey,
+    faCloud,
+    faFilter,
+    faCubes,
+    faSignOutAlt,
+} from "@fortawesome/free-solid-svg-icons";
+import { faIdCard } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faUser, faUnlockAlt, faUsers, faLock, faKey, faCloud, faFilter, faCubes, faSignOutAlt);
+library.add(faIdCard);
 
 export const getUserPreferencesModel = (user_id) => {
     const Galaxy = getGalaxyInstance();
@@ -31,7 +47,7 @@ export const getUserPreferencesModel = (user_id) => {
             title: _l("Manage Third-Party Identities"),
             id: "manage-third-party-identities",
             description: _l("Connect or disconnect access to your third-party identities."),
-            icon: "fa-id-card-o",
+            icon: "far fa-id-card",
             submitTitle: "Disconnect identity",
             submitIcon: "fa-trash",
             shouldRender: config.enable_oidc,
@@ -89,7 +105,7 @@ export const getUserPreferencesModel = (user_id) => {
             title: _l("Sign out"),
             id: "edit-preferences-sign-out",
             description: _l("Click here to sign out of all sessions."),
-            icon: "fa-sign-out",
+            icon: "fa-sign-out-alt",
             shouldRender: !!Galaxy.session_csrf_token && !config.single_user,
         },
     };

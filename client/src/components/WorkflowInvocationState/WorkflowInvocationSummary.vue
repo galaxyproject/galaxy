@@ -5,23 +5,22 @@
                 <a class="invocation-report-link" :href="invocationLink">
                     <b>View Report {{ indexStr }}</b>
                 </a>
-                <a
-                    v-b-tooltip
-                    class="fa fa-print ml-1 invocation-pdf-link"
-                    :href="invocationPdfLink"
-                    title="Download PDF" />
+                <a v-b-tooltip class="ml-1 invocation-pdf-link" :href="invocationPdfLink" title="Download PDF">
+                    <FontAwesomeIcon icon="fa-print" />
+                </a>
             </span>
         </div>
         <div v-else>
             <b-alert variant="info" show>
                 <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
             </b-alert>
-            <span
+            <FontAwesomeIcon
                 v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
-                class="fa fa-times cancel-workflow-scheduling"
+                icon="fa-times"
+                class="cancel-workflow-scheduling"
                 title="Cancel scheduling of workflow invocation"
-                @click="onCancel"></span>
+                @click="onCancel" />
         </div>
         <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
         <progress-bar
@@ -57,8 +56,13 @@ import { getRootFromIndexLink } from "onload";
 import mixin from "components/JobStates/mixin";
 import ProgressBar from "components/ProgressBar";
 import LoadingSpan from "components/LoadingSpan";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPrint, faTimes } from "@fortawesome/free-solid-svg-icons";
 
 import { mapGetters } from "vuex";
+
+library.add(faPrint, faTimes);
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 
@@ -66,6 +70,7 @@ export default {
     components: {
         ProgressBar,
         LoadingSpan,
+        FontAwesomeIcon,
     },
     mixins: [mixin],
     props: {

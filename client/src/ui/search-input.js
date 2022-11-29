@@ -1,10 +1,10 @@
 import jQuery from "jquery";
 import { library, dom } from "@fortawesome/fontawesome-svg-core";
-import { faTimesCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faTimesCircle, faSpinner, faQuestionCircle } from "@fortawesome/free-solid-svg-icons";
 
 ("use_strict");
 
-library.add(faTimesCircle, faSpinner);
+library.add(faTimesCircle, faQuestionCircle, faSpinner);
 dom.watch();
 
 var $ = jQuery;
