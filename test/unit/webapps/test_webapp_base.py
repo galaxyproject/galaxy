@@ -10,6 +10,7 @@ from typing import (
 
 import galaxy.config
 from galaxy.app_unittest_utils import galaxy_mock
+from galaxy.structured_app import BasicSharedApp
 from galaxy.webapps.base.webapp import (
     GalaxyWebTransaction,
     WebApplication,
@@ -36,7 +37,7 @@ class CORSParsingMockConfig(galaxy_mock.MockAppConfig):
 
 class TestGalaxyWebTransactionHeaders:
     def _new_trans(self, allowed_origin_hostnames: Optional[str] = None) -> StubGalaxyWebTransaction:
-        app = galaxy_mock.MockApp()
+        app = galaxy_mock.MockApp()[BasicSharedApp]
         app.config = CORSParsingMockConfig(allowed_origin_hostnames=allowed_origin_hostnames)
         webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))
         environ = galaxy_mock.buildMockEnviron()
