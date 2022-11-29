@@ -1,0 +1,13 @@
+mypy
+types-bleach
+types-boto
+types-contextvars
+types-dataclasses
+types-docutils
+types-Markdown
+types-paramiko
+types-pkg-resources
+types-python-dateutil
+types-PyYAML
+types-requests
+types-six
