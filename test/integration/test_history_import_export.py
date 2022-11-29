@@ -134,21 +134,47 @@ class TestImportExportHistoryViaTasksIntegration(
         export_records = self.dataset_populator.get_history_export_tasks(history_id)
         assert len(export_records) == 1
         last_record = export_records[0]
-
-        # Wait for export to finish if not ready yet
-        if last_record["preparing"]:
-            assert last_record["task_uuid"]
-            self.dataset_populator.wait_on_task_id(last_record["task_uuid"])
-
-        # It should be ready now
+        self._wait_for_export_task_on_record(last_record)
         assert last_record["ready"] is True
+
         # Check metadata
+        assert last_record["up_to_date"] is True
         assert last_record["export_metadata"]
         assert last_record["export_metadata"]["request_data"]
         assert last_record["export_metadata"]["request_data"]["payload"]
         assert last_record["export_metadata"]["request_data"]["payload"]["target_uri"] == target_uri
         assert last_record["export_metadata"]["result_data"]
         assert last_record["export_metadata"]["result_data"]["success"] is True
+
+        # Track temporal direct download
+        self.dataset_populator.download_history_to_store(history_id)
+        # We should have two records now
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) == 2
+        last_record = export_records[0]
+        self._wait_for_export_task_on_record(last_record)
+        assert last_record["ready"] is True
+
+        # Check metadata
+        assert last_record["up_to_date"] is True
+        assert last_record["export_metadata"]
+        assert last_record["export_metadata"]["request_data"]
+        assert last_record["export_metadata"]["request_data"]["payload"]
+        assert last_record["export_metadata"]["request_data"]["payload"]["short_term_storage_request_id"] is not None
+        assert last_record["export_metadata"]["request_data"]["payload"]["duration"] is not None
+        assert last_record["export_metadata"]["result_data"]
+        assert last_record["export_metadata"]["result_data"]["success"] is True
+
+        # After modifying the history the records must be outdated
+        self.dataset_populator.new_dataset(history_id)
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        for record in export_records:
+            assert record["up_to_date"] is False
+
+    def _wait_for_export_task_on_record(self, record):
+        if record["preparing"]:
+            assert record["task_uuid"]
+            self.dataset_populator.wait_on_task_id(record["task_uuid"])
 
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):
