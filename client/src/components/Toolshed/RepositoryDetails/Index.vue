@@ -6,7 +6,7 @@
         </div>
         <div>
             <span v-if="loading">
-                <span class="fa fa-spinner fa-spin" />
+                <FontAwesomeIcon icon="fa-spinner" spin />
                 <span class="loading-message">Loading repository details...</span>
             </span>
             <div v-else>
@@ -30,9 +30,10 @@
                         </template>
                         <template v-slot:cell(status)="row">
                             <span v-if="row.item.status">
-                                <span
+                                <FontAwesomeIcon
                                     v-if="!['Error', 'Installed', 'Uninstalled'].includes(row.item.status)"
-                                    class="fa fa-spinner fa-spin" />
+                                    icon="fa-spinner"
+                                    spin />
                                 {{ row.item.status }}
                             </span>
                             <span v-else> - </span>
@@ -72,6 +73,11 @@ import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 import InstallationSettings from "./InstallationSettings.vue";
 import InstallationActions from "./InstallationActions.vue";
 import RepositoryTools from "./RepositoryTools.vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSpinner);
 
 Vue.use(BootstrapVue);
 
@@ -82,6 +88,7 @@ export default {
         InstallationSettings,
         InstallationActions,
         RepositoryTools,
+        FontAwesomeIcon,
     },
     props: {
         repo: {

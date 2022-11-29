@@ -9,7 +9,7 @@
         </b-alert>
         <div v-else>
             <slot v-if="optionsShow" name="options"> </slot>
-            <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
+            <div v-else><FontAwesomeIcon icon="fa-spinner" spin /> <span>Please wait...</span></div>
         </div>
         <template v-slot:modal-footer>
             <div class="w-100">
@@ -21,7 +21,7 @@
                 </div>
                 <div v-else>
                     <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
-                        <font-awesome-icon :icon="['fas', 'caret-left']" />
+                        <font-awesome-icon icon="fa-caret-left" />
                         Back
                     </b-btn>
                     <b-btn id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">
@@ -37,6 +37,10 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner, faCaretLeft } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSpinner, faCaretLeft);
 
 Vue.use(BootstrapVue);
 

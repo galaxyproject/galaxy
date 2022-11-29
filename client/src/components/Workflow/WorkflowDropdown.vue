@@ -15,7 +15,7 @@
             <font-awesome-icon icon="check" class="workflow-trs-icon" />
         </span>
         <span v-if="sourceType == 'url'" v-b-tooltip.hover :title="`Imported from ${workflow.source_metadata.url}`">
-            <font-awesome-icon class="workflow-external-link" icon="link" />
+            <font-awesome-icon icon="link" class="workflow-external-link" />
         </span>
         <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
@@ -24,11 +24,11 @@
                 class="dropdown-item"
                 @keypress="$router.push(urlEdit)"
                 @click.prevent="$router.push(urlEdit)">
-                <span class="fa fa-edit fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-edit" class="mr-1" fixed-width />
                 <span v-localize>Edit</span>
             </a>
             <a v-if="!isDeleted" class="dropdown-item" href="#" @click.prevent="onCopy">
-                <span class="fa fa-copy fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-copy" class="mr-1" fixed-width />
                 <span v-localize>Copy</span>
             </a>
             <a
@@ -36,15 +36,15 @@
                 class="dropdown-item"
                 @keypress="$router.push(urlInvocations)"
                 @click.prevent="$router.push(urlInvocations)">
-                <span class="fa fa-list fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-list" class="mr-1" fixed-width />
                 <span v-localize>Invocations</span>
             </a>
             <a v-if="!isDeleted" class="dropdown-item" :href="urlDownload">
-                <span class="fa fa-download fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-download" class="mr-1" fixed-width />
                 <span v-localize>Download</span>
             </a>
             <a v-if="!readOnly && !isDeleted" class="dropdown-item" href="#" @click.prevent="onRename">
-                <span class="fa fa-signature fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-signature" class="mr-1" fixed-width />
                 <span v-localize>Rename</span>
             </a>
             <a
@@ -52,27 +52,27 @@
                 class="dropdown-item"
                 @keypress="$router.push(urlShare)"
                 @click.prevent="$router.push(urlShare)">
-                <span class="fa fa-share-alt fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-share-alt" class="mr-1" fixed-width />
                 <span v-localize>Share</span>
             </a>
             <a v-if="!readOnly && !isDeleted" class="dropdown-item" :href="urlExport">
-                <span class="fa fa-file-export fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-file-export" class="mr-1" fixed-width />
                 <span v-localize>Export</span>
             </a>
             <a v-if="!isDeleted" class="dropdown-item" :href="urlView">
-                <span class="fa fa-eye fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-eye" class="mr-1" fixed-width />
                 <span v-localize>View</span>
             </a>
             <a v-if="sourceLabel && !isDeleted" class="dropdown-item" :href="sourceUrl">
-                <span class="fa fa-globe fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-globe" class="mr-1" fixed-width />
                 <span v-localize>{{ sourceLabel }}</span>
             </a>
             <a v-if="!readOnly && !isDeleted" class="dropdown-item" href="#" @click.prevent="onDelete">
-                <span class="fa fa-trash fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-trash" class="mr-1" fixed-width />
                 <span v-localize>Delete</span>
             </a>
             <a v-if="isDeleted" class="dropdown-item" href="#" @click.prevent="onRestore">
-                <span class="fa fa-trash fa-fw mr-1" />
+                <FontAwesomeIcon icon="fa-trash" class="mr-1" fixed-width />
                 <span v-localize>Restore</span>
             </a>
         </div>
@@ -84,9 +84,33 @@ import { safePath } from "utils/redirect";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCaretDown,
+    faEdit,
+    faCopy,
+    faList,
+    faDownload,
+    faSignature,
+    faShareAlt,
+    faFileExport,
+    faEye,
+    faGlobe,
+    faTrash,
+} from "@fortawesome/free-solid-svg-icons";
 
-library.add(faCaretDown);
+library.add(
+    faCaretDown,
+    faEdit,
+    faCopy,
+    faList,
+    faDownload,
+    faSignature,
+    faShareAlt,
+    faFileExport,
+    faEye,
+    faGlobe,
+    faTrash
+);
 
 export default {
     components: {

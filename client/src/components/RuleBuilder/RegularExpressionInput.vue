@@ -1,7 +1,7 @@
 <template>
     <div>
         <label v-b-tooltip.hover for="regular_expression" :title="title">{{ label }}</label>
-        <span v-b-popover.html="popoverContent" :title="popoverTitle" class="fa fa-question"></span>
+        <FontAwesomeIcon v-b-popover.html="popoverContent" :title="popoverTitle" icon="fa-question" />
         <input
             v-b-tooltip.hover.left
             :title="title"
@@ -15,8 +15,14 @@
 
 <script>
 import _l from "utils/localization";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faQuestion } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faQuestion);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         target: {
             required: true,

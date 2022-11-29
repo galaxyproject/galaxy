@@ -13,7 +13,7 @@
                     title="Workflow Run Settings"
                     no-caret>
                     <template v-slot:button-content>
-                        <span class="fa fa-cog" />
+                        <FontAwesomeIcon icon="fa-cog" />
                     </template>
                     <b-dropdown-form>
                         <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
@@ -45,12 +45,18 @@ import { invokeWorkflow } from "./services";
 import { isWorkflowInput } from "components/Workflow/constants";
 import { errorMessageAsString } from "utils/simple-error";
 import { allowCachedJobs } from "components/Tool/utilities";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCog } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCog);
 
 export default {
     components: {
         ButtonSpinner,
         CurrentUser,
         FormDisplay,
+        FontAwesomeIcon,
     },
     props: {
         model: {

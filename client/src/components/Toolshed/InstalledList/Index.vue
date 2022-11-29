@@ -11,11 +11,11 @@
                     </span>
                     <b-link class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
-                            <span class="fa fa-angle-double-up" />
+                            <FontAwesomeIcon icon="fa-angle-double-up" />
                             <span>Hide installation progress.</span>
                         </span>
                         <span v-else>
-                            <span class="fa fa-angle-double-down" />
+                            <FontAwesomeIcon icon="fa-angle-double-down" />
                             <span>Show installation progress.</span>
                         </span>
                     </b-link>
@@ -59,6 +59,11 @@ import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
 import Monitor from "./Monitor";
 import RepositoryDetails from "./Details";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleUp, faAngleDoubleDown } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faAngleDoubleUp, faAngleDoubleDown);
 
 Vue.use(BootstrapVue);
 
@@ -67,6 +72,7 @@ export default {
         LoadingSpan,
         Monitor,
         RepositoryDetails,
+        FontAwesomeIcon,
     },
     props: {
         filter: {

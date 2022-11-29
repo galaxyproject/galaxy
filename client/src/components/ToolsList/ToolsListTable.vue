@@ -26,30 +26,38 @@
                 {{ row.item.panel_section_name }}
             </template>
             <template v-slot:cell(workflow)="row">
-                <span
+                <FontAwesomeIcon
                     v-if="row.item.is_workflow_compatible"
                     v-b-tooltip.hover
-                    class="fa fa-check text-success"
+                    icon="fa-check"
+                    class="text-success"
                     title="Is Workflow Compatible" />
-                <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Workflow Compatible" />
+                <FontAwesomeIcon
+                    v-else
+                    v-b-tooltip.hover
+                    icon="fa-times"
+                    class="text-danger"
+                    title="Not Workflow Compatible" />
             </template>
             <template v-slot:cell(target)="row">
-                <span
+                <FontAwesomeIcon
                     v-if="row.item.target === 'galaxy_main'"
                     v-b-tooltip.hover
-                    class="fa fa-check text-success"
+                    icon="fa-check"
+                    class="text-success"
                     title="Is Local" />
-                <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Local" />
+                <FontAwesomeIcon v-else v-b-tooltip.hover icon="fa-times" class="text-danger" title="Not Local" />
             </template>
             <template v-slot:cell(open)="row">
                 <b-button
                     v-b-tooltip.hover.top
                     :title="'Open Tool' | localize"
-                    class="fa fa-play"
                     size="sm"
                     variant="primary"
                     :href="row.item.target === 'galaxy_main' ? 'javascript:void(0)' : row.item.link"
-                    @click.stop="onOpen(row.item)" />
+                    @click.stop="onOpen(row.item)">
+                    <FontAwesomeIcon icon="fa-play" />
+                </b-button>
             </template>
         </b-table>
         <div>
@@ -65,11 +73,17 @@ import _l from "utils/localization";
 import infiniteScroll from "vue-infinite-scroll";
 import { openGlobalUploadModal } from "components/Upload";
 import { fetchData } from "./services";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCheck, faTimes, faPlay } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCheck, faTimes, faPlay);
 
 const defaultBufferLen = 4;
 const loadTimeout = 100;
 
 export default {
+    components: { FontAwesomeIcon },
     directives: { infiniteScroll },
     props: {
         tools: {

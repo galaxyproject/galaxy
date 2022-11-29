@@ -10,7 +10,7 @@
                 size="sm"
                 class="float-right py-0 px-1"
                 @click="onEditSubworkflow">
-                <span class="fa fa-pencil-alt" />
+                <FontAwesomeIcon icon="fa-pencil-alt" />
             </b-button>
             <b-button
                 v-if="isSubworkflow"
@@ -21,7 +21,7 @@
                 size="sm"
                 class="float-right py-0 px-1"
                 @click="onUpgradeSubworkflow">
-                <span class="fa fa-sync" />
+                <FontAwesomeIcon icon="fa-sync" />
             </b-button>
         </template>
         <template v-slot:body>
@@ -59,6 +59,11 @@ import FormElement from "components/Form/FormElement";
 import FormOutputLabel from "./FormOutputLabel";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import WorkflowIcons from "components/Workflow/icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faPencilAlt, faSync } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faPencilAlt, faSync);
 
 export default {
     components: {
@@ -66,6 +71,7 @@ export default {
         FormCard,
         FormElement,
         FormOutputLabel,
+        FontAwesomeIcon,
     },
     props: {
         nodeName: {

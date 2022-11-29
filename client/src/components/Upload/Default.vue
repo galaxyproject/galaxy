@@ -1,6 +1,6 @@
 <template>
     <upload-wrapper ref="wrapper" :top-info="topInfo" :highlight-box="highlightBox">
-        <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
+        <div v-show="showHelper" class="upload-helper"><FontAwesomeIcon icon="far fa-copy" />Drop files here</div>
         <table v-show="!showHelper" ref="uploadTable" class="upload-table ui-table-striped">
             <thead>
                 <tr>
@@ -24,7 +24,7 @@
                 :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
-            <span class="upload-footer-extension-info upload-icon-button fa fa-search" />
+            <FontAwesomeIcon icon="fa-search" class="upload-footer-extension-info upload-icon-button" />
             <span class="upload-footer-title">Genome (set all):</span>
             <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
@@ -76,7 +76,7 @@
                 :title="btnCreateTitle"
                 :disabled="!enableSources"
                 @click="_eventCreate()">
-                <span class="fa fa-edit"></span>{{ btnCreateTitle }}
+                <FontAwesomeIcon icon="fa-edit" />{{ btnCreateTitle }}
             </b-button>
             <b-button
                 v-if="remoteFiles"
@@ -85,7 +85,7 @@
                 class="ui-button-default"
                 :disabled="!enableSources"
                 @click="_eventRemoteFiles">
-                <span class="fa fa-folder-open-o"></span>{{ btnFilesTitle }}
+                <FontAwesomeIcon icon="far fa-folder-open" />{{ btnFilesTitle }}
             </b-button>
             <b-button
                 id="btn-local"
@@ -94,7 +94,7 @@
                 :title="btnLocalTitle"
                 :disabled="!enableSources"
                 @click="uploadSelect">
-                <span class="fa fa-laptop"></span>{{ btnLocalTitle }}
+                <FontAwesomeIcon icon="fa-laptop" />{{ btnLocalTitle }}
             </b-button>
         </template>
     </upload-wrapper>
@@ -107,9 +107,15 @@ import UploadRow from "mvc/upload/default/default-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
 import { BButton } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSearch, faEdit, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { faFolderOpen, faCopy } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faSearch, faEdit, faLaptop, faFolderOpen, faCopy);
 
 export default {
-    components: { BButton },
+    components: { BButton, FontAwesomeIcon },
     mixins: [UploadBoxMixin],
     props: {
         multiple: {

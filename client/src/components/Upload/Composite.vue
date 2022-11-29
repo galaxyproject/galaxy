@@ -24,7 +24,10 @@
                 :enabled="!running">
                 <option v-for="(ext, index) in extensions" :key="index" :value="ext.id">{{ ext.text }}</option>
             </select2>
-            <span ref="footerExtensionInfo" class="upload-footer-extension-info upload-icon-button fa fa-search" />
+            <FontAwesomeIcon
+                ref="footerExtensionInfo"
+                icon="faSearch"
+                class="upload-footer-extension-info upload-icon-button" />
             <span class="upload-footer-title">Genome/Build:</span>
             <select2 ref="footerGenome" v-model="genome" container-class="upload-footer-genome" :enabled="!running">
                 <option v-for="(listGenome, index) in listGenomes" :key="index" :value="listGenome.id">
@@ -66,8 +69,14 @@ import UploadRow from "mvc/upload/composite/composite-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
 import { submitUpload } from "utils/uploadbox";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faSearch } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSearch);
 
 export default {
+    components: { FontAwesomeIcon },
     mixins: [UploadBoxMixin],
     data() {
         return {

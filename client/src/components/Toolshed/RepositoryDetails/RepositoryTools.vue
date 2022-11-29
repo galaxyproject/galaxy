@@ -4,7 +4,7 @@
             <tr v-if="canExpand && expanded" class="bg-transparent">
                 <td :class="clsFirstColumn">
                     <a href="javascript:void(0)" role="button" @click.stop.prevent="onExpand">
-                        <span class="fa fa-angle-double-up" />
+                        <FontAwesomeIcon icon="fa-angle-double-up" />
                         <span>Show less</span>
                     </a>
                 </td>
@@ -21,7 +21,7 @@
             <tr v-if="canExpand && !expanded" class="bg-transparent">
                 <td :class="clsFirstColumn">
                     <a href="javascript:void(0)" role="button" @click.stop.prevent="onExpand">
-                        <span class="fa fa-angle-double-down" />
+                        <FontAwesomeIcon icon="fa-angle-double-down" />
                         <span>Show more</span>
                     </a>
                 </td>
@@ -31,8 +31,16 @@
     </table>
     <span v-else>-</span>
 </template>
+
 <script>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faAngleDoubleUp, faAngleDoubleDown } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faAngleDoubleUp, faAngleDoubleDown);
+
 export default {
+    components: { FontAwesomeIcon },
     props: {
         tools: {
             type: Array,

@@ -41,7 +41,7 @@
                     variant="link"
                     role="button"
                     @click="onEdit">
-                    <span class="fa fa-times" />
+                    <FontAwesomeIcon icon="fa-times" />
                 </b-button>
             </template>
         </MarkdownEditor>
@@ -230,6 +230,11 @@ import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
 
 export default {
     components: {
@@ -246,6 +251,7 @@ export default {
         WorkflowLint,
         RefactorConfirmationModal,
         MessagesModal,
+        FontAwesomeIcon,
     },
     props: {
         id: {

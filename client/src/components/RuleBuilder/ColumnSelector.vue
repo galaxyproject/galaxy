@@ -16,12 +16,20 @@
         <ol>
             <li v-for="(targetEl, index) in target" :key="targetEl" :index="index" class="rule-column-selector-target">
                 {{ colHeaders[targetEl] }}
-                <span class="fa fa-times rule-column-selector-target-remove" @click="handleRemove(index)"></span>
-                <span v-if="index !== 0" class="fa fa-arrow-up rule-column-selector-up" @click="moveUp(index)"></span>
-                <span
+                <FontAwesomeIcon
+                    icon="fa-times"
+                    class="rule-column-selector-target-remove"
+                    @click="handleRemove(index)" />
+                <FontAwesomeIcon
+                    v-if="index !== 0"
+                    icon="fa-arrow-up"
+                    class="rule-column-selector-up"
+                    @click="moveUp(index)" />
+                <FontAwesomeIcon
                     v-if="index < target.length - 1"
-                    class="fa fa-arrow-down rule-column-selector-down"
-                    @click="moveUp(index + 1)"></span>
+                    icon="fa-arrow-down"
+                    class="rule-column-selector-down"
+                    @click="moveUp(index + 1)" />
             </li>
             <li v-if="target.length < colHeaders.length">
                 <span v-if="!orderedEdit" class="rule-column-selector-target-add">
@@ -43,9 +51,16 @@
 import Vue from "vue";
 import _l from "utils/localization";
 import Select2 from "components/Select2";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes, faArrowUp, faArrowDown } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes, faArrowUp, faArrowDown);
+
 export default {
     components: {
         Select2,
+        FontAwesomeIcon,
     },
     props: {
         target: {

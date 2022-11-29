@@ -1,6 +1,7 @@
 <script setup>
 import { Services } from "../services";
 import { computed, ref, watch } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const props = defineProps({
     queryTrsServer: {
@@ -79,6 +80,13 @@ const possibleServeUrlsMatch = (a, b) => {
 _configureTrsServers();
 </script>
 
+<script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCaretDown);
+</script>
+
 <template>
     <span v-if="!loading" class="m-1 text-muted">
         <span v-if="showDropdown" class="dropdown">
@@ -89,7 +97,7 @@ _configureTrsServers();
                 aria-expanded="false"
                 class="font-weight-bold">
                 {{ selection.label }}
-                <span class="fa fa-caret-down" />
+                <FontAwesomeIcon icon="fa-caret-down" />
             </b-link>
             <div class="dropdown-menu" aria-labelledby="dropdownTrsServer">
                 <a

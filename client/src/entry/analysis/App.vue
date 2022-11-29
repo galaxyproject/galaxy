@@ -18,7 +18,7 @@
                 id="messagebox"
                 class="rounded-0 m-0 p-2"
                 :variant="config.message_box_class || 'info'">
-                <span class="fa fa-fw mr-1 fa-exclamation" />
+                <FontAwesomeIcon icon="fa-exclamation" class="mr-1" fixed-width />
                 <span>{{ config.message_box_content }}</span>
             </alert>
             <alert
@@ -26,7 +26,7 @@
                 id="inactivebox"
                 class="rounded-0 m-0 p-2"
                 variant="alert-warning">
-                <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
+                <FontAwesomeIcon icon="fa-exclamation-triangle" class="mr-1" fixed-width />
                 <span>{{ config.inactivity_box_content }}</span>
                 <span>
                     <a class="ml-1" :href="resendUrl">Resend Verification</a>
@@ -39,6 +39,7 @@
         <ConfirmDialog ref="confirmDialogRef" />
     </div>
 </template>
+
 <script>
 import Modal from "mvc/ui/ui-modal";
 import Masthead from "components/Masthead/Masthead.vue";
@@ -53,12 +54,18 @@ import ConfirmDialog from "components/ConfirmDialog";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { ref } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExclamation, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faExclamation, faExclamationTriangle);
 
 export default {
     components: {
         Masthead,
         Toast,
         ConfirmDialog,
+        FontAwesomeIcon,
     },
     setup() {
         const toastRef = ref(null);

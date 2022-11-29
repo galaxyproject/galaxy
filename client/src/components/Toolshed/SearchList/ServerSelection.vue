@@ -9,7 +9,7 @@
                 aria-expanded="false"
                 class="font-weight-bold">
                 {{ toolshedUrl }}
-                <span class="fa fa-caret-down" />
+                <FontAwesomeIcon icon="fa-caret-down" />
             </b-link>
             <div class="dropdown-menu" aria-labelledby="dropdownToolshedUrl">
                 <a
@@ -33,10 +33,16 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCaretDown);
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         toolshedUrl: {
             type: String,

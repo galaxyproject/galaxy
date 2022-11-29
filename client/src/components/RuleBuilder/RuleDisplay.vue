@@ -2,8 +2,8 @@
     <li class="rule">
         <span class="rule-display">
             <span class="mr-1">{{ title }}</span>
-            <span v-b-tooltip.hover :title="editTitle" class="fa fa-edit mr-1" @click="edit"></span>
-            <span v-b-tooltip.hover :title="removeTitle" class="fa fa-times map" @click="remove"></span>
+            <FontAwesomeIcon v-b-tooltip.hover :title="editTitle" icon="fa-edit" class="mr-1" @click="edit" />
+            <FontAwesomeIcon v-b-tooltip.hover :title="removeTitle" icon="fa-times" class="map" @click="remove" />
         </span>
         <span v-if="rule.warn" class="rule-warning">
             {{ rule.warn }}
@@ -17,9 +17,16 @@
 <script>
 import _l from "utils/localization";
 import RuleDefs from "./rule-definitions";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit, faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEdit, faTimes);
+
 const RULES = RuleDefs.RULES;
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         rule: {
             required: true,

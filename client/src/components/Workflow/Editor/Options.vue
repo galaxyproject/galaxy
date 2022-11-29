@@ -9,7 +9,7 @@
             aria-label="Edit Attributes"
             class="editor-button-attributes"
             @click="$emit('onAttributes')">
-            <span class="fa fa-pencil-alt" />
+            <FontAwesomeIcon icon="fa-pencil-alt" />
         </b-button>
         <b-button-group v-b-tooltip class="editor-button-save-group" title="Save Workflow">
             <b-button
@@ -20,7 +20,7 @@
                 class="editor-button-save"
                 :disabled="!hasChanges"
                 @click="$emit('onSave')">
-                <span class="fa fa-floppy-o" />
+                <FontAwesomeIcon icon="far fa-save" />
             </b-button>
         </b-button-group>
         <b-button
@@ -32,7 +32,7 @@
             aria-label="Edit Report"
             class="editor-button-report"
             @click="$emit('onReport')">
-            <span class="fa fa-edit" />
+            <FontAwesomeIcon icon="fa-edit" />
         </b-button>
         <b-dropdown
             id="workflow-options-button"
@@ -45,22 +45,22 @@
             aria-label="Workflow Options"
             class="editor-button-options">
             <template v-slot:button-content>
-                <span class="fa fa-cog" />
+                <FontAwesomeIcon icon="fa-cog" />
             </template>
             <b-dropdown-item href="#" @click="$emit('onSaveAs')"
-                ><span class="fa fa-floppy-o" />Save As...</b-dropdown-item
+                ><FontAwesomeIcon icon="far fa-save" />Save As...</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onLayout')"
-                ><span class="fa fa-align-left" />Auto Layout</b-dropdown-item
+                ><FontAwesomeIcon icon="fa-align-left" />Auto Layout</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onLint')"
-                ><span class="fa fa-magic" />Best Practices</b-dropdown-item
+                ><FontAwesomeIcon icon="fa-magic" />Best Practices</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onUpgrade')"
-                ><span class="fa fa-recycle" />Upgrade Workflow</b-dropdown-item
+                ><FontAwesomeIcon icon="fa-recycle" />Upgrade Workflow</b-dropdown-item
             >
             <b-dropdown-item href="#" @click="$emit('onDownload')"
-                ><span class="fa fa-download" />Download</b-dropdown-item
+                ><FontAwesomeIcon icon="fa-download" />Download</b-dropdown-item
             >
         </b-dropdown>
         <b-button
@@ -72,19 +72,34 @@
             aria-label="Run Workflow"
             class="editor-button-run"
             @click="$emit('onRun')">
-            <span class="fa fa-play" />
+            <FontAwesomeIcon icon="fa-play" />
         </b-button>
     </div>
 </template>
 
 <script>
 import { BDropdown, BDropdownItem, BButton } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faPencilAlt,
+    faEdit,
+    faCog,
+    faAlignLeft,
+    faMagic,
+    faRecycle,
+    faDownload,
+} from "@fortawesome/free-solid-svg-icons";
+import { faSave } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faPencilAlt, faEdit, faCog, faAlignLeft, faMagic, faRecycle, faDownload, faSave);
 
 export default {
     components: {
         BDropdown,
         BDropdownItem,
         BButton,
+        FontAwesomeIcon,
     },
     props: {
         hasChanges: {

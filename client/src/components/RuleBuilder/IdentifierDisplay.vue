@@ -1,17 +1,24 @@
 <template>
     <li class="rule">
         <span v-b-tooltip.hover :title="help">Set {{ columnsLabel }} as {{ typeDisplay }}</span>
-        <span v-b-tooltip.hover :title="titleEdit" class="fa fa-edit" @click="edit"></span>
-        <span v-b-tooltip.hover :title="titleRemove" class="fa fa-times" @click="remove"></span>
+        <FontAwesomeIcon v-b-tooltip.hover :title="titleEdit" icon="fa-edit" @click="edit" />
+        <FontAwesomeIcon v-b-tooltip.hover :title="titleRemove" icon="fa-times" @click="remove" />
     </li>
 </template>
 
 <script>
 import _l from "utils/localization";
 import RuleDefs from "./rule-definitions";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes, faEdit);
+
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
 export default {
+    components: { FontAwesomeIcon },
     props: {
         type: {
             type: String,
