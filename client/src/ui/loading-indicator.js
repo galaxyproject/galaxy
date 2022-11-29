@@ -1,5 +1,11 @@
 import jQuery from "jquery";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner } from "@fortawesome/free-solid-svg-icons";
+
 ("use_strict");
+
+library.add(faSpinner);
+dom.watch();
 
 var $ = jQuery;
 //TODO: too specific to history panel
@@ -17,7 +23,7 @@ function LoadingIndicator($where, options) {
         var html = [
             '<div class="loading-indicator">',
             '<div class="loading-indicator-text">',
-            '<span class="fa fa-spinner fa-spin fa-lg"></span>',
+            '<i class="fa fa-spinner fa-spin fa-lg" />',
             '<span class="loading-indicator-message">loading...</span>',
             "</div>",
             "</div>",

@@ -1,5 +1,11 @@
 import jQuery from "jquery";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faTimesCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
+
 ("use_strict");
+
+library.add(faTimesCircle, faSpinner);
+dom.watch();
 
 var $ = jQuery;
 var _l = window._l || ((s) => s);
@@ -107,9 +113,7 @@ function searchInput(parentNode, options) {
     // a button for clearing the search bar, placed on the right hand side
     function $clearBtn() {
         return $(
-            ['<span class="search-clear fa fa-times-circle" ', 'title="', _l("clear search (esc)"), '"></span>'].join(
-                ""
-            )
+            ['<i class="search-clear fa fa-times-circle" ', 'title="', _l("clear search (esc)"), '"></i>'].join("")
         )
             .tooltip({ placement: "bottom" })
             .click(function (event) {
@@ -168,9 +172,7 @@ function searchInput(parentNode, options) {
     // .................................................................... loadingIndicator rendering
     // a button for clearing the search bar, placed on the right hand side
     function $loadingIndicator() {
-        return $(
-            ['<span class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("loading..."), '"></span>'].join("")
-        )
+        return $(['<i class="search-loading fa fa-spinner fa-spin" ', 'title="', _l("loading..."), '"></i>'].join(""))
             .hide()
             .tooltip({ placement: "bottom" });
     }

@@ -1,6 +1,10 @@
 import jQuery from "jquery";
 import _ from "underscore";
 
+import { dom } from "@fortawesome/fontawesome-svg-core";
+
+dom.watch();
+
 var $ = jQuery;
 //============================================================================
 /** Returns a jQuery object containing a clickable font-awesome button.
@@ -35,11 +39,11 @@ var faIconButton = (options) => {
         !options.disabled && options.href ? options.href : "javascript:void(0);",
         '">',
         // could go with something less specific here - like 'html'
-        '<span class="fa ',
+        '<i class="fa ',
         options.faIcon,
         '" style="',
         options.style,
-        '"></span>',
+        '"></i>',
         "</a>",
     ].join("");
     var $button = $(html).tooltip(options.tooltipConfig);

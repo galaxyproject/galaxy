@@ -6,6 +6,12 @@ import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import UploadUtils from "mvc/upload/upload-utils";
 
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faFileAlt, faHdd } from "@fortawesome/free-regular-svg-icons";
+
+library.add(faFileAlt, faHdd);
+dom.watch();
+
 export default Backbone.View.extend({
     initialize: function (options) {
         this.model = new Backbone.Model({
@@ -195,9 +201,9 @@ export default Backbone.View.extend({
                     <div class="upload-ftp-content">
                         <span style="whitespace: nowrap; float: left;">Available files: </span>
                         <span style="whitespace: nowrap; float: right;">
-                            <span class="upload-icon fa fa-file-text-o"/>
+                            <i class="upload-icon fa-regular fa-file-alt"/>
                             <span class="upload-ftp-number"/>
-                            <span class="upload-icon fa fa-hdd-o"/>
+                            <i class="upload-icon fa-regular fa-hdd"/>
                             <span class="upload-ftp-disk"/>
                         </span>
                         <table class="grid" style="float: left;">

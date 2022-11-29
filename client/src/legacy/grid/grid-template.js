@@ -1,5 +1,11 @@
 // dependencies
 import Utils from "utils/utils";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
+dom.watch();
+
 // grid view templates
 export default {
     // template
@@ -281,7 +287,7 @@ export default {
                     <input type="hidden" id="operation" name="operation" value="">
                     <td></td>
                     <td colspan="100">
-                        For <span class="grid-selected-count"></span> selected items: 
+                        For <span class="grid-selected-count"></span> selected items:
             `;
 
             // configure buttons for operations

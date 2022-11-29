@@ -5,6 +5,13 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
+
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faCheck } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faCheck);
+dom.watch();
+
 const PopupMenu = Backbone.View.extend({
     //TODO: maybe better as singleton off the Galaxy obj
     /** Cache the desired button element and options, set up the button click handler
@@ -83,7 +90,7 @@ const PopupMenu = Backbone.View.extend({
             }
             const href = option.href || "javascript:void(0);";
             const target = option.target ? `target="${option.target}"` : "";
-            const check = option.checked ? '<span class="fa fa-check mr-1"/>' : "";
+            const check = option.checked ? '<i class="fa fa-check mr-1"/>' : "";
             const title = option.title ? `title="${option.title}"` : "";
             return `<a class="popupmenu-option dropdown-item" href="${href}" ${title} ${target}>${check}${option.html}</a>`;
         }).join("");

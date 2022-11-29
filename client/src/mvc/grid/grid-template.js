@@ -1,6 +1,11 @@
 import $ from "jquery";
 import Utils from "utils/utils";
 import _ from "underscore";
+import { library, dom } from "@fortawesome/fontawesome-svg-core";
+import { faSpinner, faSearch, faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faSpinner, faSearch, faTimes);
+dom.watch();
 
 // grid view templates
 export default {
@@ -189,7 +194,7 @@ export default {
 
                     // Determine cell content
                     if (column.delayed) {
-                        tmpl += `<div class="delayed-value-${column.key}" data-id="${item.encode_id}" data-value="${value}"><span class="fa fa-spinner fa-spin"></span></div>`;
+                        tmpl += `<div class="delayed-value-${column.key}" data-id="${item.encode_id}" data-value="${value}"><i class="fa fa-spinner fa-spin"></i></div>`;
                     } else if (column.attach_popup && link) {
                         tmpl += `<div class="btn-group">
                                     <button class="btn btn-secondary use-target" target="${target}" href="${link}" onclick="return false;">${value}</button>
@@ -297,7 +302,7 @@ export default {
                     <input type="hidden" id="operation" name="operation" value="">
                     <td></td>
                     <td colspan="100">
-                        For <span class="grid-selected-count"></span> selected items: 
+                        For <span class="grid-selected-count"></span> selected items:
             `;
 
             // configure buttons for operations
