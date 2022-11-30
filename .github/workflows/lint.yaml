@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: .tox
-          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles(env.LINT_PATH, env.TYPE_PATH, env.CORE_PATH) }}-lint-and-typecheck
+          key: tox-cache-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles(env.LINT_PATH, env.TYPE_PATH, env.CORE_PATH) }}-lint
       - name: Install tox
         run: pip install tox
       - name: Run linting
