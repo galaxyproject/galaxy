@@ -37,8 +37,8 @@ import { mapActions, mapGetters } from "vuex";
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem";
 import SelectorModal from "components/History/Modals/SelectorModal";
-import { useAnimationFrameScroll } from "composables/utils/animationFrameScroll";
-import { useAnimationFrameResizeObserver } from "composables/utils/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
+import { useAnimationFrameResizeObserver } from "composables/sensors/animationFrameResizeObserver";
 import { computed, ref } from "vue";
 
 export default {
