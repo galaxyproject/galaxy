@@ -1233,6 +1233,11 @@
     minimatch "^3.1.2"
     strip-json-comments "^3.1.1"
 
+"@fontsource/atkinson-hyperlegible@^4.5.10":
+  version "4.5.10"
+  resolved "https://registry.yarnpkg.com/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-4.5.10.tgz#7571e9d07acfc3c122d077c5c44be1c557c55a6d"
+  integrity sha512-UyKTkEGQnF5lbAYRIPCeAikkVgBPQ8n3ve/cdJX1tp0Kma3pe7cZOVESEK2oyTZqn7Jt3ZS51hbY7hR8u4dLXA==
+
 "@fortawesome/fontawesome-common-types@^0.2.36":
   version "0.2.36"
   resolved "https://registry.yarnpkg.com/@fortawesome/fontawesome-common-types/-/fontawesome-common-types-0.2.36.tgz#b44e52db3b6b20523e0c57ef8c42d315532cb903"

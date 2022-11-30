@@ -109,10 +109,9 @@ from ..item_attrs import (
 from ... import model
 
 if TYPE_CHECKING:
-    from tags import GalaxyTagHandlerSession
-
     from galaxy.managers.workflows import WorkflowContentsManager
     from galaxy.model import ImplicitCollectionJobs
+    from galaxy.model.tags import GalaxyTagHandlerSession
 
 log = logging.getLogger(__name__)
 
