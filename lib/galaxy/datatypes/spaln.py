@@ -5,6 +5,8 @@ spaln Composite Dataset
 import logging
 import os.path
 from typing import (
+    Callable,
+    Dict,
     List,
     TYPE_CHECKING,
 )
@@ -158,7 +160,7 @@ class _SpalnDb(Data):
         raise NotImplementedError("Merging spaln databases is not possible")
 
     @classmethod
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
         """Split a spaln database (not implemented)."""
         if split_params is None:
             return None

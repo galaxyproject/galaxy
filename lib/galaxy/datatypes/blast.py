@@ -34,6 +34,8 @@ import logging
 import os
 from time import sleep
 from typing import (
+    Callable,
+    Dict,
     List,
     TYPE_CHECKING,
 )
@@ -242,7 +244,7 @@ class _BlastDb(Data):
         raise NotImplementedError("Merging BLAST databases is non-trivial (do this via makeblastdb?)")
 
     @classmethod
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
         """Split a BLAST database (not implemented for now)."""
         if split_params is None:
             return None

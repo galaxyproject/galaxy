@@ -7,6 +7,7 @@ import tempfile
 from inspect import isclass
 from typing import (
     Any,
+    Callable,
     Dict,
     Generator,
     IO,
@@ -1027,7 +1028,7 @@ class Text(Data):
             dataset.blurb = "file purged from disk"
 
     @classmethod
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
         """
         Split the input files by line.
         """
