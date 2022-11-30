@@ -113,7 +113,7 @@ export default {
                 if (this.value == null) {
                     return;
                 } else if (this.value !== "") {
-                    if (this.multiple && this.display != "checkboxes") {
+                    if (this.multiple && this.display !== "checkboxes") {
                         return this.selectValueMultiple(this.formattedOptions, this.value);
                     } else if (this.multiple && this.display == "checkboxes") {
                         return this.selectValueCheckboxes(this.formattedOptions, this.value);
@@ -137,7 +137,7 @@ export default {
                 if (val == null) {
                     // This case can occur when single-select dropdown is re-selected
                     return;
-                } else if (this.multiple && this.display != "checkboxes") {
+                } else if (this.multiple && this.display !== "checkboxes") {
                     const values = this.buildValuesFromFormattedOptions(val);
                     this.$emit("input", values);
                 } else if (this.display == "radio" || this.display == "checkboxes") {
