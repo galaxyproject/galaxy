@@ -8,7 +8,10 @@ import os
 import re
 import subprocess
 import tempfile
-from typing import TYPE_CHECKING
+from typing import (
+    IO,
+    TYPE_CHECKING,
+)
 
 import yaml
 
@@ -1069,7 +1072,7 @@ class Yaml(Text):
         """Returns the mime type of the datatype"""
         return "application/yaml"
 
-    def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):
+    def _yield_user_file_content(self, trans, from_dataset: "DatasetInstance", filename: str, headers: Headers) -> IO:
         # Override non-standard application/yaml mediatype with
         # text/plain, so preview is shown in preview iframe,
         # instead of downloading the file.

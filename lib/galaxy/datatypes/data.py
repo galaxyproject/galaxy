@@ -9,6 +9,7 @@ from typing import (
     Any,
     Dict,
     Generator,
+    IO,
     Iterable,
     List,
     Optional,
@@ -544,7 +545,7 @@ class Data(metaclass=DataMeta):
                 result += indicate_data_truncated()
         return result
 
-    def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):
+    def _yield_user_file_content(self, trans, from_dataset: "DatasetInstance", filename: str, headers: Headers) -> IO:
         """This method is responsible for sanitizing the HTML if needed."""
         if trans.app.config.sanitize_all_html and headers.get("content-type", None) == "text/html":
             # Sanitize anytime we respond with plain text/html content.
