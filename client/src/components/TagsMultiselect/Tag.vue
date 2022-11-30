@@ -75,22 +75,29 @@ library.add(faTimes);
         padding: 0 0.25rem;
     }
 
+    position: relative;
+
+    &:before {
+        content: "";
+        width: 100%;
+        height: 100%;
+        top: 0;
+        left: 0;
+        position: absolute;
+        border-color: inherit;
+        border-radius: inherit;
+        pointer-events: none;
+
+        border-style: solid;
+        border-width: 0 2px 1px 0;
+    }
+
     &.clickable {
         cursor: pointer;
-        position: relative;
 
         &:hover {
             &:before {
-                content: "";
-                width: 100%;
-                height: 100%;
-                top: 0;
-                left: 0;
-                position: absolute;
-                border: 2px solid;
-                border-color: inherit;
-                border-radius: inherit;
-                pointer-events: none;
+                border-width: 0 3px 2px 0;
             }
         }
     }
