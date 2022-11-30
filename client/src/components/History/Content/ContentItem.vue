@@ -5,7 +5,7 @@
         :data-hid="id"
         :data-state="state">
         <div
-            class="p-1 cursor-pointer"
+            class="p-1 cursor-pointer content-item-header"
             draggable
             tabindex="0"
             @dragstart="onDragStart"
@@ -254,6 +254,9 @@ export default {
 .content-item {
     .name {
         word-break: break-all;
+    }
+    .content-item-header {
+        outline: none;
     }
 }
 </style>
