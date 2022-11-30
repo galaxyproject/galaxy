@@ -250,7 +250,7 @@ export default {
     },
 };
 </script>
-<style lang="scss">
+<style scoped lang="scss">
 .content-item {
     .name {
         word-break: break-all;
