@@ -258,25 +258,5 @@ export default {
     &:deep(.btn:focus) {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
     }
-
-    $states: (
-        "success": $state-success-bg,
-        "info": $state-info-bg,
-        "danger": $state-danger-bg,
-        "warning": $state-warning-bg,
-    );
-
-    @each $state, $bg-color in $states {
-        &.alert-#{$state}:hover {
-            &:focus,
-            &:focus-within {
-                background-color: scale-color($bg-color, $lightness: -5%);
-            }
-
-            &:not(:focus, :focus-within) {
-                background-color: lighten($bg-color, 5%);
-            }
-        }
-    }
 }
 </style>
