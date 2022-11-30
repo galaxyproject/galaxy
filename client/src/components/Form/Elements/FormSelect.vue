@@ -63,6 +63,7 @@ export default {
         defaultValue: {
             type: [String, Array],
             required: true,
+            default: '',
         },
         options: {
             type: Array,
