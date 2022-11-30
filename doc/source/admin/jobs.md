@@ -100,7 +100,7 @@ condition
     Failure expression on which to resubmit jobs - this Python expression may contain
     the boolean variables ``memory_limit_reached``, ``walltime_reached``,
     ``unknown_error``, or ``any_failure`` and the numeric variables ``seconds_running``
-    and ``attempt``. See the test case configuration https://github.com/galaxyproject/galaxy/blob/dev/test/integration/resubmission_job_conf.xml for examples of various expressions.
+    and ``attempt``. See the (test case configuration)[https://github.com/galaxyproject/galaxy/blob/dev/test/integration/resubmission_job_conf.yml] for examples of various expressions.
 
 handler
     Job handler(s) that should be used to run jobs for this tool after resubmission.
