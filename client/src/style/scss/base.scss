@@ -418,20 +418,20 @@ $galaxy-state-bg: (
     .state-color-#{$state},
     [data-state="#{$state}"] {
         border-color: map-get($galaxy-state-border, $state);
-        background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 50%);
+        background-color: map-get($galaxy-state-bg, $state);
 
         &:hover {
-            background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 66%);
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: +10%);
         }
 
         &:focus,
         &:focus-within {
-            background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 33%);
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
         }
 
         &:focus:hover,
         &:focus-within:hover {
-            background-color: change-color(map-get($galaxy-state-bg, $state), $alpha: 0.4, $lightness: 40%);
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -7%);
         }
 
         &.selected {
