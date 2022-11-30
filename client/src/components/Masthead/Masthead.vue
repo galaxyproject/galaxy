@@ -53,12 +53,6 @@ const windowToggle = ref(false);
 
 /* computed */
 const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
-const toolBoxProperties = computed(() => {
-    const Galaxy = getGalaxyInstance();
-    return {
-        storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
-    };
-});
 
 /* methods */
 function setActiveTab() {
@@ -88,7 +82,7 @@ onMounted(() => {
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <b-navbar-nav>
             <b-navbar-brand id="analysis" :href="safePath(logoUrl)" aria-label="homepage">
-                <b-button variant="link" size="sm" title="Galaxy" v-b-tooltip.hover>
+                <b-button v-b-tooltip.hover variant="link" size="sm" title="Home">
                     <img alt="logo" :src="safePath(logoSrc)" />
                     <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
                 </b-button>
