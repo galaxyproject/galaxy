@@ -5,7 +5,6 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
-import { getGalaxyInstance } from "app";
 import { watch, computed, ref } from "vue";
 import { defineEmits, defineProps, onMounted } from "vue";
 import { useRoute } from "vue-router/composables";

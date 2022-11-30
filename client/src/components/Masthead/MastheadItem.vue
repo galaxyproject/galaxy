@@ -38,7 +38,7 @@ const classes = computed(() => {
     const isActiveTab = props.tab.id == props.activeTab;
     return Object.fromEntries([
         ["active", isActiveTab],
-        [props.tab.cls, true],
+        [props.tab.cls, !!props.tab.cls],
     ]);
 });
 const linkClasses = computed(() => ({
@@ -48,7 +48,7 @@ const linkClasses = computed(() => ({
 const iconClasses = computed(() =>
     Object.fromEntries([
         ["fa fa-fw", true],
-        [props.tab.icon, props.tab.icon],
+        [props.tab.icon, !!props.tab.icon],
     ])
 );
 
