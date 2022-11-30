@@ -11,7 +11,7 @@ Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
 pinia.use(piniaPluginPersistedstate);
 
-addInitialization((Galaxy) => {
+addInitialization((Galaxy: any) => {
     console.log("App setup");
     const router = getRouter(Galaxy);
     new Vue({

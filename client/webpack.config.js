@@ -91,15 +91,15 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                 },
                 {
-                    test: /\.mjs$/,
-                    include: /node_modules/,
-                    type: "javascript/auto",
-                },
-                {
                     test: /\.tsx?$/,
                     exclude: /node_modules/,
                     loader: "ts-loader",
                     options: { appendTsSuffixTo: [/\.vue$/] },
+                },
+                {
+                    test: /\.mjs$/,
+                    include: /node_modules/,
+                    type: "javascript/auto",
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,
