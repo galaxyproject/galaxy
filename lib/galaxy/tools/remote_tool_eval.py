@@ -5,9 +5,11 @@ import tempfile
 import traceback
 from typing import (
     Callable,
+    cast,
     NamedTuple,
 )
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
@@ -60,7 +62,7 @@ class ToolApp(MinimalToolApp):
         file_sources: ConfiguredFileSources,
     ):
         self.model = Bunch(context=sa_session)
-        self.config = tool_app_config
+        self.config = cast(GalaxyAppConfiguration, tool_app_config)
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store
         self.genome_builds = GenomeBuilds(self)

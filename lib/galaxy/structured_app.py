@@ -38,6 +38,7 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
+    from galaxy.config import GalaxyAppConfiguration
     from galaxy.config_watchers import ConfigWatchers
     from galaxy.jobs import JobConfiguration
     from galaxy.managers.collections import DatasetCollectionManager
@@ -73,7 +74,7 @@ class BasicSharedApp(Container):
 
 class MinimalToolApp(Protocol):
     name: str
-    config: Any  # 'galaxy.config.BaseAppConfiguration'
+    config: "GalaxyAppConfiguration"
     datatypes_registry: Registry
     object_store: BaseObjectStore
     tool_data_tables: "ToolDataTableManager"
