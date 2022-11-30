@@ -241,6 +241,7 @@ class _BlastDb(Data):
         """Merge BLAST databases (not implemented for now)."""
         raise NotImplementedError("Merging BLAST databases is non-trivial (do this via makeblastdb?)")
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a BLAST database (not implemented for now)."""
         if split_params is None:

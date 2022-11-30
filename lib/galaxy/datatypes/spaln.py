@@ -157,6 +157,7 @@ class _SpalnDb(Data):
         """Merge spaln databases (not implemented)."""
         raise NotImplementedError("Merging spaln databases is not possible")
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a spaln database (not implemented)."""
         if split_params is None:

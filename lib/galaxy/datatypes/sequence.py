@@ -211,6 +211,7 @@ class Sequence(data.Text):
             start_sequence += sequences_per_file[part_no]
         return directories
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic sequence file (not sensible or possible, see subclasses)."""
         if split_params is None:
@@ -325,6 +326,7 @@ class Alignment(data.Text):
         name="species", desc="Species", default=[], param=metadata.SelectParameter, multiple=True, readonly=True
     )
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Split a generic alignment file (not sensible or possible, see subclasses)."""
         if split_params is None:

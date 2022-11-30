@@ -554,6 +554,7 @@ class OBFS(Binary):
         """Merging Fastsearch indices is not supported."""
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
+    @classmethod
     def split(cls, input_datasets, subdir_generator_function, split_params):
         """Splitting Fastsearch indices is not supported."""
         if split_params is None:
