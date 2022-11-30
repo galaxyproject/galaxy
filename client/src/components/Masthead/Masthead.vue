@@ -1,10 +1,102 @@
+<script setup>
+import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import MastheadItem from "./MastheadItem";
+import { loadWebhookMenuItems } from "./_webhooks";
+import QuotaMeter from "./QuotaMeter";
+import { safePath } from "utils/redirect";
+import { getActiveTab } from "./utilities";
+import { getGalaxyInstance } from "app";
+import { watch, computed, ref } from "vue";
+import { defineEmits, defineProps, onMounted } from "vue";
+import { useRoute } from "vue-router/composables";
+
+// basics
+const route = useRoute();
+const emit = defineEmits(["open-url"]);
+
+/* props */
+const props = defineProps({
+    tabs: {
+        type: Array,
+        default: () => [],
+    },
+    brand: {
+        type: String,
+        default: null,
+    },
+    initialActiveTab: {
+        type: String,
+        default: "analysis",
+    },
+    logoUrl: {
+        type: String,
+        default: null,
+    },
+    logoSrc: {
+        type: String,
+        default: null,
+    },
+    logoSrcSecondary: {
+        type: String,
+        default: null,
+    },
+    windowTab: {
+        type: Object,
+        default: null,
+    },
+});
+
+/* refs */
+const activeTab = ref(props.initialActiveTab);
+const extensionTabs = ref([]);
+const windowToggle = ref(false);
+
+/* computed */
+const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
+const toolBoxProperties = computed(() => {
+    const Galaxy = getGalaxyInstance();
+    return {
+        storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
+    };
+});
+
+/* methods */
+function setActiveTab() {
+    const currentRoute = route.path;
+    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
+}
+function onWindowToggle() {
+    windowToggle.value = !windowToggle.value;
+}
+
+/* watchers */
+watch(
+    () => route.path,
+    () => {
+        setActiveTab();
+    }
+);
+
+/* lifecyle */
+onMounted(() => {
+    loadWebhookMenuItems(extensionTabs.value);
+    setActiveTab();
+});
+</script>
+
 <template>
-    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
-        <b-navbar-brand :href="getPath(logoUrl)" aria-label="homepage">
-            <img alt="logo" class="navbar-brand-image" :src="getPath(logoSrc)" />
-            <img v-if="logoSrcSecondary" alt="logo" class="navbar-brand-image" :src="getPath(logoSrcSecondary)" />
-            <span class="navbar-brand-title">{{ brandTitle }}</span>
-        </b-navbar-brand>
+    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+        <b-navbar-nav>
+            <b-navbar-brand id="analysis" :href="safePath(logoUrl)" aria-label="homepage">
+                <b-button variant="link" size="sm" title="Galaxy" v-b-tooltip.hover>
+                    <img alt="logo" :src="safePath(logoSrc)" />
+                    <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
+                </b-button>
+            </b-navbar-brand>
+            <b-nav-item v-if="brand" class="navbar-brand-title" disabled>
+                {{ brand }}
+            </b-nav-item>
+        </b-navbar-nav>
         <b-navbar-nav>
             <masthead-item
                 v-for="(tab, idx) in allTabs"
@@ -12,106 +104,9 @@
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab"
-                @open-url="$emit('open-url', $event)" />
+                @open-url="emit('open-url', $event)" />
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
         <quota-meter />
     </b-navbar>
 </template>
-
-<script>
-import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
-import MastheadItem from "./MastheadItem";
-import { loadWebhookMenuItems } from "./_webhooks";
-import QuotaMeter from "./QuotaMeter.vue";
-import { safePath } from "utils/redirect";
-import { getActiveTab } from "./utilities";
-
-export default {
-    name: "Masthead",
-    components: {
-        BNavbar,
-        BNavbarBrand,
-        BNavbarNav,
-        MastheadItem,
-        QuotaMeter,
-    },
-    props: {
-        displayGalaxyBrand: {
-            type: Boolean,
-            default: true,
-        },
-        tabs: {
-            type: Array,
-            default: () => [],
-        },
-        brand: {
-            type: String,
-            default: null,
-        },
-        initialActiveTab: {
-            type: String,
-            default: "analysis",
-        },
-        logoUrl: {
-            type: String,
-            default: null,
-        },
-        logoSrc: {
-            type: String,
-            default: null,
-        },
-        logoSrcSecondary: {
-            type: String,
-            default: null,
-        },
-        windowTab: {
-            type: Object,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            activeTab: this.initialActiveTab,
-            extensionTabs: [],
-            windowToggle: false,
-        };
-    },
-    computed: {
-        brandTitle() {
-            let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
-            if (this.brand) {
-                brandTitle += this.brand;
-            }
-            return brandTitle;
-        },
-        allTabs() {
-            return [].concat(this.tabs, this.extensionTabs);
-        },
-    },
-    watch: {
-        $route() {
-            this.updateTab();
-        },
-    },
-    created() {
-        loadWebhookMenuItems(this.extensionTabs);
-        this.updateTab();
-    },
-    methods: {
-        addItem(item) {
-            this.allTabs.push(item);
-        },
-        getPath(url) {
-            return safePath(url);
-        },
-        updateTab() {
-            const currentRoute = this.$route?.path;
-            this.activeTab = getActiveTab(currentRoute, this.tabs) || this.activeTab;
-        },
-        onWindowToggle() {
-            this.windowToggle = !this.windowToggle;
-        },
-    },
-};
-</script>
