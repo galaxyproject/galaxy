@@ -15,6 +15,7 @@ from requests import (
     put,
 )
 
+from galaxy.tool_util.verify.interactor import ToolTestCase
 from galaxy.util import galaxy_root_path
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
@@ -1449,55 +1450,61 @@ class TestToolsApi(ApiTestCase, TestsTools):
         def register_job_data(job_data):
             job_data_list.append(job_data)
 
-        tool_test_dicts = [
+        def tool_test_case_list(inputs, required_files):
+            return [
+                ToolTestCase(
+                    **{
+                        "inputs": inputs,
+                        "outputs": {},
+                        "required_files": required_files,
+                        "name": "dbkey_output_action-0",
+                        "test_index": 0,
+                        "tool_version": "0.1.0",
+                        "tool_id": "dbkey_output_action",
+                    }
+                )
+            ]
+
+        tool_test_dicts = tool_test_case_list(
             {
-                "inputs": {
-                    "input": ["simple_line.txt"],
-                    "index": ["hg18_value"],
-                },
-                "outputs": {},
-                "required_files": [["simple_line.txt", {"value": "simple_line.txt", "dbkey": "hg18"}]],
-            }
-        ]
+                "input": ["simple_line.txt"],
+                "index": ["hg18_value"],
+            },
+            [["simple_line.txt", {"value": "simple_line.txt", "dbkey": "hg18"}]],
+        )
         dynamic_param_error = None
         test_driver = self.driver_or_skip_test_if_remote()
         try:
-            test_driver.run_tool_test("dbkey_output_action", tool_test_dicts=tool_test_dicts)
+            test_driver.run_tool_test("dbkey_output_action", _tool_test_dicts=tool_test_dicts)
         except Exception as e:
             dynamic_param_error = getattr(e, "dynamic_param_error", False)
         assert dynamic_param_error is None
 
-        tool_test_dicts = [
+        tool_test_dicts = tool_test_case_list(
             {
-                "inputs": {
-                    "input": ["simple_line.txt"],
-                    "index": ["hg18_value"],
-                },
-                "outputs": {},
-                "required_files": [["simple_line.txt", {"value": "simple_line.txt", "dbkey": "hgnot18"}]],
-            }
-        ]
+                "input": ["simple_line.txt"],
+                "index": ["hg18_value"],
+            },
+            [["simple_line.txt", {"value": "simple_line.txt", "dbkey": "hgnot18"}]],
+        )
         dynamic_param_error = None
         try:
-            test_driver.run_tool_test("dbkey_output_action", tool_test_dicts=tool_test_dicts)
+            test_driver.run_tool_test("dbkey_output_action", _tool_test_dicts=tool_test_dicts)
         except Exception as e:
             dynamic_param_error = getattr(e, "dynamic_param_error", False)
         assert dynamic_param_error
 
-        tool_test_dicts = [
+        tool_test_dicts = tool_test_case_list(
             {
-                "inputs": {
-                    "input": ["simple_line.txt"],
-                    "index": ["hgnot18"],
-                },
-                "outputs": {},
-                "required_files": [["simple_line.txt", {"value": "simple_line.txt", "dbkey": "hg18"}]],
-            }
-        ]
+                "input": ["simple_line.txt"],
+                "index": ["hgnot18"],
+            },
+            [["simple_line.txt", {"value": "simple_line.txt", "dbkey": "hg18"}]],
+        )
         dynamic_param_error = None
         try:
             test_driver.run_tool_test(
-                "dbkey_output_action", tool_test_dicts=tool_test_dicts, register_job_data=register_job_data
+                "dbkey_output_action", _tool_test_dicts=tool_test_dicts, register_job_data=register_job_data
             )
         except Exception as e:
             dynamic_param_error = getattr(e, "dynamic_param_error", False)
@@ -1511,7 +1518,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         try:
             test_driver.run_tool_test(
                 "dbkey_output_action",
-                tool_test_dicts=tool_test_dicts,
+                _tool_test_dicts=tool_test_dicts,
                 skip_on_dynamic_param_errors=True,
                 register_job_data=register_job_data,
             )

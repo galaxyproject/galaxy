@@ -4,11 +4,16 @@ import os.path
 from typing import (
     List,
     Tuple,
+    Union,
 )
 
 import galaxy.tools.parameters.basic
 import galaxy.tools.parameters.grouping
-from galaxy.tool_util.verify.interactor import ToolTestDescription
+from galaxy.tool_util.verify.interactor import (
+    InvalidToolTestDict,
+    ToolTestDescription,
+    ValidToolTestDict,
+)
 from galaxy.util import (
     string_as_bool,
     string_as_bool_or_none,
@@ -31,7 +36,7 @@ def parse_tests(tool, tests_source):
     return tests
 
 
-def description_from_tool_object(tool, test_index, raw_test_dict):
+def description_from_tool_object(tool, test_index, raw_test_dict) -> ToolTestDescription:
     required_files: List[Tuple[str, dict]] = []
     required_data_tables: List[str] = []
     required_loc_files: List[str] = []
@@ -39,41 +44,51 @@ def description_from_tool_object(tool, test_index, raw_test_dict):
     num_outputs = raw_test_dict.get("expect_num_outputs", None)
     if num_outputs:
         num_outputs = int(num_outputs)
+    maxseconds = raw_test_dict.get("maxseconds", None)
+    if maxseconds is not None:
+        maxseconds = int(maxseconds)
 
+    processed_test_dict: Union[ValidToolTestDict, InvalidToolTestDict]
     try:
         processed_inputs = _process_raw_inputs(
             tool, tool.inputs, raw_test_dict["inputs"], required_files, required_data_tables, required_loc_files
         )
-        processed_test_dict = {
-            "inputs": processed_inputs,
-            "outputs": raw_test_dict["outputs"],
-            "output_collections": raw_test_dict["output_collections"],
-            "num_outputs": num_outputs,
-            "command_line": raw_test_dict.get("command", None),
-            "command_version": raw_test_dict.get("command_version", None),
-            "stdout": raw_test_dict.get("stdout", None),
-            "stderr": raw_test_dict.get("stderr", None),
-            "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
-            "expect_failure": raw_test_dict.get("expect_failure", False),
-            "expect_test_failure": raw_test_dict.get("expect_test_failure", False),
-            "required_files": required_files,
-            "required_data_tables": required_data_tables,
-            "required_loc_files": required_loc_files,
-            "tool_id": tool.id,
-            "tool_version": tool.version,
-            "test_index": test_index,
-            "error": False,
-        }
+
+        processed_test_dict = ValidToolTestDict(
+            {
+                "inputs": processed_inputs,
+                "outputs": raw_test_dict["outputs"],
+                "output_collections": raw_test_dict["output_collections"],
+                "num_outputs": num_outputs,
+                "command_line": raw_test_dict.get("command", None),
+                "command_version": raw_test_dict.get("command_version", None),
+                "stdout": raw_test_dict.get("stdout", None),
+                "stderr": raw_test_dict.get("stderr", None),
+                "expect_exit_code": raw_test_dict.get("expect_exit_code", None),
+                "expect_failure": raw_test_dict.get("expect_failure", False),
+                "expect_test_failure": raw_test_dict.get("expect_test_failure", False),
+                "required_files": required_files,
+                "required_data_tables": required_data_tables,
+                "required_loc_files": required_loc_files,
+                "tool_id": tool.id,
+                "tool_version": tool.version,
+                "test_index": test_index,
+                "maxseconds": maxseconds,
+                "error": False,
+            }
+        )
     except Exception as e:
         log.exception("Failed to load tool test number [%d] for %s" % (test_index, tool.id))
-        processed_test_dict = {
-            "tool_id": tool.id,
-            "tool_version": tool.version,
-            "test_index": test_index,
-            "inputs": {},
-            "error": True,
-            "exception": unicodify(e),
-        }
+        processed_test_dict = InvalidToolTestDict(
+            {
+                "tool_id": tool.id,
+                "tool_version": tool.version,
+                "test_index": test_index,
+                "inputs": {},
+                "error": True,
+                "exception": unicodify(e),
+            }
+        )
 
     return ToolTestDescription(processed_test_dict)
 
