@@ -68,6 +68,7 @@
     "markdown-it-regexp": "^0.4.0",
     "object-hash": "^3.0.0",
     "pinia": "^2.0.23",
+    "pinia-plugin-persistedstate": "^2.4.0",
     "popper.js": "^1.16.1",
     "pretty-bytes": "^6.0.0",
     "pyre-to-regexp": "^0.0.5",
