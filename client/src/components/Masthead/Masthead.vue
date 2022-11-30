@@ -6,7 +6,7 @@ import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
 import { watch, computed, ref } from "vue";
-import { defineEmits, defineProps, onMounted } from "vue";
+import { onMounted } from "vue";
 import { useRoute } from "vue-router/composables";
 
 // basics
@@ -55,8 +55,8 @@ const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
 
 /* methods */
 function setActiveTab() {
-    const currentRoute = route.path;
-    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
+    //const currentRoute = route.path;
+    //activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
 }
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
