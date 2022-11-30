@@ -550,7 +550,7 @@ class OBFS(Binary):
         return "text/plain"
 
     @staticmethod
-    def merge(split_files: List[str], output_file: str, extra_merge_args) -> None:
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merging Fastsearch indices is not supported."""
         raise NotImplementedError("Merging Fastsearch indices is not supported.")
 
