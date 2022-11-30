@@ -39,7 +39,7 @@ library.add(faTimes);
         class="tag btn-transparent-background"
         :data-option="props.option"
         :class="{ editable, clickable }"
-        :style="`background-color: ${color.primary}; border-color: ${color.darker}`"
+        :style="`--color-primary: ${color.primary}; --color-darker: ${color.darker}; --color-dimmed: ${color.dimmed}`"
         @click.prevent.stop="onClick">
         <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
@@ -70,6 +70,9 @@ library.add(faTimes);
     color: black;
     border-radius: 4px;
 
+    background-color: var(--color-primary);
+    transition: background-color 0.1s;
+
     padding: 0 0.5rem;
     &.editable {
         padding: 0 0.25rem;
@@ -84,7 +87,7 @@ library.add(faTimes);
         top: 0;
         left: 0;
         position: absolute;
-        border-color: inherit;
+        border-color: var(--color-darker);
         border-radius: inherit;
         pointer-events: none;
 
@@ -96,9 +99,7 @@ library.add(faTimes);
         cursor: pointer;
 
         &:hover {
-            &:before {
-                border-width: 0 3px 2px 0;
-            }
+            background-color: var(--color-dimmed);
         }
     }
 }
