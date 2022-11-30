@@ -80,7 +80,7 @@ export default {
 @import "theme/blue.scss";
 
 .quota-meter {
-    position: relative;
+    position: absolute;
     right: 0.8rem;
     width: 100px;
     height: 100%;

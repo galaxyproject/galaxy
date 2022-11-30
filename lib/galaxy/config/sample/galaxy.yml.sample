@@ -1071,7 +1071,8 @@ galaxy:
   # Append "{brand}" text to the masthead.
   #brand: null
 
-  # Display the "Galaxy" text in the masthead.
+  # This option has been deprecated, use the `logo_src` instead to
+  # change the default logo including the galaxy brand title.
   #display_galaxy_brand: true
 
   # Format string used when showing date and time information. The
@@ -2430,8 +2431,8 @@ galaxy:
   #    galaxy.set_job_metadata: galaxy.external
 
   # Offload long-running tasks to a Celery task queue. Activate this
-  # only if you have setup a Celery worker for Galaxy in the gravity section.
-  # This is a beta feature that is actively being worked on.
+  # only if you have setup a Celery worker for Galaxy. For details, see
+  # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
