@@ -55,8 +55,8 @@ const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
 
 /* methods */
 function setActiveTab() {
-    //const currentRoute = route.path;
-    //activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
+    const currentRoute = route.path;
+    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
 }
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
