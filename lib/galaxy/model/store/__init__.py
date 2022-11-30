@@ -14,8 +14,8 @@ from json import (
     dumps,
     load,
 )
-from pathlib import PosixPath
 from tempfile import mkdtemp
+from types import TracebackType
 from typing import (
     Any,
     Callable,
@@ -96,7 +96,10 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
-from galaxy.util.path import safe_walk
+from galaxy.util.path import (
+    safe_walk,
+    StrPath,
+)
 from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisteTracker,
@@ -189,15 +192,15 @@ class ImportOptions:
 
 class SessionlessContext:
     def __init__(self) -> None:
-        self.objects: Dict[Any, Any] = defaultdict(dict)
+        self.objects: Dict[Type, Dict] = defaultdict(dict)
 
     def flush(self) -> None:
         pass
 
-    def add(self, obj: Union[model.HistoryDatasetAssociation, model.Job]) -> None:
+    def add(self, obj: Union[model.DatasetInstance, model.RepresentById]) -> None:
         self.objects[obj.__class__][obj.id] = obj
 
-    def query(self, model_class: Type[model.HistoryDatasetAssociation]) -> Bunch:
+    def query(self, model_class: Type) -> Bunch:
         def find(obj_id):
             return self.objects.get(model_class, {}).get(obj_id) or None
 
@@ -212,7 +215,7 @@ def replace_metadata_file(
     metadata: Dict[str, Any],
     dataset_instance: model.DatasetInstance,
     sa_session: Union[SessionlessContext, scoped_session],
-) -> Dict[str, Optional[Union[model.MetadataFile, List[str], int, str]]]:
+) -> Dict[str, Any]:
     def remap_objects(p, k, obj):
         if isinstance(obj, dict) and "model_class" in obj and obj["model_class"] == "MetadataFile":
             metadata_file = model.MetadataFile(dataset=dataset_instance, uuid=obj["uuid"])
@@ -257,7 +260,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def workflow_paths(self) -> Iterator[Tuple[str, str]]:
-        pass
+        ...
 
     @abc.abstractmethod
     def defines_new_history(self) -> bool:
@@ -276,8 +279,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         return []
 
     @abc.abstractmethod
-    def invocations_properties(self) -> List[Any]:
-        pass
+    def invocations_properties(self) -> List[Dict[str, Any]]:
+        ...
 
     @abc.abstractmethod
     def collections_properties(self) -> List[Dict[str, Any]]:
@@ -288,8 +291,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         """Return a list of jobs properties."""
 
     @abc.abstractmethod
-    def implicit_collection_jobs_properties(self) -> List[Any]:
-        pass
+    def implicit_collection_jobs_properties(self) -> List[Dict[str, Any]]:
+        ...
 
     @abc.abstractproperty
     def object_key(self) -> str:
@@ -381,9 +384,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _attach_dataset_hashes(
         self,
         dataset_or_file_attrs: Dict[str, Any],
-        dataset_instance: Union[
-            model.LibraryDatasetDatasetAssociation, model.HistoryDatasetAssociation, model.DatasetInstance
-        ],
+        dataset_instance: model.DatasetInstance,
     ) -> None:
         if "hashes" in dataset_or_file_attrs:
             for hash_attrs in dataset_or_file_attrs["hashes"]:
@@ -396,9 +397,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _attach_dataset_sources(
         self,
         dataset_or_file_attrs: Dict[str, Any],
-        dataset_instance: Union[
-            model.LibraryDatasetDatasetAssociation, model.HistoryDatasetAssociation, model.DatasetInstance
-        ],
+        dataset_instance: model.DatasetInstance,
     ) -> None:
         if "sources" in dataset_or_file_attrs:
             for source_attrs in dataset_or_file_attrs["sources"]:
@@ -417,7 +416,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _import_datasets(
         self,
         object_import_tracker: "ObjectImportTracker",
-        datasets_attrs: List[Any],
+        datasets_attrs: List[Dict[str, Any]],
         history: Optional[model.History],
         new_history: bool,
         job: Optional[model.Job],
@@ -473,7 +472,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 ]
                 for attribute in attributes:
                     if attribute in dataset_attrs:
-                        value = dataset_attrs.get(attribute)
+                        value = dataset_attrs[attribute]
                         if attribute == "metadata":
                             value = replace_metadata_file(value, dataset_instance, self.sa_session)
                         setattr(dataset_instance, attribute, value)
@@ -778,7 +777,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def _import_collection_instances(
         self,
         object_import_tracker: "ObjectImportTracker",
-        collections_attrs: List[Any],
+        collections_attrs: List[Dict[str, Any]],
         history: Optional[model.History],
         new_history: bool,
     ) -> None:
@@ -880,14 +879,14 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
     def _attach_raw_id_if_editing(
         self,
-        obj: model.DatasetInstance,
+        obj: Union[model.DatasetInstance, model.RepresentById],
         attrs: Dict[str, Any],
     ) -> None:
         if self.sessionless and "id" in attrs and self.import_options.allow_edit:
             obj.id = attrs["id"]
 
     def _import_collection_implicit_input_associations(
-        self, object_import_tracker: "ObjectImportTracker", collections_attrs: List[Any]
+        self, object_import_tracker: "ObjectImportTracker", collections_attrs: List[Dict[str, Any]]
     ) -> None:
         object_key = self.object_key
 
@@ -907,7 +906,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         hdca.add_implicit_input_collection(name, input_dataset_collection)
 
     def _import_dataset_copied_associations(
-        self, object_import_tracker: "ObjectImportTracker", datasets_attrs: List[Any]
+        self, object_import_tracker: "ObjectImportTracker", datasets_attrs: List[Dict[str, Any]]
     ) -> None:
         object_key = self.object_key
 
@@ -947,7 +946,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     hda_copied_from_sinks[copied_from_object_key] = dataset_key
 
     def _import_collection_copied_associations(
-        self, object_import_tracker: "ObjectImportTracker", collections_attrs: List[Any]
+        self, object_import_tracker: "ObjectImportTracker", collections_attrs: List[Dict[str, Any]]
     ) -> None:
         object_key = self.object_key
 
@@ -1266,12 +1265,12 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
 
 def _copied_from_object_key(
-    copied_from_chain: List[Union[Any, str]],
+    copied_from_chain: List[ObjectKeyType],
     objects_by_key: Union[
-        Dict[Union[int, str], model.HistoryDatasetAssociation],
-        Dict[Union[int, str], model.HistoryDatasetCollectionAssociation],
+        Dict[ObjectKeyType, model.HistoryDatasetAssociation],
+        Dict[ObjectKeyType, model.HistoryDatasetCollectionAssociation],
     ],
-) -> Optional[str]:
+) -> Optional[ObjectKeyType]:
     if len(copied_from_chain) == 0:
         return None
 
@@ -1324,9 +1323,9 @@ class ObjectImportTracker:
         self.hda_copied_from_sinks = {}
         self.hdca_copied_from_sinks = {}
         self.jobs_by_key = {}
-        self.invocations_by_key: Dict[str, str] = {}
+        self.invocations_by_key: Dict[str, model.WorkflowInvocation] = {}
         self.implicit_collection_jobs_by_key: Dict[str, "ImplicitCollectionJobs"] = {}
-        self.workflows_by_key: Dict[str, str] = {}
+        self.workflows_by_key: Dict[str, model.Workflow] = {}
         self.requires_hid = []
 
         self.new_history: Optional[model.History] = None
@@ -1400,7 +1399,7 @@ class DictImportModelStore(ModelImportStore):
     def defines_new_history(self) -> bool:
         return DICT_STORE_ATTRS_KEY_HISTORY in self._store_as_dict
 
-    def new_history_properties(self):
+    def new_history_properties(self) -> Dict[str, Any]:
         return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_HISTORY) or {}
 
     def datasets_properties(
@@ -1408,7 +1407,7 @@ class DictImportModelStore(ModelImportStore):
     ) -> List[Dict[str, Any]]:
         return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_DATASETS) or []
 
-    def collections_properties(self) -> List[Any]:
+    def collections_properties(self) -> List[Dict[str, Any]]:
         return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_COLLECTIONS) or []
 
     def library_properties(
@@ -1416,13 +1415,13 @@ class DictImportModelStore(ModelImportStore):
     ) -> List[Dict[str, Any]]:
         return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_LIBRARIES) or []
 
-    def jobs_properties(self) -> List[Any]:
+    def jobs_properties(self) -> List[Dict[str, Any]]:
         return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_JOBS) or []
 
-    def implicit_collection_jobs_properties(self) -> List[Any]:
+    def implicit_collection_jobs_properties(self) -> List[Dict[str, Any]]:
         return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_IMPLICIT_COLLECTION_JOBS) or []
 
-    def invocations_properties(self) -> List[Any]:
+    def invocations_properties(self) -> List[Dict[str, Any]]:
         return self._store_as_dict.get(DICT_STORE_ATTRS_KEY_INVOCATIONS) or []
 
     def workflow_paths(self) -> Iterator[Tuple[str, str]]:
@@ -1447,7 +1446,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         _find_hdca: Callable,
         _find_dce: Callable,
     ) -> Dict[str, Any]:
-        pass
+        ...
 
     @abc.abstractmethod
     def _connect_job_io(
@@ -1458,7 +1457,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         _find_hdca: Callable,
         _find_dce: Callable,
     ) -> None:
-        pass
+        ...
 
     @property
     def file_source_root(self) -> str:
@@ -1468,12 +1467,12 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         new_history_attributes = os.path.join(self.archive_dir, ATTRS_FILENAME_HISTORY)
         return os.path.exists(new_history_attributes)
 
-    def new_history_properties(self) -> Dict[str, Optional[Union[str, int, bool]]]:
+    def new_history_properties(self) -> Dict[str, Any]:
         new_history_attributes = os.path.join(self.archive_dir, ATTRS_FILENAME_HISTORY)
         history_properties = load(open(new_history_attributes))
         return history_properties
 
-    def datasets_properties(self) -> List[Any]:
+    def datasets_properties(self) -> List[Dict[str, Any]]:
         datasets_attrs_file_name = os.path.join(self.archive_dir, ATTRS_FILENAME_DATASETS)
         datasets_attrs = load(open(datasets_attrs_file_name))
         provenance_file_name = f"{datasets_attrs_file_name}.provenance"
@@ -1484,7 +1483,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
 
         return datasets_attrs
 
-    def collections_properties(self) -> List[Any]:
+    def collections_properties(self) -> List[Dict[str, Any]]:
         return self._read_list_if_exists(ATTRS_FILENAME_COLLECTIONS)
 
     def library_properties(
@@ -1499,7 +1498,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
     ) -> List[Dict[str, Any]]:
         return self._read_list_if_exists(ATTRS_FILENAME_JOBS)
 
-    def implicit_collection_jobs_properties(self) -> List[Union[Any, Dict[str, Union[str, List[str]]]]]:
+    def implicit_collection_jobs_properties(self) -> List[Dict[str, Any]]:
         implicit_collection_jobs_attrs_file_name = os.path.join(
             self.archive_dir, ATTRS_FILENAME_IMPLICIT_COLLECTION_JOBS
         )
@@ -1516,7 +1515,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
     def workflow_paths(self) -> Iterator[Tuple[str, str]]:
         workflows_directory = os.path.join(self.archive_dir, "workflows")
         if not os.path.exists(workflows_directory):
-            return []
+            return
 
         for name in os.listdir(workflows_directory):
             if name.endswith(".ga") or name.endswith(".abstract.cwl") or name.endswith(".html"):
@@ -1551,7 +1550,7 @@ class BaseDirectoryImportModelStore(ModelImportStore):
         if raw_state:
             imported_job.set_state(raw_state)
 
-    def _read_list_if_exists(self, file_name: str, required: bool = False) -> List[Any]:
+    def _read_list_if_exists(self, file_name: str, required: bool = False) -> List[Dict[str, Any]]:
         file_name = os.path.join(self.archive_dir, file_name)
         if os.path.exists(file_name):
             attrs = load(open(file_name))
@@ -1630,7 +1629,7 @@ class DirectoryImportModelStore1901(BaseDirectoryImportModelStore):
         params = remap(params, remap_objects)
         return params
 
-    def trust_hid(self, obj_attrs: Dict[str, Optional[Union[str, bool, int, Dict[str, Union[str, int]]]]]) -> bool:
+    def trust_hid(self, obj_attrs: Dict[str, Any]) -> bool:
         # We didn't do object tracking so we pretty much have to trust the HID and accept
         # that it will be wrong a lot.
         return True
@@ -1701,7 +1700,7 @@ class DirectoryImportModelStoreLatest(BaseDirectoryImportModelStore):
     def _normalize_job_parameters(
         self,
         imported_job: model.Job,
-        job_attrs: Dict[str, Optional[Union[str, Dict[str, List[str]], int, Dict[str, List[int]]]]],
+        job_attrs: Dict[str, Any],
         _find_hda: Callable,
         _find_hdca: Callable,
         _find_dce: Callable,
@@ -1805,7 +1804,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def __init__(
         self,
-        export_directory: Union[PosixPath, str],
+        export_directory: StrPath,
         app: Optional[StoreAppProtocol] = None,
         file_sources: Optional[ConfiguredFileSources] = None,
         for_edit: bool = False,
@@ -1944,19 +1943,11 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def exported_key(
         self,
-        obj: Union[model.HistoryDatasetCollectionAssociation, model.HistoryDatasetAssociation, model.DatasetInstance],
+        obj: Union[model.DatasetInstance, model.RepresentById],
     ) -> Union[str, int]:
         return self.serialization_options.get_identifier(self.security, obj)
 
-    def __enter__(
-        self,
-    ) -> Union[
-        "BagArchiveModelExportStore",
-        "DirectoryModelExportStore",
-        "TarModelExportStore",
-        "ROCrateArchiveModelExportStore",
-        "ROCrateModelExportStore",
-    ]:
+    def __enter__(self) -> "DirectoryModelExportStore":
         return self
 
     def push_metadata_files(self):
@@ -2360,7 +2351,9 @@ class DirectoryModelExportStore(ModelExportStore):
         with open(export_attrs_filename, "w") as export_attrs_out:
             dump({"galaxy_export_version": GALAXY_EXPORT_VERSION}, export_attrs_out)
 
-    def __exit__(self, exc_type: None, exc_val: None, exc_tb: None) -> bool:
+    def __exit__(
+        self, exc_type: Optional[Type[BaseException]], exc_val: Optional[BaseException], exc_tb: Optional[TracebackType]
+    ) -> bool:
         if exc_type is None:
             self._finalize()
         # http://effbot.org/zone/python-with-statement.htm
@@ -2370,14 +2363,14 @@ class DirectoryModelExportStore(ModelExportStore):
 
 class WriteCrates:
     included_invocations: List[model.WorkflowInvocation]
-    export_directory: Union[PosixPath, str]
+    export_directory: StrPath
     included_datasets: Dict[model.DatasetInstance, Tuple[model.DatasetInstance, bool]]
     dataset_id_to_path: Dict[int, Tuple[Optional[str], Optional[str]]]
 
     @property
     @abc.abstractmethod
     def workflows_directory(self) -> str:
-        pass
+        ...
 
     def _generate_markdown_readme(self) -> str:
         markdown_parts: List[str] = []
@@ -2687,7 +2680,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
 
 
 class ROCrateModelExportStore(DirectoryModelExportStore, WriteCrates):
-    def __init__(self, crate_directory: Union[PosixPath, str], **kwds) -> None:
+    def __init__(self, crate_directory: StrPath, **kwds) -> None:
         self.crate_directory = crate_directory
         super().__init__(crate_directory, export_files="symlink", **kwds)
 
@@ -2698,10 +2691,10 @@ class ROCrateModelExportStore(DirectoryModelExportStore, WriteCrates):
 
 
 class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
-    out_file: Union[PosixPath, str]
-    file_source_uri: Optional[Union[PosixPath, str]]
+    file_source_uri: Optional[StrPath]
+    out_file: StrPath
 
-    def __init__(self, uri: Union[PosixPath, str], **kwds) -> None:
+    def __init__(self, uri: StrPath, **kwds) -> None:
         temp_output_dir = tempfile.mkdtemp()
         self.temp_output_dir = temp_output_dir
         if "://" in str(uri):
@@ -2737,10 +2730,10 @@ class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
 
 
 class TarModelExportStore(DirectoryModelExportStore):
-    file_source_uri: Optional[Union[PosixPath, str]]
-    out_file: Union[PosixPath, str]
+    file_source_uri: Optional[StrPath]
+    out_file: StrPath
 
-    def __init__(self, uri: Union[PosixPath, str], gzip: bool = True, **kwds) -> None:
+    def __init__(self, uri: StrPath, gzip: bool = True, **kwds) -> None:
         self.gzip = gzip
         temp_output_dir = tempfile.mkdtemp()
         self.temp_output_dir = temp_output_dir
@@ -2778,9 +2771,9 @@ class BagDirectoryModelExportStore(DirectoryModelExportStore):
 
 
 class BagArchiveModelExportStore(BagDirectoryModelExportStore):
-    file_source_uri: Optional[Union[PosixPath, str]]
+    file_source_uri: Optional[StrPath]
 
-    def __init__(self, uri: Union[PosixPath, str], bag_archiver: str = "tgz", **kwds) -> None:
+    def __init__(self, uri: StrPath, bag_archiver: str = "tgz", **kwds) -> None:
         # bag_archiver in tgz, zip, tar
         self.bag_archiver = bag_archiver
         temp_output_dir = tempfile.mkdtemp()
@@ -2812,7 +2805,7 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
 
 def get_export_store_factory(
     app, download_format: str, export_files=None, bco_export_options: Optional[BcoExportOptions] = None
-) -> Callable[[Union[PosixPath, str]], ModelExportStore]:
+) -> Callable[[StrPath], ModelExportStore]:
     export_store_class: Union[
         Type[TarModelExportStore],
         Type[BagArchiveModelExportStore],
@@ -2846,7 +2839,7 @@ def get_export_store_factory(
     return lambda path: export_store_class(path, **export_store_class_kwds)
 
 
-def tar_export_directory(export_directory: Union[PosixPath, str], out_file: Union[PosixPath, str], gzip: bool) -> None:
+def tar_export_directory(export_directory: StrPath, out_file: StrPath, gzip: bool) -> None:
     tarfile_mode = "w"
     if gzip:
         tarfile_mode += ":gz"
