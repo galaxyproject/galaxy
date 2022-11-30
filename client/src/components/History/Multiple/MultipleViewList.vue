@@ -37,7 +37,8 @@ import { mapActions, mapGetters } from "vuex";
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem";
 import SelectorModal from "components/History/Modals/SelectorModal";
-import { useScroll, useResizeObserver } from "@vueuse/core";
+import { useAnimationFrameScroll } from "composables/utils/animationFrameScroll";
+import { useAnimationFrameResizeObserver } from "composables/utils/animationFrameResizeObserver";
 import { computed, ref } from "vue";
 
 export default {
@@ -66,14 +67,14 @@ export default {
     setup() {
         const scrollContainer = ref(null);
         const isScrollable = ref(false);
-        const { arrivedState } = useScroll(scrollContainer);
+        const { arrived } = useAnimationFrameScroll(scrollContainer);
 
-        useResizeObserver(scrollContainer, () => {
-            isScrollable.value = scrollContainer.value.scrollWidth > scrollContainer.value.offsetWidth;
+        useAnimationFrameResizeObserver(scrollContainer, () => {
+            isScrollable.value = scrollContainer.value.scrollWidth >= scrollContainer.value.clientWidth;
         });
 
-        const scrolledLeft = computed(() => !isScrollable.value || arrivedState.left);
-        const scrolledRight = computed(() => !isScrollable.value || arrivedState.right);
+        const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
+        const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 
         return {
             scrollContainer,
