@@ -24,10 +24,7 @@ from galaxy.model.security import (
     HostAgent,
 )
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.objectstore import (
-    BaseObjectStore,
-    ObjectStore,
-)
+from galaxy.objectstore import BaseObjectStore
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import Vault
@@ -78,7 +75,7 @@ class MinimalToolApp(Protocol):
     name: str
     config: Any  # 'galaxy.config.BaseAppConfiguration'
     datatypes_registry: Registry
-    object_store: ObjectStore
+    object_store: BaseObjectStore
     tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
     security: IdEncodingHelper
