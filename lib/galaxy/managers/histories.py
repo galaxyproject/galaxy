@@ -378,7 +378,11 @@ class HistoryExportManager:
         history_has_changed = history.update_time > export_date
         json_metadata = export.export_metadata
         export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
-        is_ready = export_metadata is not None and export_metadata.result_data and export_metadata.result_data.success
+        is_ready = (
+            export_metadata is not None
+            and export_metadata.result_data is not None
+            and export_metadata.result_data.success
+        )
         is_export_up_to_date = is_ready and not history_has_changed
         return {
             "id": export.id,

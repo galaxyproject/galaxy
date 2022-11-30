@@ -30,6 +30,13 @@ class TestHistoryImportExportFtpSeleniumIntegrationBase(SeleniumIntegrationTestC
         user_ftp_dir = os.path.join(self.ftp_dir(), email)
         os.makedirs(user_ftp_dir)
 
+    def _export_to_ftp_with_filename(self, filename: str):
+        self.components.history_export.directory_input.wait_for_and_click()
+        self.components.files_dialog.ftp_label.wait_for_and_click()
+        self.components.upload.file_dialog_ok.wait_for_and_click()
+        self.components.history_export.name_input.wait_for_and_send_keys(filename)
+        self.components.history_export.export_button.wait_for_and_click()
+
 
 class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSeleniumIntegrationBase):
     @classmethod
@@ -53,14 +60,8 @@ class TestHistoryImportExportFtpSeleniumIntegration(TestHistoryImportExportFtpSe
         history_export.export_link.wait_for_visible()
         history_export.tab_export_to_file.wait_for_and_click()
         history_export.export_link.wait_for_absent_or_hidden()
-        history_export.directory_input.wait_for_and_click()
 
-        # open directory by clicking on its name
-        files_dialog.ftp_label.wait_for_and_click()
-        self.components.upload.file_dialog_ok.wait_for_and_click()
-
-        history_export.name_input.wait_for_and_send_keys("my_export.tar.gz")
-        history_export.export_button.wait_for_and_click()
+        self._export_to_ftp_with_filename("my_export.tar.gz")
 
         history_export.running.wait_for_visible()
         history_export.running.wait_for_absent(wait_type=gx_selenium_context.wait_types.JOB_COMPLETION)
@@ -114,11 +115,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
 
         # Export to FTP file source
         history_export_tasks.file_source_tab.wait_for_and_click()
-        self.components.history_export.directory_input.wait_for_and_click()
-        self.components.files_dialog.ftp_label.wait_for_and_click()
-        self.components.upload.file_dialog_ok.wait_for_and_click()
-        self.components.history_export_tasks.remote_file_name_input.wait_for_and_send_keys("my_export.tar.gz")
-        self.components.history_export.export_button.wait_for_and_click()
+        self._export_to_ftp_with_filename("my_export.tar.gz")
 
         self._verify_last_export_record(expected_format=export_format)
 

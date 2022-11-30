@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="export-to-remote-file">
         <b-form-group
             id="fieldset-directory"
             label-for="directory"
