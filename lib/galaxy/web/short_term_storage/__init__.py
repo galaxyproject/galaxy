@@ -18,6 +18,7 @@ from galaxy.exceptions import (
     InternalServerError,
     MessageException,
     NoContentException,
+    ObjectNotFound,
 )
 from galaxy.exceptions.error_codes import error_codes_by_int_code
 from galaxy.util import (
@@ -244,6 +245,8 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
 
     def _load_metadata(self, target_directory: Path, meta_name: str):
         meta_path = target_directory / f"{meta_name}.json"
+        if not meta_path.exists():
+            raise ObjectNotFound
         with open(meta_path) as f:
             return json.load(f)
 
