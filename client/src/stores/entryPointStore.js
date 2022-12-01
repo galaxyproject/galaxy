@@ -43,8 +43,8 @@ export const useEntryPointStore = defineStore("entryPointStore", {
             } else {
                 const newEntryPoints = [];
                 for (const ep of data) {
-                    const older_ep = this.entryPoints.filter((y) => y.id === ep.id)[0];
-                    newEntryPoints.push(mergeEntryPoints(older_ep, ep));
+                    const olderEntryPoint = this.entryPoints.filter((item) => item.id === ep.id)[0];
+                    newEntryPoints.push(mergeEntryPoints(olderEntryPoint, ep));
                 }
                 this.entryPoints = newEntryPoints;
             }
