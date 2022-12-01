@@ -222,7 +222,6 @@ class TestCustosAuthnz(TestCase):
                 self.cookies = {}
                 self.cookies_args = {}
                 self.request = Request()
-                self.session = self.sa_session
                 self.sa_session = Session()
                 self.user = None
 

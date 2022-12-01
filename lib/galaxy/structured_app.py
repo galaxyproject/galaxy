@@ -24,10 +24,7 @@ from galaxy.model.security import (
     HostAgent,
 )
 from galaxy.model.tags import GalaxyTagHandler
-from galaxy.objectstore import (
-    BaseObjectStore,
-    ObjectStore,
-)
+from galaxy.objectstore import BaseObjectStore
 from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import Vault
@@ -76,9 +73,11 @@ class BasicSharedApp(Container):
 
 class MinimalToolApp(Protocol):
     name: str
-    config: Any  # 'galaxy.config.BaseAppConfiguration'
+    # Leave config as Any: in a full Galaxy app this is a GalaxyAppConfiguration object, but this is mostly dynamically
+    # generated, and here we want to also allow other kinds of configuration objects (e.g. a Bunch).
+    config: Any
     datatypes_registry: Registry
-    object_store: ObjectStore
+    object_store: BaseObjectStore
     tool_data_tables: "ToolDataTableManager"
     file_sources: ConfiguredFileSources
     security: IdEncodingHelper
