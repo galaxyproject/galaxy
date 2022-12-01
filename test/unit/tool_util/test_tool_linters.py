@@ -636,6 +636,7 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
         <test expect_failure="true">
             <output name="test"/>
         </test>
+        <test expect_num_outputs="1" expect_failure="true"/>
     </tests>
 </tool>
 """
@@ -1495,10 +1496,14 @@ def test_tests_expect_failure_output(lint_ctx):
     run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "No valid test(s) found." in lint_ctx.warn_messages
     assert "Test 1: Cannot specify outputs in a test expecting failure." in lint_ctx.error_messages
+    assert (
+        "Test 2: Cannot make assumptions on the number of outputs in a test expecting failure."
+        in lint_ctx.error_messages
+    )
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 1
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_tests_without_expectations(lint_ctx):

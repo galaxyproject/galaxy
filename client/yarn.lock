@@ -8083,6 +8083,11 @@ pikaday@1.5.1:
   optionalDependencies:
     moment "2.x"
 
+pinia-plugin-persistedstate@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/pinia-plugin-persistedstate/-/pinia-plugin-persistedstate-2.4.0.tgz#fda569b3c397517a0cf8aba83a628283767da620"
+  integrity sha512-bQcpv47jk3ISl+InuJWsFaS/K7pRZ97kfoD2WCf/suhnlLy48k3BnFM2tI6YZ1xMsDaPv4yOsaPuPAUuSmEO2Q==
+
 pinia@^2.0.23:
   version "2.0.23"
   resolved "https://registry.yarnpkg.com/pinia/-/pinia-2.0.23.tgz#570f5f82160b656b412602789683faa95502d227"

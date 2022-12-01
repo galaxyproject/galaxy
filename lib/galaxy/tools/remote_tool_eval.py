@@ -19,7 +19,7 @@ from galaxy.metadata.set_metadata import (
 )
 from galaxy.model import store
 from galaxy.model.store import SessionlessContext
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import BaseObjectStore
 from galaxy.structured_app import MinimalToolApp
 from galaxy.tools import (
     create_tool_from_representation,
@@ -55,7 +55,7 @@ class ToolApp(MinimalToolApp):
         sa_session: SessionlessContext,
         tool_app_config: ToolAppConfig,
         datatypes_registry: Registry,
-        object_store: ObjectStore,
+        object_store: BaseObjectStore,
         tool_data_table_manager: ToolDataTableManager,
         file_sources: ConfiguredFileSources,
     ):

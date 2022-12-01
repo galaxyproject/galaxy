@@ -12,6 +12,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Type,
     Union,
 )
 
@@ -2122,10 +2123,10 @@ class ToolModule(WorkflowModule):
 
 
 class WorkflowModuleFactory:
-    def __init__(self, module_types):
+    def __init__(self, module_types: Dict[str, Type[WorkflowModule]]):
         self.module_types = module_types
 
-    def from_dict(self, trans, d, **kwargs):
+    def from_dict(self, trans, d, **kwargs) -> WorkflowModule:
         """
         Return module initialized from the data in dictionary `d`.
         """
@@ -2141,10 +2142,6 @@ class WorkflowModuleFactory:
         """
         type = step.type
         return self.module_types[type].from_workflow_step(trans, step, **kwargs)
-
-
-def is_tool_module_type(module_type):
-    return not module_type or module_type == "tool"
 
 
 module_types = dict(

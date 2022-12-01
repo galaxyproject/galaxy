@@ -5,9 +5,11 @@ import App from "./App.vue";
 import store from "store";
 import { getRouter } from "./router";
 import { createPinia, PiniaVuePlugin } from "pinia";
+import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 
 Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
+pinia.use(piniaPluginPersistedstate);
 
 addInitialization((Galaxy) => {
     console.log("App setup");
