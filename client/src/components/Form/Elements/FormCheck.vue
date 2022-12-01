@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 
-const $emit = defineEmits(["input"]);
+const emit = defineEmits(["input"]);
 const props = defineProps({
     value: {
         default: null,
@@ -15,20 +15,20 @@ const selectAll = ref(false);
 
 const currentValue = computed({
     get: () => {
-        const val = props.value || [];
+        const val = props.value ?? [];
         return !Array.isArray(val) ? [val] : val;
     },
     set: (val) => {
-        $emit("input", val);
+        emit("input", val);
     },
 });
 
 function onSelectAll() {
     if (selectAll.value) {
-        const allValues = props.options.map((x) => x[1]);
-        $emit("input", allValues)
+        const allValues = props.options.map((option) => option[1]);
+        emit("input", allValues);
     } else {
-        $emit("input", []);
+        emit("input", []);
     }
 }
 </script>
@@ -37,11 +37,8 @@ function onSelectAll() {
     <div>
         <b-form-checkbox v-model="selectAll" @input="onSelectAll">{{ "Select/Unselect all" | l }}</b-form-checkbox>
         <b-form-checkbox-group v-model="currentValue" stacked>
-            <b-form-checkbox 
-                v-for="(option, index) in options" 
-                :key="index" 
-                :value="option[1]">
-                    {{ option[0] }}
+            <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option[1]">
+                {{ option[0] }}
             </b-form-checkbox>
         </b-form-checkbox-group>
     </div>

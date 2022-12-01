@@ -260,7 +260,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 :type="type"
                 :workflow-building-mode="workflowBuildingMode" />
             <FormSelection
-                v-else-if="props.type == 'select' && ['radio', 'checkboxes'].includes(attrs.display)"
+                v-else-if="props.type === 'select' && ['radio', 'checkboxes'].includes(attrs.display)"
                 :id="id"
                 v-model="currentValue"
                 :data="attrs.data"
