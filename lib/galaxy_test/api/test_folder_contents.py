@@ -259,7 +259,7 @@ class TestFolderContentsApi(ApiTestCase):
         dataset_names = ["a", "b", "c"]
         ldda_messages = ["Message Z", "Message Y", "Message X"]
         dataset_sizes = [50, 100, 10]
-        file_types = ["txt", "csv", "txt"]
+        file_types = ["txt", "csv", "json"]
         for index, name in enumerate(dataset_names):
             self._create_dataset_in_folder(
                 history_id,
@@ -285,7 +285,7 @@ class TestFolderContentsApi(ApiTestCase):
         self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
 
         order_by = "type"
-        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "b", "a", "c"]
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "b", "c", "a"]
         self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
 
         order_by = "size"
