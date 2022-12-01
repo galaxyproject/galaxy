@@ -133,7 +133,7 @@ export default {
         this.load();
     },
     methods: {
-        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints"]),
+        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints", "removeEntryPoint"]),
         load() {
             this.ensurePollingEntryPoints();
             this.filter = "";
@@ -148,7 +148,7 @@ export default {
                     this.services
                         .stopInteractiveTool(tool.id)
                         .then((response) => {
-                            this.activeInteractiveTools = this.activeInteractiveTools.filter((tool) => !tool.marked);
+                            this.removeEntryPoint(tool.id);
                         })
                         .catch((error) => {
                             this.messages.push(`Failed to stop interactive tool ${tool.name}: ${error.message}`);

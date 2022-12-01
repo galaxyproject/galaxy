@@ -31,13 +31,34 @@ export const useEntryPointStore = defineStore("entryPointStore", {
             axios
                 .get(url, { params: params })
                 .then((response) => {
-                    // TODO $patch here the minimal partial state object
-                    // only if needed to minimize reactivity response
-                    this.entryPoints = response.data;
+                    this.updateEntryPoints(response.data);
                 })
                 .catch((e) => {
                     rethrowSimple(e);
                 });
+        },
+        updateEntryPoints(data) {
+            if (this.entryPoints.length === 0) {
+                this.entryPoints = data;
+            } else {
+                const newEntryPoints = [];
+                for (const ep of data) {
+                    const older_ep = this.entryPoints.filter((y) => y.id === ep.id)[0];
+                    newEntryPoints.push(mergeEntryPoints(older_ep, ep));
+                }
+                this.entryPoints = newEntryPoints;
+            }
+            function mergeEntryPoints(original, updated) {
+                return { ...original, ...updated };
+            }
+        },
+        removeEntryPoint(toolId) {
+            const index = this.entryPoints.findIndex((ep) => {
+                return ep.id === toolId ? true : false;
+            });
+            if (index >= 0) {
+                this.entryPoints.splice(index, 1);
+            }
         },
     },
 });
