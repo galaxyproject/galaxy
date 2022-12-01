@@ -38,7 +38,6 @@ from galaxy.webhooks import WebhooksRegistry
 from galaxy.workflow.trs_proxy import TrsProxy
 
 if TYPE_CHECKING:
-    from galaxy.config import GalaxyAppConfiguration
     from galaxy.config_watchers import ConfigWatchers
     from galaxy.jobs import JobConfiguration
     from galaxy.managers.collections import DatasetCollectionManager
@@ -74,7 +73,9 @@ class BasicSharedApp(Container):
 
 class MinimalToolApp(Protocol):
     name: str
-    config: "GalaxyAppConfiguration"
+    # Leave config as Any: in a full Galaxy app this is a GalaxyAppConfiguration object, but this is mostly dynamically
+    # generated, and here we want to also allow other kinds of configuration objects (e.g. a Bunch).
+    config: Any
     datatypes_registry: Registry
     object_store: BaseObjectStore
     tool_data_tables: "ToolDataTableManager"
