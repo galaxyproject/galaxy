@@ -111,7 +111,6 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         TestPublishedHistories.history2_tags = [tag3]
         TestPublishedHistories.history3_tags = [tag1]
         TestPublishedHistories.history3_annot = self._get_random_name()
-        TestPublishedHistories.all_histories = [self.history1_name, self.history3_name, self.history2_name]
 
         self.register(self.user1_email)
 
@@ -131,3 +130,8 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.create_history(self.history2_name)
         self.history_panel_add_tags(self.history2_tags)
         self.publish_current_history()
+
+        published_histories = self.dataset_populator._get("histories/published").json()
+        TestPublishedHistories.all_histories = []
+        for his in published_histories:
+            TestPublishedHistories.all_histories.append(his["name"])
