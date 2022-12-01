@@ -7,6 +7,8 @@ Created on January. 05, 2018
 @githuborganization: C3BI
 Phylip datatype sniffer
 """
+from typing import TYPE_CHECKING
+
 from galaxy import util
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -18,6 +20,9 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import nice_size
 from .metadata import MetadataElement
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 @build_sniff_from_prefix
@@ -42,7 +47,7 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:

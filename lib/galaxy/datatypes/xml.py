@@ -3,7 +3,10 @@ XML format classes
 """
 import logging
 import re
-from typing import List
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 from galaxy import util
 from galaxy.datatypes.metadata import MetadataElement
@@ -16,6 +19,9 @@ from . import (
     data,
     dataproviders,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -31,7 +37,7 @@ class GenericXml(data.Text):
     edam_format = "format_2332"
     file_ext = "xml"
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -84,7 +90,7 @@ class MEMEXml(GenericXml):
 
     file_ext = "memexml"
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -100,7 +106,7 @@ class CisML(GenericXml):
 
     file_ext = "cisml"
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -165,7 +171,7 @@ class Dzi(GenericXml):
         """Returns a list of visualizations for datatype"""
         return ["openseadragon"]
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Deep Zoom Image"
@@ -198,7 +204,7 @@ class Phyloxml(GenericXml):
     edam_format = "format_3159"
     file_ext = "phyloxml"
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -240,7 +246,7 @@ class Owl(GenericXml):
     edam_format = "format_3262"
     file_ext = "owl"
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Web Ontology Language OWL"
@@ -265,7 +271,7 @@ class Sbml(GenericXml):
     edam_data = "data_2024"
     edam_format = "format_2585"
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "System Biology Markup Language SBML"

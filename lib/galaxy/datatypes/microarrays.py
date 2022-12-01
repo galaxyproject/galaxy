@@ -1,4 +1,5 @@
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Cel  # noqa: F401
@@ -9,6 +10,9 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
     get_headers,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +80,7 @@ class GenericMicroarrayFile(data.Text):
         name="block_type", default=0, desc="Type of block", readonly=True, visible=True, optional=True, no_value=0
     )
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.block_count == 1:
                 dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"

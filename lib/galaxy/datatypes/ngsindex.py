@@ -62,7 +62,7 @@ class BowtieIndex(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Bowtie index file ({dataset.metadata.sequence_space})"
             dataset.blurb = f"{dataset.metadata.sequence_space} space"

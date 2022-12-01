@@ -290,7 +290,7 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -1000,7 +1000,7 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset, **kwd):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
