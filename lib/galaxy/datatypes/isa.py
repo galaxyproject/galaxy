@@ -11,7 +11,10 @@ import os.path
 import re
 import shutil
 import tempfile
-from typing import TYPE_CHECKING
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 # Imports isatab after turning off warnings inside logger settings to avoid pandas warning making uploads fail.
 logging.getLogger("isatools.isatab").setLevel(logging.ERROR)
@@ -22,8 +25,10 @@ from isatools import (
 from markupsafe import escape
 
 from galaxy import util
-from galaxy.datatypes import data
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
+from galaxy.datatypes.data import (
+    Data,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -56,7 +61,7 @@ logger = logging.getLogger(__name__)
 ################################################################
 
 
-class _Isa(data.Data):
+class _Isa(Data):
     """Base class for implementing ISA datatypes"""
 
     composite_type = "auto_primary_file"
@@ -162,7 +167,7 @@ class _Isa(data.Data):
 
         # Read first lines of main file
         with open(main_file, encoding="utf-8") as f:
-            data = []
+            data: List = []
             for line in f:
                 if len(data) < _MAX_LINES_HISTORY_PEEK:
                     data.append(line)

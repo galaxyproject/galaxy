@@ -680,7 +680,7 @@ class ProteomicsXml(GenericXml):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
-            dataset.blurb = self.blurb
+            dataset.blurb = "ProteomicsXML data"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
