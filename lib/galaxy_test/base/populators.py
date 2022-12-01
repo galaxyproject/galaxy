@@ -64,6 +64,7 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 import cwltest.utils
 import requests
@@ -1209,7 +1210,7 @@ class BaseDatasetPopulator(BasePopulator):
         storage_request_id = self.assert_download_request_ok(download_request_response)
         return self.wait_on_download_request(storage_request_id)
 
-    def assert_download_request_ok(self, download_request_response: Response) -> str:
+    def assert_download_request_ok(self, download_request_response: Response) -> UUID:
         """Assert response is valid and okay and extract storage request ID."""
         api_asserts.assert_status_code_is(download_request_response, 200)
         download_async = download_request_response.json()
@@ -1217,7 +1218,7 @@ class BaseDatasetPopulator(BasePopulator):
         storage_request_id = download_async["storage_request_id"]
         return storage_request_id
 
-    def wait_for_download_ready(self, storage_request_id: str):
+    def wait_for_download_ready(self, storage_request_id: UUID):
         def is_ready():
             is_ready_response = self._get(f"short_term_storage/{storage_request_id}/ready")
             is_ready_response.raise_for_status()
@@ -1244,7 +1245,7 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(is_ready, "waiting for task to complete")
         return state() == "SUCCESS"
 
-    def wait_on_download_request(self, storage_request_id: str) -> Response:
+    def wait_on_download_request(self, storage_request_id: UUID) -> Response:
         self.wait_for_download_ready(storage_request_id)
         download_contents_response = self._get(f"short_term_storage/{storage_request_id}")
         download_contents_response.raise_for_status()
