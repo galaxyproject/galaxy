@@ -250,6 +250,8 @@ export default {
 @import "theme/blue.scss";
 
 .content-item {
+    cursor: default;
+
     .name {
         word-break: break-all;
     }
