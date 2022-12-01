@@ -22,6 +22,10 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.7', '3.10']
+    env:
+      LINT_PATH: 'lib/galaxy/dependencies/pinned-lint-requirements.txt'
+      TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
+      CORE_PATH: 'lib/galaxy/dependencies/pinned-requirements.txt'
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
@@ -35,12 +39,8 @@ jobs:
         uses: actions/cache@v3
         with:
           path: ~/.cache/pip
-          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles('lib/galaxy/dependencies/pinned-lint-requirements.txt') }}
+          key: pip-cache-${{ matrix.python-version }}-${{ hashFiles(env.LINT_PATH, env.TYPE_PATH, env.CORE_PATH) }}
       - name: Cache tox env
-        env:
-          LINT_PATH: 'lib/galaxy/dependencies/pinned-lint-requirements.txt'
-          TYPE_PATH: 'lib/galaxy/dependencies/pinned-typecheck-requirements.txt'
-          CORE_PATH: 'lib/galaxy/dependencies/pinned-requirements.txt'
         uses: actions/cache@v3
         with:
           path: .tox
