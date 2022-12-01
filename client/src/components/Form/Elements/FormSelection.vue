@@ -1,5 +1,6 @@
 <script setup>
 import { computed } from "vue";
+import FormCheck from "./FormCheck";
 import FormRadio from "./FormRadio";
 
 const $emit = defineEmits(["input"]);
@@ -50,5 +51,6 @@ const currentOptions = computed(() => {
 </script>
 
 <template>
-    <form-radio v-if="display == 'radio'" v-model="currentValue" :options="currentOptions" />
+    <form-check v-if="display == 'checkboxes'" v-model="currentValue" :options="currentOptions" />
+    <form-radio v-else-if="display == 'radio'" v-model="currentValue" :options="currentOptions" />
 </template>

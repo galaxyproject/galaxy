@@ -1,5 +1,5 @@
 <script setup>
-import { computed, defineProps, defineEmits } from "vue";
+import { computed } from "vue";
 
 const $emit = defineEmits(["input"]);
 const props = defineProps({
@@ -23,14 +23,12 @@ const currentValue = computed({
 </script>
 
 <template>
-    <b-form-checkbox-group
-        v-model="currentValue"
-        v-for="(option, index) in options" 
-        :key="index" 
-        :value="option[1]"
-        :options="formattedOptions"
-        value-field="value"
-        :text-field="option[0]"
-        stacked>
+    <b-form-checkbox-group v-model="currentValue" stacked>
+        <b-form-checkbox 
+            v-for="(option, index) in options" 
+            :key="index" 
+            :value="option[1]">
+                {{ option[0] }}
+        </b-form-checkbox>
     </b-form-checkbox-group>
 </template>
