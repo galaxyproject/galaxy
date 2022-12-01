@@ -26,6 +26,7 @@ from markupsafe import escape
 from galaxy.datatypes import metadata
 from galaxy.datatypes.data import (
     DatatypeValidation,
+    GeneratePrimaryFileDataset,
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
@@ -297,7 +298,7 @@ class Rgenetics(Html):
     composite_type = "auto_primary_file"
     file_ext = "rgenetics"
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head><title>Rgenetics Galaxy Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -586,7 +587,7 @@ class IdeasPre(Html):
                 dataset.metadata.tmp_archive = os.path.join(dataset.extra_files_path, fname)
         self.regenerate_primary_file(dataset)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head></head><body>"]
         rval.append("<h3>Files prepared for IDEAS</h3>")
         rval.append("<ul>")
@@ -650,7 +651,7 @@ class RexpBase(Html):
             is_binary=False,
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

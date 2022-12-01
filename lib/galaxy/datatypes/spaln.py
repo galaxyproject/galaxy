@@ -11,7 +11,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes.data import Data
+from galaxy.datatypes.data import (
+    Data,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
 
@@ -61,7 +64,7 @@ class _SpalnDb(Data):
             substitute_name_with_metadata="spalndb_name",
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head><title>Spaln Database</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

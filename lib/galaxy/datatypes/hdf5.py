@@ -7,7 +7,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes.data import Data
+from galaxy.datatypes.data import (
+    Data,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.metadata import MetadataElement
 
 if TYPE_CHECKING:
@@ -57,7 +60,7 @@ class HDF5SummarizedExperiment(Data):
         """Override parent init metadata."""
         Data.init_meta(self, dataset, copy_from=copy_from)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """Generate primary file to represent dataset."""
         return f"""
               <html>

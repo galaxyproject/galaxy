@@ -4,7 +4,10 @@ Neo4j Composite Dataset
 import logging
 from typing import TYPE_CHECKING
 
-from galaxy.datatypes.data import Data
+from galaxy.datatypes.data import (
+    Data,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
 
@@ -22,7 +25,7 @@ class Neo4j(Html):
     stored in extra files path
     """
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

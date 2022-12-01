@@ -20,7 +20,10 @@ from typing import (
 )
 
 from markupsafe import escape
-from typing_extensions import Literal
+from typing_extensions import (
+    Literal,
+    Protocol,
+)
 
 from galaxy import util
 from galaxy.datatypes.metadata import (
@@ -73,6 +76,11 @@ DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}_
 DEFAULT_MAX_PEEK_SIZE = 1000000  # 1 MB
 
 Headers = Dict[str, Any]
+
+
+class GeneratePrimaryFileDataset(Protocol):
+    extra_files_path: str
+    metadata: Any
 
 
 class DatatypeConverterNotFoundException(Exception):
@@ -838,7 +846,7 @@ class Data(metaclass=DataMeta):
             files[substitute_composite_key(key, value)] = value
         return files
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         raise Exception("generate_primary_file is not implemented for this datatype.")
 
     @property

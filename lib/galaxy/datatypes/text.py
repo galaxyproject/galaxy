@@ -16,6 +16,7 @@ from typing import (
 import yaml
 
 from galaxy.datatypes.data import (
+    GeneratePrimaryFileDataset,
     get_file_peek,
     Headers,
     Text,
@@ -842,7 +843,7 @@ class SnpSiftDbNSFP(Text):
             "%s.gz.tbi", description="Tabix Index File", substitute_name_with_metadata="reference_name", is_binary=True
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

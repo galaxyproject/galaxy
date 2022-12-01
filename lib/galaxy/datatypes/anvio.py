@@ -10,6 +10,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.datatypes.data import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
 
@@ -28,7 +29,7 @@ class AnvioComposite(Html):
     file_ext = "anvio_composite"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

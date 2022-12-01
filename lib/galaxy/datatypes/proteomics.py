@@ -11,7 +11,10 @@ from typing import (
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import Text
+from galaxy.datatypes.data import (
+    GeneratePrimaryFileDataset,
+    Text,
+)
 from galaxy.datatypes.sequence import Sequence
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -54,7 +57,7 @@ class Wiff(Binary):
             is_binary=True,
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head><title>Wiff Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -983,7 +986,7 @@ class SPLib(Msp):
         self.add_composite_file("library.spidx", description="Spectrum index", is_binary=False)
         self.add_composite_file("library.pepidx", description="Peptide index", is_binary=False)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head><title>Spectral Library Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -1072,7 +1075,7 @@ class ImzML(Binary):
 
         self.add_composite_file("ibd", description="The mass spectral data component.", is_binary=True)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head><title>imzML Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

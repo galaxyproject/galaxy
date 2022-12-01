@@ -34,6 +34,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes.data import (
     Data,
     DatatypeValidation,
+    GeneratePrimaryFileDataset,
     get_file_peek,
 )
 from galaxy.datatypes.metadata import (
@@ -1998,7 +1999,7 @@ class LudwigModel(Html):
             "training_progress.json", description="Training progress", is_binary=False, optional=True
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head><title>Ludwig Model Composite Dataset.</title></head><p/>"]
         rval.append("<div>This model dataset is composed of the following items:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

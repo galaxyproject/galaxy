@@ -23,6 +23,7 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import data
+from galaxy.datatypes.data import GeneratePrimaryFileDataset
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -198,7 +199,7 @@ class _Isa(data.Data):
     # Generate primary file {{{2
     ################################################################
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """Generate the primary file. It is an HTML file containing description of the composite dataset
         as well as a list of the composite files that it contains."""
 
