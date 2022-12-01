@@ -290,7 +290,7 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """
         Set the peek and blurb text
         """
@@ -1000,13 +1000,18 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=True, **kwd):
+    def set_peek(self, dataset, **kwd):
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
+        line_count = kwd.get("line_count")
+        width = kwd.get("width", 256)
+        skipchars = kwd.get("skipchars")
+        line_wrap = kwd.get("line_wrap", True)
+
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
-            dataset.peek = get_file_peek(dataset.file_name, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
+            dataset.peek = get_file_peek(dataset.file_name, width=width, skipchars=skipchars, line_wrap=line_wrap)
             if line_count is None:
                 # See if line_count is stored in the metadata
                 if dataset.metadata.data_lines:
@@ -1199,9 +1204,9 @@ def get_test_fname(fname):
     return full_path
 
 
-def get_file_peek(file_name, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=True):
+def get_file_peek(file_name, width=256, line_count=5, skipchars=None, line_wrap=True):
     """
-    Returns the first LINE_COUNT lines wrapped to WIDTH.
+    Returns the first line_count lines wrapped to width.
 
     >>> def assert_peek_is(file_name, expected, *args, **kwd):
     ...     path = get_test_fname(file_name)
@@ -1209,14 +1214,14 @@ def get_file_peek(file_name, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=
     ...     assert peek == expected, "%s != %s" % (peek, expected)
     >>> assert_peek_is('0_nonewline', u'0')
     >>> assert_peek_is('0.txt', u'0\\n')
-    >>> assert_peek_is('4.bed', u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n', LINE_COUNT=1)
-    >>> assert_peek_is('1.bed', u'chr1\\t147962192\\t147962580\\tCCDS989.1_cds_0_0_chr1_147962193_r\\t0\\t-\\nchr1\\t147984545\\t147984630\\tCCDS990.1_cds_0_0_chr1_147984546_f\\t0\\t+\\n', LINE_COUNT=2)
+    >>> assert_peek_is('4.bed', u'chr22\\t30128507\\t31828507\\tuc003bnx.1_cds_2_0_chr22_29227_f\\t0\\t+\\n', line_count=1)
+    >>> assert_peek_is('1.bed', u'chr1\\t147962192\\t147962580\\tCCDS989.1_cds_0_0_chr1_147962193_r\\t0\\t-\\nchr1\\t147984545\\t147984630\\tCCDS990.1_cds_0_0_chr1_147984546_f\\t0\\t+\\n', line_count=2)
     """
     # Set size for file.readline() to a negative number to force it to
     # read until either a newline or EOF.  Needed for datasets with very
     # long lines.
-    if WIDTH == "unlimited":
-        WIDTH = -1
+    if width == "unlimited":
+        width = -1
     if skipchars is None:
         skipchars = []
     lines = []
@@ -1224,9 +1229,9 @@ def get_file_peek(file_name, WIDTH=256, LINE_COUNT=5, skipchars=None, line_wrap=
 
     last_line_break = False
     with compression_utils.get_fileobj(file_name) as temp:
-        while count < LINE_COUNT:
+        while count < line_count:
             try:
-                line = temp.readline(WIDTH)
+                line = temp.readline(width)
             except UnicodeDecodeError:
                 return "binary file"
             if line == "":

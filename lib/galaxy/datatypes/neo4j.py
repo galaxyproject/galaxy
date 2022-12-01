@@ -48,7 +48,7 @@ class Neo4j(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Neo4j database (multiple files)"

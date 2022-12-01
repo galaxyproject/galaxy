@@ -36,7 +36,7 @@ class Triples(data.Data):
         """
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -61,7 +61,7 @@ class NTriples(data.Text, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -85,7 +85,7 @@ class N3(data.Text, Triples):
         """
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -113,7 +113,7 @@ class Turtle(data.Text, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -142,7 +142,7 @@ class Rdf(xml.GenericXml, Triples):
             return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -168,7 +168,7 @@ class Jsonld(text.Json, Triples):
                 return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -192,7 +192,7 @@ class HDT(binary.Binary, Triples):
                 return True
         return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

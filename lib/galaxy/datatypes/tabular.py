@@ -102,8 +102,9 @@ class TabularData(Text):
     def set_meta(self, dataset, **kwd):
         raise NotImplementedError
 
-    def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
-        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
+    def set_peek(self, dataset, **kwd):
+        kwd.setdefault("line_wrap", False)
+        super().set_peek(dataset, **kwd)
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 

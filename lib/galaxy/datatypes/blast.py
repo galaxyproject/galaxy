@@ -66,7 +66,7 @@ class BlastXml(GenericXml):
     edam_format = "format_3331"
     edam_data = "data_0857"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
@@ -191,7 +191,7 @@ class BlastXml(GenericXml):
 class _BlastDb(Data):
     """Base class for BLAST database datatype."""
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "BLAST database (multiple files)"
@@ -351,7 +351,7 @@ class LastDb(Data):
     file_ext = "lastdb"
     composite_type = "basic"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "LAST database (multiple files)"

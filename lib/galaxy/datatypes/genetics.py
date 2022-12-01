@@ -378,7 +378,7 @@ class SNPMatrix(Rgenetics):
 
     file_ext = "snpmatrix"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         if not dataset.dataset.purged:
             dataset.peek = "Binary RGenetics file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -761,7 +761,7 @@ class RexpBase(Html):
             p = []
         return "\n".join(p)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """
         expects a .pheno file in the extra_files_dir - ugh
         note that R is weird and does not include the row.name in

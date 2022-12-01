@@ -42,7 +42,7 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:

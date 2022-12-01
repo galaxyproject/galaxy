@@ -76,7 +76,7 @@ class GenericMicroarrayFile(data.Text):
         name="block_type", default=0, desc="Type of block", readonly=True, visible=True, optional=True, no_value=0
     )
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         if not dataset.dataset.purged:
             if dataset.metadata.block_count == 1:
                 dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"

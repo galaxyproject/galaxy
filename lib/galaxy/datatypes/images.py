@@ -53,7 +53,7 @@ class Image(data.Data):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         if not dataset.dataset.purged:
             dataset.peek = f"Image in {dataset.extension} format"
             dataset.blurb = nice_size(dataset.get_size())
@@ -488,7 +488,7 @@ class Star(data.Text):
 
     file_ext = "star"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset, **kwd):
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

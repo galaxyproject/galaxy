@@ -41,7 +41,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset, **kwd):
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:
