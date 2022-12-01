@@ -80,7 +80,7 @@ class _SpalnDb(Data):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """

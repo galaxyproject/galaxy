@@ -850,7 +850,7 @@ class SnpSiftDbNSFP(Text):
         """
         return "<html><head><title>SnpSiftDbNSFP Composite Dataset</title></head></html>"
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """

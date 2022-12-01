@@ -7,6 +7,7 @@ for velvet assembler tool in galaxy
 import logging
 import os
 import re
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes import (
     data,
@@ -19,6 +20,9 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.text import Html
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -188,7 +192,7 @@ class Velvet(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """

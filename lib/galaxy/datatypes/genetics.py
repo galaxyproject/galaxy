@@ -315,7 +315,7 @@ class Rgenetics(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -597,7 +597,7 @@ class IdeasPre(Html):
         rval.append("</ul></body></html>\n")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         # Cannot do this until we are setting metadata.
         rval = ["<html><head></head><body>"]
         rval.append("<h3>Files prepared for IDEAS</h3>")
@@ -810,7 +810,7 @@ class RexpBase(Html):
         except Exception:
             return "## rexpression get_file_peek: no file found"
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """
