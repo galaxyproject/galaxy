@@ -94,7 +94,10 @@ module.exports = (env = {}, argv = {}) => {
                     test: /\.tsx?$/,
                     exclude: /node_modules/,
                     loader: "ts-loader",
-                    options: { appendTsSuffixTo: [/\.vue$/] },
+                    options: {
+                        configFile: "tsconfig.webpack.json",
+                        appendTsSuffixTo: [/\.vue$/],
+                    },
                 },
                 {
                     test: /\.mjs$/,

@@ -3,13 +3,8 @@
         "target": "es2016",
         "jsx": "preserve",
         "module": "es2015",
-        "rootDir": "./src",
         "moduleResolution": "node",
         "baseUrl": "./src",
-        "typeRoots": ["./types"],
-        "types": [
-            // "webpack-env"
-        ],
         "allowJs": true,
         "checkJs": false,
         "importHelpers": true,
