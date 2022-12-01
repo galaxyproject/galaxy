@@ -767,7 +767,7 @@ class Bam(BamNative):
     # TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
     # TODO: incorporate samtools options to control output: regions first, then flags, etc.
     @dataproviders.decorators.dataprovider_factory("line", dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset, **settings):
+    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> dataproviders.line.FilteredLineDataProvider:
         samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return dataproviders.line.FilteredLineDataProvider(samtools_source, **settings)

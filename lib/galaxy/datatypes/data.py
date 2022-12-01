@@ -1100,7 +1100,9 @@ class Text(Data):
 
     # ------------- Dataproviders
     @p_dataproviders.decorators.dataprovider_factory("line", p_dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset, **settings):
+    def line_dataprovider(
+        self, dataset: "DatasetInstance", **settings
+    ) -> p_dataproviders.line.FilteredLineDataProvider:
         """
         Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.

@@ -783,7 +783,7 @@ class Sam(Tabular, _BamOrSam):
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     # TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
     @dataproviders.decorators.dataprovider_factory("line", dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset, **settings):
+    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> dataproviders.line.FilteredLineDataProvider:
         settings["comment_char"] = "@"
         return super().line_dataprovider(dataset, **settings)
 
