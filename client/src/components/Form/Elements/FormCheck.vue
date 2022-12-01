@@ -14,7 +14,8 @@ const props = defineProps({
 
 const currentValue = computed({
     get: () => {
-        return props.value;
+        const val = props.value || [];
+        return !Array.isArray(val) ? [val] : val;
     },
     set: (val) => {
         $emit("input", val);
