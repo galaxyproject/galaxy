@@ -32,9 +32,17 @@ const formattedToolHelp = computed(() => {
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp } from "@fortawesome/free-solid-svg-icons";
+import {
+    faWrench,
+    faGlobe,
+    faCheck,
+    faTimes,
+    faAngleDown,
+    faAngleUp,
+    faExclamationTriangle,
+} from "@fortawesome/free-solid-svg-icons";
 
-library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp);
+library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle);
 </script>
 
 <template>
@@ -65,25 +73,17 @@ library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp);
 
         <div class="portlet-content">
             <div class="d-flex flex-gapx-1 py-2">
-                <span class="info px-1 rounded">
+                <span v-if="props.section" class="info px-1 rounded">
                     <b>Section:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
                 </span>
 
-                <span v-if="props.local" class="info px-1 rounded">
-                    <FontAwesomeIcon icon="fa-wrench" fixed-width />
-                    Local Tool
-                </span>
-                <span v-else class="info px-1 rounded">
+                <span v-if="!props.local" class="info px-1 rounded">
                     <FontAwesomeIcon icon="fa-globe" fixed-width />
-                    External Tool
+                    External
                 </span>
 
-                <span v-if="props.workflowCompatible" class="success px-1 rounded">
-                    <FontAwesomeIcon icon="fa-check" fixed-width />
-                    Workflow compatible
-                </span>
-                <span v-else class="warn px-1 rounded">
-                    <FontAwesomeIcon icon="fa-times" fixed-width />
+                <span v-if="!props.workflowCompatible" class="warn px-1 rounded">
+                    <FontAwesomeIcon icon="fa-exclamation-triangle" />
                     Not Workflow compatible
                 </span>
             </div>
