@@ -12,7 +12,8 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def test_published_histories(self):
         self._login()
         self.navigate_to_published_histories()
-        self.assert_histories_present(self.all_histories)
+        expected_history_names = self.get_published_history_names_from_server()
+        self.assert_histories_present(expected_history_names)
 
     @selenium_test
     def test_published_histories_sort_by_name(self):
@@ -20,7 +21,8 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_published_histories()
         self.components.published_histories.column_header(column_number=1).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.assert_histories_present(sorted(self.all_histories), sort_by_matters=True)
+        sorted_histories = self.get_published_history_names_from_server(sort_by="name")
+        self.assert_histories_present(sorted_histories, sort_by_matters=True)
 
     @selenium_test
     def test_published_histories_sort_by_last_update(self):
@@ -28,7 +30,8 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.navigate_to_published_histories()
         self.components.published_histories.column_header(column_number=5).wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.assert_histories_present(self.all_histories, sort_by_matters=True)
+        expected_history_names = self.get_published_history_names_from_server(sort_by="update_time")
+        self.assert_histories_present(expected_history_names, sort_by_matters=True)
 
     @selenium_test
     def test_published_histories_tag_click(self):
@@ -68,12 +71,21 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
     def assert_histories_present(self, expected_histories, sort_by_matters=False):
         present_histories = self.get_present_histories()
         assert len(present_histories) == len(expected_histories)
-        for row in present_histories:
+        for index, row in enumerate(present_histories):
             cell = row.find_elements(By.TAG_NAME, "td")[0]
             if not sort_by_matters:
                 assert cell.text in expected_histories
             else:
-                assert cell.text == expected_histories.pop(0)
+                assert cell.text == expected_histories[index]
+
+    def get_published_history_names_from_server(self, sort_by=None):
+        published_histories = self.dataset_populator._get("histories/published").json()
+        if sort_by:
+            published_histories = sorted(published_histories, key=lambda x: x[sort_by])
+        all_published_history_names = []
+        for his in published_histories:
+            all_published_history_names.append(his["name"])
+        return all_published_history_names
 
     def get_present_histories(self):
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -130,8 +142,3 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.create_history(self.history2_name)
         self.history_panel_add_tags(self.history2_tags)
         self.publish_current_history()
-
-        published_histories = self.dataset_populator._get("histories/published").json()
-        TestPublishedHistories.all_histories = []
-        for his in published_histories:
-            TestPublishedHistories.all_histories.append(his["name"])
