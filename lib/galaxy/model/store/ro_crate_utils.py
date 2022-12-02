@@ -14,9 +14,12 @@ from rocrate.model.softwareapplication import SoftwareApplication
 from rocrate.rocrate import ROCrate
 
 from galaxy.model import (
-    Workflow, WorkflowInvocation, WorkflowStep, 
-    JobParameter, WorkflowRequestInputStepParameter,
-    JobToInputDatasetAssociation, JobToOutputDatasetAssociation
+    JobToInputDatasetAssociation,
+    JobToOutputDatasetAssociation,
+    Workflow,
+    WorkflowInvocation,
+    WorkflowRequestInputStepParameter,
+    WorkflowStep,
 )
 
 logger = logging.getLogger(__name__)
@@ -39,7 +42,7 @@ class WorkflowRunCrateProfileBuilder:
             "__workflow_invocation_uuid__",
             "chromInfo",
             "dbkey",
-            "__input_ext"
+            "__input_ext",
         ]
 
     def build_crate(self):
@@ -58,7 +61,7 @@ class WorkflowRunCrateProfileBuilder:
             if dataset.dataset.id in self.model_store.dataset_id_to_path:
                 file_name, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
                 if not file_name:
-                    file_name = "datasets/dataset_"+str(dataset.dataset.id)
+                    file_name = f"datasets/dataset_{dataset.dataset.id}"
                 name = dataset.name
                 encoding_format = dataset.datatype.get_mime()
                 properties = {
@@ -110,7 +113,6 @@ class WorkflowRunCrateProfileBuilder:
         self.roc_engine_run = roc_engine_run
 
     def _add_actions(self, crate: ROCrate, file_entities: Dict[int, Any]):
-        
         input_formal_params = []
         output_formal_params = []
         workflow_inputs = []
@@ -165,7 +167,9 @@ class WorkflowRunCrateProfileBuilder:
                 step.uuid.urn,
                 properties={
                     "@type": "FormalParameter",
-                    "additionalType": self.param_type_mapping[step.annotations[0].workflow_step.tool_inputs['parameter_type']],
+                    "additionalType": self.param_type_mapping[
+                        step.annotations[0].workflow_step.tool_inputs["parameter_type"]
+                    ],
                     "description": step.annotations[0].annotation if step.annotations else "",
                     "name": step.label,
                     "valueRequired": not step.input_optional,
@@ -187,7 +191,7 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
-        
+
     def _add_formal_parameter_output(self, crate: ROCrate, output: JobToOutputDatasetAssociation):
         # TODO: add more details for output formal definitions?
         return crate.add(
@@ -204,16 +208,16 @@ class WorkflowRunCrateProfileBuilder:
         )
 
     def _add_property_value(self, crate: ROCrate, param: WorkflowRequestInputStepParameter):
-        # TODO: 
+        input_name = param.workflow_step.output_connections[0].input_name
         return crate.add(
-                ContextEntity(
-                    crate,
-                    str(param.workflow_step.output_connections[0].input_name)+"-pv",
-                    properties={
-                        "@type": "PropertyValue",
-                        "name": param.workflow_step.output_connections[0].input_name,
-                        "value": param.parameter_value,
-                        "exampleOfWork": {"@id": param.workflow_step.uuid.urn},
-                    },
-                )
+            ContextEntity(
+                crate,
+                f"{input_name}-pv",
+                properties={
+                    "@type": "PropertyValue",
+                    "name": input_name,
+                    "value": param.parameter_value,
+                    "exampleOfWork": {"@id": param.workflow_step.uuid.urn},
+                },
             )
+        )

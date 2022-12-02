@@ -2433,14 +2433,12 @@ class WriteCrates:
                 )
 
         workflows_directory = self.workflows_directory
-
         if os.path.exists(workflows_directory):
             for filename in os.listdir(workflows_directory):
                 is_computational_wf = not filename.endswith(".cwl")
                 workflow_cls = ComputationalWorkflow if is_computational_wf else WorkflowDescription
                 lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
                 dest_path = os.path.join("workflows", filename)
-
                 is_main_entity = is_invocation_export and is_computational_wf
                 ro_crate.add_workflow(
                     source=os.path.join(workflows_directory, filename),
