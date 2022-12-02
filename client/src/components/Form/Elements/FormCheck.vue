@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 const emit = defineEmits(["input"]);
 const props = defineProps({
@@ -12,6 +12,7 @@ const props = defineProps({
     },
 });
 const selectAll = ref(false);
+const indeterminate = ref(false);
 
 const currentValue = computed({
     get: () => {
@@ -27,11 +28,6 @@ const hasOptions = computed(() => {
     return props.options.length > 0;
 });
 
-const indeterminate = computed(() => {
-    const valueLength = currentValue.value.length;
-    return valueLength !== 0 && valueLength !== props.options.length;
-});
-
 function onSelectAll() {
     if (selectAll.value) {
         const allValues = props.options.map((option) => option[1]);
@@ -40,6 +36,19 @@ function onSelectAll() {
         emit("input", []);
     }
 }
+
+watch(currentValue, () => {
+    const valueLength = currentValue.value.length;
+    if (valueLength === 0) {
+        selectAll.value = false;
+        indeterminate.value = false;
+    } else if (valueLength === props.options.length) {
+        selectAll.value = true;
+        indeterminate.value = false;
+    } else {
+        indeterminate.value = true;
+    }
+});
 </script>
 
 <template>
