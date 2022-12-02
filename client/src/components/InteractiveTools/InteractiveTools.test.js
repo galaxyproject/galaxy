@@ -18,13 +18,6 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         axiosMock.onGet("/api/entry_points", { params: { running: true } }).reply(200, testInteractiveToolsResponse);
         axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
         wrapper = mount(InteractiveTools, {
-            computed: {
-                currentHistory() {
-                    return {
-                        loadCurrentHistory() {},
-                    };
-                },
-            },
             localVue,
             pinia,
         });
