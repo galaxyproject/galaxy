@@ -29,14 +29,13 @@ describe("FormCheck", () => {
         const inputs = wrapper.findAll("[type='checkbox']");
         const labels = wrapper.findAll(".custom-control-label");
         expect(inputs.length).toBe(n + 1);
-        let value = [];
+        const expectedValues = [];
         for (let i = 0; i < n; i++) {
-            const j = i + 1;
-            await inputs.at(j).setChecked();
-            expect(labels.at(j).text()).toBe(`label_${i}`);
-            expect(inputs.at(j).attributes("value")).toBe(`value_${i}`);
-            value = [...value, `value_${i}`];
-            expect(wrapper.emitted()["input"][i][0]).toEqual(value);
+            await inputs.at(i + 1).setChecked();
+            expect(labels.at(i + 1).text()).toBe(`label_${i}`);
+            expect(inputs.at(i + 1).attributes("value")).toBe(`value_${i}`);
+            expectedValues.push(`value_${i}`);
+            expect(wrapper.emitted()["input"][i][0]).toEqual(expectedValues);
         }
     });
 });
