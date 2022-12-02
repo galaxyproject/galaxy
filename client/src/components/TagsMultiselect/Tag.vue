@@ -24,6 +24,7 @@ function onDelete() {
 }
 
 const named = computed(() => props.option.startsWith("#"));
+const searched = computed(() => props.option.toLowerCase() === props.search.toLowerCase());
 </script>
 
 <script>
@@ -37,7 +38,7 @@ library.add(faTimes);
     <div
         class="tag btn-transparent-background"
         :data-option="props.option"
-        :class="{ editable, clickable }"
+        :class="{ editable, clickable, searched }"
         :style="`--color-primary: ${color.primary}; --color-darker: ${color.darker}; --color-dimmed: ${color.dimmed}`"
         @click.prevent.stop="onClick">
         <span :class="{ 'font-weight-bold': named }">
@@ -100,6 +101,10 @@ library.add(faTimes);
         &:hover {
             background-color: var(--color-dimmed);
         }
+    }
+
+    &.searched {
+        outline: 2px solid $brand-danger;
     }
 }
 </style>
