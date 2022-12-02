@@ -5,16 +5,6 @@ variables:
     restore_cache:
       keys:
         - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-  restore_yarn_cache: &restore_yarn_cache
-    restore_cache:
-      keys:
-        - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-        - yarn-packages-{{ checksum "client/yarn.lock" }}
-  save_yarn_cache: &save_yarn_cache
-    save_cache:
-      key: yarn-packages-{{ checksum "client/yarn.lock" }}
-      paths:
-        - ~/.cache/yarn
   install_tox: &install_tox
     run: pip install tox
   set_workdir: &set_workdir
@@ -91,22 +81,10 @@ jobs:
       - run: sudo apt-get install -y libxml2-utils
       - *install_tox
       - run: tox -e validate_test_tools
-  js_lint:
-    docker:
-      - image: cimg/node:16.15.1
-    <<: *set_workdir
-    steps:
-      - *restore_yarn_cache
-      - run: cd client && yarn install --frozen-lockfile
-      - *save_yarn_cache
-      - run: cd client && yarn run eslint
-      - run: cd client && yarn run format-check
 workflows:
   version: 2
   get_code_and_test:
     jobs:
       - get_code
       - validate_test_tools:
-          <<: *requires_get_code
-      - js_lint:
           <<: *requires_get_code
