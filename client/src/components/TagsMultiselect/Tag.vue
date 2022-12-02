@@ -6,7 +6,6 @@ import { computed } from "vue";
 const props = defineProps({
     option: String,
     search: String,
-    remove: Function,
     editable: Boolean,
     focusable: Boolean,
     clickable: Boolean,
