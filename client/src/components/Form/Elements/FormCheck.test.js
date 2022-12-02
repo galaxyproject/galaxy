@@ -10,7 +10,7 @@ describe("FormCheck", () => {
     beforeEach(() => {
         wrapper = mount(MountTarget, {
             propsData: {
-                value: false,
+                value: null,
                 options: [],
             },
             localVue,
@@ -28,12 +28,15 @@ describe("FormCheck", () => {
         await wrapper.setProps({ options });
         const inputs = wrapper.findAll("[type='checkbox']");
         const labels = wrapper.findAll(".custom-control-label");
-        expect(inputs.length).toBe(n);
+        expect(inputs.length).toBe(n + 1);
+        let value = [];
         for (let i = 0; i < n; i++) {
-            await inputs.at(i).setChecked();
-            expect(labels.at(i).text()).toBe(`label_${i}`);
-            expect(inputs.at(i).attributes("value")).toBe(`value_${i}`);
-            expect(wrapper.emitted()["input"][i][0]).toBe(`value_${i}`);
+            const j = i + 1;
+            await inputs.at(j).setChecked();
+            expect(labels.at(j).text()).toBe(`label_${i}`);
+            expect(inputs.at(j).attributes("value")).toBe(`value_${i}`);
+            value = [...value, `value_${i}`];
+            expect(wrapper.emitted()["input"][i][0]).toEqual(value);
         }
     });
 });
