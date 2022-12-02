@@ -192,7 +192,10 @@ library.add(faTags, faCheck, faTimes, faPlus);
                     {{ slicedTags.length }} more...
                 </b-button>
 
-                <b-tooltip :target="toggleButtonId" placement="bottom">
+                <b-tooltip
+                    :target="toggleButtonId"
+                    custom-class="stateless-tags--tag-preview-tooltip"
+                    placement="bottom">
                     <Tag
                         v-for="tag in slicedTags"
                         :key="tag"
@@ -205,6 +208,12 @@ library.add(faTags, faCheck, faTimes, faPlus);
         </div>
     </div>
 </template>
+
+<style lang="scss">
+.stateless-tags--tag-preview-tooltip {
+    opacity: 1 !important;
+}
+</style>
 
 <style lang="scss" scoped>
 @import "scss/theme/blue.scss";
