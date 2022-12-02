@@ -44,7 +44,8 @@ watchEffect(() => {
 });
 
 const emitSteps = (val) => {
-    emit("new-steps", JSON.parse(val));
+    // TODO: interferes with store
+    // emit("new-steps", JSON.parse(val));
 };
 </script>
 <template>

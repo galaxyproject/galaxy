@@ -1,14 +1,10 @@
+import { useWorkflowStepStore } from "stores/workflowStepStore";
+
 export async function fromSimple(workflow, data, appendData = false) {
-    let offset = 0;
-    if (appendData) {
-        offset = workflow.nodeIndex;
-    } else {
-        workflow.nodeIndex = 0;
-        workflow.name = data.name;
-        workflow.annotation = data.annotation;
-        workflow.license = data.license;
-        workflow.creator = data.creator;
-    }
+    workflow.name = data.name;
+    workflow.annotation = data.annotation;
+    workflow.license = data.license;
+    workflow.creator = data.creator;
     workflow.version = data.version;
     workflow.report = data.report || {};
     Object.values(data.steps).forEach((step) => {
@@ -18,7 +14,10 @@ export async function fromSimple(workflow, data, appendData = false) {
             step.uuid = null;
         }
     });
-    workflow.steps = data.steps;
+    const stepStore = useWorkflowStepStore();
+    Object.entries(data.steps).map(([_, step]) => {
+        stepStore.addStep(step);
+    });
 }
 
 export function toSimple(workflow) {

@@ -39,7 +39,7 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormDisplay :id="formDisplayId" :inputs="inputs" @onChange="onChange" />
+            <FormDisplay :id="formDisplayId" v-if="configForm.inputs" :inputs="inputs" @onChange="onChange" />
             <div v-if="isSubworkflow">
                 <FormOutputLabel
                     v-for="(output, index) in nodeOutputs"

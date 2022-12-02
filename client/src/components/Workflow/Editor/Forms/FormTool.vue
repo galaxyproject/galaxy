@@ -133,7 +133,7 @@ export default {
             return `${this.nodeId}`;
         },
         hasData() {
-            return !!this.configForm;
+            return !!this.configForm?.id;
         },
         errorLabel() {
             return checkLabels(this.nodeId, this.nodeLabel, this.workflow.nodes);

@@ -9,10 +9,10 @@
         :class="classes"
         :style="style"
         @updatePosition="onUpdatePosition"
-        @mouseup="makeActive"
         @move="onMoveTo"
         @pan-by="onPanBy">
-        <div class="node-header unselectable clearfix">
+        <div class="node-header unselectable clearfix" @click="makeActive">
+            <!-- clicking destroy shouldn't also trigger makeActive -->
             <b-button
                 v-b-tooltip.hover
                 class="node-destroy py-0 float-right"
@@ -20,7 +20,7 @@
                 size="sm"
                 aria-label="destroy node"
                 title="Remove"
-                @click="onRemove">
+                @click.prevent.stop="onRemove">
                 <i class="fa fa-times" />
             </b-button>
             <b-button
@@ -58,10 +58,10 @@
             </span>
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error">
+        <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
             {{ errors }}
         </b-alert>
-        <div v-else class="node-body">
+        <div v-else class="node-body" @click="makeActive">
             <loading-span v-if="showLoading" message="Loading details" />
             <node-input
                 v-for="input in inputs"
@@ -108,7 +108,7 @@ import NodeInput from "./NodeInput";
 import NodeOutput from "./NodeOutput";
 import DraggableWrapper from "./DraggablePan";
 import { ActiveOutputs } from "./modules/outputs";
-import { inject, reactive, ref } from "vue";
+import { computed, inject, reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
 
 Vue.use(BootstrapVue);
@@ -162,12 +162,13 @@ export default {
             type: Number,
         },
     },
-    setup() {
+    setup(props) {
         const nodeIOKey = (key, position) => key + position?.left + position?.right;
         const el = ref(null);
         const position = reactive(useElementBounding(el, { windowResize: false }));
         const transform = inject("transform");
-        return { el, position, transform, nodeIOKey };
+        const postJobActions = computed(() => props.step.post_job_actions || {});
+        return { el, position, transform, nodeIOKey, postJobActions };
     },
     data() {
         return {
@@ -176,7 +177,6 @@ export default {
             outputs: [],
             inputTerminals: {},
             outputTerminals: {},
-            postJobActions: {},
             activeOutputs: null,
             errors: null,
             config_form: {},
@@ -340,9 +340,6 @@ export default {
             const outputNames = this.outputs.map((output) => output.name);
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.activeOutputs.filterOutputs(outputNames);
-            // data coming from the workflow editor API has post job actions,
-            // data coming from the build_module call does not (and should not)
-            this.postJobActions = data.post_job_actions || this.postJobActions;
             this.config_form = data.config_form;
         },
         initData(data) {

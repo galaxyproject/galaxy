@@ -206,6 +206,8 @@ import { useConnectionStore } from "stores/workflowConnectionStore";
 
 import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
+import { useWorkflowStepStore } from "stores/workflowStepStore";
+import { storeToRefs } from "pinia";
 
 export default {
     components: {
@@ -251,7 +253,9 @@ export default {
     },
     setup() {
         const connectionsStore = useConnectionStore();
-        return { connectionsStore };
+        const stepStore = useWorkflowStepStore();
+        const { getStepIndex, steps } = storeToRefs(stepStore);
+        return { connectionsStore, stepStore, steps: steps, nodeIndex: getStepIndex };
     },
     data() {
         return {
@@ -260,9 +264,7 @@ export default {
             markdownText: null,
             versions: [],
             parameters: null,
-            steps: {},
             hasChanges: false,
-            nodeIndex: 0,
             datatypesMapper: null,
             datatypes: [],
             report: {},
@@ -358,7 +360,6 @@ export default {
         },
         steps(newSteps, oldSteps) {
             this.hasChanges = true;
-            this.nodeIndex = Math.max(...Object.keys(newSteps).map((k) => parseInt(k))) + 1;
         },
         hasChanges() {
             this.$emit("update:confirmation", this.hasChanges);
@@ -376,20 +377,22 @@ export default {
     },
     methods: {
         onNewSteps(newSteps) {
-            Vue.set(this, "steps", newSteps);
+            Object.entries(newSteps).map(([_, step]) => {
+                this.stepStore.addStep(step);
+            });
         },
-        onUpdateStep(stepId, step) {
-            this.steps[stepId] = step;
+        onUpdateStep(step) {
+            this.stepStore.updateStep(step);
         },
         onUpdateStepPosition(stepId, position) {
-            this.steps[stepId].position.top = position.top;
-            this.steps[stepId].position.left = position.left;
+            const step = { ...this.steps[stepId], position };
+            this.onUpdateStep(step);
         },
         onConnect(connection) {
             this.connectionsStore.addConnection(connection);
         },
         onDisconnect(nodeId, inputName) {
-            delete this.steps[nodeId].input_connections[inputName];
+            // delete this.steps[nodeId].input_connections[inputName];
         },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
@@ -445,7 +448,7 @@ export default {
             }).then((response) => {
                 // TODO: state, inputs and outputs should go to store and data should flow from there,
                 // but complicated by mixing state and presentation details
-                this.steps[node.id].tool_state = response.tool_state;
+                this.onUpdateStep({ ...this.steps[node.id], tool_state: response.tool_state });
                 const newData = Object.assign({}, response, node.step);
                 newData.workflow_outputs = newData.outputs.map((o) => {
                     return {
@@ -460,11 +463,12 @@ export default {
             this.hasChanges = true;
         },
         onChangePostJobActions(nodeId, postJobActions) {
-            Vue.set(this.nodes[nodeId], "postJobActions", postJobActions);
+            const updatedStep = { ...this.steps[nodeId], post_job_actions: postJobActions };
+            this.stepStore.updateStep(updatedStep);
             this.onChange();
         },
         onRemove(nodeId) {
-            Vue.delete(this.steps, nodeId);
+            this.stepStore.removeStep(nodeId);
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
@@ -472,11 +476,9 @@ export default {
             this.onNavigate(editUrl);
         },
         async onClone(node) {
-            const newId = this.nodeIndex++;
             const stepCopy = JSON.parse(JSON.stringify(node.step));
-            await Vue.set(this.steps, newId, {
+            const { id } = this.stepStore.addStep({
                 ...stepCopy,
-                id: newId,
                 uuid: null,
                 label: null,
                 config_form: JSON.parse(JSON.stringify(node.config_form)),
@@ -484,7 +486,7 @@ export default {
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
-            this.$store.commit("workflowState/setActiveNode", newId);
+            this.$store.commit("workflowState/setActiveNode", id);
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
@@ -565,19 +567,21 @@ export default {
             this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {
-            const step = this.steps[nodeId];
-            step.annotation = newAnnotation;
+            const step = { ...this.steps[nodeId], annotation: newAnnotation };
+            this.onUpdateStep(step);
         },
         onSetData(nodeId, newData) {
             const node = this.nodes[nodeId];
             this.lastQueue.enqueue(getModule, newData).then((data) => {
                 // TODO: change data in store, don't change node ...
-                this.steps[nodeId].tool_state = data.tool_state;
+                const step = { ...this.steps[nodeId], tool_state: data.tool_state };
+                this.onUpdateStep(step);
                 node.setData(data);
             });
         },
         onLabel(nodeId, newLabel) {
-            Vue.set(this.steps[nodeId], "label", newLabel);
+            const step = { ...this.steps[nodeId], label: newLabel };
+            this.onUpdateStep(step);
         },
         onScrollTo(nodeId) {
             const node = this.nodes[nodeId];
@@ -660,8 +664,9 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            Vue.set(this.steps, this.nodeIndex++, {
-                id: this.nodeIndex - 1,
+            this.stepStore.addStep({
+                inputs: [],
+                input_connections: [],
                 name: name,
                 content_id: contentId,
                 type: type,

@@ -9,7 +9,7 @@
         <div ref="el" class="canvas-viewport" @drop.prevent @dragover.prevent>
             <d3-zoom id="canvas-container" ref="zoom" @transform="onTransform">
                 <div ref="nodes" class="node-area" :style="nodesStyle">
-                    <WorkflowEdges :steps="steps" :dragging-connection="draggingConnection" />
+                    <WorkflowEdges :dragging-connection="draggingConnection" />
                     <WorkflowNode
                         v-for="(step, key) in steps"
                         :id="step.id"
@@ -28,7 +28,6 @@
                         @onDragConnector="onDragConnector"
                         @onActivate="onActivate"
                         @onDeactivate="onDeactivate"
-                        @onRemove="onRemove"
                         v-on="$listeners" />
                 </div>
             </d3-zoom>
@@ -116,9 +115,6 @@ function onActivate(nodeId) {
 }
 function onDeactivate() {
     setActiveNodeId(null);
-}
-function onRemove(nodeId) {
-    emit("onRemove", nodeId);
 }
 
 function onTransform(newTransform) {

@@ -31,7 +31,7 @@ export default {
                     ...outputPos,
                 };
             }
-            return {};
+            return null;
         },
     },
 };

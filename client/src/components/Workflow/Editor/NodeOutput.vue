@@ -168,7 +168,6 @@ export default {
             stepId: this.getNode().id,
             outputName: this.output.name,
         });
-        this.$emit("onRemove", this.output);
     },
     methods: {
         debugHandler(event) {
