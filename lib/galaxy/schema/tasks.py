@@ -1,4 +1,5 @@
 from typing import Optional
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
@@ -27,12 +28,12 @@ class SetupHistoryExportJob(BaseModel):
 
 
 class PrepareDatasetCollectionDownload(BaseModel):
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     history_dataset_collection_association_id: int
 
 
 class GeneratePdfDownload(BaseModel):
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     # basic markdown - Galaxy directives need to be processed before handing off to this task
     basic_markdown: str
     document_type: PdfDocumentType
@@ -47,14 +48,14 @@ class RequestUser(BaseModel):
 
 class GenerateHistoryDownload(StoreExportPayload):
     history_id: int
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     user: RequestUser
 
 
 class GenerateHistoryContentDownload(StoreExportPayload):
     content_type: HistoryContentType
     content_id: int
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     user: RequestUser
 
 
@@ -64,7 +65,7 @@ class BcoGenerationTaskParametersMixin(BcoGenerationParametersMixin):
 
 class GenerateInvocationDownload(StoreExportPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     user: RequestUser
 
 

@@ -15,6 +15,7 @@ from typing import (
     Set,
     Union,
 )
+from uuid import UUID
 
 from pydantic import (
     AnyHttpUrl,
@@ -3191,7 +3192,7 @@ class AsyncTaskResultSummary(Model):
 
 
 class AsyncFile(Model):
-    storage_request_id: str
+    storage_request_id: UUID
     task: AsyncTaskResultSummary
 
 
