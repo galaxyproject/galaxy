@@ -7,7 +7,6 @@ const props = defineProps({
     option: String,
     search: String,
     editable: Boolean,
-    focusable: Boolean,
     clickable: Boolean,
 });
 
@@ -24,7 +23,7 @@ function onDelete() {
 }
 
 const named = computed(() => props.option.startsWith("#"));
-const searched = computed(() => props.option.toLowerCase() === props.search.toLowerCase());
+const searched = computed(() => props.option.toLowerCase() === props.search?.toLowerCase());
 </script>
 
 <script>
