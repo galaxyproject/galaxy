@@ -27,6 +27,11 @@ const hasOptions = computed(() => {
     return props.options.length > 0;
 });
 
+const indeterminate = computed(() => {
+    const valueLength = currentValue.value.length;
+    return valueLength !== 0 && valueLength !== props.options.length;
+});
+
 function onSelectAll() {
     if (selectAll.value) {
         const allValues = props.options.map((option) => option[1]);
@@ -39,7 +44,15 @@ function onSelectAll() {
 
 <template>
     <div v-if="hasOptions">
-        <b-form-checkbox v-model="selectAll" v-localize @input="onSelectAll"> Select/Unselect all </b-form-checkbox>
+        <b-form-checkbox
+            v-model="selectAll"
+            v-localize
+            size="sm"
+            class="mb-1"
+            :indeterminate="indeterminate"
+            @input="onSelectAll">
+            Select/Unselect all
+        </b-form-checkbox>
         <b-form-checkbox-group v-model="currentValue" stacked>
             <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option[1]">
                 {{ option[0] }}
