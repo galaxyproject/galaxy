@@ -1124,7 +1124,9 @@ class Text(Data):
         return p_dataproviders.line.FilteredLineDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("regex-line", p_dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset, **settings):
+    def regex_line_dataprovider(
+        self, dataset: "DatasetInstance", **settings
+    ) -> p_dataproviders.line.RegexLineDataProvider:
         """
         Returns an iterator over the dataset's lines
         optionally including/excluding lines that match one or more regex filters.

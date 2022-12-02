@@ -7,6 +7,9 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
+from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
+from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
 from galaxy.util import simplegraph
 from . import (
     data,
@@ -59,9 +62,9 @@ class Xgmml(xml.GenericXml):
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory("node-edge", dataproviders.hierarchy.XMLDataProvider.settings)
-    def node_edge_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("node-edge", XMLDataProvider.settings)
+    def node_edge_dataprovider(self, dataset: "DatasetInstance", **settings) -> "XGMMLGraphDataProvider":
+        dataset_source = DatasetDataProvider(dataset)
         return XGMMLGraphDataProvider(dataset_source, **settings)
 
 
@@ -99,14 +102,14 @@ class Sif(tabular.Tabular):
     def merge(split_files: List[str], output_file: str) -> None:
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory("node-edge", dataproviders.column.ColumnarDataProvider.settings)
-    def node_edge_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("node-edge", ColumnarDataProvider.settings)
+    def node_edge_dataprovider(self, dataset: "DatasetInstance", **settings) -> "SIFGraphDataProvider":
+        dataset_source = DatasetDataProvider(dataset)
         return SIFGraphDataProvider(dataset_source, **settings)
 
 
 # ----------------------------------------------------------------------------- graph specific data providers
-class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
+class XGMMLGraphDataProvider(XMLDataProvider):
     """
     Provide two lists: nodes, edges::
 
@@ -140,7 +143,7 @@ class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
         yield graph.as_dict()
 
 
-class SIFGraphDataProvider(dataproviders.column.ColumnarDataProvider):
+class SIFGraphDataProvider(ColumnarDataProvider):
     """
     Provide two lists: nodes, edges::
 

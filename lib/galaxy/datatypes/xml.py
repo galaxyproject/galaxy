@@ -9,6 +9,8 @@ from typing import (
 )
 
 from galaxy import util
+from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
+from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -78,10 +80,10 @@ class GenericXml(data.Text):
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory("xml", dataproviders.hierarchy.XMLDataProvider.settings)
-    def xml_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.hierarchy.XMLDataProvider(dataset_source, **settings)
+    @dataproviders.decorators.dataprovider_factory("xml", XMLDataProvider.settings)
+    def xml_dataprovider(self, dataset: "DatasetInstance", **settings) -> XMLDataProvider:
+        dataset_source = DatasetDataProvider(dataset)
+        return XMLDataProvider(dataset_source, **settings)
 
 
 @disable_parent_class_sniffing

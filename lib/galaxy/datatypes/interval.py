@@ -21,6 +21,12 @@ from bx.intervals.io import (
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes.data import DatatypeValidation
+from galaxy.datatypes.dataproviders.dataset import (
+    DatasetDataProvider,
+    GenomicRegionDataProvider,
+    IntervalDataProvider,
+    WiggleDataProvider,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -394,25 +400,21 @@ class Interval(Tabular):
         return None
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, **settings)
+    @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
+    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+        return GenomicRegionDataProvider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region-dict", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
+    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("interval", dataproviders.dataset.IntervalDataProvider.settings)
-    def interval_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.IntervalDataProvider(dataset, **settings)
+    @dataproviders.decorators.dataprovider_factory("interval", IntervalDataProvider.settings)
+    def interval_dataprovider(self, dataset: "DatasetInstance", **settings) -> IntervalDataProvider:
+        return IntervalDataProvider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("interval-dict", dataproviders.dataset.IntervalDataProvider.settings)
-    def interval_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("interval-dict", IntervalDataProvider.settings)
+    def interval_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> IntervalDataProvider:
         settings["named_columns"] = True
         return self.interval_dataprovider(dataset, **settings)
 
@@ -1025,25 +1027,21 @@ class Gff(Tabular, _RemoteCallMixin):
 
     # ------------- Dataproviders
     # redefine bc super is Tabular
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, 0, 3, 4, **settings)
+    @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
+    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+        return GenomicRegionDataProvider(dataset, 0, 3, 4, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region-dict", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
+    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("interval", dataproviders.dataset.IntervalDataProvider.settings)
-    def interval_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.IntervalDataProvider(dataset, 0, 3, 4, 6, 2, **settings)
+    @dataproviders.decorators.dataprovider_factory("interval", IntervalDataProvider.settings)
+    def interval_dataprovider(self, dataset: "DatasetInstance", **settings):
+        return IntervalDataProvider(dataset, 0, 3, 4, 6, 2, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("interval-dict", dataproviders.dataset.IntervalDataProvider.settings)
-    def interval_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("interval-dict", IntervalDataProvider.settings)
+    def interval_dict_dataprovider(self, dataset: "DatasetInstance", **settings):
         settings["named_columns"] = True
         return self.interval_dataprovider(dataset, **settings)
 
@@ -1449,16 +1447,16 @@ class Wiggle(Tabular, _RemoteCallMixin):
         return resolution
 
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory("wiggle", dataproviders.dataset.WiggleDataProvider.settings)
-    def wiggle_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.WiggleDataProvider(dataset_source, **settings)
+    @dataproviders.decorators.dataprovider_factory("wiggle", WiggleDataProvider.settings)
+    def wiggle_dataprovider(self, dataset: "DatasetInstance", **settings) -> WiggleDataProvider:
+        dataset_source = DatasetDataProvider(dataset)
+        return WiggleDataProvider(dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("wiggle-dict", dataproviders.dataset.WiggleDataProvider.settings)
-    def wiggle_dict_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("wiggle-dict", WiggleDataProvider.settings)
+    def wiggle_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> WiggleDataProvider:
+        dataset_source = DatasetDataProvider(dataset)
         settings["named_columns"] = True
-        return dataproviders.dataset.WiggleDataProvider(dataset_source, **settings)
+        return WiggleDataProvider(dataset_source, **settings)
 
 
 @build_sniff_from_prefix

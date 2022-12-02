@@ -37,6 +37,21 @@ from galaxy.datatypes.data import (
     GeneratePrimaryFileDataset,
     get_file_peek,
 )
+from galaxy.datatypes.dataproviders.column import (
+    ColumnarDataProvider,
+    DictDataProvider,
+)
+from galaxy.datatypes.dataproviders.dataset import (
+    DatasetDataProvider,
+    SamtoolsDataProvider,
+    SQliteDataDictProvider,
+    SQliteDataProvider,
+    SQliteDataTableProvider,
+)
+from galaxy.datatypes.dataproviders.line import (
+    FilteredLineDataProvider,
+    RegexLineDataProvider,
+)
 from galaxy.datatypes.metadata import (
     DictParameter,
     FileParameter,
@@ -767,29 +782,29 @@ class Bam(BamNative):
     # bam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     # TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
     # TODO: incorporate samtools options to control output: regions first, then flags, etc.
-    @dataproviders.decorators.dataprovider_factory("line", dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> dataproviders.line.FilteredLineDataProvider:
-        samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("line", FilteredLineDataProvider.settings)
+    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> FilteredLineDataProvider:
+        samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
-        return dataproviders.line.FilteredLineDataProvider(samtools_source, **settings)
+        return FilteredLineDataProvider(samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("regex-line", dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset, **settings):
-        samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("regex-line", RegexLineDataProvider.settings)
+    def regex_line_dataprovider(self, dataset: "DatasetInstance", **settings) -> RegexLineDataProvider:
+        samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
-        return dataproviders.line.RegexLineDataProvider(samtools_source, **settings)
+        return RegexLineDataProvider(samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("column", dataproviders.column.ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset, **settings):
-        samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
+    def column_dataprovider(self, dataset: "DatasetInstance", **settings) -> ColumnarDataProvider:
+        samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
-        return dataproviders.column.ColumnarDataProvider(samtools_source, **settings)
+        return ColumnarDataProvider(samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("dict", dataproviders.column.DictDataProvider.settings)
-    def dict_dataprovider(self, dataset, **settings):
-        samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
+    def dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
+        samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
-        return dataproviders.column.DictDataProvider(samtools_source, **settings)
+        return DictDataProvider(samtools_source, **settings)
 
     # these can't be used directly - may need BamColumn, BamDict (Bam metadata -> column/dict)
     # OR - see genomic_region_dataprovider
@@ -803,21 +818,21 @@ class Bam(BamNative):
     #    settings['comment_char'] = '@'
     #    return super().dataset_dict_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("header", dataproviders.line.RegexLineDataProvider.settings)
-    def header_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("header", RegexLineDataProvider.settings)
+    def header_dataprovider(self, dataset: "DatasetInstance", **settings) -> RegexLineDataProvider:
         # in this case we can use an option of samtools view to provide just what we need (w/o regex)
-        samtools_source = dataproviders.dataset.SamtoolsDataProvider(dataset, "-H")
-        return dataproviders.line.RegexLineDataProvider(samtools_source, **settings)
+        samtools_source = SamtoolsDataProvider(dataset, "-H")
+        return RegexLineDataProvider(samtools_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("id-seq-qual", dataproviders.column.DictDataProvider.settings)
-    def id_seq_qual_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("id-seq-qual", DictDataProvider.settings)
+    def id_seq_qual_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
         settings["indeces"] = [0, 9, 10]
         settings["column_types"] = ["str", "str", "str"]
         settings["column_names"] = ["id", "seq", "qual"]
         return self.dict_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("genomic-region", dataproviders.column.ColumnarDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region", ColumnarDataProvider.settings)
+    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> ColumnarDataProvider:
         # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
         # TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
         #   or remove altogether...
@@ -830,20 +845,18 @@ class Bam(BamNative):
         settings["column_types"] = ["str", "int", "int"]
         return self.column_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region-dict", dataproviders.column.DictDataProvider.settings
-    )
-    def genomic_region_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region-dict", DictDataProvider.settings)
+    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
         settings["indeces"] = [2, 3, 3]
         settings["column_types"] = ["str", "int", "int"]
         settings["column_names"] = ["chrom", "start", "end"]
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("samtools")
-    def samtools_dataprovider(self, dataset, **settings):
+    def samtools_dataprovider(self, dataset: "DatasetInstance", **settings) -> SamtoolsDataProvider:
         """Generic samtools interface - all options available through settings."""
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SamtoolsDataProvider(dataset_source, **settings)
+        dataset_source = DatasetDataProvider(dataset)
+        return SamtoolsDataProvider(dataset_source, **settings)
 
 
 class ProBam(Bam):
@@ -2330,22 +2343,20 @@ class SQlite(Binary):
         except Exception:
             return f"SQLite Database ({nice_size(dataset.get_size())})"
 
-    @dataproviders.decorators.dataprovider_factory("sqlite", dataproviders.dataset.SQliteDataProvider.settings)
-    def sqlite_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SQliteDataProvider(dataset_source, **settings)
+    @dataproviders.decorators.dataprovider_factory("sqlite", SQliteDataProvider.settings)
+    def sqlite_dataprovider(self, dataset: "DatasetInstance", **settings) -> SQliteDataProvider:
+        dataset_source = DatasetDataProvider(dataset)
+        return SQliteDataProvider(dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "sqlite-table", dataproviders.dataset.SQliteDataTableProvider.settings
-    )
-    def sqlite_datatableprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SQliteDataTableProvider(dataset_source, **settings)
+    @dataproviders.decorators.dataprovider_factory("sqlite-table", SQliteDataTableProvider.settings)
+    def sqlite_datatableprovider(self, dataset: "DatasetInstance", **settings) -> SQliteDataTableProvider:
+        dataset_source = DatasetDataProvider(dataset)
+        return SQliteDataTableProvider(dataset_source, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("sqlite-dict", dataproviders.dataset.SQliteDataDictProvider.settings)
-    def sqlite_datadictprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.dataset.SQliteDataDictProvider(dataset_source, **settings)
+    @dataproviders.decorators.dataprovider_factory("sqlite-dict", SQliteDataDictProvider.settings)
+    def sqlite_datadictprovider(self, dataset: "DatasetInstance", **settings) -> SQliteDataDictProvider:
+        dataset_source = DatasetDataProvider(dataset)
+        return SQliteDataDictProvider(dataset_source, **settings)
 
 
 class GeminiSQLite(SQlite):
