@@ -174,6 +174,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
                 </span>
             </template>
         </Multiselect>
+
         <div v-else class="pl-1 pb-2">
             <div class="d-inline">
                 <Tag
@@ -193,6 +194,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
                 </b-button>
 
                 <b-tooltip
+                    v-if="slicedTags.length > 0 && !toggledOpen"
                     :target="toggleButtonId"
                     custom-class="stateless-tags--tag-preview-tooltip"
                     placement="bottom">
