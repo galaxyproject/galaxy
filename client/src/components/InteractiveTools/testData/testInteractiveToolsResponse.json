@@ -2,6 +2,7 @@
   {
     "model_class": "InteractiveToolEntryPoint",
     "id": "52e496b945151ee8",
+    "job_id": "b887d74393f85b6d",
     "name": "Jupyter Interactive Tool",
     "active": true,
     "created_time": "2020-02-24T15:59:18.122103",
@@ -11,6 +12,7 @@
   {
     "model_class": "InteractiveToolEntryPoint",
     "id": "b887d74393f85b6d",
+    "job_id": "52e496b945151ee8",
     "name": "AskOmics instance on None",
     "active": true,
     "created_time": "2020-01-24T15:59:22.406480",
