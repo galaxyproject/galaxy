@@ -32,6 +32,7 @@
     "@handsontable/vue": "^2.0.0-beta1",
     "@hirez_io/observer-spy": "^2.1.2",
     "@johmun/vue-tags-input": "^2.1.0",
+    "@pinia/testing": "^0.0.14",
     "@popperjs/core": "^2.11.5",
     "@sentry/browser": "^6.17.4",
     "@vueuse/core": "^9.6.0",

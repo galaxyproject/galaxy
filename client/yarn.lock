@@ -1770,6 +1770,13 @@
     consola "^2.15.0"
     node-fetch "^2.6.7"
 
+"@pinia/testing@^0.0.14":
+  version "0.0.14"
+  resolved "https://registry.yarnpkg.com/@pinia/testing/-/testing-0.0.14.tgz#774791df360a1949c9ea2d8665de35d5a0200251"
+  integrity sha512-ZmZwVNd/NnKYLIfjfuKl0zlJ3UdiXFpsHzSlL6wCeezSlyrqGMxsIQKv0J6fleu38gyCNTPBEipfxrt8V4+VIg==
+  dependencies:
+    vue-demi "*"
+
 "@popperjs/core@^2.11.5":
   version "2.11.5"
   resolved "https://registry.yarnpkg.com/@popperjs/core/-/core-2.11.5.tgz#db5a11bf66bdab39569719555b0f76e138d7bd64"
