@@ -239,6 +239,9 @@ GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
 GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 config/shed_tool_conf.xml) used when testing
                                 installed to tools with -installed.
+GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
+                                is fairly limited and not compatible with parrallel testing
+                                so should be limited to debugging one off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.
@@ -248,6 +251,15 @@ TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
 
+We're tyring annotate API and Selenium tests with the resources they require
+and create to make them more appropriate to run on established Galaxy instances.
+The following variables can be used to disable certain classes of properly tests.
+
+GALAXY_TEST_SKIP_IF_REQUIRES_ADMIN
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_HISTORY
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_LIBRARY
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_USER
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_PUBLISHED_OBJECTS
 EOF
 }
 

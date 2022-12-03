@@ -8,7 +8,7 @@ from .framework import (
 
 
 class TestUserLibraryImport(SeleniumIntegrationTestCase):
-    requires_admin = True
+    run_as_admin = True
     ensure_registered = True
 
     @classmethod
