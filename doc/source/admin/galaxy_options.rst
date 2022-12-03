@@ -1902,7 +1902,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Display the "Galaxy" text in the masthead.
+    This option has been deprecated, use the `logo_src` instead to
+    change the default logo including the galaxy brand title.
 :Default: ``true``
 :Type: bool
 
