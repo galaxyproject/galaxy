@@ -1,4 +1,4 @@
-import { DatatypesMapperModel } from "./model.js";
+import { DatatypesMapperModel } from "./model";
 import { getDatatypes } from "./services";
 
 export async function getDatatypesMapper(upload_only = true) {
