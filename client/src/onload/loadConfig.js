@@ -80,5 +80,5 @@ export function getAppRoot(defaultRoot = "/") {
             console.warn("Unable to find index link in head", err);
         }
     }
-    return root;
+    return (root || "").replace(/\/$/, "");
 }
