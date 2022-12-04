@@ -50,15 +50,18 @@ from galaxy.schema.types import (
     RelativeUrl,
 )
 
-USER_MODEL_CLASS_NAME = "User"
-GROUP_MODEL_CLASS_NAME = "Group"
-HDA_MODEL_CLASS_NAME = "HistoryDatasetAssociation"
-DC_MODEL_CLASS_NAME = "DatasetCollection"
-DCE_MODEL_CLASS_NAME = "DatasetCollectionElement"
-HDCA_MODEL_CLASS_NAME = "HistoryDatasetCollectionAssociation"
-HISTORY_MODEL_CLASS_NAME = "History"
-JOB_MODEL_CLASS_NAME = "Job"
-STORED_WORKFLOW_MODEL_CLASS_NAME = "StoredWorkflow"
+
+class ModelClassName(str, Enum):
+    USER = "User"
+    GROUP = "Group"
+    HDA = "HistoryDatasetAssociation"
+    DC = "DatasetCollection"
+    DCE = "DatasetCollectionElement"
+    HDCA = "HistoryDatasetCollectionAssociation"
+    HISTORY = "History"
+    JOB = "Job"
+    STORED_WORKFLOW = "StoredWorkflow"
+    PAGE = "Page"
 
 
 # Generic and common Field annotations that can be reused across models
@@ -204,13 +207,13 @@ class UserModel(Model):
     active: bool = Field(title="Active", description="User is active")
     deleted: bool = Field(title="Deleted", description="User is deleted")
     last_password_change: Optional[datetime] = Field(title="Last password change", description="")
-    model_class: str = ModelClassField(USER_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.USER], ModelClassField()]
 
 
 class GroupModel(Model):
     """User group model"""
 
-    model_class: str = ModelClassField(GROUP_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.GROUP], ModelClassField()]
     id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
@@ -448,7 +451,7 @@ HdaLddaField = Field(
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
 
-    model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.HDA], ModelClassField()]
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
@@ -557,19 +560,21 @@ class HDADetailed(HDASummary):
     )
     annotation: Optional[str] = AnnotationField
     download_url: RelativeUrl = DownloadUrlField
-    type: str = Field(
-        "file",
-        const=True,
-        title="Type",
-        description="This is always `file` for datasets.",
-    )
-    api_type: str = Field(
-        "file",
-        const=True,
-        title="API Type",
-        description="TODO",
-        deprecated=False,  # TODO: Should this field be deprecated as announced in release 16.04?
-    )
+    type: Annotated[
+        Literal["file"],
+        Field(
+            title="Type",
+            description="This is always `file` for datasets.",
+        ),
+    ] = "file"
+    api_type: Annotated[
+        Literal["file"],
+        Field(
+            title="API Type",
+            description="TODO",
+            deprecated=False,  # TODO: Should this field be deprecated as announced in release 16.04?
+        ),
+    ] = "file"
     created_from_basename: Optional[str] = Field(
         None,
         title="Created from basename",
@@ -600,7 +605,7 @@ class HDAExtended(HDADetailed):
 class DCSummary(Model):
     """Dataset Collection summary information."""
 
-    model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.DC], ModelClassField()]
     id: DecodedDatabaseIdField = EntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -614,7 +619,7 @@ class HDAObject(Model):
     """History Dataset Association Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: str = ModelClassField(HDA_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.HDA], ModelClassField()]
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: DecodedDatabaseIdField = HistoryIdField
@@ -627,7 +632,7 @@ class DCObject(Model):
     """Dataset Collection Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: str = ModelClassField(DC_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.DC], ModelClassField()]
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
     element_count: Optional[int] = ElementCountField
@@ -639,7 +644,7 @@ class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: str = ModelClassField(DCE_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.DCE], ModelClassField()]
     element_index: int = Field(
         ...,
         title="Element Index",
@@ -745,15 +750,14 @@ class HDCJobStateSummary(Model):
 class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
 
-    model_class: str = ModelClassField(
-        HDCA_MODEL_CLASS_NAME
-    )  # TODO: inconsistency? HDASummary does not have model_class only the detailed view has it...
-    type: str = Field(
-        "collection",
-        const=True,
-        title="Type",
-        description="This is always `collection` for dataset collections.",
-    )
+    model_class: Annotated[Literal[ModelClassName.HDCA], ModelClassField()]
+    type: Annotated[
+        Literal["collection"],
+        Field(
+            title="Type",
+            description="This is always `collection` for dataset collections.",
+        ),
+    ] = "collection"
     collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
@@ -904,7 +908,7 @@ class UpdateHistoryContentsPayload(HistoryBase):
 class HistorySummary(HistoryBase):
     """History summary information."""
 
-    model_class: str = ModelClassField(HISTORY_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.HISTORY], ModelClassField()]
     id: DecodedDatabaseIdField = EntityIdField
     name: str = Field(
         ...,
@@ -1467,7 +1471,7 @@ class JobIdResponse(Model):
 
 class JobBaseModel(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: str = ModelClassField(JOB_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.JOB], ModelClassField()]
     tool_id: str = Field(
         ...,
         title="Tool ID",
@@ -1506,21 +1510,24 @@ class JobImportHistoryResponse(JobBaseModel):
     )
 
 
-class JobStateSummary(Model):
+class ItemStateSummary(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model: str = ModelClassField("Job")
     populated_state: DatasetCollection.populated_states = PopulatedStateField
     states: Dict[Job.states, int] = Field(
         {}, title="States", description=("A dictionary of job states and the number of jobs in that state.")
     )
 
 
-class ImplicitCollectionJobsStateSummary(JobStateSummary):
-    model: str = ModelClassField("ImplicitCollectionJobs")
+class JobStateSummary(ItemStateSummary):
+    model: Annotated[Literal["Job"], ModelClassField()]
 
 
-class WorkflowInvocationStateSummary(JobStateSummary):
-    model: str = ModelClassField("WorkflowInvocation")
+class ImplicitCollectionJobsStateSummary(ItemStateSummary):
+    model: Annotated[Literal["ImplicitCollectionJobs"], ModelClassField()]
+
+
+class WorkflowInvocationStateSummary(ItemStateSummary):
+    model: Annotated[Literal["WorkflowInvocation"], ModelClassField()]
 
 
 class JobSummary(JobBaseModel):
@@ -1687,7 +1694,7 @@ class JobFullDetails(JobDetails):
 
 class StoredWorkflowSummary(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: str = ModelClassField(STORED_WORKFLOW_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.STORED_WORKFLOW], ModelClassField()]
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     name: str = Field(
@@ -2176,7 +2183,7 @@ class BasicRoleModel(Model):
 class RoleModel(BasicRoleModel):
     description: Optional[str] = RoleDescriptionField
     url: RelativeUrl = RelativeUrlField
-    model_class: str = ModelClassField("Role")
+    model_class: Annotated[Literal["Role"], ModelClassField()]
 
 
 class RoleDefinitionModel(Model):
@@ -2252,7 +2259,7 @@ class InstalledRepositoryToolShedStatus(Model):
 
 
 class InstalledToolShedRepository(Model):
-    model_class: str = ModelClassField("ToolShedRepository")
+    model_class: Annotated[Literal["ToolShedRepository"], ModelClassField()] = "ToolShedRepository"
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2306,7 +2313,7 @@ class LibraryPermissionScope(str, Enum):
 
 
 class LibraryLegacySummary(Model):
-    model_class: str = ModelClassField("Library")
+    model_class: Annotated[Literal["Library"], ModelClassField()]
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2553,7 +2560,7 @@ class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
 
 
 class LibraryFolderDetails(Model):
-    model_class: str = ModelClassField("LibraryFolder")
+    model_class: Annotated[Literal["LibraryFolder"], ModelClassField()]
     id: LibraryFolderDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2811,11 +2818,15 @@ AnyHistoryContentItem = Union[
 ]
 
 
-AnyJobStateSummary = Union[
-    JobStateSummary,
-    ImplicitCollectionJobsStateSummary,
-    WorkflowInvocationStateSummary,
+AnyJobStateSummary = Annotated[
+    Union[
+        JobStateSummary,
+        ImplicitCollectionJobsStateSummary,
+        WorkflowInvocationStateSummary,
+    ],
+    Field(..., discriminator="model"),
 ]
+
 
 HistoryArchiveExportResult = Union[JobExportHistoryArchiveModel, JobIdResponse]
 
@@ -3202,12 +3213,7 @@ class PageSummary(PageSummaryBase):
         title="ID",
         description="Encoded ID of the Page.",
     )
-    model_class: str = Field(
-        ...,  # Required
-        title="Model class",
-        description="The class of the model associated with the ID.",
-        example="Page",
-    )
+    model_class: Annotated[Literal[ModelClassName.PAGE], ModelClassField()]
     username: str = Field(
         ...,  # Required
         title="Username",

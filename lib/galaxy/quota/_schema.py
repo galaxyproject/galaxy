@@ -5,6 +5,10 @@ from typing import (
 )
 
 from pydantic import Field
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -16,10 +20,12 @@ from galaxy.schema.schema import (
     UserModel,
 )
 
-QUOTA_MODEL_CLASS_NAME = "Quota"
-USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "UserQuotaAssociation"
-GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "GroupQuotaAssociation"
-DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "DefaultQuotaAssociation"
+
+class ModelClassName(str, Enum):
+    QUOTA = "Quota"
+    USER_QUOTA_ASSOCIATION = "UserQuotaAssociation"
+    GROUP_QUOTA_ASSOCIATION = "GroupQuotaAssociation"
+    DEFAULT_QUOTA_ASSOCIATION = "DefaultQuotaAssociation"
 
 
 class QuotaOperation(str, Enum):
@@ -66,7 +72,7 @@ QuotaOperationField = Field(
 
 
 class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: str = ModelClassField(DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.DEFAULT_QUOTA_ASSOCIATION], ModelClassField()]
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -79,7 +85,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
 
 
 class UserQuota(Model):
-    model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.USER_QUOTA_ASSOCIATION], ModelClassField()]
     user: UserModel = Field(
         ...,
         title="User",
@@ -88,7 +94,7 @@ class UserQuota(Model):
 
 
 class GroupQuota(Model):
-    model_class: str = ModelClassField(GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.GROUP_QUOTA_ASSOCIATION], ModelClassField()]
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -99,7 +105,7 @@ class GroupQuota(Model):
 class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
-    model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
+    model_class: Annotated[Literal[ModelClassName.QUOTA], ModelClassField()]
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
