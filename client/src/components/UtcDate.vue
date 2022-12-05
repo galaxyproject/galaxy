@@ -3,12 +3,13 @@ import { formatDistanceToNow, parseISO } from "date-fns";
 import { formatInTimeZone } from "date-fns-tz";
 import { computed } from "vue";
 
-const props = defineProps({
-    date: { type: String, required: true },
-    mode: {
-        type: String,
-        default: "date",
-    },
+interface UtcDateProps {
+    date: string;
+    mode?: "date" | "elapsed" | "pretty";
+}
+
+const props = withDefaults(defineProps<UtcDateProps>(), {
+    mode: "date",
 });
 
 // Component assumes ISO format date, but note that in Galaxy this won't have

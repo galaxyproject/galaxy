@@ -17,6 +17,5 @@ describe("UTCDate component", () => {
 
         await wrapper.setProps({ mode: "pretty" });
         expect(wrapper.text()).toBe("Wednesday Oct 21st 16:29:00 2015 UTC");
-
     });
 });
