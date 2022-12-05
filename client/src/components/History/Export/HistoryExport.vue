@@ -6,13 +6,11 @@ import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
 import ExportRecordTable from "components/Common/ExportRecordTable.vue";
 import ExportOptions from "./ExportOptions.vue";
 import ExportToFileSourceForm from "components/Common/ExportForm.vue";
-import { HistoryExportService } from "./services";
+import { getExportRecords, exportToFileSource, reimportHistoryFromRecord } from "./services";
 import { useTaskMonitor } from "composables/taskMonitor";
 import { useFileSources } from "composables/fileSources";
-import { useShortTermStorage } from "composables/shortTermStorage";
+import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
 import { useConfirmDialog } from "composables/confirmDialog";
-
-const service = new HistoryExportService();
 
 const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
 const { hasWritable: hasWritableFileSources } = useFileSources();
@@ -26,7 +24,7 @@ const props = defineProps({
     },
 });
 
-const exportParams = reactive(service.defaultExportParams);
+const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
 const exportRecords = ref(null);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
@@ -56,7 +54,7 @@ async function updateExports() {
     isLoadingRecords.value = true;
     try {
         errorMessage.value = null;
-        exportRecords.value = await service.getExportRecords(props.historyId);
+        exportRecords.value = await getExportRecords(props.historyId);
         const shouldWaitForTask = latestExportRecord.value?.isPreparing && !isExportTaskRunning.value;
         if (shouldWaitForTask) {
             waitForTask(latestExportRecord.value.taskUUID, 3000);
@@ -67,8 +65,8 @@ async function updateExports() {
     isLoadingRecords.value = false;
 }
 
-async function exportToFileSource(exportDirectory, fileName) {
-    await service.exportToFileSource(props.historyId, exportDirectory, fileName, exportParams);
+async function doExportToFileSource(exportDirectory, fileName) {
+    await exportToFileSource(props.historyId, exportDirectory, fileName, exportParams);
     updateExports();
 }
 
@@ -101,8 +99,7 @@ async function reimportFromRecord(record) {
         `Do you really want to import a new copy of this history exported ${record.elapsedTime}?`
     );
     if (confirmed) {
-        service
-            .reimportHistoryFromRecord(record)
+        reimportHistoryFromRecord(record)
             .then(() => {
                 actionMessageVariant.value = "info";
                 actionMessage.value =
@@ -172,7 +169,7 @@ function updateExportParams(newParams) {
                     <export-to-file-source-form
                         what="history"
                         :clear-input-after-export="true"
-                        @export="exportToFileSource" />
+                        @export="doExportToFileSource" />
                 </b-tab>
             </b-tabs>
         </b-card>
