@@ -690,7 +690,6 @@ class Grid:
         # dictionary that denotes the current filter.
         cur_filter_dict = {}
         for column in self.columns:
-            print("Column:" + str(column.key))
             if column.key:
                 # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
                 # (b) look in kwargs; and (c) look in base filter.

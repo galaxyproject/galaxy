@@ -434,3 +434,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
             f"/repository/view_repository?id={encoded_repository_id}&changeset_revision=nonsensical_changeset"
         )
         self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=[])
+
+    def test_0145_api_browse_repositories_in_category(self):
+        """"""
+        pass
