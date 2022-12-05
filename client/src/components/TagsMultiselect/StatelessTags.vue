@@ -149,7 +149,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
             <template v-slot:caret>
                 <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
                     Add Tags
-                    <FontAwesomeIcon icon="fa-tags"></FontAwesomeIcon>
+                    <FontAwesomeIcon icon="fa-tags" />
                 </b-button>
             </template>
 
@@ -158,17 +158,17 @@ library.add(faTags, faCheck, faTimes, faPlus);
                     <span>{{ option.label ?? option }}</span>
                     <span v-if="tags.includes(option)" class="float-right">
                         <span class="info">
-                            <FontAwesomeIcon class="check-icon" icon="fa-check"></FontAwesomeIcon>
+                            <FontAwesomeIcon class="check-icon" icon="fa-check" fixed-width />
                         </span>
 
                         <span class="info highlighted">
-                            <FontAwesomeIcon class="times-icon" icon="fa-times"></FontAwesomeIcon>
+                            <FontAwesomeIcon class="times-icon" icon="fa-times" fixed-width />
                             <span class="sr-only">remove tag</span>
                         </span>
                     </span>
                     <span v-else class="float-right">
                         <span class="info highlighted">
-                            <FontAwesomeIcon class="plus-icon" icon="fa-plus"></FontAwesomeIcon>
+                            <FontAwesomeIcon class="plus-icon" icon="fa-plus" fixed-width />
                             <span class="sr-only">add tag</span>
                         </span>
                     </span>
@@ -268,8 +268,10 @@ library.add(faTags, faCheck, faTimes, faPlus);
         .multiselect__content-wrapper {
             top: 100%;
             z-index: 800;
-            width: calc(100% - 8px);
-            left: 4px;
+            width: calc(100% - 4px);
+            left: 2px;
+
+            box-shadow: 0 0 6px 0 rgba(3, 0, 34, 0.048), 0 0 4px 0 rgba(3, 0, 34, 0.185);
         }
 
         &.multiselect--above .multiselect__content-wrapper {
@@ -309,7 +311,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
             // custom option wrapper
             .multiselect-option {
                 font-size: $font-size-base;
-                padding: 0.5rem 1rem;
+                padding: 0.5rem;
                 display: inline-block;
                 width: 100%;
                 height: 100%;
