@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 /* global __buildTimestamp__, __license__  */
 /* (injected by webpack) */
 
@@ -6,9 +6,9 @@ import { computed } from "vue";
 
 import { getAppRoot } from "onload/loadConfig";
 import { useConfig } from "composables/config";
-import UtcDate from "components/UtcDate";
-import License from "components/License/License";
-import ExternalLink from "components/ExternalLink";
+import UtcDate from "components/UtcDate.vue";
+import License from "components/License/License.vue";
+import ExternalLink from "components/ExternalLink.vue";
 
 const { config, isLoaded } = useConfig();
 
