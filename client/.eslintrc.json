@@ -58,29 +58,42 @@
         "vuejs-accessibility/mouse-events-have-key-events": "warn",
         "vuejs-accessibility/no-autofocus": "error",
         "vuejs-accessibility/tabindex-no-positive": "error"
-
     },
     "ignorePatterns": ["src/qunit", "src/mocha", "src/libs", "src/nls", "src/legacy"],
-    "overrides": [{
-        "files": ["**/*.ts", "**/*.tsx"],
-        "extends": [
-            "eslint:recommended",
-            "plugin:vue/recommended",
-            "plugin:compat/recommended",
-            "plugin:vuejs-accessibility/recommended",
-            "plugin:@typescript-eslint/eslint-recommended",
-            "plugin:@typescript-eslint/recommended"
-          ],
-          "parser": "@typescript-eslint/parser",
-          "parserOptions": {
-            "ecmaFeatures": { "jsx": true },
-            "ecmaVersion": 2018,
-            "sourceType": "module",
-            "project": "./tsconfig.json"
-          },
-          "rules": {
-            "@typescript-eslint/no-explicit-any": 0
-          },
-          "plugins": ["@typescript-eslint"]
-    }]
+    "overrides": [
+        {
+            "files": ["**/*.vue"],
+            "parser": "vue-eslint-parser",
+            "parserOptions": {
+                "parser": {
+                    "js": "espree",
+                    "ts": "@typescript-eslint/parser"
+                }
+            }
+        },
+        {
+            "files": ["**/*.ts", "**/*.tsx"],
+            "extends": [
+                "eslint:recommended",
+                "plugin:vue/recommended",
+                "plugin:compat/recommended",
+                "plugin:vuejs-accessibility/recommended",
+                "plugin:@typescript-eslint/eslint-recommended",
+                "plugin:@typescript-eslint/recommended"
+            ],
+            "parser": "@typescript-eslint/parser",
+            "parserOptions": {
+                "ecmaFeatures": { "jsx": true },
+                "ecmaVersion": 2020,
+                "sourceType": "module",
+                "extraFileExtensions": [".vue"],
+                "project": "./tsconfig.json"
+            },
+            "rules": {
+                // We don't want to do this long term
+                "@typescript-eslint/no-explicit-any": 0
+            },
+            "plugins": ["@typescript-eslint"]
+        }
+    ]
 }
