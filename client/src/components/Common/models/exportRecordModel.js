@@ -92,7 +92,7 @@ export class ExportRecordModel {
     }
 
     get modelStoreFormat() {
-        return this._data?.export_metadata?.request_data?.payload?.model_store_format;
+        return this._exportParams?.modelStoreFormat;
     }
 
     get exportParams() {
@@ -120,5 +120,9 @@ export class ExportRecordModel {
 
     get hasExpired() {
         return this.canExpire && Date.now() > this.expirationDate;
+    }
+
+    get errorMessage() {
+        return this._data?.export_metadata?.result_data?.error;
     }
 }

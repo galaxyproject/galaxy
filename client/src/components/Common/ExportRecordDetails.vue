@@ -1,6 +1,6 @@
 <script setup>
 import { computed } from "vue";
-import { BCard, BCardTitle } from "bootstrap-vue";
+import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -69,6 +69,7 @@ function onMessageDismissed() {
                     Something failed during this export. Please try again and if the problem persist contact your
                     administrator.
                 </span>
+                <b-alert show variant="danger">{{ props.record.errorMessage }}</b-alert>
             </div>
             <div v-else-if="props.record.isUpToDate" title="Up to date">
                 <font-awesome-icon icon="check-circle" class="text-success record-up-to-date-icon" />
