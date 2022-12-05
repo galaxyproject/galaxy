@@ -424,7 +424,7 @@ class Data(metaclass=DataMeta):
             file_paths.append(dataset.file_name)
         return zip(file_paths, rel_paths)
 
-    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, **kwd):
+    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
         """
         Displays data in central pane if preview is `True`, else handles download.
 
@@ -443,8 +443,8 @@ class Data(metaclass=DataMeta):
         headers["X-Content-Type-Options"] = "nosniff"
         if filename and filename != "index":
             # For files in extra_files_path
-            extra_dir = data.dataset.extra_files_path_name
-            file_path = trans.app.object_store.get_filename(data.dataset, extra_dir=extra_dir, alt_name=filename)
+            extra_dir = dataset.dataset.extra_files_path_name
+            file_path = trans.app.object_store.get_filename(dataset.dataset, extra_dir=extra_dir, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
                     with tempfile.NamedTemporaryFile(
@@ -468,11 +468,11 @@ class Data(metaclass=DataMeta):
                             # levels of the primary dataset.  Something like this is
                             # close, but not quite correct:
                             # href = url_for(controller='dataset', action='display',
-                            # dataset_id=trans.security.encode_id(data.dataset.id),
+                            # dataset_id=trans.security.encode_id(dataset.dataset.id),
                             # preview=preview, filename=fname, to_ext=to_ext)
                             tmp_fh.write(f'<tr bgcolor="{bgcolor}"><td>{escape(fname)}</td></tr>\n')
                         tmp_fh.write("</table></body></html>\n")
-                    return self._yield_user_file_content(trans, data, tmp_file_name, headers), headers
+                    return self._yield_user_file_content(trans, dataset, tmp_file_name, headers), headers
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
@@ -480,25 +480,25 @@ class Data(metaclass=DataMeta):
                     except Exception:
                         mime = "text/plain"
                 self._clean_and_set_mime_type(trans, mime, headers)  # type: ignore[arg-type]
-                return self._yield_user_file_content(trans, data, file_path, headers), headers
+                return self._yield_user_file_content(trans, dataset, file_path, headers), headers
             else:
                 raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
-        self._clean_and_set_mime_type(trans, data.get_mime(), headers)
+        self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
 
-        trans.log_event(f"Display dataset id: {str(data.id)}")
+        trans.log_event(f"Display dataset id: {str(dataset.id)}")
         from galaxy.datatypes import (  # DBTODO REMOVE THIS AT REFACTOR
             binary,
             images,
             text,
         )
 
-        if to_ext or isinstance(data.datatype, binary.Binary):  # Saving the file, or binary file
-            if data.extension in composite_extensions:
-                return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
+        if to_ext or isinstance(dataset.datatype, binary.Binary):  # Saving the file, or binary file
+            if dataset.extension in composite_extensions:
+                return self._archive_composite_dataset(trans, dataset, headers, do_action=kwd.get("do_action", "zip"))
             else:
-                headers["Content-Length"] = str(os.stat(data.file_name).st_size)
+                headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
                 filename = self._download_filename(
-                    data,
+                    dataset,
                     to_ext,
                     hdca=kwd.get("hdca"),
                     element_identifier=kwd.get("element_identifier"),
@@ -508,20 +508,26 @@ class Data(metaclass=DataMeta):
                     "content-type"
                 ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
                 headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-                return open(data.file_name, "rb"), headers
-        if not os.path.exists(data.file_name):
-            raise ObjectNotFound(f"File Not Found ({data.file_name}).")
+                return open(dataset.file_name, "rb"), headers
+        if not os.path.exists(dataset.file_name):
+            raise ObjectNotFound(f"File Not Found ({dataset.file_name}).")
         max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
-        if isinstance(data.datatype, text.Html):
+        if isinstance(dataset.datatype, text.Html):
             max_peek_size = 10000000  # 10 MB for html
         preview = util.string_as_bool(preview)
-        if not preview or isinstance(data.datatype, images.Image) or os.stat(data.file_name).st_size < max_peek_size:
-            return self._yield_user_file_content(trans, data, data.file_name, headers), headers
+        if (
+            not preview
+            or isinstance(dataset.datatype, images.Image)
+            or os.stat(dataset.file_name).st_size < max_peek_size
+        ):
+            return self._yield_user_file_content(trans, dataset, dataset.file_name, headers), headers
         else:
             headers["content-type"] = "text/html"
             return (
                 trans.fill_template_mako(
-                    "/dataset/large_file.mako", truncated_data=open(data.file_name, "rb").read(max_peek_size), data=data
+                    "/dataset/large_file.mako",
+                    truncated_data=open(dataset.file_name, "rb").read(max_peek_size),
+                    dataset=dataset,
                 ),
                 headers,
             )
