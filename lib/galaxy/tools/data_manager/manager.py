@@ -3,13 +3,23 @@ import json
 import logging
 import os
 from typing import (
+    Any,
+    cast,
     Dict,
+    List,
     Optional,
 )
 
+from typing_extensions import (
+    Literal,
+    Protocol,
+    TypedDict,
+)
+
 from galaxy import util
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.structured_app import StructuredApp
 from galaxy.tools.data import TabularToolDataTable
+from galaxy.util import Element
 from galaxy.util.template import fill_template
 
 log = logging.getLogger(__name__)
@@ -23,7 +33,7 @@ class DataManagers:
     data_managers: Dict[str, "DataManager"]
     managed_data_tables: Dict[str, "DataManager"]
 
-    def __init__(self, app: MinimalManagerApp, xml_filename=None):
+    def __init__(self, app: StructuredApp, xml_filename=None):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}
@@ -119,11 +129,41 @@ class DataManagers:
                         del self.managed_data_tables[data_table_name]
 
 
+class OutputDataset(Protocol):
+    file_name: str
+    extra_files_path: str
+
+    def extra_files_path_exists(self) -> bool:
+        ...
+
+
+class Tool(Protocol):
+    name: str
+    description: str
+    version: str
+
+
+MoveDict = TypedDict(
+    "MoveDict",
+    {
+        "type": str,
+        "source_base": Optional[str],
+        "source_value": Optional[str],
+        "target_base": Optional[str],
+        "target_value": Optional[str],
+        "relativize_symlinks": bool,
+    },
+)
+RepoInfo = TypedDict("RepoInfo", {"tool_shed": str, "name": str, "owner": str, "installed_changeset_revision": str})
+
+
 class DataManager:
     GUID_TYPE = "data_manager"
     DEFAULT_VERSION = "0.0.1"
 
-    def __init__(self, data_managers, elem=None, tool_path=None):
+    tool: Optional[Tool]
+
+    def __init__(self, data_managers: DataManagers, elem: Element = None, tool_path: Optional[str] = None):
         self.data_managers = data_managers
         self.declared_id = None
         self.name = None
@@ -131,16 +171,16 @@ class DataManager:
         self.version = self.DEFAULT_VERSION
         self.guid = None
         self.tool = None
-        self.data_tables = {}
-        self.output_ref_by_data_table = {}
-        self.move_by_data_table_column = {}
-        self.value_translation_by_data_table_column = {}
-        self.tool_shed_repository_info_dict = None
+        self.data_tables: Dict[str, Dict[str, Any]] = {}
+        self.output_ref_by_data_table: Dict[str, Dict[str, str]] = {}
+        self.move_by_data_table_column: Dict[str, Dict[str, MoveDict]] = {}
+        self.value_translation_by_data_table_column: Dict[str, Dict[str, List[Literal["abspath"]]]] = {}
+        self.tool_shed_repository_info_dict: Optional[RepoInfo] = None
         self.undeclared_tables = False
         if elem is not None:
-            self.load_from_element(elem, tool_path or self.data_managers.tool_path)
+            self._load_from_element(elem, tool_path or self.data_managers.tool_path)
 
-    def load_from_element(self, elem, tool_path):
+    def _load_from_element(self, elem: Element, tool_path: Optional[str]) -> None:
         assert (
             elem.tag == "data_manager"
         ), f'A data manager configuration must have a "data_manager" tag as the root. "{elem.tag}" is present'
@@ -172,12 +212,14 @@ class DataManager:
                 if shed_conf:
                     tool_path = shed_conf.get("tool_path", tool_path)
         assert path is not None, f"A tool file path could not be determined:\n{util.xml_to_string(elem)}"
-        self.load_tool(
+        assert tool_path, "A tool root path is required"
+        self._load_tool(
             os.path.join(tool_path, path),
             guid=tool_guid,
             data_manager_id=self.id,
             tool_shed_repository=tool_shed_repository,
         )
+        assert self.tool
         self.name = elem.get("name", self.tool.name)
         self.description = elem.get("description", self.tool.description)
         self.undeclared_tables = util.asbool(elem.get("undeclared_tables", self.undeclared_tables))
@@ -266,7 +308,7 @@ class DataManager:
     def id(self):
         return self.guid or self.declared_id  # if we have a guid, we will use that as the data_manager id
 
-    def load_tool(
+    def _load_tool(
         self, tool_filename, guid=None, data_manager_id=None, tool_shed_repository_id=None, tool_shed_repository=None
     ):
         toolbox = self.data_managers.app.toolbox
@@ -282,9 +324,9 @@ class DataManager:
         self.tool = tool
         return tool
 
-    def process_result(self, out_data):
-        data_manager_dicts = {}
-        data_manager_dict = {}
+    def process_result(self, out_data: Dict[str, OutputDataset]) -> None:
+        data_manager_dicts: Dict[str, Any] = {}
+        data_manager_dict: Dict[str, Any] = {}
         # TODO: fix this merging below
         for output_name, output_dataset in out_data.items():
             try:
@@ -357,18 +399,14 @@ class DataManager:
                 data_table_value = dict(**data_table_row)  # keep original values here
                 data_table.remove_entry(list(data_table_value.values()))
 
-            self.data_managers.app.queue_worker.send_control_task(
-                "reload_tool_data_tables", noop_self=True, kwargs={"table_name": data_table_name}
-            )
+            self._reload(data_table_name)
         if self.undeclared_tables and data_tables_dict:
             # We handle the data move, by just moving all the data out of the extra files path
             # moving a directory and the target already exists, we move the contents instead
             log.debug("Attempting to add entries for undeclared tables: %s.", ", ".join(data_tables_dict.keys()))
             for ref_file in out_data.values():
                 if ref_file.extra_files_path_exists():
-                    util.move_merge(
-                        ref_file.extra_files_path, self.data_managers.app.config.galaxy_data_manager_data_path
-                    )
+                    util.move_merge(ref_file.extra_files_path, self._data_manager_path)
             path_column_names = ["path"]
             for data_table_name, data_table_values in data_tables_dict.items():
                 data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
@@ -378,13 +416,9 @@ class DataManager:
                     data_table_value = dict(**data_table_row)  # keep original values here
                     for name, value in data_table_row.items():
                         if name in path_column_names:
-                            data_table_value[name] = os.path.abspath(
-                                os.path.join(self.data_managers.app.config.galaxy_data_manager_data_path, value)
-                            )
+                            data_table_value[name] = os.path.abspath(os.path.join(self._data_manager_path, value))
                     data_table.add_entry(data_table_value, persist=True, entry_source=self)
-                self.data_managers.app.queue_worker.send_control_task(
-                    "reload_tool_data_tables", noop_self=True, kwargs={"table_name": data_table_name}
-                )
+                self._reload(data_table_name)
         else:
             for data_table_name, data_table_values in data_tables_dict.items():
                 # tool returned extra data table entries, but data table was not declared in data manager
@@ -405,7 +439,7 @@ class DataManager:
             else:
                 source = fill_template(
                     source,
-                    GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path,
+                    GALAXY_DATA_MANAGER_DATA_PATH=self._data_manager_path,
                     **kwd,
                 ).strip()
             if move_dict["source_value"]:
@@ -413,17 +447,17 @@ class DataManager:
                     source,
                     fill_template(
                         move_dict["source_value"],
-                        GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path,
+                        GALAXY_DATA_MANAGER_DATA_PATH=self._data_manager_path,
                         **kwd,
                     ).strip(),
                 )
             target = move_dict["target_base"]
             if target is None:
-                target = self.data_managers.app.config.galaxy_data_manager_data_path
+                target = self._data_manager_path
             else:
                 target = fill_template(
                     target,
-                    GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path,
+                    GALAXY_DATA_MANAGER_DATA_PATH=self._data_manager_path,
                     **kwd,
                 ).strip()
             if move_dict["target_value"]:
@@ -431,7 +465,7 @@ class DataManager:
                     target,
                     fill_template(
                         move_dict["target_value"],
-                        GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path,
+                        GALAXY_DATA_MANAGER_DATA_PATH=self._data_manager_path,
                         **kwd,
                     ).strip(),
                 )
@@ -463,12 +497,23 @@ class DataManager:
                 if isinstance(value_translation, str):
                     value = fill_template(
                         value_translation,
-                        GALAXY_DATA_MANAGER_DATA_PATH=self.data_managers.app.config.galaxy_data_manager_data_path,
+                        GALAXY_DATA_MANAGER_DATA_PATH=self._data_manager_path,
                         **kwd,
                     ).strip()
                 else:
                     value = value_translation(value)
         return value
 
-    def get_tool_shed_repository_info_dict(self):
-        return self.tool_shed_repository_info_dict
+    @property
+    def _data_manager_path(self) -> str:
+        return self.data_managers.app.config.galaxy_data_manager_data_path
+
+    def _reload(self, data_table_name: str) -> None:
+        self.data_managers.app.queue_worker.send_control_task(
+            "reload_tool_data_tables", noop_self=True, kwargs={"table_name": data_table_name}
+        )
+
+    def get_tool_shed_repository_info_dict(self) -> Optional[dict]:
+        return (
+            cast(dict, self.tool_shed_repository_info_dict) if self.tool_shed_repository_info_dict is not None else None
+        )

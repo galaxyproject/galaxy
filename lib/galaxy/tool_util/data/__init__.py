@@ -237,7 +237,6 @@ class ToolDataTable(Dictifiable):
         other_table: "ToolDataTable",
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source=None,
         **kwd,
     ) -> int:
         raise NotImplementedError("Abstract method")
@@ -416,7 +415,7 @@ class TabularToolDataTable(ToolDataTable):
             if tmp_file is not None:
                 tmp_file.close()
 
-    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, **kwd):
         assert (
             self.columns == other_table.columns
         ), f"Merging tabular data tables with non matching columns is not allowed: {self.name}:{self.columns} != {other_table.name}:{other_table.columns}"
@@ -435,9 +434,7 @@ class TabularToolDataTable(ToolDataTable):
             self.allow_duplicate_entries = False
             self._deduplicate_data()
         # add data entries and return current data table version
-        return self.add_entries(
-            other_table.data, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd
-        )
+        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -601,14 +598,13 @@ class TabularToolDataTable(ToolDataTable):
     def get_filename_for_source(
         self, source: Optional[Union[Dict, "DataManager"]], default: Optional[str] = None
     ) -> Optional[str]:
+        source_repo_info: Optional[dict] = None
         if source:
             # if dict, assume is compatible info dict, otherwise call method
             if isinstance(source, dict):
                 source_repo_info = source
             else:
                 source_repo_info = source.get_tool_shed_repository_info_dict()
-        else:
-            source_repo_info = None
         filename = default
         for name, value in self.filenames.items():
             repo_info = value.get("tool_shed_repository")
