@@ -12,7 +12,7 @@ import ExternalLink from "components/ExternalLink.vue";
 
 const { config, isLoaded } = useConfig();
 
-const clientBuildDate = __buildTimestamp__ || new Date();
+const clientBuildDate = __buildTimestamp__ || new Date().toISOString();
 const apiDocsLink = `${getAppRoot()}api/docs`;
 const galaxyLicense = __license__;
 
