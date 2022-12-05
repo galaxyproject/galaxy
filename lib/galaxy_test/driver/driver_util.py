@@ -743,8 +743,10 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
     # Can't use in-memory celery broker, just fall back to sqlalchemy
     galaxy_config.update({"celery_conf": {"broker_url": None}})
+    state_dir = tempfile.mkdtemp(suffix="state")
     config = {
         "gravity": {
+            "log_dir": os.path.join(state_dir, "log"),
             "gunicorn": {"bind": f"localhost:{port}", "preload": "false"},
             "gx_it_proxy": {
                 "enable": galaxy_config.get("interactivetools_enable", False),
@@ -755,7 +757,6 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         },
         "galaxy": galaxy_config,
     }
-    state_dir = tempfile.mkdtemp(suffix="state")
     with tempfile.NamedTemporaryFile("w", dir=state_dir, delete=False, suffix=".galaxy.yml") as config_fh:
         json.dump(config, config_fh)
     with tempfile.NamedTemporaryFile(delete=True) as socket:
