@@ -20,12 +20,10 @@ from galaxy.schema.schema import (
     UserModel,
 )
 
-
-class ModelClassName(str, Enum):
-    QUOTA = "Quota"
-    USER_QUOTA_ASSOCIATION = "UserQuotaAssociation"
-    GROUP_QUOTA_ASSOCIATION = "GroupQuotaAssociation"
-    DEFAULT_QUOTA_ASSOCIATION = "DefaultQuotaAssociation"
+QUOTA = Literal["Quota"]
+USER_QUOTA_ASSOCIATION = Literal["UserQuotaAssociation"]
+GROUP_QUOTA_ASSOCIATION = Literal["GroupQuotaAssociation"]
+DEFAULT_QUOTA_ASSOCIATION = Literal["DefaultQuotaAssociation"]
 
 
 class QuotaOperation(str, Enum):
@@ -72,7 +70,7 @@ QuotaOperationField = Field(
 
 
 class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: Annotated[Literal[ModelClassName.DEFAULT_QUOTA_ASSOCIATION], ModelClassField()]
+    model_class: Annotated[DEFAULT_QUOTA_ASSOCIATION, ModelClassField()]
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -85,7 +83,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
 
 
 class UserQuota(Model):
-    model_class: Annotated[Literal[ModelClassName.USER_QUOTA_ASSOCIATION], ModelClassField()]
+    model_class: Annotated[USER_QUOTA_ASSOCIATION, ModelClassField()]
     user: UserModel = Field(
         ...,
         title="User",
@@ -94,7 +92,7 @@ class UserQuota(Model):
 
 
 class GroupQuota(Model):
-    model_class: Annotated[Literal[ModelClassName.GROUP_QUOTA_ASSOCIATION], ModelClassField()]
+    model_class: Annotated[GROUP_QUOTA_ASSOCIATION, ModelClassField()]
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -105,7 +103,7 @@ class GroupQuota(Model):
 class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
-    model_class: Annotated[Literal[ModelClassName.QUOTA], ModelClassField()]
+    model_class: Annotated[QUOTA, ModelClassField()]
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",

@@ -50,18 +50,16 @@ from galaxy.schema.types import (
     RelativeUrl,
 )
 
-
-class ModelClassName(str, Enum):
-    USER = "User"
-    GROUP = "Group"
-    HDA = "HistoryDatasetAssociation"
-    DC = "DatasetCollection"
-    DCE = "DatasetCollectionElement"
-    HDCA = "HistoryDatasetCollectionAssociation"
-    HISTORY = "History"
-    JOB = "Job"
-    STORED_WORKFLOW = "StoredWorkflow"
-    PAGE = "Page"
+USER_MODEL_CLASS = Literal["User"]
+GROUP_MODEL_CLASS = Literal["Group"]
+HDA_MODEL_CLASS = Literal["HistoryDatasetAssociation"]
+DC_MODEL_CLASS = Literal["DatasetCollection"]
+DCE_MODEL_CLASS = Literal["DatasetCollectionElement"]
+HDCA_MODEL_CLASS = Literal["HistoryDatasetCollectionAssociation"]
+HISTORY_MODEL_CLASS = Literal["History"]
+JOB_MODEL_CLASS = Literal["Job"]
+STORED_WORKFLOW_MODEL_CLASS = Literal["StoredWorkflow"]
+PAGE_MODEL_CLASS = Literal["Page"]
 
 
 # Generic and common Field annotations that can be reused across models
@@ -207,13 +205,13 @@ class UserModel(Model):
     active: bool = Field(title="Active", description="User is active")
     deleted: bool = Field(title="Deleted", description="User is deleted")
     last_password_change: Optional[datetime] = Field(title="Last password change", description="")
-    model_class: Annotated[Literal[ModelClassName.USER], ModelClassField()]
+    model_class: Annotated[USER_MODEL_CLASS, ModelClassField()]
 
 
 class GroupModel(Model):
     """User group model"""
 
-    model_class: Annotated[Literal[ModelClassName.GROUP], ModelClassField()]
+    model_class: Annotated[GROUP_MODEL_CLASS, ModelClassField()]
     id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
@@ -451,7 +449,7 @@ HdaLddaField = Field(
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
 
-    model_class: Annotated[Literal[ModelClassName.HDA], ModelClassField()]
+    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
@@ -605,7 +603,7 @@ class HDAExtended(HDADetailed):
 class DCSummary(Model):
     """Dataset Collection summary information."""
 
-    model_class: Annotated[Literal[ModelClassName.DC], ModelClassField()]
+    model_class: Annotated[DC_MODEL_CLASS, ModelClassField()]
     id: DecodedDatabaseIdField = EntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -619,7 +617,7 @@ class HDAObject(Model):
     """History Dataset Association Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[Literal[ModelClassName.HDA], ModelClassField()]
+    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: DecodedDatabaseIdField = HistoryIdField
@@ -632,7 +630,7 @@ class DCObject(Model):
     """Dataset Collection Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[Literal[ModelClassName.DC], ModelClassField()]
+    model_class: Annotated[DC_MODEL_CLASS, ModelClassField()]
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
     element_count: Optional[int] = ElementCountField
@@ -644,7 +642,7 @@ class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[Literal[ModelClassName.DCE], ModelClassField()]
+    model_class: Annotated[DCE_MODEL_CLASS, ModelClassField()]
     element_index: int = Field(
         ...,
         title="Element Index",
@@ -750,7 +748,7 @@ class HDCJobStateSummary(Model):
 class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
 
-    model_class: Annotated[Literal[ModelClassName.HDCA], ModelClassField()]
+    model_class: Annotated[HDCA_MODEL_CLASS, ModelClassField()]
     type: Annotated[
         Literal["collection"],
         Field(
@@ -908,7 +906,7 @@ class UpdateHistoryContentsPayload(HistoryBase):
 class HistorySummary(HistoryBase):
     """History summary information."""
 
-    model_class: Annotated[Literal[ModelClassName.HISTORY], ModelClassField()]
+    model_class: Annotated[HISTORY_MODEL_CLASS, ModelClassField()]
     id: DecodedDatabaseIdField = EntityIdField
     name: str = Field(
         ...,
@@ -1471,7 +1469,7 @@ class JobIdResponse(Model):
 
 class JobBaseModel(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[Literal[ModelClassName.JOB], ModelClassField()]
+    model_class: Annotated[JOB_MODEL_CLASS, ModelClassField()]
     tool_id: str = Field(
         ...,
         title="Tool ID",
@@ -1694,7 +1692,7 @@ class JobFullDetails(JobDetails):
 
 class StoredWorkflowSummary(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[Literal[ModelClassName.STORED_WORKFLOW], ModelClassField()]
+    model_class: Annotated[STORED_WORKFLOW_MODEL_CLASS, ModelClassField()]
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     name: str = Field(
@@ -3213,7 +3211,7 @@ class PageSummary(PageSummaryBase):
         title="ID",
         description="Encoded ID of the Page.",
     )
-    model_class: Annotated[Literal[ModelClassName.PAGE], ModelClassField()]
+    model_class: Annotated[PAGE_MODEL_CLASS, ModelClassField()]
     username: str = Field(
         ...,  # Required
         title="Username",
