@@ -23,32 +23,32 @@ export const validAlias = [
 ];
 
 /** Converts user input to backend compatible date. */
-const toDate = (value) => {
+function toDate(value) {
     return Date.parse(value) / 1000;
-};
+}
 
 /** Converts user input for case-insensitive filtering. */
-export const toLower = (value) => {
+export function toLower(value) {
     return String(value).toLowerCase();
-};
+}
 
 /** Converts user input to boolean. */
-export const toBool = (value) => {
+export function toBool(value) {
     return toLower(value) === "true";
-};
+}
 
 /** Converts user input to lower case and strips quotation marks. */
-export const toLowerNoQuotes = (value) => {
+export function toLowerNoQuotes(value) {
     return toLower(value).replaceAll("'", "");
-};
+}
 
 /** Converts name tags starting with '#' to 'name:' */
-export const expandNameTag = (value) => {
+export function expandNameTag(value) {
     if (value && typeof value === "string" && value.startsWith("#")) {
         value = value.replace("#", "name:");
     }
     return toLower(value);
-};
+}
 
 /**
  * Checks if a query value is equal to the item value
@@ -56,7 +56,7 @@ export const expandNameTag = (value) => {
  * @param {*} query parameter if the attribute does not match the server query key
  * @param {*} converter if item attribute value has to be transformed e.g. to a date.
  */
-const equals = (attribute, query = null, converter = null) => {
+function equals(attribute, query = null, converter = null) {
     return {
         attribute,
         converter,
@@ -69,7 +69,7 @@ const equals = (attribute, query = null, converter = null) => {
             return toLower(v) === toLower(q);
         },
     };
-};
+}
 
 /**
  * Checks if a query value is part of the item value
@@ -77,7 +77,7 @@ const equals = (attribute, query = null, converter = null) => {
  * @param {*} query parameter if the attribute does not match the server query key
  * @param {*} converter if item attribute value has to be transformed e.g. to a date.
  */
-const contains = (attribute, query = null, converter = null) => {
+function contains(attribute, query = null, converter = null) {
     return {
         attribute,
         converter,
@@ -90,7 +90,7 @@ const contains = (attribute, query = null, converter = null) => {
             return toLower(v).includes(toLower(q));
         },
     };
-};
+}
 
 /**
  * Checks if a value is greater or smaller than the item value
@@ -98,7 +98,7 @@ const contains = (attribute, query = null, converter = null) => {
  * @param {*} variant specifying the comparison operation e.g. le(<=) and gt(>)
  * @param {*} converter if item attribute value has to be transformed e.g. to a date.
  */
-const compare = (attribute, variant, converter = null) => {
+function compare(attribute, variant, converter = null) {
     return {
         attribute,
         converter,
@@ -120,7 +120,7 @@ const compare = (attribute, variant, converter = null) => {
             }
         },
     };
-};
+}
 
 /** Valid filter fields and handlers which can be used for text searches. */
 export const validFilters = {
@@ -149,7 +149,7 @@ export const validFilters = {
 };
 
 /** Checks if filterSettings have default values. */
-export const containsDefaults = (filterSettings) => {
+export function containsDefaults(filterSettings) {
     const normalized = getDefaults();
     let hasDefaults = true;
     for (const key in normalized) {
@@ -161,19 +161,19 @@ export const containsDefaults = (filterSettings) => {
         }
     }
     return hasDefaults;
-};
+}
 
 /** Normalize defaults by adding the operator to the key identifier */
-export const getDefaults = () => {
+export function getDefaults() {
     const normalized = {};
     Object.entries(defaultFilters).forEach(([key, value]) => {
         normalized[`${key}:`] = value;
     });
     return normalized;
-};
+}
 
 /** Build a text filter from filter settings */
-export const getFilterText = (filterSettings) => {
+export function getFilterText(filterSettings) {
     const normalized = getDefaults();
     const hasDefaults = containsDefaults(filterSettings);
 
@@ -191,10 +191,10 @@ export const getFilterText = (filterSettings) => {
         }
     });
     return newFilterText;
-};
+}
 
 /** Parses single text input into a dict of field->value pairs. */
-export const getFilters = (filterText, useDefaultFilters = true) => {
+export function getFilters(filterText, useDefaultFilters = true) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const matches = filterText.match(pairSplitRE);
     let result = {};
@@ -241,7 +241,7 @@ export const getFilters = (filterText, useDefaultFilters = true) => {
         result = { ...result, ...defaultFilters };
     }
     return Object.entries(result);
-};
+}
 
 /** Returns a dictionary resembling filterSettings (for HistoryFilters):
  * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
@@ -249,7 +249,7 @@ export const getFilters = (filterText, useDefaultFilters = true) => {
  * Only used to sync filterSettings (in HistoryFilters)
  * @param {Object} filters Parsed filterText from getFilters()
  */
-export const toAlias = (filters) => {
+export function toAlias(filters) {
     const result = {};
     for (const [key, value] of filters) {
         let hasAlias = false;
@@ -266,7 +266,7 @@ export const toAlias = (filters) => {
         }
     }
     return result;
-};
+}
 
 /** Returns a dictionary with query key and values.
  * @param {String} filterText The raw filter text
@@ -287,12 +287,12 @@ export function getQueryDict(filterText, useDefaultFilters = true) {
  * @param {String} filterText The raw filter text
  * @param {Boolean} useDefaultFilters The default filters are set if true
  * */
-export const getQueryString = (filterText, useDefaultFilters = true) => {
+export function getQueryString(filterText, useDefaultFilters = true) {
     const filterDict = getQueryDict(filterText, useDefaultFilters);
     return Object.entries(filterDict)
         .map(([f, v]) => `q=${f}&qv=${v}`)
         .join("&");
-};
+}
 
 /** Check the value of a particular filter. */
 export function checkFilter(filterText, filterName, filterValue) {
