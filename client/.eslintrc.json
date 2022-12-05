@@ -62,6 +62,16 @@
     "ignorePatterns": ["src/qunit", "src/mocha", "src/libs", "src/nls", "src/legacy"],
     "overrides": [
         {
+            "files": ["**/*.vue"],
+            "parser": "vue-eslint-parser",
+            "parserOptions": {
+                "parser": {
+                    "js": "espree",
+                    "ts": "@typescript-eslint/parser"
+                }
+            }
+        },
+        {
             "files": ["**/*.ts", "**/*.tsx"],
             "extends": [
                 "eslint:recommended",
