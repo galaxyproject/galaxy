@@ -38,7 +38,6 @@ describe("stores/EntryPointStore", () => {
                 id: "b887d74393f85b6d",
                 job_id: "52e496b945151ee8",
                 name: "Oh there you go, bringing class into it again.",
-                active: false,
                 created_time: "2020-01-24T15:59:22.406480",
                 modified_time: "2020-02-24T15:59:24.757453",
                 target: "http://b887d74393f85b6d-b1fd3f42331a49c1b3d8a4d1b27240b8.interactivetoolentrypoint.interactivetool.localhost:8080/loginapikey/oleg",
@@ -47,6 +46,7 @@ describe("stores/EntryPointStore", () => {
         store.updateEntryPoints(updateData);
         expect(store.entryPoints.length).toBe(1);
         expect(store.entryPoints[0].name === "Oh there you go, bringing class into it again.").toBeTruthy();
+        expect(store.entryPoints[0].active).toBeTruthy();
     });
     it("removes an entry point of given id", async () => {
         let entryPointForId = store.entryPoints.filter((item) => item.id === "52e496b945151ee8");
@@ -57,6 +57,8 @@ describe("stores/EntryPointStore", () => {
     });
     it("retrieves entry point for a given job", async () => {
         const entryPointForJob = store.entryPointsForJob("6fc9fbb81c497f69");
+        expect(entryPointForJob.length).toBe(1);
         expect(entryPointForJob[0].id === "52e496b945151ee8").toBeTruthy();
+        expect(entryPointForJob[0].active).toBeTruthy();
     });
 });
