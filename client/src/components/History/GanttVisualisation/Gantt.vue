@@ -1,13 +1,15 @@
 <template>
     <div>
         <svg id="gantt"></svg>
-        <button id="view" @click="changeQDayView">Quarter Day View</button>
-        <button id="view" @click="changeHDayView">Half Day View</button>
-        <button id="view" @click="changeDayView">Day View</button>
-        <button id="view" @click="changeWeekView">Week View</button>
-        <button id="view" @click="changeMonthView">Month View</button>
-        <button id="view" @click="changeHourView">Hour View</button>
-        <button id="view" @click="changeMinuteView">Minute View</button>
+        <div class="test">
+            <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
+            <button id="HDayView" @click="changeHDayView">Half Day View</button>
+            <button id="dayView" @click="changeDayView">Day View</button>
+            <button id="weekView" @click="changeWeekView">Week View</button>
+            <button id="monthView" @click="changeMonthView">Month View</button>
+            <button id="hourView" @click="changeHourView">Hour View</button>
+            <button id="minuteView" @click="changeMinuteView">Minute View</button>
+        </div>
     </div>
 </template>
 
@@ -26,6 +28,7 @@ export default {
             historyId: null,
             accountingArray: [],
             historyItems: [],
+            currentlyProcessing: false
         };
     },
     computed: {
@@ -40,67 +43,25 @@ export default {
     watch: {
         currentHistoryId(newHistoryId, oldHistoryId) {
             if (newHistoryId !== oldHistoryId) {
+                // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
+                this.currentlyProcessing = false
                 this.historyId = newHistoryId;
-                this.accountingArray = [];
+                // this.accountingArray = [];
                 if (this.historyId !== undefined) {
                     this.getHistoryItems();
                 }
             }
         },
         historyContent(newContent, oldContent) {
-            if (newContent && newContent.length > 0) {
-                this.accountingArray = [];
+            if ( newContent && !this.currentlyProcessing ) {
                 this.historyItems = newContent;
-                if (this.accountingArray.length > 0) {
-                    this.accountingArray = [];
-                }
                 this.getData();
-            }
-        },
-        accountingArray(newArray, oldArray) {
-            if (newArray.length > 0) {
-                var entries = [];
-                newArray.map((row, idx) => {
-                    createClassWithCSS(
-                        `.class-${row["id"]} .bar-progress`,
-                        `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
-                    );
-                    entries.push({
-                        id: idx.toString(),
-                        job_id: row["id"],
-                        name: row["label"],
-                        start: row["startTime"],
-                        end: row["endTime"],
-                        progress: 100,
-                        custom_class: `class-${row["id"]}`,
-                    });
-                });
-                this.gantt = new Gantt("#gantt", entries, {
-                    view_mode: "Day",
-                    view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
-                    arrow_curve: 14,
-                    date_format: "YYYY-MM-DD",
-                    popup_trigger: "mouseover",
-                    custom_popup_html: function (task) {
-                        return `
-          <div class="popover-container">
-            <div class="popover-header">
-              ${task.job_id}: ${task.name}  
-            </div>
-            <div class="popover-body">
-             Started At: ${task.start}
-             <br>
-              Finished At: ${task.end}
-            </div>  
-          </div>
-        `;
-                    },
-                });
             }
         },
     },
     mounted() {
         this.getData();
+        this.createKeyedColorForButtons();
     },
     methods: {
         ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchHistoryItems"]),
@@ -109,31 +70,77 @@ export default {
                 await this.fetchHistoryItems({ historyId: this.historyId, filterText: "", offset: 0 });
             }
         },
+        makeGantt: function () {
+            var entries = [];
+            this.accountingArray.map((row, idx) => {
+                createClassWithCSS(
+                    `.class-${row["id"]} .bar-progress`,
+                    `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
+                );
+                entries.push({
+                    id: idx.toString(),
+                    job_id: row["id"],
+                    name: row["label"],
+                    start: row["startTime"],
+                    end: row["endTime"],
+                    progress: 100,
+                    custom_class: `class-${row["id"]}`,
+                });
+            });
+            this.gantt = new Gantt("#gantt", entries, {
+                view_mode: "Day",
+                view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
+                arrow_curve: 14,
+                date_format: "YYYY-MM-DD",
+                popup_trigger: "mouseover",
+                custom_popup_html: function (task) {
+                return `
+                <div class="popover-container">
+                <div class="popover-header">
+                    ${task.job_id}: ${task.name}  
+                </div>
+                <div class="popover-body">
+                    Started At: ${task.start}
+                    <br>
+                    Finished At: ${task.end}
+                </div>  
+                </div>
+            `;
+        },
+    });
+},
         getData: async function () {
+            this.currentlyProcessing = true
             this.historyId = this.history;
+            this.accountingArray = []
             this.historyItems = store.getters.getHistoryItems({ historyId: this.historyId, filterText: "" });
             if (this.historyItems.length == 0) {
+                this.currentlyProcessing = false
                 this.getHistoryItems();
             }
-            this.historyItems
-                ? this.historyItems.forEach(async (job) => {
-                      var Accounting = {};
+            if( this.historyItems && this.historyItems.length > 0) {
+                    for await (const job of this.historyItems) {
+                    var Accounting = {};
                       if (job.id) {
-                          await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: "hda" });
-                          const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
-                          if (metrics && metrics[1] && metrics[2]) {
-                              Accounting = {
-                                  label: job.name,
-                                  id: job.hid,
-                                  jobid: job.id,
-                                  startTime: metrics[1].value,
-                                  endTime: metrics[2].value,
-                              };
-                              this.accountingArray.push(Accounting);
-                          }
+                        await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: "hda" });
+                        const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
+                        if (metrics && metrics[1] && metrics[2]) {
+                            Accounting = {
+                                label: job.name,
+                                id: job.hid,
+                                jobid: job.id,
+                                startTime: metrics[1].value,
+                                endTime: metrics[2].value,
+                            };
+                            this.accountingArray.push(Accounting);
+                        }
                       }
-                  })
-                : null;
+                    }
+                    if(this.accountingArray.length > 0) {
+                        this.currentlyProcessing = false
+                        this.makeGantt()
+                    }
+            }
         },
         changeQDayView: function () {
             this.gantt.change_view_mode("Quarter Day");
@@ -156,11 +163,61 @@ export default {
         changeMinuteView: function () {
             this.gantt.change_view_mode("Minute");
         },
+        createKeyedColorForButtons: function () {
+            createClassWithCSS(
+                ".QDayView",
+                `background : ${keyedColorScheme("QDayView")["primary"]}; border-color : ${
+                    keyedColorScheme("QDayView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('QDayView').className = 'QDayView';
+            createClassWithCSS(
+                ".HDayView",
+                `background : ${keyedColorScheme("HDayView")["primary"]}; border-color : ${
+                    keyedColorScheme("HDayView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('HDayView').className = 'HDayView';
+            createClassWithCSS(
+                ".dayView",
+                `background : ${keyedColorScheme("dayView")["primary"]}; border-color : ${
+                    keyedColorScheme("dayView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('dayView').className = 'dayView';
+            createClassWithCSS(
+                ".weekView",
+                `background : ${keyedColorScheme("weekView")["primary"]}; border-color : ${
+                    keyedColorScheme("weekView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('weekView').className = 'weekView';
+            createClassWithCSS(
+                ".monthView",
+                `background : ${keyedColorScheme("monthView")["primary"]}; border-color : ${
+                    keyedColorScheme("monthView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('monthView').className = 'monthView';
+            createClassWithCSS(
+                ".hourView",
+                `background : ${keyedColorScheme("hourView")["primary"]}; border-color : ${
+                    keyedColorScheme("hourView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('hourView').className = 'hourView';
+            createClassWithCSS(
+                ".minuteView",
+                `background : ${keyedColorScheme("minuteView")["primary"]}; border-color : ${
+                    keyedColorScheme("minuteView")["darker"]
+                } ; color :"black"`
+            );
+            document.getElementById('minuteView').className = 'minuteView';
+        },
     },
 };
 
 function createClassWithCSS(selector, style) {
-    console.log(" callled with", selector);
     if (!document.styleSheets) return;
     if (document.getElementsByTagName("head").length == 0) return;
 
@@ -252,5 +309,11 @@ function createClassWithCSS(selector, style) {
 
 .gantt .tick {
     stroke: #666;
+}
+.gantt{
+    margin-top: 50px;
+}
+.test {
+    position: fixed;
 }
 </style>
