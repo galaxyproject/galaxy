@@ -13,21 +13,10 @@ const props = defineProps({
 
 // Component assumes ISO format date, but note that in Galaxy this won't have
 // TZinfo -- it will always be Zulu
-const parsedDate = computed(() => {
-    return parseISO(`${props.date}Z`);
-});
-
-const elapsedTime = computed(() => {
-    return formatDistanceToNow(parsedDate.value, { addSuffix: true });
-});
-
-const fullISO = computed(() => {
-    return parsedDate.value.toISOString();
-});
-
-const pretty = computed(() => {
-    return `${formatInTimeZone(parsedDate.value, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`;
-});
+const parsedDate = computed(() => parseISO(`${props.date}Z`));
+const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
+const fullISO = computed(() => parsedDate.value.toISOString());
+const pretty = computed(() => `${formatInTimeZone(parsedDate.value, "Etc/Zulu", "eeee MMM do H:mm:ss yyyy")} UTC`);
 </script>
 <template>
     <span v-if="mode == 'date'" class="utc-time" :title="elapsedTime">
