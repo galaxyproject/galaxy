@@ -60,7 +60,7 @@
 
       ## Logo, layered over tabs to be clickable
       <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" aria-label="homepage" class="navbar-brand">
-          <img alt="logo" class="navbar-brand-image" src="${h.url_for('/static/favicon.png')}">
+          <img alt="logo" class="navbar-brand-image" src="${h.url_for('/static/favicon.ico')}">
           <span class="navbar-brand-title">
           Galaxy Tool Shed
           %if app.config.brand:
