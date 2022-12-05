@@ -15,6 +15,7 @@ import zipfile
 from json import dumps
 from typing import (
     Any,
+    Dict,
     Iterable,
     List,
     Optional,
@@ -79,7 +80,11 @@ from . import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.datatypes.util.complression_utils import FileObjType
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
@@ -634,7 +639,17 @@ class BamNative(CompressedArchive, _BamOrSam):
             offset = -1
         return dumps({"ck_data": util.unicodify(ck_data), "offset": offset})
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
@@ -1966,7 +1981,15 @@ class H5MLM(H5):
         except Exception:
             return "HDF5 Model (%s)" % (nice_size(dataset.get_size()))
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
 
@@ -1974,19 +1997,19 @@ class H5MLM(H5):
             to_ext = to_ext or dataset.extension
             return self._serve_raw(dataset, to_ext, headers, **kwd)
 
-        rval = {}
+        rval_dict: Dict = {}
         try:
             with h5py.File(dataset.file_name, "r") as handle:
-                rval["Attributes"] = {}
+                rval_dict["Attributes"] = {}
                 attributes = handle.attrs
                 for k in set(attributes.keys()) - {"-URL-", "-repr-"}:
-                    rval["Attributes"][k] = util.unicodify(attributes.get(k))
+                    rval_dict["Attributes"][k] = util.unicodify(attributes.get(k))
         except Exception as e:
             log.warning(e)
 
         config = self.get_config_string(dataset.file_name)
-        rval["Config"] = json.loads(config) if config else ""
-        rval = json.dumps(rval, sort_keys=True, indent=2)
+        rval_dict["Config"] = json.loads(config) if config else ""
+        rval = json.dumps(rval_dict, sort_keys=True, indent=2)
         rval = rval[: self.max_preview_size]
 
         repr_ = self.get_repr(dataset.file_name)

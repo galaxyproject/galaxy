@@ -33,7 +33,12 @@ from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from isatools.model import Investigation
+
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 # CONSTANTS {{{1
 ################################################################
@@ -260,7 +265,17 @@ class _Isa(Data):
     # Display data {{{2
     ################################################################
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         """Downloads the ISA dataset if `preview` is `False`;
         if `preview` is `True`, it returns a preview of the ISA dataset as a HTML page.
         The preview is triggered when user clicks on the eye icon of the composite dataset."""

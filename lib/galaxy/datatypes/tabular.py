@@ -66,7 +66,10 @@ from galaxy.util.markdown import (
 from . import dataproviders
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -156,7 +159,17 @@ class TabularData(Text):
             last_read = f.tell()
         return ck_data, last_read
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:

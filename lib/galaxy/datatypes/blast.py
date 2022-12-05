@@ -37,6 +37,7 @@ from typing import (
     Callable,
     Dict,
     List,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -53,7 +54,10 @@ from .data import (
 from .xml import GenericXml
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -207,7 +211,17 @@ class _BlastDb(Data):
         except Exception:
             return "BLAST database (multiple files)"
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         """
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
@@ -220,8 +234,8 @@ class _BlastDb(Data):
                 preview=preview,
                 filename=filename,
                 to_ext=to_ext,
-                size=size,
                 offset=offset,
+                ck_size=ck_size,
                 **kwd,
             )
         if self.file_ext == "blastdbn":
