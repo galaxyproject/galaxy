@@ -1,6 +1,9 @@
-<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="GPU enabled Interactive Jupyter Notebook for Machine Learning" version="0.1" profile="20.09">
+<tool id="interactive_tool_ml_jupyter_notebook" tool_type="interactive" name="GPU enabled Interactive Jupyter Notebook for Machine Learning" version="@VERSION@" profile="22.01">
+    <macros>
+        <token name="@VERSION@">0.2</token>
+    </macros>
     <requirements>
-        <container type="docker">docker.io/anupkumar/docker-ml-jupyterlab:galaxy-integration-0.1</container>
+        <container type="docker">docker.io/anupkumar/docker-ml-jupyterlab:galaxy-integration-@VERSION@</container>
     </requirements>
     <entry_points>
         <entry_point name="GPU enabled Interactive Jupyter Notebook for Machine Learning" requires_domain="True">
@@ -16,71 +19,221 @@
         <environment_variable name="DISABLE_AUTH">true</environment_variable>
         <environment_variable name="API_KEY" inject="api_key" />
     </environment_variables>
-    <command detect_errors="aggressive"><![CDATA[
-        #import re
+    <configfiles>
+        <inputs name="inputs" filename="galaxy_inputs.json" data_style="staging_path_and_source_path"/>
+        <configfile name="staging_script" filename="staging_script.py"><![CDATA[
+import json, os, shutil
+import os.path
+galaxy_inputs = "galaxy_inputs.json"
+galaxy_inputs_raw = "galaxy_inputs_raw.json"
+base_staging_path = "jupyter"
+base_data_staging_path = "galaxy_inputs"
+data_staging_path = os.path.join(base_staging_path, base_data_staging_path)
+os.makedirs(data_staging_path, exist_ok=True)
+shutil.copyfile(galaxy_inputs, os.path.join(data_staging_path, galaxy_inputs_raw))
+galaxy_input_dict = {}
+for user_input in json.load(open(galaxy_inputs, "r")).get("user_inputs", []):
+    input_values = user_input['input_type']['input_value']
+    input_name = user_input["input_name"]
+    assert input_name not in galaxy_input_dict, ValueError("Each name can only be used once, but a duplicate was found: %s" % (input_name))
+    if 'dataset' in user_input['input_type']['input_type_selector']:
+        input_values2 = []
+        if not isinstance(input_values, list):
+            input_values = [input_values]
+        for input_value_dict in input_values:
+            path, filename = os.path.split(input_value_dict['staging_path'])
+            input_value_dict2 = {"path": os.path.join(base_data_staging_path, input_name, path, filename), "metadata_files": []}
+            path = os.path.join(data_staging_path, input_name, path)
+            os.makedirs(path, exist_ok=True)
+            try:
+                os.symlink(input_value_dict['source_path'], os.path.join(path, filename))
+            except FileExistsError:
+                pass
+            for metadata_value_dict in input_value_dict['metadata_files']:
+                path, filename = os.path.split(metadata_value_dict['staging_path'])
+                input_value_dict2["metadata_files"].append(os.path.join(base_data_staging_path, input_name, path, filename))
+                path = os.path.join(data_staging_path, input_name, path)
+                os.makedirs(path, exist_ok=True)
+                try:
+                    os.symlink(metadata_value_dict['source_path'], os.path.join(path, filename))
+                except FileExistsError:
+                    pass
+            input_values2.append(input_value_dict2)
+        input_values = input_values2
+    galaxy_input_dict[input_name] = input_values
+with open(os.path.join(data_staging_path, galaxy_inputs), "w") as fh:
+    json.dump(galaxy_input_dict, fh)
+]]>
+        </configfile>
+        <configfile name="galaxy_input_startup_script"><![CDATA[
+import json, os
+from galaxy_ie_helpers import get
+from galaxy_ie_helpers import put
+from galaxy_ie_helpers import get_galaxy_connection
+HISTORY_ID = os.environ.get('HISTORY_ID', None)
+try:
+    GALAXY_INPUTS = json.load(open(os.path.join(os.environ.get("GALAXY_WORKING_DIR", ""), "jupyter", "galaxy_inputs", "galaxy_inputs.json")))
+except FileNotFoundError:
+    GALAXY_INPUTS = {}
+        ]]>
+    </configfile>
+    </configfiles>
+    
+    <command><![CDATA[
+        python staging_script.py &&
         export GALAXY_WORKING_DIR=`pwd` &&
-        mkdir -p ./jupyter/outputs/ &&
-        mkdir -p ./jupyter/data &&
-        mkdir -p ./jupyter/notebooks &&
-        mkdir -p ./jupyter/elyra &&
-
-        #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($input.element_identifier))
-        ln -sf '$input' './jupyter/data/${cleaned_name}' &&
-
-        ## change into the directory where the notebooks are located
+        mkdir -p ./jupyter/outputs &&
+        mkdir -p ./jupyter/galaxy_inputs &&
         cd ./jupyter/ &&
         export HOME=/home/\$NB_USER/ &&
         export PATH=/home/\$NB_USER/.local/bin:\$PATH &&
+        cp '${galaxy_input_startup_script}' /home/\$NB_USER/.ipython/profile_default/startup/02-load.py &&
+        #set $output_notebook_name = 'jupyterlab_notebook.ipynb'
         #if $mode.mode_select == 'scratch':
-            ## copy all notebooks, workflows and data
-            cp /home/\$NB_USER/home_page.ipynb ./ &&
-            cp /home/\$NB_USER/notebooks/*.ipynb ./notebooks/ &&
-            cp /home/\$NB_USER/elyra/*.* ./elyra/ &&
-            cp /home/\$NB_USER/data/*.tsv ./data/ &&
-            ## provide all rights to copied files
-            chown -R \$NB_USER:users `pwd` &&
-            chown \$NB_USER ./home_page.ipynb &&
-            chown \$NB_USER ./notebooks/ &&
-            chown \$NB_USER ./notebooks/*.ipynb &&
-            chown \$NB_USER ./elyra/ &&
-            chown \$NB_USER ./elyra/*.* &&
-            jupyter trust ./home_page.ipynb &&
-            jupyter trust ./notebooks/*.ipynb &&
-            jupyter trust ./elyra/*.ipynb &&
-            jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True
+            cp -r /home/\$NB_USER/data ./ &&
+            cp -r /home/\$NB_USER/elyra ./ &&
+            cp -r /home/\$NB_USER/notebooks ./ &&
+            cp -r /home/\$NB_USER/usecases ./ &&
+            cp -r /home/\$NB_USER/home_page.ipynb ./ &&
+            jupyter lab --no-browser --NotebookApp.shutdown_button=True
         #else:
-            #set $noteboook_name = re.sub('[^\w\-\.\s]', '_', str($mode.ipynb.element_identifier))
-            cp '$mode.ipynb' './${noteboook_name}.ipynb' &&
-            jupyter trust './${noteboook_name}.ipynb' &&
-            #if $mode.run_it:
-                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
-                #set $noteboook_name = 'ipython_galaxy_notebook'
-            #else:
-                jupyter lab --allow-root --no-browser --NotebookApp.shutdown_button=True &&
+            #import re
+            #set $cleaned_name = re.sub('[^\w\-\.]', '_', str($mode.ipynb.element_identifier))
+            #if not $cleaned_name.endswith(".ipynb"'$jupyter_notebook'):
+                #set $cleaned_name = "%s.ipynb" % $cleaned_name
             #end if
-            cp './${noteboook_name}.ipynb' '$jupyter_notebook'
+            cp '$mode.ipynb' '${cleaned_name}' &&
+            jupyter trust '${cleaned_name}' &&
+
+            #if $mode.run_it:
+                jupyter nbconvert --to notebook --execute --output '${output_notebook_name}' --allow-errors '${cleaned_name}' &&
+                cp '${output_notebook_name}' '$jupyter_notebook'
+            #else:
+                #set $output_notebook_name = $cleaned_name
+                jupyter lab --no-browser --NotebookApp.shutdown_button=True
+            #end if
         #end if
     ]]>
     </command>
     <inputs>
-
         <conditional name="mode">
-            <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
-                <option value="scratch">Start with a fresh notebook</option>
-                <option value="previous">Load a previous notebook</option>
+            <param name="mode_select" type="select" label="Do you already have a notebook?" help="Select a set of default notebooks or load an existing one.">
+                <option value="scratch">Start with default notebooks</option>
+                <option value="previous">Load an existing notebook</option>
             </param>
             <when value="scratch"/>
             <when value="previous">
-                <param name="ipynb" type="data" format="ipynb" label="IPython Notebook"/>
-                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
-                    help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
+                <param name="ipynb" type="data" format="ipynb" label="IPython Notebook" required="true"/>
+                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one." help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
             </when>
         </conditional>
-        <param name="input" type="data" optional="true" label="Include data into the environment"/>
-
+        <repeat name="user_inputs" title="User inputs">
+            <param name="input_name" type="text" value="" label="Name for parameter" optional="False" help="Required. ASCII letters and numbers only.">
+                <validator type="empty_field" message="Name is required"/>
+                <sanitizer>
+                    <valid initial="string.ascii_letters,string.digits"/>
+                </sanitizer>
+            </param>
+            <param name="description" type="text" label="Additional optional description" optional="true"/>
+            <conditional name="input_type">
+                <param name="input_type_selector" type="select" label="Choose the input type">
+                    <option value="dataset" selected="true">Dataset</option>
+                    <option value="dataset_multiple">Multiple datasets</option>
+                    <option value="dataset_collection">Dataset collection</option>
+                    <option value="dataset_collection_list">Dataset collection (list)</option>
+                    <option value="dataset_collection_paired">Dataset collection (paired)</option>
+                    <option value="dataset_collection_list_paired">Dataset collection (list:paired)</option>
+                    <option value="text">Text</option>
+                    <option value="integer">Integer</option>
+                    <option value="float">Floating point</option>
+                    <option value="boolean">Boolean</option>
+                    <option value="color">Color selector</option>
+                    <option value="dataset_optional" selected="true">Optional Dataset</option>
+                    <option value="dataset_multiple_optional">Optional Multiple datasets</option>
+                    <option value="dataset_collection_optional">Optional Dataset collection</option>
+                    <option value="dataset_collection_list_optional">Optional Dataset collection (list)</option>
+                    <option value="dataset_collection_paired_optional">Optional Dataset collection (paired)</option>
+                    <option value="dataset_collection_list_paired_optional">Optional Dataset collection (list:paired)</option>
+                    <option value="text_optional">Optional Text</option>
+                    <option value="integer_optional">Optional Integer</option>
+                    <option value="float_optional">Optional Floating point</option>
+                    <option value="boolean_optional">Optional Boolean</option>
+                    <option value="color_optional">Optional Color selector</option>
+                </param>
+                <when value="dataset">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="false" optional="false"/>
+                </when>
+                <when value="dataset_multiple">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="true" optional="false"/>
+                </when>
+                <when value="dataset_collection">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" optional="false"/>
+                </when>
+                <when value="dataset_collection_list">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list" optional="false"/>
+                </when>
+                <when value="dataset_collection_paired">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="paired" optional="false"/>
+                </when>
+                <when value="dataset_collection_list_paired">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list:paired" optional="false"/>
+                </when>
+                <when value="text">
+                    <param name="input_value" type="text" value="" label="Select value" optional="false"/>
+                </when>
+                <when value="integer">
+                    <param name="input_value" type="integer" value="" label="Select value" optional="false"/>
+                </when>
+                <when value="float">
+                    <param name="input_value" type="float" value="" label="Select value" optional="false"/>
+                </when>
+                <when value="boolean">
+                    <param name="input_value" type="boolean" truevalue="true" falsevalue="false" label="Select value" optional="false"/>
+                </when>
+                <when value="color">
+                    <param name="input_value" type="color" label="Select value" optional="false"/>
+                </when>
+                <when value="dataset_optional">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="false" optional="true"/>
+                </when>
+                <when value="dataset_multiple_optional">
+                    <param name="input_value" type="data" format="data" label="Select value" multiple="true" optional="true"/>
+                </when>
+                <when value="dataset_collection_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" optional="true"/>
+                </when>
+                <when value="dataset_collection_list_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list" optional="true"/>
+                </when>
+                <when value="dataset_collection_paired_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="paired" optional="true"/>
+                </when>
+                <when value="dataset_collection_list_paired_optional">
+                    <param name="input_value" type="data_collection" format="data" label="Select value" collection_type="list:paired" optional="true"/>
+                </when>
+                <when value="text_optional">
+                    <param name="input_value" type="text" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="integer_optional">
+                    <param name="input_value" type="integer" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="float_optional">
+                    <param name="input_value" type="float" value="" label="Select value" optional="true"/>
+                </when>
+                <when value="boolean_optional">
+                    <param name="input_value" type="boolean" truevalue="true" falsevalue="false" label="Select value" optional="true"/>
+                </when>
+                <when value="color_optional">
+                    <param name="input_value" type="color" label="Select value" optional="true"/>
+                </when>
+            </conditional>
+        </repeat>
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="Executed Notebook" />
+        <data name="jupyter_notebook" format="ipynb" label="Executed GPU JupyterLab Notebook"/>
+        <collection name="output_collection" type="list" label="GPU JupyterLab notebook output collection">
+            <discover_datasets pattern="__designation_and_ext__" directory="jupyter/outputs" visible="false"/>
+        </collection>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
@@ -94,10 +247,9 @@
         JupyterLab is a next-generation web-based user interface for Project Jupyter. JupyterLab enables you to work with documents and activities such as Jupyter notebooks, text editors,
         terminals, and custom components in a flexible, integrated, and extensible manner.
 
-        Galaxy offers you to use Jupyter Lab directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
+        Galaxy offers you to use JupyterLab directly in Galaxy accessing and interacting with Galaxy datasets as you like. A very common use-case is to
         do the heavy lifting such as performing computation on GPUs and data reduction steps in Galaxy and the plotting and more `interactive` part on smaller datasets in Jupyter Lab.
 
-        You can start with a new Jupyter Lab notebook from scratch and wait until the job starts running. Running job will provide you a link which can be opened in the same or another
-        browser tab. This link opens Jupyter Lab notebook which can be used to prototype machine learning solutions.
+        You can start with a new JupyterLab notebook from scratch and wait until the job starts running. Running job will provide you a link which can be opened in the same or another browser tab. This link opens JupyterLab notebook which can be used to prototype machine learning solutions.
     ]]></help>
 </tool>
