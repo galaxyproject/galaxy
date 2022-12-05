@@ -122,6 +122,7 @@ library.add(faTags, faCheck, faTimes, faPlus);
             v-if="!disabled"
             ref="multiselectElement"
             placeholder="Add Tags"
+            openDirection="bottom"
             :value="tags"
             :options="userTags"
             :multiple="true"
@@ -267,6 +268,8 @@ library.add(faTags, faCheck, faTimes, faPlus);
         .multiselect__content-wrapper {
             top: 100%;
             z-index: 800;
+            width: calc(100% - 8px);
+            left: 4px;
         }
 
         &.multiselect--above .multiselect__content-wrapper {
