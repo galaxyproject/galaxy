@@ -6793,7 +6793,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
           <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
-       <xs:enumeration value="cuda_runtime_min">
+       <xs:enumeration value="cuda_version_min">
         <xs:annotation>
           <xs:documentation xml:lang="en">Minimum CUDA (runtime link library) runtime version, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
