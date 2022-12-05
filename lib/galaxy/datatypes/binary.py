@@ -1579,7 +1579,7 @@ class Grib(Binary):
         """
         dataset.metadata.grib_edition = self._get_grib_edition(dataset.file_name)
 
-    def _get_grib_edition(self, filename):
+    def _get_grib_edition(self, filename: str) -> int:
         _uint8struct = struct.Struct(b">B")
         edition = 0
         with open(filename, "rb") as f:
@@ -2328,7 +2328,7 @@ class SQlite(Binary):
         except Exception:
             return False
 
-    def sniff_table_names(self, filename, table_names):
+    def sniff_table_names(self, filename: str, table_names: Iterable) -> bool:
         # All table names should be in the schema
         try:
             conn = sqlite.connect(filename)
@@ -3079,7 +3079,7 @@ class RData(CompressedArchive):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith_bytes((self.VERSION_2_PREFIX, self.VERSION_3_PREFIX))
 
-    def _parse_rdata_header(self, fh):
+    def _parse_rdata_header(self, fh: "FileObjType") -> str:
         header = fh.read(7)
         if header == self.VERSION_2_PREFIX:
             return "2"
@@ -3868,7 +3868,7 @@ class BafTar(CompressedArchive):
     edam_format = "format_3712"  # TODO: add more raw formats to EDAM?
     file_ext = "brukerbaf.d.tar"
 
-    def get_signature_file(self):
+    def get_signature_file(self) -> str:
         return "analysis.baf"
 
     def sniff(self, filename: str) -> bool:
@@ -3900,7 +3900,7 @@ class YepTar(BafTar):
 
     file_ext = "agilentbrukeryep.d.tar"
 
-    def get_signature_file(self):
+    def get_signature_file(self) -> str:
         return "analysis.yep"
 
     def get_type(self):
@@ -3912,7 +3912,7 @@ class TdfTar(BafTar):
 
     file_ext = "brukertdf.d.tar"
 
-    def get_signature_file(self):
+    def get_signature_file(self) -> str:
         return "analysis.tdf"
 
     def get_type(self):
@@ -3924,7 +3924,7 @@ class MassHunterTar(BafTar):
 
     file_ext = "agilentmasshunter.d.tar"
 
-    def get_signature_file(self):
+    def get_signature_file(self) -> str:
         return "msscan.bin"
 
     def get_type(self):
@@ -3936,7 +3936,7 @@ class MassLynxTar(BafTar):
 
     file_ext = "watersmasslynx.raw.tar"
 
-    def get_signature_file(self):
+    def get_signature_file(self) -> str:
         return "_func001.dat"
 
     def get_type(self):

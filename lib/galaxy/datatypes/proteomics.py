@@ -441,7 +441,7 @@ class Dta2d(TabularData):
     file_ext = "dta2d"
     comment_lines = 0
 
-    def _parse_header(self, line):
+    def _parse_header(self, line: List) -> Optional[List]:
         if len(line) != 3 or len(line[0]) < 3 or not line[0].startswith("#"):
             return None
         line[0] = line[0].lstrip("#")
@@ -450,7 +450,7 @@ class Dta2d(TabularData):
             return None
         return line
 
-    def _parse_delimiter(self, line):
+    def _parse_delimiter(self, line: str) -> Optional[str]:
         if len(line.split(" ")) == 3:
             return " "
         elif len(line.split("\t")) == 3:
@@ -543,7 +543,7 @@ class Edta(TabularData):
     file_ext = "edta"
     comment_lines = 0
 
-    def _parse_delimiter(self, line):
+    def _parse_delimiter(self, line: str) -> Optional[str]:
         if len(line.split(" ")) >= 3:
             return " "
         elif len(line.split("\t")) >= 3:
@@ -585,7 +585,7 @@ class Edta(TabularData):
             return False
         return True
 
-    def _clean_header(self, line):
+    def _clean_header(self, line: List) -> List:
         for idx, el in enumerate(line):
             el = el.lower()
             if el.startswith("rt"):

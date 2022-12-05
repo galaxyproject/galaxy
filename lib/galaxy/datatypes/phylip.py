@@ -22,6 +22,8 @@ from galaxy.util import nice_size
 from .metadata import MetadataElement
 
 if TYPE_CHECKING:
+    from io import StringIO
+
     from galaxy.model import DatasetInstance
 
 
@@ -58,7 +60,7 @@ class Phylip(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_strict_interleaved(self, nb_seq, seq_length, alignment_prefix):
+    def sniff_strict_interleaved(self, nb_seq: int, seq_length: int, alignment_prefix: "StringIO") -> bool:
         found_seq_length = None
         for _ in range(nb_seq):
             line = alignment_prefix.readline()
@@ -87,10 +89,10 @@ class Phylip(Text):
         # There may be more lines with the remaining parts of the sequences
         return True
 
-    def sniff_strict_sequential(self, nb_seq, seq_length, alignment_prefix):
+    def sniff_strict_sequential(self, nb_seq: int, seq_length: int, alignment_prefix: "StringIO") -> bool:
         raise NotImplementedError
 
-    def sniff_relaxed_interleaved(self, nb_seq, seq_length, alignment_prefix):
+    def sniff_relaxed_interleaved(self, nb_seq: int, seq_length: int, alignment_prefix: "StringIO") -> bool:
         found_seq_length = None
         for _ in range(nb_seq):
             line = alignment_prefix.readline()

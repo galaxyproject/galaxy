@@ -3,6 +3,10 @@ import json
 import subprocess
 import wave
 from functools import lru_cache
+from typing import (
+    List,
+    Tuple,
+)
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -143,7 +147,7 @@ class Video(Binary):
         no_value=0,
     )
 
-    def _get_resolution(self, streams):
+    def _get_resolution(self, streams: List) -> Tuple[int, int, float]:
         for stream in streams:
             if stream["codec_type"] == "video":
                 w = stream["width"]

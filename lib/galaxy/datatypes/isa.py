@@ -13,6 +13,7 @@ import shutil
 import tempfile
 from typing import (
     List,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -71,18 +72,17 @@ class _Isa(Data):
 
     composite_type = "auto_primary_file"
     is_binary = True
-    _main_file_regex = None
 
     # Make investigation instance {{{2
     ################################################################
 
-    def _make_investigation_instance(self, filename):
+    def _make_investigation_instance(self, filename: str) -> "Investigation":
         raise NotImplementedError()
 
     # Constructor {{{2
     ################################################################
 
-    def __init__(self, main_file_regex, **kwd):
+    def __init__(self, main_file_regex: re.Pattern, **kwd) -> None:
         super().__init__(**kwd)
         self._main_file_regex = main_file_regex
 
@@ -119,6 +119,7 @@ class _Isa(Data):
                 raise Exception("Invalid ISA archive. No main file found.")
 
             # Make full path
+            assert main_file
             main_file = os.path.join(isa_folder, main_file)
 
         return main_file
@@ -140,7 +141,7 @@ class _Isa(Data):
     # Find main file in archive {{{2
     ################################################################
 
-    def _find_main_file_in_archive(self, files_list):
+    def _find_main_file_in_archive(self, files_list: List) -> Optional[str]:
         """Find the main file inside the ISA archive."""
 
         found_file = None
@@ -149,7 +150,8 @@ class _Isa(Data):
             match = self._main_file_regex.match(f)
             if match:
                 if found_file is None:
-                    found_file = match.group()
+                    matched = match.group()  # can be string or tuple
+                    found_file = matched if isinstance(matched, str) else matched[0]
                 else:
                     raise Exception(
                         'More than one file match the pattern "',
@@ -347,7 +349,7 @@ class IsaTab(_Isa):
     # Make investigation instance {{{2
     ################################################################
 
-    def _make_investigation_instance(self, filename):
+    def _make_investigation_instance(self, filename: str) -> "Investigation":
 
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
@@ -381,7 +383,7 @@ class IsaJson(_Isa):
     # Make investigation instance {{{2
     ################################################################
 
-    def _make_investigation_instance(self, filename):
+    def _make_investigation_instance(self, filename: str) -> "Investigation":
 
         # Parse JSON file
         with open(filename, newline="", encoding="utf8") as fp:

@@ -7,6 +7,7 @@ Constructive Solid Geometry file formats.
 import abc
 from typing import (
     List,
+    Optional,
     TYPE_CHECKING,
 )
 
@@ -25,6 +26,8 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 
 if TYPE_CHECKING:
+    from io import TextIOBase
+
     from galaxy.model import DatasetInstance
 
 MAX_HEADER_LINES = 500
@@ -69,7 +72,7 @@ class Ply:
             return False
         return True
 
-    def _is_ply_header(self, fh, subtype):
+    def _is_ply_header(self, fh: "TextIOBase", subtype: str) -> bool:
         """
         The header is a series of carriage-return terminated lines of
         text that describe the remainder of the file.
@@ -242,7 +245,7 @@ class Vtk:
             return True
         return False
 
-    def _is_vtk_header(self, fh, subtype):
+    def _is_vtk_header(self, fh: "TextIOBase", subtype: str) -> bool:
         """
         The Header section consists of at least 4, but possibly
         5 lines.  This is tricky because sometimes the 4th line
@@ -676,7 +679,7 @@ class NeperPoints(data.Text):
             with open(dataset.file_name, errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
-    def _get_dimension(self, fh, maxlines=100, sep=None):
+    def _get_dimension(self, fh: "TextIOBase", maxlines: int = 100, sep: Optional[str] = None) -> Optional[float]:
         dim = None
         try:
             for i, line in enumerate(fh):
