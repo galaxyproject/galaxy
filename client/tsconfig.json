@@ -10,6 +10,9 @@
 
         "allowSyntheticDefaultImports": true
     },
-    "include": ["types/*.d.ts", "src/**/*.ts", "src/**/*.tsx", "src/**/*.vue", "tests/**/*.ts"],
+    "vueCompilerOptions": {
+        "target": 2.7
+    },
+    "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"],
     "exclude": ["node_modules"]
 }
