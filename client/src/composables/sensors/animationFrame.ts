@@ -3,7 +3,7 @@ import { onScopeDispose } from "vue";
 type CallbackFunction = (timestamp: number) => void;
 
 const callbacks: CallbackFunction[] = [];
-var loopActive = false;
+let loopActive = false;
 
 function animationFrameLoop(timestamp: number) {
     callbacks.forEach((callback) => {
@@ -29,7 +29,7 @@ export function useAnimationFrame(callback: CallbackFunction) {
     }
 
     const stop = () => {
-        var index = callbacks.indexOf(callback);
+        let index = callbacks.indexOf(callback);
 
         if (index !== -1) {
             callbacks.splice(index, 1);

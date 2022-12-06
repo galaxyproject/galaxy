@@ -10,8 +10,8 @@ export function useAnimationFrameResizeObserver(
     element: MaybeComputedRef<HTMLElement | null>,
     callback: AnimationFrameResizeObserverCallback
 ) {
-    var clientSize = { width: 0, height: 0 };
-    var scrollSize = { width: 0, height: 0 };
+    let clientSize = { width: 0, height: 0 };
+    let scrollSize = { width: 0, height: 0 };
 
     const isSameSize = (a: Size, b: Size) => {
         return a.width === b.width && a.height === b.height;
