@@ -29,7 +29,7 @@ export function useAnimationFrame(callback: CallbackFunction) {
     }
 
     const stop = () => {
-        let index = callbacks.indexOf(callback);
+        const index = callbacks.indexOf(callback);
 
         if (index !== -1) {
             callbacks.splice(index, 1);
