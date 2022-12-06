@@ -313,6 +313,7 @@ mapping:
       tool_dependency_dir:
         type: str
         default: dependencies
+        path_resolves_to: data_dir
         required: false
         desc: |
           Various dependency resolver configuration parameters will have defaults set relative
@@ -322,8 +323,6 @@ mapping:
           Set the string to null to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
-
-          The value of this option will be resolved with respect to <data_dir>.
 
       dependency_resolvers_config_file:
         type: str
@@ -586,6 +585,7 @@ mapping:
       involucro_path:
         type: str
         default: involucro
+        path_resolves_to: tool_dependency_dir
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -593,8 +593,6 @@ mapping:
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
-
-          The value of this option will be resolved with respect to <tool_dependency_dir>.
 
       involucro_auto_init:
         type: bool
