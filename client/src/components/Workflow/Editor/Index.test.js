@@ -60,14 +60,14 @@ describe("Index", () => {
     }
 
     it("resolved datatypes", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         expect(wrapper.datatypesMapper).not.toBeNull();
         expect(wrapper.datatypes).not.toBeNull();
         expect(wrapper.canvasManager).not.toBeNull();
     });
 
     it("routes to run to download URL and respects Galaxy prefix", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         Object.defineProperty(window, "location", {
             value: "original",
             writable: true,
@@ -77,7 +77,7 @@ describe("Index", () => {
     });
 
     it("tracks changes to annotations", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         expect(wrapper.vm.hasChanges).toBeFalsy();
         await wrapper.setData({ annotation: "original annotation" });
         expect(wrapper.vm.hasChanges).toBeTruthy();
@@ -92,7 +92,7 @@ describe("Index", () => {
     });
 
     it("tracks changes to name", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         expect(wrapper.hasChanges).toBeFalsy();
         await wrapper.setData({ name: "original name" });
         expect(wrapper.vm.hasChanges).toBeTruthy();
@@ -107,7 +107,7 @@ describe("Index", () => {
     });
 
     it("prevents navigation only if hasChanges", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         expect(wrapper.vm.hasChanges).toBeFalsy();
         await wrapper.vm.onChange();
         const confirmationRequired = wrapper.emitted()["update:confirmation"][0][0];
