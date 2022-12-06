@@ -89,10 +89,6 @@
                 "extraFileExtensions": [".vue"],
                 "project": "./tsconfig.json"
             },
-            "rules": {
-                // We don't want to do this long term
-                "@typescript-eslint/no-explicit-any": 0
-            },
             "plugins": ["@typescript-eslint"]
         }
     ]
