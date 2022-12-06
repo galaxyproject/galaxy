@@ -1,19 +1,20 @@
-import { fetcher, paths } from "schema";
+import { fetcher } from "schema";
 import { safePath } from "utils/redirect";
+import type { paths } from "schema";
 
 const _getDatasets = fetcher.path("/api/datasets").method("get").create();
-type getDatasetsApiOptions = paths["/api/datasets"]["get"]["parameters"]["query"];
-type getDatasetsQuery = Pick<paths["/api/datasets"]["get"]["parameters"]["query"], "limit" | "offset">;
+type GetDatasetsApiOptions = NonNullable<paths["/api/datasets"]["get"]["parameters"]>["query"];
+type GetDatasetsQuery = Pick<NonNullable<GetDatasetsApiOptions>, "limit" | "offset">;
 // custom interface for how we use getDatasets
-interface getDatasetsOptions extends getDatasetsQuery {
+interface GetDatasetsOptions extends GetDatasetsQuery {
     sortBy?: string;
     sortDesc?: string;
     query?: string;
 }
 
 /** Datasets request helper **/
-export async function getDatasets(options: getDatasetsOptions = {}) {
-    const params: getDatasetsApiOptions = {};
+export async function getDatasets(options: GetDatasetsOptions = {}) {
+    const params: GetDatasetsApiOptions = {};
     if (options.sortBy) {
         const sortPrefix = options.sortDesc ? "-dsc" : "-asc";
         params.order = `${options.sortBy}${sortPrefix}&`;
@@ -64,13 +65,13 @@ export async function updateTags(
     return data;
 }
 
-export function getCompositeDatasetLink(historyDatasetId, path) {
+export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
     // TODO: historyDatasetId is wrong here, we should expose the route without forcing to provide a history id
     return safePath(`/api/histories/${historyDatasetId}/contents/${historyDatasetId}/display?filename=${path}`);
 }
 
 const getDataset = fetcher.path("/api/histories/{history_id}/contents/{id}").method("get").create();
-export async function getCompositeDatasetInfo(id) {
+export async function getCompositeDatasetInfo(id: string) {
     // TODO: ${id} as history id is wrong here, we should expose the route without forcing to provide a history id
     const { data } = await getDataset({ history_id: id, id });
     return data;

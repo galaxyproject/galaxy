@@ -1,4 +1,4 @@
-export function errorMessageAsString(e, defaultMessage = "Request failed.") {
+export function errorMessageAsString(e: any, defaultMessage = "Request failed.") {
     let message = defaultMessage;
     if (e && e.response && e.response.data && e.response.data.err_msg) {
         message = e.response.data.err_msg;
@@ -10,7 +10,7 @@ export function errorMessageAsString(e, defaultMessage = "Request failed.") {
     return message;
 }
 
-export function rethrowSimple(e) {
+export function rethrowSimple(e: any): never {
     console.debug(e);
     throw errorMessageAsString(e);
 }

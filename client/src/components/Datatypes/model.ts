@@ -1,4 +1,4 @@
-import { components } from "schema";
+import type { components } from "schema";
 
 export type DatatypesCombinedMap = components["schemas"]["DatatypesCombinedMap"];
 
@@ -16,9 +16,16 @@ export class DatatypesMapperModel {
 
     isSubType(child: string, parent: string): boolean {
         const mapping = this.datatypesMapping;
-        child = mapping.ext_to_class_name[child];
-        parent = mapping.ext_to_class_name[parent];
-        return mapping.class_to_classes[child] && parent in mapping.class_to_classes[child];
+        const childClassName = mapping.ext_to_class_name[child];
+        const parentClassName = mapping.ext_to_class_name[parent];
+        if (!childClassName || !parentClassName) {
+            return false;
+        }
+        const childClassMappings = mapping.class_to_classes[childClassName];
+        if (!childClassMappings) {
+            return false;
+        }
+        return parentClassName in childClassMappings;
     }
 
     isSubTypeOfAny(child: string, parents: DatatypesCombinedMap["datatypes"]): boolean {
