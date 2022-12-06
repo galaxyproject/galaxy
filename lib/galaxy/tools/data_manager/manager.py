@@ -288,6 +288,7 @@ class DataManager:
         return tool
 
     def process_result(self, out_data: Dict[str, OutputDataset]) -> None:
+        tool_data_tables = self.data_managers.app.tool_data_tables
         data_manager_dicts: Dict[str, Any] = {}
         data_manager_dict: Dict[str, Any] = {}
         # TODO: fix this merging below
@@ -320,7 +321,7 @@ class DataManager:
                     # We don't have an old style data table definition
                     data_table_values = values_to_add
 
-            data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
+            data_table = tool_data_tables.get(data_table_name, None)
             if data_table is None:
                 log.error(
                     f'The data manager "{self.id}" returned an unknown data table "{data_table_name}" with new entries "{data_table_values}". These entries will not be created. Please confirm that an entry for "{data_table_name}" exists in your "tool_data_table_conf.xml" file.'
@@ -372,7 +373,7 @@ class DataManager:
                     util.move_merge(ref_file.extra_files_path, self._data_manager_path)
             path_column_names = ["path"]
             for data_table_name, data_table_values in data_tables_dict.items():
-                data_table = self.data_managers.app.tool_data_tables.get(data_table_name, None)
+                data_table = tool_data_tables.get(data_table_name, None)
                 if not isinstance(data_table_values, list):
                     data_table_values = [data_table_values]
                 for data_table_row in data_table_values:
