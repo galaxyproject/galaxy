@@ -186,7 +186,7 @@ module.exports = {
         "^.+\\.js$": "babel-jest",
         "^.*\\.(vue)$": "@vue/vue2-jest",
         "^.+\\.ya?ml$": "<rootDir>/tests/jest/yaml-jest.js",
-        "^.+\\.txt$": "jest-raw-loader",
+        "^.+\\.txt$": "<rootDir>/tests/jest/jest-raw-loader.js",
     },
 
     // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
