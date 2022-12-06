@@ -1,14 +1,16 @@
-<script setup>
+<script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { keyedColorScheme } from "utils/color";
 import { computed } from "vue";
 
-const props = defineProps({
-    option: String,
-    search: String,
-    editable: Boolean,
-    clickable: Boolean,
-});
+export interface TagProps {
+    option?: string;
+    search?: string;
+    editable?: boolean;
+    clickable?: boolean;
+}
+
+const props = defineProps<TagProps>();
 
 const emit = defineEmits(["click", "deleted"]);
 
@@ -22,14 +24,15 @@ function onDelete() {
     emit("deleted", props.option);
 }
 
-const named = computed(() => props.option.startsWith("#"));
-const searched = computed(() => props.option.toLowerCase() === props.search?.toLowerCase());
+const named = computed(() => props.option?.startsWith("#"));
+const searched = computed(() => props.option?.toLowerCase() === props.search?.toLowerCase());
 </script>
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
+//@ts-ignore bad library types
 library.add(faTimes);
 </script>
 
