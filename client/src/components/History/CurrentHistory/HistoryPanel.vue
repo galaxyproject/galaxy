@@ -166,7 +166,7 @@ import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
-import { Services as DatasetServices } from "components/Dataset/services";
+import { copyDataset } from "components/Dataset/services";
 
 export default {
     components: {
@@ -254,9 +254,6 @@ export default {
             this.filterText = newVal;
         },
     },
-    created() {
-        this.datasetServices = new DatasetServices();
-    },
     methods: {
         ...mapActions("history", ["loadHistoryById"]),
         getHighlight(item) {
@@ -338,8 +335,7 @@ export default {
             const data = JSON.parse(evt.dataTransfer.getData("text"))[0];
             const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
             if (data.history_id != this.historyId) {
-                this.datasetServices
-                    .copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
+                copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
                     .then(() => {
                         if (data.history_content_type === "dataset") {
                             Toast.info("Dataset copied to history");
