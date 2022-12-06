@@ -4,7 +4,7 @@ import { keyedColorScheme } from "utils/color";
 import { computed } from "vue";
 
 export interface TagProps {
-    option?: string;
+    option: string;
     search?: string;
     editable?: boolean;
     clickable?: boolean;
@@ -12,7 +12,10 @@ export interface TagProps {
 
 const props = defineProps<TagProps>();
 
-const emit = defineEmits(["click", "deleted"]);
+const emit = defineEmits<{
+    (e: "click", tag: string): void;
+    (e: "deleted", tag: string): void;
+}>();
 
 const color = computed(() => keyedColorScheme(props.option));
 

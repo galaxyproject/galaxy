@@ -25,7 +25,10 @@ const props = withDefaults(defineProps<StatelessTagsProps>(), {
     maxVisibleTags: 5,
 });
 
-const emit = defineEmits(["input", "tag-click"]);
+const emit = defineEmits<{
+    (e: "input", tags: string[]): void;
+    (e: "tag-click", tag: string): void;
+}>();
 
 const { userTags, addLocalTag } = useUserTags();
 const { warning } = useToast();
@@ -41,7 +44,7 @@ function onAddTag(tag: string) {
     }
 }
 
-function onInput(val: string) {
+function onInput(val: string[]) {
     emit("input", val);
 }
 
