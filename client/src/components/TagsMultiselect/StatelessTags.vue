@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import Multiselect from "vue-multiselect";
 import Tag from "./Tag.vue";
 import { ref, computed } from "vue";
@@ -7,27 +7,22 @@ import { useUserTags } from "composables/user";
 import { useToast } from "composables/toast";
 import { useUid } from "composables/utils/uid";
 
-const props = defineProps({
-    value: {
-        type: Array,
-        default: () => [],
-    },
-    disabled: {
-        type: Boolean,
-        default: false,
-    },
-    clickable: {
-        type: Boolean,
-        default: false,
-    },
-    useToggleLink: {
-        type: Boolean,
-        default: true,
-    },
-    maxVisibleTags: {
-        type: Number,
-        default: 5,
-    },
+import type { Ref } from "vue";
+
+export interface StatelessTagsProps {
+    value: string[];
+    disabled: boolean;
+    clickable: boolean;
+    useToggleLink: boolean;
+    maxVisibleTags: number;
+}
+
+const props = withDefaults(defineProps<StatelessTagsProps>(), {
+    value: () => [],
+    disabled: false,
+    clickable: false,
+    useToggleLink: true,
+    maxVisibleTags: 5,
 });
 
 const emit = defineEmits(["input", "tag-click"]);
@@ -35,7 +30,7 @@ const emit = defineEmits(["input", "tag-click"]);
 const { userTags, addLocalTag } = useUserTags();
 const { warning } = useToast();
 
-function onAddTag(tag) {
+function onAddTag(tag: string) {
     const newTag = tag.trim();
 
     if (isValid(newTag)) {
@@ -46,11 +41,11 @@ function onAddTag(tag) {
     }
 }
 
-function onInput(val) {
+function onInput(val: string) {
     emit("input", val);
 }
 
-function onDelete(tag) {
+function onDelete(tag: string) {
     const val = [...tags.value];
     const index = tags.value.indexOf(tag);
     val.splice(index, 1);
@@ -67,10 +62,11 @@ function onClose() {
     editing.value = false;
 }
 
-const multiselectElement = ref(null);
+const multiselectElement: Ref<Multiselect | null> = ref(null);
 
 function openMultiselect() {
-    multiselectElement.value.activate();
+    //@ts-ignore bad library types
+    multiselectElement.value?.activate();
 }
 
 const tags = computed(() => props.value.map((tag) => tag.replace(/^name:/, "#")));
@@ -96,7 +92,7 @@ const slicedTags = computed(() => {
 
 const invalidTagRegex = /([.:\s][.:\s])|(^[.:])|([.:]$)|(^[\s]*$)/;
 
-function isValid(tag) {
+function isValid(tag: string | { label: string }) {
     if (typeof tag === "string") {
         return !tag.match(invalidTagRegex);
     } else {
@@ -104,15 +100,16 @@ function isValid(tag) {
     }
 }
 
-function onTagClicked(tag) {
+function onTagClicked(tag: string) {
     emit("tag-click", tag);
 }
 </script>
 
-<script>
+<script lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
 
+//@ts-ignore bad library types
 library.add(faTags, faCheck, faTimes, faPlus);
 </script>
 
