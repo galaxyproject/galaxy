@@ -54,7 +54,7 @@ embargo, we will:
 - Patch the oldest release within the 12 month support window, and merge that fix forward.
   - Updates will be available on the `release_XX.YY` branches.
 - Update each release branch
-- Post a notice to the [galaxy-announce mailing list](https://lists.galaxyproject.org/listinfo/galaxy-announce) with:
+- Publish a security advisory on GitHub containing:
   - A description of the issue
   - List of supported versions that are affected
   - Steps to update or patch your Galaxy
