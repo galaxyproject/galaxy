@@ -50,7 +50,10 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.files import ConfiguredFileSources
+from galaxy.files import (
+    ConfiguredFileSources,
+    ProvidesUserFileSourcesUserContext,
+)
 from galaxy.files.uris import stream_url_to_file
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
@@ -1812,6 +1815,7 @@ class DirectoryModelExportStore(ModelExportStore):
         export_files: Optional[str] = None,
         strip_metadata_files: bool = True,
         serialize_jobs: bool = True,
+        user_context=None,
     ) -> None:
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
@@ -1836,6 +1840,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
+        self.user_context = ProvidesUserFileSourcesUserContext(user_context)
         self.file_sources = file_sources
         self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
@@ -2500,7 +2505,7 @@ class BcoModelExportStore(WorkflowInvocationOnlyExportStore):
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file)
+            file_source.write_from(file_source_path.path, self.out_file, user_context=self.user_context)
 
     def _core_biocompute_object_and_object_id(self) -> Tuple[BioComputeObjectCore, str]:
         assert self.app  # need app.security to do anything...
@@ -2725,7 +2730,7 @@ class ROCrateArchiveModelExportStore(DirectoryModelExportStore, WriteCrates):
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(rval), rval
-            file_source.write_from(file_source_path.path, rval)
+            file_source.write_from(file_source_path.path, rval, user_context=self.user_context)
         shutil.rmtree(self.temp_output_dir)
 
 
@@ -2756,7 +2761,7 @@ class TarModelExportStore(DirectoryModelExportStore):
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file)
+            file_source.write_from(file_source_path.path, self.out_file, user_context=self.user_context)
         shutil.rmtree(self.temp_output_dir)
 
 
@@ -2799,12 +2804,16 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(rval)
-            file_source.write_from(file_source_path.path, rval)
+            file_source.write_from(file_source_path.path, rval, user_context=self.user_context)
         shutil.rmtree(self.temp_output_dir)
 
 
 def get_export_store_factory(
-    app, download_format: str, export_files=None, bco_export_options: Optional[BcoExportOptions] = None
+    app,
+    download_format: str,
+    export_files=None,
+    bco_export_options: Optional[BcoExportOptions] = None,
+    user_context=None,
 ) -> Callable[[StrPath], ModelExportStore]:
     export_store_class: Union[
         Type[TarModelExportStore],
@@ -2816,6 +2825,7 @@ def get_export_store_factory(
         "app": app,
         "export_files": export_files,
         "serialize_dataset_objects": False,
+        "user_context": user_context,
     }
     if download_format in ["tar.gz", "tgz"]:
         export_store_class = TarModelExportStore
@@ -2871,10 +2881,11 @@ def imported_store_for_metadata(
 def source_to_import_store(
     source: Union[str, dict],
     app: StoreAppProtocol,
-    galaxy_user: Optional[model.User],
     import_options: Optional[ImportOptions],
     model_store_format: Optional[ModelStoreFormat] = None,
+    user_context=None,
 ) -> ModelImportStore:
+    galaxy_user = user_context.user if user_context else None
     if isinstance(source, dict):
         if model_store_format is not None:
             raise Exception(
@@ -2893,7 +2904,10 @@ def source_to_import_store(
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
-            source_uri = stream_url_to_file(source_uri, app.file_sources, prefix="gx_import_model_store")
+            user_context = ProvidesUserFileSourcesUserContext(user_context)
+            source_uri = stream_url_to_file(
+                source_uri, app.file_sources, prefix="gx_import_model_store", user_context=user_context
+            )
             delete = True
         target_path = source_uri
         if target_path.endswith(".json"):
