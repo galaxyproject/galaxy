@@ -1,7 +1,9 @@
 import { useAnimationFrame } from "./animationFrame";
-import { reactive, ref, unref } from "vue";
+import { reactive, ref } from "vue";
+import type { MaybeComputedRef } from "@vueuse/core";
+import { resolveUnref } from "@vueuse/core";
 
-export function useAnimationFrameScroll(element) {
+export function useAnimationFrameScroll(element: MaybeComputedRef<HTMLElement | null>) {
     const scrollLeft = ref(0);
     const scrollTop = ref(0);
 
@@ -13,7 +15,12 @@ export function useAnimationFrameScroll(element) {
     });
 
     const { stop } = useAnimationFrame(() => {
-        const el = unref(element);
+        const el = resolveUnref(element);
+
+        if (!el) {
+            return;
+        }
+
         const left = el.scrollLeft;
 
         if (left !== scrollLeft.value) {

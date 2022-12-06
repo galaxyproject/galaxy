@@ -1,16 +1,28 @@
 import { useAnimationFrame } from "./animationFrame";
-import { unref } from "vue";
+import type { MaybeComputedRef } from "@vueuse/core";
+import { resolveUnref } from "@vueuse/core";
 
-export function useAnimationFrameResizeObserver(element, callback) {
+export type Size = { width: number; height: number };
+type CallbackValue = { clientSize: Size; scrollSize: Size };
+export type AnimationFrameResizeObserverCallback = (oldValue: CallbackValue, newValue: CallbackValue) => void;
+
+export function useAnimationFrameResizeObserver(
+    element: MaybeComputedRef<HTMLElement | null>,
+    callback: AnimationFrameResizeObserverCallback
+) {
     var clientSize = { width: 0, height: 0 };
     var scrollSize = { width: 0, height: 0 };
 
-    const isSameSize = (a, b) => {
+    const isSameSize = (a: Size, b: Size) => {
         return a.width === b.width && a.height === b.height;
     };
 
     const { stop } = useAnimationFrame(() => {
-        const el = unref(element);
+        const el = resolveUnref(element);
+
+        if (!el) {
+            return;
+        }
 
         const newClientSize = {
             width: el.clientWidth,
