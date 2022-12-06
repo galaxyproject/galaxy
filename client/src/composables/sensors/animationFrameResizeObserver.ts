@@ -4,7 +4,7 @@ import { resolveUnref } from "@vueuse/core";
 
 export type Size = { width: number; height: number };
 type CallbackValue = { clientSize: Size; scrollSize: Size };
-export type AnimationFrameResizeObserverCallback = (oldValue: CallbackValue, newValue: CallbackValue) => void;
+export type AnimationFrameResizeObserverCallback = (newValue: CallbackValue, oldValue: CallbackValue) => void;
 
 export function useAnimationFrameResizeObserver(
     element: MaybeComputedRef<HTMLElement | null>,
