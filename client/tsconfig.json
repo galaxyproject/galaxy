@@ -8,6 +8,7 @@
         "allowJs": true,
         "checkJs": false,
 
+        "outDir": "./dist/build",
         "allowSyntheticDefaultImports": true
     },
     "vueCompilerOptions": {
