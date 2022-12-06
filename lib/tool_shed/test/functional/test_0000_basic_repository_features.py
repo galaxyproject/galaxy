@@ -451,8 +451,12 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
 
         # Browse category 0, assert nothing from category 1 is present.
         expected_category_id = categories[0].id
-        browse_one_category_url = f"/browse_categories?sort=name&operation=repositories_by_category&id={expected_category_id}"
+        browse_one_category_url = (
+            f"/browse_categories?sort=name&operation=repositories_by_category&id={expected_category_id}"
+        )
         self.visit_url(browse_one_category_url)
         expected_strings_displayed = [categories[0].name]
         expected_strings_not_displayed = [categories[1].name]
-        self.check_for_strings(strings_displayed=expected_strings_displayed, strings_not_displayed=expected_strings_not_displayed)
+        self.check_for_strings(
+            strings_displayed=expected_strings_displayed, strings_not_displayed=expected_strings_not_displayed
+        )
