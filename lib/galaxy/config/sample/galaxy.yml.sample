@@ -29,7 +29,7 @@ gravity:
   # What command to write to the process manager configs
   # `gravity` (`galaxyctl exec <service-name>`) is the default
   # `direct` (each service's actual command) is also supported.
-  # Valid options are: gravity, direct, exec
+  # Valid options are: gravity, direct
   # service_command_style: gravity
 
   # Use the process manager's *service instance* functionality for services that can run multiple instances.
@@ -109,11 +109,17 @@ gravity:
     # Consumes less memory when multiple processes are configured. Default is ``false`` if using unicornherder, else ``true``.
     # preload:
 
+    # umask under which service should be executed
+    # umask:
+
     # Value of supervisor startsecs, systemd TimeoutStartSec
     # start_timeout: 15
 
     # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
     # stop_timeout: 65
+
+    # Amount of time to wait for a server to become alive when performing rolling restarts.
+    # restart_timeout: 300
 
     # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
     # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
@@ -240,14 +246,14 @@ gravity:
     # upload_dir:
 
     # Comma-separated string of enabled tusd hooks.
-    # 
+    #
     # Leave at the default value to require authorization at upload creation time.
     # This means Galaxy's web process does not need to be running after creating the initial
     # upload request.
-    # 
+    #
     # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
     # without the Galaxy web process being available.
-    # 
+    #
     # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
     # hooks_enabled_events: pre-create
 
