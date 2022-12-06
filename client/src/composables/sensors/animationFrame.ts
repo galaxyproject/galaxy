@@ -1,9 +1,11 @@
 import { onScopeDispose } from "vue";
 
-const callbacks = [];
+type CallbackFunction = (timestamp: number) => void;
+
+const callbacks: CallbackFunction[] = [];
 var loopActive = false;
 
-function animationFrameLoop(timestamp) {
+function animationFrameLoop(timestamp: number) {
     callbacks.forEach((callback) => {
         callback(timestamp);
     });
@@ -15,10 +17,10 @@ function animationFrameLoop(timestamp) {
  * Runs a callback in the browsers animation loop.
  * This can serve as a performance effective alternative for frequently firing events (eg, scroll events)
  * @see https://developer.mozilla.org/en-US/docs/Web/API/window/requestAnimationFrame
- * @param {function} callback
+ * @param callback
  * @returns a stop function, to remove the callback from the animation loop
  */
-export function useAnimationFrame(callback) {
+export function useAnimationFrame(callback: CallbackFunction) {
     callbacks.push(callback);
 
     if (!loopActive) {
