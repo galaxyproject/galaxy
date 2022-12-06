@@ -1,10 +1,11 @@
 import { fetcher } from "schema";
 import { safePath } from "utils/redirect";
 import type { paths } from "schema";
+import type { FetchArgType } from "openapi-typescript-fetch";
 
 const _getDatasets = fetcher.path("/api/datasets").method("get").create();
-type GetDatasetsApiOptions = NonNullable<paths["/api/datasets"]["get"]["parameters"]>["query"];
-type GetDatasetsQuery = Pick<NonNullable<GetDatasetsApiOptions>, "limit" | "offset">;
+type GetDatasetsApiOptions = FetchArgType<typeof _getDatasets>;
+type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
 // custom interface for how we use getDatasets
 interface GetDatasetsOptions extends GetDatasetsQuery {
     sortBy?: string;
