@@ -84,14 +84,7 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
             success, message, redirect_uri = trans.app.authnz_manager.authenticate(provider, trans)
             if success:
                 return trans.response.send_redirect(redirect_uri)
-        return self.template(
-            trans,
-            "login",
-            redirect=redirect,
-            # an installation may have it's own welcome_url - show it here if they've set that
-            welcome_url=web.url_for(controller="root", action="welcome"),
-            show_welcome_with_login=trans.app.config.show_welcome_with_login,
-        )
+        return trans.response.send_redirect(web.url_for(controller="login", action="start", redirect=redirect))
 
     # ---- Tool related -----------------------------------------------------
 

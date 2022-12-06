@@ -1,10 +1,16 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded content-buttons', contentCls]"
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
         :data-hid="id"
         :data-state="state">
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
+        <div
+            class="p-1 cursor-pointer"
+            draggable
+            tabindex="0"
+            @dragstart="onDragStart"
+            @click.stop="onClick"
+            @keypress="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
                     <span v-if="selectable" class="selector">
@@ -21,21 +27,31 @@
                             :icon="['far', 'square']"
                             @click.stop="$emit('update:selected', true)" />
                     </span>
-                    <span v-if="highlight == 'input'" v-b-tooltip.hover title="Input" @click.stop="toggleHighlights">
+                    <span
+                        v-if="highlight == 'input'"
+                        v-b-tooltip.hover
+                        title="Input"
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon class="text-info" icon="arrow-circle-up" />
                     </span>
                     <span
                         v-else-if="highlight == 'noInputs'"
                         v-b-tooltip.hover
                         title="No Inputs for this item"
-                        @click.stop="toggleHighlights">
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon icon="minus-circle" />
                     </span>
                     <span
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
                         title="Inputs highlighted for this item"
-                        @click.stop="toggleHighlights">
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon icon="check-circle" />
                     </span>
                     <span v-if="hasStateIcon" class="state-icon">
@@ -52,6 +68,7 @@
                 </span>
                 <ContentOptions
                     v-else
+                    :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
                     :is-history-item="isHistoryItem"
@@ -60,6 +77,7 @@
                     :item-urls="itemUrls"
                     @delete="$emit('delete')"
                     @display="onDisplay"
+                    @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
                     @undelete="$emit('undelete')"
                     @unhide="$emit('unhide')" />
@@ -85,6 +103,7 @@
             <DatasetDetails
                 v-if="expandDataset"
                 :dataset="item"
+                :writable="writable"
                 :show-highlight="isHistoryItem"
                 :item-urls="itemUrls"
                 @edit="onEdit"
@@ -94,7 +113,6 @@
 </template>
 
 <script>
-import { iframeAdd } from "components/plugins/legacyNavigation";
 import { StatelessTags } from "components/Tags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -117,6 +135,7 @@ export default {
         FontAwesomeIcon,
     },
     props: {
+        writable: { type: Boolean, default: true },
         expandDataset: { type: Boolean, required: true },
         highlight: { type: String, default: null },
         id: { type: Number, required: true },
@@ -160,16 +179,16 @@ export default {
                         return state;
                     }
                 }
-                return "ok";
-            } else {
+            } else if (this.item.state) {
                 return this.item.state;
             }
+            return "ok";
         },
         tags() {
             return this.item.tags;
         },
         tagsDisabled() {
-            return !this.expandDataset || !this.isHistoryItem;
+            return !this.writable || !this.expandDataset || !this.isHistoryItem;
         },
         isCollection() {
             return "collection_type" in this.item;
@@ -179,14 +198,18 @@ export default {
             const id = this.item.id;
             if (this.isCollection) {
                 return {
-                    edit: `/collection/edit/${id}`,
+                    edit: `/collection/${id}/edit`,
+                    showDetails:
+                        this.item.job_source_id && this.item.job_source_type === "Job"
+                            ? `/jobs/${this.item.job_source_id}/view`
+                            : null,
                 };
             }
             return {
-                display: `/datasets/${id}/display/?preview=True`,
-                edit: `/datasets/edit/${id}`,
+                display: `/datasets/${id}/preview`,
+                edit: `/datasets/${id}/edit`,
                 showDetails: `/datasets/${id}/details`,
-                reportError: `/datasets/error?dataset_id=${id}`,
+                reportError: `/datasets/${id}/error`,
                 rerun: `/tool_runner/rerun?id=${id}`,
                 visualize: `/visualizations?dataset_id=${id}`,
             };
@@ -201,7 +224,7 @@ export default {
             }
         },
         onDisplay() {
-            iframeAdd({ path: this.itemUrls.display, title: this.name });
+            this.$router.push(this.itemUrls.display, { title: this.name });
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";
@@ -210,6 +233,9 @@ export default {
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);
+        },
+        onShowCollectionInfo() {
+            this.$router.push(this.itemUrls.showDetails);
         },
         onTags(newTags) {
             this.$emit("tag-change", this.item, newTags);
@@ -224,10 +250,7 @@ export default {
     },
 };
 </script>
-<style>
-.content-item:hover {
-    filter: brightness(105%);
-}
+<style lang="scss">
 .content-item {
     .name {
         word-break: break-all;

@@ -28,6 +28,7 @@ attribute change to a model object.
 import datetime
 import logging
 import re
+from functools import partial
 from typing import (
     Any,
     Callable,
@@ -68,6 +69,7 @@ log = logging.getLogger(__name__)
 class ParsedFilter(NamedTuple):
     filter_type: str  # orm_function, function, or orm
     filter: Any
+    case_insensitive: bool = False
 
 
 parsed_filter = ParsedFilter
@@ -163,7 +165,7 @@ def get_object(trans, id, class_name, check_ownership=False, check_accessible=Fa
     controller mixin code - however whenever possible the managers for a
     particular model should be used to load objects.
     """
-    decoded_id = decode_id(trans.app, id)
+    decoded_id = id if isinstance(id, int) else decode_id(trans.app, id)
     try:
         item_class = get_class(class_name)
         assert item_class is not None
@@ -225,7 +227,7 @@ class ModelManager(Generic[U]):
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def _session_setattr(self, item: model._HasTable, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(self, item: model.Base, attr: str, val: Any, flush: bool = True):
         setattr(item, attr, val)
 
         self.session().add(item)
@@ -1169,6 +1171,7 @@ class ModelFilterParser(HasAModelManager):
         allowed_ops = column_map["op"]
         if op not in allowed_ops:
             return None
+
         converted_op = self._convert_op_string_to_fn(column, op)
         if not converted_op:
             return None
@@ -1181,9 +1184,12 @@ class ModelFilterParser(HasAModelManager):
             val_parser = val_parser.get(op)
         if val_parser:
             val = val_parser(val)
+        if op == "contains":
+            # Do we want to make this configurable ?
+            val = val.lower()
 
         orm_filter = converted_op(val)
-        return self.parsed_filter(filter_type="orm", filter=orm_filter)
+        return self.parsed_filter(filter_type="orm", filter=orm_filter, case_insensitive=op == "contains")
 
     #: these are the easier/shorter string equivalents to the python operator fn names that need '__' around them
     UNDERSCORED_OPS = ("lt", "le", "eq", "ne", "ge", "gt")
@@ -1205,6 +1211,8 @@ class ModelFilterParser(HasAModelManager):
         op_fn = getattr(column, fn_name, None)
         if not op_fn or not callable(op_fn):
             return None
+        if op_string == "contains":
+            op_fn = partial(op_fn, autoescape=True)
         return op_fn
 
     # ---- preset fn_filters: dictionaries of standard filter ops for standard datatypes
@@ -1212,7 +1220,7 @@ class ModelFilterParser(HasAModelManager):
         return {
             "op": {
                 "eq": lambda i, v: v == getattr(i, key),
-                "contains": lambda i, v: v in getattr(i, key),
+                "contains": lambda i, v: v in partial(getattr(i, key), autoescape=True),  # type: ignore[operator]
             }
         }
 

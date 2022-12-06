@@ -70,6 +70,7 @@
                 v-for="output in outputs"
                 :key="output.name"
                 :output="output"
+                :post-job-actions="postJobActions"
                 :get-node="getNode"
                 :get-manager="getManager"
                 @onAdd="onAddOutput"
@@ -139,11 +140,12 @@ export default {
     data() {
         return {
             popoverShow: false,
-            node: null,
             inputs: [],
             outputs: [],
             inputTerminals: {},
             outputTerminals: {},
+            postJobActions: {},
+            activeOutputs: null,
             errors: null,
             label: null,
             annotation: null,
@@ -320,7 +322,9 @@ export default {
             const outputNames = this.outputs.map((output) => output.name);
             this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
             this.activeOutputs.filterOutputs(outputNames);
-            this.postJobActions = data.post_job_actions || {};
+            // data coming from the workflow editor API has post job actions,
+            // data coming from the build_module call does not (and should not)
+            this.postJobActions = data.post_job_actions || this.postJobActions;
             this.config_form = data.config_form;
         },
         initData(data) {

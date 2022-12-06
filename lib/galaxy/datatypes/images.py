@@ -495,9 +495,9 @@ class Star(data.Text):
     def sniff_prefix(self, file_prefix: FilePrefix):
         """Each file must have one or more data blocks.
         The start of a data block is defined by the keyword
-        "data_" followed by an optional string for
-        identification (e.g., "data_images").  All text
-        before the first "data_" keyword are comments
+        ``data_`` followed by an optional string for
+        identification (e.g., ``data_images``).  All text
+        before the first ``data_`` keyword are comments
 
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('1.star')

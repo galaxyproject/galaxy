@@ -1,5 +1,8 @@
 <template>
-    <b-card body-class="history-import-component" title="Import a history from an archive">
+    <b-card body-class="history-import-component" aria-labelledby="history-import-heading">
+        <template slot="header">
+            <h1 id="history-import-heading" class="mb-0 h-sm">Import a history from an archive</h1>
+        </template>
         <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
@@ -16,7 +19,7 @@
         </div>
         <div v-else-if="complete">
             <b-alert :show="complete" variant="success" dismissible @dismissed="complete = false">
-                <h4>Done!</h4>
+                <span class="mb-1 h-sm">Done!</span>
                 <p>History imported, check out <a :href="historyLink">your histories</a>.</p>
             </b-alert>
         </div>

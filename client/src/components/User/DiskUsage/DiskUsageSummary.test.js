@@ -5,6 +5,8 @@ import MockProvider from "components/providers/MockProvider";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "jest/helpers";
 import DiskUsageSummary from "./DiskUsageSummary";
+import { userStore } from "../../../store/userStore/userStore";
+import Vuex from "vuex";
 
 const localVue = getLocalVue();
 
@@ -20,6 +22,16 @@ const QuotaUsageProviderMock = MockProvider({
 });
 const QuotaUsageSummaryMock = { template: `<div id='${quotaUsageSummaryComponentId}'/>` };
 
+const store = new Vuex.Store({
+    modules: {
+        user: {
+            state: fakeUser,
+            namespaced: true,
+            getters: userStore.getters,
+        },
+    },
+});
+
 async function mountDiskUsageSummaryWrapper(enableQuotas) {
     const wrapper = mount(DiskUsageSummary, {
         stubs: {
@@ -31,6 +43,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas) {
             QuotaUsageSummary: QuotaUsageSummaryMock,
         },
         localVue,
+        store,
     });
     await flushPromises();
     return wrapper;

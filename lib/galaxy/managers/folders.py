@@ -77,16 +77,13 @@ class FolderManager:
     Interface/service object for interacting with folders.
     """
 
-    def get(self, trans, decoded_folder_id, check_manageable=False, check_accessible=True):
+    def get(self, trans, decoded_folder_id: int, check_manageable: bool = False, check_accessible: bool = True):
         """
         Get the folder from the DB.
 
         :param  decoded_folder_id:       decoded folder id
-        :type   decoded_folder_id:       int
         :param  check_manageable:        flag whether the check that user can manage item
-        :type   check_manageable:        bool
         :param  check_accessible:        flag whether to check that user can access item
-        :type   check_accessible:        bool
 
         :returns:   the requested folder
         :rtype:     LibraryFolder
@@ -408,6 +405,8 @@ class FolderManager:
         if payload.order_by in FOLDER_SORT_COLUMN_MAP:
             sort_column = FOLDER_SORT_COLUMN_MAP[payload.order_by](model.LibraryFolder)
             sub_folders_query = sub_folders_query.order_by(sort_column.desc() if payload.sort_desc else sort_column)
+        else:  # Sort by name alphabetically by default
+            sub_folders_query = sub_folders_query.order_by(model.LibraryFolder.name)
         if limit is not None:
             sub_folders_query = sub_folders_query.limit(limit)
         if offset is not None:

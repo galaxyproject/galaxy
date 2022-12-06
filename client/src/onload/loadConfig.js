@@ -68,7 +68,7 @@ export function get() {
  *
  * @param {*} defaultRoot
  */
-export function getAppRoot(defaultRoot = "/") {
+export function getAppRoot(defaultRoot = "/", stripTrailingSlash = false) {
     let root = defaultRoot;
     try {
         // try actual config
@@ -79,6 +79,9 @@ export function getAppRoot(defaultRoot = "/") {
         } catch (err) {
             console.warn("Unable to find index link in head", err);
         }
+    }
+    if (stripTrailingSlash) {
+        root = (root || "").replace(/\/$/, "");
     }
     return root;
 }

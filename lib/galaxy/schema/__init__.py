@@ -1,3 +1,4 @@
+from datetime import datetime
 from enum import Enum
 from typing import (
     Dict,
@@ -9,6 +10,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    Required,
 )
 
 
@@ -104,3 +106,10 @@ class SerializationParams(BaseModel):
 class PdfDocumentType(str, Enum):
     invocation_report = "invocation_report"
     page = "page"
+
+
+class APIKeyModel(BaseModel):
+    key: str = Field(Required, title="Key", description="API key to interact with the Galaxy API")
+    create_time: datetime = Field(
+        Required, title="Create Time", description="The time and date this API key was created."
+    )

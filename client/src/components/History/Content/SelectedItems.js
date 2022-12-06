@@ -3,7 +3,7 @@
  * It allows to select individual items or perform a query selection.
  */
 
-import { getFilters, testFilters } from "store/historyStore/model/filtering";
+import { getFilters, testFilters } from "utils/filterConversion";
 
 export default {
     props: {

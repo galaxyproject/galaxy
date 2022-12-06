@@ -4,10 +4,11 @@
 <template>
     <div>
         <nav class="d-flex justify-content-between mx-3 my-2">
-            <h4 class="m-1">History</h4>
+            <h2 class="m-1 h-sm">History</h2>
             <b-button-group>
                 <b-button
                     v-b-tooltip.bottom.hover
+                    class="create-hist-btn"
                     data-description="create new history"
                     size="sm"
                     variant="link"
@@ -32,7 +33,11 @@
                     variant="link"
                     toggle-class="text-decoration-none"
                     menu-class="history-options-button-menu"
+                    title="History options"
                     data-description="history options">
+                    <template v-slot:button-content>
+                        <span class="sr-only">History Options</span>
+                    </template>
                     <b-dropdown-text>
                         <div v-if="historiesLoading">
                             <b-spinner v-if="historiesLoading" small />
@@ -45,7 +50,7 @@
                         data-description="switch to multi history view"
                         :disabled="currentUser.isAnonymous"
                         :title="userTitle('Open History Multiview')"
-                        @click="redirect('/history/view_multiple')">
+                        @click="$router.push('/histories/view_multiple')">
                         <Icon fixed-width class="mr-1" icon="columns" />
                         <span v-localize>Show Histories Side-by-Side</span>
                     </b-dropdown-item>
@@ -57,14 +62,6 @@
                         @click="iframeRedirect('/history/resume_paused_jobs?current=True')">
                         <Icon fixed-width icon="play" class="mr-1" />
                         <span v-localize>Resume Paused Jobs</span>
-                    </b-dropdown-item>
-
-                    <b-dropdown-item
-                        data-description="show structure"
-                        :title="l('Show Detailed Structure View of History')"
-                        @click="$router.push('/histories/show_structure')">
-                        <Icon fixed-width icon="code-branch" class="mr-1" />
-                        <span v-localize>Show Structure</span>
                     </b-dropdown-item>
 
                     <b-dropdown-divider></b-dropdown-divider>
@@ -131,16 +128,6 @@
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
                     </b-dropdown-item>
-
-                    <b-dropdown-divider></b-dropdown-divider>
-
-                    <b-dropdown-item
-                        data-description="switch to legacy history view"
-                        :title="l('Switch to Legacy History Panel')"
-                        @click="switchToLegacyHistoryPanel">
-                        <Icon fixed-width class="mr-1" icon="arrow-up" />
-                        <span v-localize>Return to legacy panel</span>
-                    </b-dropdown-item>
                 </b-dropdown>
             </b-button-group>
         </nav>
@@ -181,7 +168,6 @@
 
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { switchToLegacyHistoryPanel } from "components/History/adapters/betaToggle";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 import { mapGetters } from "vuex";
@@ -202,7 +188,6 @@ export default {
         ...mapGetters("user", ["currentUser"]),
     },
     methods: {
-        switchToLegacyHistoryPanel,
         userTitle(title) {
             if (this.currentUser.isAnonymous) {
                 return this.l("Log in to") + " " + this.l(title);

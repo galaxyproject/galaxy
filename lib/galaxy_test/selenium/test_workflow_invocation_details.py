@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class WorkflowInvocationDetailsTestCase(SeleniumTestCase):
+class TestWorkflowInvocationDetails(SeleniumTestCase):
 
     ensure_registered = True
 

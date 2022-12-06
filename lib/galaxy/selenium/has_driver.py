@@ -3,6 +3,7 @@
 This should be mixed into classes with a self.driver and self.default_timeout
 attribute.
 """
+import abc
 from typing import (
     List,
     Optional,
@@ -27,7 +28,6 @@ HasFindElement = Union[WebDriver, WebElement]
 
 
 class HasDriver:
-    TimeoutException: Type[SeleniumTimeoutException] = SeleniumTimeoutException
     by: Type[By] = By
     keys: Type[Keys] = Keys
     driver: WebDriver
@@ -216,6 +216,7 @@ class HasDriver:
         else:
             element.send_keys(key)
 
+    @abc.abstractmethod
     def timeout_for(self, **kwds) -> float:
         ...
 
@@ -296,13 +297,10 @@ def exception_indicates_stale_element(exception):
     return "stale" in str(exception)
 
 
-TimeoutException = SeleniumTimeoutException
-
-
 __all__ = (
     "exception_indicates_click_intercepted",
     "exception_indicates_not_clickable",
     "exception_indicates_stale_element",
     "HasDriver",
-    "TimeoutException",
+    "SeleniumTimeoutException",
 )

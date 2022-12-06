@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="!isSingleParam" class="tool-parameters">
-            <h3 v-if="includeTitle">Tool Parameters</h3>
+            <h2 v-if="includeTitle" class="h-md">Tool Parameters</h2>
             <table id="tool-parameters" class="tabletip info_data_table">
                 <thead>
                     <tr>
@@ -129,7 +129,7 @@ export default {
                 .then((data) => {
                     this.hasParameterErrors = data.has_parameter_errors;
                     this.parameters = data.parameters;
-                    this.outputs = data.outputs;
+                    this.outputs = data.outputs || {};
                 })
                 .catch((e) => {
                     console.error(e);

@@ -22,6 +22,13 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.managers.collections_util import validate_input_element_identifiers
+from galaxy.managers.hdas import (
+    HDAManager,
+    HistoryDatasetAssociationNoHistoryException,
+)
+from galaxy.managers.hdcas import write_dataset_collection
+from galaxy.managers.histories import HistoryManager
+from galaxy.managers.lddas import LDDAManager
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
@@ -36,13 +43,6 @@ from galaxy.web.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
 )
-from .hdas import (
-    HDAManager,
-    HistoryDatasetAssociationNoHistoryException,
-)
-from .hdcas import write_dataset_collection
-from .histories import HistoryManager
-from .lddas import LDDAManager
 
 log = logging.getLogger(__name__)
 
@@ -607,8 +607,8 @@ class DatasetCollectionManager:
             src_type = element_identifier.get("src", "hda")
         except AttributeError:
             raise MessageException(f"Dataset collection element definition ({element_identifier}) not dictionary-like.")
-        encoded_id = element_identifier.get("id")
-        if not src_type or not encoded_id:
+        element_id = element_identifier.get("id")
+        if not src_type or not element_id:
             message_template = "Problem decoding element identifier %s - must contain a 'src' and a 'id'."
             message = message_template % element_identifier
             raise RequestParameterInvalidException(message)
@@ -618,8 +618,7 @@ class DatasetCollectionManager:
         if tags:
             tag_str = ",".join(str(_) for _ in tags)
         if src_type == "hda":
-            decoded_id = int(trans.app.security.decode_id(encoded_id))
-            hda = self.hda_manager.get_accessible(decoded_id, trans.user)
+            hda = self.hda_manager.get_accessible(element_id, trans.user)
             if copy_elements:
                 element: model.HistoryDatasetAssociation = self.hda_manager.copy(
                     hda, history=history or trans.history, hide_copy=True, flush=False
@@ -633,7 +632,7 @@ class DatasetCollectionManager:
             self.tag_handler.apply_item_tags(user=trans.user, item=element, tags_str=tag_str, flush=False)
             return element
         elif src_type == "ldda":
-            element2 = self.ldda_manager.get(trans, encoded_id, check_accessible=True)
+            element2 = self.ldda_manager.get(trans, element_id, check_accessible=True)
             element3 = element2.to_history_dataset_association(
                 history or trans.history, add_to_history=True, visible=not hide_source_items
             )
@@ -641,7 +640,7 @@ class DatasetCollectionManager:
             return element3
         elif src_type == "hdca":
             # TODO: Option to copy? Force copy? Copy or allow if not owned?
-            return self.__get_history_collection_instance(trans, encoded_id).collection
+            return self.__get_history_collection_instance(trans, element_id).collection
         # TODO: ldca.
         raise RequestParameterInvalidException(f"Unknown src_type parameter supplied '{src_type}'.")
 

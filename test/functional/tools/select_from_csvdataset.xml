@@ -6,7 +6,7 @@ echo select_single '$select_single' > '$output'
     <inputs>
         <param name="single" type="data" format="csv" label="single"/>
         <param name="select_single" type="select" label="select_single">
-            <options from_dataset="single" separator="," startswith="Transaction_date">
+            <options from_dataset="single" separator="," startswith="1/3/09">
                 <column name="name" index="1"/>
                 <column name="value" index="2"/>
                 <validator type="no_options" message="No data is available in single" />
@@ -29,10 +29,14 @@ echo select_single '$select_single' > '$output'
                 </assert_contents>
             </output>
         </test>
-        <!-- test that data from "comment" lines can not be selected, i.e. if the startswith attribute of <options> works-->
+        <!-- test that only data from lines starting with "1/2/09" can be selected, i.e. if the startswith attribute of <options> works-->
         <test expect_failure="true">
             <param name="single" value="1.csv" />
             <param name="select_single" value="Product" />
+        </test>
+        <test expect_failure="true">
+            <param name="single" value="1.csv" />
+            <param name="select_single" value="Product2" />
         </test>
     </tests>
     <help>

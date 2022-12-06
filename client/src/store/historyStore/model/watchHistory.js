@@ -43,7 +43,7 @@ export async function watchHistoryOnce(store) {
     const checkForUpdate = new Date();
     const history = await getCurrentHistoryFromServer(lastUpdateTime);
     store.commit("setLastCheckedTime", { checkForUpdate });
-    if (!history) {
+    if (!history || !history.id) {
         return;
     }
 
@@ -63,7 +63,7 @@ export async function watchHistoryOnce(store) {
         if (detailedIds.length) {
             params["details"] = detailedIds.join(",");
         }
-        const url = `api/histories/${historyId}/contents`;
+        const url = `/api/histories/${historyId}/contents`;
         lastRequestDate = new Date();
         const payload = await urlData({ url, params });
         // show warning that not all changes have been obtained

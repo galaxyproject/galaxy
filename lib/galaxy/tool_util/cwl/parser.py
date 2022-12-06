@@ -1115,18 +1115,6 @@ def remove_pickle_problems(obj):
     return obj
 
 
-class WorkflowToolReference(metaclass=ABCMeta):
-    pass
-
-
-class EmbeddedWorkflowToolReference(WorkflowToolReference):
-    pass
-
-
-class ExternalWorkflowToolReference(WorkflowToolReference):
-    pass
-
-
 def _outer_field_to_input_instance(field):
     field_type = field_to_field_type(field)  # Must be a list if in here?
     if not isinstance(field_type, list):
@@ -1296,7 +1284,7 @@ class InputInstance:
                 as_dict["value"] = "0"
             if self.input_type == INPUT_TYPE.FLOAT:
                 as_dict["value"] = "0.0"
-            elif self.input_type == INPUT_TYPE.DATA_COLLECTON:
+            elif self.input_type == INPUT_TYPE.DATA_COLLECTION:
                 as_dict["collection_type"] = self.collection_type
             return as_dict
 

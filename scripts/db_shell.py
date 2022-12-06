@@ -11,7 +11,6 @@
 # % ipython -i scripts/db_shell.py -- -c config/galaxy.ini
 #
 # You can also use this script as a library, for instance see https://gist.github.com/1979583
-# TODO: This script overlaps a lot with manage_db.py and create_db.py,
 # these should maybe be refactored to remove duplication.
 
 import datetime

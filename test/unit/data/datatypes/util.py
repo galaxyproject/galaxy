@@ -8,6 +8,12 @@ from galaxy.datatypes.sniff import get_test_fname
 from galaxy.util.hash_util import md5_hash_file
 
 
+class MockDatasetDataset:
+    def __init__(self, file_name):
+        self.file_name = file_name
+        self.purged = False
+
+
 class MockMetadata:
     file_name: Optional[str] = None
 

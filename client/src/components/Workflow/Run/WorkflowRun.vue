@@ -1,7 +1,7 @@
 <template>
     <span>
         <b-alert v-if="error" variant="danger" show>
-            <h5>Workflow cannot be executed. Please resolve the following issue:</h5>
+            <h2 class="h-text">Workflow cannot be executed. Please resolve the following issue:</h2>
             {{ error }}
         </b-alert>
         <span v-else>

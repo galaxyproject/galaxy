@@ -2,10 +2,10 @@
 API operations for Workflows
 """
 
-import hashlib
 import json
 import logging
 import os
+from io import BytesIO
 from typing import (
     Any,
     Dict,
@@ -23,6 +23,7 @@ from fastapi import (
 from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from pydantic import Extra
+from starlette.responses import StreamingResponse
 
 from galaxy import (
     exceptions,
@@ -37,7 +38,6 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.jobs import (
     fetch_job_states,
     invocation_job_source_iter,
-    summarize_job_metrics,
 )
 from galaxy.managers.workflows import (
     MissingToolsException,
@@ -46,7 +46,8 @@ from galaxy.managers.workflows import (
     WorkflowUpdateOptions,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.model.store import BcoExportOptions
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -56,7 +57,6 @@ from galaxy.schema.schema import (
     SharingStatus,
     StoreContentSource,
     WorkflowSortByEnum,
-    WriteStoreToPayload,
 )
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
@@ -79,6 +79,14 @@ from galaxy.webapps.base.controller import (
     UsesStoredWorkflowMixin,
 )
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
+from galaxy.webapps.galaxy.api import (
+    BaseGalaxyAPIController,
+    depends,
+    DependsOnTrans,
+    IndexQueryTag,
+    Router,
+    search_query_param,
+)
 from galaxy.webapps.galaxy.services.base import (
     ConsumesModelStores,
     ServesExportStores,
@@ -88,6 +96,7 @@ from galaxy.webapps.galaxy.services.invocations import (
     InvocationSerializationParams,
     InvocationsService,
     PrepareStoreDownloadPayload,
+    WriteInvocationStoreToPayload,
 )
 from galaxy.webapps.galaxy.services.workflows import (
     WorkflowIndexPayload,
@@ -97,14 +106,6 @@ from galaxy.workflow.extract import extract_workflow
 from galaxy.workflow.modules import module_factory
 from galaxy.workflow.run import queue_invoke
 from galaxy.workflow.run_request import build_workflow_run_configs
-from . import (
-    BaseGalaxyAPIController,
-    depends,
-    DependsOnTrans,
-    IndexQueryTag,
-    Router,
-    search_query_param,
-)
 
 log = logging.getLogger(__name__)
 
@@ -457,28 +458,6 @@ class WorkflowsAPIController(
             return format_return_as_json(ret_dict, pretty=True)
 
     @expose_api
-    def delete(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        DELETE /api/workflows/{encoded_workflow_id}
-        Deletes a specified workflow
-        Author: rpark
-
-        copied from galaxy.web.controllers.workflows.py (delete)
-        """
-        stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
-
-        # check to see if user has permissions to selected workflow
-        if stored_workflow.user != trans.user and not trans.user_is_admin:
-            raise exceptions.InsufficientPermissionsException()
-
-        # Mark a workflow as deleted
-        stored_workflow.deleted = True
-        trans.sa_session.flush()
-
-        # TODO: Unsure of response message to let api know that a workflow was successfully deleted
-        return f"Workflow '{stored_workflow.name}' successfully deleted"
-
-    @expose_api
     def import_new_workflow_deprecated(self, trans: GalaxyWebTransaction, payload, **kwd):
         """
         POST /api/workflows/upload
@@ -670,7 +649,6 @@ class WorkflowsAPIController(
             "inputs": module.get_all_inputs(connectable_only=True),
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
-            "post_job_actions": module.get_post_job_actions(inputs),
         }
 
     @expose_api
@@ -1001,278 +979,6 @@ class WorkflowsAPIController(
         trans.response.set_content_type("application/pdf")
         return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
 
-    def _generate_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id)
-        history = workflow_invocation.history
-        workflow = workflow_invocation.workflow
-        stored_workflow = workflow.stored_workflow
-
-        # pull in the license info from workflow if it exists
-        bco_license = ""
-        if workflow.license:
-            bco_license = workflow.license
-
-        # pull in the creator_metadata info from workflow if it exists
-        reviewers: list = []
-        contributors = []
-        if workflow.creator_metadata:
-            for creator in workflow.creator_metadata:
-                if creator["class"] == "Person":
-                    contributor = {}
-                    contributor["contribution"] = ["contributedBy"]
-                    if "name" in creator:
-                        contributor["name"] = creator["name"]
-                    if "email" in creator:
-                        contributor["email"] = creator["email"]
-                    if "identifier" in creator:
-                        contributor["orcid"] = creator["identifier"]
-
-                    contributors.append(contributor)
-
-        encoded_workflow_id = trans.security.encode_id(stored_workflow.id)
-        encoded_history_id = trans.security.encode_id(history.id)
-        dict_workflow = json.loads(self.workflow_dict(trans, encoded_workflow_id))
-
-        spec_version = kwd.get("spec_version", "https://w3id.org/ieee/ieee-2791-schema/2791object.json")
-
-        for i, w in enumerate(reversed(stored_workflow.workflows)):
-            if workflow == w:
-                current_version = i
-
-        provenance_domain = {
-            "name": workflow.name,
-            "version": str(current_version) + ".0",
-            "review": reviewers,
-            "created": workflow_invocation.create_time.isoformat(),
-            "modified": workflow_invocation.update_time.isoformat(),
-            "contributors": contributors,
-            "license": bco_license,
-        }
-
-        keywords = []
-        for tag in stored_workflow.tags:
-            keywords.append(tag.user_tname)
-        for tag in history.tags:
-            if tag.user_tname not in keywords:
-                keywords.append(tag.user_tname)
-
-        metrics = {}
-        tools, input_subdomain, output_subdomain, pipeline_steps, software_prerequisites = [], [], [], [], []
-        for step in workflow_invocation.steps:
-            if step.workflow_step.type == "tool":
-                workflow_outputs_list, output_list, input_list = set(), [], []
-                for wo in step.workflow_step.workflow_outputs:
-                    workflow_outputs_list.add(wo.output_name)
-                for job in step.jobs:
-                    metrics[i] = summarize_job_metrics(trans, job)
-                    for job_input in job.input_datasets:
-                        if hasattr(job_input.dataset, "dataset_id"):
-                            encoded_dataset_id = trans.security.encode_id(job_input.dataset.dataset_id)
-                            input_obj = {
-                                # TODO: that should maybe be a step prefix + element identifier where appropriate.
-                                "filename": job_input.dataset.name,
-                                "uri": url_for(
-                                    "history_content",
-                                    history_id=encoded_history_id,
-                                    id=encoded_dataset_id,
-                                    qualified=True,
-                                ),
-                                "access_time": job_input.dataset.create_time.isoformat(),
-                            }
-                            input_list.append(input_obj)
-
-                    for job_output in job.output_datasets:
-                        if hasattr(job_output.dataset, "dataset_id"):
-                            encoded_dataset_id = trans.security.encode_id(job_output.dataset.dataset_id)
-                            output_obj = {
-                                "filename": job_output.dataset.name,
-                                "uri": url_for(
-                                    "history_content",
-                                    history_id=encoded_history_id,
-                                    id=encoded_dataset_id,
-                                    qualified=True,
-                                ),
-                                "access_time": job_output.dataset.create_time.isoformat(),
-                            }
-                            output_list.append(output_obj)
-
-                            if job_output.name in workflow_outputs_list:
-                                output = {
-                                    "mediatype": job_output.dataset.extension,
-                                    "uri": {
-                                        "filename": job_output.dataset.name,
-                                        "uri": url_for(
-                                            "history_content",
-                                            history_id=encoded_history_id,
-                                            id=encoded_dataset_id,
-                                            qualified=True,
-                                        ),
-                                        "access_time": job_output.dataset.create_time.isoformat(),
-                                    },
-                                }
-                                output_subdomain.append(output)
-                workflow_step = step.workflow_step
-                step_index = workflow_step.order_index
-                current_step = dict_workflow["steps"][str(step_index)]
-                pipeline_step = {
-                    "step_number": step_index,
-                    "name": current_step["name"],
-                    "description": current_step["annotation"],
-                    "version": current_step["tool_version"],
-                    "prerequisite": kwd.get("prerequisite", []),
-                    "input_list": input_list,
-                    "output_list": output_list,
-                }
-                pipeline_steps.append(pipeline_step)
-                try:
-                    software_prerequisite = {
-                        "name": current_step["content_id"],
-                        "version": current_step["tool_version"],
-                        "uri": {"uri": current_step["content_id"], "access_time": current_step["uuid"]},
-                    }
-                    if software_prerequisite["uri"]["uri"] not in tools:
-                        software_prerequisites.append(software_prerequisite)
-                        tools.append(software_prerequisite["uri"]["uri"])
-                except Exception:
-                    continue
-
-            if step.workflow_step.type == "data_input" and step.output_datasets:
-                for output_assoc in step.output_datasets:
-                    encoded_dataset_id = trans.security.encode_id(output_assoc.dataset_id)
-                    input_obj = {
-                        "filename": step.workflow_step.label,
-                        "uri": url_for(
-                            "history_content", history_id=encoded_history_id, id=encoded_dataset_id, qualified=True
-                        ),
-                        "access_time": step.workflow_step.update_time.isoformat(),
-                    }
-                    input_subdomain.append(input_obj)
-
-            if step.workflow_step.type == "data_collection_input" and step.output_dataset_collections:
-                for output_dataset_collection_association in step.output_dataset_collections:
-                    encoded_dataset_id = trans.security.encode_id(
-                        output_dataset_collection_association.dataset_collection_id
-                    )
-                    input_obj = {
-                        "filename": step.workflow_step.label,
-                        "uri": url_for(
-                            "history_content",
-                            history_id=encoded_history_id,
-                            id=encoded_dataset_id,
-                            type="dataset_collection",
-                            qualified=True,
-                        ),
-                        "access_time": step.workflow_step.update_time.isoformat(),
-                    }
-                    input_subdomain.append(input_obj)
-
-        usability_domain = []
-        for a in stored_workflow.annotations:
-            usability_domain.append(a.annotation)
-        for h in history.annotations:
-            usability_domain.append(h.annotation)
-
-        parametric_domain = []
-        for inv_step in workflow_invocation.steps:
-            try:
-                for k, v in inv_step.workflow_step.tool_inputs.items():
-                    param, value, step = k, v, inv_step.workflow_step.order_index
-                    parametric_domain.append({"param": str(param), "value": str(value), "step": str(step)})
-            except Exception:
-                continue
-
-        execution_domain = {
-            "script": [{"uri": {"uri": url_for("workflows", encoded_workflow_id=encoded_workflow_id, qualified=True)}}],
-            "script_driver": "Galaxy",
-            "software_prerequisites": software_prerequisites,
-            "external_data_endpoints": [{"name": "Access to Galaxy", "url": url_for("/", qualified=True)}],
-            "environment_variables": kwd.get("environment_variables", {}),
-        }
-
-        extension = [
-            {
-                "extension_schema": "https://raw.githubusercontent.com/biocompute-objects/extension_domain/1.2.0/galaxy/galaxy_extension.json",
-                "galaxy_extension": {
-                    "galaxy_url": url_for("/", qualified=True),
-                    "galaxy_version": VERSION,
-                    # TODO:
-                    # Extend this definition to include more information that is significan for a galaxy workflow/invocation?
-                    # 'aws_estimate': aws_estimate,
-                    # 'job_metrics': metrics
-                },
-            }
-        ]
-
-        error_domain = {
-            "empirical_error": kwd.get("empirical_error", {}),
-            "algorithmic_error": kwd.get("algorithmic_error", {}),
-        }
-
-        bco_dict = {
-            "provenance_domain": provenance_domain,
-            "usability_domain": usability_domain,
-            "extension_domain": extension,
-            "description_domain": {
-                "keywords": keywords,
-                "xref": kwd.get("xref", []),
-                "platform": ["Galaxy"],
-                "pipeline_steps": pipeline_steps,
-            },
-            "execution_domain": execution_domain,
-            "parametric_domain": parametric_domain,
-            "io_domain": {
-                "input_subdomain": input_subdomain,
-                "output_subdomain": output_subdomain,
-            },
-            "error_domain": error_domain,
-        }
-        # Generate etag from the BCO excluding object_id and spec_version, as
-        # specified in https://opensource.ieee.org/2791-object/ieee-2791-schema/-/blob/master/2791object.json
-        etag = hashlib.sha256(json.dumps(bco_dict, sort_keys=True).encode()).hexdigest()
-        bco_dict.update(
-            {
-                "object_id": url_for(
-                    controller=f"api/invocations/{invocation_id}", action="biocompute", qualified=True
-                ),
-                "spec_version": spec_version,
-                "etag": etag,
-            }
-        )
-        return bco_dict
-
-    @expose_api
-    def export_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/invocations/{invocations_id}/biocompute
-
-        Return a BioCompute Object for the workflow invocation.
-
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-        """
-        return self._generate_invocation_bco(trans, invocation_id, **kwd)
-
-    @expose_api_raw
-    def download_invocation_bco(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/invocations/{invocations_id}/biocompute/download
-
-        Returns a selected BioCompute Object as a file for download (HTTP
-        headers configured with filename and such).
-
-        The BioCompute Object endpoints are in beta - important details such
-        as how inputs and outputs are represented, how the workflow is encoded,
-        and how author and version information is encoded, and how URLs are
-        generated will very likely change in important ways over time.
-        """
-        ret_dict = self._generate_invocation_bco(trans, invocation_id, **kwd)
-        trans.response.headers["Content-Disposition"] = f'attachment; filename="bco_{invocation_id}.json"'
-        trans.response.set_content_type("application/json")
-        return format_return_as_json(ret_dict, pretty=True)
-
     @expose_api
     def invocation_step(self, trans, invocation_id, step_id, **kwd):
         """
@@ -1452,11 +1158,11 @@ class WorkflowsAPIController(
         return self.invocations_service.serialize_workflow_invocation(invocation, params)
 
 
-StoredWorkflowIDPathParam: EncodedDatabaseIdField = Path(
+StoredWorkflowIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
 )
 
-InvocationIDPathParam: EncodedDatabaseIdField = Path(
+InvocationIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Invocation ID", description="The encoded database identifier of the Invocation."
 )
 
@@ -1557,7 +1263,7 @@ class FastAPIWorkflows:
         skip_step_counts: bool = SkipStepCountsQueryParam,
     ) -> List[Dict[str, Any]]:
         """Lists stored workflows viewable by the user."""
-        payload = WorkflowIndexPayload(
+        payload = WorkflowIndexPayload.construct(
             show_published=show_published,
             show_hidden=show_hidden,
             show_deleted=show_deleted,
@@ -1581,7 +1287,7 @@ class FastAPIWorkflows:
     def sharing(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Return the sharing status of the item."""
         return self.service.shareable_service.sharing(trans, id)
@@ -1593,7 +1299,7 @@ class FastAPIWorkflows:
     def enable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item accessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.enable_link_access(trans, id)
@@ -1605,7 +1311,7 @@ class FastAPIWorkflows:
     def disable_link_access(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item inaccessible by a URL link and return the current sharing status."""
         return self.service.shareable_service.disable_link_access(trans, id)
@@ -1617,7 +1323,7 @@ class FastAPIWorkflows:
     def publish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Makes this item publicly available by a URL link and return the current sharing status."""
         return self.service.shareable_service.publish(trans, id)
@@ -1629,7 +1335,7 @@ class FastAPIWorkflows:
     def unpublish(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
     ) -> SharingStatus:
         """Removes this item from the published list and return the current sharing status."""
         return self.service.shareable_service.unpublish(trans, id)
@@ -1641,7 +1347,7 @@ class FastAPIWorkflows:
     def share_with_users(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: ShareWithPayload = Body(...),
     ) -> ShareWithStatus:
         """Shares this item with specific users and return the current sharing status."""
@@ -1655,7 +1361,7 @@ class FastAPIWorkflows:
     def set_slug(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        id: EncodedDatabaseIdField = StoredWorkflowIDPathParam,
+        id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         payload: SetSlugPayload = Body(...),
     ):
         """Sets a new slug to access this item by URL. The new slug must be unique."""
@@ -1664,12 +1370,12 @@ class FastAPIWorkflows:
 
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
-        summary="Prepare a worklfow invocation export-style download.",
+        summary="Prepare a workflow invocation export-style download.",
     )
     def prepare_store_download(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: EncodedDatabaseIdField = InvocationIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         payload: PrepareStoreDownloadPayload = Body(...),
     ) -> AsyncFile:
         return self.invocations_service.prepare_store_download(
@@ -1680,13 +1386,13 @@ class FastAPIWorkflows:
 
     @router.post(
         "/api/invocations/{invocation_id}/write_store",
-        summary="Prepare a worklfow invocation export-style download and write to supplied URI.",
+        summary="Prepare a workflow invocation export-style download and write to supplied URI.",
     )
     def write_store(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        invocation_id: EncodedDatabaseIdField = InvocationIDPathParam,
-        payload: WriteStoreToPayload = Body(...),
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        payload: WriteInvocationStoreToPayload = Body(...),
     ) -> AsyncTaskResultSummary:
         rval = self.invocations_service.write_store(
             trans,
@@ -1694,3 +1400,112 @@ class FastAPIWorkflows:
             payload,
         )
         return rval
+
+    @router.delete(
+        "/api/workflows/{workflow_id}",
+        summary="Add the deleted flag to a workflow.",
+    )
+    def delete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.delete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/undelete",
+        summary="Remove the deleted flag from a workflow.",
+    )
+    def undelete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.undelete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    # TODO: remove this endpoint after 23.1 release
+    @router.get(
+        "/api/invocations/{invocation_id}/biocompute",
+        summary="Return a BioCompute Object for the workflow invocation.",
+        deprecated=True,
+    )
+    def export_invocation_bco(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        merge_history_metadata: Optional[bool] = Query(default=False),
+    ):
+        """
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+
+        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
+
+        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
+            ```
+            {
+                model_store_format: bco.json
+            }
+            ```
+        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
+
+        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
+        """
+        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        return json.loads(bco)
+
+    # TODO: remove this endpoint after 23.1 release
+    @router.get(
+        "/api/invocations/{invocation_id}/biocompute/download",
+        summary="Return a BioCompute Object for the workflow invocation as a file for download.",
+        response_class=StreamingResponse,
+        deprecated=True,
+    )
+    def download_invocation_bco(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        merge_history_metadata: Optional[bool] = Query(default=False),
+    ):
+        """
+        The BioCompute Object endpoints are in beta - important details such
+        as how inputs and outputs are represented, how the workflow is encoded,
+        and how author and version information is encoded, and how URLs are
+        generated will very likely change in important ways over time.
+
+        **Deprecation Notice**: please use the asynchronous short_term_storage export system instead.
+
+        1. call POST `api/invocations/{id}/prepare_store_download` with payload:
+            ```
+            {
+                model_store_format: bco.json
+            }
+            ```
+        2. Get `storageRequestId` from response and poll GET `api/short_term_storage/${storageRequestId}/ready` until `SUCCESS`
+
+        3. Get the resulting file with `api/short_term_storage/${storageRequestId}`
+        """
+        bco = self._deprecated_generate_bco(trans, invocation_id, merge_history_metadata)
+        return StreamingResponse(
+            content=BytesIO(bco),
+            media_type="application/json",
+            headers={
+                "Content-Disposition": f'attachment; filename="bco_{trans.security.encode_id(invocation_id)}.json"',
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+
+    # TODO: remove this after 23.1 release
+    def _deprecated_generate_bco(
+        self, trans, invocation_id: DecodedDatabaseIdField, merge_history_metadata: Optional[bool]
+    ):
+        export_options = BcoExportOptions(
+            galaxy_url=trans.request.base,
+            galaxy_version=VERSION,
+            merge_history_metadata=merge_history_metadata or False,
+        )
+        return self.invocations_service.deprecated_generate_invocation_bco(trans, invocation_id, export_options)

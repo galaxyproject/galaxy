@@ -1,7 +1,8 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
 import HistoryFilters from "./HistoryFilters";
-import { getQueryDict } from "store/historyStore/model/filtering";
+import { getQueryDict } from "utils/filterConversion";
+
 const localVue = getLocalVue();
 
 describe("HistoryFilters", () => {
@@ -53,7 +54,7 @@ describe("HistoryFilters", () => {
         await expectCorrectEmits(wrapper, false, "name:name-filter");
 
         // Test: clearing the filterText
-        const clearButton = wrapper.find("[data-description='show deleted filter toggle']");
+        const clearButton = wrapper.find("[data-description='clear filters']");
         await clearButton.trigger("click");
         await expectCorrectEmits(wrapper, false, "");
 

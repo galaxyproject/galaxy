@@ -1,9 +1,12 @@
 // Simple dataset provider, looks at api for result, renders to slot prop
 import axios from "axios";
 import { prependPath } from "utils/redirect";
-import { mapActions, mapGetters } from "vuex";
-import { mapCacheActions } from "vuex-cache";
+import { mapActions as vuexMapActions, mapGetters } from "vuex";
 import { HasAttributesMixin } from "./utils";
+
+import { useDbKeyStore } from "stores/dbKeyStore";
+import { mapActions, mapState } from "pinia";
+import { useDatatypeStore } from "../../stores/datatypeStore";
 
 export const SimpleProviderMixin = {
     props: {
@@ -57,20 +60,20 @@ export const DbKeyProvider = {
         await this.load();
     },
     methods: {
-        ...mapCacheActions(["fetchUploadDbKeys"]),
+        ...mapActions(useDbKeyStore, ["fetchUploadDbKeys"]),
         async load() {
             this.loading = true;
-            let dbKeys = this.getUploadDbKeys();
+            let dbKeys = this.getUploadDbKeys;
             if (dbKeys == null || dbKeys.length == 0) {
                 await this.fetchUploadDbKeys();
-                dbKeys = this.getUploadDbKeys();
+                dbKeys = this.getUploadDbKeys;
             }
             this.item = dbKeys;
             this.loading = false;
         },
     },
     computed: {
-        ...mapGetters(["getUploadDbKeys"]),
+        ...mapState(useDbKeyStore, ["getUploadDbKeys"]),
     },
 };
 
@@ -83,20 +86,20 @@ export const DatatypesProvider = {
         await this.load();
     },
     methods: {
-        ...mapCacheActions(["fetchUploadDatatypes"]),
+        ...mapActions(useDatatypeStore, ["fetchUploadDatatypes"]),
         async load() {
             this.loading = true;
-            let datatypes = this.getUploadDatatypes();
+            let datatypes = this.getUploadDatatypes;
             if (datatypes == null || datatypes.length == 0) {
                 await this.fetchUploadDatatypes();
-                datatypes = this.getUploadDatatypes();
+                datatypes = this.getUploadDatatypes;
             }
             this.item = datatypes;
             this.loading = false;
         },
     },
     computed: {
-        ...mapGetters(["getUploadDatatypes"]),
+        ...mapState(useDatatypeStore, ["getUploadDatatypes"]),
     },
 };
 
@@ -171,7 +174,7 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
             });
         },
         methods: {
-            ...mapActions([storeAction]),
+            ...vuexMapActions([storeAction]),
             async load() {
                 this.loading = true;
                 try {
@@ -190,3 +193,4 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
 export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
 export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
 export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems", "getTotalMatchesCount");
+export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");

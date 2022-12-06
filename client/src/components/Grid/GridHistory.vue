@@ -3,7 +3,7 @@
 </template>
 
 <script>
-import HistoryList from "mvc/history/history-list";
+import HistoryList from "./history-list";
 export default {
     props: {
         actionId: {

@@ -59,11 +59,14 @@
                     <textarea
                         v-if="row.item.editMode"
                         v-model="row.item.name"
+                        aria-label="Library name"
                         class="form-control input_library_name"
                         rows="3" />
 
                     <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
-                    <b-link v-else :to="{ path: `folders/${row.item.root_folder_id}` }">{{ row.item.name }}</b-link>
+                    <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">{{
+                        row.item.name
+                    }}</b-link>
                 </template>
                 <template v-slot:cell(description)="{ item }">
                     <LibraryEditField
@@ -90,7 +93,11 @@
                         icon="globe" />
                 </template>
                 <template v-slot:cell(buttons)="row">
-                    <b-button v-if="row.item.deleted" :title="'Undelete ' + row.item.name" @click="undelete(row.item)">
+                    <b-button
+                        v-if="row.item.deleted"
+                        size="sm"
+                        :title="'Undelete ' + row.item.name"
+                        @click="undelete(row.item)">
                         <font-awesome-icon icon="unlock" />
                         {{ titleUndelete }}
                     </b-button>
@@ -104,7 +111,7 @@
                         {{ titleSave }}
                     </b-button>
                     <b-button
-                        v-if="row.item.can_user_modify"
+                        v-if="row.item.can_user_modify && !row.item.deleted"
                         size="sm"
                         class="lib-btn edit_library_btn save_library_btn"
                         :title="`Edit ${row.item.name}`"
@@ -119,16 +126,16 @@
                         </div>
                     </b-button>
                     <b-button
-                        v-if="user.is_admin"
+                        v-if="user.is_admin && !row.item.deleted"
                         size="sm"
                         class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
-                        :to="{ path: `/${row.item.id}/permissions` }">
+                        :to="{ path: `/libraries/${row.item.id}/permissions` }">
                         <font-awesome-icon icon="users" />
                         Manage
                     </b-button>
                     <b-button
-                        v-if="user.is_admin && row.item.editMode"
+                        v-if="user.is_admin && row.item.editMode && !row.item.deleted"
                         size="sm"
                         class="lib-btn delete-lib-btn"
                         :title="`Delete ${row.item.name}`"
@@ -182,7 +189,7 @@ import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import { fields } from "./table-fields";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";

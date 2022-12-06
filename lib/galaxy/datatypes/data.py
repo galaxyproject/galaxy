@@ -1,4 +1,3 @@
-import abc
 import logging
 import mimetypes
 import os
@@ -34,10 +33,13 @@ from galaxy.util import (
     FILENAME_VALID_CHARS,
     inflector,
     iter_start_of_line,
-    smart_str,
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.markdown import (
+    indicate_data_truncated,
+    literal_via_fence,
+)
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.util.zipstream import ZipstreamWrapper
 from . import (
@@ -119,7 +121,7 @@ def get_params_and_input_name(converter, deps, target_context=None):
     return params, input_name
 
 
-class DataMeta(abc.ABCMeta):
+class DataMeta(type):
     """
     Metaclass for Data class.  Sets up metadata spec.
     """
@@ -206,14 +208,6 @@ class Data(metaclass=DataMeta):
         if cls.allow_datatype_change is not None:
             return cls.allow_datatype_change
         return cls.composite_type is None
-
-    def get_raw_data(self, dataset):
-        """Returns the full data. To stream it open the file_name and read/write as needed"""
-        try:
-            return open(dataset.file_name, "rb").read(-1)
-        except OSError:
-            log.exception("%s reading a file that does not exist %s", self.__class__.__name__, dataset.file_name)
-            return ""
 
     def dataset_content_needs_grooming(self, file_name):
         """This function is called on an output dataset file after the content is initially generated."""
@@ -425,8 +419,6 @@ class Data(metaclass=DataMeta):
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         headers["X-Content-Type-Options"] = "nosniff"
-        if isinstance(data, str):
-            return smart_str(data), headers
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = data.dataset.extra_files_path_name
@@ -462,7 +454,7 @@ class Data(metaclass=DataMeta):
                 mime = mimetypes.guess_type(file_path)[0]
                 if not mime:
                     try:
-                        mime = trans.app.datatypes_registry.get_mimetype_by_extension(".".split(file_path)[-1])
+                        mime = trans.app.datatypes_registry.get_mimetype_by_extension(file_path.split(".")[-1])
                     except Exception:
                         mime = "text/plain"
                 self._clean_and_set_mime_type(trans, mime, headers)
@@ -512,7 +504,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance, markdown_format_helpers):
+    def display_as_markdown(self, dataset_instance: "DatasetInstance"):
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented
@@ -535,9 +527,9 @@ class Data(metaclass=DataMeta):
         else:
             with open(dataset_instance.file_name) as f:
                 contents = f.read(DEFAULT_MAX_PEEK_SIZE)
-            result = markdown_format_helpers.literal_via_fence(contents)
+            result = literal_via_fence(contents)
             if len(contents) == DEFAULT_MAX_PEEK_SIZE:
-                result += markdown_format_helpers.indicate_data_truncated()
+                result += indicate_data_truncated()
         return result
 
     def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):

@@ -20,11 +20,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-import nose.config
-import nose.core
-import nose.loader
-import nose.plugins.manager
-
 from galaxy.app import UniverseApplication as GalaxyUniverseApplication
 from galaxy.config import LOGGING_CONFIG_DEFAULT
 from galaxy.model import mapping
@@ -54,8 +49,6 @@ from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     target_url_parts,
 )
-from galaxy_test.base.instrument import StructuredTestDataPlugin
-from galaxy_test.base.nose_util import run
 from tool_shed.webapp.app import UniverseApplication as ToolshedUniverseApplication
 from tool_shed.webapp.fast_app import initialize_fast_app as init_tool_shed_fast_app
 from .test_logging import logging_config_file
@@ -79,7 +72,6 @@ log = logging.getLogger("test_driver")
 
 # Global variables to pass database contexts around - only needed for older
 # Tool Shed twill tests that didn't utilize the API for such interactions.
-galaxy_context = None
 tool_shed_context = None
 install_context = None
 
@@ -101,19 +93,6 @@ def get_galaxy_test_tmp_dir():
     if galaxy_test_tmp_dir is None:
         galaxy_test_tmp_dir = tempfile.mkdtemp()
     return galaxy_test_tmp_dir
-
-
-def configure_environment():
-    """Hack up environment for test cases."""
-    # no op remove if unused
-    if "HTTP_ACCEPT_LANGUAGE" not in os.environ:
-        os.environ["HTTP_ACCEPT_LANGUAGE"] = DEFAULT_LOCALES
-
-    # Used by get_filename in tool shed's twilltestcase.
-    if "TOOL_SHED_TEST_FILE_DIR" not in os.environ:
-        os.environ["TOOL_SHED_TEST_FILE_DIR"] = TOOL_SHED_TEST_DATA
-
-    os.environ["GALAXY_TEST_ENVIRONMENT_CONFIGURED"] = "1"
 
 
 def build_logger():
@@ -341,36 +320,6 @@ def _tool_data_table_config_path(default_tool_data_table_config_path=None):
     return tool_data_table_config_path
 
 
-def nose_config_and_run(argv=None, env=None, ignore_files=None, plugins=None):
-    """Setup a nose context and run tests.
-
-    Tests are specified by argv (defaulting to sys.argv).
-    """
-    if env is None:
-        env = os.environ
-    if ignore_files is None:
-        ignore_files = []
-    if plugins is None:
-        plugins = nose.plugins.manager.DefaultPluginManager()
-    if argv is None:
-        argv = sys.argv
-
-    test_config = nose.config.Config(
-        env=os.environ,
-        ignoreFiles=ignore_files,
-        plugins=plugins,
-    )
-
-    # Add custom plugin to produce JSON data used by planemo.
-    test_config.plugins.addPlugin(StructuredTestDataPlugin())
-    test_config.configure(argv)
-
-    result = run(test_config)
-
-    success = result.wasSuccessful()
-    return success
-
-
 def copy_database_template(source, db_path):
     """Copy a 'clean' sqlite template database.
 
@@ -511,6 +460,8 @@ def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=
         prefix = f"{prefix}/"
     for _ in range(sleep_tries):
         # directly test the app, not the proxy
+        if port and isinstance(port, str):
+            port = int(port)
         conn = http.client.HTTPConnection(host, port)
         try:
             conn.request("GET", prefix)
@@ -526,7 +477,7 @@ def wait_for_http_server(host, port, prefix=None, sleep_amount=0.1, sleep_tries=
         raise Exception(message)
 
 
-def attempt_port(port):
+def attempt_port(port: int) -> Optional[int]:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
         sock.bind(("", port))
@@ -536,9 +487,9 @@ def attempt_port(port):
         return None
 
 
-def attempt_ports(port=None, set_galaxy_web_port=True):
+def attempt_ports(port=None, set_galaxy_web_port=True) -> str:
     if port is not None:
-        if not attempt_port(port):
+        if not attempt_port(int(port)):
             raise Exception(f"An existing process seems bound to specified test server port [{port}]")
         return port
     else:
@@ -633,9 +584,7 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     app = GalaxyUniverseApplication(**simple_kwargs)
     log.info("Embedded Galaxy application started")
 
-    global galaxy_context
     global install_context
-    galaxy_context = app.model.context
     install_context = app.install_model.context
 
     # Toolbox indexing happens via the work queue out of band recently, and,
@@ -793,7 +742,7 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     if "interactivetools_proxy_host" not in galaxy_config:
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
     # Can't use in-memory celery broker, just fall back to sqlalchemy
-    galaxy_config.pop("celery_broker", None)
+    galaxy_config.update({"celery_conf": {"broker_url": None}})
     config = {
         "gravity": {
             "gunicorn": {"bind": f"localhost:{port}", "preload": "false"},
@@ -864,14 +813,14 @@ def launch_server(app_factory, webapp_factory, prefix=DEFAULT_CONFIG_PREFIX, gal
 
     server, port, thread = uvicorn_serve(asgi_app, host=host, port=port)
     set_and_wait_for_http_target(prefix, host, port, url_prefix=url_prefix)
-    log.info(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
+    log.debug(f"Embedded uvicorn web server for {name} started at {host}:{port}{url_prefix}")
     return EmbeddedServerWrapper(app, server, name, host, port, thread=thread, prefix=url_prefix)
 
 
 class TestDriver:
     """Responsible for the life-cycle of a Galaxy-style functional test.
 
-    Sets up servers, configures tests, runs nose, and tears things
+    Sets up servers, configures tests, and tears things
     down. This is somewhat like a Python TestCase - but different
     because it is meant to provide a main() endpoint.
     """
@@ -883,11 +832,11 @@ class TestDriver:
         self.server_wrappers = []
         self.temp_directories = []
 
-    def setup(self):
+    def setup(self, config_object=None):
         """Called before tests are built."""
 
     def build_tests(self):
-        """After environment is setup, setup nose tests."""
+        """After environment is setup, setup tests."""
 
     def tear_down(self):
         """Cleanup resources tracked by this object."""
@@ -909,34 +858,15 @@ class TestDriver:
             )
         self.server_wrappers = []
 
-    def mkdtemp(self):
+    def mkdtemp(self) -> str:
         """Return a temp directory that is properly cleaned up or not based on the config."""
         temp_directory = tempfile.mkdtemp()
         self.temp_directories.append(temp_directory)
         return temp_directory
 
-    def run(self):
-        """Driver whole test.
-
-        Setup environment, build tests (if needed), run test,
-        and finally cleanup resources.
-        """
-        configure_environment()
-        self.setup()
-        self.build_tests()
-        try:
-            success = nose_config_and_run()
-            return 0 if success else 1
-        except Exception as e:
-            log.info("Failure running tests")
-            raise e
-        finally:
-            log.info("Shutting down")
-            self.tear_down()
-
 
 class GalaxyTestDriver(TestDriver):
-    """Instantial a Galaxy-style nose TestDriver for testing Galaxy."""
+    """Instantial a Galaxy-style TestDriver for testing Galaxy."""
 
     server_wrappers: List[ServerWrapper]
     testing_shed_tools = False
@@ -1114,7 +1044,6 @@ __all__ = (
     "FRAMEWORK_DATATYPES_CONF",
     "database_conf",
     "get_webapp_global_conf",
-    "nose_config_and_run",
     "setup_galaxy_config",
     "TestDriver",
     "wait_for_http_server",

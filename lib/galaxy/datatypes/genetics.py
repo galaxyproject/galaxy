@@ -787,17 +787,22 @@ class RexpBase(Html):
             p = [f"##failed to find {pp}"]
         return "".join(p[:5])
 
-    def get_file_peek(self, filename):
+    def get_file_peek(self, filename: str) -> str:
         """
-        can't really peek at a filename - need the extra_files_path and such?
+        Read and return the first `max_lines`.
+        (Can't really peek at a filename - need the extra_files_path and such?)
         """
-        h = "## rexpression get_file_peek: no file found"
+        max_lines = 5
         try:
             with open(filename) as f:
-                h = f.readlines()
+                lines = []
+                for line in f:
+                    lines.append(line)
+                    if len(lines) == max_lines:
+                        break
+                return "".join(lines)
         except Exception:
-            pass
-        return "".join(h[:5])
+            return "## rexpression get_file_peek: no file found"
 
     def regenerate_primary_file(self, dataset):
         """
@@ -1236,9 +1241,3 @@ class AllegroLOD(LinkageStudies):
                 return False
 
         return True
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

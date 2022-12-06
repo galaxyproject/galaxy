@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class ChangePasswordTestCase(SeleniumTestCase):
+class TestChangePassword(SeleniumTestCase):
     @selenium_test
     def test_change_password(self):
         self.home()

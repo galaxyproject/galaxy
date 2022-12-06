@@ -1,7 +1,7 @@
 import { getGalaxyInstance } from "app";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import _l from "utils/localization";
-import mod_library_model from "mvc/library/library-model";
+import mod_library_model from "./library-model";
 import _ from "underscore";
 import Backbone from "backbone";
 import $ from "jquery";

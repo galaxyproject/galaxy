@@ -6,7 +6,7 @@ from .framework import (
 )
 
 
-class HistoryImportExportFtpSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
+class TestHistoryImportExportFtpSeleniumIntegration(SeleniumIntegrationTestCase):
     ensure_registered = True
 
     @classmethod

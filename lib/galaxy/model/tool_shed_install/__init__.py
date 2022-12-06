@@ -1,7 +1,13 @@
 import logging
 import os
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from sqlalchemy import (
     Boolean,
@@ -10,14 +16,12 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    Table,
     TEXT,
 )
 from sqlalchemy.orm import (
     registry,
     relationship,
 )
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 from galaxy.model.custom_types import (
     MutableJSONType,
@@ -34,12 +38,14 @@ log = logging.getLogger(__name__)
 mapper_registry = registry()
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
 
-    class _HasTable:
-        table: Table
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
 
 else:
-    _HasTable = object
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
 
 
 class Base(metaclass=DeclarativeMeta):
@@ -53,7 +59,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class ToolShedRepository(Base, _HasTable):
+class ToolShedRepository(Base):
     __tablename__ = "tool_shed_repository"
 
     id = Column(Integer, primary_key=True)
@@ -146,7 +152,6 @@ class ToolShedRepository(Base, _HasTable):
         changeset_revision=None,
         ctx_rev=None,
         metadata_=None,
-        includes_datatypes=False,
         tool_shed_status=None,
         deleted=False,
         uninstalled=False,
@@ -164,7 +169,6 @@ class ToolShedRepository(Base, _HasTable):
         self.changeset_revision = changeset_revision
         self.ctx_rev = ctx_rev
         self.metadata_ = metadata_ or {}
-        self.includes_datatypes = includes_datatypes
         self.tool_shed_status = tool_shed_status
         self.deleted = deleted
         self.uninstalled = uninstalled
@@ -172,7 +176,7 @@ class ToolShedRepository(Base, _HasTable):
         self.status = status
         self.error_message = error_message
 
-    def as_dict(self, value_mapper=None):
+    def as_dict(self, value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         return self.to_dict(view="element", value_mapper=value_mapper)
 
     @property
@@ -330,10 +334,6 @@ class ToolShedRepository(Base, _HasTable):
     @property
     def includes_tool_dependencies(self):
         return "tool_dependencies" in self.metadata_
-
-    @property
-    def includes_workflows(self):
-        return "workflows" in self.metadata_
 
     @property
     def installed_repository_dependencies(self):
@@ -521,7 +521,7 @@ class ToolShedRepository(Base, _HasTable):
             return asbool(self.tool_shed_status.get("revision_update", False))
         return False
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view="collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -533,7 +533,7 @@ class ToolShedRepository(Base, _HasTable):
             try:
                 rval[key] = self.__getattribute__(key)
                 if key in value_mapper:
-                    rval[key] = value_mapper.get(key, rval[key])
+                    rval[key] = value_mapper[key](rval[key])
             except AttributeError:
                 rval[key] = None
         return rval
@@ -640,7 +640,7 @@ class ToolShedRepository(Base, _HasTable):
         return False
 
 
-class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
+class RepositoryRepositoryDependencyAssociation(Base):
     __tablename__ = "repository_repository_dependency_association"
 
     id = Column(Integer, primary_key=True)
@@ -656,7 +656,7 @@ class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
         self.repository_dependency_id = repository_dependency_id
 
 
-class RepositoryDependency(Base, _HasTable):
+class RepositoryDependency(Base):
     __tablename__ = "repository_dependency"
 
     id = Column(Integer, primary_key=True)
@@ -669,7 +669,7 @@ class RepositoryDependency(Base, _HasTable):
         self.tool_shed_repository_id = tool_shed_repository_id
 
 
-class ToolDependency(Base, _HasTable):
+class ToolDependency(Base):
     __tablename__ = "tool_dependency"
 
     id = Column(Integer, primary_key=True)
@@ -727,13 +727,6 @@ class ToolDependency(Base, _HasTable):
             self.installation_status.UNINSTALLED,
         ]
 
-    def get_env_shell_file_path(self, app):
-        installation_directory = self.installation_directory(app)
-        file_path = os.path.join(installation_directory, "env.sh")
-        if os.path.exists(file_path):
-            return file_path
-        return None
-
     @property
     def in_error_state(self):
         return self.status == self.installation_status.ERROR
@@ -757,13 +750,14 @@ class ToolDependency(Base, _HasTable):
                 self.tool_shed_repository.name,
                 self.tool_shed_repository.installed_changeset_revision,
             )
+        return None
 
     @property
     def is_installed(self):
         return self.status == self.installation_status.INSTALLED
 
 
-class ToolVersion(Base, Dictifiable, _HasTable):
+class ToolVersion(Base, Dictifiable):
     __tablename__ = "tool_version"
 
     id = Column(Integer, primary_key=True)
@@ -791,7 +785,7 @@ class ToolVersion(Base, Dictifiable, _HasTable):
         return rval
 
 
-class ToolVersionAssociation(Base, _HasTable):
+class ToolVersionAssociation(Base):
     __tablename__ = "tool_version_association"
 
     id = Column(Integer, primary_key=True)

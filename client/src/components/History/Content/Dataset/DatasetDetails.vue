@@ -2,7 +2,7 @@
     <DatasetProvider :id="dataset.id" v-slot="{ loading, result }" auto-refresh>
         <div v-if="!loading" class="dataset">
             <div class="p-2 details not-loading">
-                <div class="summary text-nowrap">
+                <div class="summary">
                     <div v-if="stateText" class="mb-1">{{ stateText }}</div>
                     <div v-else-if="result.misc_blurb" class="blurb">
                         <span class="value">{{ result.misc_blurb }}</span>
@@ -23,6 +23,7 @@
                 </div>
                 <DatasetActions
                     :item="result"
+                    :writable="writable"
                     :show-highlight="showHighlight"
                     :item-urls="itemUrls"
                     @toggleHighlights="toggleHighlights" />
@@ -97,6 +98,7 @@ export default {
     },
     props: {
         dataset: { type: Object, required: true },
+        writable: { type: Boolean, default: true },
         showHighlight: { type: Boolean, default: false },
         itemUrls: { type: Object, required: true },
     },

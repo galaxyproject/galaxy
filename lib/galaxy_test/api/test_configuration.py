@@ -3,6 +3,7 @@ from galaxy_test.base.api_asserts import (
     assert_not_has_keys,
 )
 from galaxy_test.base.api_util import TEST_USER
+from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 TEST_KEYS_FOR_ALL_USERS = [
@@ -22,7 +23,7 @@ TEST_KEYS_FOR_ADMIN_ONLY = [
 ]
 
 
-class ConfigurationApiTestCase(ApiTestCase):
+class TestConfigurationApi(ApiTestCase):
     def test_whoami(self):
         response = self._get("whoami")
         self._assert_status_code_is(response, 200)
@@ -33,6 +34,7 @@ class ConfigurationApiTestCase(ApiTestCase):
         assert_has_keys(config, *TEST_KEYS_FOR_ALL_USERS)
         assert_not_has_keys(config, *TEST_KEYS_FOR_ADMIN_ONLY)
 
+    @requires_admin
     def test_admin_user_configuration(self):
         config = self._get_configuration(admin=True)
         assert_has_keys(config, *TEST_KEYS_FOR_ALL_USERS)

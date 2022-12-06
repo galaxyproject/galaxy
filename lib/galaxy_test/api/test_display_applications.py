@@ -1,10 +1,11 @@
 import random
 from typing import List
 
+from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 
-class DisplayApplicationsApiTestCase(ApiTestCase):
+class TestDisplayApplicationsApi(ApiTestCase):
     def test_index(self):
         response = self._get("display_applications")
         self._assert_status_code_is(response, 200)
@@ -14,10 +15,12 @@ class DisplayApplicationsApiTestCase(ApiTestCase):
         for display_app in as_list:
             self._assert_has_keys(display_app, "id", "name", "version", "filename_", "links")
 
+    @requires_admin
     def test_reload_as_admin(self):
         response = self._post("display_applications/reload", admin=True)
         self._assert_status_code_is(response, 200)
 
+    @requires_admin
     def test_reload_with_some_ids(self):
         response = self._get("display_applications")
         self._assert_status_code_is(response, 200)
@@ -31,7 +34,8 @@ class DisplayApplicationsApiTestCase(ApiTestCase):
         assert len(reloaded) == len(input_ids)
         assert all(elem in reloaded for elem in input_ids)
 
-    def test_reload_unknow_returns_as_failed(self):
+    @requires_admin
+    def test_reload_unknown_returns_as_failed(self):
         unknown_id = "unknown"
         payload = {"ids": [unknown_id]}
         response = self._post("display_applications/reload", payload, admin=True)

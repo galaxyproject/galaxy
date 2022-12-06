@@ -1,7 +1,7 @@
 <template>
     <CurrentUser v-slot="{ user }">
         <div v-if="user.is_admin">
-            <h3>Destination Parameters</h3>
+            <h2 class="h-md">Destination Parameters</h2>
             <table id="destination_parameters" class="tabletip info_data_table">
                 <tbody>
                     <tr v-for="(value, title) in jobDestinationParams" :key="title">

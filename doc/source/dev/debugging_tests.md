@@ -34,13 +34,13 @@ The following instructions assume that you have cloned your Galaxy fork into ~/g
 ![VS Code Tests](tests.png)
 9. Expand integration/unit tests, select a test to display its source code in editor, add a breakpoint, and start the debugger by clicking on the debug icon (next to test name)
 
-## Debugging tests within github actions
+## Debugging tests within GitHub actions
 
 Sometimes it is necessary to debug tests that work locally. There are a few different strategies one could employ.
 The first step is often to exclude the workflow runs that are passing, so that you don't waste time waiting for your test.
-To do this you can delete all the workflow files in .github/workflows/*.yaml except for the one that sets up the failing test.
+To do this you can delete all the workflow YAML files in `.github/workflows/` except for the one that sets up the failing test.
 
-If the yaml file has a strategy section that sets up multiple tests keep just the one that contains the failing test.
+If the YAML file has a strategy section that sets up multiple tests keep just the one that contains the failing test.
 If the test never finishes, add `-s` to the options that `run_tests.sh` pass to `pytest` (i.e. `-s` needs to be after a `--`), so you can see live output.
 This diff here adds `-s` and disables strategies that are already passing:
 
@@ -73,3 +73,14 @@ If that's not enough and you need to snoop around the process, halting it and in
 and run the test manually. You can do this by injecting a step that inserts an ssh session via [tmate](https://github.com/mxschmitt/action-tmate#use-registered-public-ssh-keys), then use your favorite tools like py-spy or similar to look at the test while it's failing or getting stuck.
 
 Note that you probably don't want to do this on a PR branch, where all your tests are still going to run. Instead run this only against your fork.
+
+# Debugging tests that run out of memory
+
+You can profile the memory used in tests by installing
+[pytest-memray](https://pytest-memray.readthedocs.io/) in your virtual
+environment, activating it by setting `memray = true` in `pytest.ini`, then run
+the problematic tests in the usual way. After the tests finish, a report is
+produced by memray.
+
+Note that `pytest-memray` cannot profile test classes that inherit from
+`unittest.TestCase` .

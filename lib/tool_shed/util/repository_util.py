@@ -5,6 +5,7 @@ import re
 
 from markupsafe import escape
 from sqlalchemy import false
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql import select
 
 import tool_shed.dependencies.repository
@@ -13,8 +14,6 @@ from galaxy import (
     web,
 )
 from galaxy.tool_shed.util.repository_util import (
-    check_for_updates,
-    check_or_update_tool_shed_status_for_installed_repository,
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
     generate_tool_shed_repository_install_dir,
@@ -32,7 +31,6 @@ from galaxy.tool_shed.util.repository_util import (
     get_repository_dependency_types,
     get_repository_for_dependency_relationship,
     get_repository_ids_requiring_prior_import_or_install,
-    get_repository_in_tool_shed,
     get_repository_owner,
     get_repository_owner_from_clone_url,
     get_repository_query,
@@ -232,6 +230,14 @@ def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_rev
     return sharable_url
 
 
+def get_repository_in_tool_shed(app, id, eagerload_columns=None):
+    """Get a repository on the tool shed side from the database via id."""
+    q = get_repository_query(app)
+    if eagerload_columns:
+        q = q.options(joinedload(*eagerload_columns))
+    return q.get(app.security.decode_id(id))
+
+
 def get_repo_info_dict(app, user, repository_id, changeset_revision):
     repository = get_repository_in_tool_shed(app, repository_id)
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
@@ -353,63 +359,6 @@ def get_repositories_by_category(
         else:
             repositories.append(repository_dict)
     return repositories
-
-
-def get_tool_shed_repository_status_label(
-    app, tool_shed_repository=None, name=None, owner=None, changeset_revision=None, repository_clone_url=None
-):
-    """Return a color-coded label for the status of the received tool-shed_repository installed into Galaxy."""
-    if tool_shed_repository is None:
-        if name is not None and owner is not None and repository_clone_url is not None:
-            tool_shed = get_tool_shed_from_clone_url(repository_clone_url)
-            tool_shed_repository = get_installed_repository(
-                app, tool_shed=tool_shed, name=name, owner=owner, installed_changeset_revision=changeset_revision
-            )
-    if tool_shed_repository:
-        status_label = tool_shed_repository.status
-        if tool_shed_repository.status in [
-            app.install_model.ToolShedRepository.installation_status.CLONING,
-            app.install_model.ToolShedRepository.installation_status.SETTING_TOOL_VERSIONS,
-            app.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-            app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
-            app.install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
-        ]:
-            bgcolor = app.install_model.ToolShedRepository.states.INSTALLING
-        elif tool_shed_repository.status in [
-            app.install_model.ToolShedRepository.installation_status.NEW,
-            app.install_model.ToolShedRepository.installation_status.UNINSTALLED,
-        ]:
-            bgcolor = app.install_model.ToolShedRepository.states.UNINSTALLED
-        elif tool_shed_repository.status in [app.install_model.ToolShedRepository.installation_status.ERROR]:
-            bgcolor = app.install_model.ToolShedRepository.states.ERROR
-        elif tool_shed_repository.status in [app.install_model.ToolShedRepository.installation_status.DEACTIVATED]:
-            bgcolor = app.install_model.ToolShedRepository.states.WARNING
-        elif tool_shed_repository.status in [app.install_model.ToolShedRepository.installation_status.INSTALLED]:
-            if tool_shed_repository.repository_dependencies_being_installed:
-                bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = "{}, {}".format(
-                    status_label,
-                    app.install_model.ToolShedRepository.installation_status.INSTALLING_REPOSITORY_DEPENDENCIES,
-                )
-            elif tool_shed_repository.missing_repository_dependencies:
-                bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = f"{status_label}, missing repository dependencies"
-            elif tool_shed_repository.tool_dependencies_being_installed:
-                bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = "{}, {}".format(
-                    status_label, app.install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES
-                )
-            elif tool_shed_repository.missing_tool_dependencies:
-                bgcolor = app.install_model.ToolShedRepository.states.WARNING
-                status_label = f"{status_label}, missing tool dependencies"
-            else:
-                bgcolor = app.install_model.ToolShedRepository.states.OK
-        else:
-            bgcolor = app.install_model.ToolShedRepository.states.ERROR
-    else:
-        bgcolor = app.install_model.ToolShedRepository.states.WARNING
-        status_label = "unknown status"
-    return f'<div class="count-box state-color-{bgcolor}">{status_label}</div>'
 
 
 def handle_role_associations(app, role, repository, **kwd):
@@ -585,8 +534,6 @@ def validate_repository_name(app, name, user):
 
 __all__ = (
     "change_repository_name_in_hgrc_file",
-    "check_for_updates",
-    "check_or_update_tool_shed_status_for_installed_repository",
     "create_or_update_tool_shed_repository",
     "create_repo_info_dict",
     "create_repository_admin_role",
@@ -617,7 +564,6 @@ __all__ = (
     "get_role_by_id",
     "get_tool_shed_from_clone_url",
     "get_tool_shed_repository_by_id",
-    "get_tool_shed_repository_status_label",
     "get_tool_shed_status_for_installed_repository",
     "handle_role_associations",
     "is_tool_shed_client",

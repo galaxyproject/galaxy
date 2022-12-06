@@ -1,7 +1,7 @@
 <template>
     <CurrentUser v-if="dependencies && dependencies.length > 0" v-slot="{ user }">
         <div>
-            <h3>Job Dependencies</h3>
+            <h2 class="h-md">Job Dependencies</h2>
             <table class="tabletip">
                 <thead>
                     <tr>

@@ -53,26 +53,6 @@
 :Type: str
 
 
-~~~~~~~~~
-``debug``
-~~~~~~~~~
-
-:Description:
-    Configuration for debugging middleware
-:Default: ``false``
-:Type: bool
-
-
-~~~~~~~~~~~~
-``use_lint``
-~~~~~~~~~~~~
-
-:Description:
-    Check for WSGI compliance.
-:Default: ``false``
-:Type: bool
-
-
 ~~~~~~~~~~~~~~~~~
 ``use_heartbeat``
 ~~~~~~~~~~~~~~~~~
@@ -80,16 +60,6 @@
 :Description:
     Write thread status periodically to 'heartbeat.log' (careful, uses
     disk space rapidly!)
-:Default: ``true``
-:Type: bool
-
-
-~~~~~~~~~~~~~~~
-``use_profile``
-~~~~~~~~~~~~~~~
-
-:Description:
-    Profiling middleware (cProfile based)
 :Default: ``true``
 :Type: bool
 

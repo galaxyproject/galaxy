@@ -42,29 +42,11 @@ mapping:
           Mako templates are compiled as needed and cached for reuse, this directory is
           used for the cache
 
-      debug:
-        type: bool
-        default: false
-        desc: |
-          Configuration for debugging middleware
-
-      use_lint:
-        type: bool
-        default: false
-        desc: |
-          Check for WSGI compliance.
-
       use_heartbeat:
         type: bool
         default: true
         desc: |
           Write thread status periodically to 'heartbeat.log' (careful, uses disk space rapidly!)
-
-      use_profile:
-        type: bool
-        default: true
-        desc: |
-          Profiling middleware (cProfile based)
 
       smtp_server:
         type: str

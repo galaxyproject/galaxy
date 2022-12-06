@@ -161,11 +161,14 @@ gravity:
     # upload_dir:
 
     # Comma-separated string of enabled tusd hooks.
+    # 
     # Leave at the default value to require authorization at upload creation time.
     # This means Galaxy's web process does not need to be running after creating the initial
     # upload request.
+    # 
     # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
     # without the Galaxy web process being available.
+    # 
     # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
     # hooks_enabled_events: pre-create
 
@@ -199,6 +202,15 @@ galaxy:
   # if running Galaxy from source or `<config_dir>/data` otherwise.
   #data_dir: null
 
+  # The directory containing custom templates for Galaxy, such as
+  # HTML/text email templates. Defaults to 'templates'. Default
+  # templates can be found in the Galaxy root under config/templates.
+  # These can be copied to <templates_dir> if you wish to customize
+  # them.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #templates_dir: templates
+
   # Top level cache directory. Any other cache directories
   # (tool_cache_data_dir, template_cache_path, etc.) should be
   # subdirectories.
@@ -207,10 +219,18 @@ galaxy:
   #cache_dir: cache
 
   # By default, Galaxy uses a SQLite database at
-  # '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
+  # '<data_dir>/universe.sqlite'. You may use a SQLAlchemy connection
   # string to specify an external database instead.
   # Sample default
   # 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+  # You may specify additional options that will be passed to the
+  # SQLAlchemy database engine by using the prefix
+  # "database_engine_option_". For some of these options, default values
+  # are provided (e.g. see database_engine_option_pool_size, etc.).
+  # The same applies to `install_database_connection`, for which you
+  # should use the "install_database_engine_option_" prefix.
+  # For more options, please check SQLAlchemy's documentation at
+  # https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
   #database_connection: null
 
   # If the server logs errors about not having enough database pool
@@ -463,15 +483,6 @@ galaxy:
   # <config_dir>.
   #tool_sheds_config_file: tool_sheds_conf.xml
 
-  # This option controls whether legacy datatypes are loaded from
-  # installed tool shed repositories. We're are in the process of
-  # disabling Tool Shed datatypes. This option with a default of true
-  # will be added in 22.01, we will disable the datatypes on the big
-  # public servers during that release. This option will be switched to
-  # False by default in 22.05 and this broken functionality will be
-  # removed all together during some future release.
-  #load_tool_shed_datatypes: true
-
   # Monitor the tools and tool directories listed in any tool config
   # file specified in tool_config_file option.  If changes are found,
   # tools are automatically reloaded. Watchdog (
@@ -695,12 +706,6 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #job_working_directory: jobs_directory
-
-  # If using a cluster, Galaxy will write job scripts and stdout/stderr
-  # to this directory.
-  # The value of this option will be resolved with respect to
-  # <data_dir>.
-  #cluster_files_directory: pbs
 
   # Mako templates are compiled as needed and cached for reuse, this
   # directory is used for the cache
@@ -1066,7 +1071,8 @@ galaxy:
   # Append "{brand}" text to the masthead.
   #brand: null
 
-  # Display the "Galaxy" text in the masthead.
+  # This option has been deprecated, use the `logo_src` instead to
+  # change the default logo including the galaxy brand title.
   #display_galaxy_brand: true
 
   # Format string used when showing date and time information. The
@@ -1115,8 +1121,7 @@ galaxy:
   # file staging and Interactive Tool containers for communicating back
   # with Galaxy via the API.
   # If you plan to run Interactive Tools make sure the docker container
-  # can reach this URL. For more details see
-  # `job_conf.xml.interactivetools`.
+  # can reach this URL.
   #galaxy_infrastructure_url: http://localhost:8080
 
   # If the above URL cannot be determined ahead of time in dynamic
@@ -1360,14 +1365,35 @@ galaxy:
   # "loggers" section does not appear in this configuration file.
   #auto_configure_logging: true
 
-  # Verbosity of console log messages.  Acceptable values can be found
+  # Log destination, defaults to special value "stdout" that logs to
+  # standard output. If set to anything else, then it will be
+  # interpreted as a path that will be used as the log file, and logging
+  # to stdout will be disabled.
+  #log_destination: stdout
+
+  # Size of log file at which size it will be rotated as per the
+  # documentation in
+  # https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+  # If log_rotate_count is not also set, no log rotation will be
+  # performed. A value of 0 (the default) means no rotation. Size can be
+  # a number of bytes or a human-friendly representation like "100 MB"
+  # or "1G".
+  #log_rotate_size: '0'
+
+  # Number of log file backups to keep, per the documentation in
+  # https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+  # Any additional rotated log files will automatically be pruned. If
+  # log_rotate_size is not also set, no log rotation will be performed.
+  # A value of 0 (the default) means no rotation.
+  #log_rotate_count: 0
+
+  # Verbosity of console log messages. Acceptable values can be found
   # here: https://docs.python.org/library/logging.html#logging-levels A
   # custom debug level of "TRACE" is available for even more verbosity.
   #log_level: DEBUG
 
-  # Controls where and how the server logs messages. If unset, the
-  # default is to log all messages to standard output at the level
-  # defined by the `log_level` configuration option. Configuration is
+  # Controls where and how the server logs messages. If set, overrides
+  # all settings in the log_* configuration options. Configuration is
   # described in the documentation at:
   # https://docs.galaxyproject.org/en/master/admin/config_logging.html
   #logging: null
@@ -1414,7 +1440,7 @@ galaxy:
   # edited or manipulated through the Admin control panel -- see "Manage
   # Allowlist"
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #sanitize_allowlist_file: sanitize_allowlist.txt
 
   # By default Galaxy will serve non-HTML tool output that may
@@ -1688,6 +1714,10 @@ galaxy:
   # log your users out.
   #remote_user_logout_href: null
 
+  # This is the default url to which users are redirected after they log
+  # out.
+  #post_user_logout_href: /root/login?is_logout_redirect=true
+
   # If your proxy and/or authentication source does not normalize e-mail
   # addresses or user names being passed to Galaxy - set this option to
   # true to force these to lower case.
@@ -1905,7 +1935,7 @@ galaxy:
   # if you need to bootstrap Galaxy, in particular to create a real
   # admin user account via API. You should probably not set this on a
   # production server.
-  #master_api_key: null
+  #bootstrap_admin_api_key: null
 
   # Enable tool tags (associating tools with tags).  This has its own
   # option since its implementation has a few performance implications
@@ -2036,10 +2066,10 @@ galaxy:
   # process and notifies itself of new jobs via in-memory queues.  Jobs
   # are run locally on the system on which Galaxy is started.  Advanced
   # job running capabilities can be configured through the job
-  # configuration file.
+  # configuration file or the <job_config> option.
   # The value of this option will be resolved with respect to
   # <config_dir>.
-  #job_config_file: job_conf.xml
+  #job_config_file: job_conf.yml
 
   # Description of job running configuration, can be embedded into
   # Galaxy configuration or loaded from an additional file with the
@@ -2064,11 +2094,11 @@ galaxy:
 
   # When jobs fail due to job runner problems, Galaxy can be configured
   # to retry these or reroute the jobs to new destinations. Very fine
-  # control of this is available with resubmit declarations in
-  # job_conf.xml. For simple deployments of Galaxy though, the following
+  # control of this is available with resubmit declarations in the job
+  # config. For simple deployments of Galaxy though, the following
   # attribute can define resubmission conditions for all job
   # destinations. If any job destination defines even one resubmission
-  # condition explicitly in job_conf.xml - the condition described by
+  # condition explicitly in the job config - the condition described by
   # this option will not apply to that destination. For instance, the
   # condition: 'attempt < 3 and unknown_error and (time_running < 300 or
   # time_since_queued < 300)' would retry up to two times jobs that
@@ -2332,6 +2362,13 @@ galaxy:
   # if running many handlers.
   #cache_user_job_count: false
 
+  # If true, the toolbox will be sorted by tool id when the toolbox is
+  # loaded. This is useful for ensuring that tools are always displayed
+  # in the same order in the UI.  If false, the order of tools in the
+  # toolbox will be preserved as they are loaded from the tool config
+  # files.
+  #toolbox_auto_sort: true
+
   # Define toolbox filters
   # (https://galaxyproject.org/user-defined-toolbox-filters/) that
   # admins may use to restrict the tools to display.
@@ -2379,16 +2416,24 @@ galaxy:
   # commented out line below).
   #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
+  # Configuration options passed to Celery.
+  # To refer to a task by name, use the template `galaxy.foo` where
+  # `foo` is the function name of the task defined in the
+  # galaxy.celery.tasks module.
+  # The `broker_url` option, if unset, defaults to the value of
+  # `amqp_internal_connection`. The `result_backend` option must be set
+  # if the `enable_celery_tasks` option is set.
+  # For details, see Celery documentation at
+  # https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+  #celery_conf:
+  #  task_routes:
+  #    galaxy.fetch_data: galaxy.external
+  #    galaxy.set_job_metadata: galaxy.external
+
   # Offload long-running tasks to a Celery task queue. Activate this
   # only if you have setup a Celery worker for Galaxy. For details, see
   # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
-
-  # Celery broker (if unset falls back to amqp_internal_connection).
-  #celery_broker: null
-
-  # If set, it will be the results backend for Celery.
-  #celery_backend: null
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific

@@ -276,7 +276,7 @@ import { Services } from "./services";
 import Utils from "utils/utils";
 import linkifyHtml from "linkify-html";
 import { fields } from "./table-fields";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
@@ -510,9 +510,9 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file") {
-                return `/folders/${this.folder_id}/dataset/${element.id}/permissions`;
+                return `/libraries/folders/${this.folder_id}/dataset/${element.id}/permissions`;
             } else if (element.type === "folder") {
-                return `/folders/${element.id}/permissions`;
+                return `/libraries/folders/${element.id}/permissions`;
             }
         },
         getMessage(element) {

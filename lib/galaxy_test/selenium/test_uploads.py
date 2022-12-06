@@ -9,7 +9,7 @@ from .framework import (
 )
 
 
-class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_file(self):
         self.perform_upload(self.get_filename("1.sam"))

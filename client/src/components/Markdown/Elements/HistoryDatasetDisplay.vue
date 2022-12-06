@@ -140,7 +140,7 @@ export default {
             return dataset && dataset.name;
         },
         datatypesUrl() {
-            return "api/datatypes/types_and_mapping";
+            return "/api/datatypes/types_and_mapping";
         },
         downloadUrl() {
             return `${getAppRoot()}dataset/display?dataset_id=${this.args.history_dataset_id}`;
@@ -152,10 +152,10 @@ export default {
             return `${getAppRoot()}dataset/imp?dataset_id=${this.args.history_dataset_id}`;
         },
         itemUrl() {
-            return `api/datasets/${this.args.history_dataset_id}/get_content_as_text`;
+            return `/api/datasets/${this.args.history_dataset_id}/get_content_as_text`;
         },
         metaUrl() {
-            return `api/datasets/${this.args.history_dataset_id}`;
+            return `/api/datasets/${this.args.history_dataset_id}`;
         },
     },
     methods: {

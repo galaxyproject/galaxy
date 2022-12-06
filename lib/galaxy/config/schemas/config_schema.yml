@@ -51,6 +51,14 @@ mapping:
           file_path, etc.). Defaults to `database/` if running Galaxy from source or
           `<config_dir>/data` otherwise.
 
+      templates_dir:
+        type: str
+        path_resolves_to: config_dir
+        required: false
+        default: templates
+        desc: |
+          The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.
+
       cache_dir:
         type: str
         default: cache
@@ -64,11 +72,21 @@ mapping:
         type: str
         required: false
         desc: |
-          By default, Galaxy uses a SQLite database at '<data_dir>/universe.sqlite'.  You
-          may use a SQLAlchemy connection string to specify an external database
-          instead.
+          By default, Galaxy uses a SQLite database at '<data_dir>/universe.sqlite'. You
+          may use a SQLAlchemy connection string to specify an external database instead.
 
           Sample default 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+
+          You may specify additional options that will be passed to the SQLAlchemy
+          database engine by using the prefix "database_engine_option_". For some of these
+          options, default values are provided (e.g. see database_engine_option_pool_size,
+          etc.).
+
+          The same applies to `install_database_connection`, for which you should use the
+          "install_database_engine_option_" prefix.
+
+          For more options, please check SQLAlchemy's documentation at
+          https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
 
       database_engine_option_pool_size:
         type: int
@@ -443,17 +461,6 @@ mapping:
           File containing the Galaxy Tool Sheds that should be made available to
           install from in the admin interface (.sample used if default does not exist).
 
-      load_tool_shed_datatypes:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          This option controls whether legacy datatypes are loaded from installed tool shed repositories.
-          We're are in the process of disabling Tool Shed datatypes. This option with a default of true
-          will be added in 22.01, we will disable the datatypes on the big public servers during that
-          release. This option will be switched to False by default in 22.05 and this broken functionality
-          will be removed all together during some future release.
-
       watch_tools:
         type: str
         default: 'false'
@@ -778,15 +785,6 @@ mapping:
           created.
 
           The value of this option will be resolved with respect to <data_dir>.
-
-      cluster_files_directory:
-        type: str
-        default: pbs
-        path_resolves_to: data_dir
-        required: false
-        desc: |
-          If using a cluster, Galaxy will write job scripts and stdout/stderr to this
-          directory.
 
       template_cache_path:
         type: str
@@ -1370,7 +1368,8 @@ mapping:
         required: false
         per_host: true
         desc: |
-          Display the "Galaxy" text in the masthead.
+          This option has been deprecated, use the `logo_src` instead to change the
+          default logo including the galaxy brand title.
 
       pretty_datetime_format:
         type: str
@@ -1447,7 +1446,7 @@ mapping:
           Galaxy via the API.
 
           If you plan to run Interactive Tools make sure the docker container
-          can reach this URL. For more details see `job_conf.xml.interactivetools`.
+          can reach this URL.
 
       galaxy_infrastructure_web_port:
         type: int
@@ -1871,12 +1870,41 @@ mapping:
           If true, Galaxy will attempt to configure a simple root logger if a
           "loggers" section does not appear in this configuration file.
 
+      log_destination:
+        type: str
+        default: stdout
+        required: false
+        desc: |
+          Log destination, defaults to special value "stdout" that logs to standard output. If set to anything else,
+          then it will be interpreted as a path that will be used as the log file, and logging to stdout will be
+          disabled.
+
+      log_rotate_size:
+        type: str
+        default: "0"
+        required: false
+        desc: |
+          Size of log file at which size it will be rotated as per the documentation in
+          https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+          If log_rotate_count is not also set, no log rotation will be performed. A value of 0 (the default) means no
+          rotation. Size can be a number of bytes or a human-friendly representation like "100 MB" or "1G".
+
+      log_rotate_count:
+        type: int
+        default: 0
+        required: false
+        desc: |
+          Number of log file backups to keep, per the documentation in
+          https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+          Any additional rotated log files will automatically be pruned. If log_rotate_size is not also set, no log
+          rotation will be performed. A value of 0 (the default) means no rotation.
+
       log_level:
         type: str
         default: DEBUG
         required: false
         desc: |
-          Verbosity of console log messages.  Acceptable values can be found here:
+          Verbosity of console log messages. Acceptable values can be found here:
           https://docs.python.org/library/logging.html#logging-levels
           A custom debug level of "TRACE" is available for even more verbosity.
 
@@ -1884,9 +1912,8 @@ mapping:
         type: map
         allowempty: true
         desc: |
-          Controls where and how the server logs messages. If unset, the default is to log all messages to standard
-          output at the level defined by the `log_level` configuration option. Configuration is described in the
-          documentation at:
+          Controls where and how the server logs messages. If set, overrides all settings in the log_* configuration
+          options. Configuration is described in the documentation at:
           https://docs.galaxyproject.org/en/master/admin/config_logging.html
 
       database_engine_option_echo:
@@ -1962,7 +1989,7 @@ mapping:
           their HTML sanitized on display.  This can be manually edited or manipulated
           through the Admin control panel -- see "Manage Allowlist"
 
-          The value of this option will be resolved with respect to <mutable_config_dir>.
+          The value of this option will be resolved with respect to <managed_config_dir>.
 
       serve_xss_vulnerable_mimetypes:
         type: bool
@@ -2408,6 +2435,13 @@ mapping:
           If use_remote_user is enabled, you can set this to a URL that will log your
           users out.
 
+      post_user_logout_href:
+        type: str
+        default: /root/login?is_logout_redirect=true
+        required: false
+        desc: |
+          This is the default url to which users are redirected after they log out.
+
       normalize_remote_user_email:
         type: bool
         default: false
@@ -2742,9 +2776,10 @@ mapping:
           Optional list of email addresses of API users who can make calls on behalf of
           other users.
 
-      master_api_key:
+      bootstrap_admin_api_key:
         type: str
         required: false
+        deprecated_alias: master_api_key
         desc: |
           API key that allows performing some admin actions without actually
           having a real admin user in the database and config.
@@ -2948,7 +2983,7 @@ mapping:
 
       job_config_file:
         type: str
-        default: job_conf.xml
+        default: job_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
@@ -2961,7 +2996,7 @@ mapping:
           By default, Galaxy manages and executes jobs from within a single process and
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
-          be configured through the job configuration file.
+          be configured through the job configuration file or the <job_config> option.
 
       job_config:
         !include job_config_schema.yml
@@ -3013,10 +3048,10 @@ mapping:
         desc: |
           When jobs fail due to job runner problems, Galaxy can be configured to retry
           these or reroute the jobs to new destinations. Very fine control of this is
-          available with resubmit declarations in job_conf.xml. For simple deployments
+          available with resubmit declarations in the job config. For simple deployments
           of Galaxy though, the following attribute can define resubmission conditions
           for all job destinations. If any job destination defines even one
-          resubmission condition explicitly in job_conf.xml - the condition described
+          resubmission condition explicitly in the job config - the condition described
           by this option will not apply to that destination. For instance, the condition:
           'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
           would retry up to two times jobs that didn't fail due to detected memory or
@@ -3381,6 +3416,17 @@ mapping:
           greater possibility that jobs will be dispatched past the configured limits
           if running many handlers.
 
+      toolbox_auto_sort:
+        type: bool
+        default: true
+        required: false
+        reloadable: true
+        desc: |
+          If true, the toolbox will be sorted by tool id when the toolbox is loaded.
+          This is useful for ensuring that tools are always displayed in the same
+          order in the UI.  If false, the order of tools in the toolbox will be
+          preserved as they are loaded from the tool config files.
+
       tool_filters:
         type: str
         required: false
@@ -3450,6 +3496,24 @@ mapping:
           will automatically create and use a separate sqlite database located in your
           <galaxy>/database folder (indicated in the commented out line below).
 
+      celery_conf:
+        type: any
+        required: false
+        default:
+          task_routes:
+            'galaxy.fetch_data': 'galaxy.external'
+            'galaxy.set_job_metadata': 'galaxy.external'
+        desc: |
+          Configuration options passed to Celery.
+
+          To refer to a task by name, use the template `galaxy.foo` where `foo` is the function name
+          of the task defined in the galaxy.celery.tasks module.
+
+          The `broker_url` option, if unset, defaults to the value of `amqp_internal_connection`.
+          The `result_backend` option must be set if the `enable_celery_tasks` option is set.
+
+          For details, see Celery documentation at https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+
       enable_celery_tasks:
         type: bool
         default: false
@@ -3458,18 +3522,6 @@ mapping:
           Offload long-running tasks to a Celery task queue.
           Activate this only if you have setup a Celery worker for Galaxy.
           For details, see https://docs.galaxyproject.org/en/master/admin/production.html
-
-      celery_broker:
-        type: str
-        required: false
-        desc: |
-          Celery broker (if unset falls back to amqp_internal_connection).
-
-      celery_backend:
-        type: str
-        required: false
-        desc: |
-          If set, it will be the results backend for Celery.
 
       use_pbkdf2:
         type: bool

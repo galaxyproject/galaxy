@@ -1,6 +1,6 @@
 <template>
     <b-container fluid class="p-0">
-        <h2 v-localize>User preferences</h2>
+        <h1 v-localize class="h-lg">User preferences</h1>
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
@@ -63,7 +63,7 @@ import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
-import { userLogoutAll } from "layout/menu";
+import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
 
 import "@fortawesome/fontawesome-svg-core";

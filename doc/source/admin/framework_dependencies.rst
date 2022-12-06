@@ -185,23 +185,22 @@ Galaxy can create a virtualenv using the adapted virtualenv package. Once a vali
 Adding additional Galaxy dependencies
 -------------------------------------
 
-New packages can be added to Galaxy, or the versions of existing packages can be updated, using `poetry`_ and `Starforge Recipes`_, Galaxy's Docker-based build system.
+New packages can be added to Galaxy, or the versions of existing packages can be
+updated, using `poetry`_ and `Wheelforge`_.
 
-The process is still under development and will be streamlined and automated over time.
-If wheels exist on PyPI for all supported platforms and python versions you can skip
-to step 3 in the process below.
+If wheels already exist on PyPI for all platforms and Python versions supported
+by Galaxy, you can skip to step 3 in the process below.
 
-1. Clone https://github.com/galaxyproject/starforge-recipes/ and add or edit the wheel you would like to build under the wheels/ directory.
+1. Clone https://github.com/galaxyproject/wheelforge/ and add or edit the
+   `meta.yaml` file for the package you would like to build.
 
-2. Submit a pull request to `Starforge Recipes`_.
+2. Submit a pull request to `Wheelforge`_.
 
-3. Add the new dependency to the `[tool.poetry.dependencies]` (or to `[tool.poetry.dev-dependencies]` if only needed for Galaxy development) section of `pyproject.toml` .
+3. Add the new dependency to the `[tool.poetry.dependencies]` (or to `[tool.poetry.group.dev.dependencies]` if only needed for Galaxy development) section of `pyproject.toml` .
 4. Run `make update-dependencies` to update the requirements file in `lib/galaxy/dependencies`_.
 5. Submit a pull request to Galaxy with your changes.
 
 .. _poetry: https://python-poetry.org/
-.. _Starforge Recipes: https://github.com/galaxyproject/starforge-recipes/
+.. _Wheelforge: https://github.com/galaxyproject/wheelforge/
 .. _Pull Request #4891: https://github.com/galaxyproject/galaxy/pull/4891
-.. _wheels.yml: https://github.com/galaxyproject/starforge/blob/master/wheels/build/wheels.yml
-.. _Jenkins: https://jenkins.galaxyproject.org/
 .. _lib/galaxy/dependencies: https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/dependencies

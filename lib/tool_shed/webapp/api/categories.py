@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Callable,
+    Dict,
+)
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import (
@@ -20,10 +24,7 @@ log = logging.getLogger(__name__)
 class CategoriesController(BaseAPIController):
     """RESTful controller for interactions with categories in the Tool Shed."""
 
-    def __get_repository_count(self, trans, category_name):
-        return self.app.repository_registry.viewable_repositories_and_suites_by_category.get(category_name, 0)
-
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {"id": trans.security.encode_id}
         return value_mapper
 

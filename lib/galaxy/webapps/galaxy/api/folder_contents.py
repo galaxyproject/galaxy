@@ -11,25 +11,25 @@ from fastapi import (
 )
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import (
     CreateLibraryFilePayload,
     LibraryFolderContentsIndexQueryPayload,
     LibraryFolderContentsIndexResult,
     LibraryFolderContentsIndexSortByEnum,
 )
-from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
-from . import (
+from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.services.library_folder_contents import LibraryFolderContentsService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["data libraries folders"])
 
-FolderIdPathParam: DecodedDatabaseIdField = Path(
+FolderIdPathParam: LibraryFolderDatabaseIdField = Path(
     ..., title="Folder ID", description="The encoded identifier of the library folder."
 )
 
@@ -83,7 +83,7 @@ class FastAPILibraryFoldersContents:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: DecodedDatabaseIdField = FolderIdPathParam,
+        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
         search_text: Optional[str] = SearchQueryParam,
@@ -121,7 +121,7 @@ class FastAPILibraryFoldersContents:
     def create(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        folder_id: DecodedDatabaseIdField = FolderIdPathParam,
+        folder_id: LibraryFolderDatabaseIdField = FolderIdPathParam,
         payload: CreateLibraryFilePayload = Body(...),
     ):
         return self.service.create(trans, folder_id, payload)

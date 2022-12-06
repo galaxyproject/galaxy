@@ -1,14 +1,18 @@
 import json
+from typing import (
+    Any,
+    Dict,
+)
 
 import pytest
 from selenium.webdriver.common.by import By
 
 from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     flakey,
-    skip_if_github_down,
     stage_rules_example,
 )
 from .framework import (
@@ -20,7 +24,7 @@ from .framework import (
 )
 
 
-class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
@@ -176,7 +180,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_form_execute()
 
 
-class LoggedInToolFormTestCase(SeleniumTestCase):
+class TestLoggedInToolForm(SeleniumTestCase):
 
     ensure_registered = True
 
@@ -376,7 +380,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self.history_multi_view_display_collection_contents(32, "list:list")
         self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested")
 
-    def _apply_rules_and_check(self, example):
+    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
         rule_builder = self.components.rule_builder
 
         self.home()

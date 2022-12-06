@@ -1,8 +1,20 @@
 import json
 import os
 from tempfile import NamedTemporaryFile
+from typing import (
+    cast,
+    NoReturn,
+)
 from unittest import mock
 
+from galaxy.tool_util.unittest_utils.interactor import (
+    EXISTING_HISTORY,
+    EXISTING_HISTORY_NAME,
+    EXISTING_SUITE_NAME,
+    MockGalaxyInteractor,
+    NEW_HISTORY_ID,
+)
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 from galaxy.tool_util.verify.script import (
     arg_parser,
     build_case_references,
@@ -12,14 +24,9 @@ from galaxy.tool_util.verify.script import (
 )
 
 VT_PATH = "galaxy.tool_util.verify.script.verify_tool"
-NEW_HISTORY = object()
-NEW_HISTORY_ID = "new"
-EXISTING_HISTORY = {"id": "existing"}
-EXISTING_SUITE_NAME = "existing suite"
-EXISTING_HISTORY_NAME = f"History for {EXISTING_SUITE_NAME}"
 
 
-def test_arg_parse():
+def test_arg_parse() -> None:
     parser = arg_parser()
 
     # defaults
@@ -59,7 +66,7 @@ def test_arg_parse():
     assert args.skip == "executed"
 
 
-def test_test_tools():
+def test_test_tools() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -71,7 +78,7 @@ def test_test_tools():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
         )
@@ -83,7 +90,7 @@ def test_test_tools():
         assert interactor.history_deleted
 
 
-def test_test_tools_no_history_cleanup():
+def test_test_tools_no_history_cleanup() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -93,7 +100,7 @@ def test_test_tools_no_history_cleanup():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             no_history_cleanup=True,
@@ -106,7 +113,7 @@ def test_test_tools_no_history_cleanup():
         assert not interactor.history_deleted
 
 
-def test_test_tools_history_reuse():
+def test_test_tools_history_reuse() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results(EXISTING_SUITE_NAME, f.name)
@@ -116,7 +123,7 @@ def test_test_tools_history_reuse():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             no_history_reuse=False,
@@ -131,7 +138,7 @@ def test_test_tools_history_reuse():
         assert not interactor.history_deleted
 
 
-def test_test_tools_no_history_reuse():
+def test_test_tools_no_history_reuse() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("existing suite", f.name)
@@ -141,7 +148,7 @@ def test_test_tools_no_history_reuse():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             no_history_reuse=True,
@@ -156,7 +163,7 @@ def test_test_tools_no_history_reuse():
         assert interactor.history_deleted
 
 
-def test_test_tools_history_name():
+def test_test_tools_history_name() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -166,7 +173,7 @@ def test_test_tools_history_name():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             history_name="testfoo",
@@ -181,7 +188,7 @@ def test_test_tools_history_name():
         assert interactor.history_deleted
 
 
-def test_test_tool_per_test_history():
+def test_test_tool_per_test_history() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -192,7 +199,7 @@ def test_test_tool_per_test_history():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             history_per_test_case=True,
@@ -205,7 +212,7 @@ def test_test_tool_per_test_history():
         assert not interactor.history_deleted
 
 
-def test_test_tools_records_exception():
+def test_test_tools_records_exception() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -215,12 +222,12 @@ def test_test_tools_records_exception():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
 
-        def side_effect(*args, **kwd):
+        def side_effect(*args, **kwd) -> NoReturn:
             raise Exception("Cow")
 
         mock_verify.side_effect = side_effect
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
         )
@@ -230,7 +237,7 @@ def test_test_tools_records_exception():
         assert_results_written(results)
 
 
-def test_test_tools_records_retry_exception():
+def test_test_tools_records_retry_exception() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -251,7 +258,7 @@ def test_test_tools_records_retry_exception():
 
         mock_verify.side_effect = side_effect
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             retries=1,
@@ -292,8 +299,8 @@ def test_results():
     assert "Skipped tool tests (1)" in message
 
 
-def test_build_references():
-    interactor = MockGalaxyInteractor()
+def test_build_references() -> None:
+    interactor = cast(GalaxyInteractorApi, MockGalaxyInteractor())
     test_references = build_case_references(interactor)
     assert len(test_references) == 6
 
@@ -330,68 +337,11 @@ def test_build_references():
     assert test_reference.test_index == 2
 
 
-def assert_results_not_written(results):
+def assert_results_not_written(results: Results) -> None:
     assert os.stat(results.test_json).st_size == 0
 
 
-def assert_results_written(results):
+def assert_results_written(results: Results) -> None:
     assert os.stat(results.test_json).st_size > 0
     with open(results.test_json) as f:
         json.load(f)
-
-
-class MockGalaxyInteractor:
-    def __init__(self):
-        self.history_deleted = False
-        self.history_created = False
-        self.history_name = None
-        self.history_id = None
-
-    def get_history(self, history_name=""):
-        if history_name == EXISTING_HISTORY_NAME:
-            self.history_name = history_name
-            self.history_id = EXISTING_HISTORY["id"]
-            return EXISTING_HISTORY
-        else:
-            return None
-
-    def new_history(self, history_name="", publish_history=False):
-        self.history_created = True
-        self.history_name = history_name
-        self.history_id = NEW_HISTORY_ID
-        return NEW_HISTORY
-
-    def delete_history(self, history):
-        self.history_deleted = True
-
-    def get_tests_summary(self):
-        return {
-            "cat1": {
-                "0.2.0": {
-                    "count": 4,
-                },
-                "0.1.0": {
-                    "count": 2,
-                },
-            },
-        }
-
-    def get_tool_tests(self, tool_id, tool_version=None):
-        tool_dict = self.get_tests_summary().get(tool_id)
-        test_defs = []
-        for this_tool_version, version_defs in tool_dict.items():
-            if tool_version is not None and tool_version != "*" and this_tool_version != tool_version:
-                continue
-
-            count = version_defs["count"]
-            for _ in range(count):
-                test_def = {
-                    "tool_id": tool_id,
-                    "tool_version": this_tool_version or "0.1.1-default",
-                }
-                test_defs.append(test_def)
-
-            if tool_version is None or tool_version != "*":
-                break
-
-        return test_defs

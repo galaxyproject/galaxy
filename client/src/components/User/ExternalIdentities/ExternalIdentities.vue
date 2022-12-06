@@ -11,7 +11,7 @@
             >
 
             <hgroup class="external-id-title">
-                <h1>Manage External Identities</h1>
+                <h1 class="h-lg">Manage External Identities</h1>
             </hgroup>
 
             <p>
@@ -29,7 +29,7 @@
         </header>
 
         <div v-if="items.length" class="external-subheading">
-            <h3>Connected External Identities</h3>
+            <h2 class="h-md">Connected External Identities</h2>
             <b-button
                 v-for="item in items"
                 :key="item.email"
@@ -75,7 +75,7 @@
         </div>
 
         <div v-if="enable_oidc" class="external-subheading">
-            <h3>Connect Other External Identities</h3>
+            <h2 class="h-md">Connect Other External Identities</h2>
             <external-login :login_page="false" />
         </div>
     </section>
@@ -86,7 +86,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import svc from "./service";
-import { userLogout } from "layout/menu";
+import { userLogout } from "utils/logout";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);

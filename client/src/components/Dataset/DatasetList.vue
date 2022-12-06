@@ -29,9 +29,8 @@
 </template>
 <script>
 import store from "store";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import { Services } from "./services";
+import { copyDataset, getDatasets, updateTags } from "./services";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
@@ -106,22 +105,19 @@ export default {
     },
     created() {
         this.loadHistories();
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
         this.load();
     },
     methods: {
         ...mapActions("history", ["loadHistories"]),
         load(concat = false) {
             this.loading = true;
-            this.services
-                .getDatasets({
-                    query: this.query,
-                    sortBy: this.sortBy,
-                    sortDesc: this.sortDesc,
-                    offset: this.offset,
-                    limit: this.limit,
-                })
+            getDatasets({
+                query: this.query,
+                sortBy: this.sortBy,
+                sortDesc: this.sortDesc,
+                offset: this.offset,
+                limit: this.limit,
+            })
                 .then((datasets) => {
                     if (concat) {
                         this.rows = this.rows.concat(datasets);
@@ -139,8 +135,7 @@ export default {
             const history = Galaxy.currHistoryPanel;
             const dataset_id = item.id;
             const history_id = history.model.id;
-            this.services
-                .copyDataset(dataset_id, history_id)
+            copyDataset(dataset_id, history_id)
                 .then((response) => {
                     history.loadCurrentHistory();
                 })
@@ -159,7 +154,7 @@ export default {
         onTags(tags, index) {
             const item = this.rows[index];
             item.tags = tags;
-            this.services.updateTags(item.id, "HistoryDatasetAssociation", tags).catch((error) => {
+            updateTags(item.id, "HistoryDatasetAssociation", tags).catch((error) => {
                 this.onError(error);
             });
         },

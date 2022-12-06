@@ -129,21 +129,37 @@
                                     @onUpgrade="onUpgrade" />
                             </div>
                         </div>
-                        <div ref="right-panel" class="unified-panel-body workflow-right">
-                            <div class="m-2">
+                        <div ref="right-panel" class="unified-panel-body workflow-right p-2">
+                            <div>
                                 <FormTool
                                     v-if="hasActiveNodeTool"
                                     :key="activeNodeId"
                                     :get-manager="getManager"
-                                    :get-node="getNode"
+                                    :node-id="activeNodeId"
+                                    :node-annotation="activeNodeAnnotation"
+                                    :node-label="activeNodeLabel"
+                                    :node-inputs="activeNodeInputs"
+                                    :node-outputs="activeNodeOutputs"
+                                    :node-active-outputs="activeNodeActiveOutputs"
+                                    :config-form="activeNodeConfigForm"
                                     :datatypes="datatypes"
+                                    :post-job-actions="postJobActions"
+                                    @onChangePostJobActions="onChangePostJobActions"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
                                     @onSetData="onSetData" />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
+                                    :node-name="activeNodeName"
+                                    :node-id="activeNodeId"
+                                    :node-content-id="activeNodeContentId"
+                                    :node-annotation="activeNodeAnnotation"
+                                    :node-label="activeNodeLabel"
+                                    :node-type="activeNodeType"
+                                    :node-outputs="activeNodeOutputs"
+                                    :node-active-outputs="activeNodeActiveOutputs"
+                                    :config-form="activeNodeConfigForm"
                                     :get-manager="getManager"
-                                    :get-node="getNode"
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
@@ -213,6 +229,7 @@ import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import Vue from "vue";
+import { ConfirmDialog } from "composables/confirmDialog";
 
 export default {
     components: {
@@ -299,8 +316,38 @@ export default {
         showLint() {
             return this.showInPanel == "lint";
         },
+        postJobActions() {
+            return this.activeNode.postJobActions;
+        },
         activeNodeId() {
             return this.activeNode && this.activeNode.id;
+        },
+        activeNodeName() {
+            return this.activeNode?.name;
+        },
+        activeNodeContentId() {
+            return this.activeNode && this.activeNode.contentId;
+        },
+        activeNodeLabel() {
+            return this.activeNode?.label;
+        },
+        activeNodeAnnotation() {
+            return this.activeNode?.annotation;
+        },
+        activeNodeConfigForm() {
+            return this.activeNode?.config_form;
+        },
+        activeNodeInputs() {
+            return this.activeNode?.inputs;
+        },
+        activeNodeOutputs() {
+            return this.activeNode?.outputs;
+        },
+        activeNodeActiveOutputs() {
+            return this.activeNode?.activeOutputs;
+        },
+        activeNodeType() {
+            return this.activeNode?.type;
         },
         hasActiveNodeDefault() {
             return this.activeNode && this.activeNode.type != "tool";
@@ -316,6 +363,11 @@ export default {
         },
     },
     watch: {
+        id(newId, oldId) {
+            if (oldId) {
+                this._loadCurrent(newId);
+            }
+        },
         annotation(newAnnotation, oldAnnotation) {
             if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
@@ -432,6 +484,10 @@ export default {
         onChange() {
             this.hasChanges = true;
         },
+        onChangePostJobActions(nodeId, postJobActions) {
+            Vue.set(this.nodes[nodeId], "postJobActions", postJobActions);
+            this.onChange();
+        },
         onRemove(node) {
             delete this.nodes[node.id];
             Vue.delete(this.steps, node.id);
@@ -440,7 +496,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `/workflows/edit?id=${contentId}`;
+            const editUrl = `/workflows/edit?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {
@@ -486,7 +542,7 @@ export default {
             if (stepCount < 10) {
                 this.copyIntoWorkflow(workflowId);
             } else {
-                const confirmed = await this.$bvModal.msgBoxConfirm(
+                const confirmed = await ConfirmDialog.confirm(
                     `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
                 );
                 if (confirmed) {
@@ -513,7 +569,7 @@ export default {
                 .then((response) => {
                     this.onWorkflowMessage("Workflow saved as", "success");
                     this.hideModal();
-                    this.onNavigate(`${getAppRoot()}workflow/editor?id=${response.data}`, true);
+                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`, true);
                 })
                 .catch((response) => {
                     this.onWorkflowError("Saving workflow failed, please contact an administrator.");

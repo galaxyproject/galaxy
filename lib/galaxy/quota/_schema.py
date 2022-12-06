@@ -4,24 +4,26 @@ from typing import (
     Optional,
 )
 
-from pydantic import (
-    BaseModel,
-    Field,
+from pydantic import Field
+from typing_extensions import (
+    Annotated,
+    Literal,
 )
 
 from galaxy.schema.fields import (
-    EncodedDatabaseIdField,
+    DecodedDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.schema import (
     GroupModel,
+    Model,
     UserModel,
 )
 
-QUOTA_MODEL_CLASS_NAME = "Quota"
-USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "UserQuotaAssociation"
-GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "GroupQuotaAssociation"
-DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "DefaultQuotaAssociation"
+QUOTA = Literal["Quota"]
+USER_QUOTA_ASSOCIATION = Literal["UserQuotaAssociation"]
+GROUP_QUOTA_ASSOCIATION = Literal["GroupQuotaAssociation"]
+DEFAULT_QUOTA_ASSOCIATION = Literal["DefaultQuotaAssociation"]
 
 
 class QuotaOperation(str, Enum):
@@ -67,8 +69,8 @@ QuotaOperationField = Field(
 )
 
 
-class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: str = ModelClassField(DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
+    model_class: Annotated[DEFAULT_QUOTA_ASSOCIATION, ModelClassField()]
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -80,8 +82,8 @@ class DefaultQuota(BaseModel):  # TODO: should this replace lib.galaxy.model.Def
     )
 
 
-class UserQuota(BaseModel):
-    model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+class UserQuota(Model):
+    model_class: Annotated[USER_QUOTA_ASSOCIATION, ModelClassField()]
     user: UserModel = Field(
         ...,
         title="User",
@@ -89,8 +91,8 @@ class UserQuota(BaseModel):
     )
 
 
-class GroupQuota(BaseModel):
-    model_class: str = ModelClassField(GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+class GroupQuota(Model):
+    model_class: Annotated[GROUP_QUOTA_ASSOCIATION, ModelClassField()]
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -98,11 +100,11 @@ class GroupQuota(BaseModel):
     )
 
 
-class QuotaBase(BaseModel):
+class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
-    model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
-    id: EncodedDatabaseIdField = Field(
+    model_class: Annotated[QUOTA, ModelClassField()]
+    id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="The `encoded identifier` of the quota.",
@@ -121,7 +123,7 @@ class QuotaSummary(QuotaBase):
     )
 
 
-class QuotaSummaryList(BaseModel):
+class QuotaSummaryList(Model):
     __root__: List[QuotaSummary] = Field(
         default=[],
         title="List with summary information of Quotas.",
@@ -166,7 +168,7 @@ class CreateQuotaResult(QuotaSummary):
     )
 
 
-class CreateQuotaParams(BaseModel):
+class CreateQuotaParams(Model):
     name: str = QuotaNameField
     description: str = QuotaDescriptionField
     amount: str = Field(
@@ -196,7 +198,7 @@ class CreateQuotaParams(BaseModel):
     )
 
 
-class UpdateQuotaParams(BaseModel):
+class UpdateQuotaParams(Model):
     name: Optional[str] = Field(
         default=None,
         title="Name",
@@ -243,7 +245,7 @@ class UpdateQuotaParams(BaseModel):
     )
 
 
-class DeleteQuotaPayload(BaseModel):
+class DeleteQuotaPayload(Model):
     purge: bool = Field(
         False,
         title="Purge",

@@ -1,3 +1,4 @@
+from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import flakey
 from .framework import (
     selenium_test,
@@ -5,11 +6,12 @@ from .framework import (
 )
 
 
-class AdminAppTestCase(SeleniumTestCase):
+class TestAdminApp(SeleniumTestCase):
 
-    requires_admin = True
+    run_as_admin = True
 
     @selenium_test
+    @requires_admin
     def test_html_allowlist(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -38,6 +40,7 @@ class AdminAppTestCase(SeleniumTestCase):
 
     @selenium_test
     @flakey
+    @requires_admin
     def test_admin_toolshed(self):
         """
         This tests installing a repository, checking for upgrades, and uninstalling.
@@ -99,6 +102,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_toolshed_repo_uninstalled")
 
     @selenium_test
+    @requires_admin
     def test_admin_dependencies_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -120,6 +124,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_dependencies_unused")
 
     @selenium_test
+    @requires_admin
     def test_admin_jobs_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -138,15 +143,16 @@ class AdminAppTestCase(SeleniumTestCase):
         self.sleep_for(self.wait_types.UX_TRANSITION)
         # Make sure the job lock has been toggled.
         new_label = lock_label.wait_for_text()
-        self.assertNotEqual(new_label, original_label)
+        assert new_label != original_label
         self.screenshot("admin_jobs_locked")
         lock_label.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
         self.screenshot("admin_jobs_unlocked")
         # And confirm that it has toggled back to what it was.
-        self.assertEqual(lock_label.wait_for_text(), original_label)
+        assert lock_label.wait_for_text() == original_label
 
     @selenium_test
+    @requires_admin
     def test_admin_server_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -174,6 +180,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_local_data")
 
     @selenium_test
+    @requires_admin
     def test_admin_user_display(self):
         admin_component = self.components.admin
         self.admin_login()
@@ -201,6 +208,7 @@ class AdminAppTestCase(SeleniumTestCase):
         self.screenshot("admin_roles")
 
     @selenium_test
+    @requires_admin
     def test_admin_data_manager(self):
         admin_component = self.components.admin
         self.admin_login()

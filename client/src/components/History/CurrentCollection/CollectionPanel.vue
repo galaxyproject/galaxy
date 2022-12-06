@@ -9,14 +9,14 @@
         :contents-url="contentsUrl"
         :offset="offset">
         <ExpandedItems v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="(item) => item.id">
-            <section class="dataset-collection-panel d-flex flex-column">
+            <section class="dataset-collection-panel w-100 d-flex flex-column">
                 <section>
                     <CollectionNavigation
-                        :history="history"
+                        :history-name="history.name"
                         :selected-collections="selectedCollections"
                         v-on="$listeners" />
                     <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
-                    <CollectionOperations v-if="isRoot" :dsc="dsc" />
+                    <CollectionOperations v-if="isRoot && showControls" :dsc="dsc" />
                 </section>
                 <section class="position-relative flex-grow-1 scroller">
                     <div>
@@ -62,6 +62,7 @@ export default {
     props: {
         history: { type: Object, required: true },
         selectedCollections: { type: Array, required: true },
+        showControls: { type: Boolean, default: true },
     },
     data() {
         return {
@@ -81,6 +82,14 @@ export default {
         },
         contentsUrl() {
             return this.dsc.contents_url.substring(1);
+        },
+    },
+    watch: {
+        history(newHistory, oldHistory) {
+            if (newHistory.id != oldHistory.id) {
+                // Send up event closing out selected collection on history change.
+                this.$emit("update:selected-collections", []);
+            }
         },
     },
     methods: {

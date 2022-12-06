@@ -1,0 +1,56 @@
+<tool id="__DUPLICATE_FILE_TO_COLLECTION__"
+      name="Duplicate file to collection"
+      version="1.0.0"
+      tool_type="duplicate_file_to_collection">
+    <description></description>
+    <type class="DuplicateFileToCollectionTool" module="galaxy.tools" />
+    <action module="galaxy.tools.actions.model_operations"
+            class="ModelOperationToolAction"/>
+    <!-- <edam_operations>
+    </edam_operations> -->
+    <inputs>
+        <param name="input" type="data" label="Input Dataset" help="A dataset which will be duplicated."/>
+        <param name="number" type="integer" value="" label="Size of output collection" help="Number of times to duplicate the input dataset."/>
+        <param name="element_identifier" type="text" label="Element identifier" help="Each element in the output collection will be assigned this identifier, with an integer appended." />
+    </inputs>
+    <outputs>
+        <collection name="output" type="list" format_source="input" label="${on_string} (duplicated)" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="simple_line.txt" />
+            <param name="number" value="2" />
+            <param name="element_identifier" value="test" />
+            <output_collection name="output" type="list" count="2">
+                <element name="test 1">
+                  <assert_contents>
+                    <has_text_matching expression="^This is a line of text.\n$" />
+                  </assert_contents>
+                </element>
+                <element name="test 2">
+                    <assert_contents>
+                      <has_text_matching expression="^This is a line of text.\n$" />
+                    </assert_contents>
+                  </element>
+            </output_collection>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+========
+Synopsis
+========
+
+Creates a collection of arbitrary size by duplicating an input dataset N times, where N is a user-specified integer.
+
+===========
+Description
+===========
+
+This tool allows creation of a dataset collection of arbitrary size. It takes an input dataset and an integer parameter, which specifies the number of times to duplicate the dataset in the output collection. In addition, the user can specify the base name for the element identifier to use in the output. For example, if `Number` is specified as 3 and `Element identifier` as 'Element', the output collection will contain three identical datasets, with the identifiers `Element 1`, `Element 2` and `Element 3`.
+
+.. class:: infomark
+
+This tool will create new history datasets but your quota usage will not increase.
+    ]]></help>
+</tool>

@@ -35,7 +35,8 @@ pre {
 .dropdown-menu {
     .dropdown-item {
         text-decoration: none;
-        .fa {
+        .fa,
+        .svg-inline--fa {
             @extend .fa-fw;
             @extend .mr-2;
         }
@@ -199,6 +200,17 @@ table.info_data_table th:nth-child(1) {
         cursor: default;
 
         // differentiate disabled items more
-        color: #bfc7cf !important;
+        color: lighten($text-color, 50%);
     }
+
+    .dropdown-item.active {
+        background-color: unset;
+        color: $brand-primary;
+        font-weight: 600;
+    }
+}
+
+// show sticky elements behind dropdown-menus
+.sticky-top {
+    z-index: 800;
 }

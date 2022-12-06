@@ -9,7 +9,7 @@ import flushPromises from "flush-promises";
 
 const localVue = getLocalVue();
 
-describe("ToolsView/ToolsView.vue", () => {
+describe("ToolSchemaJson/ToolsView.vue", () => {
     let wrapper;
     let axiosMock;
     const defaultSchemaElementTag = "application/ld+json";

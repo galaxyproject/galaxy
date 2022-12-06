@@ -9,9 +9,16 @@ import sys
 import tarfile
 import threading
 from io import BytesIO
+from typing import (
+    List,
+    TYPE_CHECKING,
+)
 
 import packaging.version
 import requests
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.deps.container_resolvers import ResolutionCache
 
 log = logging.getLogger(__name__)
 
@@ -67,18 +74,8 @@ def quay_repository(namespace, pkg_name, session=None):
     return data
 
 
-def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
-    """
-    Get all quay containers in the biocontainers repo
-    """
-    # resolution_cache.mulled_resolution_cache is the persistent variant of the resolution cache
-    resolution_cache = resolution_cache.mulled_resolution_cache or resolution_cache
-    cache_key = NAMESPACE_HAS_REPO_NAME_KEY
-    if resolution_cache is not None:
-        try:
-            return repo_name in resolution_cache.get(cache_key)
-        except KeyError:
-            pass
+def _get_namespace(namespace: str) -> List[str]:
+    log.debug(f"Querying {QUAY_REPOSITORY_API_ENDPOINT} for repos within {namespace}")
     next_page = None
     repo_names = []
     repos_headers = {"Accept-encoding": "gzip", "Accept": "application/json"}
@@ -93,8 +90,28 @@ def _namespace_has_repo_name(namespace, repo_name, resolution_cache):
         next_page = repos_response_json.get("next_page")
         if not next_page:
             break
-    if resolution_cache is not None:
-        resolution_cache[cache_key] = repo_names
+    return repo_names
+
+
+def _namespace_has_repo_name(namespace: str, repo_name: str, resolution_cache: "ResolutionCache") -> bool:
+    """
+    Get all quay containers in the biocontainers repo
+    """
+    # resolution_cache.mulled_resolution_cache is the persistent variant of the resolution cache
+    preferred_resolution_cache = resolution_cache.mulled_resolution_cache or resolution_cache
+    cache_key = NAMESPACE_HAS_REPO_NAME_KEY
+    if preferred_resolution_cache is not None:
+        try:
+            cached_namespace = preferred_resolution_cache.get(cache_key)
+            if cached_namespace:
+                return repo_name in cached_namespace
+        except KeyError:
+            # preferred_resolution_cache may be a beaker Cache instance, which
+            # raises KeyError if key is not present on `.get`
+            pass
+    repo_names = _get_namespace(namespace)
+    if preferred_resolution_cache is not None:
+        preferred_resolution_cache[cache_key] = repo_names
     return repo_name in repo_names
 
 

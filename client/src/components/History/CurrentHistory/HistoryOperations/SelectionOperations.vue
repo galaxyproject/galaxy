@@ -151,9 +151,9 @@ import {
     addTagsToSelectedContent,
     removeTagsFromSelectedContent,
 } from "components/History/model/crud";
+import { checkFilter, getQueryDict } from "utils/filterConversion";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { checkFilter, getQueryDict } from "store/historyStore/model/filtering";
 import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
@@ -314,7 +314,7 @@ export default {
             await this.buildNewCollection("rules");
         },
         async buildNewCollection(collectionType) {
-            const modalResult = await buildCollectionModal(collectionType, this.history.id, this.contentSelection);
+            const modalResult = await buildCollectionModal(collectionType, this.contentSelection, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested

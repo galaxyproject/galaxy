@@ -9,12 +9,14 @@ import os
 import shutil
 import struct
 import subprocess
-import sys
 import tarfile
 import tempfile
 import zipfile
 from json import dumps
-from typing import Optional
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import h5py
 import numpy as np
@@ -56,6 +58,9 @@ from . import (
     data,
     dataproviders,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
@@ -149,6 +154,7 @@ class Cel(Binary):
     def sniff(self, filename):
         """
         Try to guess if the file is a Cel file.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('affy_v_agcc.cel')
         >>> Cel().sniff(fname)
@@ -246,6 +252,7 @@ class Meryldb(CompressedArchive):
     def sniff(self, filename):
         """
         Try to guess if the file is a Cel file.
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('affy_v_agcc.cel')
         >>> Meryldb().sniff(fname)
@@ -483,7 +490,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     )
 
     def set_meta(self, dataset, overwrite=True, **kwd):
-        _BamOrSam().set_meta(dataset)
+        _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
     def merge(split_files, output_file):
@@ -570,7 +577,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
@@ -578,8 +585,8 @@ class BamNative(CompressedArchive, _BamOrSam):
                     ck_data = ""
                     header_line_count = 0
                     if offset == 0:
-                        ck_data = bamfile.text.replace("\t", " ")
-                        header_line_count = bamfile.text.count("\n")
+                        ck_data = bamfile.text.replace("\t", " ")  # type: ignore[attr-defined]
+                        header_line_count = bamfile.text.count("\n")  # type: ignore[attr-defined]
                     else:
                         bamfile.seek(offset)
                     for line_number, alignment in enumerate(bamfile):
@@ -1242,6 +1249,7 @@ class Loom(H5):
 class Anndata(H5):
     """
     Class describing an HDF5 anndata files: http://anndata.rtfd.io
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> Anndata().sniff(get_test_fname('pbmc3k_tiny.h5ad'))
     True
@@ -3355,6 +3363,8 @@ class PostgresqlArchive(CompressedArchive):
             if dataset and tarfile.is_tarfile(dataset.file_name):
                 with tarfile.open(dataset.file_name, "r") as temptar:
                     pg_version_file = temptar.extractfile("postgresql/db/PG_VERSION")
+                    if not pg_version_file:
+                        raise Exception("Error setting PostgresqlArchive metadata: PG_VERSION file not found")
                     dataset.metadata.version = util.unicodify(pg_version_file.read()).strip()
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, util.unicodify(e))
@@ -3678,6 +3688,7 @@ class Vel(Binary):
 class DAA(Binary):
     """
     Class describing an DAA (diamond alignment archive) file
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('diamond.daa')
     >>> DAA().sniff(fname)
@@ -3702,6 +3713,7 @@ class DAA(Binary):
 class RMA6(Binary):
     """
     Class describing an RMA6 (MEGAN6 read-match archive) file
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('diamond.rma6')
     >>> RMA6().sniff(fname)
@@ -3725,6 +3737,7 @@ class RMA6(Binary):
 class DMND(Binary):
     """
     Class describing an DMND file
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('diamond_db.dmnd')
     >>> DMND().sniff(fname)
@@ -3779,6 +3792,7 @@ class ICM(Binary):
 class Parquet(Binary):
     """
     Class describing Apache Parquet file (https://parquet.apache.org/)
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('example.parquet')
     >>> Parquet().sniff(fname)
@@ -3801,6 +3815,7 @@ class Parquet(Binary):
 class BafTar(CompressedArchive):
     """
     Base class for common behavior of tar files of directory-based raw file formats
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('brukerbaf.d.tar')
     >>> BafTar().sniff(fname)
@@ -3892,6 +3907,7 @@ class MassLynxTar(BafTar):
 class WiffTar(BafTar):
     """
     A tar'd up .wiff/.scan pair containing Sciex WIFF format data
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('some.wiff.tar')
     >>> WiffTar().sniff(fname)
@@ -3921,6 +3937,7 @@ class Pretext(Binary):
     """
     PretextMap contact map file
     Try to guess if the file is a Pretext file.
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('sample.pretext')
     >>> Pretext().sniff(fname)
@@ -3952,6 +3969,7 @@ class Pretext(Binary):
 class JP2(Binary):
     """
     JPEG 2000 binary image format
+
     >>> from galaxy.datatypes.sniff import get_test_fname
     >>> fname = get_test_fname('test.jp2')
     >>> JP2().sniff(fname)
@@ -4185,9 +4203,3 @@ class HexrdEtaOmeNpz(Npz):
             return dataset.peek
         except Exception:
             return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

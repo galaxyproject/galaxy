@@ -72,7 +72,7 @@ class IdentityProvider:
     def disconnect(self, provider, trans, disconnect_redirect_url=None):
         raise NotImplementedError()
 
-    def logout(self, trans, post_logout_redirect_url=None):
+    def logout(self, trans, post_user_logout_href=None):
         """
         Return a URL that will log the user out of the IDP. In OIDC this is
         called the 'end_session_endpoint'.
@@ -80,7 +80,7 @@ class IdentityProvider:
         :type trans: GalaxyWebTransaction
         :param trans: Galaxy web transaction.
 
-        :type post_logout_redirect_url: string
-        :param post_logout_redirect_url: Optional URL to redirect to after logging out of IDP.
+        :type post_user_logout_href: string
+        :param post_user_logout_href: Optional URL to redirect to after logging out of IDP.
         """
         raise NotImplementedError()

@@ -5,7 +5,7 @@ from packaging.version import Version
 from galaxy_test.driver import integration_util
 
 
-class GalaxyInteractorTestCase(integration_util.IntegrationTestCase):
+class TestGalaxyInteractor(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 

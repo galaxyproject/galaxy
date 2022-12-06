@@ -9,14 +9,6 @@ galaxy.web.framework.middleware package
 Submodules
 ----------
 
-galaxy.web.framework.middleware.batch module
---------------------------------------------
-
-.. automodule:: galaxy.web.framework.middleware.batch
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 galaxy.web.framework.middleware.error module
 --------------------------------------------
 
@@ -45,14 +37,6 @@ galaxy.web.framework.middleware.request\_id module
 --------------------------------------------------
 
 .. automodule:: galaxy.web.framework.middleware.request_id
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-galaxy.web.framework.middleware.sentry module
----------------------------------------------
-
-.. automodule:: galaxy.web.framework.middleware.sentry
    :members:
    :undoc-members:
    :show-inheritance:

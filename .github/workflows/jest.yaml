@@ -18,20 +18,20 @@ jobs:
       matrix:
         node: [16]
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup node
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node}}
-        cache: 'yarn'
-        cache-dependency-path: 'client/yarn.lock'
-    - run: yarn install --frozen-lockfile
-      working-directory: client
-    - name: Stage client libs (Gulp)
-      run: yarn run gulp client
-      working-directory: client
-    - name: Run Unit Tests
-      run: yarn run qunit
-      working-directory: client
-    - run: yarn jest
-      working-directory: client
+      - uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node}}
+          cache: 'yarn'
+          cache-dependency-path: 'client/yarn.lock'
+      - run: yarn install --frozen-lockfile
+        working-directory: client
+      - name: Stage client libs (Gulp)
+        run: yarn run gulp client
+        working-directory: client
+      - name: Run Unit Tests
+        run: yarn run qunit
+        working-directory: client
+      - run: yarn jest
+        working-directory: client
