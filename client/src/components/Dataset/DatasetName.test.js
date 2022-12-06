@@ -1,6 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import DatasetName from "./DatasetName";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 const localVue = getLocalVue();
 

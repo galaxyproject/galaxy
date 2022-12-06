@@ -3,7 +3,7 @@ import { mount } from "@vue/test-utils";
 import Tags from "./Tags";
 import { TagService } from "./tagService";
 import { tagStore } from "store/tagStore";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 jest.mock("./tagService");
 

@@ -1,7 +1,7 @@
 import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import MultipleView from "./MultipleView";
 import MockCurrentUser from "components/providers/MockCurrentUser";
 import MockUserHistories from "components/providers/MockUserHistories";

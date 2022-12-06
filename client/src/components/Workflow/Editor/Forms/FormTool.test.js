@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "jest/helpers";
+import { getLocalVue, mockModule } from "tests/jest/helpers"
 import FormTool from "./FormTool";
 import MockCurrentUser from "components/providers/MockCurrentUser";
 import MockConfigProvider from "components/providers/MockConfigProvider";
