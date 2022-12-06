@@ -76,7 +76,6 @@ import FavoritesButton from "./Buttons/FavoritesButton";
 import FiltersButton from "./Buttons/FiltersButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import { filterToolSections, filterTools, hasResults } from "./utilities";
-import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
 
