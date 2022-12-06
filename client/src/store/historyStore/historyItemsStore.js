@@ -7,7 +7,7 @@ import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeArray } from "./model/utilities";
-import { getFilters, getQueryDict, testFilters } from "./model/filtering";
+import { getFilters, getQueryString, testFilters } from "utils/filterConversion";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -42,13 +42,6 @@ const getters = {
     getTotalMatchesCount: (state) => () => state.totalMatchesCount,
     getLastCheckedTime: (state) => () => state.lastCheckedTime,
     getWatchingVisibility: (state) => () => state.isWatching,
-};
-
-const getQueryString = (filterText) => {
-    const filterDict = getQueryDict(filterText);
-    return Object.entries(filterDict)
-        .map(([f, v]) => `q=${f}&qv=${v}`)
-        .join("&");
 };
 
 const actions = {

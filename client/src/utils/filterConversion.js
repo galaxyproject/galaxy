@@ -10,28 +10,40 @@
  * Use quotations (') around values containing spaces.
  */
 
+/** Default filters are set, unless explicitly specified by the user. */
+export const defaultFilters = {
+    deleted: false,
+    visible: true,
+};
+
+/** Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
+export const validAlias = [
+    [">", "_gt"],
+    ["<", "_lt"],
+];
+
 /** Converts user input to backend compatible date. */
 function toDate(value) {
     return Date.parse(value) / 1000;
 }
 
 /** Converts user input for case-insensitive filtering. */
-function toLower(value) {
+export function toLower(value) {
     return String(value).toLowerCase();
 }
 
 /** Converts user input to boolean. */
-function toBool(value) {
-    return toLower(value) == "true";
+export function toBool(value) {
+    return toLower(value) === "true";
 }
 
 /** Converts user input to lower case and strips quotation marks. */
-function toLowerNoQuotes(value) {
+export function toLowerNoQuotes(value) {
     return toLower(value).replaceAll("'", "");
 }
 
 /** Converts name tags starting with '#' to 'name:' */
-function expandNameTag(value) {
+export function expandNameTag(value) {
     if (value && typeof value === "string" && value.startsWith("#")) {
         value = value.replace("#", "name:");
     }
@@ -54,7 +66,7 @@ function equals(attribute, query = null, converter = null) {
                 v = converter(v);
                 q = converter(q);
             }
-            return toLower(v) == toLower(q);
+            return toLower(v) === toLower(q);
         },
     };
 }
@@ -111,23 +123,24 @@ function compare(attribute, variant, converter = null) {
 }
 
 /** Valid filter fields and handlers which can be used for text searches. */
-const validFilters = {
+export const validFilters = {
+    hid: equals("hid"),
+    state: equals("state"),
+    name: contains("name"),
+    extension: equals("extension"),
+    annotation: contains("annotation"),
+    hid_ge: compare("hid", "ge"),
+    hid_gt: compare("hid", "gt"),
+    hid_le: compare("hid", "le"),
+    hid_lt: compare("hid", "lt"),
+    tag: contains("tags", "tag", expandNameTag),
+    visible: equals("visible", "visible", toBool),
+    deleted: equals("deleted", "deleted", toBool),
     create_time: compare("create_time", "le", toDate),
     create_time_ge: compare("create_time", "ge", toDate),
     create_time_gt: compare("create_time", "gt", toDate),
     create_time_le: compare("create_time", "le", toDate),
     create_time_lt: compare("create_time", "lt", toDate),
-    deleted: equals("deleted", "deleted", toBool),
-    extension: equals("extension"),
-    hid: equals("hid"),
-    hid_ge: compare("hid", "ge"),
-    hid_gt: compare("hid", "gt"),
-    hid_le: compare("hid", "le"),
-    hid_lt: compare("hid", "lt"),
-    visible: equals("visible", "visible", toBool),
-    name: contains("name"),
-    state: equals("state"),
-    tag: contains("tags", "tag", expandNameTag),
     update_time: compare("update_time", "le", toDate),
     update_time_ge: compare("update_time", "ge", toDate),
     update_time_gt: compare("update_time", "gt", toDate),
@@ -135,28 +148,53 @@ const validFilters = {
     update_time_lt: compare("update_time", "lt", toDate),
 };
 
-/** Default filters are set, unless explicitly specified by the user. */
-export const defaultFilters = {
-    deleted: false,
-    visible: true,
-};
+/** Checks if filterSettings have default values. */
+export function containsDefaults(filterSettings) {
+    const normalized = getDefaults();
+    let hasDefaults = true;
+    for (const key in normalized) {
+        const value = String(filterSettings[key]).toLowerCase();
+        const normalizedValue = String(normalized[key]).toLowerCase();
+        if (value !== normalizedValue) {
+            hasDefaults = false;
+            break;
+        }
+    }
+    return hasDefaults;
+}
 
-/** Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
-const validAlias = [
-    [">", "_gt"],
-    ["<", "_lt"],
-];
+/** Normalize defaults by adding the operator to the key identifier */
+export function getDefaults() {
+    const normalized = {};
+    Object.entries(defaultFilters).forEach(([key, value]) => {
+        normalized[`${key}:`] = value;
+    });
+    return normalized;
+}
 
-/** Check the value of a particular filter. */
-export function checkFilter(filterText, filterName, filterValue) {
-    const re = new RegExp(`${filterName}:(\\S+)`);
-    const reMatch = re.exec(filterText);
-    const testValue = reMatch ? reMatch[1] : defaultFilters[filterName];
-    return toLowerNoQuotes(testValue) == toLowerNoQuotes(filterValue);
+/** Build a text filter from filter settings */
+export function getFilterText(filterSettings) {
+    const normalized = getDefaults();
+    const hasDefaults = containsDefaults(filterSettings);
+
+    let newFilterText = "";
+    Object.entries(filterSettings).forEach(([key, value]) => {
+        const skipDefault = hasDefaults && normalized[key] !== undefined;
+        if (!skipDefault && value !== undefined && value !== "") {
+            if (newFilterText) {
+                newFilterText += " ";
+            }
+            if (String(value).includes(" ")) {
+                value = `'${value}'`;
+            }
+            newFilterText += `${key}${value}`;
+        }
+    });
+    return newFilterText;
 }
 
 /** Parses single text input into a dict of field->value pairs. */
-export function getFilters(filterText) {
+export function getFilters(filterText, useDefaultFilters = true) {
     const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
     const matches = filterText.match(pairSplitRE);
     let result = {};
@@ -171,7 +209,7 @@ export function getFilters(filterText) {
                 const value = elgMatch[3];
                 // replace alias for less and greater symbol
                 for (const [alias, substitute] of validAlias) {
-                    if (elg == alias) {
+                    if (elg === alias) {
                         field = `${field}${substitute}`;
                         break;
                     }
@@ -199,37 +237,10 @@ export function getFilters(filterText) {
         }
     }
     // use default filters if none of the default filters has been explicitly specified
-    if (!hasDefaults) {
+    if (!hasDefaults && useDefaultFilters) {
         result = { ...result, ...defaultFilters };
     }
     return Object.entries(result);
-}
-
-/** Returns a dictionary with query key and values.
- * @param {String} filterText The raw filter text
- */
-export function getQueryDict(filterText) {
-    const queryDict = {};
-    const filters = getFilters(filterText);
-    for (const [key, value] of filters) {
-        const query = validFilters[key].query;
-        const converter = validFilters[key].converter;
-        queryDict[query] = converter ? converter(value) : value;
-    }
-    return queryDict;
-}
-
-/** Test if an item passes all filters. */
-export function testFilters(filters, item) {
-    for (const [key, filterValue] of filters) {
-        const filterAttribute = validFilters[key].attribute;
-        const filterHandler = validFilters[key].handler;
-        const itemValue = item[filterAttribute];
-        if (!filterHandler(itemValue, filterValue)) {
-            return false;
-        }
-    }
-    return true;
 }
 
 /** Returns a dictionary resembling filterSettings (for HistoryFilters):
@@ -255,4 +266,51 @@ export function toAlias(filters) {
         }
     }
     return result;
+}
+
+/** Returns a dictionary with query key and values.
+ * @param {String} filterText The raw filter text
+ * @param {Boolean} [useDefaultFilters=true] The default filters are set if true
+ */
+export function getQueryDict(filterText, useDefaultFilters = true) {
+    const queryDict = {};
+    const filters = getFilters(filterText, useDefaultFilters);
+    for (const [key, value] of filters) {
+        const query = validFilters[key].query;
+        const converter = validFilters[key].converter;
+        queryDict[query] = converter ? converter(value) : value;
+    }
+    return queryDict;
+}
+
+/** Returns query string from filter text.
+ * @param {String} filterText The raw filter text
+ * @param {Boolean} useDefaultFilters The default filters are set if true
+ * */
+export function getQueryString(filterText, useDefaultFilters = true) {
+    const filterDict = getQueryDict(filterText, useDefaultFilters);
+    return Object.entries(filterDict)
+        .map(([f, v]) => `q=${f}&qv=${v}`)
+        .join("&");
+}
+
+/** Check the value of a particular filter. */
+export function checkFilter(filterText, filterName, filterValue) {
+    const re = new RegExp(`${filterName}:(\\S+)`);
+    const reMatch = re.exec(filterText);
+    const testValue = reMatch ? reMatch[1] : defaultFilters[filterName];
+    return toLowerNoQuotes(testValue) === toLowerNoQuotes(filterValue);
+}
+
+/** Test if an item passes all filters. */
+export function testFilters(filters, item) {
+    for (const [key, filterValue] of filters) {
+        const filterAttribute = validFilters[key].attribute;
+        const filterHandler = validFilters[key].handler;
+        const itemValue = item[filterAttribute];
+        if (!filterHandler(itemValue, filterValue)) {
+            return false;
+        }
+    }
+    return true;
 }

@@ -32,6 +32,7 @@ import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
 import HistoryPublished from "components/History/HistoryPublished";
+import HistoryPublishedList from "components/History/HistoryPublishedList";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
@@ -225,6 +226,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "histories/view_multiple",
                         component: HistoryMultipleView,
+                        props: true,
+                    },
+                    {
+                        path: "histories/list_published",
+                        component: HistoryPublishedList,
                         props: true,
                     },
                     {
