@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "tests/jest/helpers"
+import { getLocalVue, mockModule } from "tests/jest/helpers";
 import ToolCard from "./ToolCard";
 import Vuex from "vuex";
 import { userStore } from "store/userStore";
