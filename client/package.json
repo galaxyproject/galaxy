@@ -146,8 +146,6 @@
     "autoprefixer": "10.4.5",
     "axios-mock-adapter": "^1.20.0",
     "babel-jest": "^29.3.1",
-    "babel-plugin-transform-inline-environment-variables": "^0.4.4",
-    "babel-plugin-transform-vue-template": "^0.4.2",
     "buffer": "^6.0.3",
     "css-loader": "^6.7.1",
     "css-minimizer-webpack-plugin": "^4.0.0",

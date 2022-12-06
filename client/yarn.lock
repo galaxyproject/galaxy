@@ -1120,7 +1120,7 @@
   dependencies:
     regenerator-runtime "^0.13.4"
 
-"@babel/template@^7.0.0-beta.46", "@babel/template@^7.18.10", "@babel/template@^7.18.6", "@babel/template@^7.3.3":
+"@babel/template@^7.18.10", "@babel/template@^7.18.6", "@babel/template@^7.3.3":
   version "7.18.10"
   resolved "https://registry.yarnpkg.com/@babel/template/-/template-7.18.10.tgz#6f9134835970d1dbf0835c0d100c9f38de0c5e71"
   integrity sha512-TI+rCtooWHr3QJ27kJxfjutghu44DLnasDMwpDqCXVTal9RLp3RSYNh4NdBrRP2cQAoG9A8juOQl6P6oZG4JxA==
@@ -2958,19 +2958,6 @@ babel-plugin-polyfill-regenerator@^0.4.1:
   integrity sha512-NtQGmyQDXjQqQ+IzRkBVwEOz9lQ4zxAQZgoAYEtU9dJjnl1Oc98qnN7jcp+bE7O7aYzVpavXE3/VKXNzUbh7aw==
   dependencies:
     "@babel/helper-define-polyfill-provider" "^0.3.3"
-
-babel-plugin-transform-inline-environment-variables@^0.4.4:
-  version "0.4.4"
-  resolved "https://registry.yarnpkg.com/babel-plugin-transform-inline-environment-variables/-/babel-plugin-transform-inline-environment-variables-0.4.4.tgz#974245008b3cbbd646bd81707af147aea3acca43"
-  integrity sha512-bJILBtn5a11SmtR2j/3mBOjX4K3weC6cq+NNZ7hG22wCAqpc3qtj/iN7dSe9HDiS46lgp1nHsQgeYrea/RUe+g==
-
-babel-plugin-transform-vue-template@^0.4.2:
-  version "0.4.2"
-  resolved "https://registry.yarnpkg.com/babel-plugin-transform-vue-template/-/babel-plugin-transform-vue-template-0.4.2.tgz#7899dee289ba743644d7091e23db9f46695ce649"
-  integrity sha512-4rqM83oRbLnbFYMri5dMAqlJgLOBFw0begZ+5z0YimpKCEavuugtVSEN1jSB0IS0N9H1+umuK3hahbaAPp3deA==
-  dependencies:
-    "@babel/template" "^7.0.0-beta.46"
-    vue-template-es2015-compiler "^1.5.3"
 
 babel-preset-current-node-syntax@^1.0.0:
   version "1.0.1"
@@ -10552,7 +10539,7 @@ vue-template-compiler@^2.7.8:
     de-indent "^1.0.2"
     he "^1.2.0"
 
-vue-template-es2015-compiler@^1.5.3, vue-template-es2015-compiler@^1.9.0:
+vue-template-es2015-compiler@^1.9.0:
   version "1.9.1"
   resolved "https://registry.yarnpkg.com/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.9.1.tgz#1ee3bc9a16ecbf5118be334bb15f9c46f82f5825"
   integrity sha512-4gDntzrifFnCEvyoO8PqyJDmguXgVPxKiIxrBKjIowvL9l+N66196+72XVYR8BBf1Uv1Fgt3bGevJ+sEmxfZzw==
