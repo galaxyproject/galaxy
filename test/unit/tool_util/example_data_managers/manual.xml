@@ -1,0 +1,4 @@
+<?xml version="1.0"?>
+<data_managers>
+    <data_manager tool_file="data_manager/data_manager_manual.xml" id="data_manager_manual" version="0.0.1" undeclared_tables="True" />
+</data_managers>

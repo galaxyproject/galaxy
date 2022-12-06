@@ -10,6 +10,7 @@ from typing import (
     Optional,
 )
 
+from pydantic import BaseModel
 from typing_extensions import (
     Literal,
     Protocol,
@@ -19,6 +20,7 @@ from typing_extensions import (
 from galaxy import util
 from galaxy.structured_app import StructuredApp
 from galaxy.tools.data import TabularToolDataTable
+from galaxy.tools.data.bundles.models import convert_data_tables_xml
 from galaxy.util import Element
 from galaxy.util.template import fill_template
 
@@ -148,7 +150,7 @@ MoveDict = TypedDict(
     {
         "type": str,
         "source_base": Optional[str],
-        "source_value": Optional[str],
+        "source_value": str,
         "target_base": Optional[str],
         "target_value": Optional[str],
         "relativize_symlinks": bool,
@@ -222,87 +224,48 @@ class DataManager:
         assert self.tool
         self.name = elem.get("name", self.tool.name)
         self.description = elem.get("description", self.tool.description)
-        self.undeclared_tables = util.asbool(elem.get("undeclared_tables", self.undeclared_tables))
         self.version = elem.get("version", self.tool.version)
-
-        for data_table_elem in elem.findall("data_table"):
-            data_table_name = data_table_elem.get("name")
-            assert data_table_name is not None, "A name is required for a data table entry"
+        processor_description = convert_data_tables_xml(elem)
+        self.undeclared_tables = processor_description.undeclared_tables
+        for data_table in processor_description.data_tables:
+            data_table_name = data_table.name
             if data_table_name not in self.data_tables:
                 self.data_tables[data_table_name] = {}
-            output_elem = data_table_elem.find("output")
-            if output_elem is not None:
-                for column_elem in output_elem.findall("column"):
-                    column_name = column_elem.get("name", None)
-                    assert column_name is not None, "Name is required for column entry"
-                    data_table_coumn_name = column_elem.get("data_table_name", column_name)
-                    self.data_tables[data_table_name][data_table_coumn_name] = column_name
-                    output_ref = column_elem.get("output_ref", None)
+            output = data_table.output
+            if output:
+                for column in output.columns:
+                    column_name = column.name
+                    data_table_column_name = column.data_table_name
+                    self.data_tables[data_table_name][data_table_column_name] = column_name
+                    output_ref = column.output_ref
                     if output_ref is not None:
                         if data_table_name not in self.output_ref_by_data_table:
                             self.output_ref_by_data_table[data_table_name] = {}
-                        self.output_ref_by_data_table[data_table_name][data_table_coumn_name] = output_ref
-                    value_translation_elems = column_elem.findall("value_translation")
-                    if value_translation_elems is not None:
-                        for value_translation_elem in value_translation_elems:
-                            value_translation = value_translation_elem.text
-                            if value_translation is not None:
-                                value_translation_type = value_translation_elem.get(
-                                    "type", DEFAULT_VALUE_TRANSLATION_TYPE
-                                )
-                                if data_table_name not in self.value_translation_by_data_table_column:
-                                    self.value_translation_by_data_table_column[data_table_name] = {}
-                                if (
-                                    data_table_coumn_name
-                                    not in self.value_translation_by_data_table_column[data_table_name]
-                                ):
-                                    self.value_translation_by_data_table_column[data_table_name][
-                                        data_table_coumn_name
-                                    ] = []
-                                if value_translation_type == "function":
-                                    if value_translation in VALUE_TRANSLATION_FUNCTIONS:
-                                        value_translation = VALUE_TRANSLATION_FUNCTIONS[value_translation]
-                                    else:
-                                        raise ValueError(
-                                            f"Unsupported value translation function: '{value_translation}'"
-                                        )
-                                else:
-                                    assert value_translation_type == DEFAULT_VALUE_TRANSLATION_TYPE, ValueError(
-                                        f"Unsupported value translation type: '{value_translation_type}'"
-                                    )
-                                self.value_translation_by_data_table_column[data_table_name][
-                                    data_table_coumn_name
-                                ].append(value_translation)
+                        self.output_ref_by_data_table[data_table_name][data_table_column_name] = output_ref
+                    for value_translation_model in column.value_translations:
+                        value_translation = value_translation_model.value
+                        value_translation_type = value_translation.type
+                        if data_table_name not in self.value_translation_by_data_table_column:
+                            self.value_translation_by_data_table_column[data_table_name] = {}
+                        if data_table_column_name not in self.value_translation_by_data_table_column[data_table_name]:
+                            self.value_translation_by_data_table_column[data_table_name][data_table_column_name] = []
+                        if value_translation_type == "function":
+                            if value_translation in VALUE_TRANSLATION_FUNCTIONS:
+                                value_translation = VALUE_TRANSLATION_FUNCTIONS[value_translation]
+                            else:
+                                raise ValueError(f"Unsupported value translation function: '{value_translation}'")
+                        else:
+                            assert value_translation_type == DEFAULT_VALUE_TRANSLATION_TYPE, ValueError(
+                                f"Unsupported value translation type: '{value_translation_type}'"
+                            )
+                        self.value_translation_by_data_table_column[data_table_name][data_table_column_name].append(
+                            value_translation
+                        )
 
-                    for move_elem in column_elem.findall("move"):
-                        move_type = move_elem.get("type", "directory")
-                        relativize_symlinks = move_elem.get(
-                            "relativize_symlinks", False
-                        )  # TODO: should we instead always relativize links?
-                        source_elem = move_elem.find("source")
-                        if source_elem is None:
-                            source_base = None
-                            source_value = ""
-                        else:
-                            source_base = source_elem.get("base", None)
-                            source_value = source_elem.text
-                        target_elem = move_elem.find("target")
-                        if target_elem is None:
-                            target_base = None
-                            target_value = ""
-                        else:
-                            target_base = target_elem.get("base", None)
-                            target_value = target_elem.text
+                    for move in column.moves:
                         if data_table_name not in self.move_by_data_table_column:
                             self.move_by_data_table_column[data_table_name] = {}
-                        self.move_by_data_table_column[data_table_name][data_table_coumn_name] = dict(
-                            type=move_type,
-                            source_base=source_base,
-                            source_value=source_value,
-                            target_base=target_base,
-                            target_value=target_value,
-                            relativize_symlinks=relativize_symlinks,
-                        )
+                        self.move_by_data_table_column[data_table_name][data_table_column_name] = move.dict()
 
     @property
     def id(self):
