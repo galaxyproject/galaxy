@@ -35,12 +35,12 @@ export async function getDatasets(options: GetDatasetsOptions = {}) {
 }
 
 const _copyDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s").method("post").create();
-type HistoryContentsPost = paths["/api/histories/{history_id}/contents/{type}s"]["post"];
+type HistoryContentsArgs = FetchArgType<typeof _copyDataset>;
 export async function copyDataset(
-    datasetId: HistoryContentsPost["requestBody"]["content"]["application/json"]["content"],
-    historyId: HistoryContentsPost["parameters"]["path"]["history_id"],
-    type: HistoryContentsPost["parameters"]["path"]["type"] = "dataset",
-    source: HistoryContentsPost["requestBody"]["content"]["application/json"]["source"] = "hda"
+    datasetId: HistoryContentsArgs["content"],
+    historyId: HistoryContentsArgs["history_id"],
+    type: HistoryContentsArgs["type"] = "dataset",
+    source: HistoryContentsArgs["source"] = "hda"
 ) {
     const response = await _copyDataset({
         history_id: historyId,
@@ -52,11 +52,11 @@ export async function copyDataset(
 }
 
 const _updateTags = fetcher.path("/api/tags").method("put").create();
-type UpdateTagsBodyParams = paths["/api/tags"]["put"]["requestBody"]["content"]["application/json"];
+type UpdateTagsArgs = FetchArgType<typeof _updateTags>;
 export async function updateTags(
-    itemId: UpdateTagsBodyParams["item_id"],
-    itemClass: UpdateTagsBodyParams["item_class"],
-    itemTags: UpdateTagsBodyParams["item_tags"]
+    itemId: UpdateTagsArgs["item_id"],
+    itemClass: UpdateTagsArgs["item_class"],
+    itemTags: UpdateTagsArgs["item_tags"]
 ) {
     const { data } = await _updateTags({
         item_id: itemId,
