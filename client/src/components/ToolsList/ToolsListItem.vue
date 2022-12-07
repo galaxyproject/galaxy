@@ -52,7 +52,13 @@ library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp, faExcla
                 <span>
                     <FontAwesomeIcon v-if="props.local" icon="fa-wrench" fixed-width />
                     <FontAwesomeIcon v-else icon="fa-globe" fixed-width />
-                    <b>{{ props.name }}</b>
+
+                    <b-button v-if="props.local" class="ui-link text-dark" @click="() => emit('open')">
+                        <b>{{ props.name }}</b>
+                    </b-button>
+                    <b-button v-else class="ui-link text-dark" :href="props.link">
+                        <b>{{ props.name }}</b>
+                    </b-button>
                 </span>
                 <span itemprop="description">{{ props.description }}</span>
                 <span>(Galaxy Version {{ props.version }})</span>
