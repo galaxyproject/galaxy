@@ -6,9 +6,12 @@ import math
 import sys
 import tempfile
 from typing import (
+    cast,
+    List,
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 from urllib.parse import quote_plus
 
@@ -40,6 +43,7 @@ from galaxy.datatypes.util.gff_util import (
     parse_gff_attributes,
 )
 from galaxy.util import compression_utils
+from galaxy.util.compression_utils import FileObjType
 from . import (
     data,
     dataproviders,
@@ -262,7 +266,7 @@ class Interval(Tabular):
             log.exception("Exception caught attempting to generate viewport for dataset '%d'", dataset.id)
         return (None, None, None)
 
-    def as_ucsc_display_file(self, dataset, **kwd):
+    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data"""
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as fh:
             c, s, e, t, n = (
@@ -278,16 +282,16 @@ class Interval(Tabular):
                     strand = "+"
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
-                        name = elems[n]
+                        name = cast(str, elems[n])
                     if t < len(elems):
-                        strand = elems[t]
+                        strand = cast(str, elems[t])
                     tmp = [elems[c], elems[s], elems[e], name, "0", strand]
                     fh.write("%s\n" % "\t".join(tmp))
             elif n >= 0:  # name column (should) exists
                 for i, elems in enumerate(compression_utils.file_iter(dataset.file_name)):
                     name = "region_%i" % i
                     if n >= 0 and n < len(elems):
-                        name = elems[n]
+                        name = cast(str, elems[n])
                     tmp = [elems[c], elems[s], elems[e], name]
                     fh.write("%s\n" % "\t".join(tmp))
             else:
@@ -309,7 +313,7 @@ class Interval(Tabular):
             },
         )
 
-    def ucsc_links(self, dataset, type, app, base_url):
+    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
         """
         Generate links to UCSC genome browser sites based on the dbkey
         and content of dataset.
@@ -427,7 +431,7 @@ class BedGraph(Interval):
     track_type = "LineTrack"
     data_sources = {"data": "bigwig", "index": "bigwig"}
 
-    def as_ucsc_display_file(self, dataset, **kwd):
+    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         """
         Returns file contents as is with no modifications.
         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
@@ -516,7 +520,7 @@ class Bed(Interval):
                         break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def as_ucsc_display_file(self, dataset, **kwd):
+    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
             line = line.strip()
@@ -949,7 +953,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset, type, app, base_url):
+    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -962,7 +966,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def gbrowse_links(self, dataset, type, app, base_url):
+    def gbrowse_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -1351,7 +1355,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def gbrowse_links(self, dataset, type, app, base_url):
+    def gbrowse_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1364,7 +1368,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def ucsc_links(self, dataset, type, app, base_url):
+    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1542,7 +1546,7 @@ class CustomTrack(Tabular):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset, type, app, base_url):
+    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:

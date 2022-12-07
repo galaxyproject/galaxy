@@ -43,6 +43,7 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.compression_utils import FileObjType
 from galaxy.util.markdown import (
     indicate_data_truncated,
     literal_via_fence,
@@ -715,7 +716,7 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "unknown"
 
-    def as_display_type(self, dataset: "DatasetInstance", type: str, **kwd) -> Any:
+    def as_display_type(self, dataset: "DatasetInstance", type: str, **kwd) -> Union[FileObjType, str]:
         """Returns modified file contents for a particular display type"""
         try:
             if type in self.get_display_types():

@@ -16,8 +16,10 @@ import os
 import re
 import sys
 from typing import (
+    List,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 from urllib.parse import quote_plus
 
@@ -40,6 +42,7 @@ from galaxy.util import (
     nice_size,
     unicodify,
 )
+from galaxy.util.compression_utils import FileObjType
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
@@ -80,13 +83,13 @@ class GenomeGraphs(Tabular):
         dataset.metadata.column_types = t
         return True
 
-    def as_ucsc_display_file(self, dataset, **kwd):
+    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         """
         Returns file
         """
         return open(dataset.file_name, "rb")
 
-    def ucsc_links(self, dataset, type, app, base_url):
+    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
         """
         from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this

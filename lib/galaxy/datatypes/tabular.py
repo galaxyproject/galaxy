@@ -59,6 +59,7 @@ from galaxy.datatypes.sniff import (
     validate_tabular,
 )
 from galaxy.util import compression_utils
+from galaxy.util.compression_utils import FileObjType
 from galaxy.util.markdown import (
     indicate_data_truncated,
     pre_formatted_contents,
@@ -533,10 +534,10 @@ class Tabular(TabularData):
         if column_names is not None:
             dataset.metadata.column_names = column_names
 
-    def as_gbrowse_display_file(self, dataset, **kwd):
+    def as_gbrowse_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
-    def as_ucsc_display_file(self, dataset, **kwd):
+    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
 
