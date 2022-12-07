@@ -1,64 +1,97 @@
-<script setup>
-import { computed, onMounted } from "vue";
+<script setup lang="ts">
+import axios from "axios";
+import { computed, onMounted, reactive, ref } from "vue";
+import { getAppRoot } from "onload/loadConfig";
+import { parse } from "csv-parse/sync";
 
-import useDataset from "@/composables/useDataset";
 
-console.debug(useDataset)
-// Needs to resolve a dataset.  This should be a composable, useDataset
+interface TabularChunk {
+    ck_data: string;
+    offset: Number;
+    data_line_offset: Number;
+}
 
-const props = defineProps({
+interface TabularChunkedViewProps {
     options: {
-        type: Object,
-        required: true,
-    },
+        dataset_config: {
+            id: string;
+            file_ext: string;
+            first_data_chunk: TabularChunk;
+            // NOT COMPLETE
+        };
+    };
+}
+
+const props = defineProps<TabularChunkedViewProps>();
+
+const tabularData = reactive<{ columns: string[]; rows: string[] }>({
+    columns: [],
+    rows: [],
 });
 
-console.debug("loaded");
+const loading = ref(true);
 
-const dataset = useDataset(props.options.datasetId);
-
-const headers = computed(() => {
-    return props.options.headers;
+const delimiter = computed(() => {
+    return props.options.dataset_config.file_ext === "csv" ? "," : "\t";
 });
+const chunkUrl = computed(() => {
+    return `${getAppRoot()}dataset/display?dataset_id=${props.options.dataset_config.id}`;
+});
+
+// const columns = computed(() => {
+//     return props.options.headers;
+// });
+
+function processChunk(chunk: TabularChunk) {
+    // parsedChunk is a 2d array of strings
+    let parsedChunk = [];
+    try {
+        parsedChunk = parse(chunk.ck_data, { delimiter: delimiter.value });
+    } catch (error) {
+        // If this blows up it's likely data in a comment or header line
+        // (e.g. VCF files) so just split it by newline first then parse
+        // each line individually.
+        parsedChunk = chunk.ck_data.trim().split("\n");
+        parsedChunk = parsedChunk.map((line) => {
+            try {
+                return parse(line, { delimiter: delimiter.value })[0];
+            } catch (error) {
+                // Failing lines get passed through intact for row-level
+                // rendering/parsing.
+                return [line];
+            }
+        });
+    }
+    parsedChunk.forEach((row: any, index: Number) => {
+        if (index >= (chunk.data_line_offset || 0)) {
+            tabularData.rows.push(row);
+        }
+    });
+}
 
 onMounted(() => {
-    console.debug("All done, mounted");
+    if (props.options.dataset_config.first_data_chunk) {
+        processChunk(props.options.dataset_config.first_data_chunk);
+        loading.value = false;
+    }
 });
 </script>
 
 <template>
     <div>
-        Tabular display.
-        <div v-if="props.options">
-            <pre>{{ props.options }}</pre>
-        </div>
-        <table>
-            <tr>
-                <th>Column 1</th>
-                <th>Column 2</th>
-            </tr>
-            <tr>
-                <td>Row 1, Column 1</td>
-                <td>Row 1, Column 2</td>
-            </tr>
-            <tr>
-                <td>Row 2, Column 1</td>
-                <td>Row 2, Column 2</td>
-            </tr>
-        </table>
-        <!-- 
-            <script type="text/javascript">
-                config.addInitialization(function(galaxy) {
-                    var dataset = ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )};
-                    var firstChunk = ${chunk};
-                    var datasetConfig = Object.assign(dataset, { first_data_chunk: firstChunk })
-                    window.bundleEntries.createNewTabularDatasetChunkedView({
-                        dataset_config : datasetConfig,
-                        parent_elt : document.body
-                    });
-                });
-            </script>
-        -->
+        <!-- TODO loading spinner locked to top right -->
+        <b-table-simple hover small striped>
+            <b-thead head-variant="dark">
+                <b-tr>
+                    <b-th v-for="column in tabularData.columns" :key="column">{{ column }}</b-th>
+                </b-tr>
+            </b-thead>
+            <b-tbody>
+                <b-tr v-for="(row, index) in tabularData.rows" :key="index">
+                    <b-td v-for="element in row" :key="element">{{ element }}</b-td>
+                </b-tr>
+            </b-tbody>
+        </b-table-simple>
     </div>
 </template>
 
