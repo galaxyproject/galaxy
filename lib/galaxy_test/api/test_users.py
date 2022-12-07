@@ -234,7 +234,6 @@ class TestUsersApi(ApiTestCase):
         assert len(users) == 1
         return users[0]["id"]
 
-
     def test_manage_beacon_settings(self):
         user_id = self._get_current_user_id()
 
