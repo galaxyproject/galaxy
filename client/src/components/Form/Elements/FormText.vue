@@ -98,25 +98,14 @@ export default {
     },
     data() {
         let inputArea;
-        let inputValue;
         if (["SelectTagParameter", "ColumnListParameter"].includes(this.model_class) || (this.options && this.data)) {
             inputArea = this.multiple;
-            if (Utils.isEmpty(this.value)) {
-                inputValue = null;
-            } else {
-                if (Array.isArray(this.value)) {
-                    inputValue = this.multiple
-                        ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
-                        : String(this.value[0]);
-                }
-            }
         }
         return {
             dismissSecs: 5,
             dismissCountDown: 0,
             errorMessage: "",
             inputArea: inputArea,
-            inputValue: inputValue,
         };
     },
     computed: {
@@ -125,7 +114,9 @@ export default {
                 // TODO: is silent fail on non-strings appropriate?
                 const v = this.value || "";
                 if (Array.isArray(v)) {
-                    return this.multiple ? v.map((i) => String(i)).join("\n") : String(v[0]);
+                    return this.multiple
+                        ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
+                        : String(this.value[0]);
                 }
                 return typeof v === "string" ? v : "";
             },
