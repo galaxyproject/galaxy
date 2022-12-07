@@ -1,8 +1,8 @@
-<script setup>
+<script setup lang="ts">
 import { ref } from "vue";
 import { useDetailedDatatypes } from "composables/datatypes";
 import { useFilterObjectArray } from "composables/utils/filter";
-import DelayedInput from "components/Common/DelayedInput";
+import DelayedInput from "components/Common/DelayedInput.vue";
 
 const filter = ref("");
 const filterFields = ["extension"];
@@ -27,7 +27,7 @@ const fields = [
     },
 ];
 
-const edamLink = (edamIRI) => `https://edamontology.github.io/edam-browser/#${edamIRI}`;
+const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-browser/#${edamIRI}`;
 </script>
 
 <template>

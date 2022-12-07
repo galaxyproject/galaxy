@@ -183,6 +183,7 @@ history_panel:
       edit_button: '${_} .edit-btn'
       delete_button: '${_} .delete-btn'
       rerun_button: '${_} .rerun-btn'
+      collection_job_details_button: '${_} .collection-job-details-btn'
 
       # Action buttons...
       download_button: '${_} .download-btn'
@@ -350,6 +351,17 @@ multi_history_panel:
       copy_btn:
         type: xpath
         selector: '//button[contains(text(), "Copy")]'
+
+published_histories:
+  selectors:
+    histories: '#published-histories-table tbody tr'
+    search_input: '#published-histories-filter'
+    advanced_search_toggle: '#published-histories-advanced-filter-toggle'
+    advanced_search_name_input: '#published-histories-advanced-filter-name'
+    advanced_search_tag_input: '#published-histories-advanced-filter-tag'
+    advanced_search_submit: '#published-histories-advanced-filter-submit'
+    tag_content: '#published-histories-table tbody tr .ti-tag .tag-name'
+    column_header: '#published-histories-table thead tr th:nth-child(${column_number})'
 
 history_copy_elements:
   selectors:
@@ -898,3 +910,11 @@ charts:
   selectors:
     visualize_button: '.ui-portlet .button i.fa-line-chart'  # without icon - it waits on other buttons that aren't visible, need more specific class
     viewport_canvas: 'svg.charts-viewport-canvas'
+
+job_details:
+  selectors:
+    galaxy_tool_with_id:
+      type: xpath
+      selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
+    tool_exit_code: '#exit-code'
+

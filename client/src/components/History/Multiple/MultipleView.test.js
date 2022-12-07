@@ -1,3 +1,4 @@
+import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "jest/helpers";
@@ -9,6 +10,8 @@ import store from "store/index";
 const COUNT = 8;
 const USER_ID = "test-user-id";
 const CURRENT_HISTORY_ID = "test-history-id-0";
+
+const pinia = createPinia();
 
 const getFakeHistorySummaries = (num, selectedIndex = 0) => {
     const result = Array.from({ length: num }, (_, index) => ({
@@ -32,6 +35,7 @@ describe("MultipleView", () => {
     beforeEach(async () => {
         wrapper = mount(MultipleView, {
             store,
+            pinia,
             stubs: {
                 CurrentUser: CurrentUserMock,
                 UserHistories: UserHistoriesMock,

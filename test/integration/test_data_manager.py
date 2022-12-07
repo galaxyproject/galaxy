@@ -146,7 +146,7 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
 
         self._app.tool_data_tables.get("all_fasta").remove_entry(table_content["dm6"])
         entries = self._app.tool_data_tables.get("all_fasta").get_entries("dbkey", "dm6", "dbkey")
-        assert entries is None
+        assert not entries
 
     def test_data_manager_manual_multiple(self):
         """
@@ -190,14 +190,14 @@ class TestDataManagerIntegration(integration_util.IntegrationTestCase, UsesShed)
         self._app.tool_data_tables.get("all_fasta").remove_entry(table_content["dm6"])
 
         entries = self._app.tool_data_tables.get("all_fasta").get_entries("dbkey", "dm6", "dbkey")
-        assert entries is None
+        assert not entries
 
         self._app.tool_data_tables.get("all_fasta").remove_entry(table_content["NC_001617.1"])
 
         entries = self._app.tool_data_tables.get("all_fasta").get_entries(
             "dbkey", "another_unique_dbkey_value", "dbkey"
         )
-        assert entries is None
+        assert not entries
 
     @classmethod
     def get_secure_ascii_digits(cls, n=12):

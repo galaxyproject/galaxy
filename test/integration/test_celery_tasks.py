@@ -72,7 +72,7 @@ class TestCeleryTasksIntegration(IntegrationTestCase):
         assert hda_purged()
 
     def test_pdf_download(self):
-        short_term_storage_allocator = self._app[ShortTermStorageAllocator]
+        short_term_storage_allocator = self._app[ShortTermStorageAllocator]  # type: ignore[type-abstract]
         short_term_storage_target = short_term_storage_allocator.new_target("moo.pdf", "application/pdf")
         request_id = short_term_storage_target.request_id
         pdf_download_request = GeneratePdfDownload(

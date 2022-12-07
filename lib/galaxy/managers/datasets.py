@@ -295,7 +295,6 @@ class DatasetAssociationManager(
 
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class: Type[model.DatasetInstance]
     app: MinimalManagerApp
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses

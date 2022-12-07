@@ -11,6 +11,7 @@ from typing import (
     Any,
     Dict,
     NamedTuple,
+    Optional,
 )
 
 import pytest
@@ -870,8 +871,10 @@ def setup_fixture_context_with_history(
 
 
 def perform_import_from_store_dict(
-    fixture_context: StoreFixtureContextWithHistory, import_dict: Dict[str, Any], import_options=None
-):
+    fixture_context: StoreFixtureContextWithHistory,
+    import_dict: Dict[str, Any],
+    import_options: Optional[store.ImportOptions] = None,
+) -> None:
     import_options = import_options or store.ImportOptions()
     import_model_store = store.get_import_model_store_for_dict(
         import_dict, app=fixture_context.app, user=fixture_context.user, import_options=import_options

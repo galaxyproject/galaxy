@@ -1,3 +1,44 @@
+<script setup>
+import { computed, onMounted } from "vue";
+
+import { useWorkflowStore } from "stores/workflowStore";
+
+import ParameterStep from "./ParameterStep";
+import GenericHistoryItem from "components/History/Content/GenericItem";
+import WorkflowInvocationStep from "./WorkflowInvocationStep";
+
+const props = defineProps({
+    invocation: {
+        type: Object,
+        required: true,
+    },
+});
+
+const workflowStore = useWorkflowStore();
+
+const workflow = computed(() => {
+    return workflowStore.workflowsByInstanceId[props.invocation.workflow_id];
+});
+
+function dataInputStepLabel(key, input) {
+    const invocationStep = props.invocation.steps[key];
+    let label = invocationStep && invocationStep.workflow_step_label;
+    if (!label) {
+        if (input.src === "hda" || input.src === "ldda") {
+            label = "Input dataset";
+        } else if (input.src === "hdca") {
+            label = "Input dataset collection";
+        }
+    }
+    return label;
+}
+
+onMounted(async () => {
+    if (!workflowStore.workflowsByInstanceId[props.invocation.workflow_id]) {
+        workflowStore.fetchWorkflowForInstanceId(props.invocation.workflow_id);
+    }
+});
+</script>
 <template>
     <div v-if="invocation">
         <b-tabs lazy>
@@ -36,49 +77,3 @@
         </b-tabs>
     </div>
 </template>
-<script>
-import ParameterStep from "./ParameterStep";
-import GenericHistoryItem from "components/History/Content/GenericItem";
-import WorkflowInvocationStep from "./WorkflowInvocationStep";
-
-import { mapGetters } from "vuex";
-import { mapCacheActions } from "vuex-cache";
-
-export default {
-    components: {
-        GenericHistoryItem,
-        WorkflowInvocationStep,
-        ParameterStep,
-    },
-    props: {
-        invocation: {
-            type: Object,
-            required: true,
-        },
-    },
-    computed: {
-        ...mapGetters(["getWorkflowByInstanceId"]),
-        workflow() {
-            return this.getWorkflowByInstanceId(this.invocation.workflow_id);
-        },
-    },
-    created: function () {
-        this.fetchWorkflowForInstanceId(this.invocation.workflow_id);
-    },
-    methods: {
-        ...mapCacheActions(["fetchWorkflowForInstanceId"]),
-        dataInputStepLabel(key, input) {
-            const invocationStep = this.invocation.steps[key];
-            let label = invocationStep && invocationStep.workflow_step_label;
-            if (!label) {
-                if (input.src === "hda" || input.src === "ldda") {
-                    label = "Input dataset";
-                } else if (input.src === "hdca") {
-                    label = "Input dataset collection";
-                }
-            }
-            return label;
-        },
-    },
-};
-</script>

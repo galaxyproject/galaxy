@@ -31,7 +31,7 @@ JobEnvironmentProperties = collections.namedtuple(
 
 
 class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase):
-
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod
@@ -67,6 +67,8 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
 
 
 class TestDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

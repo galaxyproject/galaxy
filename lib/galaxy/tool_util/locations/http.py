@@ -9,7 +9,7 @@ class HttpToolResolver(ToolLocationResolver):
     def __init__(self, **kwds):
         pass
 
-    def get_tool_source_path(self, uri_like):
+    def get_tool_source_path(self, uri_like: str) -> str:
         tmp_path = self._temp_path(uri_like)
         download_to_file(uri_like, tmp_path)
         return tmp_path

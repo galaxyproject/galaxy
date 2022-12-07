@@ -1,3 +1,4 @@
+import abc
 import os
 import shutil
 import string
@@ -35,6 +36,7 @@ SHED_DATA_TABLES = """<?xml version="1.0"?>
 
 class UsesShed(UsesShedApi):
     @property
+    @abc.abstractmethod
     def _app(self) -> UniverseApplication:
         ...
 

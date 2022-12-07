@@ -3,6 +3,7 @@
         <container type="docker">busybox:ubuntu-14.04</container>
     </requirements>
     <command detect_errors="exit_code"><![CDATA[
+mktemp -d &&
 echo 'Writing environment properties to output files.' &&
 (>&2 echo 'Example tool stderr output.') &&
 echo \$(id -u) > '$user_id' &&

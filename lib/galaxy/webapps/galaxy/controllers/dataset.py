@@ -13,12 +13,12 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.datatypes import sniff
 from galaxy.datatypes.data import DatatypeConverterNotFoundException
 from galaxy.datatypes.display_applications.util import (
     decode_dataset_user,
     encode_dataset_user,
 )
+from galaxy.datatypes.sniff import guess_ext
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.managers.hdas import (
     HDADeserializer,
@@ -430,7 +430,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                     )
                 else:
                     path = data.dataset.file_name
-                    datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
+                    datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     trans.sa_session.flush()
                     job, *_ = trans.app.datatypes_registry.set_external_metadata_tool.tool_action.execute(

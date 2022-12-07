@@ -1368,7 +1368,8 @@ mapping:
         required: false
         per_host: true
         desc: |
-          Display the "Galaxy" text in the masthead.
+          This option has been deprecated, use the `logo_src` instead to change the
+          default logo including the galaxy brand title.
 
       pretty_datetime_format:
         type: str
@@ -1445,7 +1446,7 @@ mapping:
           Galaxy via the API.
 
           If you plan to run Interactive Tools make sure the docker container
-          can reach this URL. For more details see `job_conf.xml.interactivetools`.
+          can reach this URL.
 
       galaxy_infrastructure_web_port:
         type: int
@@ -2982,7 +2983,7 @@ mapping:
 
       job_config_file:
         type: str
-        default: job_conf.xml
+        default: job_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
@@ -2995,7 +2996,7 @@ mapping:
           By default, Galaxy manages and executes jobs from within a single process and
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
-          be configured through the job configuration file.
+          be configured through the job configuration file or the <job_config> option.
 
       job_config:
         !include job_config_schema.yml
@@ -3047,10 +3048,10 @@ mapping:
         desc: |
           When jobs fail due to job runner problems, Galaxy can be configured to retry
           these or reroute the jobs to new destinations. Very fine control of this is
-          available with resubmit declarations in job_conf.xml. For simple deployments
+          available with resubmit declarations in the job config. For simple deployments
           of Galaxy though, the following attribute can define resubmission conditions
           for all job destinations. If any job destination defines even one
-          resubmission condition explicitly in job_conf.xml - the condition described
+          resubmission condition explicitly in the job config - the condition described
           by this option will not apply to that destination. For instance, the condition:
           'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
           would retry up to two times jobs that didn't fail due to detected memory or

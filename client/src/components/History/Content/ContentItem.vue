@@ -4,7 +4,13 @@
         :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
         :data-hid="id"
         :data-state="state">
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
+        <div
+            class="p-1 cursor-pointer"
+            draggable
+            tabindex="0"
+            @dragstart="onDragStart"
+            @click.stop="onClick"
+            @keypress="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
                     <span v-if="selectable" class="selector">
@@ -21,21 +27,31 @@
                             :icon="['far', 'square']"
                             @click.stop="$emit('update:selected', true)" />
                     </span>
-                    <span v-if="highlight == 'input'" v-b-tooltip.hover title="Input" @click.stop="toggleHighlights">
+                    <span
+                        v-if="highlight == 'input'"
+                        v-b-tooltip.hover
+                        title="Input"
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon class="text-info" icon="arrow-circle-up" />
                     </span>
                     <span
                         v-else-if="highlight == 'noInputs'"
                         v-b-tooltip.hover
                         title="No Inputs for this item"
-                        @click.stop="toggleHighlights">
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon icon="minus-circle" />
                     </span>
                     <span
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
                         title="Inputs highlighted for this item"
-                        @click.stop="toggleHighlights">
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon icon="check-circle" />
                     </span>
                     <span v-if="hasStateIcon" class="state-icon">
@@ -61,6 +77,7 @@
                     :item-urls="itemUrls"
                     @delete="$emit('delete')"
                     @display="onDisplay"
+                    @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
                     @undelete="$emit('undelete')"
                     @unhide="$emit('unhide')" />
@@ -182,6 +199,10 @@ export default {
             if (this.isCollection) {
                 return {
                     edit: `/collection/${id}/edit`,
+                    showDetails:
+                        this.item.job_source_id && this.item.job_source_type === "Job"
+                            ? `/jobs/${this.item.job_source_id}/view`
+                            : null,
                 };
             }
             return {
@@ -213,6 +234,9 @@ export default {
         onEdit() {
             this.$router.push(this.itemUrls.edit);
         },
+        onShowCollectionInfo() {
+            this.$router.push(this.itemUrls.showDetails);
+        },
         onTags(newTags) {
             this.$emit("tag-change", this.item, newTags);
             updateContentFields(this.item, { tags: newTags });
@@ -227,9 +251,6 @@ export default {
 };
 </script>
 <style lang="scss">
-.content-item:hover {
-    filter: brightness(105%);
-}
 .content-item {
     .name {
         word-break: break-all;

@@ -1,3 +1,4 @@
+import contextlib
 import io
 import json
 import os
@@ -15,7 +16,9 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
+    NamedTuple,
     Optional,
 )
 
@@ -47,6 +50,8 @@ VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False)
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 DEFAULT_TOOL_TEST_WAIT = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
+DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
 DEFAULT_FTYPE = "auto"
 # This following default dbkey was traditionally hg17 before Galaxy 18.05,
@@ -116,6 +121,13 @@ def stage_data_in_history(
                 tool_version=tool_version,
             )
             upload_wait()
+
+
+class RunToolResponse(NamedTuple):
+    inputs: Dict[str, Any]
+    outputs: OutputsDict
+    output_collections: Dict[str, Any]
+    jobs: List[Dict[str, Any]]
 
 
 class GalaxyInteractorApi:
@@ -354,12 +366,31 @@ class GalaxyInteractorApi:
         except IndexError:
             return None
 
+    @contextlib.contextmanager
+    def test_history(
+        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+    ) -> Generator[str, None, None]:
+        history_id = None
+        if not require_new:
+            history_id = DEFAULT_TARGET_HISTORY
+
+        cleanup = CLEANUP_TEST_HISTORIES
+        history_id = history_id or self.new_history()
+        try:
+            yield history_id
+        except Exception:
+            self._summarize_history(history_id)
+            raise
+        finally:
+            if cleanup and cleanup_callback is not None:
+                cleanup_callback(history_id)
+
     def new_history(self, history_name="test_history", publish_history=False):
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
         except Exception as e:
-            raise Exception(f"Error occured while creating history with name '{history_name}': {e}")
+            raise Exception(f"Error occurred while creating history with name '{history_name}': {e}")
         history_id = create_response.json()["id"]
         if publish_history:
             self.publish_history(history_id)
@@ -509,7 +540,7 @@ class GalaxyInteractorApi:
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
-    def run_tool(self, testdef, history_id, resource_parameters=None):
+    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -550,14 +581,16 @@ class GalaxyInteractorApi:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
-            return Bunch(
+            return RunToolResponse(
                 inputs=inputs_tree,
                 outputs=self.__dictify_outputs(submit_response_object),
                 output_collections=self.__dictify_output_collections(submit_response_object),
                 jobs=submit_response_object["jobs"],
             )
         except KeyError:
-            message = f"Error creating a job for these tool inputs - {submit_response_object['err_msg']}"
+            message = (
+                f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+            )
             raise RunToolException(message, inputs_tree)
 
     def _create_collection(self, history_id, collection_def):
@@ -591,13 +624,13 @@ class GalaxyInteractorApi:
             element_identifiers.append(element)
         return element_identifiers
 
-    def __dictify_output_collections(self, submit_response):
+    def __dictify_output_collections(self, submit_response) -> Dict[str, Any]:
         output_collections_dict = {}
         for output_collection in submit_response["output_collections"]:
-            output_collections_dict[output_collection.get("output_name")] = output_collection
+            output_collections_dict[output_collection["output_name"]] = output_collection
         return output_collections_dict
 
-    def __dictify_outputs(self, datasets_object):
+    def __dictify_outputs(self, datasets_object) -> OutputsDict:
         # Convert outputs list to a dictionary that can be accessed by
         # output_name so can be more flexible about ordering of outputs
         # but also allows fallback to legacy access as list mode.
@@ -623,7 +656,7 @@ class GalaxyInteractorApi:
                 self._summarize_history(history_id)
             raise
 
-    def _summarize_history(self, history_id):
+    def _summarize_history(self, history_id: str):
         if history_id is None:
             raise ValueError("_summarize_history passed empty history_id")
         print(f"Problem in history with id {history_id} - summary of history's datasets and jobs below.")
@@ -1486,6 +1519,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             register_exception(e)
 
     if found_exceptions and not testdef.expect_test_failure:
+        raise JobOutputsError(found_exceptions, job_stdio)
+    elif not found_exceptions and testdef.expect_test_failure:
+        register_exception(AssertionError("Expected job to miss at least one test assumption but all were met."))
         raise JobOutputsError(found_exceptions, job_stdio)
     else:
         return job_stdio

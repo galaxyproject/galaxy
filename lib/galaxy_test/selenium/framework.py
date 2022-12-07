@@ -44,6 +44,10 @@ from galaxy_test.base.api import (
     UsesCeleryTasks,
 )
 from galaxy_test.base.api_util import get_admin_api_key
+from galaxy_test.base.decorators import (
+    requires_new_history,
+    using_requirement,
+)
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
@@ -106,6 +110,7 @@ def managed_history(f):
     Cleanup the history after the job is complete as well unless
     GALAXY_TEST_NO_CLEANUP is set in the environment.
     """
+    f = requires_new_history(f)
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
@@ -247,7 +252,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # is required for the test to run properly. Override admin user
     # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
     # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
-    requires_admin = False
+    run_as_admin = False
 
     def _target_url_from_selenium(self):
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
@@ -262,7 +267,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
-        if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+        if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
             self._setup_interactor()
             self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
         self._try_setup_with_driver()
@@ -391,6 +396,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.components.history_panel.empty_message.wait_for_visible()
 
     def admin_login(self):
+        using_requirement("admin")
         self.home()
         self.submit_login(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL, GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD)
         with self.main_panel():
@@ -734,6 +740,9 @@ class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.Ba
     def __init__(self, selenium_context: GalaxySeleniumContext):
         """Construct a dataset populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
+
+    def _summarize_history(self, history_id: str) -> None:
+        pass
 
 
 class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):

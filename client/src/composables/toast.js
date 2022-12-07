@@ -3,6 +3,7 @@ import { ref } from "vue";
 let toastRef = ref(null);
 
 export const setToastComponentRef = (newRef) => {
+    // eslint-disable-next-line vue/no-ref-as-operand
     toastRef = newRef;
 };
 

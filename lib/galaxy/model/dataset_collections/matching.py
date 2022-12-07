@@ -1,3 +1,5 @@
+from typing import Optional
+
 from galaxy import exceptions
 from galaxy.util import bunch
 from .structure import (
@@ -37,7 +39,7 @@ class MatchingCollections:
     overkill but I suspect in the future plugins will be subtypable for
     instance so matching collections will need to make heavy use of the
     dataset collection type registry managed by the dataset collections
-    sevice - hence the complexity now.
+    service - hence the complexity now.
     """
 
     def __init__(self):
@@ -87,7 +89,7 @@ class MatchingCollections:
         return input_name in self.collections
 
     @staticmethod
-    def for_collections(collections_to_match, collection_type_descriptions):
+    def for_collections(collections_to_match, collection_type_descriptions) -> Optional["MatchingCollections"]:
         if not collections_to_match.has_collections():
             return None
 
