@@ -36,19 +36,12 @@ class WorkflowRunCrateProfileBuilder:
             # "dataset": "File",
             # "dataset_collection": "collection#TODO",
         }
-        self.ignored_parameter_type = [
-            "queries",
-            "input1",
-            "__workflow_invocation_uuid__",
-            "chromInfo",
-            "dbkey",
-            "__input_ext",
-        ]
 
     def build_crate(self):
         crate = ROCrate()
         file_entities = self._add_files(crate)
         self._add_workflows(crate)
+        self._add_engine_run(crate)
         self._add_actions(crate, file_entities)
         return crate
 
@@ -94,6 +87,8 @@ class WorkflowRunCrateProfileBuilder:
                     cls=workflow_cls,
                     lang=lang,
                 )
+
+            crate.license = self.workflow.license  or ""
             crate.mainEntity["name"] = self.workflow.name
 
     def _add_engine_run(self, crate: ROCrate):
@@ -153,6 +148,7 @@ class WorkflowRunCrateProfileBuilder:
                 properties={
                     "@type": "CreateAction",
                     "name": self.workflow.name,
+                    "instrument": {"@id": crate.mainEntity["@id"]},
                     "object": wf_input_ids,
                     "result": wf_output_ids,
                 },
