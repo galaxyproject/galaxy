@@ -31,6 +31,7 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
+from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.tasks import (
@@ -356,6 +357,29 @@ def compute_dataset_hash(
     request: ComputeDatasetHashTaskRequest,
 ):
     dataset_manager.compute_hash(request)
+
+
+@galaxy_task(action="import a data bundle")
+def import_data_bundle(
+    hda_manager: HDAManager,
+    ldda_manager: LDDAManager,
+    tool_data_import_manager: ToolDataImportManager,
+    config: GalaxyAppConfiguration,
+    src: str,
+    uri: Optional[str] = None,
+    id: Optional[int] = None,
+):
+    if src == "uri":
+        assert uri
+        tool_data_import_manager.import_data_bundle_by_uri(config, uri)
+    else:
+        assert id
+        dataset: model.DatasetInstance
+        if src == "hda":
+            dataset = hda_manager.by_id(id)
+        else:
+            dataset = ldda_manager.by_id(id)
+        tool_data_import_manager.import_data_bundle_by_dataset(config, dataset)
 
 
 @galaxy_task(action="pruning history audit table")

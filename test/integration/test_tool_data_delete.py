@@ -17,8 +17,10 @@ THIS_DIR = os.path.dirname(__file__)
 SOURCE_TOOL_DATA_DIRECTORY = os.path.join(THIS_DIR, os.pardir, "functional", "tool-data")
 
 
-class TestAdminToolDataIntegration(integration_util.IntegrationTestCase):
+class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
+
     require_admin_user = True
+    dataset_populator: DatasetPopulator
 
     def setUp(self):
         super().setUp()
@@ -38,10 +40,18 @@ class TestAdminToolDataIntegration(integration_util.IntegrationTestCase):
         config["tool_data_path"] = cls.temp_tool_data_dir
         config["tool_data_table_config_path"] = cls.temp_tool_data_tables_file
 
-    def test_admin_delete_data_table_entry(self):
+    def _testbase_fields(self):
         show_response = self._get("tool_data/testbeta")
-        original_count = len(show_response.json()["fields"])
+        show_response.raise_for_status()
+        return show_response.json()["fields"]
 
+    def _testbeta_field_count(self) -> int:
+        return len(self._testbase_fields())
+
+
+class TestAdminToolDataIntegration(DataManagerIntegrationTestCase):
+    def test_admin_delete_data_table_entry(self):
+        original_count = self._testbeta_field_count()
         history_id = self.dataset_populator.new_history()
         payload = self.dataset_populator.run_tool_payload(
             tool_id="data_manager",
@@ -52,8 +62,7 @@ class TestAdminToolDataIntegration(integration_util.IntegrationTestCase):
         create_response.raise_for_status()
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         time.sleep(2)
-        show_response = self._get("tool_data/testbeta")
-        updated_fields = show_response.json()["fields"]
+        updated_fields = self._testbase_fields()
         assert len(updated_fields) == original_count + 1
         new_field = updated_fields[-1]
         url = self._api_url(f"tool_data/testbeta?key={self.galaxy_interactor.api_key}")

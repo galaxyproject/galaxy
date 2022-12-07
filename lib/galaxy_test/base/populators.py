@@ -901,13 +901,17 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in create_response_json
         return create_response_json
 
-    def get_history_dataset_content(self, history_id: str, wait=True, filename=None, type="text", raw=False, **kwds):
+    def get_history_dataset_content(
+        self, history_id: str, wait=True, filename=None, type="text", to_ext=None, raw=False, **kwds
+    ):
         dataset_id = self.__history_content_id(history_id, wait=wait, **kwds)
         data = {}
         if filename:
             data["filename"] = filename
         if raw:
             data["raw"] = True
+        if to_ext is not None:
+            data["to_ext"] = to_ext
         display_response = self._get_contents_request(history_id, f"/{dataset_id}/display", data=data)
         assert display_response.status_code == 200, display_response.text
         if type == "text":

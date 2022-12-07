@@ -2273,6 +2273,24 @@ class GroupUserListModel(Model):
     __root__: List[GroupUserModel]
 
 
+class ImportToolDataBundleUriSource(Model):
+    src: Literal["uri"] = Field(title="src", description="Indicates that the tool data should be resolved by a URI.")
+    uri: str = Field(
+        title="uri",
+        description="URI to fetch tool data bundle from (file:// URIs are fine because this is an admin-only operation)",
+    )
+
+
+class ImportToolDataBundleDatasetSource(Model):
+    src: Literal["hda", "ldda"] = Field(
+        title="src", description="Indicates that the tool data should be resolved from a dataset."
+    )
+    id: DecodedDatabaseIdField = EntityIdField
+
+
+ImportToolDataBundleSource = Union[ImportToolDataBundleDatasetSource, ImportToolDataBundleUriSource]
+
+
 class ToolShedRepository(Model):
     tool_shed_url: str = Field(
         title="Tool Shed URL", default="https://toolshed.g2.bx.psu.edu/", description="Tool Shed target"

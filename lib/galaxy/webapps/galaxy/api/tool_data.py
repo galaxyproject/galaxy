@@ -1,6 +1,18 @@
-from fastapi import Path
+from fastapi import (
+    Body,
+    Path,
+)
+from pydantic import (
+    BaseModel,
+    Field,
+)
 
+from galaxy.celery.tasks import import_data_bundle
 from galaxy.managers.tool_data import ToolDataManager
+from galaxy.schema.schema import (
+    AsyncTaskResultSummary,
+    ImportToolDataBundleSource,
+)
 from galaxy.tool_util.data._schema import (
     ToolDataDetails,
     ToolDataEntryList,
@@ -8,6 +20,7 @@ from galaxy.tool_util.data._schema import (
     ToolDataItem,
 )
 from galaxy.webapps.base.api import GalaxyFileResponse
+from galaxy.webapps.galaxy.services.base import async_task_summary
 from . import (
     depends,
     Router,
@@ -29,6 +42,10 @@ ToolDataTableFieldName = Path(
 )
 
 
+class ImportToolDataBundle(BaseModel):
+    source: ImportToolDataBundleSource = Field(..., discriminator="src")
+
+
 @router.cbv
 class FastAPIToolData:
     tool_data_manager: ToolDataManager = depends(ToolDataManager)
@@ -42,6 +59,17 @@ class FastAPIToolData:
     async def index(self) -> ToolDataEntryList:
         """Get the list of all available data tables."""
         return self.tool_data_manager.index()
+
+    @router.post(
+        "/api/tool_data",
+        summary="Import a data manager bundle",
+        require_admin=True,
+    )
+    async def create(self, import_bundle_model: ImportToolDataBundle = Body(...)) -> AsyncTaskResultSummary:
+        source = import_bundle_model.source
+        result = import_data_bundle.delay(**source.dict())
+        summary = async_task_summary(result)
+        return summary
 
     @router.get(
         "/api/tool_data/{table_name}",

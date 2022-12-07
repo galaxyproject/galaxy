@@ -3056,7 +3056,15 @@ class DataManagerTool(OutputParameterJSONTool):
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
-        data_manager.process_result(out_data)
+        data_manager_mode = param_dict.get("__data_manager_mode", "populate")
+        if data_manager_mode == "populate":
+            data_manager.process_result(out_data)
+        elif data_manager_mode == "dry_run":
+            pass
+        elif data_manager_mode == "bundle":
+            data_manager.write_bundle(out_data)
+        else:
+            raise Exception("Unknown data manager mode encountered type...")
 
     def get_default_history_by_trans(self, trans, create=False):
         def _create_data_manager_history(user):

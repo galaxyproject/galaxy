@@ -97,6 +97,7 @@ class MinimalManagerApp(MinimalApp):
     file_sources: ConfiguredFileSources
     genome_builds: GenomeBuilds
     dataset_collection_manager: "DatasetCollectionManager"
+    tool_data_tables: "ToolDataTableManager"
     history_manager: "HistoryManager"
     hda_manager: "HDAManager"
     workflow_manager: "WorkflowsManager"
