@@ -6,15 +6,17 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useUserTags } from "composables/user";
 import { useToast } from "composables/toast";
 import { useUid } from "composables/utils/uid";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
 
 import type { Ref } from "vue";
 
 export interface StatelessTagsProps {
-    value: string[];
-    disabled: boolean;
-    clickable: boolean;
-    useToggleLink: boolean;
-    maxVisibleTags: number;
+    value?: string[];
+    disabled?: boolean;
+    clickable?: boolean;
+    useToggleLink?: boolean;
+    maxVisibleTags?: number;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -29,6 +31,9 @@ const emit = defineEmits<{
     (e: "input", tags: string[]): void;
     (e: "tag-click", tag: string): void;
 }>();
+
+//@ts-ignore bad library types
+library.add(faTags, faCheck, faTimes, faPlus);
 
 const { userTags, addLocalTag } = useUserTags();
 const { warning } = useToast();
@@ -106,14 +111,6 @@ function isValid(tag: string | { label: string }) {
 function onTagClicked(tag: string) {
     emit("tag-click", tag);
 }
-</script>
-
-<script lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
-
-//@ts-ignore bad library types
-library.add(faTags, faCheck, faTimes, faPlus);
 </script>
 
 <template>

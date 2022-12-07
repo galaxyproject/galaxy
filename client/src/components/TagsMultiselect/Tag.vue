@@ -2,6 +2,8 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { keyedColorScheme } from "utils/color";
 import { computed } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
 
 export interface TagProps {
     option: string;
@@ -17,6 +19,9 @@ const emit = defineEmits<{
     (e: "deleted", tag: string): void;
 }>();
 
+//@ts-ignore bad types
+library.add(faTimes);
+
 const color = computed(() => keyedColorScheme(props.option));
 
 function onClick() {
@@ -29,14 +34,6 @@ function onDelete() {
 
 const named = computed(() => props.option?.startsWith("#"));
 const searched = computed(() => props.option?.toLowerCase() === props.search?.toLowerCase());
-</script>
-
-<script lang="ts">
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
-
-//@ts-ignore bad library types
-library.add(faTimes);
 </script>
 
 <template>
