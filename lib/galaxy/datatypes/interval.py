@@ -2,7 +2,6 @@
 Interval datatypes
 """
 import logging
-import math
 import sys
 import tempfile
 from typing import (
@@ -399,9 +398,6 @@ class Interval(Tabular):
         except Exception:
             return False
         return found_valid_lines
-
-    def get_track_resolution(self, dataset, start, end):
-        return None
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
@@ -1440,15 +1436,6 @@ class Wiggle(Tabular, _RemoteCallMixin):
             return False
         except Exception:
             return False
-
-    def get_track_resolution(self, dataset, start, end):
-        range = end - start
-        # Determine appropriate resolution to plot ~1000 points
-        resolution = math.ceil(10 ** math.ceil(math.log10(range / 1000)))
-        # Restrict to valid range
-        resolution = min(resolution, 100000)
-        resolution = max(resolution, 1)
-        return resolution
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("wiggle", WiggleDataProvider.settings)
