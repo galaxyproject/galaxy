@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 from json import dumps
 from typing import (
+    Dict,
     List,
     Optional,
     TYPE_CHECKING,
@@ -241,13 +242,13 @@ class TabularData(Text):
 
     def make_html_peek_header(
         self,
-        dataset,
-        skipchars=None,
-        column_names=None,
-        column_number_format="%s",
-        column_parameter_alias=None,
+        dataset: "DatasetInstance",
+        skipchars: Optional[List] = None,
+        column_names: Optional[List] = None,
+        column_number_format: str = "%s",
+        column_parameter_alias: Optional[Dict] = None,
         **kwargs,
-    ):
+    ) -> str:
         if skipchars is None:
             skipchars = []
         if column_names is None:
@@ -266,6 +267,7 @@ class TabularData(Text):
             column_headers = [None] * columns
 
             # fill in empty headers with data from column_names
+            assert column_names is not None
             for i in range(min(columns, len(column_names))):
                 if column_headers[i] is None and column_names[i] is not None:
                     column_headers[i] = column_names[i]
@@ -294,7 +296,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset, skipchars=None, **kwargs):
+    def make_html_peek_rows(self, dataset: "DatasetInstance", skipchars: Optional[List] = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []
