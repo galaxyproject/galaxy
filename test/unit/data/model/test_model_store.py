@@ -388,14 +388,61 @@ def validate_history_crate_directory(crate_directory):
     validate_has_readme(crate)
 
 
+def validate_main_entity(ro_crate: ROCrate):
+    workflow = ro_crate.mainEntity
+    assert workflow
+    assert workflow.id.endswith('.gxwf.yml')
+    assert workflow["name"]
+    assert workflow["name"] == "Test Workflow"
+    assert "SoftwareSourceCode" in workflow.type
+    assert "ComputationalWorkflow" in workflow.type
+    assert len(workflow["input"]) == 1
+    assert len(workflow["output"]) == 1
+
+
+def validate_create_action(ro_crate: ROCrate):
+    workflow = ro_crate.mainEntity
+    actions = [_ for _ in ro_crate.contextual_entities if "CreateAction" in _.type]
+    assert len(actions) == 1
+    wf_action = actions[0]
+    assert wf_action["instrument"]
+    assert wf_action["instrument"] is workflow
+    wf_objects = wf_action["object"]
+    wf_results = wf_action["result"]
+    assert len(wf_objects) == 0
+    assert len(wf_results) == 1
+    for entity in wf_results:
+        if entity.id.endswith(".txt"):
+            assert "File" in entity.type
+            wf_output_file = entity
+            wf_output_file["encodingFormat"] == "text/plain"
+            wf_output_file["exampleOfWork"] is workflow["output"][0]         
+
+
+def validate_other_entities(ro_crate: ROCrate):
+    workflow = ro_crate.mainEntity
+    inputs = workflow["input"]
+    outputs = workflow["output"]
+    for entity in inputs + outputs:
+        assert "FormalParameter" in entity.type
+        assert "File" in entity["additionalType"]
+    sel = [_ for _ in ro_crate.contextual_entities if "OrganizeAction" in _.type]
+    assert len(sel) == 1
+    engine_action = sel[0]
+    assert "SoftwareApplication" in engine_action["instrument"].type
+
+
 def validate_invocation_crate_directory(crate_directory):
     crate = open_ro_crate(crate_directory)
-    workflow = crate.mainEntity
-    assert workflow
+    for e in crate.contextual_entities:
+        print(e.type)
+    validate_main_entity(crate)
+    validate_create_action(crate)
+    validate_other_entities(crate)
     validate_has_pl_galaxy(crate)
     validate_organize_action(crate)
     validate_has_mit_license(crate)
-    validate_has_readme(crate)
+    # validate_has_readme(crate)
     # print(json.dumps(metadata_json, indent=4))
 
 
@@ -412,7 +459,6 @@ def test_export_history_to_ro_crate(tmp_path):
 def test_export_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
-
     crate_directory = tmp_path / "crate"
     with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
@@ -765,11 +811,16 @@ def _setup_invocation(app):
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
+    workflow_1.name = "Test Workflow"
     sa_session.add(workflow_1)
     workflow_invocation = _invocation_for_workflow(u, workflow_1)
     invocation_step = model.WorkflowInvocationStep()
     invocation_step.workflow_step = workflow_step_1
+    invocation_step.job = j
     sa_session.add(invocation_step)
+    input_assoc = model.WorkflowRequestToInputDatasetAssociation()
+    input_assoc.dataset = d1
+    invocation_step.input_datasets = [input_assoc]
     output_assoc = model.WorkflowInvocationStepOutputDatasetAssociation()
     output_assoc.dataset = d2
     invocation_step.output_datasets = [output_assoc]
