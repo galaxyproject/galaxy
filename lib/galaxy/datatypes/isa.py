@@ -92,7 +92,7 @@ class _Isa(Data):
     # Get ISA folder path {{{2
     ################################################################
 
-    def _get_isa_folder_path(self, dataset):
+    def _get_isa_folder_path(self, dataset: "DatasetInstance") -> str:
         isa_folder = dataset.extra_files_path
         if not isa_folder:
             raise Exception("Unvalid dataset object, or no extra files path found for this dataset.")
@@ -101,7 +101,7 @@ class _Isa(Data):
     # Get main file {{{2
     ################################################################
 
-    def _get_main_file(self, dataset):
+    def _get_main_file(self, dataset: "DatasetInstance") -> Optional[str]:
         """Get the main file of the ISA archive. Either the investigation file i_*.txt for ISA-Tab, or the JSON file for ISA-JSON."""
 
         main_file = None
@@ -127,7 +127,7 @@ class _Isa(Data):
     # Get investigation {{{2
     ################################################################
 
-    def _get_investigation(self, dataset):
+    def _get_investigation(self, dataset: "DatasetInstance") -> Optional["Investigation"]:
         """Create a contained instance specific to the exact ISA type (Tab or Json).
         We will use it to parse and access information from the archive."""
 

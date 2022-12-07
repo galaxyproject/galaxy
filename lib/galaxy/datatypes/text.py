@@ -11,6 +11,7 @@ import tempfile
 from typing import (
     IO,
     Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 
@@ -214,7 +215,15 @@ class Ipynb(Json):
                 trans, dataset, preview=preview, filename=filename, to_ext=to_ext, headers=headers, **kwd
             )
 
-    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+    def _display_data_trusted(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ) -> Tuple[IO, Headers]:
         headers = kwd.get("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:

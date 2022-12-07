@@ -60,6 +60,7 @@ if TYPE_CHECKING:
     from galaxy.model import (
         DatasetInstance,
         HistoryDatasetAssociation,
+        HistoryDatasetCollectionAssociation,
     )
 
 XSS_VULNERABLE_MIME_TYPES = [
@@ -390,7 +391,9 @@ class Data(metaclass=DataMeta):
                 rpath = os.path.relpath(fpath, extra_files_path)
                 yield fpath, rpath
 
-    def _serve_raw(self, dataset, to_ext, headers: Headers, **kwd):
+    def _serve_raw(
+        self, dataset: "HistoryDatasetAssociation", to_ext: Optional[str], headers: Headers, **kwd
+    ) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
         headers[
             "content-type"
@@ -590,7 +593,14 @@ class Data(metaclass=DataMeta):
 
         return open(filename, mode="rb")
 
-    def _download_filename(self, dataset, to_ext, hdca=None, element_identifier=None, filename_pattern=None):
+    def _download_filename(
+        self,
+        dataset: "HistoryDatasetAssociation",
+        to_ext: Optional[str] = None,
+        hdca: Optional["HistoryDatasetCollectionAssociation"] = None,
+        element_identifier: Optional[str] = None,
+        filename_pattern: Optional[str] = None,
+    ) -> str:
         def escape(raw_identifier):
             return "".join(c in FILENAME_VALID_CHARS and c or "_" for c in raw_identifier)[0:150]
 
