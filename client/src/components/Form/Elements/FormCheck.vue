@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 
-const emit = defineEmits(["input"]);
+const emit = defineEmits(["input", "indeterminate"]);
 const props = defineProps({
     value: {
         default: null,
@@ -59,7 +59,8 @@ watch(currentValue, () => {
             size="sm"
             class="mb-1"
             :indeterminate="indeterminate"
-            @input="onSelectAll">
+            @input="onSelectAll"
+            @change="emit('indeterminate', selectAll)">
             Select/Unselect all
         </b-form-checkbox>
         <b-form-checkbox-group v-model="currentValue" stacked>
