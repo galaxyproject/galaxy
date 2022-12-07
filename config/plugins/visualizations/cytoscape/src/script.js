@@ -166,8 +166,7 @@ window.bundleEntries.load = function (options) {
     cytoscape = null,
     sif_file_ext = "sif",
     highlighted_color = settings.get( 'color_picker_highlighted' );
-    const slash_cleanup = /(\/)+/g;
-    const safe_download_url = `${options.root}/${dataset.download_url}`.replace(slash_cleanup, "/");
+    const safe_download_url = `${options.root}${dataset.download_url}`;
     $.ajax({
         url     : safe_download_url,
         success : function( content ) {

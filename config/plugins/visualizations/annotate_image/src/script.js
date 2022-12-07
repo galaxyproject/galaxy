@@ -437,8 +437,7 @@ window.bundleEntries.load = function (opt) {
         });
     };
 
-    const slash_cleanup = /(\/)+/g;
-    const safe_download_url = `${options.root}/${dataset.download_url}`.replace(slash_cleanup, "/");
+    const safe_download_url = `${options.root}${dataset.download_url}`;
     $.ajax({
         url: safe_download_url,
         success: function(content) {

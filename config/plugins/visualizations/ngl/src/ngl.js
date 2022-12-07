@@ -19,8 +19,7 @@ window.bundleEntries.load = function (options) {
         opacity: settings.get("opacity"),
     };
     stage_parameters = { ext: dataset.extension, defaultRepresentation: true };
-    const slash_cleanup = /(\/)+/g;
-    const safe_download_url = `${options.root}/${dataset.download_url}`.replace(slash_cleanup, "/");
+    const safe_download_url = `${options.root}${dataset.download_url}`;
     try {
         stage.loadFile(safe_download_url, stage_parameters).then(function (component) {
             component.addRepresentation(settings.get("mode"), representation_parameters);
