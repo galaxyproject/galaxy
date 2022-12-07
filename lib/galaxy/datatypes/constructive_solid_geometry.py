@@ -446,7 +446,7 @@ class Vtk:
                 dataset.metadata.cells = int(line.split()[1])
         return dataset, dataset_type
 
-    def get_blurb(self, dataset):
+    def get_blurb(self, dataset: "DatasetInstance") -> str:
         blurb = ""
         if dataset.metadata.vtk_version is not None:
             blurb += f"VTK Version {str(dataset.metadata.vtk_version)}"

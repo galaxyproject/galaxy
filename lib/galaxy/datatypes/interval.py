@@ -754,7 +754,9 @@ class Bed12(BedStrict):
 
 
 class _RemoteCallMixin:
-    def _get_remote_call_url(self, redirect_url, site_name, dataset, type, app, base_url):
+    def _get_remote_call_url(
+        self, redirect_url: str, site_name: str, dataset: "DatasetInstance", type: str, app, base_url: str
+    ) -> str:
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes
         the data available, followed by redirecting to the remote site with a

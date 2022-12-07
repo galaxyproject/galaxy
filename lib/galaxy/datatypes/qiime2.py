@@ -59,7 +59,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         return "".join(table)
 
-    def _peek(self, dataset, simple=False):
+    def _peek(self, dataset: "DatasetInstance", simple: bool = False) -> List:
         peek = [("Type", dataset.metadata.semantic_type), ("UUID", dataset.metadata.uuid)]
         if not simple:
             if dataset.metadata.semantic_type != "Visualization":

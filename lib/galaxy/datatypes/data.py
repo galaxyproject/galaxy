@@ -770,12 +770,12 @@ class Data(metaclass=DataMeta):
     def convert_dataset(
         self,
         trans,
-        original_dataset,
-        target_type,
-        return_output=False,
-        visible=True,
-        deps=None,
-        target_context=None,
+        original_dataset: "HistoryDatasetAssociation",
+        target_type: str,
+        return_output: bool = False,
+        visible: bool = True,
+        deps: Optional[Dict] = None,
+        target_context: Optional[Dict] = None,
         history=None,
     ):
         """This function adds a job to the queue to convert a dataset to another type. Returns a message about success/failure."""
