@@ -4,6 +4,7 @@ import InteractiveTools from "./InteractiveTools";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
+import { useEntryPointStore } from "../../stores/entryPointStore";
 
 import flushPromises from "flush-promises";
 import MockAdapter from "axios-mock-adapter";
@@ -52,9 +53,11 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         const checkbox = wrapper.get("#checkbox-" + toolId);
         await checkbox.setChecked();
         expect(tool.marked === true).toBeTruthy();
+
         // drop the tested tool from store
-        wrapper.vm.activeInteractiveTools.splice(0, 1);
-        await new Promise((_) => setTimeout(_, 10));
+        const store = useEntryPointStore();
+        await store.entryPoints.splice(0, 1);
+
         const deletedTool = wrapper.vm.activeInteractiveTools.filter((tool) => tool.id === toolId);
         expect(deletedTool.length).toBe(0);
         expect(checkIfExists("#link-", toolId) === false).toBeTruthy();
@@ -64,9 +67,7 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
         await wrapper.get("#checkbox-" + testInteractiveToolsResponse[0].id).setChecked();
-        const stopBtn = wrapper.get("#stopInteractiveTool");
-        stopBtn.trigger("click");
-        await flushPromises();
+        await wrapper.get("#stopInteractiveTool").trigger("click");
         expect(axiosMock.history.delete.length).toBe(1);
         expect(axiosMock.history.delete[0].url === "/api/entry_points/b887d74393f85b6d").toBeTruthy();
     });
