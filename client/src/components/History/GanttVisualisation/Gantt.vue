@@ -2,6 +2,7 @@
     <div>
         <svg id="gantt"></svg>
         <div class="sticky">
+            <div class="timeButtonsDiv">
             <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
             <button id="HDayView" @click="changeHDayView">Half Day View</button>
             <button id="dayView" @click="changeDayView">Day View</button>
@@ -9,38 +10,10 @@
             <button id="monthView" @click="changeMonthView">Month View</button>
             <button id="hourView" @click="changeHourView">Hour View</button>
             <button id="minuteView" @click="changeMinuteView">Minute View</button>
-            <button class="btn btn-info" @click="showModal">show modal</button>
-            <div v-if="myModal">
-                <transition name="modal">
-                    <div class="modal-mask">
-                        <div class="modal-wrapper">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h4 class="modal-title">Choose time</h4>
-                                        <button type="button" class="close" @click="myModal = false">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="modal-datetime">
-                                            <h2>Choose a starting date</h2>
-                                            <b-container class="bv-example-row">
-                                                <b-row>
-                                                    <b-col><datetime
-                                                    format="DD/MM/YYYY H:i:s"
-                                                    width="300px"
-                                                    v-model="dateTimeVal"></datetime></b-col>
-                                                    <b-col><button @click="alertVal">Alert current date value</button></b-col>
-                                                </b-row>
-                                            </b-container>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </transition>
+            <button class="btn btn-info" @click="showModal">show modlaiiiiii</button>
+            </div>
+            <div v-if="openModal">
+                <DateTimeModal :openModal="openModal" @closeModal="closeModal"></DateTimeModal>
             </div>
         </div>
     </div>
@@ -52,11 +25,12 @@ import store from "../../../store";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 import { keyedColorScheme } from "utils/color";
+import DateTimeModal from "./DateTimeModal.vue";
 //import exampleModal from "./exampleModal";
-import datetime from "vuejs-datetimepicker";
 
 export default {
     name: "Gantt",
+    components: { DateTimeModal },
     data() {
         return {
             tasks: [],
@@ -64,13 +38,12 @@ export default {
             accountingArray: [],
             historyItems: [],
             currentlyProcessing: false,
-            myModal: false,
+            openModal: false,
             date: null,
             dateTime: false,
             dateTimeVal: new Date().toLocaleString(),
         };
     },
-    components: { datetime },
     computed: {
         ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
         history() {
@@ -90,6 +63,7 @@ export default {
                 if (this.historyId !== undefined) {
                     this.getHistoryItems();
                 }
+                this.createKeyedColorForButtons();
             }
         },
         historyContent(newContent, oldContent) {
@@ -97,6 +71,7 @@ export default {
                 this.historyItems = newContent;
                 this.getData();
             }
+            this.createKeyedColorForButtons();
         },
     },
     mounted() {
@@ -135,20 +110,19 @@ export default {
                 popup_trigger: "mouseover",
                 custom_popup_html: function (task) {
                 return `
-                <div class="popover-container">
-                <div class="popover-header">
-                    ${task.job_id}: ${task.name}  
-                </div>
-                <div class="popover-body">
-                    Started At: ${task.start}
-                    <br>
-                    Finished At: ${task.end}
-                </div>  
-                </div>
-            `;
+                    <div class="popover-container">
+                        <div class="popover-header">
+                            ${task.job_id}: ${task.name}  
+                        </div>
+                        <div class="popover-body">
+                            Started At: ${task.start}
+                            <br>
+                            Finished At: ${task.end}
+                        </div>  
+                    </div>`;
+                },
+            });
         },
-    });
-},
         getData: async function () {
             this.currentlyProcessing = true
             this.historyId = this.history;
@@ -182,11 +156,16 @@ export default {
                     }
             }
         },
+        closeModal : function(){
+            this.openModal = false;
+            console.log(this.openModal);
+        },
         alertVal() {
             console.log("The dateTime Value is : ", this.dateTimeVal);
         },
         showModal() {
-            this.myModal = true;
+            this.openModal = true;
+            console.log(this.openModal);
         },
         changeQDayView: function () {
             this.gantt.change_view_mode("Quarter Day");
@@ -265,14 +244,15 @@ export default {
 };
 
 function createClassWithCSS(selector, style) {
-    if (!document.styleSheets) return;
-    if (document.getElementsByTagName("head").length == 0) return;
+    if (!document.styleSheets){ return; }
+    if (document.getElementsByTagName("head").length == 0) {return;}
 
-    var styleSheet, mediaType;
+    var styleSheet;
+    var mediaType;
 
     if (document.styleSheets.length > 0) {
         for (var i = 0, l = document.styleSheets.length; i < l; i++) {
-            if (document.styleSheets[i].disabled) continue;
+            if (document.styleSheets[i].disabled) {continue;}
             var media = document.styleSheets[i].media;
             mediaType = typeof media;
 
@@ -286,7 +266,7 @@ function createClassWithCSS(selector, style) {
                 }
             }
 
-            if (typeof styleSheet !== "undefined") break;
+            if (typeof styleSheet !== "undefined") {break;}
         }
     }
 
@@ -357,32 +337,13 @@ function createClassWithCSS(selector, style) {
 .gantt .tick {
     stroke: #666;
 }
-.gantt {
-    margin-top: 50px;
-}
 .sticky {
     position: fixed;
 }
-.modal-mask {
-    position: fixed;
-    z-index: 10000;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: table;
-}
-
-.modal-wrapper {
-    display: table-cell;
-    vertical-align: middle;
-}
-.modal-dialog,
-.modal-content {
-    /* 80% of window height */
-    height: 70%;
-}
 .gantt-container{
     position: inherit !important;
+}
+.timeButtonsDiv{
+    margin-bottom: 50px;
 }
 </style>
