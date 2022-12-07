@@ -724,7 +724,7 @@ class PQR(GenericMolFile):
     file_ext = "pqr"
     MetadataElement(name="chain_ids", default=[], desc="Chain IDs", readonly=False, visible=True)
 
-    def get_matcher(self):
+    def get_matcher(self) -> re.Pattern:
         """
         Atom and HETATM line fields are space separated, match group:
           0: Field_name
@@ -1203,7 +1203,7 @@ class XYZ(GenericMolFile):
         except (TypeError, ValueError, IndexError):
             return False
 
-    def read_blocks(self, lines):
+    def read_blocks(self, lines: List) -> List:
         """
         Parses and returns a list of dictionaries representing XYZ structure blocks (aka frames).
 
@@ -1367,7 +1367,7 @@ class ExtendedXYZ(XYZ):
             # insufficient lines
             return False
 
-    def read_blocks(self, lines):
+    def read_blocks(self, lines: List) -> List:
         """
         Parses and returns a list of XYZ structure blocks (aka frames).
 
@@ -1390,10 +1390,10 @@ class ExtendedXYZ(XYZ):
             # extract column properties
             # these have the format 'Properties="<name>:<type>:<number>:..."' in the comment line
             # e.g. Properties="species:S:1:pos:R:3:vel:R:3:select:I:1"
-            properties = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment)
-            if properties is None:  # re.search returned None
+            properties_matches = re.search(r"Properties=\"?([a-zA-Z0-9:]+)\"?", comment)
+            if properties_matches is None:  # re.search returned None
                 raise ValueError(f"Could not find column properties in line: {comment}")
-            properties = [s.split(":") for s in re.findall(r"[a-zA-Z]+:[SIRL]:[0-9]+", properties.group(1))]
+            properties = [s.split(":") for s in re.findall(r"[a-zA-Z]+:[SIRL]:[0-9]+", properties_matches.group(1))]
             total_columns = sum(int(s[2]) for s in properties)
 
             for _ in range(n_atoms):

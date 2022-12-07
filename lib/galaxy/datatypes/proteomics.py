@@ -4,6 +4,7 @@ Proteomics Datatypes
 import logging
 import re
 from typing import (
+    IO,
     List,
     Optional,
     TYPE_CHECKING,
@@ -941,7 +942,7 @@ class Msp(Text):
     file_ext = "msp"
 
     @staticmethod
-    def next_line_starts_with(contents, prefix):
+    def next_line_starts_with(contents: IO, prefix: str) -> bool:
         next_line = contents.readline()
         return next_line is not None and next_line.startswith(prefix)
 

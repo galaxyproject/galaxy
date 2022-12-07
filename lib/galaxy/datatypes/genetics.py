@@ -16,6 +16,8 @@ import os
 import re
 import sys
 from typing import (
+    Dict,
+    IO,
     List,
     Optional,
     TYPE_CHECKING,
@@ -665,7 +667,7 @@ class RexpBase(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def get_phecols(self, phenolist, maxConc=20):
+    def get_phecols(self, phenolist: List, maxConc: int = 20) -> List:
         """
         sept 2009: cannot use whitespace to split - make a more complex structure here
         and adjust the methods that rely on this structure
@@ -686,7 +688,7 @@ class RexpBase(Html):
             if nrows == 0:  # set up from header
                 head = row
                 totcols = len(row)
-                concordance = [{} for x in head]  # list of dicts
+                concordance: List[Dict] = [{} for x in head]
             else:
                 for col, code in enumerate(row):  # keep column order correct
                     if col >= totcols:
@@ -999,7 +1001,7 @@ class GenotypeMatrix(LinkageStudies):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def header_check(self, fio):
+    def header_check(self, fio: IO) -> bool:
         header_elems = fio.readline().split("\t")
 
         if header_elems[0] != "Name":
@@ -1065,7 +1067,7 @@ class MarkerMap(LinkageStudies):
 
     file_ext = "linkage_map"
 
-    def header_check(self, fio):
+    def header_check(self, fio: IO) -> bool:
         headers = fio.readline().split()
 
         if len(headers) == 5 and headers[0] == "#Chr":
@@ -1198,7 +1200,7 @@ class AllegroLOD(LinkageStudies):
 
     file_ext = "allegro_fparam"
 
-    def header_check(self, fio):
+    def header_check(self, fio: IO) -> bool:
         header = fio.readline().splitlines()[0].split()
         if len(header) == 4 and header == ["family", "location", "LOD", "marker"]:
             return True

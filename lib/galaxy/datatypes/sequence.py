@@ -11,8 +11,10 @@ import string
 import subprocess
 from itertools import islice
 from typing import (
+    Any,
     Callable,
     Dict,
+    Iterable,
     List,
     Optional,
     TYPE_CHECKING,
@@ -138,7 +140,7 @@ class Sequence(data.Text):
             dataset.blurb = "file purged from disk"
 
     @staticmethod
-    def get_sequences_per_file(total_sequences, split_params):
+    def get_sequences_per_file(total_sequences: int, split_params: Dict) -> List:
         if split_params["split_mode"] == "number_of_parts":
             # legacy basic mode - split into a specified number of parts
             parts = int(split_params["split_size"])
@@ -149,7 +151,7 @@ class Sequence(data.Text):
             # loop through the sections and calculate the number of sequences
             chunk_size = int(split_params["split_size"])
             rem = total_sequences % chunk_size
-            sequences_per_file = [chunk_size for i in range(total_sequences / chunk_size)]
+            sequences_per_file = [chunk_size for i in range(total_sequences // chunk_size)]
             # TODO: Should we invest the time in a better way to handle small remainders?
             if rem > 0:
                 sequences_per_file.append(rem)
@@ -224,7 +226,9 @@ class Sequence(data.Text):
         raise NotImplementedError("Can't split generic sequence files")
 
     @staticmethod
-    def get_split_commands_with_toc(input_name, output_name, toc_file, start_sequence, sequence_count):
+    def get_split_commands_with_toc(
+        input_name: str, output_name: str, toc_file: Any, start_sequence: int, sequence_count: int
+    ) -> List:
         """
         Uses a Table of Contents dict, parsed from an FQTOC file, to come up with a set of
         shell commands that will extract the parts necessary
@@ -302,7 +306,9 @@ class Sequence(data.Text):
         return result
 
     @staticmethod
-    def get_split_commands_sequential(is_compressed, input_name, output_name, start_sequence, sequence_count):
+    def get_split_commands_sequential(
+        is_compressed: bool, input_name: str, output_name: str, start_sequence: int, sequence_count: int
+    ) -> List:
         """
         Does a brain-dead sequential scan & extract of certain sequences
         >>> Sequence.get_split_commands_sequential(True, './input.gz', './output.gz', start_sequence=0, sequence_count=10)
@@ -447,7 +453,7 @@ class Fasta(Sequence):
             raise Exception(f"Unsupported split mode {split_params['split_mode']}")
 
     @classmethod
-    def _size_split(cls, input_file, chunk_size, subdir_generator_function):
+    def _size_split(cls, input_file: str, chunk_size: int, subdir_generator_function: Callable) -> None:
         """Split a FASTA file into chunks based on size on disk.
 
         This does of course preserve complete records - it only splits at the
@@ -485,7 +491,7 @@ class Fasta(Sequence):
                     part_file.close()
 
     @classmethod
-    def _count_split(cls, input_file, chunk_size, subdir_generator_function):
+    def _count_split(cls, input_file: str, chunk_size: int, subdir_generator_function: Callable) -> None:
         """Split a FASTA file into chunks based on counting records."""
         log.debug("Attemping to split FASTA file %s into chunks of %i sequences" % (input_file, chunk_size))
         with open(input_file) as f:
@@ -814,7 +820,7 @@ class BaseFastq(Sequence):
         return cls.do_slow_split(input_datasets, subdir_generator_function, split_params)
 
     @staticmethod
-    def process_split_file(data):
+    def process_split_file(data: Dict) -> bool:
         """
         This is called in the context of an external process launched by a Task (possibly not on the Galaxy machine)
         to create the input files for the Task. The parameters:
@@ -841,7 +847,7 @@ class BaseFastq(Sequence):
         return True
 
     @staticmethod
-    def quality_check(lines):
+    def quality_check(lines: Iterable) -> bool:
         return True
 
     @classmethod
@@ -851,7 +857,7 @@ class BaseFastq(Sequence):
         return cls.check_block(block)
 
     @classmethod
-    def check_block(cls, block):
+    def check_block(cls, block: List) -> bool:
         if (
             len(block) == 4
             and block[0][0]
@@ -903,7 +909,7 @@ class FastqSanger(Fastq):
     bases_regexp = re.compile("^[NGTAC]*$", re.IGNORECASE)
 
     @staticmethod
-    def quality_check(lines):
+    def quality_check(lines: Iterable) -> bool:
         """
         Presuming lines are lines from a fastq file,
         return True if the qualities are compatible with sanger encoding
@@ -924,7 +930,7 @@ class FastqSolexa(Fastq):
     file_ext = "fastqsolexa"
 
     @staticmethod
-    def quality_check(lines):
+    def quality_check(lines: Iterable) -> bool:
         """
         Presuming lines are lines from a fastq file,
         return True if the qualities are compatible with sanger encoding
@@ -950,7 +956,7 @@ class FastqIllumina(Fastq):
     file_ext = "fastqillumina"
 
     @staticmethod
-    def quality_check(lines):
+    def quality_check(lines: Iterable) -> bool:
         """
         Presuming lines are lines from a fastq file,
         return True if the qualities are compatible with sanger encoding

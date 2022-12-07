@@ -19,6 +19,7 @@ from typing import (
     Iterable,
     List,
     Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 
@@ -534,7 +535,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         return BamNative.is_bam(filename)
 
     @classmethod
-    def is_bam(cls, filename):
+    def is_bam(cls, filename: str) -> bool:
         # BAM is compressed in the BGZF format, and must not be uncompressed in Galaxy.
         # The first 4 bytes of any bam file is 'BAM\1', and the file is binary.
         try:
@@ -717,7 +718,7 @@ class Bam(BamNative):
         optional=True,
     )
 
-    def get_index_flag(self, file_name):
+    def get_index_flag(self, file_name: str) -> str:
         """
         Return pysam flag for bai index (default) or csi index (contig size > (2**29 - 1) )
         """
@@ -963,7 +964,7 @@ class CRAM(Binary):
             if self.set_index_file(dataset, index_file):
                 dataset.metadata.cram_index = index_file
 
-    def get_cram_version(self, filename):
+    def get_cram_version(self, filename: str) -> Tuple[int, int]:
         try:
             with open(filename, "rb") as fh:
                 header = bytearray(fh.read(6))
@@ -1948,7 +1949,7 @@ class H5MLM(H5):
                 return True
         return False
 
-    def get_repr(self, filename):
+    def get_repr(self, filename: str) -> str:
         try:
             with h5py.File(filename, "r") as handle:
                 repr_ = util.unicodify(handle.attrs.get("-repr-"))
@@ -1957,7 +1958,7 @@ class H5MLM(H5):
             log.warning("%s, get_repr Except: %s", self, e)
             return ""
 
-    def get_config_string(self, filename):
+    def get_config_string(self, filename: str) -> str:
         try:
             with h5py.File(filename, "r") as handle:
                 config = util.unicodify(handle["-model_config-"][()])
@@ -3877,7 +3878,7 @@ class BafTar(CompressedArchive):
                 return self.get_signature_file() in [os.path.basename(f).lower() for f in rawtar.getnames()]
         return False
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "Bruker BAF directory archive"
 
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
@@ -3903,7 +3904,7 @@ class YepTar(BafTar):
     def get_signature_file(self) -> str:
         return "analysis.yep"
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "Agilent/Bruker YEP directory archive"
 
 
@@ -3915,7 +3916,7 @@ class TdfTar(BafTar):
     def get_signature_file(self) -> str:
         return "analysis.tdf"
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "Bruker TDF directory archive"
 
 
@@ -3927,7 +3928,7 @@ class MassHunterTar(BafTar):
     def get_signature_file(self) -> str:
         return "msscan.bin"
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "Agilent MassHunter directory archive"
 
 
@@ -3939,7 +3940,7 @@ class MassLynxTar(BafTar):
     def get_signature_file(self) -> str:
         return "_func001.dat"
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "Waters MassLynx RAW directory archive"
 
 
@@ -3967,7 +3968,7 @@ class WiffTar(BafTar):
                 return ".wiff" in [os.path.splitext(os.path.basename(f).lower())[1] for f in rawtar.getnames()]
         return False
 
-    def get_type(self):
+    def get_type(self) -> str:
         return "Sciex WIFF/SCAN archive"
 
 

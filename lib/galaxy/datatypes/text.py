@@ -765,7 +765,7 @@ class SnpEffDb(Text):
         super().__init__(**kwd)
 
     # The SnpEff version line was added in SnpEff version 4.1
-    def getSnpeffVersionFromFile(self, path):
+    def getSnpeffVersionFromFile(self, path: str) -> Optional[str]:
         snpeff_version = None
         try:
             with gzip.open(path, "rt") as fh:

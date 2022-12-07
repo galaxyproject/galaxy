@@ -1339,7 +1339,7 @@ class BaseCSV(TabularData):
     peek_size = 1024  # File chunk used for sniffing CSV dialect
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
 
-    def is_int(self, column_text):
+    def is_int(self, column_text: str) -> bool:
         # Don't allow underscores in numeric literals (PEP 515)
         if "_" in column_text:
             return False
@@ -1349,7 +1349,7 @@ class BaseCSV(TabularData):
         except ValueError:
             return False
 
-    def is_float(self, column_text):
+    def is_float(self, column_text: str) -> bool:
         # Don't allow underscores in numeric literals (PEP 515)
         if "_" in column_text:
             return False
@@ -1361,7 +1361,7 @@ class BaseCSV(TabularData):
                 return True  # na is special cased to be a float
             return False
 
-    def guess_type(self, text):
+    def guess_type(self, text: str) -> str:
         if self.is_int(text):
             return "int"
         if self.is_float(text):
