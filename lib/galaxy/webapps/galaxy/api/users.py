@@ -5,8 +5,10 @@ import copy
 import json
 import logging
 import re
+from typing import Any
 
 from fastapi import (
+    Body,
     Path,
     Response,
     status,
@@ -35,6 +37,7 @@ from galaxy.model import (
 )
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import UserBeaconSetting
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -45,7 +48,6 @@ from galaxy.tool_util.toolbox.filters import FilterFactory
 from galaxy.util import (
     docstring_trim,
     listify,
-    string_as_bool
 )
 from galaxy.web import (
     expose_api,
@@ -138,6 +140,38 @@ class FastAPIHistories:
     ):
         self.service.delete_api_key(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/users/{user_id}/beacon",
+        summary="Returns information about beacon share settings",
+    )
+    def get_beacon(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> UserBeaconSetting:
+        user = self.service._get_user(trans, user_id)
+
+        enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
+
+        return UserBeaconSetting(enabled=enabled)
+
+    @router.post(
+        "/api/users/{user_id}/beacon",
+        summary="Changes beacon setting",
+    )
+    def set_beacon(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        payload: UserBeaconSetting = Body(...),
+    ) -> UserBeaconSetting:
+        user = self.service._get_user(trans, user_id)
+
+        user.preferences["beacon_enabled"] = payload.enabled
+        trans.sa_session.flush()
+
+        return payload
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
@@ -1066,39 +1100,3 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if user != trans.user and not trans.user_is_admin:
             raise exceptions.InsufficientPermissionsException("Access denied.")
         return user
-
-    @expose_api
-    def get_beacon(self, trans, id, payload=None, **kwd):
-        """
-        GET /api/users/{id}/beacon
-        Returns information about beacon share settings
-
-        :param id: the encoded id of the user
-        :type  id: str
-        """
-        user = self._get_user(trans, id)
-
-        enabled = string_as_bool(user.preferences["beacon_enabled"]) if "beacon_enabled" in user.preferences else False
-
-        return {"enabled": enabled}
-
-    @expose_api
-    def set_beacon(self, trans, id, payload=None, **kwd):
-        """
-        POST /api/users/{id}/beacon
-
-        :param id: the encoded id of the user
-        :type  id: str
-
-        :param payload: settings to persist
-        :type  payload: dict
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-
-        if "enabled" in payload:
-            user.preferences["beacon_enabled"] = payload["enabled"]
-            trans.sa_session.flush()
-            return {"message": "setting enabled..."}
-
-        return {"message": payload}

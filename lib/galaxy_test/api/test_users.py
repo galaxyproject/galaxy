@@ -233,3 +233,22 @@ class TestUsersApi(ApiTestCase):
         users = users_response.json()
         assert len(users) == 1
         return users[0]["id"]
+
+
+    def test_manage_beacon_settings(self):
+        user_id = self._get_current_user_id()
+
+        # Assert that beacon sharing is initially disabled
+        response = self._get(f"users/{user_id}/beacon")
+        user_beacon_settings = response.json()
+        assert not user_beacon_settings["enabled"]
+
+        # Check if post request is successful
+        response = self._post(f"users/{user_id}/beacon", data={"enabled": True}, json=True)
+        user_beacon_settings = response.json()
+        assert user_beacon_settings["enabled"]
+
+        # Check if the setting has been persisted
+        response = self._get(f"users/{user_id}/beacon")
+        user_beacon_settings = response.json()
+        assert user_beacon_settings["enabled"]

@@ -914,22 +914,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["DELETE"]),
     )
 
-    webapp.mapper.connect(
-        "get_beacon",
-        "/api/users/{id}/beacon",
-        controller="users",
-        action="get_beacon",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "set_beacon",
-        "/api/users/{id}/beacon",
-        controller="users",
-        action="set_beacon",
-        conditions=dict(method=["POST"]),
-    )
-
     # ========================
     # ===== WEBHOOKS API =====
     # ========================
