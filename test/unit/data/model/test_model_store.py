@@ -470,7 +470,7 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
     workflow_invocation = _setup_invocation(app)
 
     crate_zip = tmp_path / "crate.zip"
-    with store.ROCrateArchiveModelExportStore(crate_zip, app=app) as export_store:
+    with store.ROCrateArchiveModelExportStore(crate_zip, app=app, export_files="symlink") as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
     compressed_file = CompressedFile(crate_zip)
     assert compressed_file.file_type == "zip"
