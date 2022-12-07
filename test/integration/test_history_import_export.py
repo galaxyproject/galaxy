@@ -73,7 +73,7 @@ class ImportExportHistoryViaTasksIntegrationTestCase(
         self.dataset_populator.new_dataset(
             history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
         )
-        model_store_format = "rocrate.zip"
+        model_store_format = "tgz"  # Change to "rocrate.zip" when merging this forward and remove this comment, thanks!
         target_uri = f"gxfiles://posix_test/history.{model_store_format}"
 
         self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
@@ -106,7 +106,7 @@ class ImportExportHistoryViaTasksIntegrationTestCase(
         history_name = f"for_export_ftp_async_{uuid4()}"
         history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
 
-        model_store_format = "rocrate.zip"
+        model_store_format = "tgz"  # Change to "rocrate.zip" when merging this forward and remove this comment, thanks!
         target_uri = f"gxftp://history.{model_store_format}"
 
         self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)

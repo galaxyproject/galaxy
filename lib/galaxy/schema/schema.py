@@ -1293,7 +1293,7 @@ class ModelStoreFormat(str, Enum):
 
     @classmethod
     def is_compressed(cls, value: "ModelStoreFormat"):
-        return value in [cls.TAR_DOT_GZ, cls.TGZ, cls.TAR, cls.ROCRATE_ZIP]
+        return value in [cls.TAR_DOT_GZ, cls.TGZ, cls.TAR]
 
     @classmethod
     def is_bag(cls, value: "ModelStoreFormat"):
