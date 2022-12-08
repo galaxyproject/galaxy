@@ -1,7 +1,7 @@
 import Vuex from "vuex";
 import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { WindowManager } from "layout/window-manager";
 import { loadWebhookMenuItems } from "./_webhooks";
 import { userStore } from "store/userStore";

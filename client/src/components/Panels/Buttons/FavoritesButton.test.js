@@ -1,4 +1,4 @@
-import { mockModule, getLocalVue } from "jest/helpers";
+import { mockModule, getLocalVue } from "tests/jest/helpers";
 import { userStore } from "store/userStore";
 import Vuex from "vuex";
 import FavoritesButton from "./FavoritesButton";
