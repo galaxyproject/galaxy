@@ -74,6 +74,8 @@ Use arrow functions when declaring temporary functions within other scopes. This
 
 When possible, use arrow functions instead.
 
+### Examples
+
 > **Do**
 >
 > ```js
