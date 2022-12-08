@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "@vuepic/vue-datepicker": "^3.5.3",
-    "vuejs-datetimepicker": "^1.1.13"
-  }
-}

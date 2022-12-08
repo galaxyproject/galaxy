@@ -10,38 +10,7 @@
             <button id="hourView" @click="changeHourView">Hour View</button>
             <button id="minuteView" @click="changeMinuteView">Minute View</button>
             <button class="btn btn-info" @click="showModal">show modal</button>
-            <div v-if="myModal">
-                <transition name="modal">
-                    <div class="modal-mask">
-                        <div class="modal-wrapper">
-                            <div class="modal-dialog">
-                                <div class="modal-content">
-                                    <div class="modal-header">
-                                        <h4 class="modal-title">Choose time</h4>
-                                        <button type="button" class="close" @click="myModal = false">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <div class="modal-body">
-                                        <div class="modal-datetime">
-                                            <h2>Choose a starting date</h2>
-                                            <b-container class="bv-example-row">
-                                                <b-row>
-                                                    <b-col><datetime
-                                                    format="DD/MM/YYYY H:i:s"
-                                                    width="300px"
-                                                    v-model="dateTimeVal"></datetime></b-col>
-                                                    <b-col><button @click="alertVal">Alert current date value</button></b-col>
-                                                </b-row>
-                                            </b-container>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </transition>
-            </div>
+            <DateTimeModal v-if="openModal" @closeModal="closeModal" :openModal="openModal" :dateTimeVal="dateTimeVal" @changeDate="changeDate" />
         </div>
     </div>
 </template>
@@ -52,8 +21,7 @@ import store from "../../../store";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 import { keyedColorScheme } from "utils/color";
-//import exampleModal from "./exampleModal";
-import datetime from "vuejs-datetimepicker";
+import DateTimeModal from './DateTimeModal.vue'
 
 export default {
     name: "Gantt",
@@ -64,13 +32,11 @@ export default {
             accountingArray: [],
             historyItems: [],
             currentlyProcessing: false,
-            myModal: false,
-            date: null,
-            dateTime: false,
-            dateTimeVal: new Date().toLocaleString(),
+            openModal: false,
+            dateTimeVal: new Date().toLocaleString('en-GB'),
         };
     },
-    components: { datetime },
+    components : { DateTimeModal },
     computed: {
         ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
         history() {
@@ -109,6 +75,9 @@ export default {
             if (this.historyId) {
                 await this.fetchHistoryItems({ historyId: this.historyId, filterText: "", offset: 0 });
             }
+        },
+        changeDate: function (value) {
+          this.dateTimeVal = value
         },
         makeGantt: function () {
             var entries = [];
@@ -182,11 +151,11 @@ export default {
                     }
             }
         },
-        alertVal() {
-            console.log("The dateTime Value is : ", this.dateTimeVal);
+        closeModal() {
+            this.openModal = false
         },
         showModal() {
-            this.myModal = true;
+            this.openModal = true;
         },
         changeQDayView: function () {
             this.gantt.change_view_mode("Quarter Day");

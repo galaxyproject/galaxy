@@ -1,0 +1,65 @@
+<template>
+    <div>
+        <transition name="modal">
+            <div class="modal-mask">
+                <div class="modal-wrapper">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title">Choose time</h4>
+                                <button type="button" class="close" @click="close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="modal-datetime">
+                                    <h2>Choose a starting date</h2>
+                                    <b-container class="bv-example-row">
+                                        <b-row>
+                                            <b-col><datetime
+                                            format="DD/MM/YYYY H:i:s"
+                                            width="300px"
+                                            v-model="date" 
+                                            :value="date"
+                                            @input="$emit('changeDate', date)"></datetime></b-col>
+                                            <b-col><button @click="$emit('changeDate', date)">Confirm Date</button></b-col>
+                                        </b-row>
+                                    </b-container>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </transition>
+    </div>
+</template>
+
+<script>
+import datetime from "vuejs-datetimepicker";
+
+export default {
+    name: "DateTimeModal",
+    props: {
+        openModal: {
+            type: Boolean,
+            default: false
+        },
+    },
+    data() {
+        return {
+            date: new Date().toLocaleString('en-GB')
+        }
+    },
+    components: { datetime },
+    methods : {
+        confirmDate() {
+            console.log("The dateTime Value is : ", this.dateTimeVal);
+        },
+        close() {
+            this.$emit('closeModal')
+        }
+    }
+
+}
+</script>
