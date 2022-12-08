@@ -549,8 +549,8 @@ class SraManifest(Tabular):
     file_ext = "sra_manifest.tabular"
     data_line_offset = 1
 
-    def set_meta(self, dataset, **kwds):
-        super().set_meta(dataset, **kwds)
+    def set_meta(self, dataset, **kwd):
+        super().set_meta(dataset, **kwd)
         dataset.metadata.comment_lines = 1
 
     def get_column_names(self, first_line: str) -> Optional[List[str]]:

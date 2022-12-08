@@ -115,12 +115,12 @@ class QIIME2Metadata(Tabular):
     def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
-    def set_meta(self, dataset, **kwargs):
+    def set_meta(self, dataset, **kwd):
         """
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.
         """
-        super().set_meta(dataset, **kwargs)
+        super().set_meta(dataset, **kwd)
 
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:

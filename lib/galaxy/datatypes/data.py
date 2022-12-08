@@ -247,7 +247,7 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: Any, overwrite=True, **kwd):
+    def set_meta(self, dataset, overwrite=True, **kwd):
         """Unimplemented method, allows guessing of metadata from contents of file"""
         return True
 
