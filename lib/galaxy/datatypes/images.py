@@ -104,7 +104,7 @@ class OMETiff(Tiff):
         optional=True,
     )
 
-    def set_meta(self, dataset, overwrite=True, metadata_tmp_files_dir=None, **kwd):
+    def set_meta(self, dataset, overwrite=True, metadata_tmp_files_dir=None, **kwd) -> None:
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets
         if not offsets_file:

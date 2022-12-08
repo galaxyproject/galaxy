@@ -120,7 +120,7 @@ class Gal(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix ArrayList" in headers[2][0]
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         Set metadata for Gal file.
         """
@@ -162,7 +162,7 @@ class Gpr(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix Results" in headers[2][0]
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         Set metadata for Gpr file.
         """

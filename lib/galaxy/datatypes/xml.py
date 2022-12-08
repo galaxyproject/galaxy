@@ -152,7 +152,7 @@ class Dzi(GenericXml):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         tree = util.parse_xml(dataset.file_name)
         root = tree.getroot()
         dataset.metadata.format = root.get("Format")

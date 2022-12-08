@@ -81,7 +81,7 @@ class InfernalCM(Text):
         """
         return file_prefix.startswith("INFERNAL")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         Set the number of models and the version of CM file in dataset.
         """
@@ -198,7 +198,7 @@ class Stockholm_1_0(Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.search(STOCKHOLM_SEARCH_PATTERN)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
 
         Set the number of models in dataset.
@@ -289,7 +289,7 @@ class MauveXmfa(Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("#FormatVersion Mauve1")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         dataset.metadata.number_of_models = generic_util.count_special_lines(
             "^#Sequence([[:digit:]]+)Entry", dataset.file_name
         )

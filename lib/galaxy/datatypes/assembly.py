@@ -243,6 +243,6 @@ class Velvet(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         Html.set_meta(self, dataset, **kwd)
         self.regenerate_primary_file(dataset)

@@ -97,7 +97,7 @@ class BPF(Text):
         "SAO",
     ]
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset, overwrite=True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents"""
         types = set()
         with open(dataset.dataset.file_name) as fd:
@@ -110,7 +110,7 @@ class BPF(Text):
                 if len(parts) and len(parts[0]) == 3:
                     types.add(parts[0])
                 else:
-                    return False
+                    return
 
         dataset.metadata.annotations = list(types)
 

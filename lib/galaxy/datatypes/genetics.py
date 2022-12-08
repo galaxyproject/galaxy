@@ -75,7 +75,7 @@ class GenomeGraphs(Tabular):
         super().__init__(**kwd)
         self.add_display_app("ucsc", "Genome Graph", "as_ucsc_display_file", "ucsc_links")
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         super().set_meta(dataset, **kwd)
         dataset.metadata.markerCol = 1
         header = open(dataset.file_name).readlines()[0].strip().split("\t")
@@ -83,7 +83,6 @@ class GenomeGraphs(Tabular):
         t = ["numeric" for x in header]
         t[0] = "string"
         dataset.metadata.column_types = t
-        return True
 
     def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         """
@@ -342,7 +341,7 @@ class Rgenetics(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         for lped/pbed eg
 
@@ -351,29 +350,28 @@ class Rgenetics(Html):
         if not kwd.get("overwrite"):
             if verbose:
                 gal_Log.debug("@@@ rgenetics set_meta called with overwrite = False")
-            return True
+            return
         try:
             efp = dataset.extra_files_path
         except Exception:
             if verbose:
                 gal_Log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
-            return False
+            return
         try:
             flist = os.listdir(efp)
         except Exception:
             if verbose:
                 gal_Log.debug(f"@@@rgenetics set_meta failed {sys.exc_info()[0]} - dataset {dataset.name} has no efp ?")
-            return False
+            return
         if len(flist) == 0:
             if verbose:
                 gal_Log.debug(f"@@@rgenetics set_meta failed - {dataset.name} efp {efp} is empty?")
-            return False
+            return
         self.regenerate_primary_file(dataset)
         if not dataset.info:
             dataset.info = "Galaxy genotype datatype object"
         if not dataset.blurb:
             dataset.blurb = "Composite file - Rgenetics Galaxy toolkit"
-        return True
 
 
 class SNPMatrix(Rgenetics):
@@ -579,7 +577,7 @@ class IdeasPre(Html):
         self.add_composite_file("IDEAS_input_config.txt", description="IDEAS input config", is_binary=False)
         self.add_composite_file("tmp.tar.gz", description="Compressed archive of compressed bed files", is_binary=True)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         super().set_meta(dataset, **kwd)
         for fname in os.listdir(dataset.extra_files_path):
             if fname.startswith("chromosomes"):
@@ -836,7 +834,7 @@ class RexpBase(Html):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         NOTE we apply the tabular machinary to the phenodata extracted
         from a BioC eSet or affybatch.
@@ -848,7 +846,7 @@ class RexpBase(Html):
         except Exception:
             if verbose:
                 gal_Log.debug("@@@rexpression set_meta failed - no dataset?")
-            return False
+            return
         bn = dataset.metadata.base_name
         if not bn:
             for f in flist:
@@ -887,7 +885,6 @@ class RexpBase(Html):
             dataset.info = "Galaxy Expression datatype object"
         if not dataset.blurb:
             dataset.blurb = "R loadable BioC expression object for the Rexpression Galaxy toolkit"
-        return True
 
     def make_html_table(self, pp: str = "nothing supplied from peek\n") -> str:
         """

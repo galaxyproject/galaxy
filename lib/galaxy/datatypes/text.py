@@ -143,7 +143,7 @@ class ExpressionJson(Json):
         name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True
     )
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """ """
         if dataset.has_data():
             json_type = "null"
@@ -253,7 +253,7 @@ class Ipynb(Json):
                 )
             return open(ofilename, mode="rb"), headers
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         Set the number of models in dataset.
         """
@@ -426,7 +426,7 @@ class Biom1(Json):
             pass
         return is_biom
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         Store metadata information from the BIOM file.
         """
@@ -527,7 +527,7 @@ class ImgtJson(Json):
             pass
         return is_imgt
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         Store metadata information from the imgt file.
         """
@@ -693,7 +693,7 @@ class Arff(Text):
                     return True
         return False
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         """
         Trying to count the comment lines and the number of columns included.
         A typical ARFF data block looks like this:
@@ -778,7 +778,7 @@ class SnpEffDb(Text):
             pass
         return snpeff_version
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         super().set_meta(dataset, **kwd)
         data_dir = dataset.extra_files_path
         # search data_dir/genome_version for files
@@ -883,7 +883,7 @@ class SnpSiftDbNSFP(Text):
                 f.write("\n")
             f.write(annotations)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset, overwrite=True, **kwd) -> None:
         try:
             efp = dataset.extra_files_path
             if os.path.exists(efp):

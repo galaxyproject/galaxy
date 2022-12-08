@@ -394,7 +394,7 @@ class Dta(TabularData):
     file_ext = "dta"
     comment_lines = 0
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         column_types = []
         data_row = []
         data_lines = 0
@@ -467,7 +467,7 @@ class Dta2d(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         data_lines = 0
         delim = None
         if dataset.has_data():
@@ -603,7 +603,7 @@ class Edta(TabularData):
                 line[idx] += str(idx // 4)
         return line
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, **kwd) -> None:
         data_lines = 0
         delim = None
         tpe = None
