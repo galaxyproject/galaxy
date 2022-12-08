@@ -58,6 +58,7 @@ embargo, we will:
   - A description of the issue
   - List of supported versions that are affected
   - Steps to update or patch your Galaxy
+  - A CVE identifier (if applicable)
 
 If an issue is deemed to be time-sensitive – e.g. due to active and ongoing exploits in the wild – the embargo may be shortened considerably.
 
