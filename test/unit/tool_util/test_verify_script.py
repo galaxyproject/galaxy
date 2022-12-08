@@ -1,6 +1,10 @@
 import json
 import os
 from tempfile import NamedTemporaryFile
+from typing import (
+    cast,
+    NoReturn,
+)
 from unittest import mock
 
 from galaxy.tool_util.unittest_utils.interactor import (
@@ -10,6 +14,7 @@ from galaxy.tool_util.unittest_utils.interactor import (
     MockGalaxyInteractor,
     NEW_HISTORY_ID,
 )
+from galaxy.tool_util.verify.interactor import GalaxyInteractorApi
 from galaxy.tool_util.verify.script import (
     arg_parser,
     build_case_references,
@@ -21,7 +26,7 @@ from galaxy.tool_util.verify.script import (
 VT_PATH = "galaxy.tool_util.verify.script.verify_tool"
 
 
-def test_arg_parse():
+def test_arg_parse() -> None:
     parser = arg_parser()
 
     # defaults
@@ -61,7 +66,7 @@ def test_arg_parse():
     assert args.skip == "executed"
 
 
-def test_test_tools():
+def test_test_tools() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -73,7 +78,7 @@ def test_test_tools():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
         )
@@ -85,7 +90,7 @@ def test_test_tools():
         assert interactor.history_deleted
 
 
-def test_test_tools_no_history_cleanup():
+def test_test_tools_no_history_cleanup() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -95,7 +100,7 @@ def test_test_tools_no_history_cleanup():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             no_history_cleanup=True,
@@ -108,7 +113,7 @@ def test_test_tools_no_history_cleanup():
         assert not interactor.history_deleted
 
 
-def test_test_tools_history_reuse():
+def test_test_tools_history_reuse() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results(EXISTING_SUITE_NAME, f.name)
@@ -118,7 +123,7 @@ def test_test_tools_history_reuse():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             no_history_reuse=False,
@@ -133,7 +138,7 @@ def test_test_tools_history_reuse():
         assert not interactor.history_deleted
 
 
-def test_test_tools_no_history_reuse():
+def test_test_tools_no_history_reuse() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("existing suite", f.name)
@@ -143,7 +148,7 @@ def test_test_tools_no_history_reuse():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             no_history_reuse=True,
@@ -158,7 +163,7 @@ def test_test_tools_no_history_reuse():
         assert interactor.history_deleted
 
 
-def test_test_tools_history_name():
+def test_test_tools_history_name() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -168,7 +173,7 @@ def test_test_tools_history_name():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             history_name="testfoo",
@@ -183,7 +188,7 @@ def test_test_tools_history_name():
         assert interactor.history_deleted
 
 
-def test_test_tool_per_test_history():
+def test_test_tool_per_test_history() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -194,7 +199,7 @@ def test_test_tool_per_test_history():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             history_per_test_case=True,
@@ -207,7 +212,7 @@ def test_test_tool_per_test_history():
         assert not interactor.history_deleted
 
 
-def test_test_tools_records_exception():
+def test_test_tools_records_exception() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -217,12 +222,12 @@ def test_test_tools_records_exception():
     with mock.patch(VT_PATH) as mock_verify:
         assert_results_not_written(results)
 
-        def side_effect(*args, **kwd):
+        def side_effect(*args, **kwd) -> NoReturn:
             raise Exception("Cow")
 
         mock_verify.side_effect = side_effect
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
         )
@@ -232,7 +237,7 @@ def test_test_tools_records_exception():
         assert_results_written(results)
 
 
-def test_test_tools_records_retry_exception():
+def test_test_tools_records_retry_exception() -> None:
     interactor = MockGalaxyInteractor()
     f = NamedTemporaryFile()
     results = Results("my suite", f.name)
@@ -253,7 +258,7 @@ def test_test_tools_records_retry_exception():
 
         mock_verify.side_effect = side_effect
         run(
-            interactor,
+            cast(GalaxyInteractorApi, interactor),
             test_references,
             results,
             retries=1,
@@ -294,8 +299,8 @@ def test_results():
     assert "Skipped tool tests (1)" in message
 
 
-def test_build_references():
-    interactor = MockGalaxyInteractor()
+def test_build_references() -> None:
+    interactor = cast(GalaxyInteractorApi, MockGalaxyInteractor())
     test_references = build_case_references(interactor)
     assert len(test_references) == 6
 
@@ -332,11 +337,11 @@ def test_build_references():
     assert test_reference.test_index == 2
 
 
-def assert_results_not_written(results):
+def assert_results_not_written(results: Results) -> None:
     assert os.stat(results.test_json).st_size == 0
 
 
-def assert_results_written(results):
+def assert_results_written(results: Results) -> None:
     assert os.stat(results.test_json).st_size > 0
     with open(results.test_json) as f:
         json.load(f)

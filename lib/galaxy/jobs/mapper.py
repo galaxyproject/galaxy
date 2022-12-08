@@ -101,7 +101,7 @@ class JobRunnerMapper:
         actual_args = {}
 
         for arg in function_arg_names:
-            # Send through any job_conf.xml defined args to function
+            # Send through any job config defined args to function
             if arg in destination.params:
                 actual_args[arg] = destination.params[arg]
             # Populate needed args

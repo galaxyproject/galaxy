@@ -2,15 +2,8 @@ import logging
 
 from dateutil.parser import isoparse
 from markupsafe import escape
-from sqlalchemy import (
-    false,
-    null,
-    true,
-)
-from sqlalchemy.orm import (
-    joinedload,
-    undefer,
-)
+from sqlalchemy import false
+from sqlalchemy.orm import undefer
 
 from galaxy import (
     exceptions,
@@ -221,74 +214,6 @@ class SharedHistoryListGrid(grids.Grid):
         return query.filter(model.HistoryUserShareAssociation.user == trans.user)
 
 
-class HistoryAllPublishedGrid(grids.Grid):
-    class NameURLColumn(grids.PublicURLColumn, NameColumn):
-        pass
-
-    title = "Published Histories"
-    model_class = model.History
-    default_sort_key = "update_time"
-    default_filter = dict(public_url="All", username="All", tags="All")
-    use_paging = True
-    num_rows_per_page = 50
-    columns = [
-        NameURLColumn("Name", key="name", filterable="advanced"),
-        grids.OwnerAnnotationColumn(
-            "Annotation",
-            key="annotation",
-            model_annotation_association_class=model.HistoryAnnotationAssociation,
-            filterable="advanced",
-        ),
-        grids.OwnerColumn("Owner", key="username", model_class=model.User, filterable="advanced"),
-        grids.CommunityRatingColumn("Community Rating", key="rating"),
-        grids.CommunityTagsColumn(
-            "Community Tags",
-            key="tags",
-            model_tag_association_class=model.HistoryTagAssociation,
-            filterable="advanced",
-            grid_name="PublicHistoryListGrid",
-        ),
-        grids.ReverseSortColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search name, annotation, owner, and tags",
-            cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-
-    def build_initial_query(self, trans, **kwargs):
-        # TODO: Tags are still loaded one at a time, consider doing this all at once:
-        # - joinedload would keep everything in one query but would explode the number of rows and potentially
-        #   result in unneeded info transferred over the wire.
-        # - subqueryload("tags").subqueryload("tag") would probably be better under postgres but I'd
-        #   like some performance data against a big database first - might cause problems?
-
-        # - Pull down only username from associated User table since that is all that is used
-        #   (can be used during search). Need join in addition to the joinedload since it is used in
-        #   the .count() query which doesn't respect the joinedload options  (could eliminate this with #5523).
-        # - Undefer average_rating column to prevent loading individual ratings per-history.
-        # - Eager load annotations - this causes a left join which might be inefficient if there were
-        #   potentially many items per history (like if joining HDAs for instance) but there should only
-        #   be at most one so this is fine.
-        return (
-            trans.sa_session.query(self.model_class)
-            .join("user")
-            .options(joinedload("user").load_only("username"), joinedload("annotations"), undefer("average_rating"))
-        )
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        # A public history is published, has a slug, and is not deleted.
-        return (
-            query.filter(self.model_class.published == true())
-            .filter(self.model_class.slug != null())
-            .filter(self.model_class.deleted == false())
-        )
-
-
 class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings):
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
     history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
@@ -311,12 +236,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # ......................................................................... lists
     stored_list_grid = HistoryListGrid()
     shared_list_grid = SharedHistoryListGrid()
-    published_list_grid = HistoryAllPublishedGrid()
-
-    @web.expose
-    @web.json
-    def list_published(self, trans, **kwargs):
-        return self.published_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
     @web.require_login("work with multiple histories")

@@ -1,5 +1,6 @@
 import json
 from importlib import import_module
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -23,6 +24,8 @@ class SchemaEncoder(json.JSONEncoder):
                 "__class__": fullname(obj),
                 "__object__": obj.dict(),
             }
+        if isinstance(obj, UUID):
+            return str(obj)
         else:
             return json.JSONEncoder.default(self, obj)
 

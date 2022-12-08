@@ -82,7 +82,7 @@ class InstalledRepositoryManager:
         self.installed_dependent_repositories_of_installed_repositories = {}
 
     @property
-    def tool_paths(self):
+    def tool_paths(self) -> List[str]:
         """Return all possible tool_path attributes of all tool config files."""
         if len(self._tool_paths) != len(self.tool_configs):
             # This could be happen at startup or after the creation of a new shed_tool_conf.xml file
@@ -93,6 +93,7 @@ class InstalledRepositoryManager:
                 if error_message:
                     log.error(error_message)
                 else:
+                    assert tree
                     tool_path = tree.getroot().get("tool_path")
                     if tool_path:
                         tool_paths.append(tool_path)
@@ -402,7 +403,9 @@ class InstalledRepositoryManager:
                     missing_repository_dependencies["description"] = description
         return installed_repository_dependencies, missing_repository_dependencies
 
-    def get_installed_and_missing_repository_dependencies_for_new_or_updated_install(self, repo_info_tuple):
+    def get_installed_and_missing_repository_dependencies_for_new_or_updated_install(
+        self, repo_info_tuple
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
         Parse the received repository_dependencies dictionary that is associated with a repository being
         installed into Galaxy for the first time and attempt to determine repository dependencies that are
@@ -572,7 +575,9 @@ class InstalledRepositoryManager:
                     missing_tool_dependencies[td_key] = val
         return installed_tool_dependencies, missing_tool_dependencies
 
-    def get_repository_dependency_tups_for_installed_repository(self, repository, dependency_tups=None, status=None):
+    def get_repository_dependency_tups_for_installed_repository(
+        self, repository, dependency_tups=None, status=None
+    ) -> List[RepositoryTupleT]:
         """
         Return a list of of tuples defining tool_shed_repository objects (whose status can be anything) required by the
         received repository.  The returned list defines the entire repository dependency tree.  This method is called
@@ -646,7 +651,7 @@ class InstalledRepositoryManager:
                     deleted_tool_dependency_names.append(original_dependency_val_dict["name"])
         return updated_tool_dependency_names, deleted_tool_dependency_names
 
-    def uninstall_repository(self, repository: ToolShedRepository, remove_from_disk=True):
+    def uninstall_repository(self, repository: ToolShedRepository, remove_from_disk=True) -> str:
         errors = ""
         shed_tool_conf, tool_path, relative_install_dir = suc.get_tool_panel_config_tool_path_install_dir(
             app=self.app, repository=repository
@@ -699,7 +704,7 @@ class InstalledRepositoryManager:
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories(
         self, repository: ToolShedRepository
-    ):
+    ) -> None:
         """
         Remove an entry from self.installed_repository_dependencies_of_installed_repositories.  A side-effect of this method
         is removal of appropriate value items from self.installed_dependent_repositories_of_installed_repositories.
@@ -795,7 +800,7 @@ class InstalledRepositoryManager:
                 return "True"
         return "False"
 
-    def set_prior_installation_required(self, repository, required_repository):
+    def set_prior_installation_required(self, repository, required_repository) -> str:
         """
         Return True if the received required_repository must be installed before the
         received repository.

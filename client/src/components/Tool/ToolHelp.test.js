@@ -1,4 +1,4 @@
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import ToolHelp from "./ToolHelp";
 import { mount } from "@vue/test-utils";
 

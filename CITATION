@@ -1,25 +1,22 @@
 If you use or extend Galaxy in your published work, please cite this
 publication:
 
-- Afgan E, Baker D, Batut B, van den Beek M, Bouvier D, Čech M, Chilton J,
-  Clements D, Coraor N, Grüning BA, Guerler A, Hillman-Jackson J, Hiltemann S,
-  Jalili V, Rasche H, Soranzo N, Goecks J, Taylor J, Nekrutenko A, Blankenberg
-  D. "The Galaxy platform for accessible, reproducible and collaborative
-  biomedical analyses: 2018 update"
-  Nucleic Acids Res. (2018) 46(W1):W537-W544 doi:10.1093/nar/gky379
+- The Galaxy Community. "The Galaxy platform for accessible, reproducible and collaborative
+  biomedical analyses: 2022 update"
+  Nucleic Acids Res. (2022) 50(W1):W345-W351 doi:10.1093/nar/gkac247
 
 BibTeX format:
 
-@article{10.1093/nar/gky379,
-  title = {The {Galaxy} platform for accessible, reproducible and collaborative biomedical analyses: 2018 update},
-  author = {Afgan, Enis and Baker, Dannon and Batut, B\'{e}r\'{e}nice and van den Beek, Marius and Bouvier, Dave and \v{C}ech, Martin and Chilton, John and Clements, Dave and Coraor, Nate and Gr\"uning, Bj\"orn A. and Guerler, Aysam and Hillman-Jackson, Jennifer and Hiltemann, Saskia and Jalili, Vahid and Rasche, Helena and Soranzo, Nicola and Goecks, Jeremy and Taylor, James and Nekrutenko, Anton and Blankenberg, Daniel},
+@article{10.1093/nar/gkac247,
+  title = {The {Galaxy} platform for accessible, reproducible and collaborative biomedical analyses: 2022 update},
+  author = {The Galaxy Community},
   journal = {Nucleic Acids Res.},
-  doi = {10.1093/nar/gky379},
-  volume = {46},
+  doi = {10.1093/nar/gkac247},
+  volume = {50},
   number = {W1},
-  pages = {W537-W544},
-  year = {2018},
-  url = {https://doi.org/10.1093/nar/gky379},
+  pages = {W345-W351},
+  year = {2022},
+  url = {https://doi.org/10.1093/nar/gkac247},
   publisher = {Oxford University Press}
 }
 

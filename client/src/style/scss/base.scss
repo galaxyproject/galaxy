@@ -366,23 +366,22 @@ body {
         }
     }
     .navbar-brand {
-        @extend .position-absolute;
-        @extend .font-weight-bold;
+        @extend .ml-2;
+        @extend .mr-1;
+        button {
+            @extend .p-0;
+            img {
+                display: inline;
+                border: none;
+                height: 2.22rem;
+            }
+        }
+    }
+    .navbar-brand-title {
+        font-weight: bold;
         font-family: Verdana, sans-serif;
-        font-size: 1.25rem;
-        left: 0.8rem;
-        line-height: 0rem;
-        color: $brand-masthead-text-active;
-        text-decoration: none;
-        .navbar-brand-image {
-            display: inline;
-            margin-right: 0.3rem;
-            border: none;
-            max-height: 2rem;
-        }
-        .navbar-brand-title {
-            color: $brand-masthead-text;
-        }
+        font-size: calc($masthead-height / 3);
+        line-height: calc($masthead-height / 3);
     }
 }
 
@@ -398,6 +397,7 @@ $galaxy-state-border: (
     "error": $state-danger-border,
     "deleted": darken($state-default-border, 30%),
     "hidden": $state-default-border,
+    "setting_metadata": $state-warning-border,
 );
 
 $galaxy-state-bg: (
@@ -410,6 +410,7 @@ $galaxy-state-bg: (
     "error": $state-danger-bg,
     "deleted": darken($state-default-bg, 30%),
     "hidden": $state-default-bg,
+    "setting_metadata": $state-warning-bg,
 );
 
 @each $state in map-keys($galaxy-state-border) {
@@ -418,9 +419,18 @@ $galaxy-state-bg: (
         border-color: map-get($galaxy-state-border, $state);
         background-color: map-get($galaxy-state-bg, $state);
 
+        &:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: +10%);
+        }
+
         &:focus,
         &:focus-within {
             background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
+        }
+
+        &:focus:hover,
+        &:focus-within:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -7%);
         }
 
         &.selected {

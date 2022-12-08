@@ -405,6 +405,8 @@ class FolderManager:
         if payload.order_by in FOLDER_SORT_COLUMN_MAP:
             sort_column = FOLDER_SORT_COLUMN_MAP[payload.order_by](model.LibraryFolder)
             sub_folders_query = sub_folders_query.order_by(sort_column.desc() if payload.sort_desc else sort_column)
+        else:  # Sort by name alphabetically by default
+            sub_folders_query = sub_folders_query.order_by(model.LibraryFolder.name)
         if limit is not None:
             sub_folders_query = sub_folders_query.limit(limit)
         if offset is not None:

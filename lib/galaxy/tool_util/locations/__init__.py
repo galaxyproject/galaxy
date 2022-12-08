@@ -14,7 +14,7 @@ class ToolLocationResolver(metaclass=ABCMeta):
         """Short label for the type of location resolver and URI scheme."""
 
     @abstractmethod
-    def get_tool_source_path(self, uri_like):
+    def get_tool_source_path(self, uri_like: str) -> str:
         """Return a local path for the uri_like string."""
 
     def _temp_path(self, uri_like):

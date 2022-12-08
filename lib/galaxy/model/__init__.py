@@ -297,11 +297,11 @@ class SerializeFilesHandler(Protocol):
 class SerializationOptions:
     def __init__(
         self,
-        for_edit,
-        serialize_dataset_objects=None,
+        for_edit: bool,
+        serialize_dataset_objects: Optional[bool] = None,
         serialize_files_handler: Optional[SerializeFilesHandler] = None,
-        strip_metadata_files=None,
-    ):
+        strip_metadata_files: Optional[bool] = None,
+    ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
             serialize_dataset_objects = for_edit
@@ -3830,6 +3830,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     purged: bool
+    creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"

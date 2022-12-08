@@ -5,7 +5,6 @@
             <Masthead
                 v-if="showMasthead"
                 id="masthead"
-                :display-galaxy-brand="config.display_galaxy_brand"
                 :brand="config.brand"
                 :logo-url="config.logo_url"
                 :logo-src="config.logo_src"

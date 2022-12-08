@@ -3,24 +3,17 @@
         :id="contentId"
         :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
         :data-hid="id"
-        :data-state="state">
+        :data-state="state"
+        tabindex="0"
+        role="button"
+        @keydown="onKeyDown">
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold">
-                    <span v-if="selectable" class="selector">
-                        <icon
-                            v-if="selected"
-                            fixed-width
-                            size="lg"
-                            :icon="['far', 'check-square']"
-                            @click.stop="$emit('update:selected', false)" />
-                        <icon
-                            v-else
-                            fixed-width
-                            size="lg"
-                            :icon="['far', 'square']"
-                            @click.stop="$emit('update:selected', true)" />
-                    </span>
+                    <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
+                        <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
+                        <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
+                    </b-button>
                     <span v-if="highlight == 'input'" v-b-tooltip.hover title="Input" @click.stop="toggleHighlights">
                         <font-awesome-icon class="text-info" icon="arrow-circle-up" />
                     </span>
@@ -28,14 +21,18 @@
                         v-else-if="highlight == 'noInputs'"
                         v-b-tooltip.hover
                         title="No Inputs for this item"
-                        @click.stop="toggleHighlights">
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon icon="minus-circle" />
                     </span>
                     <span
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
                         title="Inputs highlighted for this item"
-                        @click.stop="toggleHighlights">
+                        tabindex="0"
+                        @click.stop="toggleHighlights"
+                        @keypress="toggleHighlights">
                         <font-awesome-icon icon="check-circle" />
                     </span>
                     <span v-if="hasStateIcon" class="state-icon">
@@ -59,8 +56,10 @@
                     :is-visible="item.visible"
                     :state="state"
                     :item-urls="itemUrls"
+                    :keyboard-selectable="expandDataset"
                     @delete="$emit('delete')"
                     @display="onDisplay"
+                    @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
                     @undelete="$emit('undelete')"
                     @unhide="$emit('unhide')" />
@@ -75,12 +74,12 @@
             :elements-datatypes="item.elements_datatypes" />
         <StatelessTags
             v-if="!tagsDisabled || hasTags"
-            class="alltags p-1"
             :value="tags"
-            :use-toggle-link="false"
             :disabled="tagsDisabled"
-            @tag-click="onTagClick"
-            @input="onTags" />
+            :clickable="filterable"
+            :useToggleLink="false"
+            @input="onTags"
+            @tag-click="onTagClick" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <b-collapse :visible="expandDataset">
             <DatasetDetails
@@ -96,7 +95,7 @@
 </template>
 
 <script>
-import { StatelessTags } from "components/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
 import CollectionDescription from "./Collection/CollectionDescription";
 import ContentOptions from "./ContentOptions";
@@ -128,6 +127,7 @@ export default {
         name: { type: String, required: true },
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },
+        filterable: { type: Boolean, default: false },
     },
     computed: {
         jobState() {
@@ -182,6 +182,10 @@ export default {
             if (this.isCollection) {
                 return {
                     edit: `/collection/${id}/edit`,
+                    showDetails:
+                        this.item.job_source_id && this.item.job_source_type === "Job"
+                            ? `/jobs/${this.item.job_source_id}/view`
+                            : null,
                 };
             }
             return {
@@ -195,6 +199,15 @@ export default {
         },
     },
     methods: {
+        onKeyDown(event) {
+            if (!event.target.classList.contains("content-item")) {
+                return;
+            }
+
+            if (event.key === "Enter" || event.key === " ") {
+                this.onClick();
+            }
+        },
         onClick() {
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
@@ -213,12 +226,17 @@ export default {
         onEdit() {
             this.$router.push(this.itemUrls.edit);
         },
+        onShowCollectionInfo() {
+            this.$router.push(this.itemUrls.showDetails);
+        },
         onTags(newTags) {
             this.$emit("tag-change", this.item, newTags);
             updateContentFields(this.item, { tags: newTags });
         },
         onTagClick(tag) {
-            this.$emit("tag-click", tag.label);
+            if (this.filterable) {
+                this.$emit("tag-click", tag);
+            }
         },
         toggleHighlights() {
             this.$emit("toggleHighlights", this.item);
@@ -226,13 +244,21 @@ export default {
     },
 };
 </script>
-<style lang="scss">
-.content-item:hover {
-    filter: brightness(105%);
-}
+
+<style lang="scss" scoped>
+@import "~bootstrap/scss/_functions.scss";
+@import "theme/blue.scss";
+
 .content-item {
+    cursor: default;
+
     .name {
         word-break: break-all;
+    }
+
+    // improve focus visibility
+    &:deep(.btn:focus) {
+        box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
     }
 }
 </style>

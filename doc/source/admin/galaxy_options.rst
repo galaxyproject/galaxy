@@ -1902,7 +1902,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Display the "Galaxy" text in the masthead.
+    This option has been deprecated, use the `logo_src` instead to
+    change the default logo including the galaxy brand title.
 :Default: ``true``
 :Type: bool
 
@@ -2001,8 +2002,7 @@
     file staging and Interactive Tool containers for communicating
     back with Galaxy via the API.
     If you plan to run Interactive Tools make sure the docker
-    container can reach this URL. For more details see
-    `job_conf.xml.interactivetools`.
+    container can reach this URL.
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -4113,10 +4113,10 @@
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
     Advanced job running capabilities can be configured through the
-    job configuration file.
+    job configuration file or the <job_config> option.
     The value of this option will be resolved with respect to
     <config_dir>.
-:Default: ``job_conf.xml``
+:Default: ``job_conf.yml``
 :Type: str
 
 
@@ -4170,15 +4170,15 @@
     When jobs fail due to job runner problems, Galaxy can be
     configured to retry these or reroute the jobs to new destinations.
     Very fine control of this is available with resubmit declarations
-    in job_conf.xml. For simple deployments of Galaxy though, the
+    in the job config. For simple deployments of Galaxy though, the
     following attribute can define resubmission conditions for all job
     destinations. If any job destination defines even one resubmission
-    condition explicitly in job_conf.xml - the condition described by
-    this option will not apply to that destination. For instance, the
-    condition: 'attempt < 3 and unknown_error and (time_running < 300
-    or time_since_queued < 300)' would retry up to two times jobs that
-    didn't fail due to detected memory or walltime limits but did fail
-    quickly (either while queueing or running). The commented out
+    condition explicitly in the job config - the condition described
+    by this option will not apply to that destination. For instance,
+    the condition: 'attempt < 3 and unknown_error and (time_running <
+    300 or time_since_queued < 300)' would retry up to two times jobs
+    that didn't fail due to detected memory or walltime limits but did
+    fail quickly (either while queueing or running). The commented out
     default below results in no default job resubmission condition,
     failing jobs are just failed outright.
 :Default: ``None``

@@ -1,3 +1,4 @@
+import contextlib
 import io
 import json
 import os
@@ -15,6 +16,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     NamedTuple,
     Optional,
@@ -48,6 +50,8 @@ VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False)
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 DEFAULT_TOOL_TEST_WAIT = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
+DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
 DEFAULT_FTYPE = "auto"
 # This following default dbkey was traditionally hg17 before Galaxy 18.05,
@@ -362,12 +366,31 @@ class GalaxyInteractorApi:
         except IndexError:
             return None
 
+    @contextlib.contextmanager
+    def test_history(
+        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+    ) -> Generator[str, None, None]:
+        history_id = None
+        if not require_new:
+            history_id = DEFAULT_TARGET_HISTORY
+
+        cleanup = CLEANUP_TEST_HISTORIES
+        history_id = history_id or self.new_history()
+        try:
+            yield history_id
+        except Exception:
+            self._summarize_history(history_id)
+            raise
+        finally:
+            if cleanup and cleanup_callback is not None:
+                cleanup_callback(history_id)
+
     def new_history(self, history_name="test_history", publish_history=False):
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
         except Exception as e:
-            raise Exception(f"Error occured while creating history with name '{history_name}': {e}")
+            raise Exception(f"Error occurred while creating history with name '{history_name}': {e}")
         history_id = create_response.json()["id"]
         if publish_history:
             self.publish_history(history_id)
@@ -633,7 +656,7 @@ class GalaxyInteractorApi:
                 self._summarize_history(history_id)
             raise
 
-    def _summarize_history(self, history_id):
+    def _summarize_history(self, history_id: str):
         if history_id is None:
             raise ValueError("_summarize_history passed empty history_id")
         print(f"Problem in history with id {history_id} - summary of history's datasets and jobs below.")
@@ -1496,6 +1519,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
             register_exception(e)
 
     if found_exceptions and not testdef.expect_test_failure:
+        raise JobOutputsError(found_exceptions, job_stdio)
+    elif not found_exceptions and testdef.expect_test_failure:
+        register_exception(AssertionError("Expected job to miss at least one test assumption but all were met."))
         raise JobOutputsError(found_exceptions, job_stdio)
     else:
         return job_stdio

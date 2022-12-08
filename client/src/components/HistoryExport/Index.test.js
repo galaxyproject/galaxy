@@ -1,6 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import Index from "./Index.vue";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 

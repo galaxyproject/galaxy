@@ -2,12 +2,12 @@ import json
 import logging
 import os
 import uuid
-from collections import namedtuple
 from typing import (
     Any,
     cast,
     Dict,
     List,
+    NamedTuple,
     Optional,
     Tuple,
 )
@@ -83,9 +83,9 @@ from galaxy.util.search import (
 from galaxy.web import url_for
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
-    is_tool_module_type,
     module_factory,
     ToolModule,
+    WorkflowModule,
     WorkflowModuleInjector,
 )
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
@@ -497,7 +497,13 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         return invocations, total_matches
 
 
-CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
+MissingToolsT = List[Tuple[str, str, Optional[str], str]]
+
+
+class CreatedWorkflow(NamedTuple):
+    stored_workflow: StoredWorkflow
+    workflow: model.Workflow
+    missing_tools: MissingToolsT
 
 
 class WorkflowSerializer(sharable.SharableModelSerializer):
@@ -530,7 +536,7 @@ class WorkflowContentsManager(UsesAnnotations):
             dict_or_raw_description = RawWorkflowDescription(dict_or_raw_description)
         return dict_or_raw_description
 
-    def read_workflow_from_path(self, app, user, path, allow_in_directory=None):
+    def read_workflow_from_path(self, app, user, path, allow_in_directory=None) -> model.Workflow:
         trans = WorkRequestContext(app=self.app, user=user)
 
         as_dict = {"src": "from_path", "path": path}
@@ -585,7 +591,7 @@ class WorkflowContentsManager(UsesAnnotations):
         add_to_menu=False,
         hidden=False,
         is_subworkflow=False,
-    ):
+    ) -> CreatedWorkflow:
         data = raw_workflow_description.as_dict
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
@@ -694,8 +700,14 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_raw_description(
-        self, trans, raw_workflow_description, workflow_state_resolution_options, name, is_subworkflow=False, **kwds
-    ):
+        self,
+        trans,
+        raw_workflow_description,
+        workflow_state_resolution_options,
+        name,
+        is_subworkflow: bool = False,
+        **kwds,
+    ) -> Tuple[model.Workflow, MissingToolsT]:
         # don't commit the workflow or attach its part to the sa session - just build a
         # a transient model to operate on or render.
         dry_run = kwds.pop("dry_run", False)
@@ -746,7 +758,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Keep track of tools required by the workflow that are not available in
         # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
-        # will be ( tool_id, tool_name, tool_version ).
+        # will be (tool_id, tool_name, tool_version, step_id).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts(data):
             if not dry_run:
@@ -758,8 +770,7 @@ class WorkflowContentsManager(UsesAnnotations):
         module_kwds.update(kwds)  # TODO: maybe drop this?
         for step_dict in self.__walk_step_dicts(data):
             module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **module_kwds)
-            is_tool = is_tool_module_type(module.type)
-            if is_tool and module.tool is None:
+            if isinstance(module, ToolModule) and module.tool is None:
                 missing_tool_tup = (module.tool_id, module.get_name(), module.tool_version, step_dict["id"])
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append(missing_tool_tup)
@@ -1632,7 +1643,7 @@ class WorkflowContentsManager(UsesAnnotations):
         steps_by_external_id: Dict[str, model.WorkflowStep],
         step_dict,
         **kwds,
-    ):
+    ) -> Tuple[WorkflowModule, model.WorkflowStep]:
         """Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """

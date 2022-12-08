@@ -21,7 +21,7 @@ from galaxy.web_stack.handlers import HANDLER_ASSIGNMENT_METHODS
 # there are advantages to testing the documentation/examples.
 SIMPLE_JOB_CONF = os.path.join(galaxy_samples_directory(), "job_conf.xml.sample_basic")
 ADVANCED_JOB_CONF = os.path.join(galaxy_samples_directory(), "job_conf.xml.sample_advanced")
-ADVANCED_JOB_CONF_YAML = os.path.join(os.path.dirname(__file__), "job_conf.sample_advanced.yml")
+ADVANCED_JOB_CONF_YAML = os.path.join(galaxy_samples_directory(), "job_conf.sample.yml")
 CONDITIONAL_RUNNER_JOB_CONF = os.path.join(os.path.dirname(__file__), "conditional_runners_job_conf.xml")
 HANDLER_TEMPLATE_JOB_CONF = os.path.join(os.path.dirname(__file__), "handler_template_job_conf.xml")
 

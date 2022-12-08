@@ -42,11 +42,10 @@ const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
     reducer: (state) => {
-        const { panels, userFlags, history } = state;
+        const { panels, userFlags } = state;
         return {
             panels,
             userFlags,
-            history: { pinnedHistories: history.pinnedHistories },
         };
     },
 });
