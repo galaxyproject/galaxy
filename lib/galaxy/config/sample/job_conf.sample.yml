@@ -375,8 +375,15 @@ handling:
   # most of them). If unset, the default is any untagged handlers plus any handlers in the `job-handlers` (no tag) pool.
   #default: handler0
 
+  # Static handler configurations - Configuring these is generally not desirable, fully dynamic handlers are preferable
+  # unless you need to control plugin loading on a per-handler basis. See the scaling documentation linked above for
+  # instructions on configuring dynamic handlers.
+
   processes:
     handler0:
+      # Set environment variables that only apply to this handler
+      #environment:
+      #  FOO: foo
     handler1:
     sge_handler:
       # Restrict a handler to load specific runners, by default they will load all.
