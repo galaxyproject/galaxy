@@ -509,10 +509,19 @@ class TestYamlLoader(BaseLoaderTestCase):
         assert len(resource_requirements) == 6
         assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
         assert resource_requirements[1].to_dict() == {"resource_type": "cuda_version_min", "value_or_expression": 10.2}
-        assert resource_requirements[2].to_dict() == {"resource_type": "cuda_compute_capability", "value_or_expression": 6.1}
+        assert resource_requirements[2].to_dict() == {
+            "resource_type": "cuda_compute_capability",
+            "value_or_expression": 6.1,
+        }
         assert resource_requirements[3].to_dict() == {"resource_type": "gpu_memory_min", "value_or_expression": 4042}
-        assert resource_requirements[4].to_dict() == {"resource_type": "cuda_device_count_min", "value_or_expression": 1}
-        assert resource_requirements[5].to_dict() == {"resource_type": "cuda_device_count_max", "value_or_expression": 2}
+        assert resource_requirements[4].to_dict() == {
+            "resource_type": "cuda_device_count_min",
+            "value_or_expression": 1,
+        }
+        assert resource_requirements[5].to_dict() == {
+            "resource_type": "cuda_device_count_max",
+            "value_or_expression": 2,
+        }
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
