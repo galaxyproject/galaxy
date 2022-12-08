@@ -9,6 +9,7 @@ from fastapi import (
 )
 from starlette.responses import FileResponse
 
+from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.drs import (
@@ -18,7 +19,6 @@ from galaxy.schema.drs import (
     ServiceType,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.structured_app import StructuredApp
 from galaxy.version import VERSION
 from galaxy.webapps.galaxy.services.datasets import DatasetsService
 from . import (
@@ -41,7 +41,7 @@ DRS_SERVICE_DESCRIPTION = "Serves Galaxy datasets according to the GA4GH DRS spe
 @router.cbv
 class DrsApi:
     service: DatasetsService = depends(DatasetsService)
-    app: StructuredApp = depends(StructuredApp)
+    config: GalaxyAppConfiguration = depends(GalaxyAppConfiguration)
 
     @router.get("/ga4gh/drs/v1/service-info")
     def service_info(self, request: Request) -> Service:
@@ -49,7 +49,7 @@ class DrsApi:
         hostname = components.hostname
         assert hostname
         default_organization_id = ".".join(reversed(hostname.split(".")))
-        config = self.app.config
+        config = self.config
         organization_id = config.ga4gh_service_id or default_organization_id
         organization_name = config.ga4gh_service_organization_name or organization_id
         organization_url = config.ga4gh_service_organization_url or f"{components.scheme}://{components.netloc}"
@@ -63,10 +63,10 @@ class DrsApi:
             artifact="drs",
             version="1.2.0",
         )
-        environemnt = config.ga4gh_service_environment
+        environment = config.ga4gh_service_environment
         extra_kwds = {}
-        if environemnt:
-            extra_kwds["environment"] = environemnt
+        if environment:
+            extra_kwds["environment"] = environment
         return Service(
             id=organization_id + ".drs",
             name=DRS_SERVICE_NAME,

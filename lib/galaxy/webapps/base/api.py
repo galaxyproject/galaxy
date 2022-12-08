@@ -173,8 +173,8 @@ def get_error_response_for_request(request: Request, exc: MessageException) -> J
 def add_exception_handler(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:
-        exc = validation_error_to_message_exception(exc)
-        return get_error_response_for_request(request, exc)
+        message_exception = validation_error_to_message_exception(exc)
+        return get_error_response_for_request(request, message_exception)
 
     @app.exception_handler(MessageException)
     async def message_exception_middleware(request: Request, exc: MessageException) -> Response:
