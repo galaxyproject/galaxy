@@ -64,8 +64,8 @@ library.add(faEdit);
 
 <template>
     <div class="form-rules-edit">
-        <RulesDisplay :inputRules="displayRules" />
-        <b-button @click="onEdit" title="Edit Rules">
+        <RulesDisplay :input-rules="displayRules" />
+        <b-button title="Edit Rules" @click="onEdit">
             <FontAwesomeIcon icon="fa-edit" />
             <span>Edit</span>
         </b-button>
@@ -75,11 +75,11 @@ library.add(faEdit);
                 <h2 class="mb-0">Build Rules for Applying to Existing Collection</h2>
             </template>
             <RuleCollectionBuilder
-                elementsType="collection_contents"
-                importType="collections"
-                :initialElements="elements"
-                :initialRules="props.value"
-                :saveRulesFn="onSaveRules"
+                elements-type="collection_contents"
+                import-type="collections"
+                :initial-elements="elements"
+                :initial-rules="props.value"
+                :save-rules-fn="onSaveRules"
                 :oncancel="onCancel"
                 :oncreate="() => {}" />
         </b-modal>
