@@ -267,8 +267,8 @@ IMPLICITLY_REQUIRED_TOOL_FILES: Dict[str, Dict] = {
 
 
 class safe_update(NamedTuple):
-    min_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
-    current_version: Union[packaging.version.LegacyVersion, packaging.version.Version]
+    min_version: packaging.version.Version
+    current_version: packaging.version.Version
 
 
 # Tool updates that did not change parameters in a way that requires rebuilding workflows

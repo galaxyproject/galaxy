@@ -86,7 +86,7 @@ def find_conda_prefix() -> str:
 class CondaContext(installable.InstallableContext):
     installable_description = "Conda"
     _conda_build_available: Optional[bool]
-    _conda_version: Optional[Union[packaging.version.Version, packaging.version.LegacyVersion]]
+    _conda_version: Optional[packaging.version.Version]
     _experimental_solver_available: Optional[bool]
 
     def __init__(
@@ -131,10 +131,10 @@ class CondaContext(installable.InstallableContext):
         self._experimental_solver_available = None
 
     @property
-    def conda_version(self) -> Union[packaging.version.Version, packaging.version.LegacyVersion]:
+    def conda_version(self) -> packaging.version.Version:
         if self._conda_version is None:
             self._guess_conda_properties()
-        assert isinstance(self._conda_version, (packaging.version.Version, packaging.version.LegacyVersion))
+        assert isinstance(self._conda_version, packaging.version.Version)
         return self._conda_version
 
     @property
