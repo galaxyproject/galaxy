@@ -2,6 +2,7 @@
     <div>
         <svg id="gantt"></svg>
         <div class="sticky">
+            <div class="timeButtonsDiv">
             <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
             <button id="HDayView" @click="changeHDayView">Half Day View</button>
             <button id="dayView" @click="changeDayView">Day View</button>
@@ -24,6 +25,7 @@ import DateTimeModal from './DateTimeModal.vue'
 
 export default {
     name: "Gantt",
+    components: { DateTimeModal },
     data() {
         return {
             tasks: [],
@@ -55,6 +57,7 @@ export default {
                 if (this.historyId !== undefined) {
                     this.getHistoryItems();
                 }
+                this.createKeyedColorForButtons();
             }
         },
         historyContent(newContent, oldContent) {
@@ -62,6 +65,7 @@ export default {
                 this.historyItems = newContent;
                 this.getData();
             }
+            this.createKeyedColorForButtons();
         },
     },
     mounted() {
@@ -103,20 +107,19 @@ export default {
                 popup_trigger: "mouseover",
                 custom_popup_html: function (task) {
                 return `
-                <div class="popover-container">
-                <div class="popover-header">
-                    ${task.job_id}: ${task.name}  
-                </div>
-                <div class="popover-body">
-                    Started At: ${task.start}
-                    <br>
-                    Finished At: ${task.end}
-                </div>  
-                </div>
-            `;
+                    <div class="popover-container">
+                        <div class="popover-header">
+                            ${task.job_id}: ${task.name}  
+                        </div>
+                        <div class="popover-body">
+                            Started At: ${task.start}
+                            <br>
+                            Finished At: ${task.end}
+                        </div>  
+                    </div>`;
+                },
+            });
         },
-    });
-},
         getData: async function () {
             this.currentlyProcessing = true
             this.historyId = this.history;
@@ -230,14 +233,15 @@ export default {
 };
 
 function createClassWithCSS(selector, style) {
-    if (!document.styleSheets) return;
-    if (document.getElementsByTagName("head").length == 0) return;
+    if (!document.styleSheets){ return; }
+    if (document.getElementsByTagName("head").length == 0) {return;}
 
-    var styleSheet, mediaType;
+    var styleSheet;
+    var mediaType;
 
     if (document.styleSheets.length > 0) {
         for (var i = 0, l = document.styleSheets.length; i < l; i++) {
-            if (document.styleSheets[i].disabled) continue;
+            if (document.styleSheets[i].disabled) {continue;}
             var media = document.styleSheets[i].media;
             mediaType = typeof media;
 
@@ -251,7 +255,7 @@ function createClassWithCSS(selector, style) {
                 }
             }
 
-            if (typeof styleSheet !== "undefined") break;
+            if (typeof styleSheet !== "undefined") {break;}
         }
     }
 
@@ -322,14 +326,13 @@ function createClassWithCSS(selector, style) {
 .gantt .tick {
     stroke: #666;
 }
-.gantt {
-    margin-top: 50px;
-}
 .sticky {
     position: fixed;
 }
-
 .gantt-container{
     position: inherit !important;
+}
+.timeButtonsDiv{
+    margin-bottom: 50px;
 }
 </style>
