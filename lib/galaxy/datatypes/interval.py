@@ -126,7 +126,9 @@ class Interval(Tabular):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, first_line_is_header=False, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", *, overwrite: bool = True, first_line_is_header=False, **kwd
+    ) -> None:
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=0)
         if dataset.has_data():

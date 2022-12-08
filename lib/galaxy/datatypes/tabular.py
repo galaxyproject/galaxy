@@ -118,7 +118,7 @@ class TabularData(Text):
     )
 
     @abc.abstractmethod
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", *, overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
@@ -377,6 +377,7 @@ class Tabular(TabularData):
     def set_meta(
         self,
         dataset: "DatasetInstance",
+        *,
         overwrite: bool = True,
         skip=None,
         max_data_lines=MAX_DATA_LINES,
