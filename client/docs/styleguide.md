@@ -1,6 +1,6 @@
 # Styleguide
 
-Most of the clients code style is handled by prettier. Prettier does a good job of keeping an overall consistent code style, however there are some cases it can not account for.
+Most of the client's code style is handled by prettier. Prettier does a good job of keeping an overall consistent code style, however there are some cases it can not account for.
 This document serves as a guide on how to style your code in such cases, with explanations as to why.
 Treat it more like a set of recommendations, than hard rules.
 
@@ -138,40 +138,6 @@ Prettier does not know if our element has significant whitespace, or not. Check 
 
 Prettier adds no empty newlines into your code, but they can help in making it more readable.
 
-### Vue Components
-
-Add spaces between the `script`, `template` and `style` blocks.
-
-> **Do**
->
-> ```vue
-> <script setup>
-> // do stuff...
-> </script>
->
-> <template>
->     <!--template stuff-->
-> </template>
->
-> <style lang="scss" scoped>
-> // stlye stuff...
-> </style>
-> ```
->
-> **Don't**
->
-> ```vue
-> <script setup>
-> // do stuff...
-> </script>
-> <template>
->     <!--template stuff-->
-> </template>
-> <style lang="scss" scoped>
-> // stlye stuff...
-> </style>
-> ```
-
 ### Javascript
 
 Add space between blocks of variable definitions and other code.
@@ -251,6 +217,40 @@ Add space between scopes and other code.
 >     // do stuff...
 > }
 > console.log("log stuff");
+> ```
+
+### Vue Components
+
+Add spaces between the `script`, `template` and `style` blocks.
+
+> **Do**
+>
+> ```vue
+> <script setup>
+> // do stuff...
+> </script>
+>
+> <template>
+>     <!--template stuff-->
+> </template>
+>
+> <style lang="scss" scoped>
+> // stlye stuff...
+> </style>
+> ```
+>
+> **Don't**
+>
+> ```vue
+> <script setup>
+> // do stuff...
+> </script>
+> <template>
+>     <!--template stuff-->
+> </template>
+> <style lang="scss" scoped>
+> // stlye stuff...
+> </style>
 > ```
 
 ### Vue Templates
