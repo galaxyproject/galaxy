@@ -26,7 +26,7 @@ Do not abbreviate. This includes naming `variables`, `functions` and `modules`.
 
 > **Reason**
 >
-> While abbreviation may save you a few keystrokes now, it will make the code harder to understand, and therefore maintain. Even when you think the abbreviations are obvious within this context, consider people looking at your code in the future might not be in the same context at the moment you are in right now.
+> While abbreviation may save a few keystrokes now, it will make the code harder to understand, and therefore maintain. Even when you think the abbreviations are obvious within this context, consider people looking at your code in the future might not have the same context you do when writing the code.
 
 ## Functions
 
