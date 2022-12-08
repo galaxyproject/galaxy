@@ -2070,6 +2070,7 @@ module.
       <xs:group ref="TestAssertionsTabular" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsArchive" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsJson" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
     </xs:choice>
   </xs:complexType>
@@ -2124,6 +2125,15 @@ module.
       <xs:element name="attribute_matches" type="AssertAttributeMatches"/>
       <xs:element name="attribute_is" type="AssertAttributeIs"/>
       <xs:element name="element_text" type="AssertElementText"/>
+    </xs:choice>
+  </xs:group>
+  <xs:group name="TestAssertionsJson">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[Assertions for JSON data]]></xs:documentation>
+    </xs:annotation>
+    <xs:choice>
+      <xs:element name="has_json_property_with_value" type="AssertHasJsonPropertyWithValue"/>
+      <xs:element name="has_json_property_with_text" type="AssertHasJsonPropertyWithText"/>
     </xs:choice>
   </xs:group>
   <xs:group name="TestAssertionsH5">
@@ -2356,6 +2366,7 @@ $attribute_list::5
       <xs:group ref="TestAssertionsGeneral" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsText" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsTabular" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="TestAssertionsJson" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsXml" minOccurs="0" maxOccurs="unbounded"/>
       <xs:group ref="TestAssertionsH5" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
@@ -2607,6 +2618,46 @@ $attribute_list::5
     <xs:attributeGroup ref="AssertAttributePath"/>
     <xs:attributeGroup ref="AssertAttributeNegate"/>
   </xs:complexType>
+  <xs:complexType name="AssertHasJsonPropertyWithValue">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the JSON document contains a property or key with the specified JSON value.
+
+```xml
+<has_json_property_with_value property="skipped_columns" value="[1, 3, 5]" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributeProperty"/>
+    <xs:attribute name="value" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">JSON-ified value to search for. This will be converted from an XML string to JSON with Python's json.loads function.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+  <xs:complexType name="AssertHasJsonPropertyWithText">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+Asserts the JSON document contains a property or key with the specified text (i.e. string) value.
+
+```xml
+<has_json_property_with_text property="color" text="red" />
+```
+
+$attribute_list::5
+]]>
+      </xs:documentation>
+    </xs:annotation>
+    <xs:attributeGroup ref="AssertAttributeProperty"/>
+    <xs:attribute name="text" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Text value to search for.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
   <xs:complexType name="AssertHasH5Keys">
     <xs:annotation>
       <xs:documentation xml:lang="en"><![CDATA[
@@ -2655,6 +2706,14 @@ $attribute_list::5
     <xs:attribute name="path" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:attributeGroup>
+
+  <xs:attributeGroup name="AssertAttributeProperty">
+    <xs:attribute name="property" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">JSON property to search the target for.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:attributeGroup>
