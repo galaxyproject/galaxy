@@ -294,8 +294,6 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 :style="attrs.style"
                 :datalist="attrs.datalist"
                 :type="type" />
-            <FormColor v-else-if="type == 'color'" :id="id" v-model="currentValue" />
-            <FormDirectory v-else-if="type == 'directory_uri'" v-model="currentValue" />
             <FormSelection
                 v-else-if="props.type == 'select' && attrs.display == 'radio'"
                 :id="id"
