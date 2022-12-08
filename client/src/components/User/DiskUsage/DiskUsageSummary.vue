@@ -3,15 +3,12 @@
         <CurrentUser v-slot="{ user }">
             <div>
                 <b-alert v-if="errorMessage" variant="danger" show>
-                    <h4 class="alert-heading">{{ errorMessageTitle }}</h4>
+                    <h2 class="alert-heading h-sm">{{ errorMessageTitle }}</h2>
                     {{ errorMessage }}
                 </b-alert>
                 <b-container v-if="user">
                     <b-row v-if="config.enable_quotas" class="justify-content-md-center">
-                        <QuotaUsageProvider v-slot="{ result: quotaUsages, loading: isLoadingUsage }">
-                            <b-spinner v-if="isLoadingUsage" />
-                            <QuotaUsageSummary v-else-if="quotaUsages" :quota-usages="quotaUsages" />
-                        </QuotaUsageProvider>
+                        <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
                     </b-row>
                     <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
                         You're using <b>{{ getTotalDiskUsage(user) }}</b> of disk space.
@@ -50,17 +47,17 @@ import { bytesToString } from "utils/utils";
 import CurrentUser from "components/providers/CurrentUser";
 import ConfigProvider from "components/providers/ConfigProvider";
 import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
-import { QuotaUsageProvider } from "./Quota/QuotaUsageProvider";
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import { rethrowSimple } from "utils/simple-error";
+import { QuotaUsage } from "./Quota/model";
+import { mapGetters } from "vuex";
 
 export default {
     components: {
         CurrentUser,
         ConfigProvider,
         QuotaUsageSummary,
-        QuotaUsageProvider,
     },
     data() {
         return {
@@ -69,6 +66,12 @@ export default {
             isRecalculating: false,
             dismissCountDown: 0,
         };
+    },
+    computed: {
+        ...mapGetters("user", ["currentUser"]),
+        quotaUsages() {
+            return [new QuotaUsage(this.currentUser)];
+        },
     },
     methods: {
         getTotalDiskUsage(user) {
@@ -79,7 +82,9 @@ export default {
         },
         async onRefresh() {
             await this.requestDiskUsageRecalculation();
-            this.displayRecalculationForSeconds(30);
+            await this.displayRecalculationForSeconds(30);
+
+            this.$store.dispatch("user/loadUser");
         },
         async requestDiskUsageRecalculation() {
             try {
@@ -88,12 +93,16 @@ export default {
                 rethrowSimple(e);
             }
         },
-        displayRecalculationForSeconds(seconds) {
-            this.isRecalculating = true;
-            this.dismissCountDown = seconds;
-            setTimeout(() => {
-                this.isRecalculating = false;
-            }, seconds * 1000);
+        async displayRecalculationForSeconds(seconds) {
+            return new Promise((resolve) => {
+                this.isRecalculating = true;
+                this.dismissCountDown = seconds;
+
+                setTimeout(() => {
+                    this.isRecalculating = false;
+                    resolve();
+                }, seconds * 1000);
+            });
         },
         countDownChanged(dismissCountDown) {
             this.dismissCountDown = dismissCountDown;

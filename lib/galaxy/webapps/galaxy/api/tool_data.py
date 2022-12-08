@@ -1,13 +1,13 @@
 from fastapi import Path
-from fastapi.responses import FileResponse
 
 from galaxy.managers.tool_data import ToolDataManager
-from galaxy.tools.data._schema import (
+from galaxy.tool_util.data._schema import (
     ToolDataDetails,
     ToolDataEntryList,
     ToolDataField,
     ToolDataItem,
 )
+from galaxy.webapps.base.api import GalaxyFileResponse
 from . import (
     depends,
     Router,
@@ -81,7 +81,7 @@ class FastAPIToolData:
         "/api/tool_data/{table_name}/fields/{field_name}/files/{file_name}",
         summary="Get information about a particular field in a tool data table",
         response_description="Information about a data table field",
-        response_class=FileResponse,
+        response_class=GalaxyFileResponse,
         require_admin=True,
     )
     async def download_field_file(
@@ -96,7 +96,7 @@ class FastAPIToolData:
     ):
         """Download a file associated with the data table field."""
         path = self.tool_data_manager.get_field_file_path(table_name, field_name, file_name)
-        return FileResponse(str(path))
+        return GalaxyFileResponse(str(path))
 
     @router.delete(
         "/api/tool_data/{table_name}",

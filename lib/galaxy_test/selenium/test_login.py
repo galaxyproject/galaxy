@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class LoginTestCase(SeleniumTestCase):
+class TestLogin(SeleniumTestCase):
     @selenium_test
     def test_logging_in(self):
         email = self._get_random_email()

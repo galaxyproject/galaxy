@@ -1,6 +1,6 @@
 <template>
-    <b-form-group label="Administrative Job Lock" label-for="prevent-job-dispatching">
-        <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" switch>
+    <b-form-group>
+        <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" switch size="lg">
             Job dispatching is currently
             <strong>{{ jobLockDisplay ? "locked" : "unlocked" }}</strong>
         </b-form-checkbox>

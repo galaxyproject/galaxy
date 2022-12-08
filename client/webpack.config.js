@@ -5,6 +5,7 @@ const VueLoaderPlugin = require("vue-loader/lib/plugin");
 const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
+const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -24,6 +25,8 @@ const modulesExcludedFromLibs = [
     "citeproc",
 ].join("|");
 
+const buildDate = new Date();
+
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
@@ -31,17 +34,16 @@ module.exports = (env = {}, argv = {}) => {
     const buildconfig = {
         mode: targetEnv,
         entry: {
-            login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
-            admin: ["polyfills", "bundleEntries", "entry/admin"],
             generic: ["polyfills", "bundleEntries", "entry/generic"],
+            toolshed: ["polyfills", "bundleToolshed", "entry/generic"],
         },
         output: {
             path: path.join(__dirname, "../", "/static/dist"),
             filename: "[name].bundled.js",
         },
         resolve: {
-            extensions: [".js", ".json", ".vue", ".scss"],
+            extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
@@ -52,6 +54,7 @@ module.exports = (env = {}, argv = {}) => {
                 assert: require.resolve("assert/"),
             },
             alias: {
+                vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
@@ -86,6 +89,15 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.vue$/,
                     loader: "vue-loader",
+                },
+                {
+                    test: /\.tsx?$/,
+                    exclude: /node_modules/,
+                    loader: "ts-loader",
+                    options: {
+                        configFile: "tsconfig.webpack.json",
+                        appendTsSuffixTo: [/\.vue$/],
+                    },
                 },
                 {
                     test: /\.mjs$/,
@@ -123,6 +135,18 @@ module.exports = (env = {}, argv = {}) => {
                             loader: "expose-loader",
                             options: {
                                 exposes: "bundleEntries",
+                            },
+                        },
+                    ],
+                },
+                // Attaches the bundleToolshed to the window object.
+                {
+                    test: `${scriptsBase}/bundleToolshed`,
+                    use: [
+                        {
+                            loader: "expose-loader",
+                            options: {
+                                exposes: "bundleToolshed",
                             },
                         },
                     ],
@@ -193,13 +217,22 @@ module.exports = (env = {}, argv = {}) => {
             }),
             new webpack.DefinePlugin({
                 __targetEnv__: JSON.stringify(targetEnv),
-                __buildTimestamp__: JSON.stringify(new Date().toISOString()),
+                __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
+                __license__: JSON.stringify(require("./package.json").license),
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({
                 filename: "[name].css",
             }),
             new DuplicatePackageCheckerPlugin(),
+            new DumpMetaPlugin({
+                filename: path.join(__dirname, "../lib/galaxy/web/framework/meta.json"),
+                prepare: (stats) => ({
+                    // add any other information you need to dump
+                    hash: stats.hash,
+                    epoch: Date.parse(buildDate),
+                }),
+            }),
         ],
         devServer: {
             client: {
@@ -207,7 +240,11 @@ module.exports = (env = {}, argv = {}) => {
                     errors: true,
                     warnings: false,
                 },
+                webSocketURL: {
+                    port: process.env.GITPOD_WORKSPACE_ID ? 443 : undefined,
+                },
             },
+            allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
             devMiddleware: {
                 publicPath: "/static/dist",
             },

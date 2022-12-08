@@ -1,15 +1,22 @@
-from galaxy_test.base.uses_shed import UsesShed
+from typing import TYPE_CHECKING
+
+from galaxy_test.driver.uses_shed import UsesShed
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
+if TYPE_CHECKING:
+    from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
-class WorkflowEditorToolUpgradeWithToolShedToolTestCase(SeleniumIntegrationTestCase, UsesShed):
-    requires_admin = True
+
+class TestWorkflowEditorToolUpgradeWithToolShedTool(SeleniumIntegrationTestCase, UsesShed):
+    dataset_populator: "SeleniumSessionDatasetPopulator"
+    run_as_admin = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         cls.configure_shed(config)
 
     @selenium_test

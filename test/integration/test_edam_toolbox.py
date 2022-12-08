@@ -1,12 +1,13 @@
 from galaxy_test.driver import integration_util
 
 
-class EdamToolboxIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestEdamToolboxIntegration(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["edam_panel_views"] = "merged"
 
     def test_edam_toolbox(self):
@@ -30,12 +31,13 @@ class EdamToolboxIntegrationTestCase(integration_util.IntegrationTestCase):
         assert edam_panel_view["view_type"] == "ontology"
 
 
-class EdamToolboxDefaultIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestEdamToolboxDefaultIntegration(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["edam_panel_views"] = "topics"
         config["default_panel_view"] = "ontology:edam_topics"
 

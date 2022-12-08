@@ -75,23 +75,21 @@ from sqlalchemy import (
 from galaxy import model
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
-from .testing_utils import (
+from galaxy.model.unittest_utils.mapping_testing_utils import (
     AbstractBaseTest,
     collection_consists_of_objects,
     get_unique_value,
     has_index,
     has_unique_constraint,
 )
-from ..testing_utils import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     dbcleanup,
     delete_from_database,
-    get_plugin_full_name,
     get_stored_obj,
     persist,
 )
 
-model_fixtures = get_plugin_full_name("mapping.testing_utils.gxy_model_fixtures")
-pytest_plugins = [model_fixtures]
+pytest_plugins = ["galaxy.model.unittest_utils.gxy_model_fixtures"]
 
 
 class BaseTest(AbstractBaseTest):
@@ -104,8 +102,8 @@ class TestAPIKeys(BaseTest):
         assert cls_.__tablename__ == "api_keys"
 
     def test_columns(self, session, cls_, user):
-        create_time, user_id, key = now(), user.id, get_unique_value()
-        obj = cls_(user_id=user_id, key=key, create_time=create_time)
+        create_time, user_id, key, deleted = now(), user.id, get_unique_value(), True
+        obj = cls_(user_id=user_id, key=key, create_time=create_time, deleted=deleted)
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
@@ -113,6 +111,7 @@ class TestAPIKeys(BaseTest):
             assert stored_obj.create_time == create_time
             assert stored_obj.user_id == user_id
             assert stored_obj.key == key
+            assert stored_obj.deleted == deleted
 
     def test_relationships(self, session, cls_, user):
         obj = cls_(user_id=user.id, key=get_unique_value())
@@ -2805,16 +2804,13 @@ class TestJobStateHistory(BaseTest):
     def test_columns(self, session, cls_, job):
         state, info = job.state, job.info
         create_time = now()
-        update_time = create_time + timedelta(hours=1)
         obj = cls_(job)
         obj.create_time = create_time
-        obj.update_time = update_time
 
         with dbcleanup(session, obj) as obj_id:
             stored_obj = get_stored_obj(session, cls_, obj_id)
             assert stored_obj.id == obj_id
             assert stored_obj.create_time == create_time
-            assert stored_obj.update_time == update_time
             assert stored_obj.job_id == job.id
             assert stored_obj.state == state
             assert stored_obj.info == info

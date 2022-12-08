@@ -44,25 +44,37 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
     args = _arg_parser().parse_args(argv)
-
     registry = Registry()
     registry.load_datatypes(root_dir=args.galaxy_root, config=args.datatypes_registry)
+    do_fetch(args.request, working_directory=args.working_directory or os.getcwd(), registry=registry)
 
-    request_path = args.request
+
+def do_fetch(
+    request_path: str,
+    working_directory: str,
+    registry: Registry,
+    file_sources_dict: Optional[Dict] = None,
+):
     assert os.path.exists(request_path)
     with open(request_path) as f:
         request = json.load(f)
 
-    working_directory = args.working_directory or os.getcwd()
     allow_failed_collections = request.get("allow_failed_collections", False)
-    upload_config = UploadConfig(request, registry, working_directory, allow_failed_collections)
+    upload_config = UploadConfig(
+        request,
+        registry,
+        working_directory,
+        allow_failed_collections,
+        file_sources_dict,
+    )
     galaxy_json = _request_to_galaxy_json(upload_config, request)
     galaxy_json_path = os.path.join(working_directory, "galaxy.json")
     with open(galaxy_json_path, "w") as f:
         json.dump(galaxy_json, f)
+    return working_directory
 
 
-def _request_to_galaxy_json(upload_config, request):
+def _request_to_galaxy_json(upload_config: "UploadConfig", request):
     targets = request.get("targets", [])
     fetched_targets = []
 
@@ -73,7 +85,7 @@ def _request_to_galaxy_json(upload_config, request):
     return {"__unnamed_outputs": fetched_targets}
 
 
-def _fetch_target(upload_config, target):
+def _fetch_target(upload_config: "UploadConfig", target):
     destination = target.get("destination", None)
     assert destination, "No destination defined."
 
@@ -149,18 +161,29 @@ def _fetch_target(upload_config, target):
         composite = item.pop("composite", None)
         if datatype and datatype.composite_type:
             composite_type = datatype.composite_type
-            writable_files = datatype.writable_files
             assert composite_type == "auto_primary_file", "basic composite uploads not yet implemented"
 
             # get_composite_dataset_name finds dataset name from basename of contents
             # and such but we're not implementing that here yet. yagni?
             # also need name...
+            metadata = {
+                composite_file.substitute_name_with_metadata: datatype.metadata_spec[
+                    composite_file.substitute_name_with_metadata
+                ].default
+                for composite_file in datatype.composite_files.values()
+                if composite_file.substitute_name_with_metadata
+            }
             name = item.get("name") or "Composite Dataset"
-            dataset_bunch = Bunch(
+            metadata["base_name"] = name
+            dataset = Bunch(
                 name=name,
+                metadata=metadata,
             )
+            writable_files = datatype.get_writable_files_for_dataset(dataset)
             primary_file = stream_to_file(
-                StringIO(datatype.generate_primary_file(dataset_bunch)), prefix="upload_auto_primary_file", dir="."
+                StringIO(datatype.generate_primary_file(dataset)),
+                prefix="upload_auto_primary_file",
+                dir=upload_config.working_directory,
             )
             extra_files_path = f"{primary_file}_extra"
             os.mkdir(extra_files_path)
@@ -175,7 +198,7 @@ def _fetch_target(upload_config, target):
             }
             _copy_and_validate_simple_attributes(item, rval)
             composite_items = composite.get("elements", [])
-            keys = [value.name for value in writable_files.values()]
+            keys = list(writable_files.keys())
             composite_item_idx = 0
             for composite_item in composite_items:
                 if composite_item_idx >= len(keys):
@@ -191,7 +214,7 @@ def _fetch_target(upload_config, target):
                     extra_files_path,
                     key,
                     writable_file.is_binary,
-                    ".",
+                    upload_config.working_directory,
                     f"{os.path.basename(extra_files_path)}_",
                     composite_item,
                 )
@@ -266,7 +289,7 @@ def _fetch_target(upload_config, target):
                 requested_ext=requested_ext,
                 name=name,
                 tmp_prefix="data_fetch_upload_",
-                tmp_dir=".",
+                tmp_dir=upload_config.working_directory,
                 check_content=check_content,
                 link_data_only=link_data_only,
                 in_place=in_place,
@@ -396,14 +419,14 @@ def _bagit_to_items(directory):
     return items
 
 
-def _decompress_target(upload_config, target):
+def _decompress_target(upload_config: "UploadConfig", target):
     elements_from_name, elements_from_path = _has_src_to_path(upload_config, target, is_dataset=False)
     # by default Galaxy will check for a directory with a single file and interpret that
     # as the new root for expansion, this is a good user experience for uploading single
     # files in a archive but not great from an API perspective. Allow disabling by setting
     # fuzzy_root to False to literally interpret the target.
     fuzzy_root = target.get("fuzzy_root", True)
-    temp_directory = os.path.abspath(tempfile.mkdtemp(prefix=elements_from_name, dir="."))
+    temp_directory = os.path.abspath(tempfile.mkdtemp(prefix=elements_from_name, dir=upload_config.working_directory))
     cf = CompressedFile(elements_from_path)
     result = cf.extract(temp_directory)
     return result if fuzzy_root else temp_directory
@@ -462,7 +485,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
     if src == "url":
         url = item.get("url")
         try:
-            path = stream_url_to_file(url, file_sources=get_file_sources(upload_config.working_directory))
+            path = stream_url_to_file(url, file_sources=upload_config.file_sources, dir=upload_config.working_directory)
         except Exception as e:
             raise Exception(f"Failed to fetch url {url}. {str(e)}")
 
@@ -476,7 +499,7 @@ def _has_src_to_path(upload_config, item, is_dataset=False) -> Tuple[str, str]:
         if name is None:
             name = url.split("/")[-1]
     elif src == "pasted":
-        path = stream_to_file(StringIO(item["paste_content"]))
+        path = stream_to_file(StringIO(item["paste_content"]), dir=upload_config.working_directory)
         if name is None:
             name = "Pasted Entry"
     else:
@@ -506,30 +529,32 @@ def _arg_parser():
     return parser
 
 
-_file_sources = None
+def get_file_sources(working_directory, file_sources_as_dict=None):
+    from galaxy.files import ConfiguredFileSources
 
-
-def get_file_sources(working_directory):
-    global _file_sources
-    if _file_sources is None:
-        from galaxy.files import ConfiguredFileSources
-
-        file_sources = None
+    file_sources = None
+    if file_sources_as_dict is None:
         file_sources_path = os.path.join(working_directory, "file_sources.json")
         if os.path.exists(file_sources_path):
             file_sources_as_dict = None
             with open(file_sources_path) as f:
                 file_sources_as_dict = json.load(f)
-            if file_sources_as_dict is not None:
-                file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
-        if file_sources is None:
-            ConfiguredFileSources.from_dict(None)
-        _file_sources = file_sources
-    return _file_sources
+    if file_sources_as_dict is not None:
+        file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
+    if file_sources is None:
+        ConfiguredFileSources.from_dict(None)
+    return file_sources
 
 
 class UploadConfig:
-    def __init__(self, request, registry, working_directory, allow_failed_collections):
+    def __init__(
+        self,
+        request,
+        registry,
+        working_directory,
+        allow_failed_collections,
+        file_sources_dict=None,
+    ):
         self.registry = registry
         self.working_directory = working_directory
         self.allow_failed_collections = allow_failed_collections
@@ -540,9 +565,17 @@ class UploadConfig:
         self.validate_hashes = request.get("validate_hashes", False)
         self.deferred = request.get("deferred", False)
         self.link_data_only = _link_data_only(request)
+        self.file_sources_dict = file_sources_dict
+        self._file_sources = None
 
-        self.__workdir = os.path.abspath(".")
+        self.__workdir = os.path.abspath(working_directory)
         self.__upload_count = 0
+
+    @property
+    def file_sources(self):
+        if self._file_sources is None:
+            self._file_sources = get_file_sources(self.working_directory, file_sources_as_dict=self.file_sources_dict)
+        return self._file_sources
 
     def get_option(self, item, key):
         """Return item[key] if specified otherwise use default from UploadConfig.
@@ -556,7 +589,7 @@ class UploadConfig:
             return getattr(self, key)
 
     def __new_dataset_path(self):
-        path = "gxupload_%d" % self.__upload_count
+        path = os.path.join(self.working_directory, f"gxupload_{self.__upload_count}")
         self.__upload_count += 1
         return path
 

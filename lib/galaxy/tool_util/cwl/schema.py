@@ -1,9 +1,10 @@
 """Abstraction around cwltool and related libraries for loading a CWL artifact."""
 import os
 import tempfile
-from collections import namedtuple
+from typing import NamedTuple
 
 from .cwltool_deps import (
+    CommentedMap,
     default_loader,
     ensure_cwltool_available,
     load_tool,
@@ -11,8 +12,19 @@ from .cwltool_deps import (
     resolve_and_validate_document,
 )
 
-RawProcessReference = namedtuple("RawProcessReference", ["loading_context", "process_object", "uri"])
-ResolvedProcessDefinition = namedtuple("ResolvedProcessDefinition", ["loading_context", "uri", "raw_process_reference"])
+
+class RawProcessReference(NamedTuple):
+    loading_context: LoadingContext
+    process_object: CommentedMap
+    uri: str
+
+
+class ResolvedProcessDefinition(NamedTuple):
+    loading_context: LoadingContext
+    uri: str
+    raw_process_reference: RawProcessReference
+
+
 REWRITE_EXPRESSIONS = False
 
 
@@ -36,20 +48,21 @@ class SchemaLoader:
         return loading_context
 
     def raw_process_reference(self, path, loading_context=None):
+        suffix = ""
+        if "#" in path:
+            path, suffix = path.split("#")
+        path = os.path.abspath(path)
+        uri = f"file://{path}"
+        loading_context = loading_context or self.loading_context()
         with tempfile.TemporaryDirectory() as output_dir:
-            suffix = ""
-            if "#" in path:
-                path, suffix = path.split("#")
-            processed_path = os.path.join(output_dir, os.path.basename(path))
-            path = os.path.abspath(path)
-            uri = f"file://{path}"
-            loading_context = loading_context or self.loading_context()
-            if REWRITE_EXPRESSIONS:
-                from cwl_utils import cwl_expression_refactor
-
-                exit_code = cwl_expression_refactor.main([output_dir, path, "--skip-some1", "--skip-some2"])
-                if exit_code == 0:
-                    uri = f"file://{processed_path}"
+            processed_path = os.path.join(output_dir, os.path.basename(path))  # noqa: F841
+            # if REWRITE_EXPRESSIONS:
+            #     The cwl_expression_refactor import below doesn't work any more
+            #     because there are now 3 cwl_v1_X_expression_refactor modules.
+            #     from cwl_utils import cwl_expression_refactor
+            #     exit_code = cwl_expression_refactor.main([output_dir, path, "--skip-some1", "--skip-some2"])
+            #     if exit_code == 0:
+            #         uri = f"file://{processed_path}"
             if suffix:
                 uri = f"{uri}#{suffix}"
             loading_context, process_object, uri = load_tool.fetch_document(uri, loadingContext=loading_context)
@@ -63,19 +76,18 @@ class SchemaLoader:
         loading_context, process_object, uri = load_tool.fetch_document(process_object, loadingContext=loading_context)
         return RawProcessReference(loading_context, process_object, uri)
 
-    def process_definition(self, raw_process_reference):
+    def process_definition(self, raw_process_reference: RawProcessReference) -> ResolvedProcessDefinition:
         assert raw_process_reference.loading_context is not None, "No loading context found for raw_process_reference"
         loading_context, uri = resolve_and_validate_document(
             raw_process_reference.loading_context,
             raw_process_reference.process_object,
             raw_process_reference.uri,
         )
-        process_def = ResolvedProcessDefinition(
+        return ResolvedProcessDefinition(
             loading_context,
             uri,
             raw_process_reference,
         )
-        return process_def
 
     def tool(self, **kwds):
         process_definition = kwds.get("process_definition", None)

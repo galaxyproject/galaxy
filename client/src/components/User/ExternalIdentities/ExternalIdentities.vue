@@ -11,13 +11,13 @@
             >
 
             <hgroup class="external-id-title">
-                <h1>Manage External Identities</h1>
+                <h1 class="h-lg">Manage External Identities</h1>
             </hgroup>
 
             <p>
                 Users with existing Galaxy user accounts (e.g., via Galaxy username and password) can associate their
                 account with their 3rd party identities. For instance, if a user associates their Galaxy account with
-                their Google account, then they can login to Galaxy either using their Galaxy username and password, or
+                their Google account, then they can log in to Galaxy either using their Galaxy username and password, or
                 their Google account. Whichever method they use they will be assuming same Galaxy user account, hence
                 having access to the same histories, workflows, datasets, libraries, etc.
             </p>
@@ -29,7 +29,7 @@
         </header>
 
         <div v-if="items.length" class="external-subheading">
-            <h3>Connected External Identities</h3>
+            <h2 class="h-md">Connected External Identities</h2>
             <b-button
                 v-for="item in items"
                 :key="item.email"
@@ -75,7 +75,7 @@
         </div>
 
         <div v-if="enable_oidc" class="external-subheading">
-            <h3>Connect Other External Identities</h3>
+            <h2 class="h-md">Connect Other External Identities</h2>
             <external-login :login_page="false" />
         </div>
     </section>
@@ -86,7 +86,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import svc from "./service";
-import { userLogout } from "layout/menu";
+import { userLogout } from "utils/logout";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
 Vue.use(BootstrapVue);

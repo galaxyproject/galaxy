@@ -15,6 +15,7 @@ class EmbeddedPulsarIntegrationInstance(integration_util.IntegrationInstance):
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE
 
 

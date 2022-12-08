@@ -1,13 +1,18 @@
 import json
+from typing import (
+    Any,
+    Dict,
+)
 
 import pytest
+from selenium.webdriver.common.by import By
 
 from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import rules_test_data
 from galaxy_test.base.populators import (
     flakey,
-    skip_if_github_down,
     stage_rules_example,
 )
 from .framework import (
@@ -19,7 +24,7 @@ from .framework import (
 )
 
 
-class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_run_tool_verify_contents_by_peek(self):
         self._run_environment_test_tool()
@@ -65,24 +70,24 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         assert "1 : environment_variables" in generic_item.text
         generic_item.click()
         self.sleep_for(self.wait_types.UX_RENDER)
-        assert generic_item.find_element_by_css_selector("pre").text == "42\nmoo\nNOTTHREE"
-        generic_item.find_element_by_css_selector("[title='Run Job Again']").click()
+        assert generic_item.find_element(By.CSS_SELECTOR, "pre").text == "42\nmoo\nNOTTHREE"
+        generic_item.find_element(By.CSS_SELECTOR, "[title='Run Job Again']").click()
         self.components.tool_form.execute.wait_for_visible()
 
     @staticmethod
     def click_menu_item(menu, text):
-        for element in menu.find_elements_by_css_selector("a"):
+        for element in menu.find_elements(By.CSS_SELECTOR, "a"):
             if element.text == text:
                 return element.click()
 
     def _table_to_key_value_elements(self, table_selector):
         tool_parameters_table = self.wait_for_selector_visible(table_selector)
-        tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
-        trs = tbody_element.find_elements_by_css_selector("tr")
+        tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
+        trs = tbody_element.find_elements(By.CSS_SELECTOR, "tr")
         assert trs
         key_value_pairs = []
         for tr in trs:
-            tds = tr.find_elements_by_css_selector("td")
+            tds = tr.find_elements(By.CSS_SELECTOR, "td")
             assert tds
             key_value_pairs.append((tds[0], tds[1]))
 
@@ -96,7 +101,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
         def check_recorded_val():
             inttest_div_element = self.tool_parameter_div("inttest")
-            inttest_input_element = inttest_div_element.find_element_by_css_selector("input")
+            inttest_input_element = inttest_div_element.find_element(By.CSS_SELECTOR, "input")
             recorded_val = inttest_input_element.get_attribute("value")
             # Assert form re-rendered with correct value in textbox.
             assert recorded_val == "42", recorded_val
@@ -163,8 +168,8 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.hda_click_details(hid)
         self.components.dataset_details._.wait_for_visible()
         tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
-        tbody_element = tool_parameters_table.find_element_by_css_selector("tbody")
-        tds = tbody_element.find_elements_by_css_selector("td")
+        tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
+        tds = tbody_element.find_elements(By.CSS_SELECTOR, "td")
         assert tds
         assert any(expected_value in td.text for td in tds)
 
@@ -175,7 +180,7 @@ class ToolFormTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
         self.tool_form_execute()
 
 
-class LoggedInToolFormTestCase(SeleniumTestCase):
+class TestLoggedInToolForm(SeleniumTestCase):
 
     ensure_registered = True
 
@@ -375,7 +380,7 @@ https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-da
         self.history_multi_view_display_collection_contents(32, "list:list")
         self.screenshot("rules_apply_rules_example_4_15_filtered_and_nested")
 
-    def _apply_rules_and_check(self, example):
+    def _apply_rules_and_check(self, example: Dict[str, Any]) -> None:
         rule_builder = self.components.rule_builder
 
         self.home()

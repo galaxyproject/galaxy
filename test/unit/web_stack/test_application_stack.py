@@ -1,7 +1,6 @@
 from gunicorn import SERVER_SOFTWARE
 
 from galaxy.model.unittest_utils import GalaxyDataTestApp
-from galaxy.tool_util.verify.wait import wait_on
 from galaxy.web_stack import (
     application_stack_class,
     application_stack_instance,
@@ -31,8 +30,9 @@ def test_application_stack_post_fork(monkeypatch):
     monkeypatch.setattr(GunicornApplicationStack, "do_post_fork", True)
     stack_instance = application_stack_instance(app=app, config=app.config)
     assert isinstance(stack_instance, GunicornApplicationStack)
-    stack_instance.register_postfork_function(lambda: stack_instance.set_postfork_server_name(app))
+    GunicornApplicationStack.register_postfork_function(lambda: stack_instance.set_postfork_server_name(app))
     assert not app.config.server_name.endswith(".100")
-    stack_instance.late_postfork()
-    stack_instance.late_postfork_event.set()
-    wait_on(lambda: app.config.server_name.endswith(".100") or None, desc="server name to change", timeout=1, delta=0.1)
+    GunicornApplicationStack.late_postfork()
+    GunicornApplicationStack.late_postfork_event.set()
+    GunicornApplicationStack.late_postfork_thread.join()
+    assert app.config.server_name.endswith(".100")

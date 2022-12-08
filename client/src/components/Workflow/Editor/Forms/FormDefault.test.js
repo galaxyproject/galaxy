@@ -23,16 +23,15 @@ describe("FormDefault", () => {
                         nodes: [],
                     };
                 },
-                getNode: () => {
-                    return {
-                        name: "node-title",
-                        type: "subworkflow",
-                        outputs: outputs,
-                        activeOutputs: activeOutputs,
-                        config_form: {
-                            inputs: [],
-                        },
-                    };
+                nodeId: "id",
+                nodeContentId: "id",
+                nodeLabel: "label",
+                nodeName: "node-title",
+                nodeType: "subworkflow",
+                nodeOutputs: outputs,
+                nodeActiveOutputs: activeOutputs,
+                configForm: {
+                    inputs: [],
                 },
             },
             localVue,

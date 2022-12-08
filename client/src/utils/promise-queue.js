@@ -7,21 +7,23 @@
 export class LastQueue {
     constructor(throttlePeriod = 1000) {
         this.throttlePeriod = throttlePeriod;
-        this.nextPromise = null;
+        this.nextPromise = {};
         this.pendingPromise = false;
     }
 
-    async enqueue(action, args) {
+    async enqueue(action, args, key = 0) {
         return new Promise((resolve, reject) => {
-            this.nextPromise = { action, args, resolve, reject };
+            this.nextPromise[key] = { action, args, resolve, reject };
             this.dequeue();
         });
     }
 
     async dequeue() {
-        if (!this.pendingPromise && this.nextPromise) {
-            const item = this.nextPromise;
-            this.nextPromise = null;
+        const keys = Object.keys(this.nextPromise);
+        if (!this.pendingPromise && keys.length > 0) {
+            const nextKey = keys[0];
+            const item = this.nextPromise[nextKey];
+            delete this.nextPromise[nextKey];
             this.pendingPromise = true;
             try {
                 const payload = await item.action(item.args);

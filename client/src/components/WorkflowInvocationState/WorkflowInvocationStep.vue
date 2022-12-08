@@ -84,8 +84,11 @@
     </div>
 </template>
 <script>
+import { useWorkflowStore } from "stores/workflowStore";
 import { mapCacheActions } from "vuex-cache";
-import { mapGetters, mapActions } from "vuex";
+import { mapGetters, mapActions as vuexMapActions } from "vuex";
+import { mapState, mapActions } from "pinia";
+import WorkflowIcons from "components/Workflow/icons";
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
 import GenericHistoryItem from "components/History/Content/GenericItem";
@@ -103,7 +106,6 @@ export default {
     },
     props: {
         invocation: Object,
-        orderedSteps: Array,
         workflowStep: Object,
         workflow: Object,
     },
@@ -114,12 +116,10 @@ export default {
         };
     },
     computed: {
-        ...mapGetters(["getToolForId", "getToolNameById", "getWorkflowByInstanceId", "getInvocationStepById"]),
+        ...mapState(useWorkflowStore, ["getWorkflowByInstanceId"]),
+        ...mapGetters(["getToolForId", "getToolNameById", "getInvocationStepById"]),
         isReady() {
-            return this.invocationSteps.length > 0;
-        },
-        invocationSteps() {
-            return this.orderedSteps;
+            return this.invocation.steps.length > 0;
         },
         invocationStepId() {
             return this.step?.id;
@@ -128,24 +128,13 @@ export default {
             return this.workflowStep.type;
         },
         step() {
-            return this.invocationSteps[this.workflowStep.id];
+            return this.invocation.steps[this.workflowStep.id];
         },
         isDataStep() {
             return ["data_input", "data_collection_input"].includes(this.workflowStepType);
         },
         stepIcon() {
-            switch (this.workflowStepType) {
-                case "data_input":
-                    return "fa-file";
-                case "data_collection_input":
-                    return "fa-folder-o";
-                case "parameter_input":
-                    return "fa-pencil";
-                case "subworkflow":
-                    return "fa-tasks";
-                default:
-                    return "fa-wrench";
-            }
+            return WorkflowIcons[this.workflowStepType];
         },
         stepLabel() {
             return this.labelForWorkflowStep(this.workflowStep.id);
@@ -156,8 +145,9 @@ export default {
         this.fetchSubworkflow();
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId", "fetchWorkflowForInstanceId"]),
-        ...mapActions(["fetchInvocationStepById"]),
+        ...mapCacheActions(["fetchToolForId"]),
+        ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
+        ...vuexMapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
                 this.fetchToolForId(this.workflowStep.tool_id);
@@ -172,7 +162,7 @@ export default {
             this.expanded = !this.expanded;
         },
         labelForWorkflowStep(stepIndex) {
-            const invocationStep = this.invocationSteps[stepIndex];
+            const invocationStep = this.invocation.steps[stepIndex];
             const workflowStep = this.workflow.steps[stepIndex];
             const oneBasedStepIndex = stepIndex + 1;
             if (invocationStep && invocationStep.workflow_step_label) {

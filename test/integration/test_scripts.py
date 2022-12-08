@@ -5,7 +5,6 @@ import json
 import os
 import subprocess
 import tempfile
-import unittest
 
 import yaml
 
@@ -17,19 +16,7 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-def skip_unless_module(module):
-    available = True
-    try:
-        __import__(module)
-    except ImportError:
-        available = False
-    if available:
-        return lambda func: func
-    template = "Module %s could not be loaded, dependent test skipped."
-    return unittest.skip(template % module)
-
-
-class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestScriptsIntegration(integration_util.IntegrationTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -55,13 +42,13 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         self._scripts_check_argparse_help(script)
 
         history_id = self.dataset_populator.new_history()
-        delete_response = self.dataset_populator._delete("histories/%s" % history_id)
+        delete_response = self.dataset_populator._delete(f"histories/{history_id}")
         assert delete_response.status_code == 200
         assert delete_response.json()["purged"] is False
         config_file = self.write_config_file()
         output = self._scripts_check_output(script, ["-c", config_file, "--days", "0", "--purge_histories"])
         print(output)
-        history_response = self.dataset_populator._get("histories/%s" % history_id)
+        history_response = self.dataset_populator._get(f"histories/{history_id}")
         assert history_response.status_code == 200
         assert history_response.json()["purged"] is True, history_response.json()
 
@@ -72,7 +59,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         self._scripts_check_argparse_help(script)
 
         history_id = self.dataset_populator.new_history()
-        delete_response = self.dataset_populator._delete("histories/%s" % history_id)
+        delete_response = self.dataset_populator._delete(f"histories/{history_id}")
         assert delete_response.status_code == 200
         assert delete_response.json()["purged"] is False
         config_file = self.write_config_file()
@@ -80,7 +67,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
             script, ["-c", config_file, "--older-than", "0", "--sequence", "purge_deleted_histories"]
         )
         print(output)
-        history_response = self.dataset_populator._get("histories/%s" % history_id)
+        history_response = self.dataset_populator._get(f"histories/{history_id}")
         assert history_response.status_code == 200
         assert history_response.json()["purged"] is True, history_response.json()
 
@@ -130,7 +117,7 @@ class ScriptsIntegrationTestCase(integration_util.IntegrationTestCase):
         self._scripts_check_output(script, ["-c", config_file, "-g", grt_config_file, "-r", self.config_dir])
         report_files = os.listdir(self.config_dir)
         json_files = [j for j in report_files if j.endswith(".json")]
-        assert len(json_files) == 1, "Expected one json report file in [%s]" % json_files
+        assert len(json_files) == 1, f"Expected one json report file in [{json_files}]"
         json_file = os.path.join(self.config_dir, json_files[0])
         with open(json_file) as f:
             export = json.load(f)

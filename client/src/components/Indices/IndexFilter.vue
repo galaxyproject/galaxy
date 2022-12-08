@@ -1,7 +1,7 @@
 <template>
     <span>
         <b-input-group>
-            <DebouncedInput :delay="debounceDelay" v-slot="{ value: debouncedValue, input }" v-model="localFilter">
+            <DebouncedInput v-slot="{ value: debouncedValue, input }" v-model="localFilter" :delay="debounceDelay">
                 <b-form-input
                     :id="id"
                     name="query"
@@ -17,9 +17,9 @@
             <b-input-group-append>
                 <b-button
                     data-description="show deleted filter toggle"
-                    @click="onHelp"
                     title="Advanced Filtering Help"
-                    :size="size">
+                    :size="size"
+                    @click="onHelp">
                     <icon icon="question" />
                 </b-button>
             </b-input-group-append>

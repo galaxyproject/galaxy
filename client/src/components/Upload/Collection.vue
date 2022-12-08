@@ -120,6 +120,7 @@
 import _l from "utils/localization";
 import _ from "underscore";
 import { getGalaxyInstance } from "app";
+import { refreshContentsWrapper } from "utils/data";
 import UploadRow from "mvc/upload/collection/collection-row";
 import UploadBoxMixin from "./UploadBoxMixin";
 import { uploadModelsToPayload } from "./helpers";
@@ -134,7 +135,7 @@ export default {
             topInfo: "",
             showHelper: true,
             extension: this.app.defaultExtension,
-            genome: this.app.defaultGenome,
+            genome: this.app.defaultDbKey,
             collectionType: "list",
             listExtensions: [],
             listGenomes: [],
@@ -250,8 +251,7 @@ export default {
             const outputs = incoming.outputs || incoming.data.outputs || {};
             it.set({ percentage: 100, status: "success", outputs });
             this._updateStateForSuccess(it);
-            const Galaxy = getGalaxyInstance();
-            Galaxy.currHistoryPanel.refreshContents();
+            refreshContentsWrapper();
         },
 
         _eventBuild: function () {
@@ -273,7 +273,7 @@ export default {
                 models: Object.values(models),
                 historyId: Galaxy.currHistoryPanel.model.id,
             };
-            Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection, true);
+            Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection);
             this.counterRunning = 0;
             this._updateStateForCounters();
             this._eventReset();
@@ -290,7 +290,7 @@ export default {
                 this.counterRunning = 0;
                 this.uploadbox.reset();
                 this.extension = this.app.defaultExtension;
-                this.genome = this.app.defaultGenome;
+                this.genome = this.app.defaultDbKey;
                 this.appModel.set("percentage", 0);
                 this._updateStateForCounters();
             }

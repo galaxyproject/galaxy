@@ -40,6 +40,7 @@ log = logging.getLogger(__name__)
 class TransientDatasetPaths(NamedTuple):
     external_filename: str
     external_extra_files_path: str
+    metadata_files_dir: str
 
 
 class TransientPathMapper:
@@ -61,7 +62,7 @@ class SimpleTransientPathMapper(TransientPathMapper):
         external_filename = os.path.join(self._staging_directory, external_filename_basename)
         external_extras_basename = "dataset_%s_files" % str(old_dataset.uuid)
         external_extras = os.path.join(self._staging_directory, external_extras_basename)
-        return TransientDatasetPaths(external_filename, external_extras)
+        return TransientDatasetPaths(external_filename, external_extras, self._staging_directory)
 
 
 class DatasetInstanceMaterializer:
@@ -110,6 +111,7 @@ class DatasetInstanceMaterializer:
         materialized_dataset.hashes = [h.copy() for h in dataset.hashes]
 
         target_source = self._find_closest_dataset_source(dataset)
+        transient_paths = None
         if attached:
             object_store_populator = self._object_store_populator
             assert object_store_populator
@@ -157,12 +159,14 @@ class DatasetInstanceMaterializer:
             materialized_dataset_instance.has_metadata_files or materialized_dataset_instance.metadata_deferred
         )
         if require_metadata_regeneration:
-            if attached and self._sa_session:
-                # as of mid April 2022, we now get JSON encoding errors if this
-                # isn't bound to the session before metadata generation.
-                self._sa_session.add(materialized_dataset_instance)
             materialized_dataset_instance.init_meta()
-            materialized_dataset_instance.set_meta()
+            if transient_paths:
+                metadata_tmp_files_dir = transient_paths.metadata_files_dir
+            else:
+                # If metadata_tmp_files_dir is set we generate a MetdataTempFile,
+                # which we don't want when we're generating an attached materialized dataset instance
+                metadata_tmp_files_dir = None
+            materialized_dataset_instance.set_meta(metadata_tmp_files_dir=metadata_tmp_files_dir)
             materialized_dataset_instance.metadata_deferred = False
         return materialized_dataset_instance
 

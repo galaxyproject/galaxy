@@ -7,13 +7,14 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 MOCK_BIOTOOLS_CONTENT = os.path.join(SCRIPT_DIRECTORY, "mock_biotools_content")
 
 
-class DynamicEdamLoadingIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestDynamicEdamLoadingIntegration(integration_util.IntegrationTestCase):
     """Test mapping over tools with extended metadata enabled."""
 
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["biotools_content_directory"] = MOCK_BIOTOOLS_CONTENT
         config["biotools_use_api"] = False
 

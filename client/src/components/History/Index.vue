@@ -4,6 +4,7 @@
             <div v-if="currentHistory" id="current-history-panel" class="history-index">
                 <CurrentHistory
                     v-if="!breadcrumbs.length"
+                    :list-offset="listOffset"
                     :history="currentHistory"
                     v-on="handlers"
                     @view-collection="onViewCollection">
@@ -51,10 +52,12 @@ export default {
         return {
             // list of collections we have drilled down into
             breadcrumbs: [],
+            listOffset: 0,
         };
     },
     methods: {
-        onViewCollection(collection) {
+        onViewCollection(collection, currentOffset) {
+            this.listOffset = currentOffset;
             this.breadcrumbs = [...this.breadcrumbs, collection];
         },
     },

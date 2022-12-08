@@ -3,7 +3,6 @@ Mothur Metagenomics Datatypes
 """
 import logging
 import re
-import sys
 
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
@@ -1064,9 +1063,3 @@ class SffFlow(Tabular):
         except Exception as exc:
             out = f"Can't create peek: {unicodify(exc)}"
         return out
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

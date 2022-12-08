@@ -1,33 +1,46 @@
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "jest/helpers";
+import { ROOT_COMPONENT } from "utils/navigation";
+import VueRouter from "vue-router";
 
 import "jest-location-mock";
 
-const localVue = getLocalVue();
+const localVue = getLocalVue(true);
+localVue.use(VueRouter);
 
-describe("WorkflowIndexActions.vue", () => {
+const router = new VueRouter();
+
+function getCurrentPath($router) {
+    return $router.history.current.path;
+}
+
+describe("WorkflowIndexActions", () => {
     let wrapper;
+    let $router;
 
     beforeEach(async () => {
-        const propsData = {
-            root: "/root/",
-        };
         wrapper = shallowMount(WorkflowIndexActions, {
-            propsData,
             localVue,
+            router,
         });
+        $router = wrapper.vm.$router;
     });
 
     describe("naviation", () => {
         it("should create a workflow when create is clicked", async () => {
-            await wrapper.find("#workflow-create").trigger("click");
-            expect(window.location).toBeAt("/root/workflows/create");
+            await wrapper.find(ROOT_COMPONENT.workflows.new_button.selector).trigger("click");
+            expect(getCurrentPath($router)).toBe("/workflows/create");
         });
 
         it("should import a workflow when create is clicked", async () => {
-            await wrapper.find("#workflow-import").trigger("click");
-            expect(window.location).toBeAt("/root/workflows/import");
+            await wrapper.find(ROOT_COMPONENT.workflows.import_button.selector).trigger("click");
+            expect(getCurrentPath($router)).toBe("/workflows/import");
+        });
+
+        it("should localize button text", async () => {
+            expect(wrapper.find(ROOT_COMPONENT.workflows.new_button.selector).text()).toBeLocalizationOf("Create");
+            expect(wrapper.find(ROOT_COMPONENT.workflows.import_button.selector).text()).toBeLocalizationOf("Import");
         });
     });
 });

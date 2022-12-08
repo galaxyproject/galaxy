@@ -436,21 +436,6 @@ class VisualizationController(
         return
 
     @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a visualization asynchronously and return updated community data."""
-
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-        if not visualization:
-            return trans.show_error_message("The specified visualization does not exist.")
-
-        # Rate visualization.
-        self.rate_item(trans.sa_session, trans.get_user(), visualization, rating)
-
-        return self.get_ave_item_rating_data(trans.sa_session, visualization)
-
-    @web.expose
     @web.require_login("share Galaxy visualizations")
     def imp(self, trans, id):
         """Import a visualization into user's workspace."""
@@ -508,43 +493,16 @@ class VisualizationController(
         # Security check raises error if user cannot access visualization.
         self.security_check(trans, visualization, check_ownership=False, check_accessible=True)
 
-        # Get rating data.
-        user_item_rating = 0
-        if trans.get_user():
-            user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), visualization)
-            if user_item_rating:
-                user_item_rating = user_item_rating.rating
-            else:
-                user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, visualization)
+        # Encode page identifier.
+        visualization_id = trans.security.encode_id(visualization.id)
 
-        # Fork to template based on visualization.type (registry or builtin).
-        if (trans.app.visualizations_registry and visualization.type in trans.app.visualizations_registry.plugins) and (
-            visualization.type not in trans.app.visualizations_registry.BUILT_IN_VISUALIZATIONS
-        ):
-            # if a registry visualization, load a version of display.mako that will load the vis into an iframe :(
-            # TODO: simplest path from A to B but not optimal - will be difficult to do reg visualizations any other way
-            # TODO: this will load the visualization twice (once above, once when the iframe src calls 'saved')
-            encoded_visualization_id = trans.security.encode_id(visualization.id)
-            return trans.fill_template_mako(
-                "visualization/display_in_frame.mako",
-                item=visualization,
-                encoded_visualization_id=encoded_visualization_id,
-                user_item_rating=user_item_rating,
-                ave_item_rating=ave_item_rating,
-                num_ratings=num_ratings,
-                content_only=True,
+        # Redirect to client.
+        return trans.response.send_redirect(
+            web.url_for(
+                controller="published",
+                action="visualization",
+                id=visualization_id,
             )
-
-        visualization_config = self.get_visualization_config(trans, visualization)
-        return trans.fill_template_mako(
-            "visualization/display.mako",
-            item=visualization,
-            item_data=visualization_config,
-            user_item_rating=user_item_rating,
-            ave_item_rating=ave_item_rating,
-            num_ratings=num_ratings,
-            content_only=True,
         )
 
     @web.expose
@@ -566,25 +524,6 @@ class VisualizationController(
             ),
         }
         return return_dict
-
-    @web.expose
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
-
-        # Get visualization, making sure it's accessible.
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-        if visualization is None:
-            raise web.httpexceptions.HTTPNotFound()
-
-        # Return content.
-        visualization_config = self.get_visualization_config(trans, visualization)
-        return trans.fill_template_mako(
-            "visualization/item_content.mako",
-            encoded_id=trans.security.encode_id(visualization.id),
-            item=visualization,
-            item_data=visualization_config,
-            content_only=True,
-        )
 
     @web.json
     def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):
@@ -819,7 +758,7 @@ class VisualizationController(
             app["gene_region"] = {"chrom": gene_region.chrom, "start": gene_region.start, "end": gene_region.end}
 
         # fill template
-        return trans.fill_template("galaxy.panels.mako", config={"right_panel": True, "app": app, "bundle": "extended"})
+        return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
     def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):
@@ -880,7 +819,7 @@ class VisualizationController(
         app = {"jscript": "circster", "viz_config": viz_config, "genome": genome}
 
         # fill template
-        return trans.fill_template("galaxy.panels.mako", config={"app": app, "bundle": "extended"})
+        return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
     def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):

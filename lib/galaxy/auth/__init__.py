@@ -18,14 +18,14 @@ class AuthManager:
         self.redact_username_in_logs = config.redact_username_in_logs
         self.authenticators = get_authenticators(config.auth_config_file, config.is_set("auth_config_file"))
 
-    def check_registration_allowed(self, email, username, password):
+    def check_registration_allowed(self, email, username, password, request):
         """Checks if the provided email/username is allowed to register."""
         message = ""
         status = "done"
         for provider, options in self.active_authenticators(email, username, password):
             allow_reg = _get_allow_register(options)
             if allow_reg == "challenge":
-                auth_results = provider.authenticate(email, username, password, options)
+                auth_results = provider.authenticate(email, username, password, options, request)
                 if auth_results[0] is True:
                     break
                 if auth_results[0] is None:
@@ -57,7 +57,7 @@ class AuthManager:
                 log.debug(f"Unable to find module: {options}")
             else:
                 options["no_password_check"] = no_password_check
-                auth_results = provider.authenticate(email, username, password, options)
+                auth_results = provider.authenticate(email, username, password, options, trans.request)
                 if auth_results[0] is True:
                     try:
                         auth_return = parse_auth_results(trans, auth_results, options)
@@ -70,20 +70,20 @@ class AuthManager:
                     break  # end authentication (skip rest)
         return auth_return
 
-    def check_password(self, user, password):
+    def check_password(self, user, password, request):
         """Checks the username/email and password using auth providers."""
         for provider, options in self.active_authenticators(user.email, user.username, password):
             if provider is None:
                 log.debug(f"Unable to find module: {options}")
             else:
-                auth_result = provider.authenticate_user(user, password, options)
+                auth_result = provider.authenticate_user(user, password, options, request)
                 if auth_result is True:
                     return True  # accept user
                 elif auth_result is None:
                     break  # end authentication (skip rest)
         return False
 
-    def check_change_password(self, user, current_password):
+    def check_change_password(self, user, current_password, request):
         """Checks that auth provider allows password changes and current_password
         matches.
         """
@@ -91,7 +91,7 @@ class AuthManager:
             if provider is None:
                 log.debug(f"Unable to find module: {options}")
             else:
-                auth_result = provider.authenticate_user(user, current_password, options)
+                auth_result = provider.authenticate_user(user, current_password, options, request)
                 if auth_result is True:
                     if string_as_bool(options.get("allow-password-change", False)):
                         return

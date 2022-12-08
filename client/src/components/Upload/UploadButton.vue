@@ -23,6 +23,7 @@
 </template>
 
 <script>
+import Query from "utils/query-string-parsing";
 import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -44,16 +45,19 @@ export default {
             percentage: 0,
         };
     },
-    created() {
+    mounted() {
         this.eventHub.$on("upload:status", this.setStatus);
         this.eventHub.$on("upload:percentage", this.setPercentage);
+        if (Query.get("tool_id") == "upload1") {
+            this.showUploadDialog();
+        }
     },
     beforeDestroy() {
         this.eventHub.$off("upload:status", this.setStatus);
         this.eventHub.$off("upload:percentage", this.setPercentage);
     },
     methods: {
-        showUploadDialog(e) {
+        showUploadDialog() {
             openGlobalUploadModal();
         },
         setStatus(val) {

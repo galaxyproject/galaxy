@@ -338,7 +338,7 @@ class JobHandlerQueue(Monitors):
         # Already dispatched and running
         job_wrapper = self.job_wrapper(job)
         # Use the persisted destination as its params may differ from
-        # what's in the job_conf xml
+        # what's in the job config
         job_destination = JobDestination(
             id=job.destination_id, runner=job.job_runner_name, params=job.destination_params
         )
@@ -738,7 +738,7 @@ class JobHandlerQueue(Monitors):
                 # History is job.state_history
                 started = None
                 finished = None
-                for history in sorted(job.state_history, key=lambda h: h.update_time):
+                for history in sorted(job.state_history, key=lambda h: h.create_time):
                     if history.state == "running":
                         started = history.create_time
                     elif history.state == "ok":
@@ -1198,7 +1198,7 @@ class JobHandlerStopQueue(Monitors):
 
 
 class DefaultJobDispatcher:
-    def __init__(self, app):
+    def __init__(self, app: MinimalManagerApp):
         self.app = app
         self.job_runners = self.app.job_config.get_job_runner_plugins(self.app.config.server_name)
         # Once plugins are loaded, all job destinations that were created from
@@ -1260,6 +1260,10 @@ class DefaultJobDispatcher:
         # The runner name is not set until the job has started.
         # If we're stopping a task, then the runner_name may be
         # None, in which case it hasn't been scheduled.
+        if self.app.config.enable_celery_tasks and job.tool_id == "__DATA_FETCH__":
+            from galaxy.celery import celery_app
+
+            celery_app.control.revoke(job.job_runner_external_id)
         job_runner_name = job.get_job_runner_name()
         if job_runner_name is not None:
             runner_name = job_runner_name.split(":", 1)[0]

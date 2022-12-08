@@ -10,7 +10,6 @@ import os
 import re
 import shutil
 import struct
-import sys
 import tempfile
 import zipfile
 from functools import partial
@@ -401,6 +400,15 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.extxyz')
     >>> guess_ext(fname, sniff_order)
     'extxyz'
+    >>> fname = get_test_fname('Si.castep')
+    >>> guess_ext(fname, sniff_order)
+    'castep'
+    >>> fname = get_test_fname('Si.param')
+    >>> guess_ext(fname, sniff_order)
+    'param'
+    >>> fname = get_test_fname('Si.den_fmt')
+    >>> guess_ext(fname, sniff_order)
+    'den_fmt'
     >>> fname = get_test_fname('mothur_datatypetest_true.mothur.otu')
     >>> guess_ext(fname, sniff_order)
     'mothur.otu'
@@ -933,9 +941,3 @@ DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gzip=gzip.GzipFile, bz2=bz
 
 class InappropriateDatasetContentError(Exception):
     pass
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

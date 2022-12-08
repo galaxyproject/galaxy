@@ -3,7 +3,10 @@ import logging
 import math
 import re
 import uuid
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 import packaging.version
 
@@ -13,11 +16,13 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
 )
 from galaxy.util import (
+    ElementTree,
     string_as_bool,
     xml_text,
     xml_to_string,
 )
 from .interface import (
+    AssertionList,
     InputSource,
     PageSource,
     PagesSource,
@@ -25,6 +30,8 @@ from .interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
     ToolSource,
+    ToolSourceTest,
+    ToolSourceTests,
 )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
@@ -50,7 +57,7 @@ class XmlToolSource(ToolSource):
 
     language = "xml"
 
-    def __init__(self, xml_tree, source_path=None, macro_paths=None):
+    def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
         self.root = xml_tree.getroot()
         self._source_path = source_path
@@ -284,7 +291,7 @@ class XmlToolSource(ToolSource):
         return RequiredFiles.from_dict(as_dict)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_xml(self.root)
+        return requirements.parse_requirements_from_xml(self.root, parse_resources=True)
 
     def parse_input_pages(self):
         return XmlPagesSource(self.root)
@@ -536,10 +543,10 @@ class XmlToolSource(ToolSource):
     def source_path(self):
         return self._source_path
 
-    def parse_tests_to_dict(self):
+    def parse_tests_to_dict(self) -> ToolSourceTests:
         tests_elem = self.root.find("tests")
-        tests = []
-        rval = dict(tests=tests)
+        tests: List[ToolSourceTest] = []
+        rval: ToolSourceTests = dict(tests=tests)
 
         if tests_elem is not None:
             for i, test_elem in enumerate(tests_elem.findall("test")):
@@ -561,9 +568,9 @@ class XmlToolSource(ToolSource):
         return self.root.get("license")
 
     def parse_python_template_version(self):
-        python_template_version = self.root.get("python_template_version", None)
+        python_template_version = self.root.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.parse(python_template_version)
+            python_template_version = packaging.version.Version(python_template_version)
         return python_template_version
 
     def parse_creator(self):
@@ -586,8 +593,8 @@ class XmlToolSource(ToolSource):
         return creators
 
 
-def _test_elem_to_dict(test_elem, i, profile=None):
-    rval = dict(
+def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
+    rval: ToolSourceTest = dict(
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem, profile=profile),
         inputs=__parse_input_elems(test_elem, i),
@@ -736,7 +743,7 @@ def __parse_assert_list(output_elem):
     return __parse_assert_list_from_elem(assert_elem)
 
 
-def __parse_assert_list_from_elem(assert_elem):
+def __parse_assert_list_from_elem(assert_elem) -> AssertionList:
     assert_list = None
 
     def convert_elem(elem):

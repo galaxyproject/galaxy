@@ -17,7 +17,7 @@
     </div>
 </template>
 <script>
-import RuleDefs from "mvc/rules/rule-definitions";
+import RuleDefs from "components/RuleBuilder/rule-definitions";
 import RuleDisplayPreview from "./RuleDisplayPreview";
 import IdentifierDisplayPreview from "./IdentifierDisplayPreview";
 

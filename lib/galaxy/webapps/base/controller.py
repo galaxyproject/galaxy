@@ -4,6 +4,7 @@ Contains functionality needed in every web interface
 import logging
 from typing import (
     Any,
+    Callable,
     Optional,
 )
 
@@ -22,9 +23,8 @@ from galaxy import (
     web,
 )
 from galaxy.datatypes.interval import ChromatinInteractions
-from galaxy.managers import api_keys
-from galaxy.managers import base as managers_base
 from galaxy.managers import (
+    base as managers_base,
     configuration,
     users,
     workflows,
@@ -199,10 +199,8 @@ class BaseAPIController(BaseController):
                 deleted=deleted,
             )
 
-        except exceptions.ItemDeletionException as e:
-            raise HTTPBadRequest(detail=f"Invalid {class_name} id ( {str(id)} ) specified: {util.unicodify(e)}")
-        except exceptions.MessageException as e:
-            raise HTTPBadRequest(detail=e.err_msg)
+        except exceptions.MessageException:
+            raise
         except Exception as e:
             log.exception("Exception in get_object check for %s %s.", class_name, str(id))
             raise HTTPInternalServerError(comment=util.unicodify(e))
@@ -269,7 +267,6 @@ class JSAppLauncher(BaseUIController):
         Should not be used with url_for -- see
         (https://github.com/galaxyproject/galaxy/issues/1878) for why.
         """
-        self._check_require_login(trans)
         return self._bootstrapped_client(trans, **kwd)
 
     # This includes contextualized user options in the bootstrapped data; we
@@ -384,17 +381,6 @@ class Datatype:
 #
 
 
-class CreatesApiKeysMixin:
-    """
-    Mixing centralizing logic for creating API keys for user objects.
-
-    Deprecated - please use api_keys.ApiKeyManager for new development.
-    """
-
-    def create_api_key(self, trans, user):
-        return api_keys.ApiKeyManager(trans.app).create_api_key(user)
-
-
 class SharableItemSecurityMixin:
     """Mixin for handling security for sharable items."""
 
@@ -406,7 +392,10 @@ class SharableItemSecurityMixin:
 
 
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
-    def get_library_folder(self, trans, id, check_ownership=False, check_accessible=True):
+
+    get_object: Callable
+
+    def get_library_folder(self, trans, id: int, check_ownership=False, check_accessible=True):
         return self.get_object(trans, id, "LibraryFolder", check_ownership=False, check_accessible=check_accessible)
 
     def get_library_dataset_dataset_association(self, trans, id, check_ownership=False, check_accessible=True):
@@ -454,7 +443,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
             # Slight misuse of ItemOwnershipException?
             raise exceptions.ItemOwnershipException("User cannot add to library item.")
 
-    def _copy_hdca_to_library_folder(self, trans, hda_manager, from_hdca_id, folder_id, ldda_message=""):
+    def _copy_hdca_to_library_folder(self, trans, hda_manager, from_hdca_id: int, folder_id: int, ldda_message=""):
         """
         Fetches the collection identified by `from_hcda_id` and dispatches individual collection elements to
         _copy_hda_to_library_folder
@@ -480,7 +469,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         ]
 
     def _copy_hda_to_library_folder(
-        self, trans, hda_manager, from_hda_id, folder_id, ldda_message="", element_identifier=None
+        self, trans, hda_manager, from_hda_id: int, folder_id: int, ldda_message="", element_identifier=None
     ):
         """
         Copies hda ``from_hda_id`` to library folder ``folder_id``, optionally
@@ -490,7 +479,6 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         in its payload.
         """
         log.debug(f"_copy_hda_to_library_folder: {str((from_hda_id, folder_id, ldda_message))}")
-        # PRECONDITION: folder_id has already been altered to remove the folder prefix ('F')
         # TODO: allow name and other, editable ldda attrs?
         if ldda_message:
             ldda_message = sanitize_html(ldda_message)
@@ -522,7 +510,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         trans.sa_session.flush()
         ldda_dict = ldda.to_dict()
         rval = trans.security.encode_dict_ids(ldda_dict)
-        update_time = ldda.update_time.strftime("%Y-%m-%d %I:%M %p")
+        update_time = ldda.update_time.isoformat()
         rval["update_time"] = update_time
         return rval
 
@@ -1224,12 +1212,14 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow):
+    def get_stored_workflow_steps(self, trans, stored_workflow: model.StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
-        for step in stored_workflow.latest_workflow.steps:
+        workflow = stored_workflow.latest_workflow
+        module_injector.inject_all(workflow, exact_tools=False, ignore_tool_missing_exception=True)
+        for step in workflow.steps:
             try:
-                module_injector.inject(step, exact_tools=False)
+                module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException:
                 pass
 
@@ -1385,12 +1375,6 @@ class SharableMixin:
     @web.require_login("get item name and link")
     def get_name_and_link_async(self, trans, id=None):
         """Returns item's name and link."""
-        raise NotImplementedError()
-
-    @web.expose
-    @web.require_login("get item content asynchronously")
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
         raise NotImplementedError()
 
     def get_item(self, trans, id):

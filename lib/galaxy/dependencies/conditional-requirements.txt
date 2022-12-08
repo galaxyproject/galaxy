@@ -12,7 +12,7 @@ python-ldap==3.4.0
 python-pam
 galaxycloudrunner
 pkce
-total-perspective-vortex
+total-perspective-vortex<2
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
@@ -47,10 +47,13 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.6.4
+tensorflow==2.7.2
 
 # weasyprint has problematic requirements so make it optional (i.e. cairo)
 # xref https://github.com/galaxyproject/galaxy/pull/9651
 # Run run.sh or common_startup script with GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT=1
 # to install weasyprint as part of Galaxy's conditonal dependency instalation process.
 weasyprint
+
+# AWS Batch runner
+boto3

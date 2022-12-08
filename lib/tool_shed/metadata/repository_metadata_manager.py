@@ -12,15 +12,16 @@ from galaxy.web.form_builder import SelectField
 from tool_shed.metadata import metadata_generator
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
+from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import (
     basic_util,
     common_util,
     hg_util,
     metadata_util,
     repository_util,
+    shed_util_common as suc,
+    tool_util,
 )
-from tool_shed.util import shed_util_common as suc
-from tool_shed.util import tool_util
 
 log = logging.getLogger(__name__)
 
@@ -28,7 +29,7 @@ log = logging.getLogger(__name__)
 class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
     def __init__(
         self,
-        app,
+        app: ToolShedApp,
         user,
         repository=None,
         changeset_revision=None,
@@ -399,10 +400,8 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
         """Create or update a repository_metadata record in the tool shed."""
         has_repository_dependencies = False
         has_repository_dependencies_only_if_compiling_contained_td = False
-        includes_datatypes = False
         includes_tools = False
         includes_tool_dependencies = False
-        includes_workflows = False
         if metadata_dict:
             repository_dependencies_dict = metadata_dict.get("repository_dependencies", {})
             repository_dependencies = repository_dependencies_dict.get("repository_dependencies", [])
@@ -410,21 +409,15 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 has_repository_dependencies,
                 has_repository_dependencies_only_if_compiling_contained_td,
             ) = repository_util.get_repository_dependency_types(repository_dependencies)
-            if "datatypes" in metadata_dict:
-                includes_datatypes = True
             if "tools" in metadata_dict:
                 includes_tools = True
             if "tool_dependencies" in metadata_dict:
                 includes_tool_dependencies = True
-            if "workflows" in metadata_dict:
-                includes_workflows = True
         if (
             has_repository_dependencies
             or has_repository_dependencies_only_if_compiling_contained_td
-            or includes_datatypes
             or includes_tools
             or includes_tool_dependencies
-            or includes_workflows
         ):
             downloadable = True
         else:
@@ -436,10 +429,10 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
             repository_metadata.metadata = metadata_dict
             repository_metadata.downloadable = downloadable
             repository_metadata.has_repository_dependencies = has_repository_dependencies
-            repository_metadata.includes_datatypes = includes_datatypes
+            repository_metadata.includes_datatypes = False
             repository_metadata.includes_tools = includes_tools
             repository_metadata.includes_tool_dependencies = includes_tool_dependencies
-            repository_metadata.includes_workflows = includes_workflows
+            repository_metadata.includes_workflows = False
         else:
             repository_metadata = self.app.model.RepositoryMetadata(
                 repository_id=self.repository.id,
@@ -447,10 +440,10 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                 metadata=metadata_dict,
                 downloadable=downloadable,
                 has_repository_dependencies=has_repository_dependencies,
-                includes_datatypes=includes_datatypes,
+                includes_datatypes=False,
                 includes_tools=includes_tools,
                 includes_tool_dependencies=includes_tool_dependencies,
-                includes_workflows=includes_workflows,
+                includes_workflows=False,
             )
         # Always set the default values for the following columns.  When resetting all metadata
         # on a repository this will reset the values.
@@ -1042,10 +1035,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                     repository_metadata.changeset_revision = self.repository.tip()
                     repository_metadata.metadata = self.metadata_dict
                     repository_metadata.downloadable = downloadable
-                    if "datatypes" in self.metadata_dict:
-                        repository_metadata.includes_datatypes = True
-                    else:
-                        repository_metadata.includes_datatypes = False
+                    repository_metadata.includes_datatypes = False
                     # We don't store information about the special type of repository dependency that is needed only for
                     # compiling a tool dependency defined for the dependent repository.
                     repository_dependencies_dict = self.metadata_dict.get("repository_dependencies", {})
@@ -1063,10 +1053,7 @@ class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
                         repository_metadata.includes_tools = True
                     else:
                         repository_metadata.includes_tools = False
-                    if "workflows" in self.metadata_dict:
-                        repository_metadata.includes_workflows = True
-                    else:
-                        repository_metadata.includes_workflows = False
+                    repository_metadata.includes_workflows = False
                     repository_metadata.missing_test_components = False
                     self.sa_session.add(repository_metadata)
                     self.sa_session.flush()

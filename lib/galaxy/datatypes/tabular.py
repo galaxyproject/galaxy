@@ -12,6 +12,10 @@ import shutil
 import subprocess
 import tempfile
 from json import dumps
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import pysam
 from markupsafe import escape
@@ -35,7 +39,14 @@ from galaxy.datatypes.sniff import (
     validate_tabular,
 )
 from galaxy.util import compression_utils
+from galaxy.util.markdown import (
+    indicate_data_truncated,
+    pre_formatted_contents,
+)
 from . import dataproviders
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -90,10 +101,11 @@ class TabularData(data.Text):
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
-    def displayable(self, dataset):
+    def displayable(self, dataset: "DatasetInstance"):
         try:
             return (
-                dataset.has_data()
+                not dataset.dataset.purged
+                and dataset.has_data()
                 and dataset.state == dataset.states.OK
                 and dataset.metadata.columns > 0
                 and dataset.metadata.data_lines != 0
@@ -101,7 +113,17 @@ class TabularData(data.Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset, offset=0, ck_size=None):
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
+        ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
+        return dumps(
+            {
+                "ck_data": util.unicodify(ck_data),
+                "offset": last_read,
+                "data_line_offset": self.data_line_offset,
+            }
+        )
+
+    def _read_chunk(self, trans, dataset: "DatasetInstance", offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
@@ -111,13 +133,7 @@ class TabularData(data.Text):
                     ck_data += cursor
                     cursor = f.read(1)
             last_read = f.tell()
-        return dumps(
-            {
-                "ck_data": util.unicodify(ck_data),
-                "offset": last_read,
-                "data_line_offset": self.data_line_offset,
-            }
-        )
+        return ck_data, last_read
 
     def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
         headers = kwd.get("headers", {})
@@ -169,13 +185,13 @@ class TabularData(data.Text):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance, markdown_format_helpers):
+    def display_as_markdown(self, dataset_instance):
         with open(dataset_instance.file_name) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
         if len(contents) == data.DEFAULT_MAX_PEEK_SIZE:
-            markdown += markdown_format_helpers.indicate_data_truncated()
-        return markdown_format_helpers.pre_formatted_contents(markdown)
+            markdown += indicate_data_truncated()
+        return pre_formatted_contents(markdown)
 
     def make_html_table(self, dataset, **kwargs):
         """Create HTML table, used for displaying peek"""
@@ -1040,13 +1056,15 @@ class VcfGz(BaseVcf, binary.Binary):
             last28 = fh.read()
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
         super().set_meta(dataset, **kwd)
         # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
         if not index_file:
-            index_file = dataset.metadata.spec["tabix_index"].param.new_file(dataset=dataset)
+            index_file = dataset.metadata.spec["tabix_index"].param.new_file(
+                dataset=dataset, metadata_tmp_files_dir=metadata_tmp_files_dir
+            )
 
         try:
             pysam.tabix_index(
@@ -1290,6 +1308,14 @@ class BaseCSV(TabularData):
     See the Python module csv for documentation of dialect settings
     """
 
+    @property
+    def dialect(self):
+        raise NotImplementedError
+
+    @property
+    def strict_width(self):
+        raise NotImplementedError
+
     delimiter = ","
     peek_size = 1024  # File chunk used for sniffing CSV dialect
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
@@ -1525,29 +1551,26 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset, chunk):
-        ck_index = int(chunk)
-        f = open(dataset.file_name)
-        f.seek(ck_index * trans.app.config.display_chunk_size)
-        # If we aren't at the start of the file, seek to next newline.  Do this better eventually.
-        if f.tell() != 0:
-            cursor = f.read(1)
-            while cursor and cursor != "\n":
-                cursor = f.read(1)
-        ck_data = f.read(trans.app.config.display_chunk_size)
-        cursor = f.read(1)
-        while cursor and ck_data[-1] != "\n":
-            ck_data += cursor
-            cursor = f.read(1)
+    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
+        ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
+        try:
+            # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
+            # By converting these spaces back to tabs, chunks can still be interpreted by tab delimited file parsers
+            ck_data_header, ck_data_body = ck_data.split("\n", 1)
+            ck_data_header = re.sub("^([0-9]+)[ ]+", r"\1\t", ck_data_header)
+            ck_data_body = re.sub("\n[ \t]+", "\n", ck_data_body)
+            ck_data_body = re.sub("[ ]+", "\t", ck_data_body)
+            ck_data = f"{ck_data_header}\n{ck_data_body}"
+        except ValueError:
+            pass  # 1 or 0 lines left
 
-        # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
-        # By converting these spaces back to tabs, chucks can still be interpreted by tab delimited file parsers
-        ck_data_header, ck_data_body = ck_data.split("\n", 1)
-        ck_data_header = re.sub("^([0-9]+)[ ]+", r"\1\t", ck_data_header)
-        ck_data_body = re.sub("\n[ \t]+", "\n", ck_data_body)
-        ck_data_body = re.sub("[ ]+", "\t", ck_data_body)
-
-        return dumps({"ck_data": util.unicodify(f"{ck_data_header}\n{ck_data_body}"), "ck_index": ck_index + 1})
+        return dumps(
+            {
+                "ck_data": util.unicodify(ck_data),
+                "offset": last_read,
+                "data_line_offset": self.data_line_offset,
+            }
+        )
 
 
 @build_sniff_from_prefix

@@ -1,12 +1,14 @@
 <template>
-    <div class="unified-panel">
+    <div class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h4 v-localize class="m-1">Tools</h4>
+                    <h2 v-if="!showAdvanced" id="toolbox-heading" v-localize class="m-1 h-sm">Tools</h2>
+                    <h2 v-else id="toolbox-heading" v-localize class="m-1 h-sm">Advanced Tool Search</h2>
+
                     <div class="panel-header-buttons">
                         <b-button-group>
-                            <favorites-button v-if="isUser" :query="query" @onFavorites="onQuery" />
+                            <favorites-button v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"
@@ -19,26 +21,31 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search
+                enable-advanced
                 :current-panel-view="currentPanelView"
                 :placeholder="titleSearchTools"
+                :show-advanced.sync="showAdvanced"
+                :toolbox="toolbox"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
-            <upload-button />
-            <div v-if="hasResults" class="pb-2">
-                <b-button size="sm" class="w-100" @click="onToggle">
-                    <span :class="buttonIcon" />
-                    <span class="mr-1">{{ buttonText }}</span>
-                </b-button>
-            </div>
-            <div v-else-if="queryTooShort" class="pb-2">
-                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
-            </div>
-            <div v-else-if="queryFinished" class="pb-2">
-                <b-badge class="alert-danger w-100">No results found!</b-badge>
-            </div>
+            <section v-if="!showAdvanced">
+                <upload-button />
+                <div v-if="hasResults" class="pb-2">
+                    <b-button size="sm" class="w-100" @click="onToggle">
+                        <span :class="buttonIcon" />
+                        <span class="mr-1">{{ buttonText }}</span>
+                    </b-button>
+                </div>
+                <div v-else-if="queryTooShort" class="pb-2">
+                    <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+                </div>
+                <div v-else-if="queryFinished" class="pb-2">
+                    <b-badge class="alert-danger w-100">No results found!</b-badge>
+                </div>
+            </section>
         </div>
-        <div class="unified-panel-body">
+        <div v-if="!showAdvanced" class="unified-panel-body">
             <div class="toolMenuContainer">
                 <div class="toolMenu">
                     <tool-section
@@ -66,7 +73,7 @@ import ToolSearch from "./Common/ToolSearch";
 import { UploadButton, openGlobalUploadModal } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
-import { filterToolSections, filterTools } from "./utilities";
+import { filterToolSections, filterTools, hasResults } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -106,6 +113,7 @@ export default {
             queryFilter: null,
             queryPending: false,
             showSections: false,
+            showAdvanced: false,
             buttonText: "",
             buttonIcon: "",
             titleSearchTools: _l("search tools"),
@@ -122,7 +130,7 @@ export default {
             if (this.showSections) {
                 return filterToolSections(this.toolbox, this.results);
             } else {
-                return filterTools(this.toolbox, this.results);
+                return hasResults(this.results) ? filterTools(this.toolbox, this.results) : this.toolbox;
             }
         },
         isUser() {
@@ -166,12 +174,10 @@ export default {
                 openGlobalUploadModal();
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
-                const Galaxy = getGalaxyInstance();
                 // encode spaces in tool.id
-                Galaxy.router.push("/", {
-                    tool_id: tool.id.replace(/ /g, "%20"),
-                    version: tool.version,
-                });
+                const toolId = tool.id;
+                const toolVersion = tool.version;
+                this.$router.push(`/?tool_id=${encodeURIComponent(toolId)}&version=${toolVersion}`);
             }
         },
         onToggle() {

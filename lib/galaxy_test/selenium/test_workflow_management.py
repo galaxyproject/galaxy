@@ -1,3 +1,5 @@
+from selenium.webdriver.common.by import By
+
 from .framework import (
     EXAMPLE_WORKFLOW_URL_1,
     retry_assertion_during_transitions,
@@ -8,7 +10,7 @@ from .framework import (
 )
 
 
-class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAssertions):
+class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAssertions):
 
     ensure_registered = True
 
@@ -20,7 +22,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         table_elements = self.workflow_index_table_elements()
         assert len(table_elements) == 1
 
-        new_workflow = table_elements[0].find_element_by_css_selector(".workflow-dropdown")
+        new_workflow = table_elements[0].find_element(By.CSS_SELECTOR, ".workflow-dropdown")
         assert "TestWorkflow1 (imported from URL)" in new_workflow.text, new_workflow.text
 
     @selenium_test
@@ -32,14 +34,14 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self.driver.back()
         self.components.workflows.external_link.wait_for_visible()
         # font-awesome title handling broken... https://github.com/FortAwesome/vue-fontawesome/issues/63
-        # title_element = external_link_icon.find_element_by_tag_name("title")
+        # title_element = external_link_icon.find_element(By.TAG_NAME, "title")
         # assert EXAMPLE_WORKFLOW_URL_1 in title_element.text
         self.workflow_index_click_option("View")
         workflow_show = self.components.workflow_show
         title_item = self.components.workflow_show.title.wait_for_visible()
         assert "TestWorkflow1" in title_item.text
-        annotation_item = workflow_show.annotation.wait_for_visible()
-        assert "simple workflow" in annotation_item.text
+        import_link = workflow_show.import_link.wait_for_visible()
+        assert "Import Workflow" in import_link.get_attribute("title")
         self.screenshot("workflow_manage_view")
         # TODO: Test display of steps...
 
@@ -73,7 +75,7 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
 
         @retry_assertion_during_transitions
         def check_tags():
-            self.assertEqual(self.workflow_index_tags(), ["cooltag"])
+            assert self.workflow_index_tags() == ["cooltag"]
 
         check_tags()
         self.screenshot("workflow_manage_tags")
@@ -148,6 +150,18 @@ class WorkflowManagementTestCase(SeleniumTestCase, TestsGalaxyPagers, UsesWorkfl
         self.workflow_index_search_for("n:doesnotmatch")
         self._assert_showing_n_workflows(0)
         self.screenshot("workflow_manage_search_name_alias")
+
+    @selenium_test
+    def test_workflow_delete(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_rename("fordelete")
+        self._assert_showing_n_workflows(1)
+        self.workflow_index_click_option("Delete")
+        self._assert_showing_n_workflows(0)
+
+        self.workflow_index_open()
+        self._assert_showing_n_workflows(0)
 
     @selenium_test
     def test_pagination(self):

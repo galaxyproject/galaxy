@@ -3,39 +3,34 @@
 Someday when the API tests can safely assume the target Galaxy has tasks enabled, this should be moved
 into the API test suite.
 """
+import json
 import os
 from typing import (
     Any,
     Dict,
 )
 
+from galaxy.util.compression_utils import CompressedFile
 from galaxy_test.api.test_workflows import RunsWorkflowFixtures
 from galaxy_test.base import api_asserts
+from galaxy_test.base.api import UsesCeleryTasks
 from galaxy_test.base.populators import (
     DatasetPopulator,
     RunJobsSummary,
     WorkflowPopulator,
 )
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    setup_celery_includes,
-    UsesCeleryTasks,
-)
-
-celery_includes = setup_celery_includes()
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class WorkflowTasksIntegrationTestCase(
-    PosixFileSourceSetup, IntegrationTestCase, UsesCeleryTasks, RunsWorkflowFixtures
-):
-
+class TestWorkflowTasksIntegration(PosixFileSourceSetup, IntegrationTestCase, UsesCeleryTasks, RunsWorkflowFixtures):
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
-        cls.setup_celery_config(config)
+        UsesCeleryTasks.handle_galaxy_config_kwds(config)
 
     def setUp(self):
         super().setUp()
@@ -58,10 +53,40 @@ class WorkflowTasksIntegrationTestCase(
     def test_export_import_invocation_with_input_as_output_sts(self):
         self._test_export_import_invocation_with_input_as_output(False)
 
+    def test_export_ro_crate_basic(self):
+        ro_crate_path = self._export_invocation_to_format(extension="rocrate.zip", to_uri=False)
+        assert CompressedFile(ro_crate_path).file_type == "zip"
+
+    def test_export_ro_crate_to_uri(self):
+        ro_crate_path = self._export_invocation_to_format(extension="rocrate.zip", to_uri=True)
+        assert CompressedFile(ro_crate_path).file_type == "zip"
+
+    def test_export_bco_basic(self):
+        bco_path = self._export_invocation_to_format(extension="bco.json", to_uri=False)
+        with open(bco_path) as f:
+            bco = json.load(f)
+        self.workflow_populator.validate_biocompute_object(bco)
+
+    def _export_invocation_to_format(self, extension: str, to_uri: bool):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
+            invocation_id = summary.invocation_id
+            if to_uri:
+                uri = f"gxfiles://posix_test/invocation.{extension}"
+                self.workflow_populator.download_invocation_to_uri(invocation_id, uri, extension=extension)
+                root = self.root_dir
+                invocation_path = os.path.join(root, f"invocation.{extension}")
+                assert os.path.exists(invocation_path)
+                uri = invocation_path
+            else:
+                temp_tar = self.workflow_populator.download_invocation_to_store(invocation_id, extension=extension)
+                uri = temp_tar
+            return uri
+
     def _test_export_import_invocation_collection_input(self, use_uris, model_store_format="tgz"):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_output_collections(history_id)
-            invocation_details = self._export_and_import_worklflow_invocation(
+            invocation_details = self._export_and_import_workflow_invocation(
                 summary, use_uris, model_store_format=model_store_format
             )
             output_collections = invocation_details["output_collections"]
@@ -78,7 +103,7 @@ class WorkflowTasksIntegrationTestCase(
     def _test_export_import_invocation_with_input_as_output(self, use_uris):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_inputs_as_outputs(history_id)
-            invocation_details = self._export_and_import_worklflow_invocation(summary, use_uris)
+            invocation_details = self._export_and_import_workflow_invocation(summary, use_uris)
             output_values = invocation_details["output_values"]
             assert len(output_values) == 1
             assert "wf_output_param" in output_values
@@ -94,10 +119,10 @@ class WorkflowTasksIntegrationTestCase(
         # Run this to ensure order indices are preserved.
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow_with_runtime_data_column_parameter(history_id)
-            invocation_details = self._export_and_import_worklflow_invocation(summary, use_uris)
+            invocation_details = self._export_and_import_workflow_invocation(summary, use_uris)
             self._rerun_imported_workflow(summary, invocation_details)
 
-    def _export_and_import_worklflow_invocation(
+    def _export_and_import_workflow_invocation(
         self, summary: RunJobsSummary, use_uris: bool = True, model_store_format="tgz"
     ) -> Dict[str, Any]:
         invocation_id = summary.invocation_id

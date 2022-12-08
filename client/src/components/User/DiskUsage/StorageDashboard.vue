@@ -4,7 +4,7 @@
             <h1 class="text-center my-3">
                 <b>{{ title }}</b>
             </h1>
-            <h4 class="text-center my-3">{{ subtitle }}</h4>
+            <h2 class="text-center my-3 h-sm">{{ subtitle }}</h2>
         </header>
         <DiskUsageSummary class="m-3" />
         <IconCard

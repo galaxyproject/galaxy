@@ -1,5 +1,11 @@
 <template>
-    <b-modal id="review-cleanup-dialog" v-model="showDialog" title-tag="h2" centered static @show="onShowModal">
+    <b-modal
+        id="review-cleanup-dialog"
+        v-model="showDialog"
+        title-tag="h2"
+        :static="modalStatic"
+        centered
+        @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
             <span class="text-primary h3">{{ totalItems }}<span v-if="rowLimitReached">+</span> items</span>
@@ -98,6 +104,10 @@ export default {
             type: Boolean,
             required: false,
         },
+        modalStatic: {
+            type: Boolean,
+            required: false,
+        },
     },
     data() {
         return {
@@ -185,6 +195,9 @@ export default {
         },
     },
     watch: {
+        operation() {
+            this.currentPage = 1;
+        },
         totalItems(newVal) {
             this.totalRows = newVal;
         },

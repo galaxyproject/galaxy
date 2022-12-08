@@ -1,33 +1,39 @@
 <template>
     <div>
         <div v-for="(input, index) in inputs" :key="index">
-            <div v-if="input.type == 'conditional'">
-                <FormElement
-                    :id="conditionalPrefix(input, input.test_param.name)"
-                    v-model="input.test_param.value"
-                    :title="input.test_param.label"
-                    :type="input.test_param.type"
-                    :help="input.test_param.help"
-                    :refresh-on-change="false"
-                    :disabled="sustainConditionals"
-                    :attributes="input.test_param"
-                    :backbonejs="true"
-                    @change="onChange" />
-                <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
-                    <FormNode
-                        v-if="conditionalMatch(input, caseId)"
-                        v-bind="$props"
-                        :inputs="caseDetails.inputs"
-                        :prefix="getPrefix(input.name)" />
+            <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
+                <div class="portlet-header">
+                    <b>{{ input.test_param.label }}</b>
+                </div>
+                <div class="portlet-content">
+                    <FormElement
+                        :id="conditionalPrefix(input, input.test_param.name)"
+                        v-model="input.test_param.value"
+                        :type="input.test_param.type"
+                        :help="input.test_param.help"
+                        :refresh-on-change="false"
+                        :disabled="sustainConditionals"
+                        :attributes="input.test_param"
+                        :backbonejs="true"
+                        @change="onChange" />
+                    <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
+                        <FormNode
+                            v-if="conditionalMatch(input, caseId)"
+                            v-bind="$props"
+                            :inputs="caseDetails.inputs"
+                            :prefix="getPrefix(input.name)" />
+                    </div>
                 </div>
             </div>
             <div v-else-if="input.type == 'repeat'">
-                <p v-if="!sustainRepeats || (input.cache && input.cache.length > 0)" class="font-weight-bold mb-2">
-                    {{ input.title }}
-                </p>
+                <div v-if="!sustainRepeats || (input.cache && input.cache.length > 0)">
+                    <div class="font-weight-bold mb-2">{{ input.title }}</div>
+                    <div v-if="input.help" class="mb-2" data-description="repeat help">{{ input.help }}</div>
+                </div>
                 <FormCard
                     v-for="(cache, cacheId) in input.cache"
                     :key="cacheId"
+                    data-description="repeat block"
                     :title="repeatTitle(cacheId, input.title)">
                     <template v-slot:operations>
                         <b-button
@@ -47,12 +53,13 @@
                 </FormCard>
                 <b-button v-if="!sustainRepeats" @click="repeatInsert(input)">
                     <font-awesome-icon icon="plus" class="mr-1" />
-                    <span>Insert {{ input.title || "Repeat" }}</span>
+                    <span data-description="repeat insert">Insert {{ input.title || "Repeat" }}</span>
                 </b-button>
             </div>
             <div v-else-if="input.type == 'section'">
                 <FormCard :title="input.title || input.name" :expanded.sync="input.expanded" :collapsible="true">
                     <template v-slot:body>
+                        <div v-if="input.help" class="my-2" data-description="section help">{{ input.help }}</div>
                         <FormNode v-bind="$props" :inputs="input.inputs" :prefix="getPrefix(input.name)" />
                     </template>
                 </FormCard>
@@ -72,6 +79,7 @@
                 :collapsed-enable-icon="collapsedEnableIcon"
                 :collapsed-disable-text="collapsedDisableText"
                 :collapsed-disable-icon="collapsedDisableIcon"
+                :workflow-building-mode="workflowBuildingMode"
                 @change="onChange" />
         </div>
     </div>
@@ -134,6 +142,10 @@ export default {
         onChangeForm: {
             type: Function,
             required: true,
+        },
+        workflowBuildingMode: {
+            type: Boolean,
+            default: false,
         },
     },
     methods: {

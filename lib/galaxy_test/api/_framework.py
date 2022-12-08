@@ -1,10 +1,15 @@
-from typing import Optional
-from unittest import (
-    SkipTest,
-    TestCase,
+from typing import (
+    Iterator,
+    Optional,
 )
+from unittest import SkipTest
 
-from galaxy_test.base.api import UsesApiTestCaseMixin
+import pytest
+
+from galaxy_test.base.api import (
+    UsesApiTestCaseMixin,
+    UsesCeleryTasks,
+)
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -15,7 +20,7 @@ except ImportError:
     GalaxyTestDriver = None  # type: ignore[misc,assignment]
 
 
-class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):
+class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
     galaxy_driver_class = GalaxyTestDriver
     _test_driver: Optional[GalaxyTestDriver]
 
@@ -27,6 +32,11 @@ class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, TestCase):
         if self._test_driver is None:
             raise SkipTest("This test does not work with remote Galaxy instances.")
         return self._test_driver
+
+    @pytest.fixture
+    def history_id(self) -> Iterator[str]:
+        with self.galaxy_interactor.test_history() as history_id:
+            yield history_id
 
 
 __all__ = ("ApiTestCase",)

@@ -4,6 +4,7 @@ import logging
 import os
 from typing import (
     Any,
+    ClassVar,
     Dict,
     List,
     Optional,
@@ -12,7 +13,6 @@ from typing import (
 
 import fs
 from fs.base import FS
-from typing_extensions import ClassVar
 
 from ..sources import BaseFilesSource
 

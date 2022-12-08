@@ -24,3 +24,11 @@ galaxy.model.store.discover module
    :members:
    :undoc-members:
    :show-inheritance:
+
+galaxy.model.store.load\_objects module
+---------------------------------------
+
+.. automodule:: galaxy.model.store.load_objects
+   :members:
+   :undoc-members:
+   :show-inheritance:

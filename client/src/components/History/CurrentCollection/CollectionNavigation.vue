@@ -1,7 +1,15 @@
 <template>
-    <div class="ml-1 mt-1">
-        <b-button size="sm" class="text-decoration-none" variant="link" @click="close">
-            <icon icon="angle-double-left" class="mr-1" data-description="back to history" /><span>History</span>
+    <div class="mx-1 mt-1">
+        <b-button
+            v-b-tooltip:hover="historyName"
+            size="sm"
+            class="text-left text-decoration-none overflow-hidden text-nowrap w-100"
+            style="text-overflow: ellipsis"
+            variant="link"
+            @click="close">
+            <icon icon="angle-double-left" class="mr-1" data-description="back to history" /><span
+                >History: {{ historyName }}</span
+            >
         </b-button>
         <b-button v-if="previousName" size="sm" class="text-decoration-none" variant="link" @click="back">
             <span class="fa fa-angle-left mr-1" /><span>{{ previousName }}</span>
@@ -12,6 +20,7 @@
 <script>
 export default {
     props: {
+        historyName: { type: String, required: true },
         selectedCollections: { type: Array, required: true, validate: (val) => val.length > 0 },
     },
     computed: {

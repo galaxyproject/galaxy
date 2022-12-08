@@ -1,7 +1,7 @@
 from ._framework import ApiTestCase
 
 
-class LicensesApiTestCase(ApiTestCase):
+class TestLicensesApi(ApiTestCase):
     def test_index(self):
         response = self._get("licenses")
         self._assert_status_code_is(response, 200)

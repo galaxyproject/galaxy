@@ -10,6 +10,7 @@ class JobOutputsToWorkingDirectoryIntegrationInstance(integration_util.Integrati
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         config["outputs_to_working_directory"] = True
 
 

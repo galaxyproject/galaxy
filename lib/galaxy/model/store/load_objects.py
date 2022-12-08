@@ -50,7 +50,7 @@ def main(argv=None):
 
     data: Dict[str, Any] = {}
     if is_json:
-        with open(store_path, "r") as f:
+        with open(store_path) as f:
             store_dict = yaml.safe_load(f)
         data["store_dict"] = store_dict
     else:

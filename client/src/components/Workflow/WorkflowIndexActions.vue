@@ -24,18 +24,12 @@ export default {
         BButton,
         FontAwesomeIcon,
     },
-    props: {
-        root: {
-            type: String,
-            required: true,
-        },
-    },
     methods: {
         navigateToCreate: function () {
-            window.location.assign(`${this.root}workflows/create`);
+            this.$router.push("/workflows/create");
         },
         navigateToImport: function () {
-            window.location.assign(`${this.root}workflows/import`);
+            this.$router.push("/workflows/import");
         },
     },
 };

@@ -40,7 +40,7 @@ def start_minio(container_name):
         "--rm",
         "minio/minio:latest",
         "server",
-        "/tmp/data",
+        "/data",
     ]
     subprocess.check_call(minio_start_args)
 
@@ -51,6 +51,7 @@ def stop_minio(container_name):
 
 class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
 
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod
@@ -67,7 +68,7 @@ class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
             dir_name = os.path.basename(path)
             os.path.join(temp_directory, dir_name)
             os.makedirs(path)
-            setattr(cls, "%s_path" % dir_name, path)
+            setattr(cls, f"{dir_name}_path", path)
 
     def setUp(self):
         super().setUp()
@@ -85,7 +86,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def setUpClass(cls):
-        cls.container_name = "%s_container" % cls.__name__
+        cls.container_name = f"{cls.__name__}_container"
         start_minio(cls.container_name)
         super().setUpClass()
 
@@ -96,6 +97,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         temp_directory = cls._test_driver.mkdtemp()
         cls.object_stores_parent = temp_directory
         cls.object_store_cache_path = f"{temp_directory}/object_store_cache"

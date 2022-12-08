@@ -2,7 +2,10 @@ import errno
 import json
 import logging
 import os
-from typing import Dict
+from typing import (
+    Dict,
+    Optional,
+)
 
 from galaxy import util
 from galaxy.structured_app import MinimalManagerApp
@@ -38,7 +41,7 @@ class DataManagers:
                 if exc.errno != errno.ENOENT or self.app.config.is_set("shed_data_manager_config_file"):
                     raise
 
-    def load_from_xml(self, xml_filename, store_tool_path=True):
+    def load_from_xml(self, xml_filename, store_tool_path=True) -> None:
         try:
             tree = util.parse_xml(xml_filename)
         except OSError as e:
@@ -68,7 +71,7 @@ class DataManagers:
                 tool_path = os.path.dirname(xml_filename)
                 self.load_manager_from_elem(data_manager_elem, tool_path=tool_path)
 
-    def load_manager_from_elem(self, data_manager_elem, tool_path=None, add_manager=True):
+    def load_manager_from_elem(self, data_manager_elem, tool_path=None, add_manager=True) -> Optional["DataManager"]:
         try:
             data_manager = DataManager(self, data_manager_elem, tool_path=tool_path)
         except OSError as e:

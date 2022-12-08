@@ -22,18 +22,21 @@ export default {
     props: {
         citation: {
             type: Object,
+            required: true,
         },
         outputFormat: {
             type: String,
+            default: "bibliography",
         },
         prefix: {
             type: String,
+            default: "",
         },
     },
     computed: {
         link() {
-            const cite = this.citation.cite;
-            return cite.data && cite.data[0] && cite.data[0].URL;
+            const citeUrl = this.citation.cite?.data?.[0]?.URL;
+            return citeUrl ? decodeURIComponent(citeUrl) : null;
         },
         citationHtml() {
             const citation = this.citation;

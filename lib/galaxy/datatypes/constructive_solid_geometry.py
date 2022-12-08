@@ -506,13 +506,16 @@ class STL(data.Data):
 class NeperTess(data.Text):
     """
     Neper Tessellation File
-    ***tess
-      **format
-        format
-      **general
-        dim type
-      **cell
-        number_of_cells
+
+    Example::
+
+        ***tess
+        **format
+            format
+        **general
+            dim type
+        **cell
+            number_of_cells
     """
 
     file_ext = "neper.tess"
@@ -525,7 +528,8 @@ class NeperTess(data.Text):
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
-        Neper tess format startswith:***tess
+        Neper tess format, starts with ``***tess``
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.neper.tess')
         >>> NeperTess().sniff(fname)
@@ -565,18 +569,21 @@ class NeperTess(data.Text):
 class NeperTesr(Binary):
     """
     Neper Raster Tessellation File
-    ***tesr
-      **format
-        format
-      **general
-        dimension
-        size_x size_y [size_z]
-        voxsize_x voxsize_y [voxsize_z]
-       [*origin
-        origin_x origin_y [origin_z]]
-       [*hasvoid has_void]
-      [**cell
-        number_of_cells
+
+    Example::
+
+        ***tesr
+        **format
+            format
+        **general
+            dimension
+            size_x size_y [size_z]
+            voxsize_x voxsize_y [voxsize_z]
+        [*origin
+            origin_x origin_y [origin_z]]
+        [*hasvoid has_void]
+        [**cell
+            number_of_cells
     """
 
     file_ext = "neper.tesr"
@@ -592,7 +599,8 @@ class NeperTesr(Binary):
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
-        Neper tesr format startswith:***tesr
+        Neper tesr format, starts with ``***tesr``
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.neper.tesr')
         >>> NeperTesr().sniff(fname)
@@ -732,7 +740,8 @@ class GmshMsh(Binary):
 
     def sniff_prefix(self, file_prefix: FilePrefix):
         """
-        Gmsh msh format startswith:$MeshFormat
+        Gmsh msh format, starts with ``$MeshFormat``
+
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test.gmsh.msh')
         >>> GmshMsh().sniff(fname)

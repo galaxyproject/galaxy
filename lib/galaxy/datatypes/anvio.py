@@ -5,7 +5,6 @@ https://github.com/merenlab/anvio
 import glob
 import logging
 import os
-import sys
 from typing import Optional
 
 from galaxy.datatypes.metadata import MetadataElement
@@ -23,7 +22,7 @@ class AnvioComposite(Html):
     file_ext = "anvio_composite"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset):
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -168,9 +167,3 @@ class AnvioSamplesDB(AnvioDB):
     _anvio_basename = "SAMPLES.db"
     MetadataElement(name="anvio_basename", default=_anvio_basename, desc="Basename", readonly=True)
     file_ext = "anvio_samples_db"
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

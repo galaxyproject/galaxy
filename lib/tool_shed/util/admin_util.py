@@ -13,7 +13,7 @@ from galaxy import (
 )
 from galaxy.security.validate_user_input import validate_password
 from galaxy.util import inflector
-from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web.form_builder import CheckboxField
 from galaxy.web.legacy_framework.grids import (
     Grid,
@@ -773,8 +773,8 @@ class Admin:
             compliance_log.info(f"delete-user-event: {user_id}")
             # See lib/galaxy/webapps/tool_shed/controllers/admin.py
             pseudorandom_value = str(int(time.time()))
-            email_hash = new_secure_hash(user.email + pseudorandom_value)
-            uname_hash = new_secure_hash(user.username + pseudorandom_value)
+            email_hash = new_secure_hash_v2(user.email + pseudorandom_value)
+            uname_hash = new_secure_hash_v2(user.username + pseudorandom_value)
             for role in user.all_roles():
                 print(
                     role, self.app.config.redact_username_during_deletion, self.app.config.redact_email_during_deletion

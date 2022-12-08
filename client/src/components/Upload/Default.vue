@@ -36,7 +36,7 @@
             <b-button
                 id="btn-close"
                 ref="btnClose"
-                class="ui-button-default"
+                class="ui-button-default upload-close"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle }}
@@ -62,7 +62,7 @@
             <b-button
                 id="btn-start"
                 ref="btnStart"
-                class="ui-button-default"
+                class="ui-button-default upload-start"
                 :disabled="!enableStart"
                 :title="btnStartTitle"
                 :variant="enableStart ? 'primary' : ''"
@@ -72,7 +72,7 @@
             <b-button
                 id="btn-new"
                 ref="btnCreate"
-                class="ui-button-default"
+                class="ui-button-default upload-paste"
                 :title="btnCreateTitle"
                 :disabled="!enableSources"
                 @click="_eventCreate()">
@@ -124,7 +124,7 @@ export default {
             highlightBox: false,
             showHelper: true,
             extension: this.app.defaultExtension,
-            genome: this.app.defaultGenome,
+            genome: this.app.defaultDbKey,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -242,7 +242,7 @@ export default {
                 this.counterRunning = 0;
                 this.uploadbox.reset();
                 this.extension = this.app.defaultExtension;
-                this.genome = this.app.defaultGenome;
+                this.genome = this.app.defaultDbKey;
                 this.appModel.set("percentage", 0);
                 this._updateStateForCounters();
             }

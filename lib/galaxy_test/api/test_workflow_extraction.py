@@ -13,30 +13,25 @@ from galaxy_test.base.populators import (
 from .test_workflows import BaseWorkflowsApiTestCase
 
 
-class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
-    history_id: str
-
-    def setUp(self):
-        super().setUp()
-        self.history_id = self.dataset_populator.new_history()
-
+class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
     @skip_without_tool("cat1")
     @summarize_instance_history_on_error
-    def test_extract_from_history(self):
+    def test_extract_from_history(self, history_id):
         # Run the simple test workflow and extract it back out from history
-        cat1_job_id = self.__setup_and_run_cat1_workflow(history_id=self.history_id)
-        contents = self._history_contents()
+        cat1_job_id = self.__setup_and_run_cat1_workflow(history_id=history_id)
+        contents = self._history_contents(history_id)
         input_hids = [c["hid"] for c in contents[0:2]]
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="extract_from_history_basic",
             dataset_ids=input_hids,
             job_ids=[cat1_job_id],
         )
-        self.assertEqual(downloaded_workflow["name"], "test import from history")
+        assert downloaded_workflow["name"] == "test import from history"
         self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
 
     @summarize_instance_history_on_error
-    def test_extract_with_copied_inputs(self):
+    def test_extract_with_copied_inputs(self, history_id):
         old_history_id = self.dataset_populator.new_history()
         # Run the simple test workflow and extract it back out from history
         self.__setup_and_run_cat1_workflow(history_id=old_history_id)
@@ -50,22 +45,23 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         offset = 0
         old_contents = self._history_contents(old_history_id)
         for old_dataset in old_contents:
-            self.__copy_content_to_history(self.history_id, old_dataset)
-        new_contents = self._history_contents()
+            self.__copy_content_to_history(history_id, old_dataset)
+        new_contents = self._history_contents(history_id)
         input_hids = [c["hid"] for c in new_contents[(offset + 0) : (offset + 2)]]
-        cat1_job_id = self.__job_id(self.history_id, new_contents[(offset + 2)]["id"])
+        cat1_job_id = self.__job_id(history_id, new_contents[(offset + 2)]["id"])
 
         def reimport_jobs_ids(new_history_id):
             return [j["id"] for j in self.dataset_populator.history_jobs(new_history_id) if j["tool_id"] == "cat1"]
 
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             dataset_ids=input_hids,
             job_ids=[cat1_job_id],
         )
         self.__assert_looks_like_cat1_example_workflow(downloaded_workflow)
 
     @summarize_instance_history_on_error
-    def test_extract_with_copied_inputs_reimported(self):
+    def test_extract_with_copied_inputs_reimported(self, history_id):
         old_history_id = self.dataset_populator.new_history()
         # Run the simple test workflow and extract it back out from history
         self.__setup_and_run_cat1_workflow(history_id=old_history_id)
@@ -73,14 +69,15 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         offset = 0
         old_contents = self._history_contents(old_history_id)
         for old_dataset in old_contents:
-            self.__copy_content_to_history(self.history_id, old_dataset)
-        new_contents = self._history_contents()
+            self.__copy_content_to_history(history_id, old_dataset)
+        new_contents = self._history_contents(history_id)
         input_hids = [c["hid"] for c in new_contents[(offset + 0) : (offset + 2)]]
 
         def reimport_jobs_ids(new_history_id):
             return [j["id"] for j in self.dataset_populator.history_jobs(new_history_id) if j["tool_id"] == "cat1"]
 
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="test_extract_with_copied_inputs",
             reimport_jobs_ids=reimport_jobs_ids,
             dataset_ids=input_hids,
@@ -89,32 +86,34 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     @skip_without_tool("random_lines1")
     @summarize_instance_history_on_error
-    def test_extract_mapping_workflow_from_history(self):
-        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(self.history_id)
+    def test_extract_mapping_workflow_from_history(self, history_id):
+        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(history_id)
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="extract_from_history_with_mapping",
             dataset_collection_ids=[hdca["hid"]],
             job_ids=[job_id1, job_id2],
         )
         self.__assert_looks_like_randomlines_mapping_workflow(downloaded_workflow)
 
-    def test_extract_copied_mapping_from_history(self):
+    def test_extract_copied_mapping_from_history(self, history_id):
         old_history_id = self.dataset_populator.new_history()
         hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(old_history_id)
 
         old_contents = self._history_contents(old_history_id)
         for old_content in old_contents:
-            self.__copy_content_to_history(self.history_id, old_content)
+            self.__copy_content_to_history(history_id, old_content)
         # API test is somewhat contrived since there is no good way
         # to retrieve job_id1, job_id2 like this for copied dataset
         # collections I don't think.
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             dataset_collection_ids=[hdca["hid"]],
             job_ids=[job_id1, job_id2],
         )
         self.__assert_looks_like_randomlines_mapping_workflow(downloaded_workflow)
 
-    def test_extract_copied_mapping_from_history_reimported(self):
+    def test_extract_copied_mapping_from_history_reimported(self, history_id):
         import unittest
 
         raise unittest.SkipTest(
@@ -126,7 +125,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
         old_contents = self._history_contents(old_history_id)
         for old_content in old_contents:
-            self.__copy_content_to_history(self.history_id, old_content)
+            self.__copy_content_to_history(history_id, old_content)
 
         def reimport_jobs_ids(new_history_id):
             rval = [
@@ -140,6 +139,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         # to retrieve job_id1, job_id2 like this for copied dataset
         # collections I don't think.
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="test_extract_from_history_with_mapped_collection_reimport",
             reimport_jobs_ids=reimport_jobs_ids,
             reimport_wait_on_history_length=9,  # see comments in _extract about eliminating this magic constant.
@@ -149,13 +149,13 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
 
     @skip_without_tool("random_lines1")
     @skip_without_tool("multi_data_param")
-    def test_extract_reduction_from_history(self):
+    def test_extract_reduction_from_history(self, history_id):
         hdca = self.dataset_collection_populator.create_pair_in_history(
-            self.history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
+            history_id, contents=["1 2 3\n4 5 6", "7 8 9\n10 11 10"], wait=True
         ).json()["outputs"][0]
         hdca_id = hdca["id"]
         inputs1 = {"input": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]}, "num_lines": 2}
-        implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id(self.history_id, "random_lines1", inputs1)
+        implicit_hdca1, job_id1 = self._run_tool_get_collection_and_job_id(history_id, "random_lines1", inputs1)
         inputs2 = {
             "f1": {"src": "hdca", "id": implicit_hdca1["id"]},
             "f2": {"src": "hdca", "id": implicit_hdca1["id"]},
@@ -163,12 +163,13 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         reduction_run_output = self.dataset_populator.run_tool(
             tool_id="multi_data_param",
             inputs=inputs2,
-            history_id=self.history_id,
+            history_id=history_id,
         )
         job_id2 = reduction_run_output["jobs"][0]["id"]
         self.dataset_populator.wait_for_job(job_id2, assert_ok=True)
-        self.dataset_populator.wait_for_history(self.history_id, assert_ok=True)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="extract_from_history_with_reduction",
             dataset_collection_ids=[hdca["hid"]],
             job_ids=[job_id1, job_id2],
@@ -189,7 +190,7 @@ class WorkflowExtractionApiTestCase(BaseWorkflowsApiTestCase):
         assert reduction_step_input["id"] == random_lines_map_step["id"]
 
     @skip_without_tool("collection_paired_test")
-    def test_extract_workflows_with_dataset_collections(self):
+    def test_extract_workflows_with_dataset_collections(self, history_id):
         jobs_summary = self._run_workflow(
             """
 class: GalaxyWorkflow
@@ -203,10 +204,12 @@ steps:
 test_data:
   text_input1:
     collection_type: paired
-"""
+""",
+            history_id,
         )
         job_id = self._job_id_for_tool(jobs_summary.jobs, "collection_paired_test")
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="extract_from_history_with_basic_collections",
             dataset_collection_ids=["1"],
             job_ids=[job_id],
@@ -222,10 +225,10 @@ test_data:
 
         collection_step = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
         collection_step_state = loads(collection_step["tool_state"])
-        self.assertEqual(collection_step_state["collection_type"], "paired")
+        assert collection_step_state["collection_type"] == "paired"
 
     @skip_without_tool("cat_collection")
-    def test_subcollection_mapping(self):
+    def test_subcollection_mapping(self, history_id):
         jobs_summary = self._run_workflow(
             """
 class: GalaxyWorkflow
@@ -244,11 +247,13 @@ steps:
 test_data:
   text_input1:
     collection_type: "list:paired"
-        """
+        """,
+            history_id,
         )
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat1")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "cat_collection")
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="test_extract_workflows_with_subcollection_mapping",
             dataset_collection_ids=["1"],
             job_ids=[job1_id, job2_id],
@@ -264,11 +269,11 @@ test_data:
 
         collection_step = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)[0]
         collection_step_state = loads(collection_step["tool_state"])
-        self.assertEqual(collection_step_state["collection_type"], "list:paired")
+        assert collection_step_state["collection_type"] == "list:paired"
 
     @skip_without_tool("cat_list")
     @skip_without_tool("collection_creates_dynamic_nested")
-    def test_subcollection_reduction(self):
+    def test_subcollection_reduction(self, history_id):
         jobs_summary = self._run_workflow(
             """
 class: GalaxyWorkflow
@@ -279,11 +284,13 @@ steps:
     tool_id: cat_list
     in:
       input1: creates_nested_list/list_output
-"""
+""",
+            history_id,
         )
         job1_id = self._job_id_for_tool(jobs_summary.jobs, "cat_list")
         job2_id = self._job_id_for_tool(jobs_summary.jobs, "collection_creates_dynamic_nested")
         self._extract_and_download_workflow(
+            history_id,
             reimport_as="test_extract_workflows_with_subcollection_reduction",
             dataset_collection_ids=["1"],
             job_ids=[job1_id, job2_id],
@@ -292,7 +299,7 @@ steps:
         # this workflow
 
     @skip_without_tool("collection_split_on_column")
-    def test_extract_workflow_with_output_collections(self):
+    def test_extract_workflow_with_output_collections(self, history_id):
         jobs_summary = self._run_workflow(
             """
 class: GalaxyWorkflow
@@ -321,11 +328,13 @@ steps:
 test_data:
   text_input1: "samp1\t10.0\nsamp2\t20.0\n"
   text_input2: "samp1\t30.0\nsamp2\t40.0\n"
-"""
+""",
+            history_id,
         )
         tool_ids = ["cat1", "collection_split_on_column", "cat_list"]
         job_ids = [functools.partial(self._job_id_for_tool, jobs_summary.jobs)(_) for _ in tool_ids]
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="test_extract_workflows_with_output_collections",
             dataset_ids=["1", "2"],
             job_ids=job_ids,
@@ -341,7 +350,7 @@ test_data:
 
     @skip_without_tool("collection_creates_pair")
     @summarize_instance_history_on_error
-    def test_extract_with_mapped_output_collections(self):
+    def test_extract_with_mapped_output_collections(self, history_id):
         jobs_summary = self._run_workflow(
             """
 class: GalaxyWorkflow
@@ -375,11 +384,13 @@ test_data:
         content: "samp1\t10.0\nsamp2\t20.0\n"
       - identifier: samp2
         content: "samp1\t30.0\nsamp2\t40.0\n"
-"""
+""",
+            history_id,
         )
         tool_ids = ["cat1", "collection_creates_pair", "cat_collection", "cat_list"]
         job_ids = [functools.partial(self._job_id_for_tool, jobs_summary.jobs)(_) for _ in tool_ids]
         downloaded_workflow = self._extract_and_download_workflow(
+            history_id,
             reimport_as="test_extract_workflows_with_mapped_output_collections",
             dataset_collection_ids=["1"],
             job_ids=job_ids,
@@ -450,12 +461,10 @@ test_data:
         input1 = tool_step["input_connections"]["input1"]
         input2 = tool_step["input_connections"]["queries_0|input2"]
 
-        self.assertEqual(input_steps[0]["id"], input1["id"])
-        self.assertEqual(input_steps[1]["id"], input2["id"])
+        assert input_steps[0]["id"] == input1["id"]
+        assert input_steps[1]["id"] == input2["id"]
 
-    def _history_contents(self, history_id=None):
-        if history_id is None:
-            history_id = self.history_id
+    def _history_contents(self, history_id: str):
         return self._get(f"histories/{history_id}/contents").json()
 
     def __copy_content_to_history(self, history_id, content):
@@ -484,16 +493,15 @@ test_data:
         collection_steps = self._get_steps_of_type(downloaded_workflow, "data_collection_input", expected_len=1)
         collection_step = collection_steps[0]
         collection_step_state = loads(collection_step["tool_state"])
-        self.assertEqual(collection_step_state["collection_type"], "paired")
+        assert collection_step_state["collection_type"] == "paired"
         collect_step_idx = collection_step["id"]
         return collect_step_idx
 
-    def _extract_and_download_workflow(self, **extract_payload):
+    def _extract_and_download_workflow(self, history_id: str, **extract_payload):
         reimport_as = extract_payload.get("reimport_as")
 
         if reimport_as:
             history_name = reimport_as
-            history_id = self.history_id
             self.dataset_populator.wait_for_history(history_id)
             self.dataset_populator.rename_history(history_id, history_name)
 
@@ -545,10 +553,10 @@ test_data:
 
                     extract_payload["job_ids"] = new_job_ids
 
-            self.history_id = new_history_id
+            history_id = new_history_id
 
         if "from_history_id" not in extract_payload:
-            extract_payload["from_history_id"] = self.history_id
+            extract_payload["from_history_id"] = history_id
 
         if "workflow_name" not in extract_payload:
             extract_payload["workflow_name"] = "test import from history"
@@ -581,14 +589,14 @@ test_data:
         self._assert_status_code_is(prov_response, 200)
         return prov_response.json()["job_id"]
 
-    def __cat_job_id(self, history_id):
+    def __cat_job_id(self, history_id: str):
         data = dict(history_id=history_id, tool_id="cat1")
         jobs_response = self._get("jobs", data=data)
         self._assert_status_code_is(jobs_response, 200)
         cat1_job_id = jobs_response.json()[0]["id"]
         return cat1_job_id
 
-    def _run_tool_get_collection_and_job_id(self, history_id, tool_id, inputs):
+    def _run_tool_get_collection_and_job_id(self, history_id: str, tool_id, inputs):
         run_output1 = self.dataset_populator.run_tool(
             tool_id=tool_id,
             inputs=inputs,

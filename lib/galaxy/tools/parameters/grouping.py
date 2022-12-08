@@ -42,6 +42,7 @@ URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "
 class Group(Dictifiable):
 
     dict_collection_visible_keys = ["name", "type"]
+    type: str
 
     def __init__(self):
         self.name = None
@@ -719,7 +720,7 @@ class UploadDataset(Group):
 
 class Conditional(Group):
     type = "conditional"
-    value_from: Callable[["Conditional", ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
+    value_from: Callable[[ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
 
     def __init__(self):
         Group.__init__(self)

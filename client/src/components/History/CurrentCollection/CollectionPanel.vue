@@ -9,30 +9,29 @@
         :contents-url="contentsUrl"
         :offset="offset">
         <ExpandedItems v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="(item) => item.id">
-            <section class="dataset-collection-panel d-flex flex-column">
+            <section class="dataset-collection-panel w-100 d-flex flex-column">
                 <section>
                     <CollectionNavigation
-                        :history="history"
+                        :history-name="history.name"
                         :selected-collections="selectedCollections"
                         v-on="$listeners" />
                     <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
-                    <CollectionOperations v-if="isRoot" :dsc="dsc" />
+                    <CollectionOperations v-if="isRoot && showControls" :dsc="dsc" />
                 </section>
                 <section class="position-relative flex-grow-1 scroller">
                     <div>
-                        <Listing :items="payload" :loading="loading" @scroll="onScroll">
+                        <ListingLayout :items="payload" :loading="loading" @scroll="onScroll">
                             <template v-slot:item="{ item }">
                                 <ContentItem
-                                    :id="item.element_index"
+                                    :id="item.element_index + 1"
                                     :item="item.object"
                                     :name="item.element_identifier"
                                     :expand-dataset="isExpanded(item)"
                                     :is-dataset="item.element_type == 'hda'"
-                                    :is-history-item="false"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @view-collection="onViewSubCollection" />
                             </template>
-                        </Listing>
+                        </ListingLayout>
                     </div>
                 </section>
             </section>
@@ -48,7 +47,7 @@ import CollectionNavigation from "./CollectionNavigation";
 import CollectionOperations from "./CollectionOperations";
 import CollectionDetails from "./CollectionDetails";
 import ExpandedItems from "components/History/Content/ExpandedItems";
-import Listing from "components/History/Layout/Listing";
+import ListingLayout from "components/History/Layout/ListingLayout";
 
 export default {
     components: {
@@ -58,11 +57,12 @@ export default {
         CollectionOperations,
         ContentItem,
         ExpandedItems,
-        Listing,
+        ListingLayout,
     },
     props: {
         history: { type: Object, required: true },
         selectedCollections: { type: Array, required: true },
+        showControls: { type: Boolean, default: true },
     },
     data() {
         return {
@@ -82,6 +82,14 @@ export default {
         },
         contentsUrl() {
             return this.dsc.contents_url.substring(1);
+        },
+    },
+    watch: {
+        history(newHistory, oldHistory) {
+            if (newHistory.id != oldHistory.id) {
+                // Send up event closing out selected collection on history change.
+                this.$emit("update:selected-collections", []);
+            }
         },
     },
     methods: {

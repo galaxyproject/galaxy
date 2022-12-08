@@ -1333,6 +1333,11 @@ class ColumnListParameter(SelectToolParameter):
         self.is_dynamic = True
         self.usecolnames = input_source.get_bool("use_header_names", False)
 
+    def to_json(self, value, app, use_security):
+        if isinstance(value, str):
+            return value.strip()
+        return value
+
     def from_json(self, value, trans, other_values=None):
         """
         Label convention prepends column number with a 'c', but tool uses the integer. This
@@ -1369,8 +1374,9 @@ class ColumnListParameter(SelectToolParameter):
     @staticmethod
     def _strip_c(column):
         if isinstance(column, str):
+            column = column.strip()
             if column.startswith("c") and len(column) > 1 and all(c.isdigit() for c in column[1:]):
-                column = column.strip().lower()[1:]
+                column = column.lower()[1:]
         return column
 
     def get_column_list(self, trans, other_values):
@@ -1960,9 +1966,13 @@ class BaseDataToolParameter(ToolParameter):
                         dataset_count += 1
                         do_validate(dataset_instance)
                 elif isinstance(v, DatasetCollectionElement):
-                    for dataset_instance in v.child_collection.dataset_instances:
+                    if v.hda:
                         dataset_count += 1
-                        do_validate(dataset_instance)
+                        do_validate(v.hda)
+                    else:
+                        for dataset_instance in v.child_collection.dataset_instances:
+                            dataset_count += 1
+                            do_validate(dataset_instance)
                 else:
                     dataset_count += 1
                     do_validate(v)
@@ -2114,6 +2124,8 @@ class DataToolParameter(BaseDataToolParameter):
                         "the previously selected dataset has entered an unusable state", self.name
                     )
                 elif hasattr(v, "dataset"):
+                    if isinstance(v, DatasetCollectionElement):
+                        v = v.hda
                     match = dataset_matcher.hda_match(v)
                     if match and match.implicit_conversion:
                         v.implicit_conversion = True

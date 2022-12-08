@@ -1,14 +1,16 @@
 import logging
 import os
-import unittest
 
-from testfixtures import log_capture
+from testfixtures.logcapture import log_capture
 
 import galaxy.jobs.dynamic_tool_destination as dt
 from galaxy.jobs.dynamic_tool_destination import map_tool_to_destination
 from galaxy.jobs.mapper import JobMappingException
-from . import mockGalaxy as mg
-from . import ymltests as yt
+from galaxy.util.unittest import TestCase
+from . import (
+    mockGalaxy as mg,
+    ymltests as yt,
+)
 
 theApp = mg.App("cluster_default", "test_spec")
 script_dir = os.path.dirname(__file__)
@@ -86,7 +88,7 @@ valueZ = valueE * 1024
 valueY = valueZ * 1024
 
 
-class TestDynamicToolDestination(unittest.TestCase):
+class TestDynamicToolDestination(TestCase):
     def setUp(self):
         self.maxDiff = None
         self.logger = logging.getLogger()
@@ -95,17 +97,16 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_brokenDestYML(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            runJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            broken_default_dest_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                runJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                broken_default_dest_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -117,28 +118,26 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_filesize_empty(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            emptyJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            path,
-            job_conf_path,
-        )
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            emptyJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            priority_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                emptyJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                path,
+                job_conf_path,
+            )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                emptyJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                priority_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -160,28 +159,26 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_filesize_zero(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            zeroJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            path,
-            job_conf_path,
-        )
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            zeroJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            priority_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                zeroJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                path,
+                job_conf_path,
+            )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                zeroJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                priority_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -201,28 +198,26 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_filesize_fail(self, lc):
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            failJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            path,
-            job_conf_path,
-        )
-        self.assertRaises(
-            JobMappingException,
-            map_tool_to_destination,
-            failJob,
-            theApp,
-            vanillaTool,
-            "user@email.com",
-            True,
-            priority_path,
-            job_conf_path,
-        )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                failJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                path,
+                job_conf_path,
+            )
+        with self.assertRaises(JobMappingException):
+            map_tool_to_destination(
+                failJob,
+                theApp,
+                vanillaTool,
+                "user@email.com",
+                True,
+                priority_path,
+                job_conf_path,
+            )
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -245,11 +240,11 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_filesize_run(self, lc):
         job = map_tool_to_destination(runJob, theApp, vanillaTool, "user@email.com", True, path, job_conf_path)
-        self.assertEqual(job, "Destination1")
+        assert job == "Destination1"
         priority_job = map_tool_to_destination(
             runJob, theApp, vanillaTool, "user@email.com", True, priority_path, job_conf_path
         )
-        self.assertEqual(priority_job, "Destination1_high")
+        assert priority_job == "Destination1_high"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -274,11 +269,11 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_default_tool(self, lc):
         job = map_tool_to_destination(runJob, theApp, defaultTool, "user@email.com", True, path, job_conf_path)
-        self.assertEqual(job, "cluster_default")
+        assert job == "cluster_default"
         priority_job = map_tool_to_destination(
             runJob, theApp, defaultTool, "user@email.com", True, priority_path, job_conf_path
         )
-        self.assertEqual(priority_job, "cluster_default_high")
+        assert priority_job == "cluster_default_high"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -311,11 +306,11 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_arguments_tool(self, lc):
         job = map_tool_to_destination(argJob, theApp, argTool, "user@email.com", True, path, job_conf_path)
-        self.assertEqual(job, "Destination6")
+        assert job == "Destination6"
         priority_job = map_tool_to_destination(
             argJob, theApp, argTool, "user@email.com", True, priority_path, job_conf_path
         )
-        self.assertEqual(priority_job, "Destination6_med")
+        assert priority_job == "Destination6_med"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -334,11 +329,11 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_arguments_arg_not_found(self, lc):
         job = map_tool_to_destination(argNotFoundJob, theApp, argTool, "user@email.com", True, path, job_conf_path)
-        self.assertEqual(job, "cluster_default")
+        assert job == "cluster_default"
         priority_job = map_tool_to_destination(
             argNotFoundJob, theApp, argTool, "user@email.com", True, priority_path, job_conf_path
         )
-        self.assertEqual(priority_job, "cluster_default_high")
+        assert priority_job == "cluster_default_high"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -357,11 +352,11 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_tool_not_found(self, lc):
         job = map_tool_to_destination(runJob, theApp, unTool, "user@email.com", True, path, job_conf_path)
-        self.assertEqual(job, "cluster_default")
+        assert job == "cluster_default"
         priority_job = map_tool_to_destination(
             runJob, theApp, unTool, "user@email.com", True, priority_path, job_conf_path
         )
-        self.assertEqual(priority_job, "cluster_default_high")
+        assert priority_job == "cluster_default_high"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -390,11 +385,11 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_fasta(self, lc):
         job = map_tool_to_destination(dbJob, theApp, dbTool, "user@email.com", True, path, job_conf_path)
-        self.assertEqual(job, "Destination4")
+        assert job == "Destination4"
         priority_job = map_tool_to_destination(
             dbJob, theApp, dbTool, "user@email.com", True, priority_path, job_conf_path
         )
-        self.assertEqual(priority_job, "Destination4_high")
+        assert priority_job == "Destination4_high"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -417,11 +412,11 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_fasta_count(self, lc):
         job = map_tool_to_destination(dbcountJob, theApp, dbTool, "user@email.com", True, path, job_conf_path)
-        self.assertEqual(job, "Destination4")
+        assert job == "Destination4"
         priority_job = map_tool_to_destination(
             dbcountJob, theApp, dbTool, "user@email.com", True, priority_path, job_conf_path
         )
-        self.assertEqual(priority_job, "Destination4_high")
+        assert priority_job == "Destination4_high"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -444,7 +439,7 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_no_verbose(self, lc):
         job = map_tool_to_destination(runJob, theApp, noVBTool, "user@email.com", True, no_verbose_path, job_conf_path)
-        self.assertEqual(job, "Destination1")
+        assert job == "Destination1"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running 'test_no_verbose' with 'Destination1'.")
@@ -453,7 +448,7 @@ class TestDynamicToolDestination(unittest.TestCase):
     @log_capture()
     def test_authorized_user(self, lc):
         job = map_tool_to_destination(runJob, theApp, usersTool, "user@email.com", True, users_test_path, job_conf_path)
-        self.assertEqual(job, "special_cluster")
+        assert job == "special_cluster"
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running 'test_users' with 'special_cluster'."),
@@ -464,14 +459,15 @@ class TestDynamicToolDestination(unittest.TestCase):
         job = map_tool_to_destination(
             runJob, theApp, usersTool, "userblah@email.com", True, users_test_path, job_conf_path
         )
-        self.assertEqual(job, "lame_cluster")
+        assert job == "lame_cluster"
 
         lc.check_present(("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running 'test_users' with 'lame_cluster'."))
 
     # ================================Invalid yaml files==============================
     @log_capture()
     def test_no_file(self, lc):
-        self.assertRaises(IOError, dt.parse_yaml, path="")
+        with self.assertRaises(IOError):
+            dt.parse_yaml(path="")
         lc.check_present()
 
     @log_capture()
@@ -489,11 +485,11 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_empty_file(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest2, job_conf_path=job_conf_path, test=True), {})
+        assert dt.parse_yaml(path=yt.ivYMLTest2, job_conf_path=job_conf_path, test=True) == {}
 
     @log_capture()
     def test_no_tool_name(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest3, job_conf_path=job_conf_path, test=True), yt.iv3dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest3, job_conf_path=job_conf_path, test=True) == yt.iv3dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -506,7 +502,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_type(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest4, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        assert dt.parse_yaml(path=yt.ivYMLTest4, job_conf_path=job_conf_path, test=True) == yt.ivDict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "No rule_type found for rule 1 in 'spades'."),
@@ -515,7 +511,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_lower_bound(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest51, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        assert dt.parse_yaml(path=yt.ivYMLTest51, job_conf_path=job_conf_path, test=True) == yt.ivDict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Missing bounds for rule 1 in 'spades'. Ignoring rule."),
@@ -524,7 +520,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_upper_bound(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest52, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        assert dt.parse_yaml(path=yt.ivYMLTest52, job_conf_path=job_conf_path, test=True) == yt.ivDict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Missing bounds for rule 1 in 'spades'. Ignoring rule."),
@@ -533,7 +529,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_rule_arg(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest53, job_conf_path=job_conf_path, test=True), yt.ivDict53)
+        assert dt.parse_yaml(path=yt.ivYMLTest53, job_conf_path=job_conf_path, test=True) == yt.ivDict53
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -546,7 +542,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_bad_rule_type(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest6, job_conf_path=job_conf_path, test=True), yt.ivDict)
+        assert dt.parse_yaml(path=yt.ivYMLTest6, job_conf_path=job_conf_path, test=True) == yt.ivDict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -559,7 +555,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_no_err_msg(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest91, job_conf_path=job_conf_path, test=True), yt.iv91dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest91, job_conf_path=job_conf_path, test=True) == yt.iv91dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -600,7 +596,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_no_err_msg(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest12, job_conf_path=job_conf_path, test=True), yt.iv12dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest12, job_conf_path=job_conf_path, test=True) == yt.iv12dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -613,7 +609,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_no_args(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest131, job_conf_path=job_conf_path, test=True), yt.iv131dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest131, job_conf_path=job_conf_path, test=True) == yt.iv131dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -626,7 +622,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_arguments_no_arg(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest132, job_conf_path=job_conf_path, test=True), yt.iv132dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest132, job_conf_path=job_conf_path, test=True) == yt.iv132dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -639,14 +635,14 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_multiple_jobs(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Missing a fail_message for rule 1 in 'smalt'.")
         )
 
     @log_capture()
     def test_return_rule_for_multiple_jobs(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True), yt.iv133dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest133, job_conf_path=job_conf_path, test=True) == yt.iv133dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -659,14 +655,14 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_no_destination(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "No destination specified for rule 1 in 'spades'.")
         )
 
     @log_capture()
     def test_return_rule_for_no_destination(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True), yt.iv134dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest134, job_conf_path=job_conf_path, test=True) == yt.iv134dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -679,7 +675,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_reversed_bounds(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest135, job_conf_path=job_conf_path, test=True), yt.iv135dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest135, job_conf_path=job_conf_path, test=True) == yt.iv135dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -692,7 +688,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_missing_tool_fields(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -703,7 +699,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_missing_tool_fields(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True), yt.iv136dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest136, job_conf_path=job_conf_path, test=True) == yt.iv136dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -716,14 +712,14 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_blank_tool(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Config section for tool 'spades' is blank!")
         )
 
     @log_capture()
     def test_return_rule_for_blank_tool(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True), yt.iv137dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest137, job_conf_path=job_conf_path, test=True) == yt.iv137dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Config section for tool 'spades' is blank!"),
@@ -732,7 +728,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_malformed_users(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -748,7 +744,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_malformed_users(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True), yt.iv138dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest138, job_conf_path=job_conf_path, test=True) == yt.iv138dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -766,12 +762,12 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_no_users(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Couldn't find a list under 'users:'!"))
 
     @log_capture()
     def test_return_rule_for_no_users(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True), yt.iv139dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest139, job_conf_path=job_conf_path, test=True) == yt.iv139dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Couldn't find a list under 'users:'! Ignoring rule."),
@@ -780,7 +776,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_malformed_user_email(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -801,7 +797,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_malformed_user_email(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True), yt.iv140dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest140, job_conf_path=job_conf_path, test=True) == yt.iv140dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -824,7 +820,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_empty_users(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -845,7 +841,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_empty_users(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True), yt.iv141dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest141, job_conf_path=job_conf_path, test=True) == yt.iv141dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -868,7 +864,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_bad_num_input_datasets_bounds(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -880,7 +876,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_bad_num_input_datasets_bound(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True), yt.iv142dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest142, job_conf_path=job_conf_path, test=True) == yt.iv142dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -893,7 +889,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_bool_for_worse_num_input_datasets_bounds(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -904,7 +900,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_return_rule_for_worse_num_input_datasets_bound(self, lc):
-        self.assertEqual(dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True), yt.iv143dict)
+        assert dt.parse_yaml(path=yt.ivYMLTest143, job_conf_path=job_conf_path, test=True) == yt.iv143dict
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
             (
@@ -1281,7 +1277,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_invalid_default_dest_valid_tool_default_dest_bool(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest172, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest172, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -1292,7 +1288,7 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     @log_capture()
     def test_valid_default_dest_invalid_tool_default_dest_bool(self, lc):
-        self.assertFalse(dt.parse_yaml(path=yt.ivYMLTest173, job_conf_path=job_conf_path, test=True, return_bool=True))
+        assert not dt.parse_yaml(path=yt.ivYMLTest173, job_conf_path=job_conf_path, test=True, return_bool=True)
         lc.check_present(
             (
                 "galaxy.jobs.dynamic_tool_destination",
@@ -1309,21 +1305,21 @@ class TestDynamicToolDestination(unittest.TestCase):
     # ================================Valid yaml files==============================
     @log_capture()
     def test_parse_valid_yml(self, lc):
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest1, job_conf_path=job_conf_path, test=True), yt.vdictTest1_yml)
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest2, job_conf_path=job_conf_path, test=True), yt.vdictTest2_yml)
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest3, job_conf_path=job_conf_path, test=True), yt.vdictTest3_yml)
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest4, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest4, job_conf_path=job_conf_path, test=True), yt.vdictTest4_yml)
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest5, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest5, job_conf_path=job_conf_path, test=True), yt.vdictTest5_yml)
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True), yt.vdictTest6_yml)
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True), yt.vdictTest7_yml)
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True), yt.vdictTest160_yml)
-        self.assertTrue(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True, return_bool=True))
-        self.assertEqual(dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True), yt.vdictTest164_yml)
+        assert dt.parse_yaml(yt.vYMLTest1, job_conf_path=job_conf_path, test=True) == yt.vdictTest1_yml
+        assert dt.parse_yaml(yt.vYMLTest2, job_conf_path=job_conf_path, test=True) == yt.vdictTest2_yml
+        assert dt.parse_yaml(yt.vYMLTest3, job_conf_path=job_conf_path, test=True) == yt.vdictTest3_yml
+        assert dt.parse_yaml(yt.vYMLTest4, job_conf_path=job_conf_path, test=True, return_bool=True)
+        assert dt.parse_yaml(yt.vYMLTest4, job_conf_path=job_conf_path, test=True) == yt.vdictTest4_yml
+        assert dt.parse_yaml(yt.vYMLTest5, job_conf_path=job_conf_path, test=True, return_bool=True)
+        assert dt.parse_yaml(yt.vYMLTest5, job_conf_path=job_conf_path, test=True) == yt.vdictTest5_yml
+        assert dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True, return_bool=True)
+        assert dt.parse_yaml(yt.vYMLTest6, job_conf_path=job_conf_path, test=True) == yt.vdictTest6_yml
+        assert dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True, return_bool=True)
+        assert dt.parse_yaml(yt.vYMLTest7, job_conf_path=job_conf_path, test=True) == yt.vdictTest7_yml
+        assert dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True, return_bool=True)
+        assert dt.parse_yaml(yt.vYMLTest160, job_conf_path=job_conf_path, test=True) == yt.vdictTest160_yml
+        assert dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True, return_bool=True)
+        assert dt.parse_yaml(yt.vYMLTest164, job_conf_path=job_conf_path, test=True) == yt.vdictTest164_yml
 
         lc.check_present(
             ("galaxy.jobs.dynamic_tool_destination", "DEBUG", "Running config validation..."),
@@ -1358,68 +1354,70 @@ class TestDynamicToolDestination(unittest.TestCase):
 
     # ================================Testing str_to_bytes==========================
     def test_str_to_bytes_invalid(self):
-        self.assertRaises(dt.MalformedYMLException, dt.str_to_bytes, "1d")
-        self.assertRaises(dt.MalformedYMLException, dt.str_to_bytes, "1 d")
+        with self.assertRaises(dt.MalformedYMLException):
+            dt.str_to_bytes("1d")
+        with self.assertRaises(dt.MalformedYMLException):
+            dt.str_to_bytes("1 d")
 
     def test_str_to_bytes_valid(self):
-        self.assertEqual(dt.str_to_bytes("-1"), -1)
-        self.assertEqual(dt.str_to_bytes("1"), value)
-        self.assertEqual(dt.str_to_bytes(156), 156)
-        self.assertEqual(dt.str_to_bytes("1 B"), value)
-        self.assertEqual(dt.str_to_bytes("1 KB"), valueK)
-        self.assertEqual(dt.str_to_bytes("1 MB"), valueM)
-        self.assertEqual(dt.str_to_bytes("1 gB"), valueG)
-        self.assertEqual(dt.str_to_bytes("1 Tb"), valueT)
-        self.assertEqual(dt.str_to_bytes("1 pb"), valueP)
-        self.assertEqual(dt.str_to_bytes("1 EB"), valueE)
-        self.assertEqual(dt.str_to_bytes("1 ZB"), valueZ)
-        self.assertEqual(dt.str_to_bytes("1 YB"), valueY)
+        assert dt.str_to_bytes("-1") == -1
+        assert dt.str_to_bytes("1") == value
+        assert dt.str_to_bytes(156) == 156
+        assert dt.str_to_bytes("1 B") == value
+        assert dt.str_to_bytes("1 KB") == valueK
+        assert dt.str_to_bytes("1 MB") == valueM
+        assert dt.str_to_bytes("1 gB") == valueG
+        assert dt.str_to_bytes("1 Tb") == valueT
+        assert dt.str_to_bytes("1 pb") == valueP
+        assert dt.str_to_bytes("1 EB") == valueE
+        assert dt.str_to_bytes("1 ZB") == valueZ
+        assert dt.str_to_bytes("1 YB") == valueY
 
     # ==============================Testing bytes_to_str=============================
     def test_bytes_to_str_invalid(self):
         testValue = ""
-        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str(testValue)
         testValue = "5564fads"
-        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str(testValue)
         testValue = "45.0.1"
-        self.assertRaises(ValueError, dt.bytes_to_str, testValue)
-        self.assertRaises(ValueError, dt.bytes_to_str, "1 024")
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str(testValue)
+        with self.assertRaises(ValueError):
+            dt.bytes_to_str("1 024")
 
     def test_bytes_to_str_valid(self):
-        self.assertEqual(dt.bytes_to_str(-1), "Infinity")
-        self.assertEqual(dt.bytes_to_str(value), "1.00 B")
-        self.assertEqual(dt.bytes_to_str(valueK), "1.00 KB")
-        self.assertEqual(dt.bytes_to_str(valueM), "1.00 MB")
-        self.assertEqual(dt.bytes_to_str(valueG), "1.00 GB")
-        self.assertEqual(dt.bytes_to_str(valueT), "1.00 TB")
-        self.assertEqual(dt.bytes_to_str(valueP), "1.00 PB")
-        self.assertEqual(dt.bytes_to_str(valueE), "1.00 EB")
-        self.assertEqual(dt.bytes_to_str(valueZ), "1.00 ZB")
-        self.assertEqual(dt.bytes_to_str(valueY), "1.00 YB")
+        assert dt.bytes_to_str(-1) == "Infinity"
+        assert dt.bytes_to_str(value) == "1.00 B"
+        assert dt.bytes_to_str(valueK) == "1.00 KB"
+        assert dt.bytes_to_str(valueM) == "1.00 MB"
+        assert dt.bytes_to_str(valueG) == "1.00 GB"
+        assert dt.bytes_to_str(valueT) == "1.00 TB"
+        assert dt.bytes_to_str(valueP) == "1.00 PB"
+        assert dt.bytes_to_str(valueE) == "1.00 EB"
+        assert dt.bytes_to_str(valueZ) == "1.00 ZB"
+        assert dt.bytes_to_str(valueY) == "1.00 YB"
 
-        self.assertEqual(dt.bytes_to_str(10, "B"), "10.00 B")
-        self.assertEqual(dt.bytes_to_str(1000000, "KB"), "976.56 KB")
-        self.assertEqual(dt.bytes_to_str(1000000000, "MB"), "953.67 MB")
-        self.assertEqual(dt.bytes_to_str(1000000000000, "GB"), "931.32 GB")
-        self.assertEqual(dt.bytes_to_str(1000000000000000, "TB"), "909.49 TB")
-        self.assertEqual(dt.bytes_to_str(1000000000000000000, "PB"), "888.18 PB")
-        self.assertEqual(dt.bytes_to_str(1000000000000000000000, "EB"), "867.36 EB")
-        self.assertEqual(dt.bytes_to_str(1000000000000000000000000, "ZB"), "847.03 ZB")
+        assert dt.bytes_to_str(10, "B") == "10.00 B"
+        assert dt.bytes_to_str(1000000, "KB") == "976.56 KB"
+        assert dt.bytes_to_str(1000000000, "MB") == "953.67 MB"
+        assert dt.bytes_to_str(1000000000000, "GB") == "931.32 GB"
+        assert dt.bytes_to_str(1000000000000000, "TB") == "909.49 TB"
+        assert dt.bytes_to_str(1000000000000000000, "PB") == "888.18 PB"
+        assert dt.bytes_to_str(1000000000000000000000, "EB") == "867.36 EB"
+        assert dt.bytes_to_str(1000000000000000000000000, "ZB") == "847.03 ZB"
 
-        self.assertEqual(dt.bytes_to_str(value, "KB"), "1.00 B")
-        self.assertEqual(dt.bytes_to_str(valueK, "MB"), "1.00 KB")
-        self.assertEqual(dt.bytes_to_str(valueM, "GB"), "1.00 MB")
-        self.assertEqual(dt.bytes_to_str(valueG, "TB"), "1.00 GB")
-        self.assertEqual(dt.bytes_to_str(valueT, "PB"), "1.00 TB")
-        self.assertEqual(dt.bytes_to_str(valueP, "EB"), "1.00 PB")
-        self.assertEqual(dt.bytes_to_str(valueE, "ZB"), "1.00 EB")
-        self.assertEqual(dt.bytes_to_str(valueZ, "YB"), "1.00 ZB")
+        assert dt.bytes_to_str(value, "KB") == "1.00 B"
+        assert dt.bytes_to_str(valueK, "MB") == "1.00 KB"
+        assert dt.bytes_to_str(valueM, "GB") == "1.00 MB"
+        assert dt.bytes_to_str(valueG, "TB") == "1.00 GB"
+        assert dt.bytes_to_str(valueT, "PB") == "1.00 TB"
+        assert dt.bytes_to_str(valueP, "EB") == "1.00 PB"
+        assert dt.bytes_to_str(valueE, "ZB") == "1.00 EB"
+        assert dt.bytes_to_str(valueZ, "YB") == "1.00 ZB"
 
-        self.assertEqual(dt.bytes_to_str("1"), "1.00 B")
-        self.assertEqual(dt.bytes_to_str("\t\t1000000"), "976.56 KB")
-        self.assertEqual(dt.bytes_to_str("1000000000\n"), "953.67 MB")
-        self.assertEqual(dt.bytes_to_str(1024, "fda"), "1.00 KB")
-
-
-if __name__ == "__main__":
-    unittest.main()
+        assert dt.bytes_to_str("1") == "1.00 B"
+        assert dt.bytes_to_str("\t\t1000000") == "976.56 KB"
+        assert dt.bytes_to_str("1000000000\n") == "953.67 MB"
+        assert dt.bytes_to_str(1024, "fda") == "1.00 KB"

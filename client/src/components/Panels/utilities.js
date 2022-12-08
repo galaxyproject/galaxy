@@ -1,86 +1,185 @@
-export function filterToolSections(layout, results) {
-    if (results) {
-        results = normalize_results(results);
-        const filteredLayout = layout.map((section) => {
-            var toolRes = [];
-            if (section.elems) {
-                section.elems.forEach((el) => {
-                    if (
-                        (!el.text && results.includes(el.id)) ||
-                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))
-                    ) {
-                        toolRes.push(el);
-                    }
-                });
-            }
-            // sort tools in section by rank in results
-            toolRes.sort((tool1, tool2) => {
-                return results.indexOf(tool1.id) - results.indexOf(tool2.id);
-            });
+/**
+ * Utilities file for Tool Search (panel/client search + advanced/backend search)
+ */
+import { orderBy } from "lodash";
 
+const TOOLS_RESULTS_SORT_LABEL = "apiSort";
+const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
+
+// - Takes filterSettings = {"name": "Tool Name", "section": "Collection", ...}
+// - Takes panelView (if not 'default', does ontology search at backend)
+// - Takes toolbox (to find ontology id if given ontology name)
+// - Returns parsed Whoosh query
+// e.g. fn call: createWhooshQuery(filterSettings, 'ontology:edam_topics', toolbox)
+// can return:
+//     query = "(name:(skew) name_exact:(skew) description:(skew)) AND (edam_topics:(topic_0797) AND )"
+export function createWhooshQuery(filterSettings, panelView, toolbox) {
+    let query = "(";
+    // add description+name_exact fields = name, to do a combined OrGroup at backend
+    const name = filterSettings["name"];
+    if (name) {
+        query += "name:(" + name + ") ";
+        query += "name_exact:(" + name + ") ";
+        query += "description:(" + name + ")";
+    }
+    query += ") AND (";
+    for (const [key, filterValue] of Object.entries(filterSettings)) {
+        // get ontology keys if view is not default
+        if (key === "section" && panelView !== "default") {
+            const ontology = toolbox.find(({ name }) => name && name.toLowerCase().match(filterValue.toLowerCase()));
+            if (ontology) {
+                let ontologyKey = "";
+                if (panelView === "ontology:edam_operations") {
+                    ontologyKey = "edam_operations";
+                } else if (panelView === "ontology:edam_topics") {
+                    ontologyKey = "edam_topics";
+                }
+                query += ontologyKey + ":(" + ontology.id + ") AND ";
+            } else {
+                query += key + ":(" + filterValue + ") AND ";
+            }
+        } else if (key == "id") {
+            query += "id_exact:(" + filterValue + ") AND ";
+        } else if (key != "name") {
+            query += key + ":(" + filterValue + ") AND ";
+        }
+    }
+    query += ")";
+    return query;
+}
+
+// Given toolbox and search results, returns filtered tool results
+export function filterTools(tools, results) {
+    let toolsResults = [];
+    tools = normalizeTools(tools);
+    toolsResults = mapToolsResults(tools, results);
+    toolsResults = sortToolsResults(toolsResults);
+    toolsResults = removeDuplicateResults(toolsResults);
+    return toolsResults;
+}
+
+// Given toolbox and search results, returns filtered tool results by sections
+export function filterToolSections(tools, results) {
+    let toolsResults = [];
+    let toolsResultsSection = [];
+    if (hasResults(results)) {
+        toolsResults = tools.map((section) => {
+            tools = flattenToolsSection(section);
+            toolsResultsSection = mapToolsResults(tools, results);
+            toolsResultsSection = sortToolsResults(toolsResultsSection);
             return {
                 ...section,
-                elems: toolRes,
+                elems: toolsResultsSection,
             };
         });
-        // filter out categories without tools in results
-        return filteredLayout
-            .filter((section) => {
-                const isSection = section.elems && section.elems.length > 0;
-                const isMatchedTool = !section.text && results.includes(section.id);
-                return isSection || isMatchedTool;
-            })
-            .sort((sect1, sect2) => {
-                if (sect1.elems.length == 0 || sect2.elems.length == 0) {
-                    return 0;
-                }
-                return results.indexOf(sect1.elems[0].id) - results.indexOf(sect2.elems[0].id);
-            });
+        toolsResults = deleteEmptyToolsSections(toolsResults, results);
     } else {
-        return layout;
+        toolsResults = tools;
     }
+    return toolsResults;
 }
 
-export function filterTools(layout, results) {
-    // do not consider expression tools, unless requested by the workflow editor
-    layout = layout.filter((section) => section.name !== "Expression Tools");
-    if (results) {
-        results = normalize_results(results);
-        var toolsResults = [];
-        if (results.length < 1) {
-            return toolsResults;
+export function hasResults(results) {
+    return Array.isArray(results) && results.length > 0;
+}
+
+// Given toolbox, keys to sort/search results by and a search query,
+// Returns tool ids sorted by order of keys that are being searched
+export function searchToolsByKeys(tools, keys, query) {
+    const returnedTools = [];
+    for (const tool of tools) {
+        for (const key of Object.keys(keys)) {
+            const actualValue = tool[key] ? tool[key].toLowerCase() : "";
+            const queryLowerCase = query.toLowerCase();
+            if (actualValue.match(queryLowerCase)) {
+                // do we care for exact matches && is it an exact match ?
+                const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
+                returnedTools.push({ id: tool.id, order });
+                break;
+            }
         }
-        // iterate through each section and add each tool that is in the results to
-        // toolsResults, sort by search ranking
-        layout.map((section) => {
-            if (section.elems) {
-                section.elems.forEach((el) => {
-                    if (
-                        (!el.text && results.includes(el.id)) ||
-                        (el.tool_shed_repository && results.includes(el.tool_shed_repository.name))
-                    ) {
-                        toolsResults.push(el);
-                    }
-                });
-            } else if (!section.text && results.includes(section.id)) {
-                toolsResults.push(section);
+    }
+    // sorting results by indexed order of keys
+    return orderBy(returnedTools, ["order"], ["desc"]).map((tool) => tool.id);
+}
+
+export function normalizeTools(tools) {
+    tools = hideToolsSection(tools);
+    tools = flattenTools(tools);
+    return tools;
+}
+
+function flattenToolsSection(section) {
+    const flattenTools = [];
+    if (section.elems) {
+        section.elems.forEach((tool) => {
+            if (!tool.text) {
+                flattenTools.push(tool);
             }
         });
-        return toolsResults.sort((tool1, tool2) => {
-            return results.indexOf(tool1.id) - results.indexOf(tool2.id);
-        });
-    } else {
-        return layout;
+    } else if (!section.text) {
+        flattenTools.push(section);
     }
+    return flattenTools;
 }
 
-function normalize_results(results) {
-    var norm_results = [];
-    results.forEach((result) => {
-        norm_results.push(result);
-        if (result.includes("/repos/")) {
-            norm_results.push(result.split("/repos/")[1].split("/")[2]);
+function mapToolsResults(tools, results) {
+    const toolsResults = tools
+        .filter((tool) => !tool.text && results.includes(tool.id))
+        .map((tool) => {
+            Object.assign(tool, setSort(tool, results));
+            return tool;
+        });
+    return toolsResults;
+}
+
+function removeDuplicateResults(results) {
+    const uniqueTools = [];
+    return results.filter((tool) => {
+        if (!uniqueTools.includes(tool.id)) {
+            uniqueTools.push(tool.id);
+            return true;
+        } else {
+            return false;
         }
     });
-    return norm_results;
+}
+
+function setSort(tool, results) {
+    return { [TOOLS_RESULTS_SORT_LABEL]: results.indexOf(tool.id) };
+}
+
+function sortToolsResults(toolsResults) {
+    return orderBy(toolsResults, [TOOLS_RESULTS_SORT_LABEL], ["asc"]);
+}
+
+function deleteEmptyToolsSections(tools, results) {
+    let isSection = false;
+    let isMatchedTool = false;
+    tools = tools
+        .filter((section) => {
+            isSection = section.elems && section.elems.length > 0;
+            isMatchedTool = !section.text && results.includes(section.id);
+            return isSection || isMatchedTool;
+        })
+        .sort((sectionPrevious, sectionCurrent) => {
+            if (sectionPrevious.elems.length == 0 || sectionCurrent.elems.length == 0) {
+                return 0;
+            }
+            return results.indexOf(sectionPrevious.elems[0].id) - results.indexOf(sectionCurrent.elems[0].id);
+        });
+
+    return tools;
+}
+
+function hideToolsSection(tools) {
+    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
+}
+
+function flattenTools(tools) {
+    let normalizedTools = [];
+    tools.forEach((section) => {
+        normalizedTools = normalizedTools.concat(flattenToolsSection(section));
+    });
+    return normalizedTools;
 }

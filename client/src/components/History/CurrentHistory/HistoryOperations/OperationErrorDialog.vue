@@ -1,8 +1,8 @@
 <template>
     <b-modal
         v-model="show"
-        title="Something went wrong..."
-        header-text-variant="danger"
+        :title="title"
+        :header-text-variant="titleVariant"
         title-tag="h2"
         scrollable
         ok-only
@@ -14,6 +14,9 @@
         </p>
         <p v-else v-localize>The operation failed for the following reasons:</p>
         <div>
+            <ul v-if="errorMessage">
+                <li>{{ errorMessage }}</li>
+            </ul>
             <ul>
                 <li v-for="(reason, index) in reasons" :key="`error-${index}`">
                     {{ reason }}
@@ -51,7 +54,20 @@ export default {
             if (this.operationError && this.operationError.result) {
                 return [...new Set(this.operationError.result.errors.map((e) => e.error))];
             }
+            const response_error = this.operationError?.errorMessage?.response?.data?.err_msg;
+            if (response_error) {
+                return [response_error];
+            }
             return [];
+        },
+        title() {
+            return this.isPartialSuccess ? "Some items could not be processed" : "Something went wrong...";
+        },
+        titleVariant() {
+            return this.isPartialSuccess ? "warning" : "danger";
+        },
+        errorMessage() {
+            return this.operationError?.errorMessage?.message;
         },
     },
     methods: {

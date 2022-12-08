@@ -5,6 +5,7 @@ Universe configuration builder.
 
 import configparser
 import ipaddress
+import json
 import locale
 import logging
 import logging.config
@@ -25,6 +26,7 @@ from typing import (
     Optional,
     Set,
     SupportsInt,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
@@ -35,6 +37,7 @@ from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
     listify,
+    size_to_bytes,
     string_as_bool,
     unicodify,
 )
@@ -42,7 +45,6 @@ from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
 from galaxy.util.properties import (
-    find_config_file,
     read_properties_from_file,
     running_from_source,
 )
@@ -50,6 +52,9 @@ from ..version import (
     VERSION_MAJOR,
     VERSION_MINOR,
 )
+
+if TYPE_CHECKING:
+    from galaxy.model import User
 
 try:
     from importlib.resources import files  # type: ignore[attr-defined]
@@ -99,6 +104,12 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "level": "INFO",
             "qualname": "botocore",
         },
+        "gunicorn.access": {
+            "level": "INFO",
+            "qualname": "gunicorn.access",
+            "propagate": False,
+            "handlers": ["console"],
+        },
     },
     "filters": {
         "stack": {
@@ -121,6 +132,8 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
     },
 }
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
+
+VERSION_JSON_FILE = "version.json"
 
 
 def configure_logging(config, facts=None):
@@ -271,7 +284,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 
     def _set_config_base(self, config_kwargs):
         def _set_global_conf():
-            self.config_file = find_config_file("galaxy")
+            self.config_file = config_kwargs.get("__file__", None)
             self.global_conf = config_kwargs.get("global_conf")
             self.global_conf_parser = configparser.ConfigParser()
             if not self.config_file and self.global_conf and "__file__" in self.global_conf:
@@ -443,6 +456,11 @@ class BaseAppConfiguration(HasDynamicProperties):
             return value
 
         for key, value in kwargs.items():
+            if key in self.schema._deprecated_aliases:
+                new_key = self.schema._deprecated_aliases[key]
+                log.warning(f"Option {key} has been deprecated in favor of {new_key}")
+                key = new_key
+
             if key in self.schema.app_schema:
                 value = convert_datatype(key, value)
                 if value and self.deprecated_dirs:
@@ -561,9 +579,9 @@ class CommonConfigurationMixin:
         self._admin_users = value
         self.admin_users_list = listify(value)
 
-    def is_admin_user(self, user):
+    def is_admin_user(self, user: Optional["User"]) -> bool:
         """Determine if the provided user is listed in `admin_users`."""
-        return user and (user.email in self.admin_users_list or user.bootstrap_admin_user)
+        return user is not None and (user.email in self.admin_users_list or user.bootstrap_admin_user)
 
     @property
     def sentry_dsn_public(self):
@@ -662,6 +680,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     database_connection: str
     tool_path: str
     tool_data_path: str
+    new_file_path: str
+    drmaa_external_runjob_script: str
+    track_jobs_in_database: bool
+    monitor_thread_join_timeout: int
+    manage_dependency_relationships: bool
+    enable_tool_shed_check: bool
     builds_file_path: str
     len_file_path: str
     integrated_tool_panel_config: str
@@ -677,9 +701,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     hours_between_check: int
     galaxy_data_manager_data_path: str
     use_remote_user: bool
-    cluster_files_directory: str
     preserve_python_environment: str
-    email_from: str
+    email_from: Optional[str]
     workflow_resource_params_mapper: str
     sanitize_allowlist_file: str
     allowed_origin_hostnames: List[str]
@@ -752,7 +775,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         return val
 
-    def _process_config(self, kwargs):
+    def _process_config(self, kwargs: Dict[str, Any]) -> None:
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
@@ -764,6 +787,20 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         self.version_major = VERSION_MAJOR
         self.version_minor = VERSION_MINOR
+        # Try loading extra version info
+        self.version_extra = None
+        json_file = os.environ.get(
+            "GALAXY_VERSION_JSON_FILE", self._in_root_dir(VERSION_JSON_FILE)
+        )  # TODO: add this to schema
+        try:
+            with open(json_file) as f:
+                extra_info = json.load(f)
+        except FileNotFoundError:
+            log.debug("No extra version JSON file detected at %s", json_file)
+        except ValueError:
+            log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
+        else:
+            self.version_extra = extra_info
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))
@@ -785,7 +822,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.tool_data_path = self._in_data_dir(self.schema.defaults["tool_data_path"])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
-        self.oidc = {}
+        self.oidc: Dict[str, Dict] = {}
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get("integrated_tool_panel_tracking_directory")
         if integrated_tool_panel_tracking_directory:
@@ -843,7 +880,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             if len(ip.strip()) > 0
         ]
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
-        self.cluster_files_directory = self._in_root_dir(self.cluster_files_directory)
 
         # Fall back to legacy job_working_directory config variable if set.
         self.jobs_directory = self._in_data_dir(kwargs.get("jobs_directory", self.job_working_directory))
@@ -854,8 +890,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get("output_size_limit", 0))
         # activation_email was used until release_15.03
-        activation_email = kwargs.get("activation_email")
-        self.email_from = self.email_from or activation_email
+        self.email_from = self.email_from or kwargs.get("activation_email")
 
         self.email_domain_blocklist_content = (
             self._load_list_from_file(self._in_config_dir(self.email_domain_blocklist_file))
@@ -941,10 +976,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == "none":
             self.tool_dependency_dir = None
-        if self.involucro_path is None:
-            target_dir = self.tool_dependency_dir or self.schema.defaults["tool_dependency_dir"]
-            self.involucro_path = self._in_data_dir(os.path.join(target_dir, "involucro"))
-        self.involucro_path = self._in_root_dir(self.involucro_path)
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(",")]  # type: ignore[attr-defined]
 
@@ -999,7 +1030,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 self.server_name = arg.split("=", 1)[-1]
         # Allow explicit override of server name in config params
         if "server_name" in kwargs:
-            self.server_name = kwargs.get("server_name")
+            self.server_name = kwargs["server_name"]
         # The application stack code may manipulate the server name. It also needs to be accessible via the get() method
         # for galaxy.util.facts()
         self.config_dict["base_server_name"] = self.base_server_name = self.server_name
@@ -1102,6 +1133,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
 
         log_destination = kwargs.get("log_destination")
+        log_rotate_size = size_to_bytes(unicodify(kwargs.get("log_rotate_size", 0)))
+        log_rotate_count = int(kwargs.get("log_rotate_count", 0))
         galaxy_daemon_log_destination = os.environ.get("GALAXY_DAEMON_LOG")
         if log_destination == "stdout":
             LOGGING_CONFIG_DEFAULT["handlers"]["console"] = {
@@ -1113,19 +1146,23 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             }
         elif log_destination:
             LOGGING_CONFIG_DEFAULT["handlers"]["console"] = {
-                "class": "logging.FileHandler",
+                "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "stack",
                 "level": "DEBUG",
                 "filename": log_destination,
                 "filters": ["stack"],
+                "maxBytes": log_rotate_size,
+                "backupCount": log_rotate_count,
             }
         if galaxy_daemon_log_destination:
             LOGGING_CONFIG_DEFAULT["handlers"]["files"] = {
-                "class": "logging.FileHandler",
+                "class": "logging.handlers.RotatingFileHandler",
                 "formatter": "stack",
                 "level": "DEBUG",
                 "filename": galaxy_daemon_log_destination,
                 "filters": ["stack"],
+                "maxBytes": log_rotate_size,
+                "backupCount": log_rotate_count,
             }
             LOGGING_CONFIG_DEFAULT["root"]["handlers"].append("files")
 

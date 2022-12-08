@@ -36,7 +36,11 @@ const FAKE_OPERATION = () => {
 };
 
 async function mountReviewCleanupDialogWith(operation, totalItems = EXPECTED_TOTAL_ITEMS) {
-    const wrapper = mount(ReviewCleanupDialog, { propsData: { operation, totalItems, show: true } }, localVue);
+    const wrapper = mount(
+        ReviewCleanupDialog,
+        { propsData: { operation, totalItems, show: true, modalStatic: true } },
+        localVue
+    );
     await flushPromises();
     return wrapper;
 }

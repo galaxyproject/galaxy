@@ -27,6 +27,7 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalToolApp,
 )
+from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -330,7 +331,7 @@ class ToolEvaluator:
                 dataset = input_values[input.name]
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
-                    tool=self,
+                    tool=self.tool,
                     name=input.name,
                     compute_environment=self.compute_environment,
                 )
@@ -343,7 +344,7 @@ class ToolEvaluator:
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
                     compute_environment=self.compute_environment,
-                    tool=self,
+                    tool=self.tool,
                     name=input.name,
                 )
                 wrapper = DatasetCollectionWrapper(job_working_directory, dataset_collection, **wrapper_kwds)
@@ -390,7 +391,7 @@ class ToolEvaluator:
             if not isinstance(param_dict_value, (DatasetFilenameWrapper, DatasetListWrapper)):
                 wrapper_kwds = dict(
                     datatypes_registry=self.app.datatypes_registry,
-                    tool=self,
+                    tool=self.tool,
                     name=name,
                     compute_environment=self.compute_environment,
                 )
@@ -436,6 +437,7 @@ class ToolEvaluator:
             # Conditionally create empty output:
             # - may already exist (e.g. symlink output)
             # - parent directory might not exist (e.g. Pulsar)
+            # TODO: put into JobIO, needed for fetch_data tasks
             if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
                 open(output_path, "w").close()
 
@@ -462,7 +464,10 @@ class ToolEvaluator:
             Queries and returns an entry in a data table.
             """
             if table_name in self.app.tool_data_tables:
-                return self.app.tool_data_tables[table_name].get_entry(query_attr, query_val, return_attr)
+                table = self.app.tool_data_tables[table_name]
+                if not isinstance(table, TabularToolDataTable):
+                    raise Exception(f"Expected a TabularToolDataTable but got a {type(table)}: {table}.")
+                return table.get_entry(query_attr, query_val, return_attr)
 
         param_dict["__tool_directory__"] = self.compute_environment.tool_directory()
         param_dict["__get_data_table_entry__"] = get_data_table_entry

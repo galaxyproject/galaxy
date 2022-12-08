@@ -16,10 +16,7 @@ from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
 )
-from galaxy_test.driver.integration_util import (
-    IntegrationTestCase,
-    UsesCeleryTasks,
-)
+from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
 @shared_task
@@ -33,7 +30,9 @@ def process_page(request: CreatePagePayload):
     return f"content_format is {request.content_format} with annotation {request.annotation}"
 
 
-class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
+class TestCeleryTasksIntegration(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -73,7 +72,7 @@ class CeleryTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):
         assert hda_purged()
 
     def test_pdf_download(self):
-        short_term_storage_allocator = self._app[ShortTermStorageAllocator]
+        short_term_storage_allocator = self._app[ShortTermStorageAllocator]  # type: ignore[type-abstract]
         short_term_storage_target = short_term_storage_allocator.new_target("moo.pdf", "application/pdf")
         request_id = short_term_storage_target.request_id
         pdf_download_request = GeneratePdfDownload(

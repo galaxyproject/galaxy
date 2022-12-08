@@ -143,10 +143,10 @@ export default {
 
         // load genomes
         // TODO: provider...
-        UploadUtils.getUploadGenomes(this.defaultGenome)
-            .then((listGenomes) => {
+        UploadUtils.getUploadDbKeys(this.defaultDbKey)
+            .then((listDbKeys) => {
                 this.genomesSet = true;
-                this.listGenomes = listGenomes;
+                this.listGenomes = listDbKeys;
             })
             .catch((err) => {
                 console.log("Error in uploadModalContent, unable to load genomes", err);

@@ -1,7 +1,7 @@
 <template>
     <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
-            <span class="footer-section-name" v-localize>Citations</span>
+            <span v-localize class="footer-section-name">Citations</span>
             <font-awesome-icon
                 v-b-tooltip.hover
                 title="Copy all citations as BibTeX"
@@ -13,11 +13,10 @@
                 :key="index"
                 class="formatted-reference"
                 :citation="citation"
-                output-format="bibliography"
                 prefix="-" />
         </div>
         <div v-if="hasRequirements" class="mb-1">
-            <span class="footer-section-name" v-localize>Requirements</span>
+            <span v-localize class="footer-section-name">Requirements</span>
             <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
                 <font-awesome-icon v-b-tooltip.hover title="Learn more about Galaxy Requirements" icon="question" />
             </a>
@@ -27,11 +26,11 @@
             </div>
         </div>
         <div v-if="hasLicense" class="mb-1">
-            <span class="footer-section-name" v-localize>License</span>
+            <span v-localize class="footer-section-name">License</span>
             <License :license-id="license" />
         </div>
         <div v-if="hasReferences" class="mb-1">
-            <span class="footer-section-name" v-localize>References</span>
+            <span v-localize class="footer-section-name">References</span>
             <div v-for="(xref, index) in xrefs" :key="index">
                 -
                 <template v-if="xref.reftype == 'bio.tools'">

@@ -40,22 +40,9 @@ class TestRepairRepository(ShedTwillTestCase):
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_filter_repository(self):
         """Create and populate the filter_1430 repository.
@@ -64,13 +51,13 @@ class TestRepairRepository(ShedTwillTestCase):
 
         This repository will be depended on by the column_1430 repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=filter_repository_name,
             description=filter_repository_description,
             long_description=filter_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -92,13 +79,13 @@ class TestRepairRepository(ShedTwillTestCase):
 
         This repository will depend on the filter_1430 repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=column_repository_name,
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -119,11 +106,11 @@ class TestRepairRepository(ShedTwillTestCase):
         This is step 3 - Upload a repository_dependencies.xml file to the column_1430 repository that creates a repository
         dependency on the filter_1430 repository.
         """
-        column_repository = self.test_db_util.get_repository_by_name_and_owner("column_1430", common.test_user_1_name)
-        filter_repository = self.test_db_util.get_repository_by_name_and_owner("filter_1430", common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner("column_1430", common.test_user_1_name)
+        filter_repository = self._get_repository_by_name_and_owner("filter_1430", common.test_user_1_name)
         tool_shed_url = self.url
         name = filter_repository.name
-        owner = filter_repository.user.username
+        owner = filter_repository.owner
         changeset_revision = self.get_repository_tip(filter_repository)
         repository_dependency_tuple = (tool_shed_url, name, owner, changeset_revision)
         filepath = self.generate_temp_path("1430_repository_dependency")
@@ -137,13 +124,11 @@ class TestRepairRepository(ShedTwillTestCase):
         the repositories in a specified section of the tool panel.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        post_submit_strings_displayed = ["column_1430", "filter_1430"]
-        self.install_repository(
+        self._install_repository(
             "column_1430",
             common.test_user_1_name,
             category_name,
             new_tool_panel_section_label="repair",
-            post_submit_strings_displayed=post_submit_strings_displayed,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
         )
@@ -156,14 +141,5 @@ class TestRepairRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             "filter_1430", common.test_user_1_name
         )
-        strings_displayed = ["Uninstalling this repository will result in the following"]
-        strings_not_displayed = []
-        self.uninstall_repository(
-            installed_repository, strings_displayed=strings_displayed, strings_not_displayed=strings_not_displayed
-        )
-        strings_not_displayed = [
-            "filter_1430",
-            "Galaxy's filter tool for test 1430",
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self.uninstall_repository(installed_repository)
+        self._assert_has_no_installed_repos_with_names("filter_1430")

@@ -667,11 +667,11 @@ class FileParameter(MetadataParameter):
             value = MetadataTempFile.to_JSON(value)
         return value
 
-    def new_file(self, dataset=None, **kwds):
+    def new_file(self, dataset=None, metadata_tmp_files_dir=None, **kwds):
         # If there is a place to store the file (i.e. an object_store has been bound to
         # Dataset) then use a MetadataFile and assume it is accessible. Otherwise use
         # a MetadataTempFile.
-        if getattr(dataset.dataset, "object_store", False):
+        if getattr(dataset.dataset, "object_store", False) and not metadata_tmp_files_dir:
             mf = galaxy.model.MetadataFile(name=self.spec.name, dataset=dataset, **kwds)
             sa_session = object_session(dataset)
             if sa_session:
@@ -682,15 +682,17 @@ class FileParameter(MetadataParameter):
             # we need to make a tmp file that is accessable to the head node,
             # we will be copying its contents into the MetadataFile objects filename after restoring from JSON
             # we do not include 'dataset' in the kwds passed, as from_JSON_value() will handle this for us
-            return MetadataTempFile(**kwds)
+            return MetadataTempFile(metadata_tmp_files_dir=metadata_tmp_files_dir, **kwds)
 
 
 # This class is used when a database file connection is not available
 class MetadataTempFile:
     tmp_dir = "database/tmp"  # this should be overwritten as necessary in calling scripts
 
-    def __init__(self, **kwds):
+    def __init__(self, metadata_tmp_files_dir=None, **kwds):
         self.kwds = kwds
+        if metadata_tmp_files_dir:
+            self.tmp_dir = metadata_tmp_files_dir
         self._filename = None
 
     @property

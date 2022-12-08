@@ -5,20 +5,8 @@ variables:
     restore_cache:
       keys:
         - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-  restore_yarn_cache: &restore_yarn_cache
-    restore_cache:
-      keys:
-        - v1-repo-{{ .Environment.CIRCLE_SHA1 }}
-        - yarn-packages-{{ checksum "client/yarn.lock" }}
-  save_yarn_cache: &save_yarn_cache
-    save_cache:
-      key: yarn-packages-{{ checksum "client/yarn.lock" }}
-      paths:
-        - ~/.cache/yarn
   install_tox: &install_tox
     run: pip install tox
-  install_deb_reqs: &install_deb_reqs
-    run: sudo apt-get update && sudo apt-get install ffmpeg nodejs -y
   set_workdir: &set_workdir
     working_directory: ~/repo
   requires_get_code: &requires_get_code
@@ -93,33 +81,10 @@ jobs:
       - run: sudo apt-get install -y libxml2-utils
       - *install_tox
       - run: tox -e validate_test_tools
-  test_galaxy_packages:
-    docker:
-      - image: cimg/python:3.7
-    <<: *set_workdir
-    steps:
-      - *restore_repo_cache
-      - *install_tox
-      - *install_deb_reqs
-      - run: tox -e test_galaxy_packages
-  js_lint:
-    docker:
-      - image: cimg/node:16.13.2
-    <<: *set_workdir
-    steps:
-      - *restore_yarn_cache
-      - run: cd client && yarn install --frozen-lockfile
-      - *save_yarn_cache
-      - run: cd client && yarn run eslint
-      - run: cd client && yarn run format-check
 workflows:
   version: 2
   get_code_and_test:
     jobs:
       - get_code
-      - test_galaxy_packages:
-          <<: *requires_get_code
       - validate_test_tools:
-          <<: *requires_get_code
-      - js_lint:
           <<: *requires_get_code

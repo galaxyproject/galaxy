@@ -31,3 +31,9 @@ class TestStockToursTestCase(SeleniumTestCase):
         self.run_tour(
             os.path.join(STOCK_TOURS_DIRECTORY, "core.history.yaml"),
         )
+
+    @selenium_test
+    def test_core_deferred(self):
+        self.run_tour(
+            os.path.join(STOCK_TOURS_DIRECTORY, "core.deferred.yaml"),
+        )

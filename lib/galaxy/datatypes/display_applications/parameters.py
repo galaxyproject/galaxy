@@ -100,6 +100,8 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         assert data, "Base dataset could not be found in values provided to DisplayApplicationDataParameter"
         if isinstance(data, DisplayDataValueWrapper):
             data = data.value
+        if data.state != data.states.OK:
+            return None
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
             assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
@@ -109,8 +111,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                 rval = data.get_converted_files_by_type(ext)
                 if rval:
                     return rval
-
-            direct_match, target_ext, converted_dataset = data.find_conversion_destination(self.formats)
+            direct_match, target_ext, _ = data.find_conversion_destination(self.formats)
             assert direct_match or target_ext is not None, f"No conversion path found for data param: {self.name}"
             return None
         return data
@@ -214,7 +215,7 @@ class DisplayParameterValueWrapper:
         if self.parameter.guess_mime_type:
             mime, encoding = mimetypes.guess_type(self._url)
             if not mime:
-                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension(".".split(self._url)[-1], None)
+                mime = self.trans.app.datatypes_registry.get_mimetype_by_extension(self._url.split(".")[-1], None)
             if mime:
                 return mime
         return "text/plain"
@@ -269,10 +270,10 @@ class DisplayDataValueWrapper(DisplayParameterValueWrapper):
             if not mime:
                 if action_param_extra:
                     mime = self.trans.app.datatypes_registry.get_mimetype_by_extension(
-                        ".".split(action_param_extra)[-1], None
+                        action_param_extra.split(".")[-1], None
                     )
                 if not mime:
-                    mime = self.trans.app.datatypes_registry.get_mimetype_by_extension(".".split(self._url)[-1], None)
+                    mime = self.trans.app.datatypes_registry.get_mimetype_by_extension(self._url.split(".")[-1], None)
             if mime:
                 return mime
         if hasattr(self.value, "get_mime"):

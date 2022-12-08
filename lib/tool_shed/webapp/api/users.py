@@ -2,6 +2,7 @@ import logging
 
 import tool_shed.util.shed_util_common as suc
 from galaxy import (
+    exceptions,
     util,
     web,
 )
@@ -18,7 +19,7 @@ log = logging.getLogger(__name__)
 class UsersController(BaseAPIController):
     """RESTful controller for interactions with users in the Tool Shed."""
 
-    @web.legacy_expose_api
+    @web.expose_api
     @web.require_admin
     def create(self, trans, payload, **kwd):
         """
@@ -32,22 +33,19 @@ class UsersController(BaseAPIController):
                 :param password (required): the password of the user
                 :param username (required): the public username of the user
         """
-        user_dict = dict(message="", status="ok")
         # Get the information about the user to be created from the payload.
         email = payload.get("email", "")
         password = payload.get("password", "")
         username = payload.get("username", "")
         message = self.__validate(trans, email=email, password=password, confirm=password, username=username)
         if message:
-            message = f"email: {email}, username: {username} - {message}"
-            user_dict["message"] = message
-            user_dict["status"] = "error"
-        else:
-            # Create the user.
-            user = self.__create_user(trans, email, username, password)
-            user_dict = user.to_dict(view="element", value_mapper=self.__get_value_mapper(trans))
-            user_dict["message"] = f"User '{str(user.username)}' has been created."
-            user_dict["url"] = web.url_for(controller="users", action="show", id=trans.security.encode_id(user.id))
+            raise exceptions.RequestParameterInvalidException(message)
+
+        # Create the user.
+        user = self.__create_user(trans, email, username, password)
+        user_dict = user.to_dict(view="element", value_mapper=self.__get_value_mapper(trans))
+        user_dict["message"] = f"User '{str(user.username)}' has been created."
+        user_dict["url"] = web.url_for(controller="users", action="show", id=trans.security.encode_id(user.id))
         return user_dict
 
     def __create_user(self, trans, email, username, password):
@@ -67,7 +65,7 @@ class UsersController(BaseAPIController):
         value_mapper = {"id": trans.security.encode_id}
         return value_mapper
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def index(self, trans, deleted=False, **kwd):
         """
         GET /api/users
@@ -86,7 +84,7 @@ class UsersController(BaseAPIController):
             user_dicts.append(user_dict)
         return user_dicts
 
-    @web.legacy_expose_api_anonymous
+    @web.expose_api_anonymous
     def show(self, trans, id, **kwd):
         """
         GET /api/users/{encoded_user_id}

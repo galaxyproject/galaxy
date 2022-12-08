@@ -1002,7 +1002,7 @@ class CIF(GenericMolFile):
         Try to guess if the file is a CIF file.
 
         The CIF format and the Relion STAR format have a shared origin.
-        Note therefore that STAR files and the STAR sniffer also use "data_" blocks.
+        Note therefore that STAR files and the STAR sniffer also use ``data_`` blocks.
         STAR files will not pass the CIF sniffer, but CIF files can pass the STAR sniffer.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1382,7 +1382,7 @@ class ExtendedXYZ(XYZ):
             if properties is None:  # re.search returned None
                 raise ValueError(f"Could not find column properties in line: {comment}")
             properties = [s.split(":") for s in re.findall(r"[a-zA-Z]+:[SIRL]:[0-9]+", properties.group(1))]
-            total_columns = sum([int(s[2]) for s in properties])
+            total_columns = sum(int(s[2]) for s in properties)
 
             for _ in range(n_atoms):
                 atom_dict = {}

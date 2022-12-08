@@ -1,4 +1,4 @@
-from galaxy_test.api.test_workflows import ChangeDatatypeTestCase
+from galaxy_test.api.test_workflows import ChangeDatatypeTests
 from galaxy_test.base.populators import (
     DatasetPopulator,
     WorkflowPopulator,
@@ -6,9 +6,10 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 
-class ChangeDatatypeStoreByIdIntegrationTestCase(integration_util.IntegrationTestCase, ChangeDatatypeTestCase):
+class TestChangeDatatypeStoreByIdIntegration(integration_util.IntegrationTestCase, ChangeDatatypeTests):
     """Test changing datatype with object_store_store_by: id."""
 
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod

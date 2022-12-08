@@ -6,10 +6,12 @@ import shutil
 from tempfile import mkdtemp
 from typing import ClassVar
 
-from .driver_util import GalaxyTestDriver
+from galaxy_test.driver.driver_util import GalaxyTestDriver
 
-REQUIRED_ROLE = "user@bx.psu.edu"
-REQUIRED_GROUP = "fs_test_group"
+REQUIRED_ROLE_EXPRESSION = "user@bx.psu.edu"
+GROUP_A = "fs_test_group"
+GROUP_B = "group name with spaces"
+REQUIRED_GROUP_EXPRESSION = f"{GROUP_A} or '{GROUP_B}'"
 
 
 def get_posix_file_source_config(root_dir: str, roles: str, groups: str, include_test_data_dir: bool) -> str:
@@ -35,8 +37,16 @@ def get_posix_file_source_config(root_dir: str, roles: str, groups: str, include
     return rval
 
 
-def create_file_source_config_file_on(temp_dir, root_dir, include_test_data_dir):
-    file_contents = get_posix_file_source_config(root_dir, REQUIRED_ROLE, REQUIRED_GROUP, include_test_data_dir)
+def create_file_source_config_file_on(
+    temp_dir,
+    root_dir,
+    include_test_data_dir,
+    required_role_expression,
+    required_group_expression,
+):
+    file_contents = get_posix_file_source_config(
+        root_dir, required_role_expression, required_group_expression, include_test_data_dir
+    )
     file_path = os.path.join(temp_dir, "file_sources_conf_posix.yml")
     with open(file_path, "w") as f:
         f.write(file_contents)
@@ -49,14 +59,25 @@ class PosixFileSourceSetup:
     include_test_data_dir: ClassVar[bool] = False
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config, clazz_=None):
+    def handle_galaxy_config_kwds(
+        cls,
+        config,
+        clazz_=None,
+        # Require role for access but do not require groups by default on every test to simplify them
+        required_role_expression=REQUIRED_ROLE_EXPRESSION,
+        required_group_expression="",
+    ):
         temp_dir = os.path.realpath(mkdtemp())
         clazz_ = clazz_ or cls
         clazz_._test_driver.temp_directories.append(temp_dir)
         clazz_.root_dir = os.path.join(temp_dir, "root")
 
         file_sources_config_file = create_file_source_config_file_on(
-            temp_dir, clazz_.root_dir, clazz_.include_test_data_dir
+            temp_dir,
+            clazz_.root_dir,
+            clazz_.include_test_data_dir,
+            required_role_expression,
+            required_group_expression,
         )
         config["file_sources_config_file"] = file_sources_config_file
 

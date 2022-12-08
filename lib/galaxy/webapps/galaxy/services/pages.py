@@ -12,7 +12,7 @@ from galaxy.managers.pages import (
     PageSerializer,
 )
 from galaxy.schema import PdfDocumentType
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncFile,
     CreatePagePayload,
@@ -69,19 +69,21 @@ class PagesService(ServiceBase):
                 raise exceptions.AdminRequiredException("Only admins can index the pages of others")
 
         pages, _ = self.manager.index_query(trans, payload)
-        return PageSummaryList.parse_obj([trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages])
+        return PageSummaryList.construct(
+            __root__=[trans.security.encode_all_ids(p.to_dict(), recursive=True) for p in pages]
+        )
 
     def create(self, trans, payload: CreatePagePayload) -> PageSummary:
         """
         Create a page and return Page summary
         """
-        page = self.manager.create(trans, payload.dict())
+        page = self.manager.create_page(trans, payload)
         rval = trans.security.encode_all_ids(page.to_dict(), recursive=True)
         rval["content"] = page.latest_revision.content
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageSummary.parse_obj(rval)
+        return PageSummary.construct(**rval)
 
-    def delete(self, trans, id: EncodedDatabaseIdField):
+    def delete(self, trans, id: DecodedDatabaseIdField):
         """
         Deletes a page (or marks it as deleted)
         """
@@ -91,7 +93,7 @@ class PagesService(ServiceBase):
         page.deleted = True
         trans.sa_session.flush()
 
-    def show(self, trans, id: EncodedDatabaseIdField) -> PageDetails:
+    def show(self, trans, id: DecodedDatabaseIdField) -> PageDetails:
         """View a page summary and the content of the latest revision
 
         :param  id:    ID of page to be displayed
@@ -104,9 +106,9 @@ class PagesService(ServiceBase):
         rval["content"] = page.latest_revision.content
         rval["content_format"] = page.latest_revision.content_format
         self.manager.rewrite_content_for_export(trans, rval)
-        return PageDetails.parse_obj(rval)
+        return PageDetails.construct(**rval)
 
-    def show_pdf(self, trans, id: EncodedDatabaseIdField):
+    def show_pdf(self, trans, id: DecodedDatabaseIdField):
         """
         View a page summary and the content of the latest revision as PDF.
 
@@ -121,7 +123,7 @@ class PagesService(ServiceBase):
         internal_galaxy_markdown = page.latest_revision.content
         return internal_galaxy_markdown_to_pdf(trans, internal_galaxy_markdown, PdfDocumentType.page)
 
-    def prepare_pdf(self, trans, id: EncodedDatabaseIdField) -> AsyncFile:
+    def prepare_pdf(self, trans, id: DecodedDatabaseIdField) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         page = base.get_object(trans, id, "Page", check_ownership=False, check_accessible=True)
         short_term_storage_target = self.short_term_storage_allocator.new_target(

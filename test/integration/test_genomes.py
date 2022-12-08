@@ -26,9 +26,10 @@ def get_key(has_len_file=True):
     return BUILDS_DATA[pos].split("\t")[0]
 
 
-class GenomesTestCase(integration_util.IntegrationTestCase):
+class TestGenomes(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
         genomes_dir = cls.temp_config_dir("test_genomes")
         os.makedirs(genomes_dir)
         cls._setup_builds_file(config, genomes_dir)

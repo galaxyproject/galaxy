@@ -1,15 +1,22 @@
 import collections
 import logging
 import os
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.util import (
     asbool,
     plugin_config,
 )
 from .container_classes import (
+    Container,
     CONTAINER_CLASSES,
     DOCKER_CONTAINER_TYPE,
-    NULL_CONTAINER,
     SINGULARITY_CONTAINER_TYPE,
 )
 from .container_resolvers import ResolutionCache
@@ -27,6 +34,14 @@ from .container_resolvers.mulled import (
 )
 from .requirements import ContainerDescription
 
+if TYPE_CHECKING:
+    from beaker.cache import Cache
+
+    from .dependencies import (
+        AppInfo,
+        ToolInfo,
+    )
+
 log = logging.getLogger(__name__)
 
 
@@ -39,11 +54,11 @@ ResolvedContainerDescription = collections.namedtuple(
 
 
 class ContainerFinder:
-    def __init__(self, app_info, mulled_resolution_cache=None):
+    def __init__(self, app_info: "AppInfo", mulled_resolution_cache: Optional["Cache"] = None) -> None:
         self.app_info = app_info
         self.mulled_resolution_cache = mulled_resolution_cache
         self.default_container_registry = ContainerRegistry(app_info, mulled_resolution_cache=mulled_resolution_cache)
-        self.destination_container_registeries = {}
+        self.destination_container_registeries: Dict[str, "ContainerRegistry"] = {}
 
     def _enabled_container_types(self, destination_info):
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]
@@ -85,12 +100,12 @@ class ContainerFinder:
 
         return destination_container_registry or self.default_container_registry
 
-    def find_container(self, tool_info, destination_info, job_info):
+    def find_container(self, tool_info, destination_info, job_info) -> Optional[Container]:
         enabled_container_types = self._enabled_container_types(destination_info)
 
         # Short-cut everything else and just skip checks if no container type is enabled.
         if not enabled_container_types:
-            return NULL_CONTAINER
+            return None
 
         def __destination_container(container_description=None, container_id=None, container_type=None):
             if container_description:
@@ -150,7 +165,7 @@ class ContainerFinder:
                 if container:
                     return container
 
-        return NULL_CONTAINER
+        return None
 
     def resolution_cache(self):
         return self.default_container_registry.get_resolution_cache()
@@ -196,7 +211,7 @@ class ContainerFinder:
     ):
         # TODO: ensure destination_info is dict-like
         if not self.__container_type_enabled(container_type, destination_info):
-            return NULL_CONTAINER
+            return None
 
         # TODO: Right now this assumes all containers available when a
         # container type is - there should be more thought put into this.
@@ -212,13 +227,18 @@ class ContainerFinder:
 
 class NullContainerFinder:
     def find_container(self, tool_info, destination_info, job_info):
-        return []
+        return None
 
 
 class ContainerRegistry:
     """Loop through enabled ContainerResolver plugins and find first match."""
 
-    def __init__(self, app_info, destination_info=None, mulled_resolution_cache=None):
+    def __init__(
+        self,
+        app_info: "AppInfo",
+        destination_info: Optional[Dict[str, Any]] = None,
+        mulled_resolution_cache: Optional["Cache"] = None,
+    ) -> None:
         self.resolver_classes = self.__resolvers_dict()
         self.enable_mulled_containers = app_info.enable_mulled_containers
         self.app_info = app_info
@@ -292,7 +312,9 @@ class ContainerRegistry:
             cache.mulled_resolution_cache = self.mulled_resolution_cache
         return cache
 
-    def find_best_container_description(self, enabled_container_types, tool_info, **kwds):
+    def find_best_container_description(
+        self, enabled_container_types: List[str], tool_info: "ToolInfo", **kwds: Any
+    ) -> Optional[ContainerDescription]:
         """Yield best container description of supplied types matching tool info."""
         try:
             resolved_container_description = self.resolve(enabled_container_types, tool_info, **kwds)

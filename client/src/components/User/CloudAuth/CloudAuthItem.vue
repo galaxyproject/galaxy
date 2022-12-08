@@ -2,7 +2,7 @@
     <b-list-group-item class="cloud-auth-key" :class="statusClasses" :variant="variant" :button="!expanded">
         <header>
             <hgroup>
-                <h4 @click.prevent="expand()">{{ credential.title }}</h4>
+                <h2 class="h-sm" @click.prevent="expand()">{{ credential.title }}</h2>
                 <nav class="operations">
                     <ul>
                         <transition name="fade">

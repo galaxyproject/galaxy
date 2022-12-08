@@ -1,13 +1,5 @@
 import logging
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
-
 from galaxy.tool_util.verify.interactor import (
     GalaxyInteractorApi,
     verify_tool,
@@ -17,7 +9,6 @@ from galaxy_test.base.env import (
     setup_keep_outdir,
     target_url_parts,
 )
-from galaxy_test.base.instrument import register_job_data
 from galaxy_test.driver.testcase import DrivenFunctionalTestCase
 
 log = logging.getLogger(__name__)
@@ -46,11 +37,9 @@ class ToolTestCase(DrivenFunctionalTestCase):
             resource_parameters=resource_parameters,
             test_index=test_index,
             tool_version=tool_version,
-            register_job_data=register_job_data,
         )
 
 
-@nottest
 def build_tests(
     app=None,
     testing_shed_tools=False,
@@ -93,6 +82,14 @@ def build_tests(
         if key.startswith("TestForTool_"):
             del G[key]
 
+    def make_test_method(tool_version, test_index, test_function_name):
+        def test_tool(self):
+            self.do_it(tool_version=tool_version, test_index=test_index)
+
+        test_tool.__name__ = test_function_name
+
+        return test_tool
+
     tests_summary = galaxy_interactor.get_tests_summary()
     for tool_id, tool_summary in tests_summary.items():
         # Create a new subclass of ToolTestCase, dynamically adding methods
@@ -109,16 +106,7 @@ def build_tests(
             count = version_summary["count"]
             for i in range(count):
                 test_function_name = "test_tool_%06d" % all_versions_test_count
-
-                def make_test_method(tool_version, test_index):
-                    def test_tool(self):
-                        self.do_it(tool_version=tool_version, test_index=test_index)
-
-                    test_tool.__name__ = test_function_name
-
-                    return test_tool
-
-                test_method = make_test_method(tool_version, i)
+                test_method = make_test_method(tool_version, i, test_function_name)
                 test_method.__doc__ = "( %s ) > Test-%d" % (tool_id, all_versions_test_count + 1)
                 namespace[test_function_name] = test_method
                 namespace["tool_id"] = tool_id

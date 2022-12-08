@@ -17,11 +17,16 @@
                     :pressed="showAdvanced"
                     :variant="showAdvanced ? 'info' : 'secondary'"
                     data-description="show advanced filter toggle"
+                    aria-label="Show advanced filter"
                     @click="onToggle">
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
                 </b-button>
-                <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
+                <b-button
+                    size="sm"
+                    aria-label="Clear filters"
+                    data-description="clear filters"
+                    @click="updateFilter('')">
                     <icon icon="times" />
                 </b-button>
             </b-input-group-append>
@@ -33,13 +38,13 @@
             @keyup.enter="onSearch"
             @keyup.esc="onToggle">
             <small>Filter by name:</small>
-            <b-form-input v-model="filterSettings['name=']" size="sm" placeholder="any name" />
+            <b-form-input v-model="filterSettings['name:']" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by extension:</small>
-            <b-form-input v-model="filterSettings['extension=']" size="sm" placeholder="any extension" />
+            <b-form-input v-model="filterSettings['extension:']" size="sm" placeholder="any extension" />
             <small class="mt-1">Filter by tag:</small>
-            <b-form-input v-model="filterSettings['tag=']" size="sm" placeholder="any tag" />
+            <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-form-input v-model="filterSettings['state=']" size="sm" placeholder="any state" list="stateSelect" />
+            <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
             <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
             <small class="mt-1">Filter by item index:</small>
             <b-form-group class="m-0">
@@ -51,21 +56,13 @@
             <small class="mt-1">Filter by creation time:</small>
             <b-form-group class="m-0">
                 <b-input-group>
-                    <b-form-input v-model="filterSettings['create_time>']" size="sm" placeholder="created after" />
+                    <b-form-input v-model="create_time_gt" size="sm" placeholder="created after" />
                     <b-input-group-append>
-                        <b-form-datepicker
-                            v-model="filterSettings['create_time>']"
-                            reset-button
-                            button-only
-                            size="sm" />
+                        <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
                     </b-input-group-append>
-                    <b-form-input v-model="filterSettings['create_time<']" size="sm" placeholder="created before" />
+                    <b-form-input v-model="create_time_lt" size="sm" placeholder="created before" />
                     <b-input-group-append>
-                        <b-form-datepicker
-                            v-model="filterSettings['create_time<']"
-                            reset-button
-                            button-only
-                            size="sm" />
+                        <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
                     </b-input-group-append>
                 </b-input-group>
             </b-form-group>
@@ -85,11 +82,10 @@
 </template>
 
 <script>
-import { getFilters, toAlias } from "store/historyStore/model/filtering";
 import DebouncedInput from "components/DebouncedInput";
-import { STATES } from "components/History/Content/model/states";
-import { getFilterText } from "./filterConversion";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
+import { STATES } from "components/History/Content/model/states";
+import { getFilters, getFilterText, toAlias } from "utils/filterConversion";
 
 export default {
     components: {
@@ -99,6 +95,12 @@ export default {
     props: {
         filterText: { type: String, default: null },
         showAdvanced: { type: Boolean, default: false },
+    },
+    data() {
+        return {
+            create_time_gt: "",
+            create_time_lt: "",
+        };
     },
     computed: {
         filterSettings() {
@@ -118,12 +120,20 @@ export default {
             return Object.keys(STATES);
         },
     },
+    watch: {
+        filterSettings() {
+            this.create_time_gt = this.filterSettings["create_time>"];
+            this.create_time_lt = this.filterSettings["create_time<"];
+        },
+    },
     methods: {
         onOption(name, value) {
             this.filterSettings[name] = value;
         },
         onSearch() {
             this.onToggle();
+            this.filterSettings["create_time>"] = this.create_time_gt;
+            this.filterSettings["create_time<"] = this.create_time_lt;
             this.updateFilter(getFilterText(this.filterSettings));
         },
         onToggle() {

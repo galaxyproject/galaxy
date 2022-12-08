@@ -60,7 +60,7 @@
                 </template>
                 <template v-slot:row-details="row">
                     <b-card>
-                        <h5>Command Line</h5>
+                        <h2 class="h-text">Command Line</h2>
                         <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
                         <template v-slot:footer>
                             <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>

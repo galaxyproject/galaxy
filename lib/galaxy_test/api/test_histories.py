@@ -32,7 +32,7 @@ class BaseHistories:
         post_data = dict(name=name)
         create_response = self._post("histories", data=post_data).json()
         self._assert_has_keys(create_response, "name", "id")
-        self.assertEqual(create_response["name"], name)
+        assert create_response["name"] == name
         return create_response
 
     def _assert_history_length(self, history_id, n):
@@ -42,7 +42,7 @@ class BaseHistories:
         assert len(contents) == n, contents
 
 
-class HistoriesApiTestCase(ApiTestCase, BaseHistories):
+class TestHistoriesApi(ApiTestCase, BaseHistories):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -56,14 +56,14 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         # Make sure new history appears in index of user's histories.
         index_response = self._get("histories").json()
         indexed_history = [h for h in index_response if h["id"] == created_id][0]
-        self.assertEqual(indexed_history["name"], "TestHistory1")
+        assert indexed_history["name"] == "TestHistory1"
 
     def test_create_history_json(self):
         name = "TestHistoryJson"
         post_data = dict(name=name)
         create_response = self._post("histories", data=post_data, json=True).json()
         self._assert_has_keys(create_response, "name", "id")
-        self.assertEqual(create_response["name"], name)
+        assert create_response["name"] == name
         return create_response
 
     def test_show_history(self):
@@ -92,6 +92,15 @@ class HistoriesApiTestCase(ApiTestCase, BaseHistories):
         assert isinstance(state_ids, dict)
         self._assert_has_keys(state_details, *states)
         self._assert_has_keys(state_ids, *states)
+
+    def test_show_history_returns_expected_urls(self):
+        # This test can be dropped when the URL attributes become deprecated
+        history_id = self._create_history("TestHistoryForUrls")["id"]
+        show_response = self._show(history_id)
+        self._assert_has_key(show_response, "id", "url", "contents_url")
+
+        assert show_response["url"] == f"/api/histories/{history_id}"
+        assert show_response["contents_url"] == f"/api/histories/{history_id}/contents"
 
     def test_show_most_recently_used(self):
         history_id = self._create_history("TestHistoryRecent")["id"]
@@ -547,7 +556,7 @@ class ImportExportTests(BaseHistories):
             elements_checker(imported_collection_metadata["elements"])
 
 
-class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
+class TestImportExportHistory(ApiTestCase, ImportExportTests):
     task_based = False
 
     def setUp(self):
@@ -555,7 +564,7 @@ class ImportExportHistoryTestCase(ApiTestCase, ImportExportTests):
         self._set_up_populators()
 
 
-class SharingHistoryTestCase(ApiTestCase, BaseHistories, SharingApiTests):
+class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
     """Tests specific for the particularities of sharing Histories."""
 
     api_name = "histories"

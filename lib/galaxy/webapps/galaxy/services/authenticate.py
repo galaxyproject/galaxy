@@ -17,6 +17,7 @@ from galaxy.util import (
     smart_str,
     unicodify,
 )
+from galaxy.web.framework.base import Request
 
 
 class APIKeyResponse(BaseModel):
@@ -29,14 +30,14 @@ class AuthenticationService:
         self._auth_manager = auth_manager
         self._api_keys_manager = api_keys_manager
 
-    def get_api_key(self, environ: Dict[str, Any]) -> APIKeyResponse:
+    def get_api_key(self, environ: Dict[str, Any], request: Request) -> APIKeyResponse:
         auth_header = environ.get("HTTP_AUTHORIZATION")
         identity, password = self._decode_baseauth(auth_header)
         # check if this is an email address or username
         user = self._user_manager.get_user_by_identity(identity)
         if not user:
             raise exceptions.ObjectNotFound("The user does not exist.")
-        is_valid_user = self._auth_manager.check_password(user, password)
+        is_valid_user = self._auth_manager.check_password(user, password, request)
         if is_valid_user:
             key = self._api_keys_manager.get_or_create_api_key(user)
             return APIKeyResponse(api_key=key)

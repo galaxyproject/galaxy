@@ -164,18 +164,6 @@ class CommunityRBACAgent(RBACAgent):
                 return None
         return role
 
-    def get_repository_reviewer_role(self):
-        return (
-            self.sa_session.query(self.model.Role)
-            .filter(
-                and_(
-                    self.model.Role.table.c.name == "Repository Reviewer",
-                    self.model.Role.table.c.type == self.model.Role.types.SYSTEM,
-                )
-            )
-            .first()
-        )
-
     def set_entity_group_associations(self, groups=None, users=None, roles=None, delete_existing_assocs=True):
         if groups is None:
             groups = []
@@ -280,26 +268,6 @@ class CommunityRBACAgent(RBACAgent):
         if iuc_group is not None:
             for uga in iuc_group.users:
                 if uga.user.id == user.id:
-                    return True
-        return False
-
-    def user_can_review_repositories(self, user):
-        if user:
-            roles = user.all_roles()
-            if roles:
-                repository_reviewer_role = self.get_repository_reviewer_role()
-                if repository_reviewer_role:
-                    return repository_reviewer_role in roles
-        return False
-
-    def user_can_browse_component_review(self, app, repository, component_review, user):
-        if component_review and user:
-            if self.can_push(app, user, repository):
-                # A user with write permission on the repository can access private/public component reviews.
-                return True
-            else:
-                if self.user_can_review_repositories(user):
-                    # Reviewers can access private/public component reviews.
                     return True
         return False
 

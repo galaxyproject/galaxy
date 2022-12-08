@@ -37,7 +37,7 @@ export default {
             "createNewHistory",
             "updateHistory",
             "deleteHistory",
-            "setCurrentHistoryId",
+            "setCurrentHistory",
             "setHistory",
             "loadHistories",
             "secureHistory",
@@ -47,8 +47,10 @@ export default {
         // when user changes reload histories
         user: {
             immediate: true,
-            handler() {
-                this.loadHistories();
+            handler(newVal, oldVal) {
+                if (oldVal?.id != newVal?.id) {
+                    this.loadHistories();
+                }
             },
         },
 
@@ -73,7 +75,7 @@ export default {
                 setHistory: this.setHistory,
 
                 // select new history, basically just needs the id
-                setCurrentHistory: (h) => this.setCurrentHistoryId(h.id),
+                setCurrentHistory: (h) => this.setCurrentHistory(h.id),
 
                 // create new history then select it
                 createNewHistory: this.createNewHistory,
@@ -86,7 +88,7 @@ export default {
                 deleteHistory: (history) => this.deleteHistory({ history }),
                 deleteCurrentHistory: () => this.deleteHistory({ history: this.currentHistory }),
 
-                // purge history then clearn currentHistoryId
+                // purge history then clear currentHistoryId
                 purgeHistory: (history) => this.deleteHistory({ history, purge: true }),
                 purgeCurrentHistory: () => this.deleteHistory({ history: this.currentHistory, purge: true }),
 

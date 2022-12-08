@@ -2,6 +2,7 @@
 A simple WSGI application/framework.
 """
 import io
+import json
 import logging
 import os
 import socket
@@ -25,11 +26,17 @@ import webob.exc as httpexceptions
 from paste.response import HeaderDict
 
 from galaxy.util import smart_str
+from galaxy.util.resources import resource_string
 
 log = logging.getLogger(__name__)
 
 #: time of the most recent server startup
 server_starttime = int(time.time())
+try:
+    meta_json = json.loads(resource_string(__package__, "meta.json"))
+    server_starttime = meta_json.get("epoch") or server_starttime
+except Exception:
+    meta_json = {}
 
 
 def __resource_with_deleted(self, member_name, collection_name, **kwargs):
@@ -523,20 +530,41 @@ def send_file(start_response, trans, body):
         body = [b""]
     # Fall back on sending the file in chunks
     else:
-        body = iterate_file(body)
+        trans.response.headers["accept-ranges"] = "bytes"
+        start = None
+        end = None
+        if trans.request.range:
+            start = trans.request.range.start
+            end = trans.request.range.end
+            file_size = trans.response.headers["content-length"]
+            trans.response.headers["content-length"] = str(end - start)
+            trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
+            trans.response.status = 206
+        body = iterate_file(body, start, end)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 
 
-def iterate_file(fh):
+def iterate_file(fh, start=None, stop=None):
     """
     Progressively return chunks from `file`.
     """
+    length = None
+    if start:
+        fh.seek(start)
+    if stop:
+        length = stop - start
     while 1:
-        chunk = fh.read(CHUNK_SIZE)
+        read_size = CHUNK_SIZE
+        if length:
+            read_size = min(CHUNK_SIZE, length)
+            length -= read_size
+        chunk = fh.read(read_size)
         if not chunk:
             break
         yield chunk
+        if length is not None and length == 0:
+            break
 
 
 def flatten(seq):
@@ -567,6 +595,7 @@ __all__ = (
     "httpexceptions",
     "lazy_property",
     "routes",
+    "server_starttime",
     "walk_controller_modules",
     "WebApplication",
 )

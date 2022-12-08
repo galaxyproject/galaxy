@@ -49,7 +49,6 @@ import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
 import MarkdownDialog from "./MarkdownDialog";
-import { showMarkdownHelp } from "./markdownHelp";
 import { getAppRoot } from "onload/loadConfig";
 
 Vue.use(BootstrapVue);
@@ -365,9 +364,6 @@ export default {
             this.selectedType = "invocation_id";
             this.selectedLabels = this.getSteps();
             this.selectedShow = true;
-        },
-        onHelp() {
-            showMarkdownHelp();
         },
         async getVisualizations() {
             axios

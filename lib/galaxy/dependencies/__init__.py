@@ -58,7 +58,11 @@ class ConditionalDependencies:
         if "job_config" in self.config:
             load_job_config_dict(self.config.get("job_config"))
         else:
-            job_conf_path = self.config.get("job_config_file", join(dirname(self.config_file), "job_conf.xml"))
+            job_conf_path = self.config.get("job_config_file")
+            if not job_conf_path:
+                job_conf_path = join(dirname(self.config_file), "job_conf.yml")
+                if not exists(job_conf_path):
+                    job_conf_path = join(dirname(self.config_file), "job_conf.xml")
             if ".xml" in job_conf_path:
                 try:
                     try:
@@ -194,7 +198,7 @@ class ConditionalDependencies:
         return "galaxycloudrunner.rules" in self.job_rule_modules
 
     def check_total_perspective_vortex(self):
-        return "vortex.rules" in self.job_rule_modules
+        return "tpv.rules" in self.job_rule_modules
 
     def check_pbs_python(self):
         return "galaxy.jobs.runners.pbs:PBSJobRunner" in self.job_runners
@@ -204,6 +208,9 @@ class ConditionalDependencies:
 
     def check_chronos_python(self):
         return "galaxy.jobs.runners.chronos:ChronosJobRunner" in self.job_runners
+
+    def check_boto3_python(self):
+        return "galaxy.jobs.runners.aws:AWSBatchJobRunner" in self.job_runners
 
     def check_fluent_logger(self):
         return asbool(self.config["fluent_log"])
