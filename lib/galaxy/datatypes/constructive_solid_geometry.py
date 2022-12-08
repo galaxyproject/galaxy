@@ -8,6 +8,7 @@ import abc
 from typing import (
     List,
     Optional,
+    Tuple,
     TYPE_CHECKING,
 )
 
@@ -388,7 +389,9 @@ class Vtk:
             dataset.metadata.file_format = line
         return dataset
 
-    def set_structure_metadata(self, line, dataset, dataset_type):
+    def set_structure_metadata(
+        self, line: str, dataset: "DatasetInstance", dataset_type: Optional[str]
+    ) -> Tuple["DatasetInstance", Optional[str]]:
         """
         The fourth part of legacy VTK files is the dataset structure. The
         geometry part describes the geometry and topology of the dataset.
