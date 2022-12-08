@@ -147,7 +147,7 @@ Add spaces between the `script`, `template` and `style` blocks.
 > ```vue
 > <script setup>
 > // do stuff...
-> <script>
+> </script>
 >
 > <template>
 >     <!--template stuff-->
@@ -163,7 +163,7 @@ Add spaces between the `script`, `template` and `style` blocks.
 > ```vue
 > <script setup>
 > // do stuff...
-> <script>
+> </script>
 > <template>
 >     <!--template stuff-->
 > </template>
