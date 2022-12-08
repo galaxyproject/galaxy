@@ -27,7 +27,7 @@ class GoldenPath(Tabular):
     edam_format = "format_3693"
     file_ext = "agp"
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         # AGPFile reads and validates entire file.
         AGPFile(dataset.file_name)
         super().set_meta(dataset, **kwd)

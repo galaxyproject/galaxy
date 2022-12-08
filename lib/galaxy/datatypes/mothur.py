@@ -36,7 +36,7 @@ class Otu(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Otu files.
 
@@ -173,7 +173,7 @@ class GroupAbund(Otu):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, skip=1, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=1, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         # See if file starts with header line
@@ -297,7 +297,7 @@ class AlignCheck(Tabular):
         self.column_types = ["str", "int", "int", "int", "int", "int", "int", "int"]
         self.comment_lines = 1
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         dataset.metadata.column_names = self.column_names
@@ -354,7 +354,7 @@ class DistanceMatrix(Text):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, skip=0, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=0, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
         headers = iter_headers(dataset.file_name, sep="\t")
@@ -507,7 +507,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         self.column_names = ["Sequence", "Sequence", "Distance"]
         self.column_types = ["str", "str", "float"]
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, skip=None, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=None, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -595,7 +595,9 @@ class Group(Tabular):
         self.column_names = ["name", "group"]
         self.columns = 2
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, skip=None, max_data_lines=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, skip=None, max_data_lines=None, **kwd
+    ) -> None:
         super().set_meta(dataset, overwrite, skip, max_data_lines)
 
         group_names = set()
@@ -836,7 +838,7 @@ class CountTable(Tabular):
         super().__init__(**kwd)
         self.column_names = ["name", "total"]
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, skip=1, max_data_lines=None, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=1, max_data_lines=None, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         headers = get_headers(dataset.file_name, sep="\t", count=1)
@@ -1041,7 +1043,7 @@ class SffFlow(Tabular):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, skip=1, max_data_lines=None, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=1, max_data_lines=None, **kwd) -> None:
         super().set_meta(dataset, overwrite, 1, max_data_lines)
 
         headers = get_headers(dataset.file_name, sep="\t", count=1)

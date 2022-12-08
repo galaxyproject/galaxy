@@ -75,7 +75,7 @@ class GenomeGraphs(Tabular):
         super().__init__(**kwd)
         self.add_display_app("ucsc", "Genome Graph", "as_ucsc_display_file", "ucsc_links")
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, **kwd)
         dataset.metadata.markerCol = 1
         header = open(dataset.file_name).readlines()[0].strip().split("\t")
@@ -341,7 +341,7 @@ class Rgenetics(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         for lped/pbed eg
 
@@ -577,7 +577,7 @@ class IdeasPre(Html):
         self.add_composite_file("IDEAS_input_config.txt", description="IDEAS input config", is_binary=False)
         self.add_composite_file("tmp.tar.gz", description="Compressed archive of compressed bed files", is_binary=True)
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, **kwd)
         for fname in os.listdir(dataset.extra_files_path):
             if fname.startswith("chromosomes"):
@@ -834,7 +834,7 @@ class RexpBase(Html):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         NOTE we apply the tabular machinary to the phenodata extracted
         from a BioC eSet or affybatch.

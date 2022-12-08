@@ -108,7 +108,7 @@ class Sequence(data.Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """
@@ -564,7 +564,7 @@ class csFasta(Sequence):
                     return False
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
@@ -641,7 +641,7 @@ class Fastg(Sequence):
                     break  # we found a non-empty line, but it's not a header
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         with open(dataset.file_name) as fh:
             for i, line in enumerate(fh):
                 if not line:
@@ -690,7 +690,7 @@ class BaseFastq(Sequence):
     file_ext = "fastq"
     bases_regexp = re.compile(r"^[NGTAC 0123\.]*$", re.IGNORECASE)
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -1014,7 +1014,7 @@ class Maf(Alignment):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
         """
         Parses and sets species, chromosomes, index from MAF file.
         """
@@ -1140,7 +1140,7 @@ class MafCustomTrack(data.Text):
         name="vp_end", default="100", desc="Viewport End", readonly=True, optional=True, visible=False, no_value=""
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite=True, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Parses and sets viewport metadata from MAF file.
         """
@@ -1311,7 +1311,7 @@ class DotBracket(Sequence):
     sequence_regexp = re.compile(r"^[ACGTURYKMSWBDHVN]+$", re.I)
     structure_regexp = re.compile(r"^[\(\)\.\[\]{}]+$")
 
-    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines
         in dataset.
