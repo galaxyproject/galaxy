@@ -3,7 +3,7 @@ boltons
 docutils
 importlib_resources
 MarkupSafe
-packaging
+packaging<22  # packaging 22.0 dropped LegacyVersion
 pycryptodome
 PyYAML
 requests
