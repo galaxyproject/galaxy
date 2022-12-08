@@ -204,7 +204,7 @@ class GenericMolFile(Text):
 class MOL(GenericMolFile):
     file_ext = "mol"
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number molecules, in the case of MOL its always one.
         """
@@ -257,7 +257,7 @@ class SDF(GenericMolFile):
                 break
         return False
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of molecules in dataset.
         """
@@ -340,7 +340,7 @@ class MOL2(GenericMolFile):
                 break
         return False
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
@@ -426,7 +426,7 @@ class FPS(GenericMolFile):
         else:
             return False
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
@@ -567,7 +567,7 @@ class OBFS(Binary):
 class DRF(GenericMolFile):
     file_ext = "drf"
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
@@ -634,7 +634,7 @@ class PDB(GenericMolFile):
         else:
             return False
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Find Chain_IDs for metadata.
         """
@@ -788,7 +788,7 @@ class PQR(GenericMolFile):
         else:
             return False
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Find Optional Chain_IDs for metadata.
         """
@@ -885,7 +885,7 @@ class Cell(GenericMolFile):
                 return True
         return False
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Find Atom IDs for metadata.
         """
@@ -1046,7 +1046,7 @@ class CIF(GenericMolFile):
                 return False
         return False
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Find Atom IDs for metadata.
         """
@@ -1243,7 +1243,7 @@ class XYZ(GenericMolFile):
                     raise
         return blocks
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Find Atom IDs for metadata.
         """
@@ -1497,7 +1497,7 @@ class InChI(Tabular):
         no_value=0,
     )
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
@@ -1562,7 +1562,7 @@ class SMILES(Tabular):
         no_value=0,
     )
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
@@ -1598,7 +1598,7 @@ class CML(GenericXml):
         no_value=0,
     )
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """

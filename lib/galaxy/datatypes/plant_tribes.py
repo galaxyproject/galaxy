@@ -103,7 +103,7 @@ class PlantTribesKsComponents(Tabular):
         except Exception:
             return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.

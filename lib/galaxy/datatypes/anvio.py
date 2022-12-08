@@ -97,7 +97,7 @@ class AnvioDB(AnvioComposite):
         if self._anvio_basename is not None:
             self.add_composite_file(self._anvio_basename, is_binary=True, optional=False)
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """

@@ -183,7 +183,7 @@ class _SpalnDb(Data):
             return None
         raise NotImplementedError("Can't split spaln database")
 
-    def set_meta(self, dataset, **kwd) -> None:
+    def set_meta(self, dataset: "DatasetInstance", **kwd) -> None:
         super().set_meta(dataset, **kwd)
         efp = dataset.extra_files_path
         for filename in os.listdir(efp):
