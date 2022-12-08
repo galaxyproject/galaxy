@@ -1,4 +1,6 @@
-import { checkFilter, getFilters, getQueryDict, testFilters, toAlias } from "./filterConversion";
+import { HistoryFilters } from "components/History/HistoryFilters";
+
+const { checkFilter, getFilters, getQueryDict, testFilters, toAlias } = HistoryFilters;
 
 const filterTexts = [
     "name:'name of item' hid>10 hid<100 create-time>'2021-01-01' update-time<'2022-01-01' state:success extension:ext tag:first deleted:False visible:'TRUE'",
