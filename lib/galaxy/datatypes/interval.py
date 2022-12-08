@@ -812,7 +812,7 @@ class Gff(Tabular, _RemoteCallMixin):
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
         self.add_display_app("gbrowse", "display in Gbrowse", "as_gbrowse_display_file", "gbrowse_links")
 
-    def set_attribute_metadata(self, dataset):
+    def set_attribute_metadata(self, dataset: "DatasetInstance") -> None:
         """
         Sets metadata elements for dataset's attributes.
         """
