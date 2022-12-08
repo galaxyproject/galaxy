@@ -2088,6 +2088,21 @@ galaxy:
   # production server.
   #bootstrap_admin_api_key: null
 
+  # Service ID for GA4GH services (exposed via the service-info endpoint
+  # for the Galaxy DRS API). If unset, one will be generated using the
+  # URL the target API requests are made against.
+  #ga4gh_service_id: null
+
+  # Service name for host organization (exposed via the service-info
+  # endpoint for the Galaxy DRS API). If unset, one will be generated
+  # using ga4gh_service_service_id.
+  #ga4gh_service_organization_name: null
+
+  # Organization URL for host organization (exposed via the service-info
+  # endpoint for the Galaxy DRS API). If unset, one will be generated
+  # using the URL the target API requests are made against.
+  #ga4gh_service_organization_url: null
+
   # Enable tool tags (associating tools with tags).  This has its own
   # option since its implementation has a few performance implications
   # on startup for large servers.

@@ -3833,6 +3833,43 @@
 
 
 ~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_id``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service ID for GA4GH services (exposed via the service-info
+    endpoint for the Galaxy DRS API). If unset, one will be generated
+    using the URL the target API requests are made against.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_organization_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service name for host organization (exposed via the service-info
+    endpoint for the Galaxy DRS API). If unset, one will be generated
+    using ga4gh_service_service_id.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_organization_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Organization URL for host organization (exposed via the
+    service-info endpoint for the Galaxy DRS API). If unset, one will
+    be generated using the URL the target API requests are made
+    against.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
 ``enable_tool_tags``
 ~~~~~~~~~~~~~~~~~~~~
 

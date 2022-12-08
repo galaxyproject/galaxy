@@ -116,4 +116,4 @@ class ComputeDatasetHashTaskRequest(BaseModel):
     dataset_id: int
     extra_files_path: Optional[str]
     hash_function: HashFunctionNameEnum
-    user: RequestUser
+    user: Optional[RequestUser]  # access checks should be done pre-celery so this is optional

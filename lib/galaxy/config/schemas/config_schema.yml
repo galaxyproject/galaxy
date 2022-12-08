@@ -2785,6 +2785,27 @@ mapping:
           a real admin user account via API.
           You should probably not set this on a production server.
 
+      ga4gh_service_id:
+        type: str
+        required: false
+        desc: |
+          Service ID for GA4GH services (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using the URL the target API requests are made against.
+
+      ga4gh_service_organization_name:
+        type: str
+        required: false
+        desc: |
+          Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using ga4gh_service_service_id.
+
+      ga4gh_service_organization_url:
+        type: str
+        required: False
+        desc: |
+          Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using the URL the target API requests are made against.
+
       enable_tool_tags:
         type: bool
         default: false
