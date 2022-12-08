@@ -10,6 +10,7 @@
             <button id="monthView" @click="changeMonthView">Month View</button>
             <button id="hourView" @click="changeHourView">Hour View</button>
             <button id="minuteView" @click="changeMinuteView">Minute View</button>
+            </div>
             <DateTimeModal v-if="openModal" @closeModal="closeModal" :openModal="openModal" :dateTimeVal="dateTimeVal" @changeDate="changeDate" />
         </div>
     </div>
