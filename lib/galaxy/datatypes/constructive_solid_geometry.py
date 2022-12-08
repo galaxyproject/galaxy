@@ -370,7 +370,7 @@ class Vtk:
             if len(field_components) > 0:
                 dataset.metadata.field_components = field_components
 
-    def set_initial_metadata(self, i, line, dataset):
+    def set_initial_metadata(self, i: int, line: str, dataset: "DatasetInstance") -> "DatasetInstance":
         if i == 0:
             # The first part of legacy VTK files is the file version and
             # identifier. This part contains the single line:
