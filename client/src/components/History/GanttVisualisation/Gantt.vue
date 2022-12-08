@@ -9,7 +9,6 @@
             <button id="monthView" @click="changeMonthView">Month View</button>
             <button id="hourView" @click="changeHourView">Hour View</button>
             <button id="minuteView" @click="changeMinuteView">Minute View</button>
-            <button class="btn btn-info" @click="showModal">show modal</button>
             <DateTimeModal v-if="openModal" @closeModal="closeModal" :openModal="openModal" :dateTimeVal="dateTimeVal" @changeDate="changeDate" />
         </div>
     </div>
@@ -154,9 +153,6 @@ export default {
         closeModal() {
             this.openModal = false
         },
-        showModal() {
-            this.openModal = true;
-        },
         changeQDayView: function () {
             this.gantt.change_view_mode("Quarter Day");
         },
@@ -176,8 +172,8 @@ export default {
             this.gantt.change_view_mode("Hour");
         },
         changeMinuteView: function () {
-            this.dateTime = true;
-            this.gantt.change_view_mode("Minute");
+            this.openModal = true;
+            // this.gantt.change_view_mode("Minute");
         },
         createKeyedColorForButtons: function () {
             createClassWithCSS(
@@ -332,25 +328,7 @@ function createClassWithCSS(selector, style) {
 .sticky {
     position: fixed;
 }
-.modal-mask {
-    position: fixed;
-    z-index: 10000;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: table;
-}
 
-.modal-wrapper {
-    display: table-cell;
-    vertical-align: middle;
-}
-.modal-dialog,
-.modal-content {
-    /* 80% of window height */
-    height: 70%;
-}
 .gantt-container{
     position: inherit !important;
 }

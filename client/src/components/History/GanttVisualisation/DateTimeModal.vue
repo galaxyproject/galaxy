@@ -22,7 +22,7 @@
                                             v-model="date" 
                                             :value="date"
                                             @input="$emit('changeDate', date)"></datetime></b-col>
-                                            <b-col><button @click="$emit('changeDate', date)">Confirm Date</button></b-col>
+                                            <b-col><button @click="$emit('changeDate', date); close()">Confirm Date</button></b-col>
                                         </b-row>
                                     </b-container>
                                 </div>
@@ -63,3 +63,24 @@ export default {
 
 }
 </script>
+<style>
+.modal-mask {
+    position: fixed;
+    z-index: 10000;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: table;
+}
+
+.modal-wrapper {
+    display: table-cell;
+    vertical-align: middle;
+}
+.modal-dialog,
+.modal-content {
+    /* 80% of window height */
+    height: 70%;
+}
+</style>
