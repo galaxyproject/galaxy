@@ -6,10 +6,10 @@
         <b-row align-v="center">
             <b-col>
                 <component
-                    class="text-input"
                     :is="componentName"
                     :id="id"
                     v-model="currentValue"
+                    class="text-input"
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
@@ -25,8 +25,6 @@
 </template>
 
 <script>
-import Utils from "utils/utils";
-
 export default {
     props: {
         value: {

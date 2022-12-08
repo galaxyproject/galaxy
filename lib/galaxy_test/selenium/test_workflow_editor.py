@@ -102,7 +102,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         node.title.wait_for_and_click()
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
         self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter value")
-        time.sleep(5) # TODO: fix the race condition
+        time.sleep(5)  # TODO: fix the race condition
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])
@@ -116,7 +116,7 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         assert tool_state["select_single"] is None
         # Enable button but don't provide a value
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
-        time.sleep(5) # TODO: fix the race condition
+        time.sleep(5)  # TODO: fix the race condition
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         tool_state = json.loads(workflow["steps"]["0"]["tool_state"])

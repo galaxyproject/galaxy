@@ -1,8 +1,8 @@
 <template>
     <div>
         <b-form-checkbox
-            class="ui-switch"
             v-model="currentStatus"
+            class="ui-switch"
             value="optional_text"
             unchecked-value="no_optional_text"
             switch
@@ -29,11 +29,6 @@ import FormText from "./FormText";
 export default {
     components: {
         FormText,
-    },
-    data() {
-        return {
-            status: "no_optional_text"
-        }
     },
     props: {
         value: {
@@ -80,8 +75,10 @@ export default {
             required: false,
         },
     },
-    created() {
-        this.status = "no_optional_text";
+    data() {
+        return {
+            status: "no_optional_text",
+        };
     },
     computed: {
         currentValue: {
@@ -107,7 +104,10 @@ export default {
         },
         textEnabled() {
             return this.currentStatus == "optional_text";
-        }
+        },
+    },
+    created() {
+        this.status = "no_optional_text";
     },
     methods: {
         /** Submits a changed value. */
