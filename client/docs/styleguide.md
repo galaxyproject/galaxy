@@ -384,6 +384,10 @@ When possible, use strict equality.
 > if (value === 5) {
 >     // do stuff...
 > }
+>
+> if (otherValue !== 6) {
+>     // do more stuff...
+> }
 > ```
 >
 > **Don't**
@@ -391,6 +395,10 @@ When possible, use strict equality.
 > ```js
 > if (value == 5) {
 >     // do stuff...
+> }
+>
+> if (otherValue != 6) {
+>     // do more stuff...
 > }
 > ```
 
