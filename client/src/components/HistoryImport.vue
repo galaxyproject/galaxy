@@ -48,8 +48,8 @@
 
                 <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
                     <b-alert v-if="showImportUrlWarning" variant="warning" show>
-                        It looks like you are trying to import a history by URL from another galaxy instance. You need
-                        to create an archive, in order for this import to work.
+                        It looks like you are trying to import a published history from another galaxy instance. You can
+                        only import histories via an archive URL.
                         <ExternalLink
                             href="https://training.galaxyproject.org/training-material/faqs/galaxy/histories_transfer_entire_histories_from_one_galaxy_server_to_another.html">
                             Read more on the GTN
