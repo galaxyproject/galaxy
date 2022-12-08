@@ -5,6 +5,10 @@ from typing import (
 )
 
 from pydantic import Field
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -16,10 +20,10 @@ from galaxy.schema.schema import (
     UserModel,
 )
 
-QUOTA_MODEL_CLASS_NAME = "Quota"
-USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "UserQuotaAssociation"
-GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "GroupQuotaAssociation"
-DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "DefaultQuotaAssociation"
+QUOTA = Literal["Quota"]
+USER_QUOTA_ASSOCIATION = Literal["UserQuotaAssociation"]
+GROUP_QUOTA_ASSOCIATION = Literal["GroupQuotaAssociation"]
+DEFAULT_QUOTA_ASSOCIATION = Literal["DefaultQuotaAssociation"]
 
 
 class QuotaOperation(str, Enum):
@@ -66,7 +70,7 @@ QuotaOperationField = Field(
 
 
 class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: str = ModelClassField(DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: Annotated[DEFAULT_QUOTA_ASSOCIATION, ModelClassField()]
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -79,7 +83,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
 
 
 class UserQuota(Model):
-    model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: Annotated[USER_QUOTA_ASSOCIATION, ModelClassField()]
     user: UserModel = Field(
         ...,
         title="User",
@@ -88,7 +92,7 @@ class UserQuota(Model):
 
 
 class GroupQuota(Model):
-    model_class: str = ModelClassField(GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: Annotated[GROUP_QUOTA_ASSOCIATION, ModelClassField()]
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -99,7 +103,7 @@ class GroupQuota(Model):
 class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
-    model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
+    model_class: Annotated[QUOTA, ModelClassField()]
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",

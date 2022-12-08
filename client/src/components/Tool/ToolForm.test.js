@@ -1,7 +1,7 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "jest/helpers";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
 import ToolForm from "./ToolForm";
 import MockCurrentUser from "../providers/MockCurrentUser";
 import MockConfigProvider from "../providers/MockConfigProvider";

@@ -168,7 +168,10 @@ ifndef YARN
 else
 	cd client && yarn install $(YARN_INSTALL_OPTS)
 endif
-	
+
+
+update-client-api-schema: node-deps
+	$(IN_VENV) cd client && python ../scripts/dump_openapi_schema.py | yarn run openapi-typescript --output src/schema/schema.ts && npx prettier --write src/schema/schema.ts
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build

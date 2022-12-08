@@ -1,1 +1,1 @@
-export { getDatatypesMapper } from "./factory.js";
+export { getDatatypesMapper } from "./factory";

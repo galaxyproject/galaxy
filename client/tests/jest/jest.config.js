@@ -1,9 +1,19 @@
 const path = require("path");
 
+const { defaults: tsjPreset } = require("ts-jest/presets");
+
 // For a detailed explanation regarding each configuration property, visit:
 // https://jestjs.io/docs/en/configuration.html
 
-const modulesToTransform = ["bootstrap-vue", "rxjs", "@hirez_io", "winbox", "pretty-bytes"].join("|");
+const modulesToTransform = [
+    "bootstrap-vue",
+    "rxjs",
+    "@hirez_io",
+    "winbox",
+    "pretty-bytes",
+    "@fortawesome",
+    "openapi-typescript-fetch",
+].join("|");
 
 module.exports = {
     // All imported modules in your tests should be mocked automatically
@@ -72,7 +82,7 @@ module.exports = {
     // An array of file extensions your modules use
     moduleFileExtensions: ["js", "json", "vue", "yml", "txt", "ts"],
 
-    modulePaths: ["<rootDir>/src/", "<rootDir>/node_modules/", "<rootDir>/tests/"],
+    modulePaths: ["<rootDir>/src/", "<rootDir>/tests/","<rootDir>/node_modules/", "./"],
 
     // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
     // Some of these should turn into true mocks, instead of this module name mapping hack.
@@ -121,7 +131,7 @@ module.exports = {
     rootDir: path.join(__dirname, "../../"),
 
     // A list of paths to directories that Jest should use to search for files in
-    roots: ["<rootDir>/src", "<rootDir>/tests/jest/standalone/", "<rootDir>/docs/"],
+    roots: ["<rootDir>", "<rootDir>/src/", "<rootDir>/tests/jest/standalone/", "<rootDir>/docs/"],
 
     // Allows you to use a custom runner instead of Jest's default test runner
     // runner: "jest-runner",
@@ -172,11 +182,11 @@ module.exports = {
 
     // A map from regular expressions to paths to transformers
     transform: {
-        // [`(${modulesToTransform}).+\\.js$`]: "vue-jest",
+        ...tsjPreset.transform,
         "^.+\\.js$": "babel-jest",
-        ".*\\.(vue)$": "@vue/vue2-jest",
-        "\\.yml$": "yaml-jest",
-        "\\.txt$": "jest-raw-loader",
+        "^.*\\.(vue)$": "@vue/vue2-jest",
+        "^.+\\.ya?ml$": "<rootDir>/tests/jest/yaml-jest.js",
+        "^.+\\.txt$": "<rootDir>/tests/jest/jest-raw-loader.js",
     },
 
     // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation

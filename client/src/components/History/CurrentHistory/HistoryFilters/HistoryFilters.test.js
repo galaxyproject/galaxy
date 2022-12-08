@@ -1,7 +1,8 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import HistoryFilters from "./HistoryFilters";
-import { getQueryDict } from "store/historyStore/model/filtering";
+import { getQueryDict } from "utils/filterConversion";
+
 const localVue = getLocalVue();
 
 describe("HistoryFilters", () => {

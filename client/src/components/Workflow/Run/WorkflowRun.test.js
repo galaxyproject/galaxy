@@ -1,6 +1,6 @@
 import WorkflowRun from "./WorkflowRun.vue";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
-import { watchForChange } from "jest/helpers";
+import { watchForChange } from "tests/jest/helpers";
 
 import sampleRunData1 from "./testdata/run1.json";
 
