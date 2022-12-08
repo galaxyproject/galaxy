@@ -146,14 +146,19 @@ class CondaContext(installable.InstallableContext):
 
     def _guess_conda_properties(self) -> None:
         info = self.conda_info()
-        self._conda_version = packaging.version.parse(info["conda_version"])
+
+        try:
+            self._conda_version = packaging.version.parse(info["conda_version"])
+        except packaging.version.InvalidVersion:
+            log.warning(f'Unable to parse Conda version identifier: {info["conda_version"]}')
+
         self._conda_build_available = False
         conda_build_version = info.get("conda_build_version")
         if conda_build_version and conda_build_version != "not installed":
             try:
                 packaging.version.parse(conda_build_version)
                 self._conda_build_available = True
-            except Exception:
+            except packaging.version.InvalidVersion:
                 pass
 
     @property
