@@ -1,7 +1,6 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
 import HistoryFilters from "./HistoryFilters";
-import { getQueryDict } from "utils/filterConversion";
+import { getLocalVue } from "tests/jest/helpers";
 
 const localVue = getLocalVue();
 
@@ -13,8 +12,8 @@ describe("HistoryFilters", () => {
         expect(wrapper.emitted()["update:show-advanced"][toggleEmit][0]).toEqual(showAdvanced);
         await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"][toggleEmit][0] });
         const receivedText = wrapper.emitted()["update:filter-text"][filterEmit][0];
-        const receivedDict = getQueryDict(receivedText);
-        const parsedDict = getQueryDict(filterText);
+        const receivedDict = HistoryFilters.getQueryDict(receivedText);
+        const parsedDict = HistoryFilters.getQueryDict(filterText);
         expect(receivedDict).toEqual(parsedDict);
     }
 
