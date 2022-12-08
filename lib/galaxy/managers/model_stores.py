@@ -3,7 +3,9 @@ from typing import Optional
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.jobs.manager import JobManager
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.users import UserManager
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import (
     ImportDiscardedDataType,
@@ -29,6 +31,28 @@ from galaxy.web.short_term_storage import (
 )
 
 
+class ModelStoreUserContext(ProvidesUserContext):
+    def __init__(self, app: MinimalManagerApp, user: model.User) -> None:
+        self._app = app
+        self._user = user
+
+    @property
+    def app(self):
+        return self._app
+
+    @property
+    def url_builder(self):
+        raise NotImplementedError("URL builder not available in ModelStore context.")
+
+    def get_user(self):
+        return self._user
+
+    def set_user(self, user):
+        raise NotImplementedError("Cannot change user from ModelStore context.")
+
+    user = property(get_user, set_user)
+
+
 class ModelStoreManager:
     def __init__(
         self,
@@ -37,12 +61,14 @@ class ModelStoreManager:
         sa_session: galaxy_scoped_session,
         job_manager: JobManager,
         short_term_storage_monitor: ShortTermStorageMonitor,
+        user_manager: UserManager,
     ):
         self._app = app
         self._sa_session = sa_session
         self._job_manager = job_manager
         self._history_manager = history_manager
         self._short_term_storage_monitor = short_term_storage_monitor
+        self._user_manager = user_manager
 
     def setup_history_export_job(self, request: SetupHistoryExportJob):
         history_id = request.history_id
@@ -112,9 +138,13 @@ class ModelStoreManager:
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
-        with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-            target_uri
-        ) as export_store:
+        user_context = self._build_user_context(request.user.user_id)
+        with model.store.get_export_store_factory(
+            self._app,
+            model_store_format,
+            export_files=export_files,
+            user_context=user_context,
+        )(target_uri) as export_store:
             invocation = self._sa_session.query(model.WorkflowInvocation).get(request.invocation_id)
             export_store.export_workflow_invocation(
                 invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
@@ -124,9 +154,10 @@ class ModelStoreManager:
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
-        with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-            target_uri
-        ) as export_store:
+        user_context = self._build_user_context(request.user.user_id)
+        with model.store.get_export_store_factory(
+            self._app, model_store_format, export_files=export_files, user_context=user_context
+        )(target_uri) as export_store:
             if request.content_type == HistoryContentType.dataset:
                 hda = self._sa_session.query(model.HistoryDatasetAssociation).get(request.content_id)
                 export_store.add_dataset(hda)
@@ -140,9 +171,10 @@ class ModelStoreManager:
         model_store_format = request.model_store_format
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
-        with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-            target_uri
-        ) as export_store:
+        user_context = self._build_user_context(request.user.user_id)
+        with model.store.get_export_store_factory(
+            self._app, model_store_format, export_files=export_files, user_context=user_context
+        )(target_uri) as export_store:
             history = self._history_manager.by_id(request.history_id)
             export_store.export_history(
                 history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
@@ -150,7 +182,6 @@ class ModelStoreManager:
 
     def import_model_store(self, request: ImportModelStoreTaskRequest):
         import_options = ImportOptions(
-            discarded_data=ImportDiscardedDataType.FORCE,
             allow_library_creation=request.for_library,
         )
         history_id = request.history_id
@@ -158,16 +189,13 @@ class ModelStoreManager:
             history = self._sa_session.query(model.History).get(history_id)
         else:
             history = None
-        user_id = request.user.user_id
-        if user_id:
-            galaxy_user = self._sa_session.query(model.User).get(user_id)
-        else:
-            galaxy_user = None
+        user_context = self._build_user_context(request.user.user_id)
         model_import_store = source_to_import_store(
             request.source_uri,
             self._app,
-            galaxy_user,
             import_options,
+            model_store_format=request.model_store_format,
+            user_context=user_context,
         )
         new_history = history is None and not request.for_library
         if new_history:
@@ -183,6 +211,11 @@ class ModelStoreManager:
             )
         return object_tracker
 
+    def _build_user_context(self, user_id: int):
+        user = self._user_manager.by_id(user_id)
+        user_context = ModelStoreUserContext(self._app, user)
+        return user_context
+
 
 def create_objects_from_store(
     app: MinimalManagerApp,
@@ -195,12 +228,13 @@ def create_objects_from_store(
         discarded_data=ImportDiscardedDataType.FORCE,
         allow_library_creation=for_library,
     )
+    user_context = ModelStoreUserContext(app, galaxy_user) if galaxy_user is not None else None
     model_import_store = source_to_import_store(
         payload.store_content_uri or payload.store_dict,
         app=app,
-        galaxy_user=galaxy_user,
         import_options=import_options,
         model_store_format=payload.model_store_format,
+        user_context=user_context,
     )
     new_history = history is None and not for_library
     if new_history:

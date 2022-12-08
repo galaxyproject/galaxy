@@ -1,6 +1,7 @@
 import abc
 import contextlib
 import datetime
+import logging
 import os
 import shutil
 import tarfile
@@ -38,7 +39,10 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.files import ConfiguredFileSources
+from galaxy.files import (
+    ConfiguredFileSources,
+    ProvidesUserFileSourcesUserContext,
+)
 from galaxy.files.uris import stream_url_to_file
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
@@ -47,7 +51,9 @@ from galaxy.model.orm.util import (
     add_object_to_session,
     get_object_session,
 )
+from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import ObjectStore
+from galaxy.schema.schema import ModelStoreFormat
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import (
     FILENAME_VALID_CHARS,
@@ -63,6 +69,8 @@ from ..item_attrs import (
     get_item_annotation_str,
 )
 from ... import model
+
+log = logging.getLogger(__name__)
 
 ObjectKeyType = Union[str, int]
 
@@ -96,6 +104,7 @@ class StoreAppProtocol(Protocol):
     datatypes_registry: Registry
     object_store: ObjectStore
     security: IdEncodingHelper
+    tag_handler: GalaxyTagHandler
     model: GalaxyModelMapping
     file_sources: ConfiguredFileSources
 
@@ -582,9 +591,18 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                             pass
                         if not self.import_options.allow_edit:
                             # external import, metadata files need to be regenerated (as opposed to extended metadata dataset import)
-                            self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
-                                dataset_instance, history, **regenerate_kwds
-                            )
+                            if self.app.datatypes_registry.set_external_metadata_tool:
+                                self.app.datatypes_registry.set_external_metadata_tool.regenerate_imported_metadata_if_needed(
+                                    dataset_instance, history, **regenerate_kwds
+                                )
+                            else:
+                                # Try to set metadata directly. @mvdbeek thinks we should only record the datasets
+                                try:
+                                    if dataset_instance.has_metadata_files:
+                                        dataset_instance.datatype.set_meta(dataset_instance)
+                                except Exception:
+                                    log.debug(f"Metadata setting failed on {dataset_instance}", exc_info=True)
+                                    dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
 
                 if model_class == "HistoryDatasetAssociation":
                     if object_key in dataset_attrs:
@@ -1589,7 +1607,8 @@ class DirectoryModelExportStore(ModelExportStore):
         export_files: Optional[str] = None,
         strip_metadata_files: bool = True,
         serialize_jobs: bool = True,
-    ):
+        user_context=None,
+    ) -> None:
         """
         :param export_directory: path to export directory. Will be created if it does not exist.
         :param app: Galaxy App or app-like object. Must be provided if `for_edit` and/or `serialize_dataset_objects` are True
@@ -1613,6 +1632,7 @@ class DirectoryModelExportStore(ModelExportStore):
             sessionless = True
             security = IdEncodingHelper(id_secret="randomdoesntmatter")
 
+        self.user_context = ProvidesUserFileSourcesUserContext(user_context)
         self.file_sources = file_sources
         self.serialize_jobs = serialize_jobs
         self.sessionless = sessionless
@@ -2140,7 +2160,7 @@ class TarModelExportStore(DirectoryModelExportStore):
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(self.out_file)
-            file_source.write_from(file_source_path.path, self.out_file)
+            file_source.write_from(file_source_path.path, self.out_file, user_context=self.user_context)
         shutil.rmtree(self.temp_output_dir)
 
 
@@ -2179,16 +2199,22 @@ class BagArchiveModelExportStore(BagDirectoryModelExportStore):
             file_source_path = self.file_sources.get_file_source_path(self.file_source_uri)
             file_source = file_source_path.file_source
             assert os.path.exists(rval)
-            file_source.write_from(file_source_path.path, rval)
+            file_source.write_from(file_source_path.path, rval, user_context=self.user_context)
         shutil.rmtree(self.temp_output_dir)
 
 
-def get_export_store_factory(app, download_format: str, export_files=None) -> Callable[[str], ModelExportStore]:
+def get_export_store_factory(
+    app,
+    download_format: str,
+    export_files=None,
+    user_context=None,
+) -> Callable[[str], ModelExportStore]:
     export_store_class: Union[Type[TarModelExportStore], Type[BagArchiveModelExportStore]]
     export_store_class_kwds = {
         "app": app,
         "export_files": export_files,
         "serialize_dataset_objects": False,
+        "user_context": user_context,
     }
     if download_format in ["tar.gz", "tgz"]:
         export_store_class = TarModelExportStore
@@ -2237,10 +2263,11 @@ def imported_store_for_metadata(directory, object_store=None):
 def source_to_import_store(
     source: Union[str, dict],
     app: StoreAppProtocol,
-    galaxy_user: Optional[model.User],
     import_options: Optional[ImportOptions],
-    model_store_format: Optional[str] = None,
+    model_store_format: Optional[ModelStoreFormat] = None,
+    user_context=None,
 ) -> ModelImportStore:
+    galaxy_user = user_context.user if user_context else None
     if isinstance(source, dict):
         if model_store_format is not None:
             raise Exception(
@@ -2255,10 +2282,14 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
+        tag_handler = app.tag_handler.create_tag_handler_session()
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:
-            source_uri = stream_url_to_file(source_uri, app.file_sources, prefix="gx_import_model_store")
+            user_context = ProvidesUserFileSourcesUserContext(user_context)
+            source_uri = stream_url_to_file(
+                source_uri, app.file_sources, prefix="gx_import_model_store", user_context=user_context
+            )
             delete = True
         target_path = source_uri
         if target_path.endswith(".json"):
@@ -2273,11 +2304,11 @@ def source_to_import_store(
             )
         elif os.path.isdir(target_path):
             model_import_store = get_import_model_store_for_directory(
-                target_path, import_options=import_options, app=app, user=galaxy_user
+                target_path, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
             )
         else:
-            model_store_format = model_store_format or "tgz"
-            if model_store_format in ["tar.gz", "tgz", "tar"]:
+            model_store_format = model_store_format or ModelStoreFormat.TGZ
+            if ModelStoreFormat.is_compressed(model_store_format):
                 try:
                     temp_dir = mkdtemp()
                     target_dir = CompressedFile(target_path).extract(temp_dir)
@@ -2285,9 +2316,9 @@ def source_to_import_store(
                     if delete:
                         os.remove(target_path)
                 model_import_store = get_import_model_store_for_directory(
-                    target_dir, import_options=import_options, app=app, user=galaxy_user
+                    target_dir, import_options=import_options, app=app, user=galaxy_user, tag_handler=tag_handler
                 )
-            elif model_store_format in ["bag.gz", "bag.tar", "bag.zip"]:
+            elif ModelStoreFormat.is_bag(model_store_format):
                 model_import_store = BagArchiveImportModelStore(
                     target_path, import_options=import_options, app=app, user=galaxy_user
                 )

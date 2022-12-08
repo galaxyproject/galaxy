@@ -1,4 +1,6 @@
+import os
 import tarfile
+from uuid import uuid4
 
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -12,6 +14,7 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
 )
+from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
@@ -29,9 +32,24 @@ class ImportExportHistoryOutputsToWorkingDirIntegrationTestCase(ImportExportTest
         self._set_up_populators()
 
 
-class ImportExportHistoryViaTasksIntegrationTestCase(ImportExportTests, IntegrationTestCase, UsesCeleryTasks):
+class ImportExportHistoryViaTasksIntegrationTestCase(
+    ImportExportTests, IntegrationTestCase, UsesCeleryTasks, PosixFileSourceSetup
+):
     task_based = True
     framework_tool_and_types = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
+        UsesCeleryTasks.handle_galaxy_config_kwds(config)
+        cls.setup_ftp_config(config)
+
+    @classmethod
+    def setup_ftp_config(cls, config):
+        ftp_dir = cls.temp_config_dir("ftp")
+        os.makedirs(ftp_dir)
+        config["ftp_upload_dir"] = ftp_dir
+        config["ftp_upload_site"] = "ftp://cow.com"
 
     def setUp(self):
         super().setUp()
@@ -47,6 +65,59 @@ class ImportExportHistoryViaTasksIntegrationTestCase(ImportExportTests, Integrat
             async_history_name,
             "task based import history",
         )
+
+    def test_import_model_store_from_file_source_async_with_format(self):
+        history_name = f"for_export_format_async_{uuid4()}"
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+        # Add bam dataset to test metadata generation on import
+        self.dataset_populator.new_dataset(
+            history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
+        )
+        model_store_format = "tgz"  # Change to "rocrate.zip" when merging this forward and remove this comment, thanks!
+        target_uri = f"gxfiles://posix_test/history.{model_store_format}"
+
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
+        self.dataset_populator.import_history_from_uri_async(target_uri, model_store_format)
+
+        last_history = self._get("histories?limit=1").json()
+        assert len(last_history) == 1
+        imported_history = last_history[0]
+        imported_history_id = imported_history["id"]
+        assert imported_history_id != history_id
+        assert imported_history["name"] == history_name
+        self.dataset_populator.wait_for_history(imported_history_id)
+        history_contents = self.dataset_populator.get_history_contents(imported_history_id)
+        assert len(history_contents) == 3
+        # Only deleted datasets should appear as "discarded"
+        for dataset in history_contents:
+            if dataset["deleted"] is True:
+                assert dataset["state"] == "discarded"
+            else:
+                assert dataset["state"] == "ok"
+                # Check metadata generation
+            if dataset["extension"] == "bam":
+                imported_bam_details = self.dataset_populator.get_history_dataset_details(
+                    imported_history_id, dataset_id=dataset["id"]
+                )
+                bai_metadata = imported_bam_details["meta_files"][0]
+                assert bai_metadata["file_type"] == "bam_index"
+
+    def test_import_export_ftp(self):
+        history_name = f"for_export_ftp_async_{uuid4()}"
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+
+        model_store_format = "tgz"  # Change to "rocrate.zip" when merging this forward and remove this comment, thanks!
+        target_uri = f"gxftp://history.{model_store_format}"
+
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
+        self.dataset_populator.import_history_from_uri_async(target_uri, model_store_format)
+
+        last_history = self._get("histories?limit=1").json()
+        assert len(last_history) == 1
+        imported_history = last_history[0]
+        imported_history_id = imported_history["id"]
+        assert imported_history_id != history_id
+        assert imported_history["name"] == history_name
 
 
 class ImportExportHistoryContentsViaTasksIntegrationTestCase(IntegrationTestCase, UsesCeleryTasks):

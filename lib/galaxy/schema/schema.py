@@ -1291,6 +1291,14 @@ class ModelStoreFormat(str, Enum):
     BAG_DOT_TAR = "bag.tar"
     BAG_DOT_TGZ = "bag.tgz"
 
+    @classmethod
+    def is_compressed(cls, value: "ModelStoreFormat"):
+        return value in [cls.TAR_DOT_GZ, cls.TGZ, cls.TAR]
+
+    @classmethod
+    def is_bag(cls, value: "ModelStoreFormat"):
+        return value in [cls.BAG_DOT_TAR, cls.BAG_DOT_TGZ, cls.BAG_DOT_ZIP]
+
 
 class StoreContentSource(Model):
     store_content_uri: Optional[str]
