@@ -419,3 +419,5 @@ Use `??` to assign default values.
 > **Reason**
 >
 > The `??` operator uses the right hand value, when the left hand one is unassigned (`undefined` or `null`), while `||` does this on all falsely values (eg. `false` or `0`). This can lead to unexpected bugs in edge cases.
+>
+> [Read more on MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing#assigning_a_default_value_to_a_variable)
