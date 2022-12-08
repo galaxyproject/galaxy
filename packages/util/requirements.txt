@@ -5,6 +5,7 @@ importlib_resources
 MarkupSafe
 packaging<22  # packaging 22.0 dropped LegacyVersion
 pycryptodome
+pyparsing
 PyYAML
 requests
 Routes
