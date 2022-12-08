@@ -1,4 +1,4 @@
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import Tag from "./Tag";
 

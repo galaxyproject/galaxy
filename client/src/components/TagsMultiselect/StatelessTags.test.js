@@ -1,4 +1,4 @@
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import { useUserTags } from "composables/user";
 import { useToast } from "composables/toast";
