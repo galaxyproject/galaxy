@@ -1,19 +1,28 @@
 <template>
-    <div>
-        <svg id="gantt"></svg>
-        <div class="sticky">
-            <div class="timeButtonsDiv">
-            <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
-            <button id="HDayView" @click="changeHDayView">Half Day View</button>
-            <button id="dayView" @click="changeDayView">Day View</button>
-            <button id="weekView" @click="changeWeekView">Week View</button>
-            <button id="monthView" @click="changeMonthView">Month View</button>
-            <button id="hourView" @click="changeHourView">Hour View</button>
-            <button id="minuteView" @click="changeMinuteView">Minute View</button>
+    <CurrentUser v-slot="{ user }">
+        <UserHistories v-if="user" v-slot="{ historiesLoading }" :user="user">
+            <div>
+                <b-alert v-if="historiesLoading || isLoading" class="m-2" variant="info" show>
+                    <LoadingSpan message="Loading Gantt Visualization" />
+                </b-alert>
+                <div class="sticky">
+                    <div class="timeButtonsDiv">
+                        <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
+                        <button id="HDayView" @click="changeHDayView">Half Day View</button>
+                        <button id="dayView" @click="changeDayView">Day View</button>
+                        <button id="weekView" @click="changeWeekView">Week View</button>
+                        <button id="monthView" @click="changeMonthView">Month View</button>
+                        <button id="hourView" @click="changeHourView">Hour View</button>
+                        <button id="minuteView" @click="changeMinuteView">Minute View</button>
+                    </div>
+                </div>
+                <div>
+                    <svg id="gantt"></svg>
+                </div>
+                <DateTimeModal v-if="openModal" @closeModal="closeModal" :openModal="openModal" :dateTimeVal="dateTimeVal" @changeDate="changeDate" />
             </div>
-            <DateTimeModal v-if="openModal" @closeModal="closeModal" :openModal="openModal" :dateTimeVal="dateTimeVal" @changeDate="changeDate" />
-        </div>
-    </div>
+        </UserHistories>
+    </CurrentUser>
 </template>
 
 <script>
@@ -22,11 +31,19 @@ import store from "../../../store";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 import { keyedColorScheme } from "utils/color";
+import CurrentUser from "components/providers/CurrentUser";
+import UserHistories from "components/providers/UserHistories";
+import LoadingSpan from "components/LoadingSpan";
 import DateTimeModal from './DateTimeModal.vue'
 
 export default {
     name: "Gantt",
-    components: { DateTimeModal },
+    components: {
+        LoadingSpan,
+        CurrentUser,
+        UserHistories,
+        DateTimeModal
+    },
     data() {
         return {
             tasks: [],
@@ -34,11 +51,11 @@ export default {
             accountingArray: [],
             historyItems: [],
             currentlyProcessing: false,
+            isLoading: true,
             openModal: false,
             dateTimeVal: new Date().toLocaleString('en-GB'),
         };
     },
-    components : { DateTimeModal },
     computed: {
         ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
         history() {
@@ -100,6 +117,7 @@ export default {
                     custom_class: `class-${row["id"]}`,
                 });
             });
+            this.isLoading = false
             this.gantt = new Gantt("#gantt", entries, {
                 view_mode: "Day",
                 view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
@@ -122,6 +140,7 @@ export default {
             });
         },
         getData: async function () {
+            this.isLoading = true
             this.currentlyProcessing = true
             this.historyId = this.history;
             this.accountingArray = []
@@ -333,7 +352,12 @@ function createClassWithCSS(selector, style) {
 .gantt-container{
     position: inherit !important;
 }
-.timeButtonsDiv{
-    margin-bottom: 50px;
+.gantt {
+    margin-top: 50px;
 }
+.popup-wrapper {
+    margin-top: 65px;
+    margin-left: 15px;
+}
+
 </style>
