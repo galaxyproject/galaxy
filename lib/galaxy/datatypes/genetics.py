@@ -347,7 +347,7 @@ class Rgenetics(Html):
 
         """
         super().set_meta(dataset, **kwd)
-        if not kwd.get("overwrite"):
+        if not overwrite:
             if verbose:
                 gal_Log.debug("@@@ rgenetics set_meta called with overwrite = False")
             return
