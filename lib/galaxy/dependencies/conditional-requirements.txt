@@ -47,7 +47,7 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.9.1
+tensorflow==2.9.3
 
 # weasyprint has problematic requirements (cairo, Pango, see:
 # https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#linux)
