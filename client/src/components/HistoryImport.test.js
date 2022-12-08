@@ -85,7 +85,7 @@ describe("HistoryImport.vue", () => {
         const alert = wrapper.find(".alert");
         expect(alert.classes()).toContain("alert-warning");
         expect(alert.text()).toContain(
-            "It looks like you are trying to import a history by URL from another galaxy instance"
+            "It looks like you are trying to import a published history from another galaxy instance"
         );
 
         // Link to the GTN
