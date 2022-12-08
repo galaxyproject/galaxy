@@ -33,7 +33,7 @@ Do not abbreviate. This includes naming `variables`, `functions` and `modules`.
 There are several ways to define functions in JavaScript.
 
 ```js
-// function keyword
+// named function
 function myFunction(param) {
     // do stuff
 }
@@ -52,9 +52,9 @@ const myFunction = function(param) {
 Only use the first two.
 `anonymous functions` have mostly been superseded by `arrow functions`
 
-### When to use the function keyword
+### When to use the named functions
 
-Use the function keyword in the top-level module scope and to declare class methods.
+Use named functions in the top-level module scope and to declare class methods.
 
 > **Reason**
 >
