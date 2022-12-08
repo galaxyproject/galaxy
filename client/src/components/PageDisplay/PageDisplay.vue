@@ -52,7 +52,7 @@ export default {
             return `${this.dataUrl}.pdf`;
         },
         editUrl() {
-            return `/page/edit_content?id=${this.pageId}`;
+            return `/pages/editor?id=${this.pageId}`;
         },
     },
     created() {
