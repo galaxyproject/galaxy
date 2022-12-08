@@ -1602,7 +1602,7 @@ def test_tests_discover_outputs(lint_ctx):
 
 def test_tests_expect_num_outputs_filter(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_EXPECT_NUM_OUTPUTS_FILTER)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "Test should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
     assert len(lint_ctx.warn_messages) == 1
     assert len(lint_ctx.error_messages) == 0
