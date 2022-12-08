@@ -101,7 +101,7 @@ class AnvioDB(AnvioComposite):
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         if dataset.metadata.anvio_basename is not None and os.path.exists(
             os.path.join(dataset.extra_files_path, dataset.metadata.anvio_basename)
         ):

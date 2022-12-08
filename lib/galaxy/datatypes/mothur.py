@@ -598,7 +598,7 @@ class Group(Tabular):
     def set_meta(
         self, dataset: "DatasetInstance", overwrite: bool = True, skip=None, max_data_lines=None, **kwd
     ) -> None:
-        super().set_meta(dataset, overwrite, skip, max_data_lines)
+        super().set_meta(dataset, overwrite=overwrite, skip=skip, max_data_lines=max_data_lines, **kwd)
 
         group_names = set()
         headers = iter_headers(dataset.file_name, sep="\t", count=-1)
@@ -1044,7 +1044,7 @@ class SffFlow(Tabular):
         super().__init__(**kwd)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=1, max_data_lines=None, **kwd) -> None:
-        super().set_meta(dataset, overwrite, 1, max_data_lines)
+        super().set_meta(dataset, overwrite=overwrite, skip=1, max_data_lines=max_data_lines, **kwd)
 
         headers = get_headers(dataset.file_name, sep="\t", count=1)
         try:

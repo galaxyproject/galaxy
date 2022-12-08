@@ -556,7 +556,7 @@ class SraManifest(Tabular):
     data_line_offset = 1
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.comment_lines = 1
 
     def get_column_names(self, first_line: str) -> Optional[List[str]]:
@@ -802,7 +802,7 @@ class Sam(Tabular, _BamOrSam):
                 "str",
             ]
 
-            _BamOrSam().set_meta(dataset)
+            _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
     def merge(split_files: List[str], output_file: str) -> None:
@@ -1003,7 +1003,7 @@ class BaseVcf(Tabular):
         return self.make_html_table(dataset, column_names=self.column_names)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         line = None
         with compression_utils.get_fileobj(dataset.file_name) as fh:
             # Skip comments.
@@ -1083,7 +1083,7 @@ class VcfGz(BaseVcf, binary.Binary):
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index

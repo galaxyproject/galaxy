@@ -779,7 +779,7 @@ class SnpEffDb(Text):
         return snpeff_version
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         data_dir = dataset.extra_files_path
         # search data_dir/genome_version for files
         regulation_pattern = "regulation_(.+).bin"

@@ -108,7 +108,7 @@ class PlantTribesKsComponents(Tabular):
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         significant_components = []
         with open(dataset.file_name) as fh:
             for i, line in enumerate(fh):

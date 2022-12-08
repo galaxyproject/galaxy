@@ -124,7 +124,7 @@ class Gal(GenericMicroarrayFile):
         """
         Set metadata for Gal file.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]
@@ -166,7 +166,7 @@ class Gpr(GenericMicroarrayFile):
         """
         Set metadata for Gpr file.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]

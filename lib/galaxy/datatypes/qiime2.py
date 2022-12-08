@@ -120,7 +120,7 @@ class QIIME2Metadata(Tabular):
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:

@@ -4152,7 +4152,7 @@ class HexrdImagesNpz(Npz):
         return False
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with np.load(dataset.file_name) as npz:
                 if "panel_id" in npz.files:
@@ -4218,7 +4218,7 @@ class HexrdEtaOmeNpz(Npz):
         return False
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with np.load(dataset.file_name) as npz:
                 dataset.metadata.HKLs = npz["iHKLList"].tolist()

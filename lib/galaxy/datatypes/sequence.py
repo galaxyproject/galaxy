@@ -569,7 +569,7 @@ class csFasta(Sequence):
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
             return
-        return Sequence.set_meta(self, dataset, **kwd)
+        return Sequence.set_meta(self, dataset, overwrite=overwrite, **kwd)
 
 
 @build_sniff_from_prefix
@@ -664,7 +664,7 @@ class Fastg(Sequence):
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
             return
-        return Sequence.set_meta(self, dataset, **kwd)
+        return Sequence.set_meta(self, dataset, overwrite=overwrite, **kwd)
 
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:

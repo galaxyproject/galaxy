@@ -677,7 +677,7 @@ class NeperPoints(data.Text):
         data.Text.__init__(self, **kwd)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        data.Text.set_meta(self, dataset, **kwd)
+        data.Text.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
@@ -719,7 +719,7 @@ class NeperPointsTabular(NeperPoints, Tabular):
         Tabular.__init__(self, **kwd)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        Tabular.set_meta(self, dataset, **kwd)
+        Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)

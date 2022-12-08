@@ -76,7 +76,7 @@ class GenomeGraphs(Tabular):
         self.add_display_app("ucsc", "Genome Graph", "as_ucsc_display_file", "ucsc_links")
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.markerCol = 1
         header = open(dataset.file_name).readlines()[0].strip().split("\t")
         dataset.metadata.columns = len(header)
@@ -346,7 +346,7 @@ class Rgenetics(Html):
         for lped/pbed eg
 
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         if not overwrite:
             if verbose:
                 gal_Log.debug("@@@ rgenetics set_meta called with overwrite = False")
@@ -578,7 +578,7 @@ class IdeasPre(Html):
         self.add_composite_file("tmp.tar.gz", description="Compressed archive of compressed bed files", is_binary=True)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         for fname in os.listdir(dataset.extra_files_path):
             if fname.startswith("chromosomes"):
                 dataset.metadata.chrom_bed = os.path.join(dataset.extra_files_path, fname)
@@ -840,7 +840,7 @@ class RexpBase(Html):
         from a BioC eSet or affybatch.
 
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             flist = os.listdir(dataset.extra_files_path)
         except Exception:

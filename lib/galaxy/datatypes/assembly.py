@@ -244,5 +244,5 @@ class Velvet(Html):
             f.write("\n")
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
-        Html.set_meta(self, dataset, **kwd)
+        Html.set_meta(self, dataset, overwrite=overwrite, **kwd)
         self.regenerate_primary_file(dataset)
