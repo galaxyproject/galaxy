@@ -20,55 +20,16 @@
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
 
-  # Process manager to use.
-  # ``supervisor`` is the default process manager when Gravity is invoked as a non-root user.
-  # ``systemd`` is the default when Gravity is invoked as root.
-  # Valid options are: supervisor, systemd
-  # process_manager:
-
-  # What command to write to the process manager configs
-  # `gravity` (`galaxyctl exec <service-name>`) is the default
-  # `direct` (each service's actual command) is also supported.
-  # Valid options are: gravity, direct
-  # service_command_style: gravity
-
-  # Use the process manager's *service instance* functionality for services that can run multiple instances.
-  # Presently this includes services like gunicorn and Galaxy dynamic job handlers. Service instances are only supported if
-  # ``service_command_style`` is ``gravity``, and so this option is automatically set to ``false`` if
-  # ``service_command_style`` is set to ``direct``.
-  # use_service_instances: true
-
-  # umask under which services should be executed. Setting ``umask`` on an individual service overrides this value.
-  # umask: '022'
-
-  # Memory limit (in GB), processes exceeding the limit will be killed. Default is no limit. If set, this is default value
-  # for all services. Setting ``memory_limit`` on an individual service overrides this value. Ignored if ``process_manager``
-  # is ``supervisor``.
-  # memory_limit:
-
-  # Specify Galaxy config file (galaxy.yml), if the Gravity config is separate from the Galaxy config. Assumed to be the
-  # same file as the Gravity config if a ``galaxy`` key exists at the root level, otherwise, this option is required.
-  # galaxy_config_file:
-
   # Specify Galaxy's root directory.
   # Gravity will attempt to find the root directory, but you can set the directory explicitly with this option.
   # galaxy_root:
 
-  # User to run Galaxy as, required when using the systemd process manager as root.
-  # Ignored if ``process_manager`` is ``supervisor`` or user-mode (non-root) ``systemd``.
-  # galaxy_user:
-
-  # Group to run Galaxy as, optional when using the systemd process manager as root.
-  # Ignored if ``process_manager`` is ``supervisor`` or user-mode (non-root) ``systemd``.
-  # galaxy_group:
-
   # Set to a directory that should contain log files for the processes controlled by Gravity.
-  # If not specified defaults to ``<galaxy_data_dir>/gravity/log``.
+  # If not specified defaults to ``<state_dir>/log``.
   # log_dir:
 
   # Set to Galaxy's virtualenv directory.
-  # If not specified, Gravity assumes all processes are on PATH. This option is required in most circumstances when using
-  # the ``systemd`` process manager.
+  # If not specified, Gravity assumes all processes are on PATH.
   # virtualenv:
 
   # Select the application server.
@@ -82,7 +43,7 @@ gravity:
   # this is hidden from you when running a single instance.
   # instance_name: _default_
 
-  # Configuration for Gunicorn. Can be a list to run multiple gunicorns for rolling restarts.
+  # Configuration for Gunicorn.
   gunicorn:
 
     # Enable Galaxy gunicorn server.
@@ -108,23 +69,6 @@ gravity:
     # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
     # Consumes less memory when multiple processes are configured. Default is ``false`` if using unicornherder, else ``true``.
     # preload:
-
-    # umask under which service should be executed
-    # umask:
-
-    # Value of supervisor startsecs, systemd TimeoutStartSec
-    # start_timeout: 15
-
-    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
-    # stop_timeout: 65
-
-    # Amount of time to wait for a server to become alive when performing rolling restarts.
-    # restart_timeout: 300
-
-    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
-    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
-    # ``supervisor``.
-    # memory_limit:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -156,20 +100,6 @@ gravity:
     # Extra arguments to pass to Celery command line.
     # extra_args:
 
-    # umask under which service should be executed
-    # umask:
-
-    # Value of supervisor startsecs, systemd TimeoutStartSec
-    # start_timeout: 10
-
-    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
-    # stop_timeout: 10
-
-    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
-    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
-    # ``supervisor``.
-    # memory_limit:
-
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
     # environment: {}
@@ -187,8 +117,7 @@ gravity:
     # port: 4002
 
     # Routes file to monitor.
-    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
-    # ``interactivetools_map is set``.
+    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -205,20 +134,6 @@ gravity:
     # Rewrite location blocks with proxy port.
     # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
     # reverse_proxy: false
-
-    # umask under which service should be executed
-    # umask:
-
-    # Value of supervisor startsecs, systemd TimeoutStartSec
-    # start_timeout: 10
-
-    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
-    # stop_timeout: 10
-
-    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
-    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
-    # ``supervisor``.
-    # memory_limit:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -246,85 +161,19 @@ gravity:
     # upload_dir:
 
     # Comma-separated string of enabled tusd hooks.
-    #
+    # 
     # Leave at the default value to require authorization at upload creation time.
     # This means Galaxy's web process does not need to be running after creating the initial
     # upload request.
-    #
+    # 
     # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
     # without the Galaxy web process being available.
-    #
+    # 
     # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
     # hooks_enabled_events: pre-create
 
     # Extra arguments to pass to tusd command line.
     # extra_args:
-
-    # umask under which service should be executed
-    # umask:
-
-    # Value of supervisor startsecs, systemd TimeoutStartSec
-    # start_timeout: 10
-
-    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
-    # stop_timeout: 10
-
-    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
-    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
-    # ``supervisor``.
-    # memory_limit:
-
-    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
-    # names.
-    # environment: {}
-
-  # Configuration for Galaxy Reports.
-  reports:
-
-    # Enable Galaxy Reports server.
-    # enable: false
-
-    # Path to reports.yml, relative to galaxy.yml if not absolute
-    # config_file: reports.yml
-
-    # The socket to bind. A string of the form: ``HOST``, ``HOST:PORT``, ``unix:PATH``, ``fd://FD``. An IP is a valid HOST.
-    # bind: localhost:9001
-
-    # Controls the number of Galaxy Reports application processes Gunicorn will spawn.
-    # It is not generally necessary to increase this for the low-traffic Reports server.
-    # workers: 1
-
-    # Gunicorn workers silent for more than this many seconds are killed and restarted.
-    # Value is a positive number or 0. Setting it to 0 has the effect of infinite timeouts by disabling timeouts for all workers entirely.
-    # timeout: 300
-
-    # URL prefix to serve from.
-    # The corresponding nginx configuration is (replace <url_prefix> and <bind> with the values from these options):
-    #
-    # location /<url_prefix>/ {
-    #     proxy_pass http://<bind>/;
-    # }
-    #
-    # If <bind> is a unix socket, you will need a ``:`` after the socket path but before the trailing slash like so:
-    #     proxy_pass http://unix:/run/reports.sock:/;
-    # url_prefix:
-
-    # Extra arguments to pass to Gunicorn command line.
-    # extra_args:
-
-    # umask under which service should be executed
-    # umask:
-
-    # Value of supervisor startsecs, systemd TimeoutStartSec
-    # start_timeout: 10
-
-    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
-    # stop_timeout: 10
-
-    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
-    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
-    # ``supervisor``.
-    # memory_limit:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
