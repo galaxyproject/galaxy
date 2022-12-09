@@ -396,7 +396,7 @@ class Dta(TabularData):
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         column_types = []
-        data_row = []
+        data_row: List = []
         data_lines = 0
         if dataset.has_data():
             with open(dataset.file_name) as dtafile:
