@@ -81,7 +81,7 @@ from . import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.datatypes.util.complression_utils import FileObjType
+    from galaxy.util.compression_utils import FileObjType
     from galaxy.model import (
         DatasetInstance,
         HistoryDatasetAssociation,
