@@ -52,6 +52,7 @@ import ConfirmDialog from "components/ConfirmDialog";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { ref } from "vue";
+import { useEntryPointStore } from "../../stores/entryPointStore";
 
 export default {
     components: {
@@ -108,6 +109,7 @@ export default {
                 return "Are you sure you want to leave the page?";
             }
         };
+        useEntryPointStore().ensurePollingEntryPoints();
     },
     methods: {
         openUrl(urlObj) {
