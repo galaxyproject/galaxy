@@ -56,14 +56,13 @@ watch(currentValue, () => {
         <b-form-checkbox
             v-model="selectAll"
             v-localize
-            size="sm"
             class="mb-1"
             :indeterminate="indeterminate"
             @input="onSelectAll"
             @change="emit('indeterminate', selectAll)">
-            Select/Unselect all
+            Select / Deselect all
         </b-form-checkbox>
-        <b-form-checkbox-group v-model="currentValue" stacked>
+        <b-form-checkbox-group v-model="currentValue" stacked class="pl-3">
             <b-form-checkbox v-for="(option, index) in options" :key="index" :value="option[1]">
                 {{ option[0] }}
             </b-form-checkbox>
