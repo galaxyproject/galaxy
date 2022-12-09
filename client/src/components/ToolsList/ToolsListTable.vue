@@ -63,7 +63,7 @@
 import Vue from "vue";
 import _l from "utils/localization";
 import infiniteScroll from "vue-infinite-scroll";
-import { openGlobalUploadModal } from "components/Upload";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { fetchData } from "./services";
 
 const defaultBufferLen = 4;
@@ -76,6 +76,10 @@ export default {
             type: Array,
             default: null,
         },
+    },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
     },
     data() {
         return {
@@ -121,7 +125,7 @@ export default {
     methods: {
         onOpen(tool) {
             if (tool.id === "upload1") {
-                openGlobalUploadModal();
+                this.openGlobalUploadModal();
             } else if (tool.form_style === "regular") {
                 // encode spaces in tool.id
                 const toolId = tool.id;
