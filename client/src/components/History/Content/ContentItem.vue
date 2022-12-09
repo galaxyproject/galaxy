@@ -123,6 +123,7 @@ import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { useEntryPointStore } from "../../../stores/entryPointStore";
 
 library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
 
@@ -224,7 +225,15 @@ export default {
             }
         },
         onDisplay() {
-            this.$router.push(this.itemUrls.display, { title: this.name });
+            const entryPointStore = useEntryPointStore();
+            const entryPointsForJob = entryPointStore.entryPointsForJob(this.item.creating_job);
+            if (entryPointsForJob && entryPointsForJob.length > 0) {
+                // there can be more than one entry point, choose the first
+                const url = entryPointsForJob[0].target;
+                window.open(url, "_blank");
+            } else {
+                this.$router.push(this.itemUrls.display, { title: this.name });
+            }
         },
         onDragStart(evt) {
             evt.dataTransfer.dropEffect = "move";
