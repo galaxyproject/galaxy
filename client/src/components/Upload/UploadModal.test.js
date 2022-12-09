@@ -3,7 +3,7 @@ import axios from "axios";
 import UploadModal from "./UploadModal";
 import UploadModalContent from "./UploadModalContent";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "jest/helpers";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
 import { userStore } from "store/userStore";
 import { historyStore } from "store/historyStore";
 import { configStore } from "store/configStore";
