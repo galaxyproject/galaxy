@@ -405,12 +405,12 @@ class HistoryExportManager:
         rval["type"] = "job"
         encoded_jeha_id = DecodedDatabaseIdField.encode(jeha.id)
         encoded_history_id = DecodedDatabaseIdField.encode(history_id)
-        api_url = trans.url_builder("history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id)
+        api_url = trans.url_builder("history_archive_download", history_id=encoded_history_id, jeha_id=encoded_jeha_id)
         external_url = trans.url_builder(
-            "history_archive_download", id=encoded_history_id, jeha_id="latest", qualified=True
+            "history_archive_download", history_id=encoded_history_id, jeha_id="latest", qualified=True
         )
         external_permanent_url = trans.url_builder(
-            "history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id, qualified=True
+            "history_archive_download", history_id=encoded_history_id, jeha_id=encoded_jeha_id, qualified=True
         )
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
@@ -535,7 +535,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "nice_size": lambda item, key, **context: item.disk_nice_size,
             "state": self.serialize_history_state,
             "url": lambda item, key, **context: self.url_for(
-                "history", id=self.app.security.encode_id(item.id), context=context
+                "history", history_id=self.app.security.encode_id(item.id), context=context
             ),
             "contents_url": lambda item, key, **context: self.url_for(
                 "history_contents", history_id=self.app.security.encode_id(item.id), context=context

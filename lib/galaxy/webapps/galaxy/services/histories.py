@@ -312,13 +312,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         Returns detailed information about the history with the given encoded `id`. If no `id` is
         provided, then the most recently used history will be returned.
 
-        :type   id:      an optional encoded id string
-        :param  id:      the encoded id of the history to query or None to use the most recently used
+        :param  history_id:      the encoded id of the history to query or None to use the most recently used
 
-        :type   serialization_params:   dictionary
         :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
 
-        :rtype:     dictionary
         :returns:   detailed history information
         """
         if history_id is None:  # By default display the most recent history
@@ -373,29 +370,25 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     def update(
         self,
         trans: ProvidesHistoryContext,
-        id: DecodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         payload,
         serialization_params: SerializationParams,
     ):
         """Updates the values for the history with the given ``id``
 
-        :type   id:      str
-        :param  id:      the encoded id of the history to update
-        :type   payload: dict
+        :param  history_id:      the encoded id of the history to update
         :param  payload: a dictionary containing any or all the
             fields in :func:`galaxy.model.History.to_dict` and/or the following:
 
             * annotation: an annotation for the history
 
-        :type   serialization_params:   dictionary
         :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
 
-        :rtype:     dict
         :returns:   an error object if an error occurred or a dictionary containing
             any values that were different from the original and, therefore, updated
         """
         # TODO: PUT /api/histories/{encoded_history_id} payload = { rating: rating } (w/ no security checks)
-        history = self.manager.get_owned(id, trans.user, current_history=trans.history)
+        history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
         self.deserializer.deserialize(history, payload, user=trans.user, trans=trans)
         return self._serialize_history(trans, history, serialization_params)
 
@@ -412,12 +405,6 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
 
         You can purge a history, removing all it's datasets from disk (if unshared),
         by passing in ``purge=True`` in the url.
-
-        :type   serialization_params:   dictionary
-        :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
-
-        :rtype:     dict
-        :returns:   the deleted or purged history
         """
         history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
         if purge:
@@ -434,13 +421,10 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     ):
         """Undelete history (that hasn't been purged) with the given ``id``
 
-        :type   id:     str
-        :param  id:     the encoded id of the history to undelete
+        :param  history_id:     the encoded id of the history to undelete
 
-        :type   serialization_params:   dictionary
         :param  serialization_params:   contains the optional `view`, `keys` and `default_view` for serialization
 
-        :rtype:     dict
         :returns:   the undeleted history
         """
         history = self.manager.get_owned(history_id, trans.user, current_history=trans.history)
@@ -515,34 +499,32 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     def index_exports(
         self,
         trans: ProvidesHistoryContext,
-        id: DecodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         use_tasks: bool = False,
         limit: Optional[int] = None,
         offset: Optional[int] = None,
     ):
         if use_tasks:
-            return self.history_export_manager.get_task_exports(trans, id, limit, offset)
-        return self.history_export_manager.get_exports(trans, id)
+            return self.history_export_manager.get_task_exports(trans, history_id, limit, offset)
+        return self.history_export_manager.get_exports(trans, history_id)
 
     def archive_export(
         self,
         trans,
-        id: DecodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         payload: Optional[ExportHistoryArchivePayload] = None,
     ) -> Tuple[HistoryArchiveExportResult, bool]:
         """
         start job (if needed) to create history export for corresponding
         history.
 
-        :type   id:     str
-        :param  id:     the encoded id of the history to export
+        :param  history_id:     the encoded id of the history to export
 
-        :rtype:     dict
         :returns:   object containing url to fetch export from.
         """
         if payload is None:
             payload = ExportHistoryArchivePayload()
-        history = self.manager.get_accessible(id, trans.user, current_history=trans.history)
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         jeha = history.latest_export
         exporting_to_uri = payload.directory_uri
         # always just issue a new export when exporting to a URI.
@@ -571,12 +553,12 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             return (JobIdResponse.construct(job_id=job.id), ready)
 
         if up_to_date and jeha.ready:
-            serialized_jeha = self.history_export_manager.serialize(trans, id, jeha)
+            serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
             return (JobExportHistoryArchiveModel.construct(**serialized_jeha), ready)
         else:
             # Valid request, just resource is not ready yet.
             if jeha:
-                serialized_jeha = self.history_export_manager.serialize(trans, id, jeha)
+                serialized_jeha = self.history_export_manager.serialize(trans, history_id, jeha)
                 return (JobExportHistoryArchiveModel.construct(**serialized_jeha), ready)
             else:
                 assert job is not None, "logic error, don't have a jeha or a job"
@@ -585,12 +567,12 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     def get_ready_history_export(
         self,
         trans: ProvidesHistoryContext,
-        id: DecodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         jeha_id: Union[DecodedDatabaseIdField, LatestLiteral],
     ) -> model.JobExportHistoryArchive:
         """Returns the exported history archive information if it's ready
         or raises an exception if not."""
-        return self.history_export_manager.get_ready_jeha(trans, id, jeha_id)
+        return self.history_export_manager.get_ready_jeha(trans, history_id, jeha_id)
 
     def get_archive_download_path(
         self,
@@ -614,24 +596,24 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
     def legacy_archive_download(
         self,
         trans: ProvidesHistoryContext,
-        id: DecodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         jeha_id: DecodedDatabaseIdField,
     ):
         """
         If ready and available, return raw contents of exported history.
         """
-        jeha = self.history_export_manager.get_ready_jeha(trans, id, jeha_id)
+        jeha = self.history_export_manager.get_ready_jeha(trans, history_id, jeha_id)
         return self.manager.legacy_serve_ready_history_export(trans, jeha)
 
     def get_custom_builds_metadata(
         self,
         trans: ProvidesHistoryContext,
-        id: DecodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
     ) -> CustomBuildsMetadataResponse:
         """
         Returns metadata for custom builds.
         """
-        history = self.manager.get_accessible(id, trans.user, current_history=trans.history)
+        history = self.manager.get_accessible(history_id, trans.user, current_history=trans.history)
         installed_builds = []
         for build in glob.glob(os.path.join(trans.app.config.len_file_path, "*.len")):
             installed_builds.append(os.path.basename(build).split(".len")[0])
