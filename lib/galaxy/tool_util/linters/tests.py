@@ -15,8 +15,8 @@ def check_compare_attribs(element, lint_ctx, test_idx):
         "sort": ["diff", "re_match", "re_match_multiline"],
         "lines_diff": ["diff", "re_match", "contains"],
         "decompress": ["diff"],
-        "delta": ["diff"],
-        "delta_frac": ["diff"],
+        "delta": ["sim_size"],
+        "delta_frac": ["sim_size"],
     }
     compare = element.get("compare", "diff")
     for attrib in COMPARE_COMPATIBILITY:
