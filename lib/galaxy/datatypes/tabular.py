@@ -13,6 +13,7 @@ import subprocess
 import tempfile
 from json import dumps
 from typing import (
+    cast,
     Dict,
     List,
     Optional,
@@ -60,7 +61,10 @@ from galaxy.datatypes.sniff import (
     validate_tabular,
 )
 from galaxy.util import compression_utils
-from galaxy.util.compression_utils import FileObjType
+from galaxy.util.compression_utils import (
+    FileObjType,
+    FileObjTypeStr,
+)
 from galaxy.util.markdown import (
     indicate_data_truncated,
     pre_formatted_contents,
@@ -1265,6 +1269,7 @@ class Eland(Tabular):
     ) -> None:
         if dataset.has_data():
             with compression_utils.get_fileobj(dataset.file_name, compressed_formats=["gzip"]) as dataset_fh:
+                dataset_fh = cast(FileObjTypeStr, dataset_fh)
                 lanes = {}
                 tiles = {}
                 barcodes = {}
