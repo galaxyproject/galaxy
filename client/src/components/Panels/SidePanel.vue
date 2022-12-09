@@ -26,8 +26,11 @@ export default {
     props: ["currentPanel", "currentPanelProperties", "side"],
     data() {
         return {
-            show: true,
+            show: localStorage.getItem(`${this.side}_panel_show`)
+                ? localStorage.getItem(`${this.side}_panel_show`) === "true"
+                : true,
             width: 288,
+            // width: localStorage.getItem(`${this.side}_panel_show`) && localStorage.getItem(`${this.side}_panel_width`) ? parseInt(localStorage.getItem(`${this.side}_panel_width`)) : 288,
         };
     },
     computed: {
@@ -65,10 +68,12 @@ export default {
         },
         resize(newWidth) {
             this.width = newWidth;
+            // localStorage.setItem(`${this.side}_panel_width`, this.width);
             document.getElementById("center").style[this.side] = newWidth + "px";
         },
         toggle() {
             this.show = !this.show;
+            localStorage.setItem(`${this.side}_panel_show`, this.show);
 
             if (this.show) {
                 document.getElementById("center").style.transition = `${this.side} 200ms linear`;
@@ -86,6 +91,7 @@ export default {
         },
         hide(timeout = 250) {
             this.show = false;
+            localStorage.setItem(`${this.side}_panel_show`, this.show);
             document.getElementById("center").style.transition = `${this.side} 200ms linear`;
             document.getElementById("center").style[this.side] = "0";
             setTimeout(() => {
