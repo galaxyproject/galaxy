@@ -220,6 +220,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
                 "file_size",
                 "total_size",
                 "uuid",
+                "creating_job",
             ],
         )
         # could do visualizations and/or display_apps
