@@ -1731,11 +1731,36 @@ class ToolTestDescription:
             }
         )
 
-    def to_dict(self) -> Dict[str, Any]:
-        # For backward compatibility maintain a dict version - if
-        # this comment got merged the converter tests failed without this.
-        return self.to_model().dict()
+    def to_dict(self):
+        inputs_dict = {}
+        for key, value in self.inputs.items():
+            if hasattr(value, "to_dict"):
+                inputs_dict[key] = value.to_dict()
+            else:
+                inputs_dict[key] = value
 
+        return {
+            "inputs": inputs_dict,
+            "outputs": self.outputs,
+            "output_collections": [_.to_dict() for _ in self.output_collections],
+            "num_outputs": self.num_outputs,
+            "command_line": self.command_line,
+            "command_version": self.command_version,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
+            "expect_exit_code": self.expect_exit_code,
+            "expect_failure": self.expect_failure,
+            "expect_test_failure": self.expect_test_failure,
+            "name": self.name,
+            "test_index": self.test_index,
+            "tool_id": self.tool_id,
+            "tool_version": self.tool_version,
+            "required_files": self.required_files,
+            "required_data_tables": self.required_data_tables,
+            "required_loc_files": self.required_loc_files,
+            "error": self.error,
+            "exception": self.exception,
+        }
 
 def test_data_iter(required_files):
     for fname, extra in required_files:
