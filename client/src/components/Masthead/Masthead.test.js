@@ -7,6 +7,8 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 import { getActiveTab } from "./utilities";
+import { createTestingPinia } from "@pinia/testing";
+import { PiniaVuePlugin } from "pinia";
 
 jest.mock("app");
 jest.mock("./_webhooks");
@@ -36,6 +38,7 @@ describe("Masthead.vue", () => {
 
     beforeEach(() => {
         localVue = getLocalVue();
+        localVue.use(PiniaVuePlugin);
 
         store = new Vuex.Store({
             modules: {
@@ -90,6 +93,7 @@ describe("Masthead.vue", () => {
             },
             store,
             localVue,
+            pinia: createTestingPinia(),
         });
     });
 

@@ -2,7 +2,7 @@ import { createTestingPinia } from "@pinia/testing";
 import { setActivePinia, PiniaVuePlugin } from "pinia";
 import { mount } from "@vue/test-utils";
 import ToolEntryPoints from "./ToolEntryPoints";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
     const localVue = getLocalVue();
