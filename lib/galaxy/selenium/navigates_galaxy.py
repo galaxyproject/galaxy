@@ -1393,7 +1393,7 @@ class NavigatesGalaxy(HasDriver):
 
     def tool_parameter_edit_rules(self):
         rules_div_element = self.tool_parameter_div("rules")
-        edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, "i.fa-edit")
+        edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, ".form-rules-edit button")
         edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None):
@@ -1515,21 +1515,17 @@ class NavigatesGalaxy(HasDriver):
 
     @edit_details
     def history_panel_add_tags(self, tags):
-        tag_icon = self.components.history_panel.tag_icon
-        tag_area = self.components.history_panel.tag_area
-        tag_area_input = self.components.history_panel.tag_area_input
+        tag_area_button = self.components.history_panel.tag_area_button
 
-        # if the tag editor is not present but the tag_icon is, then click it
-        if not tag_icon.is_absent and (tag_area.is_absent or not tag_area.is_displayed):
-            tag_icon.wait_for_and_click()
-
-        input_element = tag_area_input.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        tag_area_button.wait_for_and_click()
+        input_element = self.components.history_panel.tag_area_input.wait_for_visible()
 
         for tag in tags:
             input_element.send_keys(tag)
             self.send_enter(input_element)
             self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.send_escape(input_element)
 
     @edit_details
     def history_panel_rename(self, new_name):

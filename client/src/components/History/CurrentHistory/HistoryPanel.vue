@@ -123,6 +123,7 @@
                                         :highlight="getHighlight(item)"
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"
+                                        :filterable="filterable"
                                         @tag-click="onTagClick"
                                         @tag-change="onTagChange"
                                         @toggleHighlights="toggleHighlights"
@@ -194,6 +195,7 @@ export default {
         filter: { type: String, default: "" },
         writable: { type: Boolean, default: true },
         showControls: { type: Boolean, default: true },
+        filterable: { type: Boolean, default: false },
     },
     data() {
         return {

@@ -1798,3 +1798,124 @@ class CMAP(TabularData):
             dataset.metadata.column_types = cleaned_column_types
             dataset.metadata.columns = number_of_columns
             dataset.metadata.delimiter = "\t"
+
+
+@build_sniff_from_prefix
+class Psl(Tabular):
+    """Tab delimited data in psl format."""
+
+    edam_format = "format_3007"
+    file_ext = "psl"
+    line_class = "assemblies"
+    data_sources = {"data": "tabix"}
+
+    def __init__(self, **kwd):
+        """Initialize psl datatype"""
+        super().__init__(**kwd)
+        self.column_names = [
+            "matches",
+            "misMatches",
+            "repMatches",
+            "nCount",
+            "qNumInsert",
+            "qBaseInsert",
+            "tNumInsert",
+            "tBaseInsert",
+            "strand",
+            "qName",
+            "qSize",
+            "qStart",
+            "qEnd",
+            "tName",
+            "tSize",
+            "tStart",
+            "tEnd",
+            "blockCount",
+            "blockSizes",
+            "qStarts",
+            "tStarts",
+        ]
+
+    def sniff_prefix(self, file_prefix: FilePrefix):
+        """
+        PSL lines represent alignments, and are typically generated
+        by BLAT. Each line consists of 21 required fields, and track
+        lines may optionally be used to provide more information.
+
+        Fields are tab-separated, and all 21 are required.
+        Although not part of the formal PSL specification, track lines
+        may be used to further configure sets of features.  Track lines
+        are placed at the beginning of the list of features they are
+        to affect.
+
+        Rules for sniffing as True::
+
+            - There must be 21 columns on each fields line
+            - matches, misMatches repMatches, nCount, qNumInsert,
+              qBaseInsert, tNumInsert, tBaseInsert, strand, qSize, qStart,
+              qEnd, tName, tSize, tStart, tEnd, blockCount, blockSizes,
+              qStarts, tStarts  must be correct
+            - We will only check that up to the first 10 alignments are
+              correctly formatted.
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname( '1.psl' )
+        >>> Psl().sniff( fname )
+        True
+        >>> fname = get_test_fname( '2.psl' )
+        >>> Psl().sniff( fname )
+        True
+        >>> fname = get_test_fname( 'interval.interval' )
+        >>> Psl().sniff( fname )
+        False
+        >>> fname = get_test_fname( '2.txt' )
+        >>> Psl().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'test_tab2.tabular' )
+        >>> Psl().sniff( fname )
+        False
+        >>> fname = get_test_fname( 'mothur_datatypetest_true.mothur.ref.taxonomy' )
+        >>> Psl().sniff( fname )
+        False
+        """
+
+        def check_items(s):
+            s_items = s.split(",")
+            for item in s_items:
+                if int(item) < 0:
+                    raise Exception("Out of range")
+
+        count = 0
+        for line in file_prefix.line_iterator():
+            line = line.strip()
+            if not line:
+                break
+            if line:
+                if line.startswith("browser") or line.startswith("track"):
+                    # Skip track lines.
+                    continue
+                items = line.split("\t")
+                if len(items) != 21:
+                    return False
+                # tName is a string
+                items.pop(13)
+                # qName is a string
+                items.pop(9)
+                # strand
+                if items.pop(8) not in ["-", "+", "+-", "-+"]:
+                    raise Exception("Invalid strand")
+                # blockSizes
+                s = items.pop(15).rstrip(",")
+                check_items(s)
+                # qStarts
+                s = items.pop(15).rstrip(",")
+                check_items(s)
+                # tStarts
+                s = items.pop(15).rstrip(",")
+                check_items(s)
+                if any(int(item) < 0 for item in items):
+                    raise Exception("Out of range")
+                count += 1
+                if count == 10:
+                    break
+        if count > 0:
+            return True
