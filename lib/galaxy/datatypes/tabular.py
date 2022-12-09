@@ -517,8 +517,10 @@ class Tabular(TabularData):
                             column_types = [None for col in first_line_column_types]
                     if max_data_lines is not None and data_lines >= max_data_lines:
                         if dataset_fh.tell() != dataset.get_size():
-                            data_lines = None  # Clear optional data_lines metadata value
-                            comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                            # Clear optional data_lines metadata value
+                            data_lines = None  # type: ignore [assignment]
+                            # Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                            comment_lines = None  # type: ignore [assignment]
                         break
                     i += 1
 
@@ -1684,7 +1686,7 @@ class MatrixMarket(TabularData):
                     if line.startswith("%"):
                         comment_lines += 1
                     elif count_comments_only:
-                        data_lines = None
+                        data_lines = None  # type: ignore [assignment]
                         break
                     else:
                         data_lines += 1
