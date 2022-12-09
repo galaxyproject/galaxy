@@ -51,8 +51,15 @@ function dismiss(result) {
     showModal.value = false;
 }
 
-function open(overrideOptions) {
+function wait(milliseconds) {
+    return new Promise((resolve) => {
+        setTimeout(() => resolve(), milliseconds);
+    });
+}
+
+async function open(overrideOptions) {
     const newOptions = overrideOptions ?? {};
+
     options.value = { ...getDefaultOptions(), ...newOptions };
 
     if (options.value.callback) {
@@ -60,6 +67,7 @@ function open(overrideOptions) {
     }
 
     showModal.value = true;
+    await wait(100);
 
     if (options.value.immediateUpload) {
         content.value.immediateUpload(options.value.immediateFiles);
