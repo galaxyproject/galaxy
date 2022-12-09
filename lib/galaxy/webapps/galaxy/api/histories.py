@@ -320,7 +320,7 @@ class FastAPIHistories:
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         payload: CreateHistoryFromStore = Body(...),
-    ) -> AnyHistoryView:
+    ) -> AsyncTaskResultSummary:
         return self.service.create_from_store_async(trans, payload)
 
     @router.get(
