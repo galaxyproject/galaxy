@@ -4,7 +4,10 @@ Image classes
 import base64
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 import mrcfile
 import numpy as np
@@ -104,7 +107,9 @@ class OMETiff(Tiff):
         optional=True,
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets
         if not offsets_file:

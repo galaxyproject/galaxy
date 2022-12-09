@@ -379,9 +379,9 @@ class Tabular(TabularData):
         dataset: "DatasetInstance",
         *,
         overwrite: bool = True,
-        skip=None,
-        max_data_lines=MAX_DATA_LINES,
-        max_guess_type_data_lines=None,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
         **kwd,
     ) -> None:
         """
@@ -744,7 +744,14 @@ class Sam(Tabular, _BamOrSam):
             return True
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=None, max_data_lines=5, **kwd) -> None:
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 5,
+        **kwd,
+    ) -> None:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
@@ -1083,7 +1090,9 @@ class VcfGz(BaseVcf, binary.Binary):
             last28 = fh.read()
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
@@ -1244,7 +1253,14 @@ class Eland(Tabular):
             return True
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=None, max_data_lines=5, **kwd) -> None:
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 5,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             with compression_utils.get_fileobj(dataset.file_name, compressed_formats=["gzip"]) as dataset_fh:
                 lanes = {}
@@ -1645,7 +1661,14 @@ class MatrixMarket(TabularData):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("%%MatrixMarket matrix coordinate")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=None, max_data_lines=5, **kwd) -> None:
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 5,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
             with open(dataset.file_name) as dataset_fh:
@@ -1766,7 +1789,14 @@ class CMAP(TabularData):
                 return True
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip=None, max_data_lines=7, **kwd) -> None:
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 7,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0

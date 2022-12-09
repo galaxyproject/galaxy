@@ -1014,7 +1014,9 @@ class Maf(Alignment):
     def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
         """
         Parses and sets species, chromosomes, index from MAF file.
         """

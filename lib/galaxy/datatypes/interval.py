@@ -127,7 +127,7 @@ class Interval(Tabular):
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
-        self, dataset: "DatasetInstance", *, overwrite: bool = True, first_line_is_header=False, **kwd
+        self, dataset: "DatasetInstance", *, overwrite: bool = True, first_line_is_header: bool = False, **kwd
     ) -> None:
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=0)
@@ -1784,8 +1784,8 @@ class IntervalTabix(Interval):
         self,
         dataset: "DatasetInstance",
         overwrite: bool = True,
-        first_line_is_header=False,
-        metadata_tmp_files_dir=None,
+        first_line_is_header: bool = False,
+        metadata_tmp_files_dir: Optional[str] = None,
         **kwd,
     ) -> None:
         # We don't use the method Interval.set_meta as we don't want to guess the columns for chr start end

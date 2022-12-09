@@ -768,7 +768,9 @@ class Bam(BamNative):
             pass
         return needs_sorting
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
         # These metadata values are not accessible by users, always overwrite
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
         index_flag = self.get_index_flag(dataset.file_name)
@@ -952,7 +954,9 @@ class CRAM(Binary):
         optional=True,
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
         major_version, minor_version = self.get_cram_version(dataset.file_name)
         if major_version != -1:
             dataset.metadata.cram_version = f"{str(major_version)}.{str(minor_version)}"
@@ -1033,7 +1037,9 @@ class Bcf(BaseBcf):
         except Exception:
             return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
         """Creates the index for the BCF file."""
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.bcf_index
@@ -1919,7 +1925,9 @@ class H5MLM(H5):
         optional=True,
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir=None, **kwd) -> None:
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
         try:
             spec_key = "hyper_params"
             params_file = dataset.metadata.hyper_params
