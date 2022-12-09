@@ -1,22 +1,28 @@
 import { shallowMount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import HistoryExport from "./HistoryExport.vue";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,
     RECENT_STS_DOWNLOAD_RECORD,
 } from "components/Common/models/testData/exportData";
+import flushPromises from "flush-promises";
+import type { components } from "schema";
+import { getLocalVue } from "../../../../tests/jest/helpers";
+import HistoryExport from "./HistoryExport.vue";
+import { getExportRecords } from "./services";
 
 const localVue = getLocalVue(true);
 
+jest.mock("./services");
+const mockGetExportRecords = getExportRecords as jest.MockedFunction<typeof getExportRecords>;
+mockGetExportRecords.mockResolvedValue([]);
+
 const FAKE_HISTORY_ID = "fake-history-id";
-const HISTORY_EXPORTS_API_ENDPOINT = new RegExp(`/api/histories/${FAKE_HISTORY_ID}/exports`);
 const REMOTE_FILES_API_ENDPOINT = new RegExp("/api/remote_files/plugins");
 
-const REMOTE_FILES_API_RESPONSE = [
+type FilesSourcePluginList = components["schemas"]["FilesSourcePlugin"][];
+const REMOTE_FILES_API_RESPONSE: FilesSourcePluginList = [
     {
         id: "test-posix-source",
         type: "posix",
@@ -24,8 +30,8 @@ const REMOTE_FILES_API_RESPONSE = [
         label: "TestSource",
         doc: "For testing",
         writable: true,
-        requires_roles: null,
-        requires_groups: null,
+        requires_roles: undefined,
+        requires_groups: undefined,
     },
 ];
 
@@ -39,12 +45,11 @@ async function mountHistoryExport() {
 }
 
 describe("HistoryExport.vue", () => {
-    let axiosMock;
+    let axiosMock: MockAdapter;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(REMOTE_FILES_API_ENDPOINT).reply(200, []);
-        axiosMock.onGet(HISTORY_EXPORTS_API_ENDPOINT).reply(200, []);
     });
 
     afterEach(() => {
@@ -64,16 +69,18 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should render previous records when there is more than one record", async () => {
-        axiosMock
-            .onGet(HISTORY_EXPORTS_API_ENDPOINT)
-            .reply(200, [RECENT_STS_DOWNLOAD_RECORD, FILE_SOURCE_STORE_RECORD, EXPIRED_STS_DOWNLOAD_RECORD]);
+        mockGetExportRecords.mockResolvedValue([
+            RECENT_STS_DOWNLOAD_RECORD,
+            FILE_SOURCE_STORE_RECORD,
+            EXPIRED_STS_DOWNLOAD_RECORD,
+        ]);
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#previous-export-records").exists()).toBe(true);
     });
 
     it("should not render previous records when there is one or less records", async () => {
-        axiosMock.onGet(HISTORY_EXPORTS_API_ENDPOINT).reply(200, [RECENT_STS_DOWNLOAD_RECORD]);
+        mockGetExportRecords.mockResolvedValue([RECENT_STS_DOWNLOAD_RECORD]);
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#previous-export-records").exists()).toBe(false);

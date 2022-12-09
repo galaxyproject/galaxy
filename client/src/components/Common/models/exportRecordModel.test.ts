@@ -1,15 +1,15 @@
 import { ExportRecordModel } from "./exportRecordModel";
 import {
     EXPECTED_EXPIRATION_DATE,
-    EXPIRED_STS_DOWNLOAD_RECORD,
-    FAILED_DOWNLOAD_RECORD,
-    FILE_SOURCE_STORE_RECORD,
-    RECENT_STS_DOWNLOAD_RECORD,
+    EXPIRED_STS_DOWNLOAD_RESPONSE,
+    FAILED_DOWNLOAD_RESPONSE,
+    FILE_SOURCE_STORE_RESPONSE,
+    RECENT_STS_DOWNLOAD_RESPONSE,
 } from "./testData/exportData";
 
 describe("ExportRecordModel", () => {
     describe("STS Download Record", () => {
-        const stsDownloadRecord = new ExportRecordModel(RECENT_STS_DOWNLOAD_RECORD);
+        const stsDownloadRecord = new ExportRecordModel(RECENT_STS_DOWNLOAD_RESPONSE);
 
         it("should be considered temporal (STS) when it has a short term storage ID defined", () => {
             expect(stsDownloadRecord.isStsDownload).toBe(true);
@@ -24,7 +24,7 @@ describe("ExportRecordModel", () => {
     });
 
     describe("Expired STS Download Record", () => {
-        const expiredDownloadRecord = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RECORD);
+        const expiredDownloadRecord = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RESPONSE);
 
         it("should calculate the correct expiration date", () => {
             expect(expiredDownloadRecord.canExpire).toBe(true);
@@ -39,7 +39,7 @@ describe("ExportRecordModel", () => {
     });
 
     describe("Failed STS Download Record", () => {
-        const failedDownloadRecord = new ExportRecordModel(FAILED_DOWNLOAD_RECORD);
+        const failedDownloadRecord = new ExportRecordModel(FAILED_DOWNLOAD_RESPONSE);
 
         it("should not be downloadable", () => {
             expect(failedDownloadRecord.isReady).toBe(false);
@@ -50,7 +50,7 @@ describe("ExportRecordModel", () => {
     });
 
     describe("File Source Storage Record", () => {
-        const failedDownloadRecord = new ExportRecordModel(FILE_SOURCE_STORE_RECORD);
+        const failedDownloadRecord = new ExportRecordModel(FILE_SOURCE_STORE_RESPONSE);
 
         it("should be importable", () => {
             expect(failedDownloadRecord.isReady).toBe(true);

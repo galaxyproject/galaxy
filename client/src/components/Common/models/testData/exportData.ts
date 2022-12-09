@@ -1,3 +1,10 @@
+import { ExportRecordModel } from "components/Common/models/exportRecordModel";
+import type { components } from "schema";
+
+type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+type ExportObjectResultMetadata = components["schemas"]["ExportObjectResultMetadata"];
+
 const PAST_EXPORT_DATE = new Date("11 November 2022 14:48 UTC").toISOString();
 const RECENT_EXPORT_DATE = new Date().toISOString();
 const STS_EXPORT_DURATION_IN_SECONDS = 86400;
@@ -7,7 +14,7 @@ export const EXPECTED_EXPIRATION_DATE = () => {
     return expectedDate;
 };
 
-const FAKE_STS_DOWNLOAD_REQUEST_DATA = {
+const FAKE_STS_DOWNLOAD_REQUEST_DATA: ExportObjectRequestMetadata = {
     object_id: "3cc0effd29705aa3",
     object_type: "history",
     user_id: "f597429621d6eb2b",
@@ -21,7 +28,7 @@ const FAKE_STS_DOWNLOAD_REQUEST_DATA = {
     },
 };
 
-const FAKE_FILE_SOURCE_REQUEST_DATA = {
+const FAKE_FILE_SOURCE_REQUEST_DATA: ExportObjectRequestMetadata = {
     object_id: "3cc0effd29705aa3",
     object_type: "history",
     user_id: "f597429621d6eb2b",
@@ -34,17 +41,17 @@ const FAKE_FILE_SOURCE_REQUEST_DATA = {
     },
 };
 
-const SUCCESS_EXPORT_RESULT_DATA = {
+const SUCCESS_EXPORT_RESULT_DATA: ExportObjectResultMetadata = {
     success: true,
-    error: null,
+    error: undefined,
 };
 
-const FAILED_EXPORT_RESULT_DATA = {
+const FAILED_EXPORT_RESULT_DATA: ExportObjectResultMetadata = {
     success: false,
     error: "Fake Error Message",
 };
 
-export const RECENT_STS_DOWNLOAD_RECORD = {
+export const RECENT_STS_DOWNLOAD_RESPONSE: ObjectExportTaskResponse = {
     id: "FAKE_RECENT_DOWNLOAD_ID",
     ready: true,
     preparing: false,
@@ -57,7 +64,7 @@ export const RECENT_STS_DOWNLOAD_RECORD = {
     },
 };
 
-export const EXPIRED_STS_DOWNLOAD_RECORD = {
+export const EXPIRED_STS_DOWNLOAD_RESPONSE: ObjectExportTaskResponse = {
     id: "FAKE_EXPIRED_DOWNLOAD_ID",
     ready: true,
     preparing: false,
@@ -70,7 +77,7 @@ export const EXPIRED_STS_DOWNLOAD_RECORD = {
     },
 };
 
-export const FAILED_DOWNLOAD_RECORD = {
+export const FAILED_DOWNLOAD_RESPONSE: ObjectExportTaskResponse = {
     id: "FAKE_FAILED_DOWNLOAD_ID",
     ready: false,
     preparing: false,
@@ -83,7 +90,7 @@ export const FAILED_DOWNLOAD_RECORD = {
     },
 };
 
-export const FILE_SOURCE_STORE_RECORD = {
+export const FILE_SOURCE_STORE_RESPONSE: ObjectExportTaskResponse = {
     id: "FAKE_RECENT_DOWNLOAD_ID",
     ready: true,
     preparing: false,
@@ -95,3 +102,7 @@ export const FILE_SOURCE_STORE_RECORD = {
         result_data: SUCCESS_EXPORT_RESULT_DATA,
     },
 };
+
+export const EXPIRED_STS_DOWNLOAD_RECORD = new ExportRecordModel(EXPIRED_STS_DOWNLOAD_RESPONSE);
+export const FILE_SOURCE_STORE_RECORD = new ExportRecordModel(FILE_SOURCE_STORE_RESPONSE);
+export const RECENT_STS_DOWNLOAD_RECORD = new ExportRecordModel(RECENT_STS_DOWNLOAD_RESPONSE);
