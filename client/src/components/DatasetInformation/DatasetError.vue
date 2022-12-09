@@ -64,7 +64,8 @@
                     <CurrentUser v-slot="{ user }">
                         <div v-if="showForm" id="fieldsAndButton">
                             <span class="mr-2 font-weight-bold">{{ emailTitle | l }}</span>
-                            <span>{{ user.email }}</span>
+                            <span v-if="!!user.email">{{ user.email }}</span>
+                            <span v-else>{{ "You must be logged in to receive emails" | l }}</span>
                             <FormElement
                                 id="dataset-error-message"
                                 v-model="message"
