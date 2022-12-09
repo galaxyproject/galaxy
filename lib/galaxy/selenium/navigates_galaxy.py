@@ -1393,7 +1393,7 @@ class NavigatesGalaxy(HasDriver):
 
     def tool_parameter_edit_rules(self):
         rules_div_element = self.tool_parameter_div("rules")
-        edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, "i.fa-edit")
+        edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, ".form-rules-edit button")
         edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None):
