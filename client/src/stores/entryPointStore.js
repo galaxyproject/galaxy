@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 import axios from "axios";
+import isEqual from "lodash.isequal";
 
 export const useEntryPointStore = defineStore("entryPointStore", {
     state: () => ({
@@ -38,15 +39,21 @@ export const useEntryPointStore = defineStore("entryPointStore", {
                 });
         },
         updateEntryPoints(data) {
+            let hasChanged = this.entryPoints.length !== data.length ? true : false;
             if (this.entryPoints.length === 0) {
                 this.entryPoints = data;
             } else {
                 const newEntryPoints = [];
                 for (const ep of data) {
                     const olderEntryPoint = this.entryPoints.filter((item) => item.id === ep.id)[0];
+                    if (!hasChanged && !isEqual(olderEntryPoint, ep)) {
+                        hasChanged = true;
+                    }
                     newEntryPoints.push(mergeEntryPoints(olderEntryPoint, ep));
                 }
-                this.entryPoints = newEntryPoints;
+                if (hasChanged) {
+                    this.entryPoints = newEntryPoints;
+                }
             }
             function mergeEntryPoints(original, updated) {
                 return { ...original, ...updated };

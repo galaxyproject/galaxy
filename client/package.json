@@ -66,6 +66,7 @@
     "linkify-html": "^3.0.5",
     "linkifyjs": "^3.0.5",
     "localforage": "^1.10.0",
+    "lodash.isequal": "^4.5.0",
     "markdown-it": "^12.3.2",
     "markdown-it-regexp": "^0.4.0",
     "object-hash": "^3.0.0",

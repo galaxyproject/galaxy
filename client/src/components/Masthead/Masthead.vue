@@ -6,9 +6,9 @@ import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
 import { watch, computed, ref } from "vue";
-import { onMounted } from "vue";
+import { onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
-
+import { useEntryPointStore } from "../../stores/entryPointStore";
 // basics
 const route = useRoute();
 const emit = defineEmits(["open-url"]);
@@ -71,6 +71,10 @@ watch(
 );
 
 /* lifecyle */
+onBeforeMount(() => {
+    const entryPointStore = useEntryPointStore();
+    entryPointStore.ensurePollingEntryPoints();
+});
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
     setActiveTab();
