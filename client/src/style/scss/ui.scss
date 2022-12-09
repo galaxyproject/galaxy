@@ -102,15 +102,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     cursor: pointer;
 }
 
-.ui-btn-back-to-top {
-    bottom: 2em;
-    position: fixed;
-    opacity: 0.5;
-}
-.ui-btn-back-to-top:hover {
-    opacity: 1;
-}
-
 // thumbnails
 .ui-thumbnails {
     .ui-thumbnails-item {
@@ -441,4 +432,19 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 .h-text {
     font-size: $font-size-base;
+}
+
+// makes a button element look like a link
+.ui-link {
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
+    color: $brand-primary;
+    display: inline;
+    line-height: unset;
+    vertical-align: unset;
+
+    &:hover {
+        text-decoration: underline;
+    }
 }
