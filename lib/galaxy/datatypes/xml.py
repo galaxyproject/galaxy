@@ -169,10 +169,6 @@ class Dzi(GenericXml):
                 dataset.metadata.width = elem.get("Width")
                 dataset.metadata.height = elem.get("Height")
 
-    def get_visualizations(self) -> List[str]:
-        """Returns a list of visualizations for datatype"""
-        return ["openseadragon"]
-
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -230,13 +226,6 @@ class Phyloxml(GenericXml):
         False
         """
         return self._has_root_element_in_prefix(file_prefix, "phyloxml")
-
-    def get_visualizations(self) -> List[str]:
-        """
-        Returns a list of visualizations for datatype.
-        """
-
-        return ["phyloviz"]
 
 
 class Owl(GenericXml):
