@@ -107,7 +107,7 @@ ValidToolTestDict = TypedDict(
         "error": Literal[False],
         "tool_id": str,
         "tool_version": str,
-        "test_index": int,
+        "test_index": Optional[int],
     },
 )
 
@@ -117,7 +117,7 @@ InvalidToolTestDict = TypedDict(
         "error": Literal[True],
         "tool_id": str,
         "tool_version": str,
-        "test_index": int,
+        "test_index": Optional[int],
         "inputs": Any,
         "exception": str,
     },
@@ -1651,7 +1651,7 @@ class ToolTestDescription:
         maxseconds: int
         if not error_in_test_definition:
             processed_test_dict = cast(ValidToolTestDict, processed_test_dict)
-            maxseconds = int(processed_test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT)
+            maxseconds = int(processed_test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400)
             output_collections = processed_test_dict.get("output_collections", [])
         else:
             processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
