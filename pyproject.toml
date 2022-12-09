@@ -71,6 +71,7 @@ mrcfile = "*"
 nodeenv = "*"
 nose = "*"
 numpy = "*"
+packaging = "<22"  # packaging 22.0 dropped LegacyVersion
 paramiko = "!=2.9.0, !=2.9.1"  # https://github.com/paramiko/paramiko/issues/1961
 Parsley = "*"
 Paste = "*"
