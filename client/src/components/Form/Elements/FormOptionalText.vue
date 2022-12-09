@@ -18,7 +18,6 @@
             :placeholder="placeholder"
             :color="color"
             :multiple="multiple"
-            :style="tyle"
             :datalist="datalist"
             :type="type" />
     </div>

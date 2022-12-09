@@ -13,7 +13,7 @@
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
-                    :type="type"
+                    :type="localType"
                     @change="onInputChange" />
 
                 <datalist v-if="datalist && !inputArea && !multiple" :id="`${id}-datalist`">
@@ -107,6 +107,13 @@ export default {
         };
     },
     computed: {
+        localType() {
+            // this seems silly, if we're in a component called FormText ... this has to be text??
+            if (this.inputArea) {
+                return "text";
+            }
+            return this.type;
+        },
         currentValue: {
             get() {
                 // TODO: is silent fail on non-strings appropriate?
