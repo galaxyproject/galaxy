@@ -1,4 +1,5 @@
 import { ExportRecordModel } from "components/Common/models/exportRecordModel";
+import type { ObjectExportTaskResponse } from "components/Common/models/exportRecordModel";
 import { DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
 import type { components } from "schema";
 import { fetcher } from "schema";
@@ -34,7 +35,7 @@ export async function getExportRecords(historyId: string) {
             },
         }
     );
-    return response.data.map((item) => new ExportRecordModel(item));
+    return response.data.map((item: unknown) => new ExportRecordModel(item as ObjectExportTaskResponse));
 }
 
 /**
