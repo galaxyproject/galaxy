@@ -81,11 +81,11 @@ from . import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.util.compression_utils import FileObjType
     from galaxy.model import (
         DatasetInstance,
         HistoryDatasetAssociation,
     )
+    from galaxy.util.compression_utils import FileObjType
 
 log = logging.getLogger(__name__)
 # pysam 0.16.0.1 emits logs containing the word 'Error', this can confuse the stdout/stderr checkers.
