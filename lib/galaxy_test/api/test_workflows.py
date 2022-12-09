@@ -752,9 +752,9 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
     def test_get_tool_predictions(self):
         request = {
             "tool_sequence": "Cut1",
-            "remote_model_url": "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5",
+            "remote_model_url": "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5",
         }
-        actual_recommendations = ["Filter1", "cat1", "addValue", "comp1", "Grep1"]
+        actual_recommendations = ["Filter1", "Grouping1"]
         route = "workflows/get_tool_predictions"
         response = self._post(route, data=request)
         recommendation_response = response.json()
