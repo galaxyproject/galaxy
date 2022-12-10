@@ -31,7 +31,7 @@ export default Backbone.View.extend({
         this.$buttons = this.$(".charts-buttons");
         this.chart = new Chart({}, options);
         this.chart.plugin = options.visualization_plugin;
-        this.chart.requiresConfirmation = asBoolean(this.chart.plugin.specs.confirm);
+        this.chart.requiresConfirmation = asBoolean(this.chart.plugin.specs?.confirm);
         this.chart.plugin.specs = this.chart.plugin.specs || {};
         this.chart_load = options.chart_load;
         this.message = new Ui.Message();
