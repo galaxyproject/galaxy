@@ -1,0 +1,59 @@
+<tool id="dbkey_data_filter_input" name="dbkey_data_filter_input" version="0.1.0" profile="22.9">
+    <description>Filter (single) data input on a dbkey</description>
+    <command><![CDATA[
+       cat '$inputs' > '$output' &&
+       echo $inputs.metadata.dbkey
+       echo $other.metadata.dbkey
+    ]]></command>
+    <inputs>
+        <param name="inputs" type="data" format="txt" label="Inputs" help="" />
+        <param name="other" type="data" format="txt" label="Other">
+            <options>
+                <filter type="data_meta" key="dbkey" ref="inputs"/>
+            </options>
+            <validator type="no_options" message="No reference genome is available for the build associated with the selected input dataset" />
+        </param>
+    </inputs>
+
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+
+    <tests>
+        <!-- can choose a dbkey if it matches input -->
+        <test>
+            <param name="inputs" value="simple_line.txt" dbkey="hg19" />
+            <param name="other" value="simple_line_x2.txt" dbkey="hg19"/>
+            <output name="output" file="simple_line.txt" />
+            <assert_stdout>
+                <has_text text="hg19" n="2"/>
+            </assert_stdout>
+        </test>
+        <!-- choose any dbkey if not specified in reference -->
+        <test>
+            <param name="inputs" value="simple_line.txt" />
+            <param name="other" value="simple_line_x2.txt" dbkey="hg19"/>
+            <output name="output" file="simple_line.txt" />
+            <assert_stdout>
+                <has_text text="hg19" n="1"/>
+            </assert_stdout>
+        </test>
+        <!-- cant choose a dkkey different from reference
+             this test should actually fail (ie it should have:
+             expect_failure="true" and output assertions removed)
+             it doesnt because for testing currently no restrictions are
+             applied to datasets (like dbkey filters)
+             https://github.com/galaxyproject/galaxy/pull/12073
+        -->
+        <test>
+            <param name="inputs" value="simple_line.txt" dbkey="hg18" />
+            <param name="other" value="simple_line_x2.txt" dbkey="hg19"/>
+            <assert_stdout>
+                <has_text text="hg18" n="1"/>
+                <has_text text="hg19" n="1"/>
+            </assert_stdout>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
