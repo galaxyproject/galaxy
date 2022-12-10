@@ -1,7 +1,7 @@
 <tool id="interactive_tool_pavian" tool_type="interactive" name="Pavian" version="1.0" profile="22.01">
     <description>Interactive analysis of metagenomics data</description>
     <requirements>
-        <container type="docker">florianbw/pavian:latest</container>
+        <container type="docker">quay.io/galaxy/pavian:0.1</container>
     </requirements>
     <entry_points>
         <entry_point name="Pavian visualisation" requires_domain="True">
