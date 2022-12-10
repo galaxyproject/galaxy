@@ -35,6 +35,7 @@ import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import LoadingSpan from "components/LoadingSpan";
 import DateTimeModal from './DateTimeModal.vue'
+import moment from 'moment'
 
 export default {
     name: "Gantt",
@@ -49,11 +50,15 @@ export default {
             tasks: [],
             historyId: null,
             accountingArray: [],
+            accountingArrayMinutes: [],
+            ganttView:'Hour',
             historyItems: [],
             currentlyProcessing: false,
             isLoading: true,
             openModal: false,
             dateTimeVal: new Date().toLocaleString('en-GB'),
+            start_time: null,
+            end_time: null
         };
     },
     computed: {
@@ -85,6 +90,11 @@ export default {
             }
             this.createKeyedColorForButtons();
         },
+        ganttView (newval, oldval) {
+          if(oldval == "Minute") {
+            this.makeGantt()
+          }
+        }
     },
     mounted() {
         this.getData();
@@ -97,12 +107,25 @@ export default {
                 await this.fetchHistoryItems({ historyId: this.historyId, filterText: "", offset: 0 });
             }
         },
-        changeDate: function (value) {
+        changeDate: function (value, status) {
           this.dateTimeVal = value
+          if(status == 'confirmed') {
+            this.start_time = moment(value).format('YYYY-MM-DD HH:mm:ss')
+            this.end_time = moment(value).add(10, 'minutes').format('YYYY-MM-DD HH:mm:ss')
+            if(this.start_time && this.end_time) {
+              this.isLoading = true
+              this.accountingArrayMinutes = this.accountingArray.filter((entry) => {
+                return moment(entry.startTime).isBetween(moment(this.start_time), moment(this.end_time))
+              })
+              this.makeGantt()
+              this.gantt.change_view_mode("Minute");
+            }
+          }
         },
         makeGantt: function () {
             var entries = [];
-            this.accountingArray.map((row, idx) => {
+            if ( this.ganttView == "Minute") {
+              this.accountingArrayMinutes.map((row, idx) => {
                 createClassWithCSS(
                     `.class-${row["id"]} .bar-progress`,
                     `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
@@ -116,28 +139,50 @@ export default {
                     progress: 100,
                     custom_class: `class-${row["id"]}`,
                 });
-            });
+              });
+            }
+            else {
+              this.accountingArray.map((row, idx) => {
+                  createClassWithCSS(
+                      `.class-${row["id"]} .bar-progress`,
+                      `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
+                  );
+                  entries.push({
+                      id: idx.toString(),
+                      job_id: row["id"],
+                      name: row["label"],
+                      start: row["startTime"],
+                      end: row["endTime"],
+                      progress: 100,
+                      custom_class: `class-${row["id"]}`,
+                  });
+              });
+            }
             this.isLoading = false
-            this.gantt = new Gantt("#gantt", entries, {
-                view_mode: "Day",
-                view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
-                arrow_curve: 14,
-                date_format: "YYYY-MM-DD",
-                popup_trigger: "mouseover",
-                custom_popup_html: function (task) {
-                return `
-                    <div class="popover-container">
-                        <div class="popover-header">
-                            ${task.job_id}: ${task.name}  
-                        </div>
-                        <div class="popover-body">
-                            Started At: ${task.start}
-                            <br>
-                            Finished At: ${task.end}
-                        </div>  
-                    </div>`;
-                },
-            });
+            if(entries.length > 0) {
+                this.gantt = new Gantt("#gantt", entries, {
+                  view_mode: "Day",
+                  view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
+                  arrow_curve: 14,
+                  date_format: "DD-MM-YYYY",
+                  popup_trigger: "mouseover",
+                  start_time: this.start_time,
+                  end_time: this.end_time,
+                  custom_popup_html: function (task) {
+                  return `
+                      <div class="popover-container">
+                          <div class="popover-header">
+                              ${task.job_id}: ${task.name}  
+                          </div>
+                          <div class="popover-body">
+                              Started At: ${task.start}
+                              <br>
+                              Finished At: ${task.end}
+                          </div>  
+                      </div>`;
+                  },
+              });
+            }
         },
         getData: async function () {
             this.isLoading = true
@@ -177,26 +222,32 @@ export default {
             this.openModal = false
         },
         changeQDayView: function () {
+            this.ganttView = "Quarter Day"
             this.gantt.change_view_mode("Quarter Day");
         },
         changeHDayView: function () {
+            this.ganttView = "Half Day"
             this.gantt.change_view_mode("Half Day");
         },
         changeDayView: function () {
+            this.ganttView = "Day"
             this.gantt.change_view_mode("Day");
         },
         changeWeekView: function () {
+          this.ganttView = "Week"
             this.gantt.change_view_mode("Week");
         },
         changeMonthView: function () {
+            this.ganttView = "Month"
             this.gantt.change_view_mode("Month");
         },
         changeHourView: function () {
-            this.gantt.change_view_mode("Hour");
+          this.ganttView = "Hour"
+          this.gantt.change_view_mode("Hour");
         },
         changeMinuteView: function () {
+            this.ganttView = "Minute"
             this.openModal = true;
-            // this.gantt.change_view_mode("Minute");
         },
         createKeyedColorForButtons: function () {
             createClassWithCSS(
@@ -358,6 +409,7 @@ function createClassWithCSS(selector, style) {
 .popup-wrapper {
     margin-top: 65px;
     margin-left: 15px;
+    margin-right: 15px;
 }
 
 </style>

@@ -17,12 +17,12 @@
                                     <b-container class="bv-example-row">
                                         <b-row>
                                             <b-col><datetime
-                                            format="DD/MM/YYYY H:i:s"
+                                            format="YYYY-MM-DD H:i:s"
                                             width="300px"
                                             v-model="date" 
                                             :value="date"
-                                            @input="$emit('changeDate', date)"></datetime></b-col>
-                                            <b-col><button @click="$emit('changeDate', date); close()">Confirm Date</button></b-col>
+                                            @input="$emit('changeDate', date, 'not-confirmed')"></datetime></b-col>
+                                            <b-col><button @click="$emit('changeDate', date, 'confirmed'); close()">Confirm Date</button></b-col>
                                         </b-row>
                                     </b-container>
                                 </div>
@@ -37,6 +37,7 @@
 
 <script>
 import datetime from "vuejs-datetimepicker";
+import moment from 'moment'
 
 export default {
     name: "DateTimeModal",
@@ -48,14 +49,11 @@ export default {
     },
     data() {
         return {
-            date: new Date().toLocaleString('en-GB')
+            date: moment().format('YYYY-MM-DD HH:mm:ss')
         }
     },
     components: { datetime },
     methods : {
-        confirmDate() {
-            console.log("The dateTime Value is : ", this.dateTimeVal);
-        },
         close() {
             this.$emit('closeModal')
         }

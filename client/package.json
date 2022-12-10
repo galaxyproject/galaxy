@@ -67,6 +67,7 @@
     "localforage": "^1.10.0",
     "markdown-it": "^12.3.2",
     "markdown-it-regexp": "^0.4.0",
+    "moment": "^2.29.4",
     "object-hash": "^3.0.0",
     "popper.js": "^1.16.1",
     "pretty-bytes": "^6.0.0",
