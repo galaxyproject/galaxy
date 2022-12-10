@@ -1,6 +1,7 @@
 import re
 
 from pydantic import Field
+from typing_extensions import get_args
 
 from galaxy.security.idencoding import IdEncodingHelper
 
@@ -94,19 +95,34 @@ class EncodedDatabaseIdField(str, BaseDatabaseIdField):
         return cls.security.decode_id(v)
 
 
-def ModelClassField():
+def literal_to_value(arg):
+    val = get_args(arg)
+    if not val:
+        return arg
+    if len(val) > 1:
+        raise Exception("Can't extract default argument for unions")
+    return val[0]
+
+
+def ModelClassField(default_value=...):
     """Represents a database model class name annotated as a constant
     pydantic Field.
     :param class_name: The name of the database class.
     :return: A constant pydantic Field with default annotations for model classes.
     """
+    get_args
     return Field(
+        literal_to_value(default_value),
         title="Model class",
         description="The name of the database model class.",
+        const=True,
     )
 
 
-def ViewField():
+def ViewField(default_value=...):
     return Field(
-        ..., title="view", description="Selected subset of data. Can be controlled with the ``view`` request parameter."
+        literal_to_value(default_value),
+        title="view",
+        description="Selected subset of data. Can be controlled with the ``view`` request parameter.",
+        const=True,
     )

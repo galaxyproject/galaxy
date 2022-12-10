@@ -196,6 +196,21 @@ class Model(BaseModel):
             LibraryFolderDatabaseIdField: lambda v: LibraryFolderDatabaseIdField.encode(v),
         }
 
+        @staticmethod
+        def schema_extra(schema: Dict[str, Any], model) -> None:
+            # pydantic doesn't currently allow creating a constant that isn't optional,
+            # which makes sense for validation, but here we're creating an openapi schema
+            # that describes the response model.
+            required_default_fields = ["view", "model_class"]
+            for default_field in required_default_fields:
+                if default_field in schema.get("properties", {}):
+                    view_props = schema["properties"][default_field]
+                    if "const" in view_props:
+                        if "required" in schema:
+                            schema["required"].append(default_field)
+                        else:
+                            schema["required"] = [default_field]
+
 
 class UserModel(Model):
     """User in a transaction context."""
@@ -206,13 +221,13 @@ class UserModel(Model):
     active: bool = Field(title="Active", description="User is active")
     deleted: bool = Field(title="Deleted", description="User is deleted")
     last_password_change: Optional[datetime] = Field(title="Last password change", description="")
-    model_class: Annotated[USER_MODEL_CLASS, ModelClassField()]
+    model_class: USER_MODEL_CLASS = ModelClassField(USER_MODEL_CLASS)
 
 
 class GroupModel(Model):
     """User group model"""
 
-    model_class: Annotated[GROUP_MODEL_CLASS, ModelClassField()]
+    model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
     id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
@@ -407,10 +422,9 @@ class HistoryItemCommon(HistoryItemBase):
     update_time: Optional[datetime] = UpdateTimeField
     url: RelativeUrl = RelativeUrlField
     tags: TagCollection
-    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
 
 
-class HDASummary(HistoryItemCommon):
+class _HDASummary(HistoryItemCommon):
     """History Dataset Association summary information."""
 
     dataset_id: DecodedDatabaseIdField = Field(
@@ -430,7 +444,11 @@ class HDASummary(HistoryItemCommon):
         title="Purged",
         description="Whether this dataset has been removed from disk.",
     )
-    view: Annotated[Literal["summary"], ViewField()]
+    model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
+
+
+class HDASummary(_HDASummary):
+    view: Literal["summary"] = ViewField("summary")
 
 
 class HDAInaccessible(HistoryItemBase):
@@ -449,7 +467,7 @@ HdaLddaField = Field(
 )
 
 
-class HDADetailed(HDASummary):
+class HDADetailed(_HDASummary):
     """History Dataset Association detailed information."""
 
     hda_ldda: DatasetSourceType = HdaLddaField
@@ -580,13 +598,13 @@ class HDADetailed(HDASummary):
         title="Created from basename",
         description="The basename of the output that produced this dataset.",  # TODO: is that correct?
     )
-    view: Annotated[Literal["detailed"], ViewField()]
+    view: Literal["detailed"] = ViewField("detailed")
 
 
 class DCSummary(Model):
     """Dataset Collection summary information."""
 
-    model_class: Annotated[DC_MODEL_CLASS, ModelClassField()]
+    model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     id: DecodedDatabaseIdField = EntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -600,7 +618,7 @@ class HDAObject(Model):
     """History Dataset Association Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
+    model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: DecodedDatabaseIdField = HistoryIdField
@@ -613,7 +631,7 @@ class DCObject(Model):
     """Dataset Collection Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[DC_MODEL_CLASS, ModelClassField()]
+    model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
     element_count: Optional[int] = ElementCountField
@@ -625,7 +643,7 @@ class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[DCE_MODEL_CLASS, ModelClassField()]
+    model_class: DCE_MODEL_CLASS = ModelClassField(DCE_MODEL_CLASS)
     element_index: int = Field(
         ...,
         title="Element Index",
@@ -728,10 +746,10 @@ class HDCJobStateSummary(Model):
     )
 
 
-class HDCASummary(HistoryItemCommon):
+class _HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
 
-    model_class: Annotated[HDCA_MODEL_CLASS, ModelClassField()]
+    model_class: HDCA_MODEL_CLASS = ModelClassField(HDCA_MODEL_CLASS)
     type: Annotated[
         Literal["collection"],
         Field(
@@ -764,10 +782,13 @@ class HDCASummary(HistoryItemCommon):
         title="Collection ID",
         description="The encoded ID of the dataset collection associated with this HDCA.",
     )
-    view: Annotated[Literal["summary"], ViewField()]
 
 
-class HDCADetailed(HDCASummary):
+class HDCASummary(_HDCASummary):
+    view: Literal["summary"] = ViewField("summary")
+
+
+class HDCADetailed(_HDCASummary):
     """History Dataset Collection Association detailed information."""
 
     populated: bool = PopulatedField
@@ -775,7 +796,7 @@ class HDCADetailed(HDCASummary):
     elements_datatypes: Set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
     )
-    view: Annotated[Literal["detailed"], ViewField()]
+    view: Literal["detailed"] = ViewField("detailed")
 
 
 class HistoryBase(Model):
@@ -888,10 +909,10 @@ class UpdateHistoryContentsPayload(HistoryBase):
         }
 
 
-class HistorySummary(HistoryBase):
+class _HistorySummary(HistoryBase):
     """History summary information."""
 
-    model_class: Annotated[HISTORY_MODEL_CLASS, ModelClassField()]
+    model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
     id: DecodedDatabaseIdField = EntityIdField
     name: str = Field(
         ...,
@@ -921,7 +942,10 @@ class HistorySummary(HistoryBase):
     )
     annotation: Optional[str] = AnnotationField
     tags: TagCollection
-    view: Annotated[Literal["summary"], ViewField()]
+
+
+class HistorySummary(_HistorySummary):
+    view: Literal["summary"] = ViewField("summary")
 
 
 class HistoryActiveContentCounts(Model):
@@ -948,7 +972,7 @@ HistoryStateCounts = Dict[Dataset.states, int]
 HistoryStateIds = Dict[Dataset.states, List[DecodedDatabaseIdField]]
 
 
-class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
+class _HistoryDetailed(_HistorySummary):  # Equivalent to 'dev-detailed' view, which seems the default
     """History detailed information."""
 
     contents_url: RelativeUrl = ContentsUrlField
@@ -1001,10 +1025,13 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
             "of datasets in this history that have those states."
         ),
     )
-    view: Annotated[Literal["detailed"], ViewField()]
 
 
-class HistoryBeta(HistoryDetailed):
+class HistoryDetailed(_HistoryDetailed):
+    view: Literal["detailed"] = ViewField("detailed")
+
+
+class HistoryBeta(_HistoryDetailed):
     """History detailed information used in the new Beta History."""
 
     annotation: Optional[str] = AnnotationField
@@ -1032,17 +1059,31 @@ class HistoryBeta(HistoryDetailed):
         title="Active Contents",
         description="Contains the number of active, deleted or hidden items in the History.",
     )
-    view: Annotated[Literal["beta-detailed"], ViewField()]
+    view: Literal["beta-detailed"] = ViewField("beta-detailed")
+
+
+class HistoryWithCustomFields(Model):
+    """Can contain any serializable property of the item.
+
+    Allows arbitrary custom keys to be specified in the serialization
+    parameters without a particular view (predefined set of keys).
+    """
+
+    model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
+    view: Literal["custom"] = ViewField("custom")
+
+    class Config:
+        extra = Extra.allow
 
 
 AnyHistoryView = Annotated[
     Union[
-        HistoryBeta,
-        HistoryDetailed,
         HistorySummary,
+        HistoryDetailed,
+        HistoryBeta,
         # Any will cover those cases in which only specific `keys` are requested
         # otherwise the validation will fail because the required fields are not returned
-        Any,
+        HistoryWithCustomFields,
     ],
     Field(discriminator="view"),
 ]
@@ -1460,7 +1501,7 @@ class JobIdResponse(Model):
 
 class JobBaseModel(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[JOB_MODEL_CLASS, ModelClassField()]
+    model_class: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
     tool_id: str = Field(
         ...,
         title="Tool ID",
@@ -1508,15 +1549,15 @@ class ItemStateSummary(Model):
 
 
 class JobStateSummary(ItemStateSummary):
-    model: Annotated[Literal["Job"], ModelClassField()]
+    model: Literal["Job"] = ModelClassField("Job")
 
 
 class ImplicitCollectionJobsStateSummary(ItemStateSummary):
-    model: Annotated[Literal["ImplicitCollectionJobs"], ModelClassField()]
+    model: Literal["ImplicitCollectionJobs"] = ModelClassField("ImplicitCollectionJobs")
 
 
 class WorkflowInvocationStateSummary(ItemStateSummary):
-    model: Annotated[Literal["WorkflowInvocation"], ModelClassField()]
+    model: Literal["WorkflowInvocation"] = ModelClassField("WorkflowInvocation")
 
 
 class JobSummary(JobBaseModel):
@@ -1683,7 +1724,7 @@ class JobFullDetails(JobDetails):
 
 class StoredWorkflowSummary(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[STORED_WORKFLOW_MODEL_CLASS, ModelClassField()]
+    model_class: STORED_WORKFLOW_MODEL_CLASS = ModelClassField(STORED_WORKFLOW_MODEL_CLASS)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     name: str = Field(
@@ -2172,7 +2213,7 @@ class BasicRoleModel(Model):
 class RoleModel(BasicRoleModel):
     description: Optional[str] = RoleDescriptionField
     url: RelativeUrl = RelativeUrlField
-    model_class: Annotated[Literal["Role"], ModelClassField()]
+    model_class: Literal["Role"] = ModelClassField("Role")
 
 
 class RoleDefinitionModel(Model):
@@ -2248,7 +2289,7 @@ class InstalledRepositoryToolShedStatus(Model):
 
 
 class InstalledToolShedRepository(Model):
-    model_class: Annotated[Literal["ToolShedRepository"], ModelClassField()] = "ToolShedRepository"
+    model_class: Literal["ToolShedRepository"] = ModelClassField("ToolShedRepository")
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2302,7 +2343,7 @@ class LibraryPermissionScope(str, Enum):
 
 
 class LibraryLegacySummary(Model):
-    model_class: Annotated[Literal["Library"], ModelClassField()]
+    model_class: Literal["Library"] = ModelClassField("Library")
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2549,7 +2590,7 @@ class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
 
 
 class LibraryFolderDetails(Model):
-    model_class: Annotated[Literal["LibraryFolder"], ModelClassField()]
+    model_class: Literal["LibraryFolder"] = ModelClassField("LibraryFolder")
     id: LibraryFolderDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2787,14 +2828,22 @@ class UpdateDatasetPermissionsPayload(Model):
     )
 
 
-class CustomHistoryItem(Model):
+class CustomHDA(Model):
     """Can contain any serializable property of the item.
 
     Allows arbitrary custom keys to be specified in the serialization
     parameters without a particular view (predefined set of keys).
     """
 
-    model_class: Annotated[Literal[HDA_MODEL_CLASS, HDCA_MODEL_CLASS], ModelClassField()]
+    model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
+
+    class Config:
+        extra = Extra.allow
+
+
+class CustomHDCA(Model):
+
+    model_class: HDCA_MODEL_CLASS = ModelClassField(HDCA_MODEL_CLASS)
 
     class Config:
         extra = Extra.allow
@@ -2806,7 +2855,8 @@ AnyHistoryContentItem = Annotated[
     Union[
         AnyHDA,
         AnyHDCA,
-        CustomHistoryItem,
+        CustomHDA,
+        CustomHDCA,
     ],
     Field(..., discriminator="model_class"),
 ]
@@ -2843,7 +2893,7 @@ class DeleteHistoryContentPayload(Model):
     )
 
 
-class DeleteHistoryContentResult(CustomHistoryItem):
+class _DeleteHistoryContentResult(Model):
     """Contains minimum information about the deletion state of a history item.
 
     Can also contain any other properties of the item."""
@@ -2863,6 +2913,17 @@ class DeleteHistoryContentResult(CustomHistoryItem):
         title="Purged",
         description="True if the item was successfully removed from disk.",
     )
+
+
+class DeleteHDAResult(_DeleteHistoryContentResult, CustomHDA):
+    pass
+
+
+class DeleteHDCAResult(_DeleteHistoryContentResult, CustomHDCA):
+    pass
+
+
+DeleteHistoryContentResult = Annotated[Union[DeleteHDAResult, DeleteHDCAResult], Field(discriminator="model_class")]
 
 
 class HistoryContentsArchiveDryRunResult(Model):
@@ -3207,7 +3268,7 @@ class PageSummary(PageSummaryBase):
         title="ID",
         description="Encoded ID of the Page.",
     )
-    model_class: Annotated[PAGE_MODEL_CLASS, ModelClassField()]
+    model_class: PAGE_MODEL_CLASS = ModelClassField(PAGE_MODEL_CLASS)
     username: str = Field(
         ...,  # Required
         title="Username",

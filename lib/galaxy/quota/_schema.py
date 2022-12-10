@@ -5,10 +5,7 @@ from typing import (
 )
 
 from pydantic import Field
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
+from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -70,7 +67,7 @@ QuotaOperationField = Field(
 
 
 class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: Annotated[DEFAULT_QUOTA_ASSOCIATION, ModelClassField()]
+    model_class: Literal["DEFAULT_QUOTA_ASSOCIATION"] = ModelClassField(DEFAULT_QUOTA_ASSOCIATION)
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -83,7 +80,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
 
 
 class UserQuota(Model):
-    model_class: Annotated[USER_QUOTA_ASSOCIATION, ModelClassField()]
+    model_class: Literal["USER_QUOTA_ASSOCIATION"] = ModelClassField(USER_QUOTA_ASSOCIATION)
     user: UserModel = Field(
         ...,
         title="User",
