@@ -19,7 +19,12 @@
                 <div>
                     <svg id="gantt"></svg>
                 </div>
-                <DateTimeModal v-if="openModal" @closeModal="closeModal" :openModal="openModal" :dateTimeVal="dateTimeVal" @changeDate="changeDate" />
+                <DateTimeModal
+                    v-if="openModal"
+                    :dateTimeVal="dateTimeVal"
+                    :openModal="openModal"
+                    @closeModal="closeModal"
+                    @changeDate="changeDate" />
             </div>
         </UserHistories>
     </CurrentUser>
@@ -34,8 +39,8 @@ import { keyedColorScheme } from "utils/color";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import LoadingSpan from "components/LoadingSpan";
-import DateTimeModal from './DateTimeModal.vue'
-import moment from 'moment'
+import DateTimeModal from "./DateTimeModal.vue";
+import moment from "moment";
 
 export default {
     name: "Gantt",
@@ -43,7 +48,7 @@ export default {
         LoadingSpan,
         CurrentUser,
         UserHistories,
-        DateTimeModal
+        DateTimeModal,
     },
     data() {
         return {
@@ -51,14 +56,14 @@ export default {
             historyId: null,
             accountingArray: [],
             accountingArrayMinutes: [],
-            ganttView:'Hour',
+            ganttView: "Hour",
             historyItems: [],
             currentlyProcessing: false,
             isLoading: true,
             openModal: false,
-            dateTimeVal: new Date().toLocaleString('en-GB'),
+            dateTimeVal: new Date().toLocaleString("en-GB"),
             start_time: null,
-            end_time: null
+            end_time: null,
         };
     },
     computed: {
@@ -74,7 +79,7 @@ export default {
         currentHistoryId(newHistoryId, oldHistoryId) {
             if (newHistoryId !== oldHistoryId) {
                 // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
-                this.currentlyProcessing = false
+                this.currentlyProcessing = false;
                 this.historyId = newHistoryId;
                 // this.accountingArray = [];
                 if (this.historyId !== undefined) {
@@ -84,17 +89,17 @@ export default {
             }
         },
         historyContent(newContent, oldContent) {
-            if ( newContent && !this.currentlyProcessing ) {
+            if (newContent && !this.currentlyProcessing) {
                 this.historyItems = newContent;
                 this.getData();
             }
             this.createKeyedColorForButtons();
         },
-        ganttView (newval, oldval) {
-          if(oldval == "Minute") {
-            this.makeGantt()
-          }
-        }
+        ganttView(newval, oldval) {
+            if (oldval == "Minute") {
+                this.makeGantt();
+            }
+        },
     },
     mounted() {
         this.getData();
@@ -108,68 +113,67 @@ export default {
             }
         },
         changeDate: function (value, status) {
-          this.dateTimeVal = value
-          if(status == 'confirmed') {
-            this.start_time = moment(value).format('YYYY-MM-DD HH:mm:ss')
-            this.end_time = moment(value).add(10, 'minutes').format('YYYY-MM-DD HH:mm:ss')
-            if(this.start_time && this.end_time) {
-              this.isLoading = true
-              this.accountingArrayMinutes = this.accountingArray.filter((entry) => {
-                return moment(entry.startTime).isBetween(moment(this.start_time), moment(this.end_time))
-              })
-              this.makeGantt()
-              this.gantt.change_view_mode("Minute");
+            this.dateTimeVal = value;
+            if (status == "confirmed") {
+                this.start_time = moment(value).format("YYYY-MM-DD HH:mm:ss");
+                this.end_time = moment(value).add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
+                if (this.start_time && this.end_time) {
+                    this.isLoading = true;
+                    this.accountingArrayMinutes = this.accountingArray.filter((entry) => {
+                        return moment(entry.startTime).isBetween(moment(this.start_time), moment(this.end_time));
+                    });
+                    this.makeGantt();
+                    this.gantt.change_view_mode("Minute");
+                }
             }
-          }
         },
         makeGantt: function () {
             var entries = [];
-            if ( this.ganttView == "Minute") {
-              this.accountingArrayMinutes.map((row, idx) => {
-                createClassWithCSS(
-                    `.class-${row["id"]} .bar-progress`,
-                    `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
-                );
-                entries.push({
-                    id: idx.toString(),
-                    job_id: row["id"],
-                    name: row["label"],
-                    start: row["startTime"],
-                    end: row["endTime"],
-                    progress: 100,
-                    custom_class: `class-${row["id"]}`,
+            if (this.ganttView == "Minute") {
+                this.accountingArrayMinutes.map((row, idx) => {
+                    createClassWithCSS(
+                        `.class-${row["id"]} .bar-progress`,
+                        `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
+                    );
+                    entries.push({
+                        id: idx.toString(),
+                        job_id: row["id"],
+                        name: row["label"],
+                        start: row["startTime"],
+                        end: row["endTime"],
+                        progress: 100,
+                        custom_class: `class-${row["id"]}`,
+                    });
                 });
-              });
+            } else {
+                this.accountingArray.map((row, idx) => {
+                    createClassWithCSS(
+                        `.class-${row["id"]} .bar-progress`,
+                        `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
+                    );
+                    entries.push({
+                        id: idx.toString(),
+                        job_id: row["id"],
+                        name: row["label"],
+                        start: row["startTime"],
+                        end: row["endTime"],
+                        progress: 100,
+                        custom_class: `class-${row["id"]}`,
+                    });
+                });
             }
-            else {
-              this.accountingArray.map((row, idx) => {
-                  createClassWithCSS(
-                      `.class-${row["id"]} .bar-progress`,
-                      `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
-                  );
-                  entries.push({
-                      id: idx.toString(),
-                      job_id: row["id"],
-                      name: row["label"],
-                      start: row["startTime"],
-                      end: row["endTime"],
-                      progress: 100,
-                      custom_class: `class-${row["id"]}`,
-                  });
-              });
-            }
-            this.isLoading = false
-            if(entries.length > 0) {
+            this.isLoading = false;
+            if (entries.length > 0) {
                 this.gantt = new Gantt("#gantt", entries, {
-                  view_mode: "Day",
-                  view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
-                  arrow_curve: 14,
-                  date_format: "DD-MM-YYYY",
-                  popup_trigger: "mouseover",
-                  start_time: this.start_time,
-                  end_time: this.end_time,
-                  custom_popup_html: function (task) {
-                  return `
+                    view_mode: "Day",
+                    view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
+                    arrow_curve: 14,
+                    date_format: "DD-MM-YYYY",
+                    popup_trigger: "mouseover",
+                    start_time: this.start_time,
+                    end_time: this.end_time,
+                    custom_popup_html: function (task) {
+                        return `
                       <div class="popover-container">
                           <div class="popover-header">
                               ${task.job_id}: ${task.name}  
@@ -180,24 +184,24 @@ export default {
                               Finished At: ${task.end}
                           </div>  
                       </div>`;
-                  },
-              });
+                    },
+                });
             }
         },
         getData: async function () {
-            this.isLoading = true
-            this.currentlyProcessing = true
+            this.isLoading = true;
+            this.currentlyProcessing = true;
             this.historyId = this.history;
-            this.accountingArray = []
+            this.accountingArray = [];
             this.historyItems = store.getters.getHistoryItems({ historyId: this.historyId, filterText: "" });
             if (this.historyItems.length == 0) {
-                this.currentlyProcessing = false
+                this.currentlyProcessing = false;
                 this.getHistoryItems();
             }
-            if( this.historyItems && this.historyItems.length > 0) {
-                    for await (const job of this.historyItems) {
+            if (this.historyItems && this.historyItems.length > 0) {
+                for await (const job of this.historyItems) {
                     var Accounting = {};
-                      if (job.id) {
+                    if (job.id) {
                         await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: "hda" });
                         const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
                         if (metrics && metrics[1] && metrics[2]) {
@@ -210,43 +214,43 @@ export default {
                             };
                             this.accountingArray.push(Accounting);
                         }
-                      }
                     }
-                    if(this.accountingArray.length > 0) {
-                        this.currentlyProcessing = false
-                        this.makeGantt()
-                    }
+                }
+                if (this.accountingArray.length > 0) {
+                    this.currentlyProcessing = false;
+                    this.makeGantt();
+                }
             }
         },
         closeModal() {
-            this.openModal = false
+            this.openModal = false;
         },
         changeQDayView: function () {
-            this.ganttView = "Quarter Day"
+            this.ganttView = "Quarter Day";
             this.gantt.change_view_mode("Quarter Day");
         },
         changeHDayView: function () {
-            this.ganttView = "Half Day"
+            this.ganttView = "Half Day";
             this.gantt.change_view_mode("Half Day");
         },
         changeDayView: function () {
-            this.ganttView = "Day"
+            this.ganttView = "Day";
             this.gantt.change_view_mode("Day");
         },
         changeWeekView: function () {
-          this.ganttView = "Week"
+            this.ganttView = "Week";
             this.gantt.change_view_mode("Week");
         },
         changeMonthView: function () {
-            this.ganttView = "Month"
+            this.ganttView = "Month";
             this.gantt.change_view_mode("Month");
         },
         changeHourView: function () {
-          this.ganttView = "Hour"
-          this.gantt.change_view_mode("Hour");
+            this.ganttView = "Hour";
+            this.gantt.change_view_mode("Hour");
         },
         changeMinuteView: function () {
-            this.ganttView = "Minute"
+            this.ganttView = "Minute";
             this.openModal = true;
         },
         createKeyedColorForButtons: function () {
@@ -304,15 +308,21 @@ export default {
 };
 
 function createClassWithCSS(selector, style) {
-    if (!document.styleSheets){ return; }
-    if (document.getElementsByTagName("head").length == 0) {return;}
+    if (!document.styleSheets) {
+        return;
+    }
+    if (document.getElementsByTagName("head").length == 0) {
+        return;
+    }
 
     var styleSheet;
     var mediaType;
 
     if (document.styleSheets.length > 0) {
         for (var i = 0, l = document.styleSheets.length; i < l; i++) {
-            if (document.styleSheets[i].disabled) {continue;}
+            if (document.styleSheets[i].disabled) {
+                continue;
+            }
             var media = document.styleSheets[i].media;
             mediaType = typeof media;
 
@@ -326,7 +336,9 @@ function createClassWithCSS(selector, style) {
                 }
             }
 
-            if (typeof styleSheet !== "undefined") {break;}
+            if (typeof styleSheet !== "undefined") {
+                break;
+            }
         }
     }
 
@@ -346,7 +358,7 @@ function createClassWithCSS(selector, style) {
     }
 
     if (mediaType === "string") {
-        for (var i = 0, l = styleSheet.rules.length; i < l; i++) {
+        for (i = 0, l = styleSheet.rules.length; i < l; i++) {
             if (
                 styleSheet.rules[i].selectorText &&
                 styleSheet.rules[i].selectorText.toLowerCase() == selector.toLowerCase()
@@ -358,7 +370,7 @@ function createClassWithCSS(selector, style) {
         styleSheet.addRule(selector, style);
     } else if (mediaType === "object") {
         var styleSheetLength = styleSheet.cssRules ? styleSheet.cssRules.length : 0;
-        for (var i = 0; i < styleSheetLength; i++) {
+        for (i = 0; i < styleSheetLength; i++) {
             if (
                 styleSheet.cssRules[i].selectorText &&
                 styleSheet.cssRules[i].selectorText.toLowerCase() == selector.toLowerCase()
@@ -400,7 +412,7 @@ function createClassWithCSS(selector, style) {
 .sticky {
     position: fixed;
 }
-.gantt-container{
+.gantt-container {
     position: inherit !important;
 }
 .gantt {
@@ -411,5 +423,4 @@ function createClassWithCSS(selector, style) {
     margin-left: 15px;
     margin-right: 15px;
 }
-
 </style>

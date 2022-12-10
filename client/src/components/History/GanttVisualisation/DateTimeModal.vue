@@ -16,13 +16,23 @@
                                     <h2>Choose a starting date</h2>
                                     <b-container class="bv-example-row">
                                         <b-row>
-                                            <b-col><datetime
-                                            format="YYYY-MM-DD H:i:s"
-                                            width="300px"
-                                            v-model="date" 
-                                            :value="date"
-                                            @input="$emit('changeDate', date, 'not-confirmed')"></datetime></b-col>
-                                            <b-col><button @click="$emit('changeDate', date, 'confirmed'); close()">Confirm Date</button></b-col>
+                                            <b-col
+                                                ><datetime
+                                                    v-model="date"
+                                                    format="YYYY-MM-DD H:i:s"
+                                                    width="300px"
+                                                    :value="date"
+                                                    @input="$emit('changeDate', date, 'not-confirmed')"></datetime
+                                            ></b-col>
+                                            <b-col
+                                                ><button
+                                                    @click="
+                                                        $emit('changeDate', date, 'confirmed');
+                                                        close();
+                                                    ">
+                                                    Confirm Date
+                                                </button></b-col
+                                            >
                                         </b-row>
                                     </b-container>
                                 </div>
@@ -37,29 +47,28 @@
 
 <script>
 import datetime from "vuejs-datetimepicker";
-import moment from 'moment'
+import moment from "moment";
 
 export default {
     name: "DateTimeModal",
+    components: { datetime },
     props: {
         openModal: {
             type: Boolean,
-            default: false
+            default: false,
         },
     },
     data() {
         return {
-            date: moment().format('YYYY-MM-DD HH:mm:ss')
-        }
+            date: moment().format("YYYY-MM-DD HH:mm:ss"),
+        };
     },
-    components: { datetime },
-    methods : {
+    methods: {
         close() {
-            this.$emit('closeModal')
-        }
-    }
-
-}
+            this.$emit("closeModal");
+        },
+    },
+};
 </script>
 <style scoped>
 .modal-mask {
