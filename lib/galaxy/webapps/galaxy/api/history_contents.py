@@ -2,13 +2,11 @@
 API operations on the contents of a history.
 """
 import logging
-from datetime import datetime
 from typing import (
     Any,
     Dict,
     List,
     Optional,
-    Set,
     Union,
 )
 
@@ -18,7 +16,6 @@ from fastapi import (
     Header,
     Path,
     Query,
-    Request,
 )
 from pydantic.error_wrappers import ValidationError
 from starlette import status
@@ -73,9 +70,7 @@ from galaxy.webapps.galaxy.api.common import (
 from galaxy.webapps.galaxy.services.history_contents import (
     CreateHistoryContentFromStore,
     CreateHistoryContentPayload,
-    DirectionOptions,
     HistoriesContentsService,
-    HistoryContentsFilterList,
     HistoryContentsIndexJobsSummaryParams,
     HistoryContentsIndexParams,
     LegacyHistoryContentsIndexParams,
@@ -298,35 +293,6 @@ def parse_index_jobs_summary_params(
     """Parses query parameters for the history contents `index_jobs_summary` operation
     and returns a model containing the values in the correct type."""
     return HistoryContentsIndexJobsSummaryParams(ids=util.listify(ids), types=util.listify(types))
-
-
-def parse_content_filter_params(
-    params: Dict[str, Any],
-    exclude: Optional[Set[str]] = None,
-) -> HistoryContentsFilterList:
-    """Alternative way of parsing query parameter for filtering history contents.
-
-    Parses parameters like: ?[field]-[operator]=[value]
-        Example: ?update_time-gt=2015-01-29
-
-    Currently used by the `contents_near` endpoint. The `exclude` set can contain
-    names of parameters that will be ignored and not added to the filters.
-    """
-    DEFAULT_OP = "eq"
-    splitchar = "-"
-
-    exclude = exclude or set()
-    result = []
-    for key, val in params.items():
-        if key in exclude:
-            continue
-        attr = key
-        op = DEFAULT_OP
-        if splitchar in key:
-            attr, op = key.rsplit(splitchar, 1)
-        result.append([attr, op, val])
-
-    return result
 
 
 @router.cbv
@@ -795,99 +761,6 @@ class FastAPIHistoryContents:
         or hand-crafted JSON dictionary.
         """
         return self.service.create_from_store(trans, history_id, create_payload, serialization_params)
-
-    @router.get(
-        "/api/histories/{history_id}/contents/{direction}/{hid}/{limit}",
-        summary="Get content items around a particular `HID`.",
-    )
-    def contents_near(
-        self,
-        request: Request,
-        response: Response,
-        trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        hid: int = Path(
-            ...,
-            title="Target HID",
-            description="The target `HID` to get content around it.",
-        ),
-        direction: DirectionOptions = Path(
-            ...,
-            description="Determines what items are selected before, after or near the target `hid`.",
-        ),
-        limit: int = Path(
-            ...,
-            description="The maximum number of content items to return above and below the target `HID`.",
-        ),
-        since: Optional[datetime] = Query(
-            default=None,
-            description=(
-                "A timestamp in ISO format to check if the history has changed since this particular date/time. "
-                "If it hasn't changed, no additional processing will be done and 204 status code will be returned."
-            ),
-        ),
-        serialization_params: SerializationParams = Depends(query_serialization_params),
-    ) -> HistoryContentsResult:
-        """
-        .. warning:: For internal use to support the scroller functionality.
-
-        This endpoint provides random access to a large history without having
-        to know exactly how many pages are in the final query. Pick a target HID
-        and filters, and the endpoint will get a maximum of `limit` history items "around" the `hid`.
-
-        Additional counts are provided in the HTTP headers.
-
-        The `direction` determines what items are selected:
-
-        a) item counts:
-
-           - total matches-up:   hid < {hid}
-           - total matches-down: hid > {hid}
-           - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
-           - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
-           - displayed matches-down: hid > {hid}
-           - displayed matches:      displayed matches-up + displayed matches-down
-
-        b) {limit} history items:
-
-           - if direction == "before": hid <= {hid}
-           - if direction == "after":  hid > {hid}
-           - if direction == "near":   "near" {hid}, so that
-             n. items before <= limit // 2,
-             n. items after <= limit // 2 + 1.
-
-        .. note:: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters,
-            it uses the following syntax for query parameters::
-
-                ?[field]-[operator]=[value]
-
-            Example::
-
-                ?update_time-gt=2015-01-29
-        """
-
-        # Needed to parse arbitrary query parameter names for the filters.
-        # Since we are directly accessing the request's query_params we also need to exclude the
-        # known params that are already parsed by FastAPI or they may be treated as filter params too.
-        # This looks a bit hacky...
-        exclude_params = {"since"}
-        exclude_params.update(SerializationParams.__fields__.keys())
-        filter_params = parse_content_filter_params(request.query_params._dict, exclude=exclude_params)
-
-        result = self.service.contents_near(
-            trans,
-            history_id,
-            serialization_params,
-            filter_params,
-            direction,
-            hid,
-            limit,
-            since,
-        )
-        if result is None:
-            return Response(status_code=status.HTTP_204_NO_CONTENT)  # type: ignore[return-value]
-        response.headers.update(result.stats.to_headers())
-        return result.contents
 
     @router.post(
         "/api/histories/{history_id}/contents/datasets/{id}/materialize",

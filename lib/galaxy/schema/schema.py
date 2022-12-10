@@ -1,6 +1,5 @@
 """This module contains general pydantic models and common schema field annotations for them."""
 
-import json
 import re
 from datetime import (
     date,
@@ -1031,37 +1030,6 @@ class HistoryDetailed(_HistoryDetailed):
     view: Literal["detailed"] = ViewField("detailed")
 
 
-class HistoryBeta(_HistoryDetailed):
-    """History detailed information used in the new Beta History."""
-
-    annotation: Optional[str] = AnnotationField
-    empty: bool = Field(
-        ...,
-        title="Empty",
-        description="Whether this History has any content.",
-    )
-    nice_size: str = Field(
-        ..., title="Nice Size", description="Human-readable size of the contents of this history.", example="95.4 MB"
-    )
-    purged: bool = Field(
-        ...,
-        title="Purged",
-        description="Whether this History has been permanently removed.",
-    )
-    tags: TagCollection
-    hid_counter: int = Field(
-        ...,
-        title="HID Counter",
-        description="TODO",
-    )
-    contents_active: HistoryActiveContentCounts = Field(
-        ...,
-        title="Active Contents",
-        description="Contains the number of active, deleted or hidden items in the History.",
-    )
-    view: Literal["beta-detailed"] = ViewField("beta-detailed")
-
-
 class HistoryWithCustomFields(Model):
     """Can contain any serializable property of the item.
 
@@ -1080,7 +1048,6 @@ AnyHistoryView = Annotated[
     Union[
         HistorySummary,
         HistoryDetailed,
-        HistoryBeta,
         # Any will cover those cases in which only specific `keys` are requested
         # otherwise the validation will fail because the required fields are not returned
         HistoryWithCustomFields,
@@ -2948,31 +2915,6 @@ class HistoryContentStats(Model):
     )
 
 
-class ContentsNearStats(Model):
-    """Stats used by the `contents_near` endpoint."""
-
-    matches: int
-    matches_up: int
-    matches_down: int
-    total_matches: int
-    total_matches_up: int
-    total_matches_down: int
-    max_hid: Optional[int] = None
-    min_hid: Optional[int] = None
-    history_size: int
-    history_empty: bool
-
-    def to_headers(self) -> Dict[str, str]:
-        """Converts all field values to json strings.
-
-        The headers values need to be json strings or updating the response
-        headers will raise encoding errors."""
-        headers = {}
-        for key, val in self:
-            headers[key] = json.dumps(val)
-        return headers
-
-
 class HistoryContentsResult(Model):
     """List of history content items.
     Can contain different views and kinds of items.
@@ -3001,14 +2943,7 @@ class HistoryContentsWithStatsResult(Model):
     __accept_type__ = "application/vnd.galaxy.history.contents.stats+json"
 
 
-class ContentsNearResult(Model):
-    contents: HistoryContentsResult
-    stats: ContentsNearStats
-
-
 # Sharing -----------------------------------------------------------------
-
-
 class SharingOptions(str, Enum):
     """Options for sharing resources that may have restricted access to all or part of their contents."""
 
