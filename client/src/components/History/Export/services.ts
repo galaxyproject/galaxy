@@ -13,7 +13,7 @@ const _importFromStoreAsync = fetcher.path("/api/histories/from_store_async").me
 /**
  * A list of objects with the available export formats IDs and display names.
  */
-export const AVAILABLE_EXPORT_FORMATS: Array<{ id: ModelStoreFormat; name: string }> = [
+export const AVAILABLE_EXPORT_FORMATS: { id: ModelStoreFormat; name: string }[] = [
     { id: "rocrate.zip", name: "RO-Crate" },
     { id: "tar.gz", name: "Compressed TGZ" },
 ];

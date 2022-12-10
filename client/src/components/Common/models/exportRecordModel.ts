@@ -1,19 +1,59 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
 import type { components } from "schema";
 
-type StoreExportPayload = components["schemas"]["StoreExportPayload"];
 type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
+
+export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
 export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
+
+export class ExportParamsModel {
+    private _params: StoreExportPayload;
+    constructor(data: StoreExportPayload = {}) {
+        this._params = data;
+    }
+
+    get modelStoreFormat() {
+        return this._params?.model_store_format;
+    }
+
+    get includeFiles() {
+        return this._params?.include_files;
+    }
+
+    get includeDeleted() {
+        return this._params?.include_deleted;
+    }
+
+    get includeHidden() {
+        return this._params?.include_hidden;
+    }
+
+    public equals(otherExportParams?: ExportParamsModel) {
+        if (!otherExportParams) {
+            return false;
+        }
+        return (
+            this.modelStoreFormat === otherExportParams.modelStoreFormat &&
+            this.includeFiles === otherExportParams.includeFiles &&
+            this.includeDeleted === otherExportParams.includeDeleted &&
+            this.includeHidden === otherExportParams.includeHidden
+        );
+    }
+}
 
 export class ExportRecordModel {
     private _data: ObjectExportTaskResponse;
     private _expirationDate?: Date | null;
     private _requestMetadata?: ExportObjectRequestMetadata;
+    private _exportParameters?: ExportParamsModel;
 
     constructor(data: ObjectExportTaskResponse) {
         this._data = data;
         this._expirationDate = undefined;
         this._requestMetadata = data.export_metadata?.request_data;
+        this._exportParameters = this._requestMetadata?.payload
+            ? new ExportParamsModel(this._requestMetadata?.payload)
+            : undefined;
     }
 
     get isReady() {
@@ -69,11 +109,11 @@ export class ExportRecordModel {
     }
 
     get modelStoreFormat() {
-        return this.exportParams?.model_store_format;
+        return this.exportParams?.modelStoreFormat;
     }
 
-    get exportParams(): StoreExportPayload | undefined {
-        return this._requestMetadata?.payload;
+    get exportParams() {
+        return this._exportParameters;
     }
 
     get duration() {
