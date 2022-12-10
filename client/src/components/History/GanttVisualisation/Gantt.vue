@@ -120,6 +120,9 @@ export default {
                 if (this.start_time && this.end_time) {
                     this.isLoading = true;
                     this.accountingArrayMinutes = this.accountingArray.filter((entry) => {
+                        if (moment(this.end_time).isBefore(moment(entry.endTime))) {
+                            this.end_time = moment(entry.endTime).format("YYYY-MM-DD HH:mm:ss");
+                        }
                         return moment(entry.startTime).isBetween(moment(this.start_time), moment(this.end_time));
                     });
                     this.makeGantt();
