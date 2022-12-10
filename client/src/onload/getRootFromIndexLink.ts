@@ -2,7 +2,7 @@
 // there That should probably be a <base> tag instead since that's how
 // they're using <link rel="index" />
 
-import { serverPath } from "utils/serverPath";
+import { serverPath } from "@/utils/serverPath";
 
 export function getRootFromIndexLink(defaultRoot = "/"): string {
     const links = document.getElementsByTagName("link");
