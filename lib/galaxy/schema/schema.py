@@ -44,6 +44,7 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
     LibraryFolderDatabaseIdField,
     ModelClassField,
+    ViewField,
 )
 from galaxy.schema.types import (
     OffsetNaiveDatetime,
@@ -406,6 +407,7 @@ class HistoryItemCommon(HistoryItemBase):
     update_time: Optional[datetime] = UpdateTimeField
     url: RelativeUrl = RelativeUrlField
     tags: TagCollection
+    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
 
 
 class HDASummary(HistoryItemCommon):
@@ -428,6 +430,7 @@ class HDASummary(HistoryItemCommon):
         title="Purged",
         description="Whether this dataset has been removed from disk.",
     )
+    view: Annotated[Literal["summary"], ViewField()]
 
 
 class HDAInaccessible(HistoryItemBase):
@@ -449,7 +452,6 @@ HdaLddaField = Field(
 class HDADetailed(HDASummary):
     """History Dataset Association detailed information."""
 
-    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
     hda_ldda: DatasetSourceType = HdaLddaField
     accessible: bool = AccessibleField
     genome_build: Optional[str] = GenomeBuildField
@@ -578,26 +580,7 @@ class HDADetailed(HDASummary):
         title="Created from basename",
         description="The basename of the output that produced this dataset.",  # TODO: is that correct?
     )
-
-
-class HDAExtended(HDADetailed):
-    """History Dataset Association extended information."""
-
-    tool_version: str = Field(
-        ...,
-        title="Tool Version",
-        description="The version of the tool that produced this dataset.",
-    )
-    parent_id: Optional[DecodedDatabaseIdField] = Field(
-        None,
-        title="Parent ID",
-        description="TODO",
-    )
-    designation: Optional[str] = Field(
-        None,
-        title="Designation",
-        description="TODO",
-    )
+    view: Annotated[Literal["detailed"], ViewField()]
 
 
 class DCSummary(Model):
@@ -781,6 +764,7 @@ class HDCASummary(HistoryItemCommon):
         title="Collection ID",
         description="The encoded ID of the dataset collection associated with this HDCA.",
     )
+    view: Annotated[Literal["summary"], ViewField()]
 
 
 class HDCADetailed(HDCASummary):
@@ -791,6 +775,7 @@ class HDCADetailed(HDCASummary):
     elements_datatypes: Set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
     )
+    view: Annotated[Literal["detailed"], ViewField()]
 
 
 class HistoryBase(Model):
@@ -936,6 +921,7 @@ class HistorySummary(HistoryBase):
     )
     annotation: Optional[str] = AnnotationField
     tags: TagCollection
+    view: Annotated[Literal["summary"], ViewField()]
 
 
 class HistoryActiveContentCounts(Model):
@@ -1015,6 +1001,7 @@ class HistoryDetailed(HistorySummary):  # Equivalent to 'dev-detailed' view, whi
             "of datasets in this history that have those states."
         ),
     )
+    view: Annotated[Literal["detailed"], ViewField()]
 
 
 class HistoryBeta(HistoryDetailed):
@@ -1045,15 +1032,19 @@ class HistoryBeta(HistoryDetailed):
         title="Active Contents",
         description="Contains the number of active, deleted or hidden items in the History.",
     )
+    view: Annotated[Literal["beta-detailed"], ViewField()]
 
 
-AnyHistoryView = Union[
-    HistoryBeta,
-    HistoryDetailed,
-    HistorySummary,
-    # Any will cover those cases in which only specific `keys` are requested
-    # otherwise the validation will fail because the required fields are not returned
-    Any,
+AnyHistoryView = Annotated[
+    Union[
+        HistoryBeta,
+        HistoryDetailed,
+        HistorySummary,
+        # Any will cover those cases in which only specific `keys` are requested
+        # otherwise the validation will fail because the required fields are not returned
+        Any,
+    ],
+    Field(discriminator="view"),
 ]
 
 
@@ -2803,16 +2794,21 @@ class CustomHistoryItem(Model):
     parameters without a particular view (predefined set of keys).
     """
 
+    model_class: Annotated[Literal[HDA_MODEL_CLASS, HDCA_MODEL_CLASS], ModelClassField()]
+
     class Config:
         extra = Extra.allow
 
 
-AnyHDA = Union[HDADetailed, HDASummary]
-AnyHDCA = Union[HDCADetailed, HDCASummary]
-AnyHistoryContentItem = Union[
-    AnyHDA,
-    AnyHDCA,
-    CustomHistoryItem,
+AnyHDA = Annotated[Union[HDADetailed, HDASummary], Field(..., discriminator="view")]
+AnyHDCA = Annotated[Union[HDCADetailed, HDCASummary], Field(..., discriminator="view")]
+AnyHistoryContentItem = Annotated[
+    Union[
+        AnyHDA,
+        AnyHDCA,
+        CustomHistoryItem,
+    ],
+    Field(..., discriminator="model_class"),
 ]
 
 

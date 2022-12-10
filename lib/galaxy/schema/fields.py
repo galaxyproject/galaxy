@@ -104,3 +104,9 @@ def ModelClassField():
         title="Model class",
         description="The name of the database model class.",
     )
+
+
+def ViewField():
+    return Field(
+        ..., title="view", description="Selected subset of data. Can be controlled with the ``view`` request parameter."
+    )

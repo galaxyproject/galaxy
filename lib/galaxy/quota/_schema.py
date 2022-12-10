@@ -92,7 +92,7 @@ class UserQuota(Model):
 
 
 class GroupQuota(Model):
-    model_class: Annotated[GROUP_QUOTA_ASSOCIATION, ModelClassField()]
+    model_class: Literal[GROUP_QUOTA_ASSOCIATION] = ModelClassField(GROUP_QUOTA_ASSOCIATION)
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -103,7 +103,7 @@ class GroupQuota(Model):
 class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
-    model_class: Annotated[QUOTA, ModelClassField()]
+    model_class: Literal[QUOTA] = ModelClassField(QUOTA)
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
