@@ -7,6 +7,8 @@ Created on January. 05, 2018
 @githuborganization: C3BI
 Phylip datatype sniffer
 """
+from typing import TYPE_CHECKING
+
 from galaxy import util
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -18,6 +20,11 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import nice_size
 from .metadata import MetadataElement
+
+if TYPE_CHECKING:
+    from io import StringIO
+
+    from galaxy.model import DatasetInstance
 
 
 @build_sniff_from_prefix
@@ -32,7 +39,7 @@ class Phylip(Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """
@@ -42,7 +49,7 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
@@ -53,7 +60,7 @@ class Phylip(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_strict_interleaved(self, nb_seq, seq_length, alignment_prefix):
+    def sniff_strict_interleaved(self, nb_seq: int, seq_length: int, alignment_prefix: "StringIO") -> bool:
         found_seq_length = None
         for _ in range(nb_seq):
             line = alignment_prefix.readline()
@@ -82,10 +89,10 @@ class Phylip(Text):
         # There may be more lines with the remaining parts of the sequences
         return True
 
-    def sniff_strict_sequential(self, nb_seq, seq_length, alignment_prefix):
+    def sniff_strict_sequential(self, nb_seq: int, seq_length: int, alignment_prefix: "StringIO") -> bool:
         raise NotImplementedError
 
-    def sniff_relaxed_interleaved(self, nb_seq, seq_length, alignment_prefix):
+    def sniff_relaxed_interleaved(self, nb_seq: int, seq_length: int, alignment_prefix: "StringIO") -> bool:
         found_seq_length = None
         for _ in range(nb_seq):
             line = alignment_prefix.readline()
@@ -117,7 +124,7 @@ class Phylip(Text):
         # There may be more lines with the remaining parts of the sequences
         return True
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         All Phylip files starts with the number of sequences so we can use this
         to count the following number of sequences in the first 'stack'

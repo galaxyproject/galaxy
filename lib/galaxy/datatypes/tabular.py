@@ -13,8 +13,12 @@ import subprocess
 import tempfile
 from json import dumps
 from typing import (
+    cast,
+    Dict,
+    List,
     Optional,
     TYPE_CHECKING,
+    Union,
 )
 
 import pysam
@@ -27,6 +31,24 @@ from galaxy.datatypes import (
     metadata,
 )
 from galaxy.datatypes.binary import _BamOrSam
+from galaxy.datatypes.data import (
+    DatatypeValidation,
+    Text,
+)
+from galaxy.datatypes.dataproviders.column import (
+    ColumnarDataProvider,
+    DictDataProvider,
+)
+from galaxy.datatypes.dataproviders.dataset import (
+    DatasetColumnarDataProvider,
+    DatasetDataProvider,
+    DatasetDictDataProvider,
+    GenomicRegionDataProvider,
+)
+from galaxy.datatypes.dataproviders.line import (
+    FilteredLineDataProvider,
+    RegexLineDataProvider,
+)
 from galaxy.datatypes.metadata import (
     MetadataElement,
     MetadataParameter,
@@ -39,6 +61,10 @@ from galaxy.datatypes.sniff import (
     validate_tabular,
 )
 from galaxy.util import compression_utils
+from galaxy.util.compression_utils import (
+    FileObjType,
+    FileObjTypeStr,
+)
 from galaxy.util.markdown import (
     indicate_data_truncated,
     pre_formatted_contents,
@@ -46,7 +72,10 @@ from galaxy.util.markdown import (
 from . import dataproviders
 
 if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 
@@ -54,7 +83,7 @@ MAX_DATA_LINES = 100000
 
 
 @dataproviders.decorators.has_dataproviders
-class TabularData(data.Text):
+class TabularData(Text):
     """Generic tabular data"""
 
     edam_format = "format_3475"
@@ -93,11 +122,12 @@ class TabularData(data.Text):
     )
 
     @abc.abstractmethod
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", *, overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
-    def set_peek(self, dataset, line_count=None, WIDTH=256, skipchars=None, line_wrap=False, **kwd):
-        super().set_peek(dataset, line_count=line_count, WIDTH=WIDTH, skipchars=skipchars, line_wrap=line_wrap)
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+        kwd.setdefault("line_wrap", False)
+        super().set_peek(dataset, **kwd)
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
@@ -135,7 +165,17 @@ class TabularData(data.Text):
             last_read = f.tell()
         return ck_data, last_read
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, offset=None, ck_size=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
@@ -185,7 +225,7 @@ class TabularData(data.Text):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance):
+    def display_as_markdown(self, dataset_instance: "DatasetInstance") -> str:
         with open(dataset_instance.file_name) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
@@ -193,27 +233,26 @@ class TabularData(data.Text):
             markdown += indicate_data_truncated()
         return pre_formatted_contents(markdown)
 
-    def make_html_table(self, dataset, **kwargs):
+    def make_html_table(self, dataset: "DatasetInstance", **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
-        out = ['<table cellspacing="0" cellpadding="3">']
         try:
+            out = ['<table cellspacing="0" cellpadding="3">']
             out.append(self.make_html_peek_header(dataset, **kwargs))
             out.append(self.make_html_peek_rows(dataset, **kwargs))
             out.append("</table>")
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek: {util.unicodify(exc)}"
-        return out
+            return f"Can't create peek: {util.unicodify(exc)}"
 
     def make_html_peek_header(
         self,
-        dataset,
-        skipchars=None,
-        column_names=None,
-        column_number_format="%s",
-        column_parameter_alias=None,
+        dataset: "DatasetInstance",
+        skipchars: Optional[List] = None,
+        column_names: Optional[List] = None,
+        column_number_format: str = "%s",
+        column_parameter_alias: Optional[Dict] = None,
         **kwargs,
-    ):
+    ) -> str:
         if skipchars is None:
             skipchars = []
         if column_names is None:
@@ -232,6 +271,7 @@ class TabularData(data.Text):
             column_headers = [None] * columns
 
             # fill in empty headers with data from column_names
+            assert column_names is not None
             for i in range(min(columns, len(column_names))):
                 if column_headers[i] is None and column_names[i] is not None:
                     column_headers[i] = column_names[i]
@@ -260,7 +300,7 @@ class TabularData(data.Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset, skipchars=None, **kwargs):
+    def make_html_peek_rows(self, dataset: "DatasetInstance", skipchars: Optional[List] = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []
@@ -297,36 +337,66 @@ class TabularData(data.Text):
             raise Exception(f"Can't create peek rows: {util.unicodify(exc)}")
         return "".join(out)
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formatted html of peek"""
         return self.make_html_table(dataset)
 
+    def is_int(self, column_text: str) -> bool:
+        # Don't allow underscores in numeric literals (PEP 515)
+        if "_" in column_text:
+            return False
+        try:
+            int(column_text)
+            return True
+        except ValueError:
+            return False
+
+    def is_float(self, column_text: str) -> bool:
+        # Don't allow underscores in numeric literals (PEP 515)
+        if "_" in column_text:
+            return False
+        try:
+            float(column_text)
+            return True
+        except ValueError:
+            if column_text.strip().lower() == "na":
+                return True  # na is special cased to be a float
+            return False
+
+    def guess_type(self, text: str) -> str:
+        if self.is_int(text):
+            return "int"
+        if self.is_float(text):
+            return "float"
+        else:
+            return "str"
+
     # ------------- Dataproviders
-    @dataproviders.decorators.dataprovider_factory("column", dataproviders.column.ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
+    def column_dataprovider(self, dataset: "DatasetInstance", **settings) -> ColumnarDataProvider:
         """Uses column settings that are passed in"""
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+        dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
-        return dataproviders.column.ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
+        return ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("dataset-column", dataproviders.column.ColumnarDataProvider.settings)
-    def dataset_column_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
+    def dataset_column_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetColumnarDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return dataproviders.dataset.DatasetColumnarDataProvider(dataset, deliminator=delimiter, **settings)
+        return DatasetColumnarDataProvider(dataset, deliminator=delimiter, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("dict", dataproviders.column.DictDataProvider.settings)
-    def dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
+    def dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
         """Uses column settings that are passed in"""
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+        dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
-        return dataproviders.column.DictDataProvider(dataset_source, deliminator=delimiter, **settings)
+        return DictDataProvider(dataset_source, deliminator=delimiter, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("dataset-dict", dataproviders.column.DictDataProvider.settings)
-    def dataset_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
+    def dataset_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetDictDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
-        return dataproviders.dataset.DatasetDictDataProvider(dataset, deliminator=delimiter, **settings)
+        return DatasetDictDataProvider(dataset, deliminator=delimiter, **settings)
 
 
 @dataproviders.decorators.has_dataproviders
@@ -335,12 +405,19 @@ class Tabular(TabularData):
 
     file_ext = "tabular"
 
-    def get_column_names(self, first_line=None):
+    def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return None
 
     def set_meta(
-        self, dataset, overwrite=True, skip=None, max_data_lines=MAX_DATA_LINES, max_guess_type_data_lines=None, **kwd
-    ):
+        self,
+        dataset: "DatasetInstance",
+        *,
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = MAX_DATA_LINES,
+        max_guess_type_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         """
         Tries to determine the number of columns as well as those columns that
         contain numerical values in the dataset.  A skip parameter is used
@@ -431,7 +508,7 @@ class Tabular(TabularData):
         data_lines = 0
         comment_lines = 0
         column_names = None
-        column_types = []
+        column_types: List = []
         first_line_column_types = [default_column_type]  # default value is one column of type str
         if dataset.has_data():
             # NOTE: if skip > num_check_lines, we won't detect any metadata, and will use default
@@ -474,8 +551,10 @@ class Tabular(TabularData):
                             column_types = [None for col in first_line_column_types]
                     if max_data_lines is not None and data_lines >= max_data_lines:
                         if dataset_fh.tell() != dataset.get_size():
-                            data_lines = None  # Clear optional data_lines metadata value
-                            comment_lines = None  # Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                            # Clear optional data_lines metadata value
+                            data_lines = None  # type: ignore [assignment]
+                            # Clear optional comment_lines metadata value; additional comment lines could appear below this point
+                            comment_lines = None  # type: ignore [assignment]
                         break
                     i += 1
 
@@ -500,10 +579,10 @@ class Tabular(TabularData):
         if column_names is not None:
             dataset.metadata.column_names = column_names
 
-    def as_gbrowse_display_file(self, dataset, **kwd):
+    def as_gbrowse_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
-    def as_ucsc_display_file(self, dataset, **kwd):
+    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
 
@@ -513,11 +592,11 @@ class SraManifest(Tabular):
     file_ext = "sra_manifest.tabular"
     data_line_offset = 1
 
-    def set_meta(self, dataset, **kwds):
-        super().set_meta(dataset, **kwds)
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.comment_lines = 1
 
-    def get_column_names(self, first_line):
+    def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
 
@@ -554,7 +633,7 @@ class Taxonomy(Tabular):
             "Subspecies",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -645,11 +724,11 @@ class Sam(Tabular, _BamOrSam):
             "OPT",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in SAM format
 
@@ -701,7 +780,14 @@ class Sam(Tabular, _BamOrSam):
             return True
         return False
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 5,
+        **kwd,
+    ) -> None:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
@@ -760,10 +846,10 @@ class Sam(Tabular, _BamOrSam):
                 "str",
             ]
 
-            _BamOrSam().set_meta(dataset)
+            _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Multiple SAM files may each have headers. Since the headers should all be the same, remove
         the headers from files 1-n, keeping them in the first file only
@@ -777,62 +863,58 @@ class Sam(Tabular, _BamOrSam):
     # Dataproviders
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     # TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
-    @dataproviders.decorators.dataprovider_factory("line", dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("line", FilteredLineDataProvider.settings)
+    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> FilteredLineDataProvider:
         settings["comment_char"] = "@"
         return super().line_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("regex-line", dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("regex-line", RegexLineDataProvider.settings)
+    def regex_line_dataprovider(self, dataset: "DatasetInstance", **settings) -> RegexLineDataProvider:
         settings["comment_char"] = "@"
         return super().regex_line_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("column", dataproviders.column.ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
+    def column_dataprovider(self, dataset: "DatasetInstance", **settings) -> ColumnarDataProvider:
         settings["comment_char"] = "@"
         return super().column_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("dataset-column", dataproviders.column.ColumnarDataProvider.settings)
-    def dataset_column_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
+    def dataset_column_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetColumnarDataProvider:
         settings["comment_char"] = "@"
         return super().dataset_column_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("dict", dataproviders.column.DictDataProvider.settings)
-    def dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
+    def dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
         settings["comment_char"] = "@"
         return super().dict_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("dataset-dict", dataproviders.column.DictDataProvider.settings)
-    def dataset_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
+    def dataset_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetDictDataProvider:
         settings["comment_char"] = "@"
         return super().dataset_dict_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory("header", dataproviders.line.RegexLineDataProvider.settings)
-    def header_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        headers_source = dataproviders.line.RegexLineDataProvider(dataset_source, regex_list=["^@"])
-        return dataproviders.line.RegexLineDataProvider(headers_source, **settings)
+    @dataproviders.decorators.dataprovider_factory("header", RegexLineDataProvider.settings)
+    def header_dataprovider(self, dataset: "DatasetInstance", **settings) -> RegexLineDataProvider:
+        dataset_source = DatasetDataProvider(dataset)
+        headers_source = RegexLineDataProvider(dataset_source, regex_list=["^@"])
+        return RegexLineDataProvider(headers_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("id-seq-qual", dict_dataprovider.settings)
-    def id_seq_qual_dataprovider(self, dataset, **settings):
+    def id_seq_qual_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
         # provided as an example of a specified column dict (w/o metadata)
         settings["indeces"] = [0, 9, 10]
         settings["column_names"] = ["id", "seq", "qual"]
         return self.dict_dataprovider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
+    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
         settings["comment_char"] = "@"
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, 2, 3, 3, **settings)
+        return GenomicRegionDataProvider(dataset, 2, 3, 3, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region-dict", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
+    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
         settings["comment_char"] = "@"
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, 2, 3, 3, True, **settings)
+        return GenomicRegionDataProvider(dataset, 2, 3, 3, True, **settings)
 
     # @dataproviders.decorators.dataprovider_factory( 'samtools' )
     # def samtools_dataprovider( self, dataset, **settings ):
@@ -855,20 +937,16 @@ class Pileup(Tabular):
     MetadataElement(name="endCol", default=2, desc="End column", param=metadata.ColumnParameter)
     MetadataElement(name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter)
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(
             dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
         )
 
-    def repair_methods(self, dataset):
-        """Return options for removing errors along with a description"""
-        return [("lines", "Remove erroneous lines")]
-
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for 'pileup-ness'
 
@@ -914,16 +992,12 @@ class Pileup(Tabular):
         return found_non_comment_lines
 
     # Dataproviders
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, **settings)
+    @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
+    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+        return GenomicRegionDataProvider(dataset, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region-dict", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
+    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
@@ -961,19 +1035,19 @@ class BaseVcf(Tabular):
         name="sample_names", default=[], desc="Sample names", readonly=True, visible=False, optional=True, no_value=[]
     )
 
-    def _sniff(self, fname_or_file_prefix):
+    def _sniff(self, fname_or_file_prefix: Union[str, FilePrefix]) -> bool:
         # Because this sniffer is run on compressed files that might be BGZF (due to the VcfGz subclass), we should
         # handle unicode decode errors. This should ultimately be done in get_headers(), but guess_ext() currently
         # relies on get_headers() raising this exception.
         headers = get_headers(fname_or_file_prefix, "\n", count=1)
         return headers[0][0].startswith("##fileformat=VCF")
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def set_meta(self, dataset, **kwd):
-        super().set_meta(dataset, **kwd)
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         line = None
         with compression_utils.get_fileobj(dataset.file_name) as fh:
             # Skip comments.
@@ -986,7 +1060,7 @@ class BaseVcf(Tabular):
             dataset.metadata.sample_names = line.split()[9:]
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         stderr_f = tempfile.NamedTemporaryFile(prefix="bam_merge_stderr")
         stderr_name = stderr_f.name
         command = ["bcftools", "concat"] + split_files + ["-o", output_file]
@@ -996,27 +1070,23 @@ class BaseVcf(Tabular):
             stderr = f.read().strip()
         # Did merge succeed?
         if exit_code != 0:
-            raise Exception(f"Error merging VCF files: {stderr}")
+            raise Exception(f"Error merging VCF files: {stderr!r}")
 
-    def validate(self, dataset, **kwd):
+    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
                 raise Exception("Not enough columns in row %s" % row.join("\t"))
 
         validate_tabular(dataset.file_name, sep="\t", validate_row=validate_row, comment_designator="#")
-        return data.DatatypeValidation.validated()
+        return DatatypeValidation.validated()
 
     # Dataproviders
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dataprovider(self, dataset, **settings):
-        return dataproviders.dataset.GenomicRegionDataProvider(dataset, 0, 1, 1, **settings)
+    @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
+    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+        return GenomicRegionDataProvider(dataset, 0, 1, 1, **settings)
 
-    @dataproviders.decorators.dataprovider_factory(
-        "genomic-region-dict", dataproviders.dataset.GenomicRegionDataProvider.settings
-    )
-    def genomic_region_dict_dataprovider(self, dataset, **settings):
+    @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
+    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
@@ -1024,7 +1094,7 @@ class BaseVcf(Tabular):
 class Vcf(BaseVcf):
     file_ext = "vcf"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return self._sniff(file_prefix)
 
 
@@ -1045,7 +1115,7 @@ class VcfGz(BaseVcf, binary.Binary):
         optional=True,
     )
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         if not self._sniff(filename):
             return False
         # Check that the file is compressed with bgzip (not gzip), i.e. the
@@ -1056,8 +1126,10 @@ class VcfGz(BaseVcf, binary.Binary):
             last28 = fh.read()
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
-    def set_meta(self, dataset, metadata_tmp_files_dir=None, **kwd):
-        super().set_meta(dataset, **kwd)
+    def set_meta(
+        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+    ) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         # Creates the index for the VCF file.
         # These metadata values are not accessible by users, always overwrite
         index_file = dataset.metadata.tabix_index
@@ -1157,12 +1229,13 @@ class Eland(Tabular):
             "FILT",
         ]
 
-    def make_html_table(self, dataset, skipchars=None, peek=None):
+    def make_html_table(
+        self, dataset: "DatasetInstance", skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
+    ) -> str:
         """Create HTML table, used for displaying peek"""
-        if skipchars is None:
-            skipchars = []
-        out = ['<table cellspacing="0" cellpadding="3">']
+        skipchars = skipchars or []
         try:
+            out = ['<table cellspacing="0" cellpadding="3">']
             # Generate column header
             out.append("<tr>")
             for i, name in enumerate(self.column_names):
@@ -1174,12 +1247,11 @@ class Eland(Tabular):
                 out.append("</tr>")
             out.append(self.make_html_peek_rows(dataset, skipchars=skipchars, peek=peek))
             out.append("</table>")
-            out = "".join(out)
+            return "".join(out)
         except Exception as exc:
-            out = f"Can't create peek {exc}"
-        return out
+            return f"Can't create peek {exc}"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in ELAND export format
 
@@ -1215,10 +1287,19 @@ class Eland(Tabular):
                     break
         if count > 0:
             return True
+        return False
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 5,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             with compression_utils.get_fileobj(dataset.file_name, compressed_formats=["gzip"]) as dataset_fh:
+                dataset_fh = cast(FileObjTypeStr, dataset_fh)
                 lanes = {}
                 tiles = {}
                 barcodes = {}
@@ -1276,7 +1357,7 @@ class Eland(Tabular):
 class ElandMulti(Tabular):
     file_ext = "elandmulti"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return False
 
 
@@ -1320,37 +1401,7 @@ class BaseCSV(TabularData):
     peek_size = 1024  # File chunk used for sniffing CSV dialect
     big_peek_size = 10240  # Large File chunk used for sniffing CSV dialect
 
-    def is_int(self, column_text):
-        # Don't allow underscores in numeric literals (PEP 515)
-        if "_" in column_text:
-            return False
-        try:
-            int(column_text)
-            return True
-        except ValueError:
-            return False
-
-    def is_float(self, column_text):
-        # Don't allow underscores in numeric literals (PEP 515)
-        if "_" in column_text:
-            return False
-        try:
-            float(column_text)
-            return True
-        except ValueError:
-            if column_text.strip().lower() == "na":
-                return True  # na is special cased to be a float
-            return False
-
-    def guess_type(self, text):
-        if self.is_int(text):
-            return "int"
-        if self.is_float(text):
-            return "float"
-        else:
-            return "str"
-
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """Return True if if recognizes dialect and header."""
         # check the dialect works
         with open(filename, newline="") as f:
@@ -1402,7 +1453,7 @@ class BaseCSV(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         column_types = []
         header_row = []
         data_row = []
@@ -1484,7 +1535,7 @@ class ConnectivityTable(Tabular):
         self.column_names = ["base_index", "base", "neighbor_left", "neighbor_right", "partner", "natural_numbering"]
         self.column_types = ["int", "str", "int", "int", "int", "int"]
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         data_lines = 0
 
         with open(dataset.file_name) as fh:
@@ -1493,7 +1544,7 @@ class ConnectivityTable(Tabular):
 
         dataset.metadata.data_lines = data_lines
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         The ConnectivityTable (CT) is a file format used for describing
         RNA 2D structures by tools including MFOLD, UNAFOLD and
@@ -1614,10 +1665,17 @@ class MatrixMarket(TabularData):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("%%MatrixMarket matrix coordinate")
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=5, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 5,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             # If the dataset is larger than optional_metadata, just count comment lines.
             with open(dataset.file_name) as dataset_fh:
@@ -1633,7 +1691,7 @@ class MatrixMarket(TabularData):
                     if line.startswith("%"):
                         comment_lines += 1
                     elif count_comments_only:
-                        data_lines = None
+                        data_lines = None  # type: ignore [assignment]
                         break
                     else:
                         data_lines += 1
@@ -1729,7 +1787,7 @@ class CMAP(TabularData):
         no_value=[],
     )
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         handle = file_prefix.string_io()
         for line in handle:
             if not line.startswith("#"):
@@ -1738,7 +1796,14 @@ class CMAP(TabularData):
                 return True
         return False
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=7, **kwd):
+    def set_meta(
+        self,
+        dataset: "DatasetInstance",
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = 7,
+        **kwd,
+    ) -> None:
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
                 comment_lines = 0
