@@ -1,10 +1,10 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase,
+    SeleniumIntegrationTestCase,
 )
 
 
-class TestHistoryExport(SeleniumTestCase):
+class TestHistoryExport(SeleniumIntegrationTestCase):
     ensure_registered = True
 
     @classmethod
