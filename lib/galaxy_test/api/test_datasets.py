@@ -57,8 +57,9 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(index_response, 200)
         datasets = index_response.json()
         for dataset in datasets:
-            assert len(dataset) == 1
             self._assert_has_keys(dataset, "id")
+            self._assert_has_keys(dataset, "model_class")
+            assert len(dataset) == 2
 
     @requires_new_history
     def test_index_order_by_size(self):
