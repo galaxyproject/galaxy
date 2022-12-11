@@ -28,7 +28,6 @@
 </%def>
 
 <%def name="left_panel()">
-    <% can_review_repositories = trans.app.security_agent.user_can_review_repositories( trans.user ) %>
     <div class="unified-panel-header" unselectable="on">
         <div class='unified-panel-header-inner'>${trans.app.shed_counter.unique_valid_tools | h} valid tools on ${util.unicodify( trans.app.shed_counter.generation_time ) | h}</div>
     </div>
@@ -93,11 +92,6 @@
                                     <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_i_can_administer' )}">Repositories I can administer</a>
                                 </div>
                             %endif
-                            %if has_reviewed_repositories:
-                                <div class="toolTitle">
-                                    <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories', operation='reviewed_repositories_i_own' )}">Reviewed repositories I own</a>
-                                </div>
-                            %endif
                             %if has_deprecated_repositories:
                                 <div class="toolTitle">
                                     <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_deprecated_repositories_i_own' )}">Deprecated repositories I own</a>
@@ -126,59 +120,6 @@
                         %if trans.app.config.enable_galaxy_flavor_docker_image:
                             <div class="toolTitle">
                                 <a target="galaxy_main" href="${h.url_for( controller='repository', action='create_galaxy_docker_image' )}">Create Galaxy Docker Image</a>
-                            </div>
-                        %endif
-                        %if can_review_repositories:
-                            <div class="toolSectionPad"></div>
-                            <div class="toolSectionTitle">
-                                Reviewing Repositories
-                            </div>
-                            <div class="toolSectionBody">
-                                <div class="toolSectionBg">
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_ready_for_review' )}">Repositories ready for review</a>
-                                    </div>
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_without_reviews' )}">All repositories with no reviews</a>
-                                    </div>
-                                    %if trans.user.repository_reviews:
-                                        <div class="toolTitle">
-                                            <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_reviewed_by_me' )}">Repositories reviewed by me</a>
-                                        </div>
-                                    %endif
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repositories_with_reviews' )}">All reviewed repositories</a>
-                                    </div>
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_components' )}">Manage review components</a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="toolSectionPad"></div>
-                            <div class="toolSectionTitle">
-                                Reviewing Repositories With Tools
-                            </div>
-                            <div class="toolSectionBody">
-                                <div class="toolSectionBg">
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_missing_tool_test_components' )}">Latest revision: missing tool tests</a>
-                                    </div>
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_install_errors' )}">Latest revision: installation errors</a>
-                                    </div>
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_failing_tool_tests' )}">Latest revision: failing tool tests</a>
-                                    </div>
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_skip_tool_test_checked' )}">Latest revision: skip tool tests</a>
-                                    </div>
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_no_failing_tool_tests' )}">Latest revision: all tool tests pass</a>
-                                    </div>
-                                    <div class="toolTitle">
-                                        <a target="galaxy_main" href="${h.url_for( controller='repository', action='browse_repositories_with_invalid_tools' )}">Latest revision: invalid tools</a>
-                                    </div>
-                                </div>
                             </div>
                         %endif
                     %else:

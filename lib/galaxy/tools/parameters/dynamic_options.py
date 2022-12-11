@@ -14,10 +14,6 @@ from galaxy.model import (
     MetadataFile,
     User,
 )
-from galaxy.tools.wrappers import (
-    DatasetFilenameWrapper,
-    DatasetListWrapper,
-)
 from galaxy.util import string_as_bool
 from . import validation
 
@@ -320,11 +316,11 @@ class UniqueValueFilter(Filter):
 
     def filter_options(self, options, trans, other_values):
         rval = []
-        skip_list = []
+        seen = set()
         for fields in options:
-            if fields[self.column] not in skip_list:
+            if fields[self.column] not in seen:
                 rval.append(fields)
-                skip_list.append(fields[self.column])
+                seen.add(fields[self.column])
         return rval
 
 
@@ -380,7 +376,7 @@ class AttributeValueSplitterFilter(Filter):
         self.columns = [d_option.column_spec_to_index(column) for column in columns.split(",")]
 
     def filter_options(self, options, trans, other_values):
-        attr_names = []
+        attr_names = set()
         rval = []
         for fields in options:
             for column in self.columns:
@@ -390,7 +386,7 @@ class AttributeValueSplitterFilter(Filter):
                         name = ary[0]
                         if name not in attr_names:
                             rval.append(fields[0:column] + [name] + fields[column:])
-                            attr_names.append(name)
+                            attr_names.add(name)
         return rval
 
 
@@ -467,6 +463,8 @@ class RemoveValueFilter(Filter):
         self.separator = elem.get("separator", ",")
 
     def filter_options(self, options, trans, other_values):
+        from galaxy.tools.wrappers import DatasetFilenameWrapper
+
         if trans is not None and trans.workflow_building_mode:
             return options
 
@@ -491,9 +489,7 @@ class RemoveValueFilter(Filter):
                 data_ref = other_values.get(self.meta_ref)
                 if isinstance(data_ref, HistoryDatasetCollectionAssociation):
                     data_ref = data_ref.to_hda_representative()
-                if not isinstance(data_ref, HistoryDatasetAssociation) and not isinstance(
-                    data_ref, DatasetFilenameWrapper
-                ):
+                if not isinstance(data_ref, (HistoryDatasetAssociation, DatasetFilenameWrapper)):
                     return options  # cannot modify options
                 value = data_ref.metadata.get(self.metadata_key, None)
         # Default to the second column (i.e. 1) since this used to work only on options produced by the data_meta filter
@@ -516,9 +512,10 @@ class SortByColumnFilter(Filter):
         column = elem.get("column", None)
         assert column is not None, "Required 'column' attribute missing from filter"
         self.column = d_option.column_spec_to_index(column)
+        self.reverse = string_as_bool(elem.get("reverse_sort_order", "False"))
 
     def filter_options(self, options, trans, other_values):
-        return sorted(options, key=lambda x: x[self.column])
+        return sorted(options, key=lambda x: x[self.column], reverse=self.reverse)
 
 
 filter_types = dict(
@@ -804,6 +801,11 @@ def _get_ref_data(other_values, ref_name):
     - a KeyError is raised if no such element exists
     - a ValueError is raised if the element is not of the type DatasetFilenameWrapper, HistoryDatasetAssociation, DatasetListWrapper, HistoryDatasetCollectionAssociation, list
     """
+    from galaxy.tools.wrappers import (
+        DatasetFilenameWrapper,
+        DatasetListWrapper,
+    )
+
     ref = other_values[ref_name]
     if not isinstance(
         ref,

@@ -13,9 +13,10 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
+from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
-from galaxy_test.base.uses_shed import UsesShed
+from galaxy_test.base.uses_shed_api import UsesShedApi
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_RUNTIME_PARAMETER,
     WORKFLOW_NESTED_SIMPLE,
@@ -38,7 +39,7 @@ steps:
 """
 
 
-class WorkflowRefactoringIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
+class TestWorkflowRefactoringIntegration(integration_util.IntegrationTestCase, UsesShedApi):
 
     framework_tool_and_types = True
 
@@ -881,6 +882,7 @@ class MockTrans(ProvidesAppContext):
         self._app = app
         self.user = user
         self.history = None
+        self.workflow_building_mode = workflow_building_modes.ENABLED
 
     @property
     def app(self):

@@ -5,7 +5,7 @@
             <span class="description">{{ tool.description }}</span>
         </a>
         <a v-else :class="targetClass" :href="tool.link" :target="tool.target" @click="onClick">
-            <img v-if="tool.logo" class="logo" :src="tool.logo" />
+            <img v-if="tool.logo" class="logo" :src="tool.logo" :alt="tool.name" />
             <span class="labels">
                 <span
                     v-for="(label, index) in tool.labels"

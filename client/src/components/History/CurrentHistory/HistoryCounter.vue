@@ -2,13 +2,13 @@
     <div class="history-size my-1 d-flex justify-content-between">
         <b-button
             v-b-tooltip.hover
-            title="Access Dashboard"
+            title="History Size"
             variant="link"
             size="sm"
             class="rounded-0 text-decoration-none"
             @click="onDashboard">
             <icon icon="database" />
-            <span>{{ history.size | niceFileSize }}</span>
+            <span>{{ historySize | niceFileSize }}</span>
         </b-button>
         <b-button-group>
             <b-button
@@ -19,10 +19,10 @@
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('')">
                 <span class="fa fa-map-marker" />
-                <span>{{ history.contents_active.active }}</span>
+                <span>{{ numItemsActive }}</span>
             </b-button>
             <b-button
-                v-if="history.contents_active.deleted"
+                v-if="numItemsDeleted"
                 v-b-tooltip.hover
                 title="Show deleted"
                 variant="link"
@@ -30,10 +30,10 @@
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('deleted:true')">
                 <icon icon="trash" />
-                <span>{{ history.contents_active.deleted }}</span>
+                <span>{{ numItemsDeleted }}</span>
             </b-button>
             <b-button
-                v-if="history.contents_active.hidden"
+                v-if="numItemsHidden"
                 v-b-tooltip.hover
                 title="Show hidden"
                 variant="link"
@@ -41,12 +41,12 @@
                 class="rounded-0 text-decoration-none"
                 @click="setFilter('visible:false')">
                 <icon icon="eye-slash" />
-                <span>{{ history.contents_active.hidden }}</span>
+                <span>{{ numItemsHidden }}</span>
             </b-button>
             <b-button
                 v-b-tooltip.hover
-                :title="'Last updated ' + diffToNow"
-                variant="link"
+                :title="reloadButtonTitle"
+                :variant="reloadButtonVariant"
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="reloadContents()">
@@ -57,9 +57,9 @@
 </template>
 
 <script>
-import { backboneRoute } from "components/plugins/legacyNavigation";
 import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
+import { usesDetailedHistoryMixin } from "./usesDetailedHistoryMixin.js";
 
 export default {
     filters: {
@@ -67,14 +67,17 @@ export default {
             return prettyBytes(rawSize);
         },
     },
+    mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },
+        isWatching: { type: Boolean, default: false },
         lastChecked: { type: Date, default: null },
     },
     data() {
         return {
-            diffToNow: 0,
             reloadButtonCls: "fa fa-sync",
+            reloadButtonTitle: "",
+            reloadButtonVariant: "link",
         };
     },
     mounted() {
@@ -84,13 +87,22 @@ export default {
     },
     methods: {
         onDashboard() {
-            backboneRoute("/storage");
+            this.$router.push("/storage");
         },
         setFilter(newFilterText) {
             this.$emit("update:filter-text", newFilterText);
         },
         updateTime() {
-            this.diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });
+            const diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });
+            const diffToNowSec = Date.now() - this.lastChecked;
+            // if history isn't being watched or hasn't been watched/polled for over 2 minutes
+            if (!this.isWatching || diffToNowSec > 120000) {
+                this.reloadButtonTitle = "Last refreshed " + diffToNow + ". Consider reloading the page.";
+                this.reloadButtonVariant = "danger";
+            } else {
+                this.reloadButtonTitle = "Last refreshed " + diffToNow;
+                this.reloadButtonVariant = "link";
+            }
         },
         async reloadContents() {
             this.$emit("reloadContents");

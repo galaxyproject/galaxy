@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from galaxy.util.bunch import Bunch
 from galaxy.web.framework.base import (
+    Request,
     Response,
     send_file,
 )
@@ -18,6 +19,7 @@ def setup_fastAPI(fh, nginx_x_accel_redirect_base=None, apache_xsendfile=None):
     def wsgi_application(env, start_response):
         trans = Bunch(
             response=Response(),
+            request=Request(env),
             app=Bunch(
                 config=Bunch(nginx_x_accel_redirect_base=nginx_x_accel_redirect_base, apache_xsendfile=apache_xsendfile)
             ),

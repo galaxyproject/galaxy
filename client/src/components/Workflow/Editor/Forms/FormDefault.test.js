@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import FormDefault from "./FormDefault";
 import { ActiveOutputs } from "components/Workflow/Editor/modules/outputs";
 
@@ -23,16 +23,15 @@ describe("FormDefault", () => {
                         nodes: [],
                     };
                 },
-                getNode: () => {
-                    return {
-                        name: "node-title",
-                        type: "subworkflow",
-                        outputs: outputs,
-                        activeOutputs: activeOutputs,
-                        config_form: {
-                            inputs: [],
-                        },
-                    };
+                nodeId: "id",
+                nodeContentId: "id",
+                nodeLabel: "label",
+                nodeName: "node-title",
+                nodeType: "subworkflow",
+                nodeOutputs: outputs,
+                nodeActiveOutputs: activeOutputs,
+                configForm: {
+                    inputs: [],
                 },
             },
             localVue,

@@ -7,19 +7,13 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.tools.parameters import params_to_strings
-from galaxy.tools.repositories import ValidationContext
-from galaxy.web import expose_api_raw_anonymous_and_sessionless
-from galaxy.webapps.base.controller import BaseAPIController
-from tool_shed.dependencies.repository import relation_builder
-from tool_shed.tools import tool_validator
-from tool_shed.util import (
-    common_util,
-    metadata_util,
-    repository_util,
+from galaxy.web import (
+    expose_api,
+    expose_api_raw_anonymous_and_sessionless,
+    require_admin,
 )
-from tool_shed.util import shed_util_common as suc
-from tool_shed.utility_containers import ToolShedUtilityContainerManager
+from galaxy.webapps.base.controller import BaseAPIController
+from tool_shed.util.shed_index import build_index
 from tool_shed.webapp.search.tool_search import ToolSearch
 
 log = logging.getLogger(__name__)
@@ -27,6 +21,26 @@ log = logging.getLogger(__name__)
 
 class ToolsController(BaseAPIController):
     """RESTful controller for interactions with tools in the Tool Shed."""
+
+    @expose_api
+    @require_admin
+    def build_search_index(self, trans, **kwd):
+        """
+        PUT /api/tools/build_search_index
+
+        Not part of the stable API, just something to simplify bootstrapping tool sheds,
+        scripting, testing, etc...
+        """
+        repos_indexed, tools_indexed = build_index(
+            trans.app.config.whoosh_index_dir,
+            trans.app.config.file_path,
+            trans.app.config.hgweb_config_dir,
+            trans.app.config.database_connection,
+        )
+        return {
+            "repositories_indexed": repos_indexed,
+            "tools_indexed": tools_indexed,
+        }
 
     @expose_api_raw_anonymous_and_sessionless
     def index(self, trans, **kwd):
@@ -114,79 +128,3 @@ class ToolsController(BaseAPIController):
         results = tool_search.search(trans, search_term, page, page_size, boosts)
         results["hostname"] = web.url_for("/", qualified=True)
         return results
-
-    @expose_api_raw_anonymous_and_sessionless
-    def json(self, trans, **kwd):
-        """
-        GET /api/tools/json
-
-        Get the tool form JSON for a tool in a repository.
-
-        :param guid:          the GUID of the tool
-        :param guid:          str
-
-        :param tsr_id:        the ID of the repository
-        :param tsr_id:        str
-
-        :param changeset:     the changeset at which to load the tool json
-        :param changeset:     str
-        """
-        guid = kwd.get("guid", None)
-        tsr_id = kwd.get("tsr_id", None)
-        changeset = kwd.get("changeset", None)
-        if None in [changeset, tsr_id, guid]:
-            message = "Changeset, repository ID, and tool GUID are all required parameters."
-            trans.response.status = 400
-            return {"status": "error", "message": message}
-        tsucm = ToolShedUtilityContainerManager(trans.app)
-        repository = repository_util.get_repository_in_tool_shed(self.app, tsr_id)
-        repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(repository.user, repository)
-        repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(trans.app, tsr_id, changeset)
-        toolshed_base_url = str(web.url_for("/", qualified=True)).rstrip("/")
-        rb = relation_builder.RelationBuilder(trans.app, repository, repository_metadata, toolshed_base_url)
-        repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
-        containers_dict = tsucm.build_repository_containers(
-            repository, changeset, repository_dependencies, repository_metadata
-        )
-        found_tool = None
-        for folder in containers_dict["valid_tools"].folders:
-            if hasattr(folder, "valid_tools"):
-                for tool in folder.valid_tools:
-                    tool.id = tool.tool_id
-                    tool_guid = suc.generate_tool_guid(repository_clone_url, tool)
-                    if tool_guid == guid:
-                        found_tool = tool
-                        break
-        if found_tool is None:
-            message = f"Unable to find tool with guid {guid} in repository {repository.name}."
-            trans.response.status = 404
-            return {"status": "error", "message": message}
-
-        with ValidationContext.from_app(trans.app) as validation_context:
-            tv = tool_validator.ToolValidator(validation_context)
-            repository, tool, valid, message = tv.load_tool_from_changeset_revision(
-                tsr_id, changeset, found_tool.tool_config
-            )
-        if message or not valid:
-            status = "error"
-            return dict(message=message, status=status)
-        tool_help = ""
-        if tool.help:
-            tool_help = tool.help.render(static_path=web.url_for("/static"), host_url=web.url_for("/", qualified=True))
-            tool_help = util.unicodify(tool_help, "utf-8")
-        tool_dict = tool.to_dict(trans)
-        tool_dict["inputs"] = {}
-        tool.populate_model(trans, tool.inputs, {}, tool_dict["inputs"])
-        tool_dict.update(
-            {
-                "help": tool_help,
-                "citations": bool(tool.citations),
-                "requirements": [{"name": r.name, "version": r.version} for r in tool.requirements],
-                "state_inputs": params_to_strings(tool.inputs, {}, trans.app),
-                "display": tool.display_interface,
-                "action": web.url_for(tool.action),
-                "method": tool.method,
-                "enctype": tool.enctype,
-            }
-        )
-        return json.dumps(tool_dict)

@@ -21,9 +21,11 @@ class WorkflowSchedulingPlugin(metaclass=ABCMeta):
     def plugin_type(self):
         """Short string providing labelling this plugin"""
 
+    @abstractmethod
     def startup(self, app):
         """Called when Galaxy starts up if the plugin is enabled."""
 
+    @abstractmethod
     def shutdown(self):
         """Called when Galaxy is shutting down, workflow scheduling should
         end.

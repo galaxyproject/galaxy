@@ -34,6 +34,10 @@ export default {
             type: Function,
             required: true,
         },
+        postJobActions: {
+            type: Object,
+            required: true,
+        },
     },
     data() {
         return {
@@ -46,12 +50,8 @@ export default {
             return `node-${node.id}-output-${this.output.name}`;
         },
         label() {
-            let extensions = this.output.extensions || this.output.type || "unspecified";
-            if (Array.isArray(extensions)) {
-                extensions = extensions.join(", ");
-            }
             const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
-            return `${activeLabel} (${extensions})`;
+            return `${activeLabel} (${this.extensions.join(", ")})`;
         },
         activeClass() {
             return this.output.activeOutput && "mark-terminal-active";
@@ -67,6 +67,22 @@ export default {
             }
             return cls;
         },
+        forcedExtension() {
+            const changeDatatype =
+                this.postJobActions[`ChangeDatatypeAction${this.output.label}`] ||
+                this.postJobActions[`ChangeDatatypeAction${this.output.name}`];
+            return changeDatatype?.action_arguments.newtype;
+        },
+        extensions() {
+            let extensions = this.forcedExtension || this.output.extensions || this.output.type || "unspecified";
+            if (!Array.isArray(extensions)) {
+                extensions = [extensions];
+            }
+            return extensions;
+        },
+        effectiveOutput() {
+            return { ...this.output, extensions: this.extensions };
+        },
     },
     watch: {
         label() {
@@ -75,17 +91,18 @@ export default {
                 this.$emit("onChange");
             });
         },
-        output(newOutput) {
+        effectiveOutput(newOutput) {
             const oldTerminal = this.terminal;
             if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
                 oldTerminal.update(newOutput);
                 oldTerminal.destroyInvalidConnections();
             } else {
                 // create new terminal, connect like old terminal, destroy old terminal
+                // this might be a little buggy, we should replace this with proper vue components
                 this.$emit("onRemove", this.output);
                 this.createTerminal(newOutput);
                 this.terminal.connectors = oldTerminal.connectors.map((c) => {
-                    return new Connector(this.getManager(), this.terminal, c.inputHandle);
+                    return new Connector(this.getManager().canvasManager, this.terminal, c.inputHandle);
                 });
                 this.terminal.destroyInvalidConnections();
                 oldTerminal.destroy();
@@ -124,7 +141,7 @@ export default {
                     ...parameters,
                     collection_type: collection_type,
                     collection_type_source: collection_type_source,
-                    datatypes: output.extensions,
+                    datatypes: this.extensions,
                 });
             } else if (output.parameter) {
                 this.terminal = new terminalClass({
@@ -134,7 +151,7 @@ export default {
             } else {
                 this.terminal = new terminalClass({
                     ...parameters,
-                    datatypes: output.extensions,
+                    datatypes: this.extensions,
                 });
             }
             new OutputDragging(this.getManager(), {

@@ -3,7 +3,7 @@
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
-                    <h4 v-localize class="m-1">Tools</h4>
+                    <h2 v-localize class="m-1 h-sm">Tools</h2>
                     <div class="panel-header-buttons">
                         <panel-view-button
                             v-if="panelViews && Object.keys(panelViews).length > 1"
@@ -18,9 +18,16 @@
             <tool-search
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
+                :toolbox="toolbox"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
+            <div v-if="queryTooShort" class="pb-2">
+                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+            </div>
+            <div v-else-if="noResults" class="pb-2">
+                <b-badge class="alert-danger w-100">No results found!</b-badge>
+            </div>
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
@@ -108,6 +115,12 @@ export default {
         };
     },
     computed: {
+        queryTooShort() {
+            return this.query && this.query.length < 3;
+        },
+        noResults() {
+            return this.query && this.results.length === 0;
+        },
         hasWorkflowSection() {
             return this.workflows.length > 0;
         },

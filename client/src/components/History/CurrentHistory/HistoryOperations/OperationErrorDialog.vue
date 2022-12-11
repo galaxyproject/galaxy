@@ -1,8 +1,8 @@
 <template>
     <b-modal
         v-model="show"
-        title="Something went wrong..."
-        header-text-variant="danger"
+        :title="title"
+        :header-text-variant="titleVariant"
         title-tag="h2"
         scrollable
         ok-only
@@ -59,6 +59,12 @@ export default {
                 return [response_error];
             }
             return [];
+        },
+        title() {
+            return this.isPartialSuccess ? "Some items could not be processed" : "Something went wrong...";
+        },
+        titleVariant() {
+            return this.isPartialSuccess ? "warning" : "danger";
         },
         errorMessage() {
             return this.operationError?.errorMessage?.message;

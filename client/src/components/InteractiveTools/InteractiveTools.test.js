@@ -1,6 +1,6 @@
 import InteractiveTools from "./InteractiveTools";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
 

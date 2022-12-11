@@ -16,7 +16,7 @@
 
 <script>
 import _l from "utils/localization";
-import RuleDefs from "mvc/rules/rule-definitions";
+import RuleDefs from "./rule-definitions";
 const RULES = RuleDefs.RULES;
 
 export default {

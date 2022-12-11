@@ -1,23 +1,24 @@
 <template>
-    <Details
+    <DetailsLayout
         :name="history.name"
         :annotation="history.annotation"
         :tags="history.tags"
         :writeable="writeable"
         @save="onSave">
         <template v-slot:name>
+            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
             <h3 v-short="history.name || 'History'" data-description="name display" class="my-2" />
         </template>
-    </Details>
+    </DetailsLayout>
 </template>
 
 <script>
 import short from "components/directives/v-short";
-import Details from "components/History/Layout/Details";
+import DetailsLayout from "components/History/Layout/DetailsLayout";
 
 export default {
     components: {
-        Details,
+        DetailsLayout,
     },
     directives: {
         short,

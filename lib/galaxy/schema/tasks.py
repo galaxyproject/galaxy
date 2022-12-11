@@ -1,13 +1,17 @@
 from typing import Optional
+from uuid import UUID
 
 from pydantic import (
     BaseModel,
     Field,
 )
 
+from galaxy.util.hash_util import HashFunctionNameEnum
 from .schema import (
+    BcoGenerationParametersMixin,
     DatasetSourceType,
     HistoryContentType,
+    ModelStoreFormat,
     StoreExportPayload,
     WriteStoreToPayload,
 )
@@ -24,12 +28,12 @@ class SetupHistoryExportJob(BaseModel):
 
 
 class PrepareDatasetCollectionDownload(BaseModel):
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     history_dataset_collection_association_id: int
 
 
 class GeneratePdfDownload(BaseModel):
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     # basic markdown - Galaxy directives need to be processed before handing off to this task
     basic_markdown: str
     document_type: PdfDocumentType
@@ -44,24 +48,28 @@ class RequestUser(BaseModel):
 
 class GenerateHistoryDownload(StoreExportPayload):
     history_id: int
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     user: RequestUser
 
 
 class GenerateHistoryContentDownload(StoreExportPayload):
     content_type: HistoryContentType
     content_id: int
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     user: RequestUser
 
 
-class GenerateInvocationDownload(StoreExportPayload):
+class BcoGenerationTaskParametersMixin(BcoGenerationParametersMixin):
+    galaxy_url: str
+
+
+class GenerateInvocationDownload(StoreExportPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
-    short_term_storage_request_id: str
+    short_term_storage_request_id: UUID
     user: RequestUser
 
 
-class WriteInvocationTo(WriteStoreToPayload):
+class WriteInvocationTo(WriteStoreToPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
     user: RequestUser
 
@@ -82,6 +90,7 @@ class ImportModelStoreTaskRequest(BaseModel):
     history_id: Optional[int]
     source_uri: str
     for_library: bool
+    model_store_format: Optional[ModelStoreFormat]
 
 
 class MaterializeDatasetInstanceTaskRequest(BaseModel):
@@ -101,3 +110,10 @@ class MaterializeDatasetInstanceTaskRequest(BaseModel):
             "- The encoded id of the the HDA\n"
         ),
     )
+
+
+class ComputeDatasetHashTaskRequest(BaseModel):
+    dataset_id: int
+    extra_files_path: Optional[str]
+    hash_function: HashFunctionNameEnum
+    user: RequestUser

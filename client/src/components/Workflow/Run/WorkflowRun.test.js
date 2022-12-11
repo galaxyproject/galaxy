@@ -1,6 +1,6 @@
 import WorkflowRun from "./WorkflowRun.vue";
 import { shallowMount, createLocalVue } from "@vue/test-utils";
-import { watchForChange } from "jest/helpers";
+import { watchForChange } from "tests/jest/helpers";
 
 import sampleRunData1 from "./testdata/run1.json";
 
@@ -49,6 +49,7 @@ describe("WorkflowRun.vue", () => {
 
         expect(wrapper.vm.error).toBeNull();
         expect(wrapper.vm.loading).toBe(false);
+        expect(wrapper.vm.simpleForm).toBe(false);
         const model = wrapper.vm.model;
         expect(model).not.toBeNull();
         expect(model.workflowId).toBe(run1WorkflowId);

@@ -40,7 +40,11 @@ class CacheableStaticURLParser(StaticURLParser):
                     directory = host_val
                     break
 
-        full = os.path.join(directory, filename)
+        full = self.normpath(os.path.join(directory, filename))
+        if not full.startswith(directory):
+            # Out of bounds
+            return self.not_found(environ, start_response)
+
         if not os.path.exists(full):
             return self.not_found(environ, start_response)
         if os.path.isdir(full):

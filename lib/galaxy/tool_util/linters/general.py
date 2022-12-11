@@ -69,7 +69,7 @@ def lint_general(tool_source, lint_ctx):
     else:
         lint_ctx.valid(PROFILE_INFO_SPECIFIED_MSG % profile, node=tool_node)
 
-    requirements, containers = tool_source.parse_requirements_and_containers()
+    requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
     for r in requirements:
         if r.type == "package":
             if not r.name:
@@ -79,3 +79,6 @@ def lint_general(tool_source, lint_ctx):
             # Warn requirement attributes with leading/trailing whitespace:
             elif r.version != r.version.strip():
                 lint_ctx.warn(WARN_WHITESPACE_MSG % ("Requirement version", r.version))
+    for rr in resource_requirements:
+        if rr.runtime_required:
+            lint_ctx.warn("Expressions in resource requirement not supported yet")

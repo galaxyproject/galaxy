@@ -7,22 +7,13 @@
         if kwargs.get( 'embedded', False ):
             # No inheritance - using only embeddable content (self.body)
             return None
-        if context.get('use_panels'):
-            if context.get('webapp'):
-                app_name = context.get('webapp')
-            elif context.get('app'):
-                app_name = context.get('app').name
-            else:
-                app_name = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % app_name
-        else:
-            return '/base.mako'
+        return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
 ##
-## Override methods from base.mako and base_panels.mako
+## Override methods from base.mako
 ##
 
 <%def name="init( embedded=False, insert=None )">

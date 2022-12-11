@@ -2,6 +2,7 @@ import NAVIGATION_DATA from "./navigation.yml";
 
 function interpolate(template, properties) {
     let parsed = template;
+    parsed = parsed.replace("$$", "$"); // Handle escaping $ in Python style...
     Object.keys(properties).forEach((key) => {
         const value = properties[key];
         parsed = parsed.replace("${" + key + "}", value);

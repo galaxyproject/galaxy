@@ -1,5 +1,5 @@
 // abstraction for copying text to the clipboard (or prompting if that isn't available)
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 
 export function copy(text, notificationText) {
     if (navigator.clipboard) {

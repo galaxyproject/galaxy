@@ -22,7 +22,7 @@ router = Router(tags=["tours"])
 @router.cbv
 class FastAPITours:
     # ugh - mypy https://github.com/python/mypy/issues/5374
-    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore[misc]
+    registry: ToursRegistry = depends(ToursRegistry)  # type: ignore[type-abstract]
 
     @router.get("/api/tours")
     def index(self) -> TourList:

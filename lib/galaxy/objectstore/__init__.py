@@ -16,6 +16,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Tuple,
     Type,
 )
 
@@ -256,6 +257,10 @@ class ObjectStore(metaclass=abc.ABCMeta):
         """
         raise NotImplementedError()
 
+    @abc.abstractmethod
+    def to_dict(self) -> Dict[str, Any]:
+        raise NotImplementedError
+
 
 class BaseObjectStore(ObjectStore):
     store_by: str
@@ -284,6 +289,13 @@ class BaseObjectStore(ObjectStore):
         extra_dirs["temp"] = config.new_file_path
         extra_dirs.update({e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])})
         self.extra_dirs = extra_dirs
+
+    def start(self):
+        """
+        Call all postfork function(s) here. These functions spawn a thread.
+        We register start(self) with app, so app starts the threads. Override
+        this function in subclasses, as needed.
+        """
 
     def shutdown(self):
         """Close any connections for this ObjectStore."""
@@ -653,9 +665,11 @@ class DiskObjectStore(ConcreteObjectStore):
             if entire_dir and (extra_dir or obj_dir):
                 shutil.rmtree(path)
                 return True
-            if self._exists(obj, **kwargs):
-                os.remove(path)
-                return True
+            os.remove(path)
+            return True
+        except FileNotFoundError:
+            # Absolutely possible that a delete request races, but that's "fine".
+            return True
         except OSError as ex:
             log.critical(f"{self.__get_filename(obj, **kwargs)} delete error {ex}")
         return False
@@ -1075,8 +1089,8 @@ class HierarchicalObjectStore(NestedObjectStore):
         self.backends[0].create(obj, **kwargs)
 
 
-def type_to_object_store_class(store, fsmon=False):
-    objectstore_class: Type[ObjectStore]
+def type_to_object_store_class(store: str, fsmon: bool = False) -> Tuple[Type[BaseObjectStore], Dict[str, Any]]:
+    objectstore_class: Type[BaseObjectStore]
     objectstore_constructor_kwds = {}
     if store == "disk":
         objectstore_class = DiskObjectStore

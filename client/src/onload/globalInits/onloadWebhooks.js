@@ -1,4 +1,4 @@
-import Webhooks from "mvc/webhooks";
+import Webhooks from "utils/webhooks";
 import Utils from "utils/utils";
 
 export function onloadWebhooks(Galaxy) {

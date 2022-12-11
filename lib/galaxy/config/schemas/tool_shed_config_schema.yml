@@ -259,27 +259,6 @@ mapping:
           If use_remote_user is enabled, you can set this to a URL that will log your
           users out.
 
-      debug:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Configuration for debugging middleware
-
-      use_lint:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Check for WSGI compliance.
-
-      use_printdebug:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Intercept print statements and show them on the returned page.
-
       admin_users:
         type: str
         required: false
@@ -370,13 +349,6 @@ mapping:
         desc: |
           Write thread status periodically to 'heartbeat.log' (careful, uses disk
            space rapidly!)
-
-      use_profile:
-        type: bool
-        default: true
-        required: false
-        desc: |
-          Profiling middleware (cProfile based)
 
       enable_galaxy_flavor_docker_image:
         type: bool
@@ -610,6 +582,16 @@ mapping:
           XML config file that allows the use of different authentication providers
           (e.g. LDAP) instead or in addition to local authentication (.sample is used
           if default does not exist).
+
+      bootstrap_admin_api_key:
+        type: str
+        required: false
+        desc: |
+          API key that allows performing some admin actions without actually
+          having a real admin user in the database and config.
+          Only set this if you need to bootstrap Galaxy, in particular to create
+          a real admin user account via API.
+          You should probably not set this on a production server.
 
       shed_tool_data_table_config:
         type: str

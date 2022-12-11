@@ -10,6 +10,11 @@ import Editor from "mvc/visualization/chart/views/editor";
 import Viewer from "mvc/visualization/chart/views/viewer";
 import Menu from "mvc/visualization/chart/views/menu";
 
+/** Get boolean as string */
+function asBoolean(value) {
+    return String(value).toLowerCase() == "true";
+}
+
 export default Backbone.View.extend({
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
@@ -27,6 +32,11 @@ export default Backbone.View.extend({
         this.chart = new Chart({}, options);
         this.chart.plugin = options.visualization_plugin;
         this.chart.plugin.specs = this.chart.plugin.specs || {};
+        if (Object.keys(this.chart.plugin.specs).length === 0) {
+            this.chart.requiresConfirmation = false;
+        } else {
+            this.chart.requiresConfirmation = asBoolean(this.chart.plugin.specs.confirm);
+        }
         this.chart_load = options.chart_load;
         this.message = new Ui.Message();
         this.deferred = new Deferred();

@@ -65,6 +65,14 @@
                 <expand macro="assert_size" value="707"/>
             </output>
         </test>
+        <test>
+            <param name="input1" ftype="gtf" value="cufflinks_out1.gtf"/>
+            <output name="output1" ftype="bgzip" >
+                <assert_contents>
+                    <has_size value="270" delta="10" />
+                </assert_contents>
+            </output>
+        </test>
     </tests>
     <help>
     </help>

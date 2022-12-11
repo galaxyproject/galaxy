@@ -6,6 +6,10 @@ import pytest
 from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.util.unittest_utils import (
+    skip_if_github_down,
+    skip_if_site_down,
+)
 from galaxy_test.base.constants import (
     ONE_TO_SIX_ON_WINDOWS,
     ONE_TO_SIX_WITH_SPACES,
@@ -15,16 +19,15 @@ from galaxy_test.base.constants import (
 )
 from galaxy_test.base.populators import (
     DatasetPopulator,
-    skip_if_github_down,
-    skip_if_site_down,
     skip_without_datatype,
     stage_inputs,
-    uses_test_history,
 )
 from ._framework import ApiTestCase
 
 
-class ToolsUploadTestCase(ApiTestCase):
+class TestToolsUpload(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -51,22 +54,22 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_upload_posix_newline_fixes_by_default(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_fetch_posix_unaltered(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch")
-        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
+        assert result_content == ONE_TO_SIX_ON_WINDOWS
 
     def test_upload_disable_posix_fix(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, to_posix_lines=None)
-        self.assertEqual(result_content, windows_content)
+        assert result_content == windows_content
 
     def test_fetch_post_lines_option(self):
         windows_content = ONE_TO_SIX_ON_WINDOWS
         result_content = self._upload_and_get_content(windows_content, api="fetch", to_posix_lines=True)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     # Test how trailing new lines are added
     # - upload1 adds by default because to_posix_lines is on by default
@@ -75,47 +78,47 @@ class ToolsUploadTestCase(ApiTestCase):
     def test_post_lines_trailing(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_post_lines_trailing_off(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content, to_posix_lines=False)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+        assert result_content == ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
 
     def test_fetch_post_lines_trailing_off_by_default(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content, api="fetch")
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE)
+        assert result_content == ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
 
     def test_fetch_post_lines_trailing_if_to_posix(self):
         input_content = ONE_TO_SIX_WITH_TABS_NO_TRAILING_NEWLINE
         result_content = self._upload_and_get_content(input_content, api="fetch", to_posix_lines=True)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_upload_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table)
-        self.assertEqual(result_content, table)
+        assert result_content == table
 
     def test_fetch_tab_to_space_off_by_default(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch")
-        self.assertEqual(result_content, table)
+        assert result_content == table
 
     def test_upload_tab_to_space(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, space_to_tab="Yes")
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_fetch_tab_to_space(self):
         table = ONE_TO_SIX_WITH_SPACES
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
-        self.assertEqual(result_content, ONE_TO_SIX_WITH_TABS)
+        assert result_content == ONE_TO_SIX_WITH_TABS
 
     def test_fetch_tab_to_space_doesnt_swap_newlines(self):
         table = ONE_TO_SIX_WITH_SPACES_ON_WINDOWS
         result_content = self._upload_and_get_content(table, api="fetch", space_to_tab=True)
-        self.assertEqual(result_content, ONE_TO_SIX_ON_WINDOWS)
+        assert result_content == ONE_TO_SIX_ON_WINDOWS
 
     def test_fetch_compressed_with_explicit_type(self):
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -131,7 +134,7 @@ class ToolsUploadTestCase(ApiTestCase):
         assert details["state"] == "ok"
         assert details["file_ext"] == "fastqsanger.gz", details
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_fetch_compressed_auto_decompress_target(self, history_id):
         # TODO: this should definitely be fixed to allow auto decompression via that API.
         fastqgz_path = TestDataResolver().get_filename("1.fastqsanger.gz")
@@ -173,7 +176,7 @@ class ToolsUploadTestCase(ApiTestCase):
             details = self._upload_and_get_details(fh, file_type="auto", assert_ok=False, auto_decompress=False)
         assert details["file_ext"] == "binary", details
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_fetch_compressed_with_auto(self, history_id):
         # UNSTABLE_FLAG: This might default to a bed.gz datatype in the future.
         # TODO: this should definitely be fixed to allow auto decompression via that API.
@@ -191,45 +194,44 @@ class ToolsUploadTestCase(ApiTestCase):
         rdata_path = TestDataResolver().get_filename("1.RData")
         with open(rdata_path, "rb") as fh:
             rdata_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEqual(rdata_metadata["file_ext"], "rdata")
+        assert rdata_metadata["file_ext"] == "rdata"
 
     @skip_without_datatype("csv")
     def test_csv_upload(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="csv")
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("csv")
     def test_csv_upload_auto(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("csv")
     def test_csv_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="csv", to_posix_lines=True)
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("csv")
     def test_csv_sniff_fetch(self):
         csv_path = TestDataResolver().get_filename("1.csv")
         with open(csv_path, "rb") as fh:
             csv_metadata = self._upload_and_get_details(fh, api="fetch", ext="auto", to_posix_lines=True)
-        self.assertEqual(csv_metadata["file_ext"], "csv")
+        assert csv_metadata["file_ext"] == "csv"
 
     @skip_without_datatype("tiff")
     def test_image_upload_auto(self):
         tiff_path = TestDataResolver().get_filename("1.tiff")
         with open(tiff_path, "rb") as fh:
             tiff_metadata = self._upload_and_get_details(fh, file_type="auto")
-        self.assertEqual(tiff_metadata["file_ext"], "tiff")
+        assert tiff_metadata["file_ext"] == "tiff"
 
-    @uses_test_history(require_new=False)
-    def test_newlines_stage_fetch(self, history_id):
+    def test_newlines_stage_fetch(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -238,31 +240,28 @@ class ToolsUploadTestCase(ApiTestCase):
             }
         }
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline.
-        self.assertEqual(content, "This is a line of text.\n")
+        assert content == "This is a line of text.\n"
 
-    @uses_test_history(require_new=False)
-    def test_stage_object(self, history_id):
+    def test_stage_object(self, history_id: str) -> None:
         job = {"input1": "randomstr"}
         inputs, datasets = stage_inputs(
             self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False
         )
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
-        self.assertEqual(content.strip(), '"randomstr"')
+        assert content.strip() == '"randomstr"'
 
-    @uses_test_history(require_new=False)
-    def test_stage_object_fetch(self, history_id):
+    def test_stage_object_fetch(self, history_id: str) -> None:
         job = {"input1": "randomstr"}
         inputs, datasets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
-        self.assertEqual(content, '"randomstr"')
+        assert content == '"randomstr"'
 
-    @uses_test_history(require_new=False)
-    def test_newlines_stage_fetch_configured(self, history_id):
+    def test_newlines_stage_fetch_configured(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -274,14 +273,13 @@ class ToolsUploadTestCase(ApiTestCase):
         inputs, datasets = stage_inputs(
             self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False
         )
-        dataset = datasets[0][0]
+        dataset = datasets[0]
         content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
         # By default this appends the newline, but we disabled with 'to_posix_lines=False' above.
-        self.assertEqual(content, "This is a line of text.")
+        assert content == "This is a line of text."
         details = self.dataset_populator.get_history_dataset_details(history_id=history_id, dataset=dataset)
         assert details["genome_build"] == "hg19"
 
-    @uses_test_history(require_new=False)
     @skip_if_github_down
     def test_upload_multiple_mixed_success(self, history_id):
         destination = {"type": "hdas"}
@@ -312,7 +310,6 @@ class ToolsUploadTestCase(ApiTestCase):
         assert output0["state"] == "ok"
         assert output1["state"] == "error"
 
-    @uses_test_history(require_new=False)
     @skip_if_github_down
     def test_fetch_bam_file_from_url_with_extension_set(self, history_id):
         item = {
@@ -323,7 +320,6 @@ class ToolsUploadTestCase(ApiTestCase):
         output = self.dataset_populator.fetch_hda(history_id, item)
         self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
 
-    @uses_test_history(require_new=False)
     @skip_if_github_down
     def test_fetch_html_from_url(self, history_id):
         destination = {"type": "hdas"}
@@ -352,7 +348,6 @@ class ToolsUploadTestCase(ApiTestCase):
         assert dataset["state"] == "error"
         assert dataset["name"] == "html_file.txt"
 
-    @uses_test_history(require_new=False)
     def test_abort_fetch_job(self, history_id):
         # This should probably be an integration test that also verifies
         # that the celery chord is properly canceled.
@@ -403,7 +398,6 @@ class ToolsUploadTestCase(ApiTestCase):
             assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
     @skip_without_datatype("velvet")
-    @uses_test_history(require_new=False)
     def test_composite_datatype_fetch(self, history_id):
         item = {
             "src": "composite",
@@ -421,8 +415,7 @@ class ToolsUploadTestCase(ApiTestCase):
         assert roadmaps_content.strip() == "roadmaps content", roadmaps_content
 
     @skip_without_datatype("velvet")
-    @uses_test_history(require_new=False)
-    def test_composite_datatype_stage_fetch(self, history_id):
+    def test_composite_datatype_stage_fetch(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -434,12 +427,11 @@ class ToolsUploadTestCase(ApiTestCase):
                 ],
             }
         }
-        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
-    @uses_test_history(require_new=False)
-    def test_composite_datatype_pbed_stage_fetch(self, history_id):
+    def test_composite_datatype_pbed_stage_fetch(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -451,12 +443,11 @@ class ToolsUploadTestCase(ApiTestCase):
                 ],
             }
         }
-        inputs, datsets = stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
+        stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
-    @uses_test_history(require_new=False)
-    def test_composite_datatype_stage_upload1(self, history_id):
+    def test_composite_datatype_stage_upload1(self, history_id: str) -> None:
         job = {
             "input1": {
                 "class": "File",
@@ -468,13 +459,10 @@ class ToolsUploadTestCase(ApiTestCase):
                 ],
             }
         }
-        inputs, datsets = stage_inputs(
-            self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False
-        )
+        stage_inputs(self.galaxy_interactor, history_id, job, use_path_paste=False, use_fetch_api=False)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
 
     @skip_without_datatype("velvet")
-    @uses_test_history(require_new=False)
     def test_composite_datatype_space_to_tab(self, history_id):
         # Like previous test but set one upload with space_to_tab to True to
         # verify that works.
@@ -519,7 +507,6 @@ class ToolsUploadTestCase(ApiTestCase):
         assert details["file_ext"] == "isa-tab", details
         assert details["file_size"] == 85, details
 
-    @uses_test_history(require_new=False)
     def test_upload_composite_as_tar(self, history_id):
         tar_path = self.test_data_resolver.get_filename("testdir.tar")
         with open(tar_path, "rb") as tar_f:
@@ -538,7 +525,6 @@ class ToolsUploadTestCase(ApiTestCase):
             dataset = run_response.json()["outputs"][0]
             self._check_testdir_composite(dataset, history_id)
 
-    @uses_test_history(require_new=False)
     def test_upload_composite_as_tar_fetch(self, history_id):
         tar_path = self.test_data_resolver.get_filename("testdir.tar")
         with open(tar_path, "rb") as tar_f:
@@ -595,7 +581,6 @@ class ToolsUploadTestCase(ApiTestCase):
 
         assert len(found_files) == 5, found_files
 
-    @uses_test_history(require_new=False)
     def test_upload_composite_from_bad_tar(self, history_id):
         tar_path = self.test_data_resolver.get_filename("unsafe.tar")
         with open(tar_path, "rb") as tar_f:
@@ -623,7 +608,6 @@ class ToolsUploadTestCase(ApiTestCase):
             datasets = run_response.json()["outputs"]
             assert datasets[0].get("genome_build") == "hg19", datasets[0]
 
-    @uses_test_history(require_new=False)
     def test_fetch_bam_file(self, history_id):
         bam_path = TestDataResolver().get_filename("1.bam")
         with open(bam_path, "rb") as fh:
@@ -990,7 +974,6 @@ class ToolsUploadTestCase(ApiTestCase):
             assert hda["file_ext"] == "fastqsanger.gz"
             assert hda["state"] == "ok"
 
-    @uses_test_history(require_new=False)
     def test_upload_deferred(self, history_id):
         details = self.dataset_populator.create_deferred_hda(
             history_id, "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bam", ext="bam"

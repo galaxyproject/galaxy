@@ -1,6 +1,6 @@
 import WorkflowDropdown from "./WorkflowDropdown";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
@@ -93,7 +93,6 @@ describe("WorkflowDropdown.vue", () => {
 
     describe("workflow clicking workflow deletion", () => {
         let axiosMock;
-        let confirmRequest;
 
         async function mountAndDelete() {
             const workflow = {
@@ -109,33 +108,30 @@ describe("WorkflowDropdown.vue", () => {
 
         beforeEach(async () => {
             axiosMock = new MockAdapter(axios);
-            confirmRequest = true;
-            global.confirm = jest.fn(() => confirmRequest);
             axiosMock.onDelete("/api/workflows/workflowid123").reply(202, "deleted...");
+            axiosMock.onPost("/api/workflows/workflowid123/undelete").reply(204, "restored...");
         });
 
         afterEach(() => {
             axiosMock.restore();
         });
 
-        it("should confirm with localized deletion message", async () => {
-            await mountAndDelete();
-            expect(global.confirm).toHaveBeenCalledWith(expect.toBeLocalized());
-        });
-
-        it("should fire deletion API request upon confirmation", async () => {
+        it("should fire deletion API request upon remove action", async () => {
             await mountAndDelete();
             const emitted = wrapper.emitted();
             expect(emitted["onRemove"][0][0]).toEqual("workflowid123");
             expect(emitted["onSuccess"][0][0]).toEqual("deleted...");
         });
 
-        it("should not fire deletion API request if not confirmed", async () => {
-            confirmRequest = false;
+        it("should restore previously deleted workflows", async () => {
             await mountAndDelete();
             const emitted = wrapper.emitted();
-            expect(emitted["onRemove"]).toBeFalsy();
-            expect(emitted["onSuccess"]).toBeFalsy();
+            expect(emitted["onRemove"][0][0]).toEqual("workflowid123");
+            expect(emitted["onSuccess"][0][0]).toEqual("deleted...");
+            await wrapper.vm.onRestore();
+            await flushPromises();
+            expect(emitted["onRestore"][0][0]).toEqual("workflowid123");
+            expect(emitted["onSuccess"][1][0]).toEqual("restored...");
         });
     });
 });

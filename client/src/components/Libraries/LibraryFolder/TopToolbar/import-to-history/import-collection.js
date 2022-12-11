@@ -1,18 +1,10 @@
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-import { Toast } from "ui/toast";
-import mod_library_model from "mvc/library/library-model";
+import { Toast } from "composables/toast";
+import mod_library_model from "../library-model";
 import _ from "underscore";
 import Backbone from "backbone";
 import axios from "axios";
-import LIST_CREATOR from "components/Collections/ListCollectionCreator";
-import LIST_CREATOR_MODAL from "components/Collections/ListCollectionCreatorModal";
-import PAIR_CREATOR from "components/Collections/PairCollectionCreator";
-import PAIR_CREATOR_MODAL from "components/Collections/PairCollectionCreatorModal";
-import PAIRED_CREATOR from "components/Collections/PairedListCollectionCreator";
-import PAIRED_CREATOR_MODAL from "components/Collections/PairedListCollectionCreatorModal";
-import RULE_CREATOR_MODAL from "components/Collections/RuleBasedCollectionCreatorModal";
-import HDCA_MODEL from "mvc/history/hdca-model";
 
 var ImportCollectionModal = Backbone.View.extend({
     options: null,
@@ -91,15 +83,15 @@ var ImportCollectionModal = Backbone.View.extend({
             collection_item.name = dataset.name;
             collection_item.deleted = dataset.deleted;
             collection_item.state = dataset.state;
+            collection_item.src = "ldda";
             collection_elements.push(collection_item);
         }
-
         const new_history_name = this.modal.$("input[name=history_name]").val();
         if (new_history_name !== "") {
             this.createNewHistory(new_history_name)
                 .then((new_history) => {
                     Toast.success("History created");
-                    this.collectionImport(collection_elements, new_history.id, new_history.name);
+                    this.collectionImport(collection_elements, new_history.id);
                 })
                 .catch((error) => {
                     console.error(error);
@@ -108,92 +100,22 @@ var ImportCollectionModal = Backbone.View.extend({
         } else {
             this.select_collection_history = this.modal.$el.find("#library-collection-history-select");
             const selected_history_id = this.select_collection_history.val();
-            const selected_history_name = this.select_collection_history.find("option:selected").text();
-            this.collectionImport(collection_elements, selected_history_id, selected_history_name);
+            this.collectionImport(collection_elements, selected_history_id);
         }
     },
-    collectionImport: function (collection_elements, history_id, history_name) {
-        const modal_title = `Creating Collection in ${history_name}`;
-        let creator_class;
-        let creationFn;
-        this.collectionType = this.modal.$el.find("#library-collection-type-select").val();
-        if (this.collectionType === "list") {
-            creator_class = LIST_CREATOR;
-            creationFn = (elements, name, hideSourceItems) => {
-                elements = elements.map((element) => ({
-                    id: element.id,
-                    name: element.name,
-                    src: "ldda",
-                }));
-                return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
+    collectionImport: function (collectionElements, historyId) {
+        const collectionType = this.modal.$el.find("#library-collection-type-select").val();
+        let selection = null;
+        if (collectionType == "rules") {
+            selection = collectionElements;
+            selection.selectionType = "library_datasets";
+        } else {
+            selection = {
+                models: collectionElements,
             };
-            LIST_CREATOR_MODAL.listCollectionCreatorModal(
-                collection_elements,
-                { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
-                creator_class
-            );
-        } else if (this.collectionType === "paired") {
-            creator_class = PAIR_CREATOR;
-            creationFn = (elements, name, hideSourceItems) => {
-                elements = [
-                    { name: "forward", src: "ldda", id: elements[0].id },
-                    { name: "reverse", src: "ldda", id: elements[1].id },
-                ];
-                return this.createHDCA(elements, this.collectionType, name, hideSourceItems, history_id);
-            };
-            PAIR_CREATOR_MODAL.pairCollectionCreatorModal(
-                collection_elements,
-                { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
-                creator_class
-            );
-        } else if (this.collectionType === "list:paired") {
-            creator_class = PAIRED_CREATOR;
-            creationFn = (elements, name, hideSourceItems) => {
-                elements = elements.map((pair) => ({
-                    collection_type: "paired",
-                    src: "new_collection",
-                    name: pair.name,
-                    element_identifiers: [
-                        {
-                            name: "forward",
-                            id: pair.forward.id,
-                            src: "ldda",
-                        },
-                        {
-                            name: "reverse",
-                            id: pair.reverse.id,
-                            src: "ldda",
-                        },
-                    ],
-                }));
-                return this.createHDCA(elements, "list:paired", name, hideSourceItems, history_id);
-            };
-            PAIRED_CREATOR_MODAL.pairedListCollectionCreatorModal(
-                collection_elements,
-                { creationFn: creationFn, title: modal_title, defaultHideSourceItems: true },
-                creator_class
-            );
-        } else if (this.collectionType === "rules") {
-            const creationFn = (elements, collectionType, name, hideSourceItems) => {
-                return this.createHDCA(elements, collectionType, name, hideSourceItems, history_id);
-            };
-            RULE_CREATOR_MODAL.ruleBasedCollectionCreatorModal(collection_elements, "library_datasets", "collections", {
-                creationFn: creationFn,
-                defaultHideSourceItems: true,
-            });
         }
-    },
-    createHDCA: function (elementIdentifiers, collectionType, name, hideSourceItems, history_id, options) {
-        const hdca = new HDCA_MODEL.HistoryDatasetCollection({
-            history_content_type: "dataset_collection",
-            collection_type: collectionType,
-            history_id: history_id,
-            name: name,
-            hide_source_items: hideSourceItems,
-            copy_elements: !hideSourceItems,
-            element_identifiers: elementIdentifiers,
-        });
-        return hdca.save(options);
+        const Galaxy = getGalaxyInstance();
+        Galaxy.currHistoryPanel.buildCollection(collectionType, selection, historyId);
     },
     templateCollectionSelectModal: function () {
         return _.template(

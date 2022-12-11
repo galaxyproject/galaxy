@@ -13,6 +13,7 @@ import json
 import os
 import random
 import re
+import shlex
 import shutil
 import smtplib
 import stat
@@ -22,7 +23,6 @@ import tempfile
 import textwrap
 import threading
 import time
-import typing
 import unicodedata
 import xml.dom.minidom
 from datetime import datetime
@@ -30,7 +30,17 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
 from os.path import relpath
-from pathlib import Path
+from typing import (
+    Any,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    overload,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from urllib.parse import (
     urlencode,
     urlparse,
@@ -45,6 +55,7 @@ from boltons.iterutils import (
 )
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
+from typing_extensions import Literal
 
 try:
     import grp
@@ -54,13 +65,23 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
+    from lxml.etree import _Element as Element
 
-    Element = etree._Element
+    # lxml.etree.ElementTree is a function that returns a new instance of the
+    # lxml.etree._ElementTree class. This class doesn't have a proper
+    # __init__() method, so we can add a __new__() constructor that mimicks
+    # xml.etree.ElementTree.ElementTree initialization.
+    class ElementTree(etree._ElementTree):
+        def __new__(cls, element=None, file=None) -> etree.ElementTree:
+            return etree.ElementTree(element, file=file)
+
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-
-    Element = etree.Element
+    from xml.etree.ElementTree import (  # type: ignore[assignment]
+        Element,
+        ElementTree,
+    )
 
 try:
     import docutils.core as docutils_core
@@ -75,7 +96,16 @@ from .path import (  # noqa: F401
     safe_contains,
     safe_makedirs,
     safe_relpath,
+    StrPath,
 )
+
+try:
+    shlex_join = shlex.join  # type: ignore[attr-defined]
+except AttributeError:
+    # Python < 3.8
+    def shlex_join(split_command):
+        return " ".join(map(shlex.quote, split_command))
+
 
 inflector = Inflector()
 
@@ -238,7 +268,7 @@ def file_reader(fp, chunk_size=CHUNK_SIZE):
         yield data
 
 
-def chunk_iterable(it: typing.Iterable, size: int = 1000):
+def chunk_iterable(it: Iterable, size: int = 1000) -> Iterator[tuple]:
     """
     Break an iterable into chunks of ``size`` elements.
 
@@ -265,7 +295,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: typing.Union[str, Path], strip_whitespace=True, remove_comments=True):
+def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:
@@ -292,28 +322,28 @@ def parse_xml(fname: typing.Union[str, Path], strip_whitespace=True, remove_comm
     return tree
 
 
-def parse_xml_string(xml_string, strip_whitespace=True):
+def parse_xml_string(xml_string: str, strip_whitespace: bool = True) -> Element:
     try:
-        tree = etree.fromstring(xml_string)
+        elem = etree.fromstring(xml_string)
     except ValueError as e:
         if "strings with encoding declaration are not supported" in unicodify(e):
-            tree = etree.fromstring(xml_string.encode("utf-8"))
+            elem = etree.fromstring(xml_string.encode("utf-8"))
         else:
             raise e
     if strip_whitespace:
-        for elem in tree.iter("*"):
-            if elem.text is not None:
-                elem.text = elem.text.strip()
-            if elem.tail is not None:
-                elem.tail = elem.tail.strip()
-    return tree
+        for sub_elem in elem.iter("*"):
+            if sub_elem.text is not None:
+                sub_elem.text = sub_elem.text.strip()
+            if sub_elem.tail is not None:
+                sub_elem.tail = sub_elem.tail.strip()
+    return elem
 
 
-def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
-    return etree.ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
+def parse_xml_string_to_etree(xml_string: str, strip_whitespace: bool = True) -> ElementTree:
+    return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem, pretty=False):
+def xml_to_string(elem: Element, pretty: bool = False) -> str:
     """
     Returns a string from an xml tree.
     """
@@ -767,7 +797,7 @@ def ready_name_for_url(raw_name):
     return slug_base
 
 
-def which(file):
+def which(file: str) -> Optional[str]:
     # http://stackoverflow.com/questions/5226958/which-equivalent-function-in-python
     for path in os.environ["PATH"].split(":"):
         if os.path.exists(path + "/" + file):
@@ -999,7 +1029,7 @@ def asbool(obj):
     return bool(obj)
 
 
-def string_as_bool(string: str) -> bool:
+def string_as_bool(string: Any) -> bool:
     if str(string).lower() in ("true", "yes", "on", "1"):
         return True
     else:
@@ -1025,7 +1055,32 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip=False) -> typing.List[typing.Any]:
+ItemType = TypeVar("ItemType")
+
+
+@overload
+def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List:
+    ...
+
+
+@overload
+def listify(item: str, do_strip: bool = False) -> List[str]:
+    ...
+
+
+@overload
+def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]:
+    ...
+
+
+# Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
+# because then that would also match Union types.
+@overload
+def listify(item: Any, do_strip: bool = False) -> List:
+    ...
+
+
+def listify(item: Any, do_strip: bool = False) -> List:
     """
     Make a single item a single item list.
 
@@ -1044,9 +1099,7 @@ def listify(item, do_strip=False) -> typing.List[typing.Any]:
     """
     if not item:
         return []
-    elif isinstance(item, list):
-        return item
-    elif isinstance(item, tuple):
+    elif isinstance(item, (list, tuple)):
         return list(item)
     elif isinstance(item, str) and item.count(","):
         if do_strip:
@@ -1076,7 +1129,35 @@ def roundify(amount, sfs=2):
         return amount[0:sfs] + "0" * (len(amount) - sfs)
 
 
-def unicodify(value, encoding=DEFAULT_ENCODING, error="replace", strip_null=False, log_exception=True):
+@overload
+def unicodify(  # type: ignore[misc]
+    value: Literal[None],
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> None:
+    ...
+
+
+@overload
+def unicodify(
+    value: Any,
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> str:
+    ...
+
+
+def unicodify(
+    value: Any,
+    encoding: str = DEFAULT_ENCODING,
+    error: str = "replace",
+    strip_null: bool = False,
+    log_exception: bool = True,
+) -> Optional[str]:
     """
     Returns a Unicode string or None.
 
@@ -1585,10 +1666,15 @@ galaxy_samples_path = os.path.join(__path__[0], os.pardir, "config", "sample")  
 
 
 def galaxy_directory():
-    root_path = os.path.abspath(galaxy_root_path)
-    if os.path.basename(root_path) == "packages":
-        root_path = os.path.abspath(os.path.join(root_path, ".."))
-    return root_path
+    path = galaxy_root_path
+    if in_packages():
+        path = os.path.join(galaxy_root_path, "..")
+    return os.path.abspath(path)
+
+
+def in_packages():
+    # Normalize first; otherwise basename will be `..`
+    return os.path.basename(os.path.normpath(galaxy_root_path)) == "packages"
 
 
 def galaxy_samples_directory():
@@ -1805,9 +1891,3 @@ class StructuredExecutionTimer:
     @property
     def elapsed(self):
         return time.time() - self.begin
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__], verbose=False)

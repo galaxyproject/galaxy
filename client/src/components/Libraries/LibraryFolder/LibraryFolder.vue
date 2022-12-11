@@ -3,8 +3,8 @@
         <div>
             <FolderTopBar
                 :folder-contents="folderContents"
-                :include_deleted="include_deleted"
-                :folder_id="current_folder_id"
+                :include-deleted.sync="includeDeleted"
+                :folder_id="currentFolderId"
                 :selected="selected"
                 :metadata="folder_metadata"
                 :unselected="unselected"
@@ -29,6 +29,7 @@
                 selectable
                 no-select-on-click
                 show-empty
+                @sort-changed="onSort"
                 @row-clicked="onRowClick">
                 <template v-slot:empty>
                     <div v-if="isBusy" class="text-center my-2">
@@ -275,7 +276,7 @@ import { Services } from "./services";
 import Utils from "utils/utils";
 import linkifyHtml from "linkify-html";
 import { fields } from "./table-fields";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE } from "components/Libraries/library-utils";
@@ -292,8 +293,7 @@ function initialFolderState() {
         unselected: [],
         expandedMessage: [],
         folderContents: [],
-        include_deleted: false,
-        search_text: "",
+        includeDeleted: false,
         isAllSelectedMode: false,
     };
 }
@@ -323,8 +323,11 @@ export default {
         return {
             ...initialFolderState(),
             ...{
-                currentPage: null,
-                current_folder_id: null,
+                currentPage: 1,
+                sortBy: "name",
+                sortDesc: false,
+                searchText: "",
+                currentFolderId: null,
                 error: null,
                 isBusy: false,
                 folder_metadata: {},
@@ -338,10 +341,17 @@ export default {
         };
     },
     watch: {
-        perPage: {
-            handler: function (value) {
-                this.fetchFolderContents(this.include_deleted);
-            },
+        perPage() {
+            this.fetchFolderContents();
+        },
+        includeDeleted() {
+            this.fetchFolderContents();
+        },
+        sortBy() {
+            this.fetchFolderContents();
+        },
+        sortDesc() {
+            this.fetchFolderContents();
         },
     },
     created() {
@@ -350,25 +360,30 @@ export default {
     },
     methods: {
         getFolder(folder_id, page) {
-            this.current_folder_id = folder_id;
+            this.currentFolderId = folder_id;
             this.currentPage = page;
             this.resetData();
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         resetData() {
             const data = initialFolderState();
             Object.keys(data).forEach((k) => (this[k] = data[k]));
         },
-        fetchFolderContents(include_deleted = false) {
-            this.include_deleted = include_deleted;
+        onSort(props) {
+            this.sortBy = props.sortBy;
+            this.sortDesc = props.sortDesc;
+        },
+        fetchFolderContents() {
             this.setBusy(true);
             this.services
                 .getFolderContents(
-                    this.current_folder_id,
-                    include_deleted,
+                    this.currentFolderId,
+                    this.includeDeleted,
+                    this.sortBy,
+                    this.sortDesc,
                     this.perPage,
                     (this.currentPage - 1) * this.perPage,
-                    this.search_text
+                    this.searchText
                 )
                 .then((response) => {
                     this.folderContents = response.folder_contents;
@@ -391,9 +406,9 @@ export default {
                 });
         },
         updateSearchValue(value) {
-            this.search_text = value;
+            this.searchText = value;
             this.folderContents = [];
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         selectAllRenderedRows() {
             this.$refs.folder_content_table.items.forEach((row, index) => {
@@ -413,7 +428,7 @@ export default {
             this.$refs.folder_content_table.refresh();
         },
         refreshTableContent() {
-            this.fetchFolderContents(this.include_deleted);
+            this.fetchFolderContents();
         },
         deleteFromTable(deletedItem) {
             this.folderContents = this.folderContents.filter((element) => {
@@ -495,9 +510,9 @@ export default {
         },
         navigateToPermission(element) {
             if (element.type === "file") {
-                return `/folders/${this.folder_id}/dataset/${element.id}/permissions`;
+                return `/libraries/folders/${this.folder_id}/dataset/${element.id}/permissions`;
             } else if (element.type === "folder") {
-                return `/folders/${element.id}/permissions`;
+                return `/libraries/folders/${element.id}/permissions`;
             }
         },
         getMessage(element) {
@@ -533,7 +548,7 @@ export default {
             } else {
                 this.services.newFolder(
                     {
-                        parent_id: this.current_folder_id,
+                        parent_id: this.currentFolderId,
                         name: folder.name,
                         description: folder.description,
                     },

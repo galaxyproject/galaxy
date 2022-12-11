@@ -1,0 +1,109 @@
+name: Deferred Data - An Introduction
+description: An introduction on how to work with deferred datasets.
+title_default: Deferred Data - An Introduction
+tags:
+  - "core"
+  - "UI"
+
+requirements:
+  - new_history
+
+steps:
+    - content: This short tour will walk you through using deferred datasets
+
+    - title: Start as Normal with the Upload Dialog
+      component: upload.start
+      intro: The Galaxy upload dialog can be used to simulate 'uploads' of deferred datasets as if they were normal datasets.
+      postclick: true
+
+    - title: "'Upload' Your Data"
+      component: upload.paste_new
+      intro: Copy and paste data directly into Galaxy or include URLs that lead to your data
+      preclick: true
+
+    - title: Specify Deferred Dataset...
+      intro: ...by pasting deferred URL into the upload text area.
+      component: upload.paste_content(n=0)
+      textinsert: |
+        https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
+
+    - title: Configure Upload.
+      component: upload.settings_button(n=0)
+      intro: Now, we may further configure the upload content by clicking this settings button.
+      postclick: true
+
+    - title: Deferred Setting.
+      component: upload.setting_deferred
+      intro: ...by specifying to defer datasets, only URLs will be stored in Galaxy and the dataset will only be fetched if and when needed by Galaxy to run tools or workflows.
+      postclick: true
+
+    - title: Close Settings
+      element: .popover-close
+      postclick: true
+
+    - title: Start Upload
+      component: upload.start_uploading
+      intro: Click the start button to begin the process of 'uploading' your deferred dataset.
+      postclick: true
+
+    - title: Close Upload
+      component: upload.close
+      intro: Hit the close button to close the upload dialog.
+      postclick: true
+
+    - title: History Panel
+      element: '#current-history-panel'
+      intro: The deferred dataset will be placed in the history panel like any other history dataset.
+
+    - title: The Deferred Dataset
+      component: history_panel.item(hid=1)
+      intro: The deferred dataset is being created.
+
+    - title: The Deferred Dataset is Ready
+      component: history_panel.item(hid=1,state=deferred)
+      intro: The deferred dataset has been created - the styling of the history dataset indicates it is deferred.
+
+    - title: State Indicator
+      component: history_panel.item(hid=1,state=deferred).state_icon
+      intro: This cloud icon indicates the dataset is deferred. Click to exapnd the dataset.
+      postclick: true
+
+    - title: A Note About Datatype/Format
+      component: history_panel.item(hid=1,state=deferred).datatype
+      intro: Unless manually set, normally this datatype is based on the contents of the dataset. For deferred datasets, the file name is used to make this inference. Be sure to specify a file type during upload if this is incorrect.
+
+    - title: Dataset Details
+      component: history_panel.item(hid=1,state=deferred).info_button
+      intro: Clicking the info button we can see more information about how our deferred dataset is stored and what it targets.
+      postclick: true
+
+    - title: Dataset Source URI
+      component: dataset_details.deferred_source_uri
+      intro: Typically this part of the dataset information page describes how the dataset is stored by Galaxy. For deferred datasets, only information about where the dataset will be fetched from is dislayed.
+
+    - title: Tool Search
+      component: tool_panel.search
+      intro: Let's search for the concatenate tool to run on our deferred dataset.
+      textinsert: 'Concatenate'
+
+    - title: Select a Tool
+      component: tool_panel.tool_link(tool_id=cat1)
+      intro: We will click the concatenate tool.
+      postclick: true
+
+    - title: Deferred dataset is an Option.
+      component: tool_form.parameter_div(parameter=input1)
+      intro: The deferred dataset is available in the tool form even though the dataset has not been downloaded by Galaxy.
+
+    - title: Execute the Tool
+      component: tool_form.execute
+      intro: Lets run the tool, calling the concatenate tool with a single input will simply create a duplicate of the supplied input dataset.
+      postclick: true
+
+    - title: Resulting Dataset
+      component: history_panel.item(hid=2)
+      intro: The concatenation of the two datasets is running.
+
+    - title: Resulting Dataset is Ready
+      component: history_panel.item(hid=2,state=ok)
+      intro: The result is now available in Galaxy. The original input dataset isn't consuming quota or being stored by Galaxy, but this dataset is.

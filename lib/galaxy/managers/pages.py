@@ -39,6 +39,7 @@ from galaxy.managers.markdown_util import (
 )
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.schema import (
+    CreatePagePayload,
     PageContentFormat,
     PageIndexQueryPayload,
 )
@@ -134,39 +135,37 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             query = query.offset(payload.offset)
         return query, total_matches
 
-    def create(self, trans, payload):
+    def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
 
-        if not payload.get("title"):
+        if not payload.title:
             raise exceptions.ObjectAttributeMissingException("Page name is required")
-        elif not payload.get("slug"):
+        elif not payload.slug:
             raise exceptions.ObjectAttributeMissingException("Page id is required")
-        elif not base.is_valid_slug(payload["slug"]):
+        elif not base.is_valid_slug(payload.slug):
             raise exceptions.ObjectAttributeInvalidException(
                 "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             )
         elif (
-            trans.sa_session.query(trans.app.model.Page)
-            .filter_by(user=user, slug=payload["slug"], deleted=False)
-            .first()
+            trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload.slug, deleted=False).first()
         ):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
-        if payload.get("invocation_id"):
-            invocation_id = payload.get("invocation_id")
+        if payload.invocation_id:
+            invocation_id = payload.invocation_id
             invocation_report = self.workflow_manager.get_invocation_report(trans, invocation_id)
             content = invocation_report.get("markdown")
             content_format = "markdown"
         else:
-            content = payload.get("content", "")
-            content_format = payload.get("content_format", "html")
+            content = payload.content
+            content_format = payload.content_format
         content = self.rewrite_content_for_import(trans, content, content_format)
 
         # Create the new stored page
         page = trans.app.model.Page()
-        page.title = payload["title"]
-        page.slug = payload["slug"]
-        page_annotation = payload.get("annotation", None)
+        page.title = payload.title
+        page.slug = payload.slug
+        page_annotation = payload.annotation
         if page_annotation is not None:
             page_annotation = sanitize_html(page_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
@@ -174,7 +173,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         page.user = user
         # And the first (empty) page revision
         page_revision = trans.app.model.PageRevision()
-        page_revision.title = payload["title"]
+        page_revision.title = payload.title
         page_revision.page = page
         page.latest_revision = page_revision
         page_revision.content = content

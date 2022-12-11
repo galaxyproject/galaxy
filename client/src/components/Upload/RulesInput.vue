@@ -133,7 +133,11 @@ export default {
                 .get(
                     `${getAppRoot()}api/histories/${
                         Galaxy.currHistoryPanel.model.id
-                    }/contents/${selectedDatasetId}/display`
+                    }/contents/${selectedDatasetId}/display`,
+                    // The Rule builder expects strings, we should not parse the respone to the default JSON type
+                    {
+                        responseType: "text",
+                    }
                 )
                 .then((response) => {
                     this.sourceContent = response.data;
@@ -196,7 +200,7 @@ export default {
                 selection.elements = this.uris;
             }
             selection.dataType = this.dataType;
-            Galaxy.currHistoryPanel.buildCollection("rules", selection, true, true);
+            Galaxy.currHistoryPanel.buildCollection("rules", selection, null, true);
             this.$emit("dismiss");
         },
     },

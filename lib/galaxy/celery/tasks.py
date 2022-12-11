@@ -2,7 +2,11 @@ import json
 from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
-from typing import Callable
+from typing import (
+    Any,
+    Callable,
+    Optional,
+)
 
 from sqlalchemy import (
     exists,
@@ -19,6 +23,10 @@ from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.datasets import (
+    DatasetAssociationManager,
+    DatasetManager,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
@@ -26,6 +34,7 @@ from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.tasks import (
+    ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
     GenerateHistoryDownload,
     GenerateInvocationDownload,
@@ -56,7 +65,7 @@ def cached_create_tool_from_representation(app, raw_tool_source):
 
 
 @galaxy_task(ignore_result=True, action="recalculate a user's disk usage")
-def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id=None):
+def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id: Optional[int] = None):
     if user_id:
         user = session.query(model.User).get(user_id)
         if user:
@@ -69,7 +78,7 @@ def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id=None):
 
 
 @galaxy_task(ignore_result=True, action="purge a history dataset")
-def purge_hda(hda_manager: HDAManager, hda_id):
+def purge_hda(hda_manager: HDAManager, hda_id: int):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda)
 
@@ -89,7 +98,7 @@ def set_job_metadata(
     extended_metadata_collection: bool,
     job_id: int,
     sa_session: galaxy_scoped_session,
-):
+) -> None:
     return abort_when_job_stops(
         set_metadata_portable,
         session=sa_session,
@@ -109,7 +118,12 @@ def change_datatype(
     datatype: str,
     model_class: str = "HistoryDatasetAssociation",
 ):
-    dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
+    manager = _get_dataset_manager(hda_manager, ldda_manager, model_class)
+    dataset_instance = manager.by_id(dataset_id)
+    can_change_datatype = manager.ensure_can_change_datatype(dataset_instance, raiseException=False)
+    if not can_change_datatype:
+        log.info(f"Changing datatype is not allowed for {model_class} {dataset_instance.id}")
+        return
     if datatype == "auto":
         path = dataset_instance.dataset.file_name
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
@@ -127,7 +141,12 @@ def set_metadata(
     model_class: str = "HistoryDatasetAssociation",
     overwrite: bool = True,
 ):
-    dataset_instance = _get_dataset_by_id(hda_manager, ldda_manager, dataset_id, model_class)
+    manager = _get_dataset_manager(hda_manager, ldda_manager, model_class)
+    dataset_instance = manager.by_id(dataset_id)
+    can_set_metadata = manager.ensure_can_set_metadata(dataset_instance, raiseException=False)
+    if not can_set_metadata:
+        log.info(f"Setting metadata is not allowed for {model_class} {dataset_instance.id}")
+        return
     try:
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)
@@ -140,17 +159,15 @@ def set_metadata(
     sa_session.flush()
 
 
-def _get_dataset_by_id(
-    hda_manager: HDAManager, ldda_manager: LDDAManager, dataset_id: int, model_class: str = "HistoryDatasetAssociation"
-) -> model.DatasetInstance:
-    dataset: model.DatasetInstance
+def _get_dataset_manager(
+    hda_manager: HDAManager, ldda_manager: LDDAManager, model_class: str = "HistoryDatasetAssociation"
+) -> DatasetAssociationManager:
     if model_class == "HistoryDatasetAssociation":
-        dataset = hda_manager.by_id(dataset_id)
+        return hda_manager
     elif model_class == "LibraryDatasetDatasetAssociation":
-        dataset = ldda_manager.by_id(dataset_id)
+        return ldda_manager
     else:
-        raise NotImplementedError(f"Cannot set metadata for model_class {model_class}")
-    return dataset
+        raise NotImplementedError(f"Cannot find manager for model_class {model_class}")
 
 
 @galaxy_task(bind=True)
@@ -203,12 +220,13 @@ def is_aborted(session: galaxy_scoped_session, job_id: int):
     ).scalar()
 
 
-def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs):
+def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs) -> Any:
     if not is_aborted(session, job_id):
-        future = celery_app.fork_pool.schedule(
+        future = celery_app.fork_pool.submit(
             function,
+            timeout=None,
             *args,
-            kwargs=kwargs,
+            **kwargs,
         )
         while True:
             try:
@@ -244,7 +262,7 @@ def fetch_data(
     job_id: int,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
-):
+) -> str:
     job = sa_session.query(model.Job).get(job_id)
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
@@ -330,6 +348,14 @@ def import_model_store(
     request: ImportModelStoreTaskRequest,
 ):
     model_store_manager.import_model_store(request)
+
+
+@galaxy_task(action="compute dataset hash and store in database")
+def compute_dataset_hash(
+    dataset_manager: DatasetManager,
+    request: ComputeDatasetHashTaskRequest,
+):
+    dataset_manager.compute_hash(request)
 
 
 @galaxy_task(action="pruning history audit table")

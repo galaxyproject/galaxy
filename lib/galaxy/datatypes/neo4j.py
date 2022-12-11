@@ -2,11 +2,17 @@
 Neo4j Composite Dataset
 """
 import logging
-import sys
+from typing import TYPE_CHECKING
 
-from galaxy.datatypes.data import Data
+from galaxy.datatypes.data import (
+    Data,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
@@ -19,7 +25,7 @@ class Neo4j(Html):
     stored in extra files path
     """
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -38,11 +44,11 @@ class Neo4j(Html):
         rval.append("</ul></html>")
         return "\n".join(rval)
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Neo4j database (multiple files)"
@@ -51,7 +57,7 @@ class Neo4j(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -132,9 +138,3 @@ class Neo4jDBzip(Neo4j, Data):
         self.add_composite_file(
             "%s.zip", description="neostore zip", substitute_name_with_metadata="reference_name", is_binary=True
         )
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

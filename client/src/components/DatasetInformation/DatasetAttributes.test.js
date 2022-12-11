@@ -1,6 +1,6 @@
 import axios from "axios";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import DatasetAttributes from "./DatasetAttributes";
 import MockProvider from "../providers/MockProvider";
 import MockAdapter from "axios-mock-adapter";
@@ -42,7 +42,8 @@ describe("DatasetAttributes", () => {
         expect(wrapper.findAll("#conversion_text").length).toBe(1);
         expect(wrapper.findAll("#datatype_text").length).toBe(1);
         expect(wrapper.findAll("#permission_text").length).toBe(1);
-        expect(wrapper.findAll(".tab-pane").length).toBe(4);
+        expect(wrapper.findAll(".tab-pane").length).toBe(3);
+        expect(wrapper.findAll(".ui-portlet-section").length).toBe(2);
         const $button = wrapper.find("#dataset-attributes-default-save");
         await $button.trigger("click");
         await flushPromises();
@@ -57,5 +58,6 @@ describe("DatasetAttributes", () => {
         expect(wrapper.findAll("#datatype_text").length).toBe(1);
         expect(wrapper.findAll("#permission_text").length).toBe(1);
         expect(wrapper.findAll(".tab-pane").length).toBe(3);
+        expect(wrapper.findAll(".ui-portlet-section").length).toBe(1);
     });
 });

@@ -1,18 +1,28 @@
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
+
 from galaxy.exceptions import error_codes
 from galaxy_test.base.api_asserts import (
     assert_error_code_is,
     assert_has_keys,
     assert_status_code_is,
 )
+from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 
-class RolesApiTestCase(ApiTestCase):
+class TestRolesApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
+    @requires_admin
     def test_list_and_show(self):
         def check_roles_response(response):
             assert_status_code_is(response, 200)
@@ -20,7 +30,7 @@ class RolesApiTestCase(ApiTestCase):
             assert isinstance(as_list, list)
             assert len(as_list) > 0
             for role in as_list:
-                RolesApiTestCase.check_role_dict(role)
+                self.check_role_dict(role)
 
         user_role_id = self.dataset_populator.user_private_role_id()
         with self._different_user():
@@ -46,8 +56,9 @@ class RolesApiTestCase(ApiTestCase):
         role_response = self._get(f"roles/{user_role_id}")
         assert_status_code_is(role_response, 200)
         role = role_response.json()
-        RolesApiTestCase.check_role_dict(role, assert_id=user_role_id)
+        self.check_role_dict(role, assert_id=user_role_id)
 
+    @requires_admin
     def test_create_invalid_params(self):
         # In theory these low-level validation test cases could be handled in more
         # of a unit test style but it makes sense during the transition from wsgi to
@@ -67,28 +78,29 @@ class RolesApiTestCase(ApiTestCase):
         assert "description" in response.json()["err_msg"]
 
         # Test missing name
-        payload = {
+        payload_missing_name = {
             "name": None,
             "description": description,
             "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True, json=True)
+        response = self._post("roles", payload_missing_name, admin=True, json=True)
         assert_status_code_is(response, 400)
         assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_MISSING_PARAMETER"].code)
         assert "name" in response.json()["err_msg"]
 
         # Test invalid type for name
-        payload = {
+        payload_invalid_type = {
             "name": ["a test", "name"],
             "description": description,
             "user_ids": [self.dataset_populator.user_id()],
         }
-        response = self._post("roles", payload, admin=True, json=True)
+        response = self._post("roles", payload_invalid_type, admin=True, json=True)
         assert_status_code_is(response, 400)
         assert_error_code_is(response, error_codes.error_codes_by_name["USER_REQUEST_INVALID_PARAMETER"].code)
         assert "name" in response.json()["err_msg"]
         assert "validation_errors" in response.json()
 
+    @requires_admin
     def test_create_valid(self):
         name = self.dataset_populator.get_random_name()
         description = "A test role."
@@ -100,7 +112,7 @@ class RolesApiTestCase(ApiTestCase):
         response = self._post("roles", payload, admin=True, json=True)
         assert_status_code_is(response, 200)
         role = response.json()
-        RolesApiTestCase.check_role_dict(role)
+        self.check_role_dict(role)
 
         assert role["name"] == name
         assert role["description"] == description
@@ -116,6 +128,7 @@ class RolesApiTestCase(ApiTestCase):
         assert role["id"] in user_roles_response_ids
         assert role["id"] in different_user_roles_response_ids
 
+    @requires_admin
     def test_show_error_codes(self):
         # Bad role ids are 400.
         response = self._get("roles/badroleid")
@@ -127,6 +140,7 @@ class RolesApiTestCase(ApiTestCase):
         response = self._get(f"roles/{different_user_role_id}")
         assert_status_code_is(response, 400)
 
+    @requires_admin
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)
@@ -135,7 +149,7 @@ class RolesApiTestCase(ApiTestCase):
         assert "administrator" in response_err["err_msg"]
 
     @staticmethod
-    def check_role_dict(role_dict, assert_id=None):
+    def check_role_dict(role_dict: Dict[str, Any], assert_id: Optional[str] = None) -> None:
         assert_has_keys(role_dict, "id", "name", "model_class", "url")
         assert role_dict["model_class"] == "Role"
         if assert_id is not None:

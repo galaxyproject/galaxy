@@ -6,9 +6,11 @@ user inputs - so these methods do not need to be escaped.
 """
 import logging
 import re
-import socket
 
+import dns.resolver
+from dns.exception import DNSException
 from sqlalchemy import func
+from typing_extensions import LiteralString
 
 log = logging.getLogger(__name__)
 
@@ -71,7 +73,7 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     message = validate_email_str(email)
     if not message and validate_domain:
         domain = extract_domain(email)
-        message = validate_domain(domain)
+        message = validate_email_domain_name(domain)
 
     if (
         not message
@@ -97,12 +99,17 @@ def validate_email(trans, email, user=None, check_dup=True, allow_empty=False, v
     return message
 
 
-def validate_domain(domain):
-    message = None
+def validate_email_domain_name(domain: str) -> LiteralString:
+    message = ""
     try:
-        socket.gethostbyname(domain)
-    except socket.gaierror:
-        message = "The email domain cannot be resolved."
+        dns.resolver.resolve(domain, "MX")
+    except DNSException:
+        try:
+            # Per RFC 5321, try to fall back to the A record (implicit MX) for
+            # the domain, see https://www.rfc-editor.org/rfc/rfc5321#section-5.1
+            dns.resolver.resolve(domain, "A")
+        except DNSException:
+            message = "The email domain cannot be resolved."
     return message
 
 

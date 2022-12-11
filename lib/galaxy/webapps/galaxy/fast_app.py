@@ -1,5 +1,7 @@
-from pathlib import Path
-from typing import cast
+from typing import (
+    Any,
+    Dict,
+)
 
 from a2wsgi import WSGIMiddleware
 from fastapi import (
@@ -7,15 +9,13 @@ from fastapi import (
     Request,
 )
 from starlette.middleware.cors import CORSMiddleware
-from starlette.responses import (
-    FileResponse,
-    Response,
-)
+from starlette.responses import Response
 
 from galaxy.version import VERSION
 from galaxy.webapps.base.api import (
     add_exception_handler,
     add_request_id_middleware,
+    GalaxyFileResponse,
     include_all_package_routers,
 )
 from galaxy.webapps.base.webapp import config_allows_origin
@@ -51,7 +51,7 @@ api_tags_metadata = [
     },
     {"name": "histories"},
     {"name": "libraries"},
-    {"name": "folders"},
+    {"name": "data libraries folders"},
     {"name": "job_lock"},
     {"name": "metrics"},
     {"name": "default"},
@@ -104,28 +104,13 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             response.headers["X-Frame-Options"] = x_frame_options
             return response
 
-    nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
-    apache_xsendfile = gx_app.config.apache_xsendfile
+    GalaxyFileResponse.nginx_x_accel_redirect_base = gx_app.config.nginx_x_accel_redirect_base
+    GalaxyFileResponse.apache_xsendfile = gx_app.config.apache_xsendfile
 
     if gx_app.config.sentry_dsn:
         from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
 
         app.add_middleware(SentryAsgiMiddleware)
-
-    if nginx_x_accel_redirect_base or apache_xsendfile:
-
-        @app.middleware("http")
-        async def add_send_file_header(request: Request, call_next) -> Response:
-            response = await call_next(request)
-            if not isinstance(response, FileResponse):
-                return response
-            response = cast(FileResponse, response)
-            if nginx_x_accel_redirect_base:
-                full_path = Path(nginx_x_accel_redirect_base) / response.path
-                response.headers["X-Accel-Redirect"] = str(full_path)
-            if apache_xsendfile:
-                response.headers["X-Sendfile"] = str(response.path)
-            return response
 
     if gx_app.config.get("allowed_origin_hostnames", None):
         app.add_middleware(
@@ -162,12 +147,31 @@ def include_legacy_openapi(app, gx_app):
     return app.openapi_schema
 
 
-def initialize_fast_app(gx_wsgi_webapp, gx_app):
-    app = FastAPI(
+def get_fastapi_instance() -> FastAPI:
+    return FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
         openapi_tags=api_tags_metadata,
     )
+
+
+def get_openapi_schema() -> Dict[str, Any]:
+    """
+    Dumps openAPI schema without starting a full app and webserver.
+    """
+    app = get_fastapi_instance()
+    include_all_package_routers(app, "galaxy.webapps.galaxy.api")
+    return get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version=app.openapi_version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+
+def initialize_fast_app(gx_wsgi_webapp, gx_app):
+    app = get_fastapi_instance()
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)

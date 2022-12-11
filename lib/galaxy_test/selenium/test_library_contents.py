@@ -1,7 +1,9 @@
 import os
 
-from selenium.webdriver.support.ui import Select
-
+from galaxy_test.base.decorators import (
+    requires_admin,
+    requires_new_library,
+)
 from .framework import (
     retry_during_transitions,
     selenium_test,
@@ -10,11 +12,13 @@ from .framework import (
 )
 
 
-class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
+class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
 
-    requires_admin = True
+    run_as_admin = True
 
     @selenium_test
+    @requires_admin
+    @requires_new_library
     def test_sub_folder(self):
         def change_description(description):
             self.components.libraries.folder.edit_folder_btn.wait_for_and_click()
@@ -54,6 +58,8 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         assert shrinked_description == self.components.libraries.folder.description_field_shrinked.wait_for_text()
 
     @selenium_test
+    @requires_admin
+    @requires_new_library
     def test_import_dataset_from_history(self):
         self.admin_login()
         self.perform_upload(self.get_filename("1.txt"))
@@ -70,7 +76,7 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
         # Need to select the right item on the dropdown
         self.sleep_for(self.wait_types.UX_RENDER)
-        self._select_history_option("dataset_add_bulk", "Unnamed history")
+        self._select_history_option("Unnamed history")
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import_from_history_select(["1.txt"])
         # Add
@@ -80,6 +86,8 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.assert_num_displayed_items_is(1)
 
     @selenium_test
+    @requires_admin
+    @requires_new_library
     def download_dataset_from_library(self):
         self.test_import_dataset_from_history()
 
@@ -92,6 +100,8 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         assert expected_filename in folder_files
 
     @selenium_test
+    @requires_admin
+    @requires_new_library
     def test_delete_dataset(self):
         self.test_import_dataset_from_history()
 
@@ -113,6 +123,8 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
     # Galaxy must be running so that test-data/1.txt would work but it just doesn't
     # for some reason. https://jenkins.galaxyproject.org/job/jmchilton-selenium/79/artifact/79-test-errors/test_import_dataset_from_path2017100413221507137721/
     @selenium_test
+    @requires_admin
+    @requires_new_library
     def test_import_dataset_from_path(self):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
@@ -148,6 +160,8 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         assert table_as_dict["Genome build"] == "?", table_as_dict
 
     @selenium_test
+    @requires_admin
+    @requires_new_library
     def test_import_dataset_from_import_dir(self):
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
@@ -156,6 +170,8 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.assert_num_displayed_items_is(len(filenames))
 
     @selenium_test
+    @requires_admin
+    @requires_new_library
     def test_show_details(self):
         self.navigate_to_new_library()
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -167,6 +183,6 @@ class LibraryContentsTestCase(SeleniumTestCase, UsesLibraryAssertions):
         self.screenshot("libraries_show_details_done")
 
     @retry_during_transitions
-    def _select_history_option(self, select_id, label_text):
-        select = Select(self.driver.find_element_by_id(select_id))
+    def _select_history_option(self, label_text):
+        select = self.components.libraries.folder.add_history_items.wait_for_select()
         select.select_by_visible_text(label_text)

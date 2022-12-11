@@ -235,7 +235,7 @@ class HasDockerLikeVolumes:
                 # and Galaxy.
                 defaults += ",$tmp_directory:/tmp:rw"
             else:
-                defaults += ",$_GALAXY_JOB_TMP_DIR:rw"
+                defaults += ",$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
             if self.app_info.outputs_to_working_directory:
@@ -441,6 +441,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             run_extra_arguments=self.prop("run_extra_arguments", singularity_util.DEFAULT_RUN_EXTRA_ARGUMENTS),
             guest_ports=self.tool_info.guest_ports,
             container_name=self.container_name,
+            cleanenv=asbool(self.prop("cleanenv", singularity_util.DEFAULT_CLEANENV)),
             **self.get_singularity_target_kwds(),
         )
         return run_command
@@ -450,16 +451,3 @@ CONTAINER_CLASSES = dict(
     docker=DockerContainer,
     singularity=SingularityContainer,
 )
-
-
-class NullContainer:
-    def __init__(self):
-        pass
-
-    def __bool__(self):
-        return False
-
-    __nonzero__ = __bool__
-
-
-NULL_CONTAINER = NullContainer()

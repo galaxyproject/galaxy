@@ -1,4 +1,6 @@
-from .components import (
+from selenium.webdriver.support.select import Select
+
+from galaxy.navigation.components import (
     Component,
     Target,
 )
@@ -7,7 +9,8 @@ from .components import (
 class SmartComponent:
     """Wrap a Component with driver aware methods.
 
-    Allows smarter selectors that know how to wait for themselves, test themselves,
+    Adapts Galaxy's component locators more tightly to Selenium - including a Selenium
+    runtime. Allows smarter selectors that know how to wait for themselves, test themselves,
     click themselves, etc.... More "magic", but much cleaner usage.
     """
 
@@ -64,6 +67,9 @@ class SmartTarget:
     def wait_for_visible(self, **kwds):
         return self._has_driver.wait_for_visible(self._target, **kwds)
 
+    def wait_for_select(self, **kwds):
+        return Select(self.wait_for_visible(**kwds))
+
     def wait_for_clickable(self, **kwds):
         return self._has_driver.wait_for_clickable(self._target, **kwds)
 
@@ -98,6 +104,9 @@ class SmartTarget:
 
     def assert_absent_or_hidden_after_transitions(self, **kwds):
         self._has_driver.assert_absent_or_hidden_after_transitions(self._target, **kwds)
+
+    def assert_disabled(self, **kwds):
+        self._has_driver.assert_disabled(self._target, **kwds)
 
     def has_class(self, class_name):
         classes_str = self._has_driver.driver.find_element(*self._target.element_locator).get_attribute("class") or ""

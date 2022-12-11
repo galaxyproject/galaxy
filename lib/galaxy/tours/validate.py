@@ -4,6 +4,7 @@ import sys
 import yaml
 from pydantic.error_wrappers import ValidationError
 
+from galaxy.navigation.data import load_root_component
 from ._impl import (
     get_tour_id_from_path,
     load_tour_from_path,
@@ -25,26 +26,35 @@ def main(argv=None):
         tour_id = get_tour_id_from_path(tour_path)
 
         def warn(msg):
-            print(f"Tour '{tour_id}' warning: {msg}")
+            print(f"Tour '{tour_id}' warning: {msg}")  # noqa: B023
 
         message = None
         tour = None
         try:
-            tour = load_tour_from_path(tour_path, warn=warn)
+            tour = load_tour_from_path(tour_path, warn=warn, resolve_components=False)
         except OSError:
             message = f"Tour '{tour_id}' could not be loaded, error reading file."
         except yaml.error.YAMLError:
-            message = f"Tour '{tour_id}' could not be loaded, error within file." " Please check your yaml syntax."
+            message = f"Tour '{tour_id}' could not be loaded, error within file. Please check your YAML syntax."
         except TypeError:
             message = (
                 f"Tour '{tour_id}' could not be loaded, error within file."
-                " Possibly spacing related. Please check your yaml syntax."
+                " Possibly spacing related. Please check your YAML syntax."
             )
         if tour:
             try:
                 TourDetails(**tour)
             except ValidationError as e:
                 message = f"Validation issue with tour data for '{tour_id}'. [{e}]"
+
+            for tour_step in tour["steps"]:
+                root_component = load_root_component()
+                if "component" in tour_step:
+                    component = tour_step["component"]
+                    try:
+                        root_component.resolve_component_locator(component)
+                    except Exception as e:
+                        message = f"Tour '{tour_id}' - failed to resolve component {component}. [{e}]"
         if message:
             validated = False
             print(message)

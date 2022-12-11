@@ -53,6 +53,7 @@
   <tool file="filter_param_value_ref_attribute.xml" />
   <tool file="filter_static_regexp.xml" />
   <tool file="select_from_dataset.xml" />
+  <tool file="select_from_csvdataset.xml" />
   <tool file="select_from_dataset_optional.xml" />
   <tool file="drill_down.xml" />
   <tool file="dbkey_filter_input.xml" />
@@ -65,7 +66,9 @@
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
+  <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
+  <tool file="metadata_bed.xml" />
   <tool file="metadata_biom1.xml" />
   <tool file="metadata_column_names.xml" />
   <tool file="strict_shell.xml" />
@@ -159,6 +162,7 @@
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
+  <tool file="identifier_all_collection_types.xml"/>
   <tool file="identifier_in_actions.xml" />
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />
@@ -279,5 +283,6 @@
   <tool file="${model_tools_path}/build_list.xml" />
   <tool file="${model_tools_path}/build_list_1.2.0.xml" />
   <tool file="${model_tools_path}/extract_dataset.xml" />
+  <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
 
 </toolbox>

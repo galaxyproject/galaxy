@@ -47,26 +47,26 @@ steps:
       element: "#current-history-panel div.content-item span.datatype"
       intro: "Galaxy has assigned a datatype to your dataset during upload, which you can see here."
 
-    - element: "#current-history-panel div.content-item button[title='Download']"
+    - element: "#current-history-panel div.content-item .download-btn"
       title: "Download your dataset"
       intro: "You can download every dataset by using the floppy disc symbol."
 
-    - element: "#current-history-panel div.content-item button[title='Dataset Details']"
+    - element: "#current-history-panel div.content-item .params-btn"
       title: "Even more information"
       intro: "Get an overview of all metadata associated with your dataset by using the Information symbol."
       preclick: true
 
-    - element: "#current-history-panel div.content-item button[title='Display']"
+    - element: "#current-history-panel div.content-item .display-btn"
       title: "Inspect your data"
       intro: "The eye symbol can be used to look at your data."
       preclick: true
 
-    - element: "#current-history-panel div.content-item button[title='Edit attributes']"
+    - element: "#current-history-panel div.content-item .edit-btn"
       title: "Edit metadata"
       intro: "With the pencil button you can edit metadata attributes of your dataset, like the associated filetype or the dataset name."
       preclick: true
 
-    - element: "#current-history-panel div.content-item button[title='Delete']"
+    - element: "#current-history-panel div.content-item .delete-btn"
       title: "Remove datasets"
       intro: "You can remove a dataset from the history with the trash can symbol."
       postclick: true
@@ -76,7 +76,7 @@ steps:
       intro: "By default your history will hide all deleted datasets from you. You can visualize them by filtering."
       textinsert: "deleted:true"
 
-    - element: "#current-history-panel div.content-item button[title='Undelete']"
+    - element: "#current-history-panel div.content-item .undelete-btn"
       title: "Undeleting a dataset"
       intro: |
             Galaxy datasets are only marked as deleted and can be recovered by clicking this link.
@@ -88,11 +88,10 @@ steps:
       intro: "You can filter your history by typing your search term in here. Galaxy supports more advanced filters that can be seen here."
       textinsert: ""
 
-    - element: "#current-history-panel [title='Show history options']"
+    - element: "#current-history-panel [data-description='history options']"
       title: "History Options"
       intro: "In the History menu you will find a lot more useful History options."
       postclick: true
 
     - title: "Enjoy your Galaxy Histories"
       intro: "Thanks for taking this tour! Happy research with Galaxy!"
-

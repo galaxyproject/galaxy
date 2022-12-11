@@ -1,41 +1,37 @@
 <template>
     <loading-span v-if="license == null" message="Loading license information"> </loading-span>
-    <div v-else-if="license.name" class="text-muted">
+    <span v-else-if="license.name" class="text-muted">
         <link itemprop="license" :href="license.licenseId" />
         <span v-if="title">
             {{ title }}
         </span>
-        {{ license.name }}
-        <a target="_blank" :href="license.url">
-            <font-awesome-icon icon="external-link-alt" />
-        </a>
+        <external-link :href="license.url">
+            {{ license.name }}
+        </external-link>
         <slot name="buttons"></slot>
-    </div>
-    <div v-else>
+    </span>
+    <span v-else>
         Unknown License (<i>{{ license.url }}</i
         >)
         <slot name="buttons"></slot>
-    </div>
+    </span>
 </template>
 
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
 import LoadingSpan from "components/LoadingSpan";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-
-import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-library.add(faExternalLinkAlt);
+import ExternalLink from "components/ExternalLink";
 
 export default {
     components: {
         LoadingSpan,
-        FontAwesomeIcon,
+        ExternalLink,
     },
     props: {
         licenseId: {
             type: String,
+            required: true,
         },
         inputLicenseInfo: {
             type: Object,

@@ -4,9 +4,9 @@ By default, jobs in Galaxy are run locally on the server on which the Galaxy app
 
 This document is a reference for the job configuration file. [Detailed documentation](cluster.md) is provided for configuring Galaxy to work with a variety of Distributed Resource Managers (DRMs) such as TORQUE, Grid Engine, LSF, and HTCondor.  Additionally, a wide range of infrastructure decisions and configuration changes should be made when running Galaxy as a production service, as one is likely doing if using a cluster.  It is highly recommended that the [production server documentation](production.md) and [cluster configuration documentation](cluster.md) be read before making changes to the job configuration.
 
-**The most up-to-date details of advanced job configuration features can be found in the [sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) found in the Galaxy distribution.**
+**The most up-to-date details of job configuration features can be found in the [job_conf.sample.yml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.sample.yml) found in the Galaxy distribution.**
 
-Configuration of where to run jobs is performed in the `job_conf.xml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations are provided at `config/job_conf.xml.sample_basic` and `config/job_conf.xml.sample_advanced`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used.  `job_conf.xml.sample_basic` provides a configuration identical to the default configuration if no `job_conf.xml` exists.
+Configuration of where to run jobs is performed in the `job_conf.yml` file in `$GALAXY_ROOT/config/`.  The path to the config file can be overridden by setting the value of `job_config_file` in `config/galaxy.yml`.  Sample configurations can be found at `config/job_conf.sample.yml`.  The job configuration file is not required - if it does not exist, a default configuration that runs jobs on the local system (with a maximum of 4 concurrent jobs) will be used. Examples of XML job configuration files are also available in [basic](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_basic) and [advanced](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced) forms. 
 
 ## job_conf.xml Syntax
 
@@ -100,7 +100,7 @@ condition
     Failure expression on which to resubmit jobs - this Python expression may contain
     the boolean variables ``memory_limit_reached``, ``walltime_reached``,
     ``unknown_error``, or ``any_failure`` and the numeric variables ``seconds_running``
-    and ``attempt``. See the test case configuration https://github.com/galaxyproject/galaxy/blob/dev/test/integration/resubmission_job_conf.xml for examples of various expressions.
+    and ``attempt``. See the [test case configuration](https://github.com/galaxyproject/galaxy/blob/dev/test/integration/resubmission_job_conf.yml) for examples of various expressions.
 
 handler
     Job handler(s) that should be used to run jobs for this tool after resubmission.

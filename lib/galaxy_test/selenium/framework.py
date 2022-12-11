@@ -37,19 +37,24 @@ from galaxy.util import (
     classproperty,
     DEFAULT_SOCKET_TIMEOUT,
 )
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base import populators
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
 from galaxy_test.base.api_util import get_admin_api_key
+from galaxy_test.base.decorators import (
+    requires_new_history,
+    using_requirement,
+)
 from galaxy_test.base.env import (
     DEFAULT_WEB_HOST,
     get_ip_address,
 )
 from galaxy_test.base.populators import (
     load_data_dict,
-    skip_if_github_down,
+    YamlContentT,
 )
 from galaxy_test.base.testcase import FunctionalTestCase
 
@@ -69,7 +74,7 @@ DEFAULT_DOWNLOAD_PATH = driver_factory.DEFAULT_DOWNLOAD_PATH
 TIMEOUT_MULTIPLIER = float(os.environ.get("GALAXY_TEST_TIMEOUT_MULTIPLIER", DEFAULT_TIMEOUT_MULTIPLIER))
 GALAXY_TEST_ERRORS_DIRECTORY = os.environ.get("GALAXY_TEST_ERRORS_DIRECTORY", DEFAULT_TEST_ERRORS_DIRECTORY)
 GALAXY_TEST_SCREENSHOTS_DIRECTORY = os.environ.get("GALAXY_TEST_SCREENSHOTS_DIRECTORY", None)
-# Test browser can be ["CHROME", "FIREFOX", "OPERA"]
+# Test browser can be ["CHROME", "FIREFOX"]
 GALAXY_TEST_SELENIUM_BROWSER = os.environ.get("GALAXY_TEST_SELENIUM_BROWSER", driver_factory.DEFAULT_SELENIUM_BROWSER)
 GALAXY_TEST_SELENIUM_REMOTE = os.environ.get("GALAXY_TEST_SELENIUM_REMOTE", driver_factory.DEFAULT_SELENIUM_REMOTE)
 GALAXY_TEST_SELENIUM_REMOTE_PORT = os.environ.get(
@@ -89,7 +94,6 @@ GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADM
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get(
     "GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD
 )
-GALAXY_TEST_SELENIUM_BETA_HISTORY = os.environ.get("GALAXY_TEST_SELENIUM_BETA_HISTORY", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -99,13 +103,6 @@ window.localStorage && window.localStorage.setItem("galaxy:debug", true);
 window.localStorage && window.localStorage.setItem("galaxy:debug:flatten", true);
 """
 
-try:
-    from nose.tools import nottest
-except ImportError:
-
-    def nottest(x):
-        return x
-
 
 def managed_history(f):
     """Ensure a Selenium test has a distinct, named history.
@@ -113,6 +110,7 @@ def managed_history(f):
     Cleanup the history after the job is complete as well unless
     GALAXY_TEST_NO_CLEANUP is set in the environment.
     """
+    f = requires_new_history(f)
 
     @wraps(f)
     def func_wrapper(self, *args, **kwds):
@@ -170,7 +168,6 @@ def dump_test_information(self, name_prefix):
                 continue
 
 
-@nottest
 def selenium_test(f):
     test_name = f.__name__
 
@@ -225,7 +222,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
     """Extend GalaxySeleniumContext with Selenium-aware galaxy_test.base.populators."""
 
     @property
-    def dataset_populator(self) -> populators.BaseDatasetPopulator:
+    def dataset_populator(self) -> "SeleniumSessionDatasetPopulator":
         """A dataset populator connected to the Galaxy session described by Selenium context."""
         return SeleniumSessionDatasetPopulator(self)
 
@@ -241,7 +238,7 @@ class GalaxyTestSeleniumContext(GalaxySeleniumContext):
 
 
 class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, UsesCeleryTasks):
-    # If run one-off via nosetests, the next line ensures test
+    # If run one-off via pytest, the next line ensures test
     # tools and datatypes are used instead of configured tools.
     framework_tool_and_types = True
 
@@ -251,13 +248,11 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # will be used to login.
     ensure_registered = False
 
-    ensure_beta_history = GALAXY_TEST_SELENIUM_BETA_HISTORY
-
     # Override this in subclasses to annotate that an admin user
     # is required for the test to run properly. Override admin user
     # login info with GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL /
     # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
-    requires_admin = False
+    run_as_admin = False
 
     def _target_url_from_selenium(self):
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
@@ -272,7 +267,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.target_url_from_selenium = self._target_url_from_selenium()
         self.snapshots = []
         self.setup_driver_and_session()
-        if self.requires_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
+        if self.run_as_admin and GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL == DEFAULT_ADMIN_USER:
             self._setup_interactor()
             self._setup_user(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL)
         self._try_setup_with_driver()
@@ -292,8 +287,6 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         """
         if self.ensure_registered:
             self.login()
-            if self.ensure_beta_history:
-                self.use_beta_history()
 
     def tear_down_selenium(self):
         self.tear_down_driver()
@@ -403,6 +396,7 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
         self.components.history_panel.empty_message.wait_for_visible()
 
     def admin_login(self):
+        using_requirement("admin")
         self.home()
         self.submit_login(GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL, GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD)
         with self.main_panel():
@@ -625,16 +619,11 @@ class RunsWorkflows(GalaxyTestSeleniumContext):
         return history_id
 
     def workflow_run_wait_for_ok(self, hid: int, expand=False):
-        if self.is_beta_history():
-            timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
-            item = self.content_item_by_attributes(hid=hid, state="ok")
-            item.wait_for_present(timeout=timeout)
-            if expand:
-                item.title.wait_for_and_click()
-        else:
-            self.history_panel_wait_for_hid_ok(hid, allowed_force_refreshes=1)
-            if expand:
-                self.history_panel_click_item_title(hid=hid, wait=True)
+        timeout = self.wait_length(self.wait_types.JOB_COMPLETION)
+        item = self.content_item_by_attributes(hid=hid, state="ok")
+        item.wait_for_present(timeout=timeout)
+        if expand:
+            item.title.wait_for_and_click()
 
 
 def default_web_host_for_selenium_tests():
@@ -752,6 +741,9 @@ class SeleniumSessionDatasetPopulator(SeleniumSessionGetPostMixin, populators.Ba
         """Construct a dataset populator from a bioblend GalaxyInstance."""
         self.selenium_context = selenium_context
 
+    def _summarize_history(self, history_id: str) -> None:
+        pass
+
 
 class SeleniumSessionDatasetCollectionPopulator(SeleniumSessionGetPostMixin, populators.BaseDatasetCollectionPopulator):
 
@@ -789,8 +781,8 @@ class SeleniumSessionWorkflowPopulator(
         upload_response.raise_for_status()
         return upload_response.json()
 
-    def upload_yaml_workflow(self, has_yaml, **kwds) -> str:
-        workflow = convert_and_import_workflow(has_yaml, galaxy_interface=self, **kwds)
+    def upload_yaml_workflow(self, yaml_content: YamlContentT, **kwds) -> str:
+        workflow = convert_and_import_workflow(yaml_content, galaxy_interface=self, **kwds)
         return workflow["id"]
 
 

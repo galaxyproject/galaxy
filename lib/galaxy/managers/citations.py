@@ -47,9 +47,14 @@ class DoiCache:
     def _raw_get_bibtex(self, doi):
         doi_url = f"https://doi.org/{doi}"
         headers = {"Accept": "application/x-bibtex"}
-        req = requests.get(doi_url, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
-        req.encoding = req.apparent_encoding
-        return req.text
+        res = requests.get(doi_url, headers=headers, timeout=DEFAULT_SOCKET_TIMEOUT)
+        # To decode the response content, res.text tries to determine the
+        # content encoding from the Content-Type header (res.encoding), and if
+        # that fails, falls back to guessing from the content itself (res.apparent_encoding).
+        # The guessed encoding is sometimes wrong, better to default to utf-8.
+        if res.encoding is None:
+            res.encoding = "utf-8"
+        return res.text
 
     def get_bibtex(self, doi):
         createfunc = functools.partial(self._raw_get_bibtex, doi)

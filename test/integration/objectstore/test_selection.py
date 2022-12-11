@@ -48,7 +48,7 @@ DISTRIBUTED_OBJECT_STORE_CONFIG_TEMPLATE = string.Template(
 )
 
 
-class ObjectStoreSelectionIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
+class TestObjectStoreSelectionIntegration(BaseObjectStoreIntegrationTestCase):
     # populated by config_object_store
     files_default_path: str
     files_static_path: str

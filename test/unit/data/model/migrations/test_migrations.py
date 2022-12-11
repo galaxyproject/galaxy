@@ -9,6 +9,7 @@ from sqlalchemy import (
     text,
 )
 
+import galaxy.model.migrations.scripts
 from galaxy.model import migrations
 from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
@@ -31,12 +32,13 @@ from galaxy.model.migrations import (
     verify_databases,
 )
 from galaxy.model.migrations.scripts import LegacyManageDb
-from ..testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
+from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
     create_and_drop_database,
     disposing_engine,
     drop_existing_database,
     url_factory,
 )
+from galaxy.util.resources import resource_path
 
 # Revision numbers from test versions directories
 GXY_REVISION_0 = "62695fac6cc0"  # oldest/base
@@ -1120,20 +1122,14 @@ def db_state6_gxy_state3_tsi_no_sam(url_factory, metadata_state6_gxy_state3_tsi_
 
 @pytest.fixture(autouse=True)
 def legacy_manage_db(monkeypatch):
-    def get_alembic_cfg(self):
-        path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
-        path = os.path.normpath(path)
-        # Adjust path when running from packages
-        if os.path.split(path)[1] == "packages":
-            path = os.path.join(path, os.pardir)
-        path = os.path.join(path, "lib", "galaxy", "model", "migrations", "alembic.ini")
-
+    def get_alembic_cfg():
+        path = resource_path("galaxy.model.migrations", "alembic.ini")
         config = Config(path)
         path1, path2 = _get_paths_to_version_locations()
         config.set_main_option("version_locations", f"{path1};{path2}")
         return config
 
-    monkeypatch.setattr(LegacyManageDb, "_get_alembic_cfg", get_alembic_cfg)
+    monkeypatch.setattr(galaxy.model.migrations.scripts, "get_alembic_cfg", get_alembic_cfg)
 
 
 @pytest.fixture(autouse=True)

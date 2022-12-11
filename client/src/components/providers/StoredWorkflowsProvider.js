@@ -21,7 +21,7 @@ export function storedWorkflowsProvider(ctx, callback, extraParams = {}) {
 }
 
 async function storedWorkflowDetails({ storedWorkflowId }) {
-    const url = `${getAppRoot()}api/workflows/${storedWorkflowId}?instance=true`;
+    const url = `${getAppRoot()}api/workflows/${storedWorkflowId}`;
     try {
         const { data } = await axios.get(url);
         return data;

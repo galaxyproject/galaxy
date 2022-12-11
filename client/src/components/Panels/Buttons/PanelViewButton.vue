@@ -2,12 +2,15 @@
     <b-dropdown
         v-b-tooltip.hover
         right
-        role="button"
         title="Show panel options"
         variant="link"
+        role="menu"
         aria-label="View all tool panel configurations"
         class="tool-panel-dropdown"
         size="sm">
+        <template v-slot:button-content>
+            <span class="sr-only">View all tool panel configurations</span>
+        </template>
         <PanelViewMenuItem
             :current-panel-view="currentPanelView"
             :panel-view="defaultPanelView"

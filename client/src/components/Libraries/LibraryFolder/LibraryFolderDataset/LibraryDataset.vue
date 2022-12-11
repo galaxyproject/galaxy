@@ -87,16 +87,16 @@
                                 :current-item-id="dataset.file_ext"
                                 @update:selected-item="onSelectedDatatype" />
                         </DatatypesProvider>
-                        <GenomeProvider
+                        <db-key-provider
                             v-else-if="row.item.name === fieldTitles.genome_build"
-                            v-slot="{ item: genomes, loading: loadingGenomes }">
+                            v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                             <SingleItemSelector
-                                collection-name="Genomes"
-                                :loading="loadingGenomes"
-                                :items="genomes"
+                                collection-name="Database/Builds"
+                                :loading="loadingDbKeys"
+                                :items="dbkeys"
                                 :current-item-id="dataset.genome_build"
-                                @update:selected-item="onSelectedGenome" />
-                        </GenomeProvider>
+                                @update:selected-item="onSelectedDbKey" />
+                        </db-key-provider>
                         <b-form-input
                             v-else-if="row.item.name === fieldTitles.message"
                             v-model="modifiedDataset.message"
@@ -139,9 +139,9 @@ import { Services } from "components/Libraries/LibraryFolder/services";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 import download from "components/Libraries/LibraryFolder/TopToolbar/download";
 import CopyToClipboard from "components/CopyToClipboard";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { fieldTitles } from "components/Libraries/LibraryFolder/LibraryFolderDataset/constants";
-import { GenomeProvider, DatatypesProvider } from "components/providers";
+import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { buildFields } from "components/Libraries/library-utils";
 import CurrentUser from "components/providers/CurrentUser";
@@ -153,7 +153,7 @@ export default {
         LibraryBreadcrumb,
         CopyToClipboard,
         FontAwesomeIcon,
-        GenomeProvider,
+        DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
         CurrentUser,
@@ -239,7 +239,7 @@ export default {
                 selected: { dataset_ids: [this.dataset_id] },
             });
         },
-        onSelectedGenome(genome) {
+        onSelectedDbKey(genome) {
             this.modifiedDataset.genome_build = genome.id;
         },
         onSelectedDatatype(datatype) {

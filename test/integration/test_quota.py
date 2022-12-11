@@ -2,7 +2,7 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestQuotaIntegration(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     @classmethod
@@ -147,6 +147,21 @@ class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
         quota_id = "unknown-id"
         show_response = self._get(f"quotas/{quota_id}")
         self._assert_status_code_is(show_response, 400)
+
+    def test_400_when_invalid_amount(self):
+        invalid_amount = ""
+        quota_name = "invalid-amount-id"
+        payload = {
+            "name": quota_name,
+            "description": f"Quota {quota_name} description",
+            "amount": invalid_amount,
+            "operation": "=",
+            "default": "no",
+            "in_users": [],
+            "in_groups": [],
+        }
+        create_response = self._post("quotas", data=payload, json=True)
+        self._assert_status_code_is(create_response, 400)
 
     def _create_quota_with_name(self, quota_name: str, is_default: bool = False):
         payload = self._build_quota_payload_with_name(quota_name, is_default)

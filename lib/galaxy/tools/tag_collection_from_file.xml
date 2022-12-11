@@ -37,13 +37,13 @@
                     <assert_contents>
                         <has_text_matching expression="^This is a line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:f,alias:r1,group:sample1,name:forward,orientation:forward,zoo" />
+                    <metadata name="tags" value="name:forward,alias:f,alias:r1,group:sample1,orientation:forward,zoo" />
                 </element>
                 <element name="reverse">
                     <assert_contents>
                         <has_text_matching expression="^This is a different line of text.\n$" />
                     </assert_contents>
-                    <metadata name="tags" value="alias:r,alias:r2,group:sample2,name:reverse,orientation:reverse" />
+                    <metadata name="tags" value="name:reverse,alias:r,alias:r2,group:sample2,orientation:reverse" />
                 </element>
             </output_collection>
         </test>
@@ -66,13 +66,13 @@
                         <assert_contents>
                             <has_text_matching expression="^This is a line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:f,alias:r1,group:sample1,name:forward,orientation:forward" />
+                        <metadata name="tags" value="name:forward,alias:f,alias:r1,group:sample1,orientation:forward" />
                     </element>
                     <element name="reverse">
                         <assert_contents>
                             <has_text_matching expression="^This is a different line of text.\n$" />
                         </assert_contents>
-                        <metadata name="tags" value="alias:r,alias:r2,group:sample2,name:reverse,orientation:reverse" />
+                        <metadata name="tags" value="name:reverse,alias:r,alias:r2,group:sample2,orientation:reverse" />
                     </element>
                 </element>
             </output_collection>
@@ -92,7 +92,7 @@ Description
 
 The relationship between element names and tags is specified in a two column tab-delimited file. This file may contain less entries than elements in the collection. In that case only matching list identifiers will be tagged.
 
-To create name: or group: tags prepend them with ``#`` (you can also use ``name:``) or ``group:``, respectively. 
+To create name: or group: tags prepend them with ``#`` (you can also use ``name:``) or ``group:``, respectively.
 
 ===============
 More about tags
@@ -100,7 +100,7 @@ More about tags
 
 Galaxy allows tagging datasets to facilitate analyses. There are several types of tags including simple tags, name tags, and group tags. **Simple** tags allow you to attach an alternative label to a dataset, which will make it easier to find it later. **Name** tags allow you to track propagation of a dataset through the analyses: all datasets derived from the initial dataset labeled with a name tag will inherit it. Finally, **group** tags allow you to label group of datasets. This is useful. for example, for differential expression analysis where you can have two groups of datasets labeled as "treatment" and "control".
 
-To learn mote about tags go to `our training site`_. 
+To learn mote about tags go to `our training site`_.
 
 .. _our training site: https://training.galaxyproject.org/training-material/search?query=tags
 

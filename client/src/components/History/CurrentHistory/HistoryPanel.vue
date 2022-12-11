@@ -27,21 +27,33 @@
                 :filter-text="filterText"
                 :total-items-in-query="totalItemsInQuery"
                 @query-selection-break="querySelectionBreak = true">
-                <section class="history-layout d-flex flex-column">
+                <section
+                    class="history-layout d-flex flex-column w-100"
+                    @drop.prevent="onDrop"
+                    @dragenter.prevent="onDragEnter"
+                    @dragover.prevent
+                    @dragleave.prevent="onDragLeave">
                     <slot name="navigation" :history="history" />
                     <HistoryFilters
+                        v-if="showControls"
                         class="content-operations-filters mx-3"
                         :filter-text.sync="filterText"
                         :show-advanced.sync="showAdvanced" />
                     <section v-if="!showAdvanced">
-                        <HistoryDetails :history="history" @update:history="$emit('updateHistory', $event)" />
+                        <HistoryDetails
+                            :history="history"
+                            :writeable="writable"
+                            @update:history="$emit('updateHistory', $event)" />
                         <HistoryMessages :history="history" />
                         <HistoryCounter
+                            v-if="showControls"
                             :history="history"
+                            :is-watching="isWatching"
                             :last-checked="lastChecked"
                             :filter-text.sync="filterText"
                             @reloadContents="reloadContents" />
                         <HistoryOperations
+                            v-if="showControls"
                             :history="history"
                             :show-selection="showSelection"
                             :expanded-count="expandedCount"
@@ -76,8 +88,9 @@
                             @hide="operationError = null" />
                     </section>
                     <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
+                        <history-drop-zone v-if="showDropZone" />
                         <div>
-                            <div v-if="itemsLoaded && itemsLoaded.length == 0 && loading">
+                            <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
                                 <b-alert class="m-2" variant="info" show>
                                     <LoadingSpan message="Loading History" />
                                 </b-alert>
@@ -85,36 +98,43 @@
                             <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
                                 <LoadingSpan message="Processing operation" />
                             </b-alert>
-                            <div v-else-if="totalItemsInQuery == 0">
+                            <div v-else-if="itemsLoaded.length === 0">
                                 <HistoryEmpty v-if="queryDefault" class="m-2" />
                                 <b-alert v-else class="m-2" variant="info" show>
                                     No data found for selected filter.
                                 </b-alert>
                             </div>
-                            <Listing v-else :items="itemsLoaded" :query-key="queryKey" @scroll="onScroll">
-                                <template v-slot:item="{ item }">
+                            <ListingLayout
+                                v-else
+                                :offset="listOffset"
+                                :items="itemsLoaded"
+                                :query-key="queryKey"
+                                @scroll="onScroll">
+                                <template v-slot:item="{ item, currentOffset }">
                                     <ContentItem
                                         v-if="!invisible[item.hid]"
                                         :id="item.hid"
+                                        is-history-item
                                         :item="item"
                                         :name="item.name"
+                                        :writable="writable"
                                         :expand-dataset="isExpanded(item)"
                                         :is-dataset="isDataset(item)"
-                                        is-hist-panel
                                         :highlight="getHighlight(item)"
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"
+                                        :filterable="filterable"
                                         @tag-click="onTagClick"
                                         @tag-change="onTagChange"
                                         @toggleHighlights="toggleHighlights"
                                         @update:expand-dataset="setExpanded(item, $event)"
                                         @update:selected="setSelected(item, $event)"
-                                        @view-collection="$emit('view-collection', item)"
+                                        @view-collection="$emit('view-collection', item, currentOffset)"
                                         @delete="onDelete(item)"
                                         @undelete="onUndelete(item)"
                                         @unhide="onUnhide(item)" />
                                 </template>
-                            </Listing>
+                            </ListingLayout>
                         </div>
                     </section>
                 </section>
@@ -125,6 +145,8 @@
 
 <script>
 import Vue from "vue";
+import { Toast } from "composables/toast";
+import { mapActions } from "vuex";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
@@ -132,10 +154,11 @@ import { deleteContent, updateContentFields } from "components/History/model/que
 import { getHighlights } from "components/History/Content/model/highlights";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
-import Listing from "components/History/Layout/Listing";
+import ListingLayout from "components/History/Layout/ListingLayout";
 import HistoryCounter from "./HistoryCounter";
 import HistoryOperations from "./HistoryOperations/Index";
 import HistoryDetails from "./HistoryDetails";
+import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
 import HistoryFilters from "./HistoryFilters/HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
@@ -144,6 +167,7 @@ import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
+import { copyDataset } from "components/Dataset/services";
 
 export default {
     components: {
@@ -152,6 +176,7 @@ export default {
         HistoryCounter,
         HistoryMessages,
         HistoryDetails,
+        HistoryDropZone,
         HistoryEmpty,
         HistoryFilters,
         HistoryItemsProvider,
@@ -159,13 +184,18 @@ export default {
         HistorySelectionOperations,
         HistorySelectionStatus,
         LoadingSpan,
-        Listing,
+        ListingLayout,
         SelectedItems,
         SelectionChangeWarning,
         OperationErrorDialog,
     },
     props: {
+        listOffset: { type: Number, default: 0 },
         history: { type: Object, required: true },
+        filter: { type: String, default: "" },
+        writable: { type: Boolean, default: true },
+        showControls: { type: Boolean, default: true },
+        filterable: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -175,6 +205,7 @@ export default {
             invisible: {},
             offset: 0,
             showAdvanced: false,
+            showDropZone: false,
             operationRunning: null,
             operationError: null,
             querySelectionBreak: false,
@@ -205,6 +236,9 @@ export default {
         lastChecked() {
             return this.$store.getters.getLastCheckedTime();
         },
+        isWatching() {
+            return this.$store.getters.getWatchingVisibility();
+        },
     },
     watch: {
         queryKey() {
@@ -218,8 +252,12 @@ export default {
                 this.resetHighlights();
             }
         },
+        filter(newVal) {
+            this.filterText = newVal;
+        },
     },
     methods: {
+        ...mapActions("history", ["loadHistoryById"]),
         getHighlight(item) {
             return this.highlights[this.getItemKey(item)];
         },
@@ -269,7 +307,7 @@ export default {
             }
         },
         onOperationError(error) {
-            console.debug("OPERATION ERROR", error);
+            console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
         },
         async toggleHighlights(item) {
@@ -284,6 +322,37 @@ export default {
         resetHighlights() {
             this.highlights = {};
             this.highlightsKey = null;
+        },
+        onDragEnter(e) {
+            this.dragTarget = e.target;
+            this.showDropZone = true;
+        },
+        onDragLeave(e) {
+            if (this.dragTarget == e.target) {
+                this.showDropZone = false;
+            }
+        },
+        onDrop(evt) {
+            this.showDropZone = false;
+            const data = JSON.parse(evt.dataTransfer.getData("text"))[0];
+            const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
+            if (data.history_id != this.historyId) {
+                copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
+                    .then(() => {
+                        if (data.history_content_type === "dataset") {
+                            Toast.info("Dataset copied to history");
+                        } else {
+                            Toast.info("Collection copied to history");
+                        }
+                        this.loadHistoryById(this.historyId);
+                    })
+                    .catch((error) => {
+                        this.onError(error);
+                    });
+            }
+        },
+        onError(error) {
+            Toast.error(error);
         },
     },
 };

@@ -77,7 +77,6 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
         new_destination = job_state.job_wrapper.job_runner_mapper.cache_job_destination(new_destination)
         # Reset job state
         job_state.job_wrapper.clear_working_directory()
-        job_state.job_wrapper.invalidate_external_metadata()
         job = job_state.job_wrapper.get_job()
         if resubmit.get("handler", None):
             log.debug("%s Job reassigned to handler %s", job_log_prefix, resubmit["handler"])

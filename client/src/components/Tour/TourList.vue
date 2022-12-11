@@ -1,11 +1,11 @@
 <template>
     <div class="ui-thumbnails">
-        <h2>Galaxy Tours</h2>
+        <h1 class="h-lg">Galaxy Tours</h1>
         <p>
             This page presents a list of interactive tours available on this Galaxy server. Select any tour to get
             started (and remember, you can click 'End Tour' at any time).
         </p>
-        <h4>Tours</h4>
+        <h2 class="h-sm">Tours</h2>
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <DelayedInput class="mb-3" :query="search" :placeholder="searchTours" :delay="0" @change="onSearch" />
@@ -47,7 +47,7 @@ export default {
     },
     created() {
         this.root = getAppRoot();
-        urlData({ url: `api/tours` })
+        urlData({ url: `/api/tours` })
             .then((response) => {
                 this.tours = response;
             })

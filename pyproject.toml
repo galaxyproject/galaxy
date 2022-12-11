@@ -45,11 +45,12 @@ Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/p
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
-cwltool = "==3.1.20211107152837"
+cwltool = "==3.1.20221109155812"
 dictobj = "*"
+dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 edam-ontology = "*"
-fastapi = ">=0.68.2, !=0.69.0, !=0.70.0, !=0.70.1"  # https://github.com/tiangolo/fastapi/issues/4041
+fastapi = ">=0.71.0"  # https://github.com/tiangolo/fastapi/issues/4041
 fastapi-utils = "*"
 fs = "*"
 future = "*"
@@ -68,16 +69,16 @@ MarkupSafe = "*"
 Mercurial = "*"
 mrcfile = "*"
 nodeenv = "*"
-nose = "*"
 numpy = "*"
+packaging = "<22"  # packaging 22.0 dropped LegacyVersion
 paramiko = "!=2.9.0, !=2.9.1"  # https://github.com/paramiko/paramiko/issues/1961
 Parsley = "*"
 Paste = "*"
 pebble = "*"
 psutil = "*"
-pulsar-galaxy-lib = ">=0.14.13"
+pulsar-galaxy-lib = ">=0.15.0.dev0"
 pycryptodome = "*"
-pydantic = "*"
+pydantic = {version = "*", extras = ["email"]}
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
@@ -90,7 +91,9 @@ python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
 PyYAML = "*"
 refgenconf = ">=0.12.0"
 requests = "*"
+rocrate = "*"
 Routes = "*"
+schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-language/schema_salad/issues/575
 social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
@@ -109,7 +112,7 @@ WebOb = "*"
 Whoosh = "*"
 zipstream-new = "*"
 
-[tool.poetry.dev-dependencies]
+[tool.poetry.group.dev.dependencies]
 ase = ">=3.18.1"
 black = "^22.1.0"
 cwltest = "2.2.20210901154959"
@@ -119,7 +122,7 @@ httpx = "*"
 isort = "^5.10.1"
 lxml = "!=4.2.2"
 markdown-it-reporter = "*"
-NoseHTML = "*"
+pkce = "*"
 PyGithub = "*"
 pytest = "*"
 pytest-asyncio = "*"

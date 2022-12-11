@@ -180,6 +180,7 @@
     </datatype>
     <datatype extension="toolshed.gz" type="galaxy.datatypes.binary:Binary" mimetype="multipart/x-gzip" subclass="true"/>
     <datatype extension="h5" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="scool" type="galaxy.datatypes.binary:H5" mimetype="application/octet-stream" display_in_upload="true" subclass="true"/>
     <datatype extension="grib" type="galaxy.datatypes.binary:Grib" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="loom" type="galaxy.datatypes.binary:Loom" description="An HDF5-based Loom File" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="h5ad" type="galaxy.datatypes.binary:Anndata" description="An HDF5-based anndata File" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -191,6 +192,7 @@
     <datatype extension="h5mlm" type="galaxy.datatypes.binary:H5MLM" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="ludwig_model" type="galaxy.datatypes.binary:LudwigModel" display_in_upload="true"/>
     <datatype extension="html" type="galaxy.datatypes.text:Html" mimetype="text/html"/>
+    <datatype extension="ludwig_report.html" type="galaxy.datatypes.text:Html" mimetype="text/html" display_in_upload="false" subclass="true" />
     <datatype extension="interval" type="galaxy.datatypes.interval:Interval" display_in_upload="true" description="File must start with definition line in the following format (columns may be in any order).">
       <converter file="interval_to_bed_converter.xml" target_datatype="bed"/>
       <converter file="interval_to_bedstrict_converter.xml" target_datatype="bedstrict"/>
@@ -251,6 +253,13 @@
     <datatype extension="nrrd" type="galaxy.datatypes.images:Nrrd" mimetype="image/nrrd"/>
     <datatype extension="nhdr" type="galaxy.datatypes.images:Nrrd" subclass="true"/>
     <datatype extension="rna_eps" type="galaxy.datatypes.sequence:RNADotPlotMatrix" mimetype="image/eps" display_in_upload="true"/>
+    <datatype extension="qza" type="galaxy.datatypes.qiime2:QIIME2Artifact" mimetype="application/octet-stream" display_in_upload="true">
+      <display file="qiime/qiime2/q2view.xml"/>
+    </datatype>
+    <datatype extension="qzv" type="galaxy.datatypes.qiime2:QIIME2Visualization" mimetype="application/octet-stream" display_in_upload="true">
+      <display file="qiime/qiime2/q2view.xml"/>
+    </datatype>
+    <datatype extension='qiime2.tabular' type="galaxy.datatypes.qiime2:QIIME2Metadata" display_in_upload="true"/>
     <datatype extension="zip" type="galaxy.datatypes.binary:CompressedZipArchive" display_in_upload="true"/>
     <datatype extension="ncbi_genome_dataset.zip" type="galaxy.datatypes.binary:CompressedZipArchive" subclass="true" display_in_upload="true"/>
     <datatype extension="tar" type="galaxy.datatypes.binary:CompressedArchive" subclass="true" display_in_upload="true">
@@ -389,6 +398,7 @@
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
       <converter file="interval_to_tabix_converter.xml" target_datatype="tabix" depends_on="bgzip"/>
     </datatype>
+    <datatype extension="psl" type="galaxy.datatypes.tabular:Psl" display_in_upload="true"/>
     <datatype extension="obo" type="galaxy.datatypes.text:Obo" mimetype="text/html" display_in_upload="true"/>
     <datatype extension="owl" type="galaxy.datatypes.xml:Owl" mimetype="text/html" display_in_upload="true"/>
     <datatype extension="png" type="galaxy.datatypes.images:Png" mimetype="image/png" display_in_upload="true"/>
@@ -468,6 +478,10 @@
     <datatype extension="protobuf3" type="galaxy.datatypes.binary:Binary" subclass="true" description="Protocol Buffers (Protobuf) is data format for serializing structured data." display_in_upload="true"/>
     <datatype extension="onnx" type="galaxy.datatypes.binary:Binary" subclass="true" description="ONNX (Open neural network exchange) is data format for storing and sharing machine learning and deep learning models." display_in_upload="true"/>
     <datatype extension="tabix" type="galaxy.datatypes.binary:Binary" subclass="true"/>
+    <datatype extension="interval_tabix.gz" type="galaxy.datatypes.interval:IntervalTabix" mimetype="application/octet-stream" />
+    <datatype extension="juicer_medium_tabix.gz" type="galaxy.datatypes.interval:JuicerMediumTabix" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="bed_tabix.gz" type="galaxy.datatypes.interval:BedTabix" mimetype="application/octet-stream" display_in_upload="true"/>
+    <datatype extension="gff_tabix.gz" type="galaxy.datatypes.interval:GffTabix" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="bgzip" type="galaxy.datatypes.binary:Binary" subclass="true" display_in_upload="true"/>
     <datatype extension="vcf_bgzip" type="galaxy.datatypes.tabular:VcfGz" display_in_upload="true">
       <display file="igv/vcf.xml"/>
@@ -917,6 +931,19 @@
     <!-- Povray script -->
     <datatype extension="pov" type="galaxy.datatypes.text:Text" subclass="true" display_in_upload="true"/>
     <!-- End Structural Materials datatypes -->
+    <!-- Sybila types -->
+    <datatype extension="pithya.result" type="galaxy.datatypes.text:PithyaResult" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="pithya.property" type="galaxy.datatypes.text:PithyaProperty" display_in_upload="true" />
+    <datatype extension="pithya.model" type="galaxy.datatypes.text:PithyaModel" display_in_upload="true" />
+    <datatype extension="bcsl.ts" type="galaxy.datatypes.text:BCSLts" mimetype="application/json" display_in_upload="true"/>
+    <datatype extension="bcsl.model" type="galaxy.datatypes.text:BCSLmodel" display_in_upload="true"/>
+    <datatype extension="storm.sample" type="galaxy.datatypes.text:StormSample" display_in_upload="true"/>
+    <datatype extension="storm.check" type="galaxy.datatypes.text:StormCheck" display_in_upload="true"/>
+    <datatype extension="ctl.result" type="galaxy.datatypes.text:CTLresult" display_in_upload="true"/>
+    <!-- CASTEP types -->
+    <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
+    <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
+    <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -1011,6 +1038,9 @@
     <sniffer type="galaxy.datatypes.binary:Edr"/>
     <sniffer type="galaxy.datatypes.binary:Vel"/>
     <sniffer type="galaxy.datatypes.binary:Xlsx"/>
+    <sniffer type="galaxy.datatypes.qiime2:QIIME2Metadata"/>
+    <sniffer type="galaxy.datatypes.qiime2:QIIME2Artifact"/>
+    <sniffer type="galaxy.datatypes.qiime2:QIIME2Visualization"/>
     <sniffer type="galaxy.datatypes.binary:CompressedZipArchive"/>
     <sniffer type="galaxy.datatypes.binary:Pretext"/>
     <sniffer type="galaxy.datatypes.annotation:Augustus"/>
@@ -1096,6 +1126,7 @@
     <sniffer type="galaxy.datatypes.interval:Gff"/>
     <sniffer type="galaxy.datatypes.interval:Gff3"/>
     <sniffer type="galaxy.datatypes.tabular:Pileup"/>
+    <sniffer type="galaxy.datatypes.tabular:Psl"/>
     <sniffer type="galaxy.datatypes.text:Paf"/>
     <sniffer type="galaxy.datatypes.interval:Interval"/>
     <sniffer type="galaxy.datatypes.tabular:Sam"/>
@@ -1108,6 +1139,8 @@
     <sniffer type="galaxy.datatypes.text:Biom1"/>
     <sniffer type="galaxy.datatypes.text:ImgtJson"/>
     <sniffer type="galaxy.datatypes.text:GeoJson"/>
+    <sniffer type="galaxy.datatypes.text:PithyaResult"/>
+    <sniffer type="galaxy.datatypes.text:BCSLts"/>
     <sniffer type="galaxy.datatypes.text:Json"/>
     <sniffer type="galaxy.datatypes.genetics:GenotypeMatrix"/>
     <sniffer type="galaxy.datatypes.genetics:DataIn"/>
@@ -1165,6 +1198,10 @@
     <sniffer type="galaxy.datatypes.media:Mpg"/>
     <sniffer type="galaxy.datatypes.speech:TextGrid" />
     <sniffer type="galaxy.datatypes.speech:BPF" />
+    <sniffer type="galaxy.datatypes.text:Castep" />
+    <sniffer type="galaxy.datatypes.text:CTLresult"/>
+    <sniffer type="galaxy.datatypes.text:FormattedDensity" />
+    <sniffer type="galaxy.datatypes.text:Param" />
     <sniffer type="galaxy.datatypes.text:Yaml" />
     <!--
     Keep this commented until the sniff method in the assembly.py
@@ -1178,5 +1215,10 @@
     <sniffer type="galaxy.datatypes.binary:OxliSubset"/>
     <sniffer type="galaxy.datatypes.binary:OxliGraphLabels"/>
     <sniffer type="galaxy.datatypes.neo4j:Neo4jDBzip"/>
+    <sniffer type="galaxy.datatypes.text:PithyaProperty"/>
+    <sniffer type="galaxy.datatypes.text:PithyaModel"/>
+    <sniffer type="galaxy.datatypes.text:BCSLmodel"/>
+    <sniffer type="galaxy.datatypes.text:StormSample"/>
+    <sniffer type="galaxy.datatypes.text:StormCheck"/>
   </sniffers>
 </datatypes>

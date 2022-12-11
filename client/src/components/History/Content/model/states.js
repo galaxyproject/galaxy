@@ -10,19 +10,24 @@ export const STATES = {
         icon: "exclamation-triangle",
     },
     deferred: {
-        status: "danger",
-        text: "This dataset is remote, has not be ingested by Galaxy, and full metadata may not be available.",
-        icon: "exclamation-triangle",
+        status: "info",
+        text: "This dataset is remote, has not been ingested by Galaxy, and full metadata may not be available.",
+        icon: "cloud",
     },
     /** has no data */
     empty: {
         status: "success",
         text: "No data.",
     },
-    /** the tool producing this dataset failed */
+    /** the tool producing this dataset has errored */
     error: {
         status: "danger",
         text: "An error occurred with this dataset:",
+        icon: "exclamation-triangle",
+    },
+    /** the job has failed, this is not a dataset but a job state used in the collection job state summary. */
+    failed: {
+        status: "danger",
         icon: "exclamation-triangle",
     },
     /** metadata discovery/setting failed or errored (but otherwise ok) */
@@ -74,3 +79,8 @@ export const STATES = {
         spin: true,
     },
 };
+
+/** We want to display a single state for a dataset collection whose elements may have mixed states.
+ * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
+ */
+export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "upload", "paused", "running", "queued", "new"];

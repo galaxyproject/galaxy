@@ -1,9 +1,27 @@
-import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "utils/job-states-model";
 import { snakeCase } from "snake-case";
 
 export function stateIsTerminal(result) {
     return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(result.state);
 }
+
+export const HasAttributesMixin = {
+    computed: {
+        attributes() {
+            return this.toCamelCase(this.$attrs);
+        },
+    },
+    methods: {
+        toCamelCase(attributes) {
+            const result = {};
+            for (const key in attributes) {
+                const newKey = key.replace(/-./g, (x) => x[1].toUpperCase());
+                result[newKey] = attributes[key];
+            }
+            return result;
+        },
+    },
+};
 
 // Adapt bootstrap parameters to Galaxy API. Galaxy consumes snake case parameters
 // and generally uses limit instead of perPage/per_page as a name for this concept.

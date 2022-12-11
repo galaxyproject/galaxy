@@ -100,6 +100,14 @@ galaxy.datatypes.data module
    :undoc-members:
    :show-inheritance:
 
+galaxy.datatypes.flow module
+----------------------------
+
+.. automodule:: galaxy.datatypes.flow
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.datatypes.genetics module
 --------------------------------
 
@@ -116,10 +124,26 @@ galaxy.datatypes.gis module
    :undoc-members:
    :show-inheritance:
 
+galaxy.datatypes.goldenpath module
+----------------------------------
+
+.. automodule:: galaxy.datatypes.goldenpath
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 galaxy.datatypes.graph module
 -----------------------------
 
 .. automodule:: galaxy.datatypes.graph
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.datatypes.hdf5 module
+----------------------------
+
+.. automodule:: galaxy.datatypes.hdf5
    :members:
    :undoc-members:
    :show-inheritance:
@@ -152,6 +176,14 @@ galaxy.datatypes.media module
 -----------------------------
 
 .. automodule:: galaxy.datatypes.media
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.datatypes.metacyto module
+--------------------------------
+
+.. automodule:: galaxy.datatypes.metacyto
    :members:
    :undoc-members:
    :show-inheritance:
@@ -232,6 +264,14 @@ galaxy.datatypes.proteomics module
 ----------------------------------
 
 .. automodule:: galaxy.datatypes.proteomics
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+galaxy.datatypes.qiime2 module
+------------------------------
+
+.. automodule:: galaxy.datatypes.qiime2
    :members:
    :undoc-members:
    :show-inheritance:

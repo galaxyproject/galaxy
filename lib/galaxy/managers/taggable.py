@@ -5,9 +5,13 @@ Mixins for Taggable model managers and serializers.
 # from galaxy import exceptions as galaxy_exceptions
 
 import logging
+import re
 from typing import Type
 
-from sqlalchemy import sql
+from sqlalchemy import (
+    func,
+    sql,
+)
 
 from galaxy import model
 from galaxy.model.tags import GalaxyTagHandler
@@ -33,7 +37,9 @@ def _tag_str_gen(item):
 def _tags_to_strings(item):
     if not hasattr(item, "tags"):
         return None
-    return sorted(list(_tag_str_gen(item)))
+    tag_list = list(_tag_str_gen(item))
+    # consider named tags while sorting
+    return sorted(tag_list, key=lambda str: re.sub("^name:", "#", str))
 
 
 def _tags_from_strings(item, tag_handler, new_tags_list, user=None):
@@ -118,15 +124,16 @@ class TaggableFilterMixin:
             target_model = getattr(model, f"{class_name}TagAssociation")
             id_column = f"{target_model.table.name.rsplit('_tag_association')[0]}_id"
             column = target_model.table.c.user_tname + ":" + target_model.table.c.user_value
+            lower_val = val.lower()  # Ignore case
             if op == "eq":
-                if ":" not in val:
+                if ":" not in lower_val:
                     # We require an exact match and the tag to look for has no user_value,
                     # so we can't just concatenate user_tname, ':' and user_vale
-                    cond = target_model.table.c.user_tname == val
+                    cond = func.lower(target_model.table.c.user_tname) == lower_val
                 else:
-                    cond = column == val
+                    cond = func.lower(column) == lower_val
             else:
-                cond = column.contains(val, autoescape=True)
+                cond = func.lower(column).contains(lower_val, autoescape=True)
             return sql.expression.and_(model_class.table.c.id == getattr(target_model.table.c, id_column), cond)
 
         return _create_tag_filter

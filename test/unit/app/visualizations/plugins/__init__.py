@@ -1,9 +1,9 @@
-import unittest
-
 import routes
 
+from galaxy.util.unittest import TestCase
 
-class VisualizationsBase_TestCase(unittest.TestCase):
+
+class VisualizationsBase_TestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         routes.Mapper()

@@ -10,11 +10,11 @@ from galaxy.util.topsort import (
 )
 
 
-def attach_ordered_steps(workflow, steps):
+def attach_ordered_steps(workflow):
     """Attempt to topologically order steps and attach to workflow. If this
     fails - the workflow contains cycles so it mark it as such.
     """
-    ordered_steps = order_workflow_steps(steps)
+    ordered_steps = order_workflow_steps(workflow.steps)
     workflow.has_cycles = True
     if ordered_steps:
         workflow.has_cycles = False
@@ -30,6 +30,8 @@ def order_workflow_steps(steps):
     """
     position_data_available = bool(steps)
     for step in steps:
+        if step.subworkflow:
+            attach_ordered_steps(step.subworkflow)
         if not step.position or "left" not in step.position or "top" not in step.position:
             position_data_available = False
     if position_data_available:
@@ -52,6 +54,14 @@ def order_workflow_steps(steps):
         return [steps[i] for i in node_order]
     except CycleError:
         return None
+
+
+def has_cycles(workflow):
+    try:
+        topsort(sorted(edgelist_for_workflow_steps(workflow.steps)))
+        return False
+    except CycleError:
+        return True
 
 
 def edgelist_for_workflow_steps(steps):

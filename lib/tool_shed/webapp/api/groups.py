@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Callable,
+    Dict,
+)
 
 from galaxy import (
     util,
@@ -13,8 +17,8 @@ from galaxy.util import pretty_print_time_interval
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
+    require_admin,
 )
-from galaxy.web import require_admin as require_admin
 from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.managers import groups
 
@@ -28,7 +32,7 @@ class GroupsController(BaseAPIController):
         super().__init__(app)
         self.group_manager = groups.GroupManager()
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {"id": trans.security.encode_id}
         return value_mapper
 
@@ -125,15 +129,7 @@ class GroupsController(BaseAPIController):
                 time_repo_updated_full = repo.update_time.strftime("%Y-%m-%d %I:%M %p")
                 time_repo_created = pretty_print_time_interval(repo.create_time, True)
                 time_repo_updated = pretty_print_time_interval(repo.update_time, True)
-                approved = ""
-                ratings = []
-                for review in repo.reviews:
-                    if review.rating:
-                        ratings.append(review.rating)
-                    if review.approved == "yes":
-                        approved = "yes"
                 # TODO add user ratings
-                ratings_mean = str(float(sum(ratings)) / len(ratings)) if len(ratings) > 0 else ""
                 total_downloads += repo.times_downloaded
                 group_repos.append(
                     {
@@ -145,8 +141,6 @@ class GroupsController(BaseAPIController):
                         "time_updated_full": time_repo_updated_full,
                         "time_updated": time_repo_updated,
                         "description": repo.description,
-                        "approved": approved,
-                        "ratings_mean": ratings_mean,
                         "categories": categories,
                     }
                 )

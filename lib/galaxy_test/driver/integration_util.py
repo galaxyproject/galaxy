@@ -5,11 +5,17 @@ order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
 import os
-from typing import ClassVar
+from typing import (
+    ClassVar,
+    Iterator,
+    Optional,
+    Type,
+    TYPE_CHECKING,
+    TypeVar,
+)
 from unittest import (
     skip,
     SkipTest,
-    TestCase,
 )
 
 import pytest
@@ -17,11 +23,15 @@ import pytest
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
 from galaxy.util.commands import which
+from galaxy.util.unittest import TestCase
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
 from .driver_util import GalaxyTestDriver
+
+if TYPE_CHECKING:
+    from galaxy_test.base.populators import BaseDatasetPopulator
 
 NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 # Following should be for Homebrew Rabbitmq and Docker on Mac "amqp://guest:guest@localhost:5672//"
@@ -84,6 +94,13 @@ def skip_if_github_workflow():
     return pytest.mark.skip("This test is skipped for Github actions.")
 
 
+def skip_unless_environ(env_var):
+    if os.environ.get(env_var):
+        return _identity
+
+    return pytest.mark.skip(f"{env_var} must be set for this test")
+
+
 class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     """Unit test case with utilities for spinning up Galaxy."""
 
@@ -96,6 +113,8 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
     # Don't pull in default configs for un-configured things from Galaxy's
     # config directory and such.
     isolate_galaxy_config = True
+
+    dataset_populator: Optional["BaseDatasetPopulator"]
 
     @classmethod
     def setUpClass(cls):
@@ -171,13 +190,22 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
         # realpath here to get around problems with symlinks being blocked.
         return os.path.realpath(os.path.join(cls._test_driver.galaxy_test_tmp_dir, name))
 
+    @pytest.fixture
+    def history_id(self) -> Iterator[str]:
+        assert self.dataset_populator
+        with self.dataset_populator.test_history() as history_id:
+            yield history_id
+
 
 class IntegrationTestCase(IntegrationInstance, TestCase):
     """Unit TestCase with utilities for spinning up Galaxy."""
 
 
-def integration_module_instance(clazz):
-    def _instance():
+IntegrationInstanceObject = TypeVar("IntegrationInstanceObject", bound=IntegrationInstance)
+
+
+def integration_module_instance(clazz: Type[IntegrationInstanceObject]):
+    def _instance() -> Iterator[IntegrationInstanceObject]:
         instance = clazz()
         instance.setUpClass()
         instance.setUp()

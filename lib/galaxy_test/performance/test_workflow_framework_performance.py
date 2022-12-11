@@ -17,7 +17,7 @@ GALAXY_TEST_PERFORMANCE_WORKFLOW_DEPTH = int(
 )
 
 
-class WorkflowFrameworkPerformanceTestCase(PerformanceTestCase):
+class TestWorkflowFrameworkPerformance(PerformanceTestCase):
     framework_tool_and_types = True
 
     def setUp(self):

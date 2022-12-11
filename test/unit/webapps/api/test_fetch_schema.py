@@ -10,7 +10,7 @@ from galaxy.schema.fetch_data import (
     UrlDataElement,
 )
 
-HISTORY_ID = "abcdef0123456789"
+HISTORY_ID = "378807ae895b74ff"
 example_payload = {
     "targets": [
         {
@@ -69,7 +69,7 @@ ftp_hdca_target = {
 }
 
 recursive_archive_payload = {
-    "history_id": "f3f73e481f432006",
+    "history_id": "70583a56914a26f9",
     "targets": [
         {
             "destination": {"type": "library", "name": "My Cool Library"},
@@ -78,6 +78,47 @@ recursive_archive_payload = {
             "path": "/Users/mvandenb/src/metadata_embed/test-data/testdir1.zip",
         }
     ],
+}
+
+
+nested_element_regression_payload = {
+    "history_id": "c369577e3c21d7b7",
+    "targets": [
+        {
+            "destination": {"type": "hdca"},
+            "elements": [
+                {
+                    "name": "a",
+                    "elements": [
+                        {
+                            "name": "a",
+                            "elements": [
+                                {
+                                    "url": "https://example.com",
+                                    "src": "url",
+                                    "dbkey": "?",
+                                    "ext": "auto",
+                                    "name": "forward",
+                                },
+                                {
+                                    "url": "https://example.com",
+                                    "src": "url",
+                                    "dbkey": "?",
+                                    "ext": "auto",
+                                    "name": "reverse",
+                                },
+                            ],
+                            "collection_type": "paired",
+                        },
+                    ],
+                    "collection_type": "list:paired",
+                },
+            ],
+            "collection_type": "list:list:paired",
+            "name": "a",
+        }
+    ],
+    "auto_decompress": True,
 }
 
 
@@ -113,3 +154,7 @@ def test_recursive_archive_form_like_data():
     payload = deepcopy(recursive_archive_payload)
     payload["targets"] = dumps(payload["targets"])
     FetchDataPayload(**payload)
+
+
+def test_nested_elemet_regression():
+    FetchDataPayload(**nested_element_regression_payload)

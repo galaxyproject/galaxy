@@ -29,6 +29,8 @@ def test_parse_valid_config_xml():
     assert config["connection"]["host"] == "localhost"
     assert config["connection"]["port"] == 1247
     assert config["connection"]["timeout"] == 30
+    assert config["connection"]["refresh_time"] == 300
+    assert config["connection"]["connection_pool_monitor_interval"] == 3600
     assert config["cache"]["path"] == "database/object_store_cache"
     assert config["cache"]["size"] == 1000
     assert config["extra_dirs"][0]["type"] == "job_work"

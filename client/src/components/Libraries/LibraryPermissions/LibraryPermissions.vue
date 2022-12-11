@@ -2,7 +2,7 @@
     <div>
         <b-button variant="link" @click="onGoBack">Go back to Libraries</b-button>
         <PermissionsHeader v-if="library" :name="library.name" />
-        <h2 class="text-center">Library permissions</h2>
+        <h1 class="text-center h-lg">Library permissions</h1>
         <PermissionsInputField
             v-if="access_library_role_list"
             :id="library_id"
@@ -43,7 +43,7 @@ import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "components/Libraries/LibraryPermissions/services";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import PermissionsHeader from "components/Libraries/LibraryPermissions/PermissionsHeader";
 import { extractRoles } from "components/Libraries/library-utils";

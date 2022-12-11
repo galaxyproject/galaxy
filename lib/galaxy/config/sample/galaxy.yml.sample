@@ -20,16 +20,55 @@
 # ``uwsgi:`` section will be ignored if Galaxy is started via Gravity commands (e.g ``./run.sh``, ``galaxy`` or ``galaxyctl``).
 gravity:
 
+  # Process manager to use.
+  # ``supervisor`` is the default process manager when Gravity is invoked as a non-root user.
+  # ``systemd`` is the default when Gravity is invoked as root.
+  # Valid options are: supervisor, systemd
+  # process_manager:
+
+  # What command to write to the process manager configs
+  # `gravity` (`galaxyctl exec <service-name>`) is the default
+  # `direct` (each service's actual command) is also supported.
+  # Valid options are: gravity, direct
+  # service_command_style: gravity
+
+  # Use the process manager's *service instance* functionality for services that can run multiple instances.
+  # Presently this includes services like gunicorn and Galaxy dynamic job handlers. Service instances are only supported if
+  # ``service_command_style`` is ``gravity``, and so this option is automatically set to ``false`` if
+  # ``service_command_style`` is set to ``direct``.
+  # use_service_instances: true
+
+  # umask under which services should be executed. Setting ``umask`` on an individual service overrides this value.
+  # umask: '022'
+
+  # Memory limit (in GB), processes exceeding the limit will be killed. Default is no limit. If set, this is default value
+  # for all services. Setting ``memory_limit`` on an individual service overrides this value. Ignored if ``process_manager``
+  # is ``supervisor``.
+  # memory_limit:
+
+  # Specify Galaxy config file (galaxy.yml), if the Gravity config is separate from the Galaxy config. Assumed to be the
+  # same file as the Gravity config if a ``galaxy`` key exists at the root level, otherwise, this option is required.
+  # galaxy_config_file:
+
   # Specify Galaxy's root directory.
   # Gravity will attempt to find the root directory, but you can set the directory explicitly with this option.
   # galaxy_root:
 
+  # User to run Galaxy as, required when using the systemd process manager as root.
+  # Ignored if ``process_manager`` is ``supervisor`` or user-mode (non-root) ``systemd``.
+  # galaxy_user:
+
+  # Group to run Galaxy as, optional when using the systemd process manager as root.
+  # Ignored if ``process_manager`` is ``supervisor`` or user-mode (non-root) ``systemd``.
+  # galaxy_group:
+
   # Set to a directory that should contain log files for the processes controlled by Gravity.
-  # If not specified defaults to ``<state_dir>/log``.
+  # If not specified defaults to ``<galaxy_data_dir>/gravity/log``.
   # log_dir:
 
   # Set to Galaxy's virtualenv directory.
-  # If not specified, Gravity assumes all processes are on PATH.
+  # If not specified, Gravity assumes all processes are on PATH. This option is required in most circumstances when using
+  # the ``systemd`` process manager.
   # virtualenv:
 
   # Select the application server.
@@ -43,7 +82,7 @@ gravity:
   # this is hidden from you when running a single instance.
   # instance_name: _default_
 
-  # Configuration for Gunicorn.
+  # Configuration for Gunicorn. Can be a list to run multiple gunicorns for rolling restarts.
   gunicorn:
 
     # Enable Galaxy gunicorn server.
@@ -69,6 +108,23 @@ gravity:
     # Use Gunicorn's --preload option to fork workers after loading the Galaxy Application.
     # Consumes less memory when multiple processes are configured. Default is ``false`` if using unicornherder, else ``true``.
     # preload:
+
+    # umask under which service should be executed
+    # umask:
+
+    # Value of supervisor startsecs, systemd TimeoutStartSec
+    # start_timeout: 15
+
+    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
+    # stop_timeout: 65
+
+    # Amount of time to wait for a server to become alive when performing rolling restarts.
+    # restart_timeout: 300
+
+    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
+    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
+    # ``supervisor``.
+    # memory_limit:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -100,6 +156,20 @@ gravity:
     # Extra arguments to pass to Celery command line.
     # extra_args:
 
+    # umask under which service should be executed
+    # umask:
+
+    # Value of supervisor startsecs, systemd TimeoutStartSec
+    # start_timeout: 10
+
+    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
+    # stop_timeout: 10
+
+    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
+    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
+    # ``supervisor``.
+    # memory_limit:
+
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
     # environment: {}
@@ -117,7 +187,8 @@ gravity:
     # port: 4002
 
     # Routes file to monitor.
-    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section.
+    # Should be set to the same path as ``interactivetools_map`` in the ``galaxy:`` section. This is ignored if
+    # ``interactivetools_map is set``.
     # sessions: database/interactivetools_map.sqlite
 
     # Include verbose messages in gx-it-proxy
@@ -134,6 +205,20 @@ gravity:
     # Rewrite location blocks with proxy port.
     # This is an advanced option that is only needed when proxying to remote interactive tool container that cannot be reached through the local network.
     # reverse_proxy: false
+
+    # umask under which service should be executed
+    # umask:
+
+    # Value of supervisor startsecs, systemd TimeoutStartSec
+    # start_timeout: 10
+
+    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
+    # stop_timeout: 10
+
+    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
+    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
+    # ``supervisor``.
+    # memory_limit:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -160,8 +245,86 @@ gravity:
     # Must match ``tus_upload_store`` setting in ``galaxy:`` section.
     # upload_dir:
 
+    # Comma-separated string of enabled tusd hooks.
+    #
+    # Leave at the default value to require authorization at upload creation time.
+    # This means Galaxy's web process does not need to be running after creating the initial
+    # upload request.
+    #
+    # Set to empty string to disable all authorization. This means data can be uploaded (but not processed)
+    # without the Galaxy web process being available.
+    #
+    # You can find a list of available hooks at https://github.com/tus/tusd/blob/master/docs/hooks.md#list-of-available-hooks.
+    # hooks_enabled_events: pre-create
+
     # Extra arguments to pass to tusd command line.
     # extra_args:
+
+    # umask under which service should be executed
+    # umask:
+
+    # Value of supervisor startsecs, systemd TimeoutStartSec
+    # start_timeout: 10
+
+    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
+    # stop_timeout: 10
+
+    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
+    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
+    # ``supervisor``.
+    # memory_limit:
+
+    # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
+    # names.
+    # environment: {}
+
+  # Configuration for Galaxy Reports.
+  reports:
+
+    # Enable Galaxy Reports server.
+    # enable: false
+
+    # Path to reports.yml, relative to galaxy.yml if not absolute
+    # config_file: reports.yml
+
+    # The socket to bind. A string of the form: ``HOST``, ``HOST:PORT``, ``unix:PATH``, ``fd://FD``. An IP is a valid HOST.
+    # bind: localhost:9001
+
+    # Controls the number of Galaxy Reports application processes Gunicorn will spawn.
+    # It is not generally necessary to increase this for the low-traffic Reports server.
+    # workers: 1
+
+    # Gunicorn workers silent for more than this many seconds are killed and restarted.
+    # Value is a positive number or 0. Setting it to 0 has the effect of infinite timeouts by disabling timeouts for all workers entirely.
+    # timeout: 300
+
+    # URL prefix to serve from.
+    # The corresponding nginx configuration is (replace <url_prefix> and <bind> with the values from these options):
+    #
+    # location /<url_prefix>/ {
+    #     proxy_pass http://<bind>/;
+    # }
+    #
+    # If <bind> is a unix socket, you will need a ``:`` after the socket path but before the trailing slash like so:
+    #     proxy_pass http://unix:/run/reports.sock:/;
+    # url_prefix:
+
+    # Extra arguments to pass to Gunicorn command line.
+    # extra_args:
+
+    # umask under which service should be executed
+    # umask:
+
+    # Value of supervisor startsecs, systemd TimeoutStartSec
+    # start_timeout: 10
+
+    # Value of supervisor stopwaitsecs, systemd TimeoutStopSec
+    # stop_timeout: 10
+
+    # Memory limit (in GB). If the service exceeds the limit, it will be killed. Default is no limit or the value of the
+    # ``memory_limit`` setting at the top level of the Gravity configuration, if set. Ignored if ``process_manager`` is
+    # ``supervisor``.
+    # memory_limit:
 
     # Extra environment variables and their values to set when running the service. A dictionary where keys are the variable
     # names.
@@ -190,6 +353,15 @@ galaxy:
   # if running Galaxy from source or `<config_dir>/data` otherwise.
   #data_dir: null
 
+  # The directory containing custom templates for Galaxy, such as
+  # HTML/text email templates. Defaults to 'templates'. Default
+  # templates can be found in the Galaxy root under config/templates.
+  # These can be copied to <templates_dir> if you wish to customize
+  # them.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #templates_dir: templates
+
   # Top level cache directory. Any other cache directories
   # (tool_cache_data_dir, template_cache_path, etc.) should be
   # subdirectories.
@@ -198,10 +370,18 @@ galaxy:
   #cache_dir: cache
 
   # By default, Galaxy uses a SQLite database at
-  # '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
+  # '<data_dir>/universe.sqlite'. You may use a SQLAlchemy connection
   # string to specify an external database instead.
   # Sample default
   # 'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+  # You may specify additional options that will be passed to the
+  # SQLAlchemy database engine by using the prefix
+  # "database_engine_option_". For some of these options, default values
+  # are provided (e.g. see database_engine_option_pool_size, etc.).
+  # The same applies to `install_database_connection`, for which you
+  # should use the "install_database_engine_option_" prefix.
+  # For more options, please check SQLAlchemy's documentation at
+  # https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
   #database_connection: null
 
   # If the server logs errors about not having enough database pool
@@ -454,15 +634,6 @@ galaxy:
   # <config_dir>.
   #tool_sheds_config_file: tool_sheds_conf.xml
 
-  # This option controls whether legacy datatypes are loaded from
-  # installed tool shed repositories. We're are in the process of
-  # disabling Tool Shed datatypes. This option with a default of true
-  # will be added in 22.01, we will disable the datatypes on the big
-  # public servers during that release. This option will be switched to
-  # False by default in 22.05 and this broken functionality will be
-  # removed all together during some future release.
-  #load_tool_shed_datatypes: true
-
   # Monitor the tools and tool directories listed in any tool config
   # file specified in tool_config_file option.  If changes are found,
   # tools are automatically reloaded. Watchdog (
@@ -686,12 +857,6 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #job_working_directory: jobs_directory
-
-  # If using a cluster, Galaxy will write job scripts and stdout/stderr
-  # to this directory.
-  # The value of this option will be resolved with respect to
-  # <data_dir>.
-  #cluster_files_directory: pbs
 
   # Mako templates are compiled as needed and cached for reuse, this
   # directory is used for the cache
@@ -1057,7 +1222,8 @@ galaxy:
   # Append "{brand}" text to the masthead.
   #brand: null
 
-  # Display the "Galaxy" text in the masthead.
+  # This option has been deprecated, use the `logo_src` instead to
+  # change the default logo including the galaxy brand title.
   #display_galaxy_brand: true
 
   # Format string used when showing date and time information. The
@@ -1106,8 +1272,7 @@ galaxy:
   # file staging and Interactive Tool containers for communicating back
   # with Galaxy via the API.
   # If you plan to run Interactive Tools make sure the docker container
-  # can reach this URL. For more details see
-  # `job_conf.xml.interactivetools`.
+  # can reach this URL.
   #galaxy_infrastructure_url: http://localhost:8080
 
   # If the above URL cannot be determined ahead of time in dynamic
@@ -1351,14 +1516,35 @@ galaxy:
   # "loggers" section does not appear in this configuration file.
   #auto_configure_logging: true
 
-  # Verbosity of console log messages.  Acceptable values can be found
+  # Log destination, defaults to special value "stdout" that logs to
+  # standard output. If set to anything else, then it will be
+  # interpreted as a path that will be used as the log file, and logging
+  # to stdout will be disabled.
+  #log_destination: stdout
+
+  # Size of log file at which size it will be rotated as per the
+  # documentation in
+  # https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+  # If log_rotate_count is not also set, no log rotation will be
+  # performed. A value of 0 (the default) means no rotation. Size can be
+  # a number of bytes or a human-friendly representation like "100 MB"
+  # or "1G".
+  #log_rotate_size: '0'
+
+  # Number of log file backups to keep, per the documentation in
+  # https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
+  # Any additional rotated log files will automatically be pruned. If
+  # log_rotate_size is not also set, no log rotation will be performed.
+  # A value of 0 (the default) means no rotation.
+  #log_rotate_count: 0
+
+  # Verbosity of console log messages. Acceptable values can be found
   # here: https://docs.python.org/library/logging.html#logging-levels A
   # custom debug level of "TRACE" is available for even more verbosity.
   #log_level: DEBUG
 
-  # Controls where and how the server logs messages. If unset, the
-  # default is to log all messages to standard output at the level
-  # defined by the `log_level` configuration option. Configuration is
+  # Controls where and how the server logs messages. If set, overrides
+  # all settings in the log_* configuration options. Configuration is
   # described in the documentation at:
   # https://docs.galaxyproject.org/en/master/admin/config_logging.html
   #logging: null
@@ -1405,7 +1591,7 @@ galaxy:
   # edited or manipulated through the Admin control panel -- see "Manage
   # Allowlist"
   # The value of this option will be resolved with respect to
-  # <mutable_config_dir>.
+  # <managed_config_dir>.
   #sanitize_allowlist_file: sanitize_allowlist.txt
 
   # By default Galaxy will serve non-HTML tool output that may
@@ -1565,62 +1751,68 @@ galaxy:
   # Available formats are currently 'zip', 'gz', and 'bz2'.
   #disable_library_comptypes: null
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_name_boost: 9.0
+  # In tool search, a query match against a tool's name text will
+  # receive this score multiplier.
+  #tool_name_boost: 20.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_id_boost: 9.0
+  # If a search query matches a tool name exactly, the score will be
+  # multiplied by this factor.
+  #tool_name_exact_multiplier: 10.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
+  # In tool search, a query match against a tool's ID text will receive
+  # this score multiplier. The query must be an exact match against ID
+  # in order to be counted as a match.
+  #tool_id_boost: 20.0
+
+  # In tool search, a query match against a tool's section text will
+  # receive this score multiplier.
   #tool_section_boost: 3.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_description_boost: 2.0
+  # In tool search, a query match against a tool's description text will
+  # receive this score multiplier.
+  #tool_description_boost: 8.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
+  # In tool search, a query match against a tool's label text will
+  # receive this score multiplier.
   #tool_label_boost: 1.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_stub_boost: 5.0
+  # A stub is parsed from the GUID as "owner/repo/tool_id". In tool
+  # search, a query match against a tool's stub text will receive this
+  # score multiplier.
+  #tool_stub_boost: 2.0
 
-  # Boosts are used to customize this instance's toolbox search. The
-  # higher the boost, the more importance the scoring algorithm gives to
-  # the given field.  Section refers to the tool group in the tool
-  # panel.  Rest of the fields are tool's attributes.
-  #tool_help_boost: 0.5
+  # In tool search, a query match against a tool's help text will
+  # receive this score multiplier.
+  #tool_help_boost: 1.0
 
-  # Limits the number of results in toolbox search.  Can be used to
-  # tweak how many results will appear.
+  # The lower this parameter, the greater the diminishing reward for
+  # term frequency in the help text. A higher K1 increases the level of
+  # reward for additional occurences of a term. The default value will
+  # provide a slight increase in score for the first, second and third
+  # occurrence and little reward thereafter.
+  #tool_help_bm25f_k1: 0.5
+
+  # Limits the number of results in toolbox search. Use to set the
+  # maximum number of tool search results to display.
   #tool_search_limit: 20
 
-  # Enable/ disable Ngram-search for tools. It makes tool search results
-  # tolerant for spelling mistakes in the query by dividing the query
-  # into multiple ngrams and search for each ngram
+  # Disabling this will prevent partial matches on tool names.
+  # Enable/disable Ngram-search for tools. It makes tool search results
+  # tolerant for spelling mistakes in the query, and will also match
+  # query substrings e.g. "genome" will match "genomics" or
+  # "metagenome".
   #tool_enable_ngram_search: true
 
-  # Set minimum size of ngrams
+  # Set minimum character length of ngrams
   #tool_ngram_minsize: 3
 
-  # Set maximum size of ngrams
+  # Set maximum character length of ngrams
   #tool_ngram_maxsize: 4
+
+  # Ngram matched scores will be multiplied by this factor. Should
+  # always be below 1, because an ngram match is a partial match of a
+  # search term.
+  #tool_ngram_factor: 0.2
 
   # Set tool test data directory. The test framework sets this value to
   # 'test-data,https://github.com/galaxyproject/galaxy-test-data.git'
@@ -1672,6 +1864,10 @@ galaxy:
   # If use_remote_user is enabled, you can set this to a URL that will
   # log your users out.
   #remote_user_logout_href: null
+
+  # This is the default url to which users are redirected after they log
+  # out.
+  #post_user_logout_href: /root/login?is_logout_redirect=true
 
   # If your proxy and/or authentication source does not normalize e-mail
   # addresses or user names being passed to Galaxy - set this option to
@@ -1890,7 +2086,7 @@ galaxy:
   # if you need to bootstrap Galaxy, in particular to create a real
   # admin user account via API. You should probably not set this on a
   # production server.
-  #master_api_key: null
+  #bootstrap_admin_api_key: null
 
   # Enable tool tags (associating tools with tags).  This has its own
   # option since its implementation has a few performance implications
@@ -2021,10 +2217,10 @@ galaxy:
   # process and notifies itself of new jobs via in-memory queues.  Jobs
   # are run locally on the system on which Galaxy is started.  Advanced
   # job running capabilities can be configured through the job
-  # configuration file.
+  # configuration file or the <job_config> option.
   # The value of this option will be resolved with respect to
   # <config_dir>.
-  #job_config_file: job_conf.xml
+  #job_config_file: job_conf.yml
 
   # Description of job running configuration, can be embedded into
   # Galaxy configuration or loaded from an additional file with the
@@ -2049,11 +2245,11 @@ galaxy:
 
   # When jobs fail due to job runner problems, Galaxy can be configured
   # to retry these or reroute the jobs to new destinations. Very fine
-  # control of this is available with resubmit declarations in
-  # job_conf.xml. For simple deployments of Galaxy though, the following
+  # control of this is available with resubmit declarations in the job
+  # config. For simple deployments of Galaxy though, the following
   # attribute can define resubmission conditions for all job
   # destinations. If any job destination defines even one resubmission
-  # condition explicitly in job_conf.xml - the condition described by
+  # condition explicitly in the job config - the condition described by
   # this option will not apply to that destination. For instance, the
   # condition: 'attempt < 3 and unknown_error and (time_running < 300 or
   # time_since_queued < 300)' would retry up to two times jobs that
@@ -2317,6 +2513,13 @@ galaxy:
   # if running many handlers.
   #cache_user_job_count: false
 
+  # If true, the toolbox will be sorted by tool id when the toolbox is
+  # loaded. This is useful for ensuring that tools are always displayed
+  # in the same order in the UI.  If false, the order of tools in the
+  # toolbox will be preserved as they are loaded from the tool config
+  # files.
+  #toolbox_auto_sort: true
+
   # Define toolbox filters
   # (https://galaxyproject.org/user-defined-toolbox-filters/) that
   # admins may use to restrict the tools to display.
@@ -2364,16 +2567,24 @@ galaxy:
   # commented out line below).
   #amqp_internal_connection: sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
 
+  # Configuration options passed to Celery.
+  # To refer to a task by name, use the template `galaxy.foo` where
+  # `foo` is the function name of the task defined in the
+  # galaxy.celery.tasks module.
+  # The `broker_url` option, if unset, defaults to the value of
+  # `amqp_internal_connection`. The `result_backend` option must be set
+  # if the `enable_celery_tasks` option is set.
+  # For details, see Celery documentation at
+  # https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+  #celery_conf:
+  #  task_routes:
+  #    galaxy.fetch_data: galaxy.external
+  #    galaxy.set_job_metadata: galaxy.external
+
   # Offload long-running tasks to a Celery task queue. Activate this
   # only if you have setup a Celery worker for Galaxy. For details, see
   # https://docs.galaxyproject.org/en/master/admin/production.html
   #enable_celery_tasks: false
-
-  # Celery broker (if unset falls back to amqp_internal_connection).
-  #celery_broker: null
-
-  # If set, it will be the results backend for Celery.
-  #celery_backend: null
 
   # Allow disabling pbkdf2 hashing of passwords for legacy situations.
   # This should normally be left enabled unless there is a specific

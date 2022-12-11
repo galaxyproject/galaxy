@@ -1,9 +1,9 @@
 <template>
     <div>
-        <h6 class="description mt-1">
+        <span class="description mt-1 mb-1">
             a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
-        </h6>
-        <CollectionProgress :summary="jobStateSummary" />
+        </span>
+        <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
     </div>
 </template>
 
@@ -68,3 +68,11 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+@import "scss/theme/blue.scss";
+
+.description {
+    font-size: $h6-font-size;
+}
+</style>

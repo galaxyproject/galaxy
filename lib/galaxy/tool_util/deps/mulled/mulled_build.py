@@ -12,7 +12,6 @@ Build a mulled image with:
 import json
 import logging
 import os
-import shlex
 import shutil
 import stat
 import string
@@ -31,6 +30,7 @@ from galaxy.tool_util.deps.docker_util import command_list as docker_command_lis
 from galaxy.util import (
     commands,
     safe_makedirs,
+    shlex_join,
     unicodify,
 )
 from ._cli import arg_parser
@@ -197,6 +197,8 @@ def mull_targets(
     repository_template=DEFAULT_REPOSITORY_TEMPLATE,
     dry_run=False,
     conda_version=None,
+    mamba_version=None,
+    use_mamba=False,
     verbose=False,
     binds=DEFAULT_BINDS,
     rebuild=True,
@@ -284,9 +286,28 @@ def mull_targets(
         involucro_args.extend(["-set", f"USER_ID={os.getuid()}:{os.getgid()}"])
     if test:
         involucro_args.extend(["-set", f"TEST={test}"])
-    if conda_version is not None:
-        verbose = "--verbose" if verbose else "--quiet"
-        involucro_args.extend(["-set", f"PREINSTALL=conda install {verbose} --yes conda={conda_version}"])
+
+    verbose = "--verbose" if verbose else "--quiet"
+    conda_bin = "conda"
+    if use_mamba:
+        conda_bin = "mamba"
+        if mamba_version is None:
+            mamba_version = ""
+    involucro_args.extend(["-set", "CONDA_BIN=%s" % conda_bin])
+    if conda_version is not None or mamba_version is not None:
+        mamba_test = "true"
+        specs = []
+        if conda_version is not None:
+            specs.append(f"conda={conda_version}")
+        if mamba_version is not None:
+            specs.append(f"mamba={mamba_version}")
+            if mamba_version == "" and not specs:
+                # If nothing but mamba without a specific version is requested,
+                # then only run conda install if mamba is not already installed.
+                mamba_test = "[ '[]' = \"$( conda list --json --full-name mamba )\" ]"
+        conda_install = f"""conda install {verbose} --yes {" ".join(f"'{spec}'" for spec in specs)}"""
+        involucro_args.extend(["-set", f"PREINSTALL=if {mamba_test} ; then {conda_install} ; fi"])
+
     involucro_args.append(command)
     if test_files:
         test_bind = []
@@ -301,7 +322,7 @@ def mull_targets(
             involucro_args.insert(6, "-set")
             involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
     cmd = involucro_context.build_command(involucro_args)
-    print(f"Executing: {' '.join(shlex.quote(_) for _ in cmd)}")
+    print(f"Executing: {shlex_join(cmd)}")
     if dry_run:
         return 0
     ensure_installed(involucro_context, True)
@@ -457,6 +478,18 @@ def add_build_arguments(parser):
         help="Change to specified version of Conda before installing packages.",
     )
     parser.add_argument(
+        "--mamba-version",
+        dest="mamba_version",
+        default=None,
+        help="Change to specified version of Mamba before installing packages.",
+    )
+    parser.add_argument(
+        "--use-mamba",
+        dest="use_mamba",
+        action="store_true",
+        help="Use Mamba instead of Conda for package installation.",
+    )
+    parser.add_argument(
         "--oauth-token",
         dest="oauth_token",
         default=None,
@@ -521,6 +554,10 @@ def args_to_mull_targets_kwds(args):
         kwds["repository_template"] = args.repository_template
     if hasattr(args, "conda_version"):
         kwds["conda_version"] = args.conda_version
+    if hasattr(args, "mamba_version"):
+        kwds["mamba_version"] = args.mamba_version
+    if hasattr(args, "use_mamba"):
+        kwds["use_mamba"] = args.use_mamba
     if hasattr(args, "oauth_token"):
         kwds["oauth_token"] = args.oauth_token
     if hasattr(args, "rebuild"):

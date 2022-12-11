@@ -1,7 +1,7 @@
 <template>
     <div>
-        <div class="alert alert-secondary" role="alert">
-            <div class="float-left">Convert all datasets to new format</div>
+        <div>
+            <span class="float-left h-sm">Convert all datasets to new format</span>
             <div class="text-right">
                 <button
                     class="run-tool-collection-edit btn btn-primary"

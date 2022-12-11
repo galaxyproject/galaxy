@@ -2,16 +2,7 @@
     from galaxy.util.sanitize_html import sanitize_html
 
     def inherit(context):
-        if context.get('use_panels'):
-            if context.get('webapp'):
-                app_name = context.get('webapp')
-            elif context.get('app'):
-                app_name = context.get('app').name
-            else:
-                app_name = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % app_name
-        else:
-            return '/base.mako'
+        return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
 
@@ -42,7 +33,7 @@
 </%def>
 
 ##
-## Override methods from base.mako and base_panels.mako
+## Override methods from base.mako
 ##
 
 <%def name="center_panel()">
@@ -63,5 +54,5 @@
         if status not in ("danger", "info", "success", "warning"):
             status = "info"
     %>
-    <div class="message mt-2 alert alert-${status}">${_(sanitize_html(msg))}</div>
+    <div class="message mt-2 alert alert-${status}">${sanitize_html(msg)}</div>
 </%def>

@@ -7,7 +7,7 @@ import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeArray } from "./model/utilities";
-import { getFilters, getQueryDict, testFilters } from "./model/filtering";
+import { getFilters, getQueryString, testFilters } from "utils/filterConversion";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -18,6 +18,7 @@ const state = {
     latestCreateTime: new Date(),
     totalMatchesCount: undefined,
     lastCheckedTime: new Date(),
+    isWatching: false,
 };
 
 const getters = {
@@ -40,22 +41,16 @@ const getters = {
     getLatestCreateTime: (state) => () => state.latestCreateTime,
     getTotalMatchesCount: (state) => () => state.totalMatchesCount,
     getLastCheckedTime: (state) => () => state.lastCheckedTime,
-};
-
-const getQueryString = (filterText) => {
-    const filterDict = getQueryDict(filterText);
-    return Object.entries(filterDict)
-        .map(([f, v]) => `q=${f}&qv=${v}`)
-        .join("&");
+    getWatchingVisibility: (state) => () => state.isWatching,
 };
 
 const actions = {
     fetchHistoryItems: async ({ commit }, { historyId, filterText, offset }) => {
         const queryString = getQueryString(filterText);
         const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
-        const url = `api/histories/${historyId}/contents?${params}&${queryString}`;
+        const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
         const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
-        await queue.enqueue(urlData, { url, headers }).then((data) => {
+        await queue.enqueue(urlData, { url, headers }, historyId).then((data) => {
             const stats = data.stats;
             commit("saveQueryStats", { stats });
             const payload = data.contents;
@@ -81,6 +76,9 @@ const mutations = {
     },
     setLastCheckedTime: (state, { checkForUpdate }) => {
         state.lastCheckedTime = checkForUpdate;
+    },
+    setWatchingVisibility: (state, { watchingVisibility }) => {
+        state.isWatching = watchingVisibility;
     },
     saveQueryStats: (state, { stats }) => {
         state.totalMatchesCount = stats.total_matches;

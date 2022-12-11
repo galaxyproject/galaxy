@@ -2,18 +2,17 @@
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <b-button v-if="showError" class="px-1" title="Error" size="sm" variant="link" @click.stop="onError">
-                    <span class="fa fa-bug" />
-                </b-button>
                 <b-button
-                    v-if="showDownloads"
-                    class="download-btn px-1"
-                    title="Download"
+                    v-if="showError"
+                    class="px-1"
+                    title="Error"
                     size="sm"
                     variant="link"
-                    @click.stop="onDownload">
-                    <span class="fa fa-save" />
+                    :href="reportErrorUrl"
+                    @click.prevent.stop="onError">
+                    <span class="fa fa-bug" />
                 </b-button>
+                <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -29,16 +28,18 @@
                     title="Dataset Details"
                     size="sm"
                     variant="link"
-                    @click.stop="onInfo">
+                    :href="showDetailsUrl"
+                    @click.prevent.stop="onInfo">
                     <span class="fa fa-info-circle" />
                 </b-button>
                 <b-button
-                    v-if="showRerun"
+                    v-if="writable && showRerun"
                     class="rerun-btn px-1"
                     title="Run Job Again"
                     size="sm"
                     variant="link"
-                    @click.stop="onRerun">
+                    :href="rerunUrl"
+                    @click.prevent.stop="onRerun">
                     <span class="fa fa-redo" />
                 </b-button>
                 <b-button
@@ -47,7 +48,8 @@
                     title="Visualize"
                     size="sm"
                     variant="link"
-                    @click.stop="onVisualize">
+                    :href="visualizeUrl"
+                    @click.prevent.stop="onVisualize">
                     <span class="fa fa-bar-chart-o" />
                 </b-button>
                 <b-button
@@ -68,21 +70,23 @@
 </template>
 
 <script>
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { prependPath } from "utils/redirect";
 import { copy as sendToClipboard } from "utils/clipboard";
-import { absPath } from "utils/redirect";
+import { absPath, prependPath } from "utils/redirect.js";
+import { downloadUrlMixin } from "./mixins.js";
+import DatasetDownload from "./DatasetDownload";
 
 export default {
-    mixins: [legacyNavigationMixin],
+    components: {
+        DatasetDownload,
+    },
+    mixins: [downloadUrlMixin],
     props: {
         item: { type: Object, required: true },
+        writable: { type: Boolean, default: true },
         showHighlight: { type: Boolean, default: false },
+        itemUrls: { type: Object, required: true },
     },
     computed: {
-        downloadUrl() {
-            return prependPath(`api/datasets/${this.item.id}/display?to_ext=${this.item.extension}`);
-        },
         showDownloads() {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
@@ -104,36 +108,39 @@ export default {
             // TODO: Check hasViz, if visualizations are activated in the config
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
+        reportErrorUrl() {
+            return prependPath(this.itemUrls.reportError);
+        },
+        showDetailsUrl() {
+            return prependPath(this.itemUrls.showDetails);
+        },
+        rerunUrl() {
+            return prependPath(this.itemUrls.rerun);
+        },
+        visualizeUrl() {
+            return prependPath(this.itemUrls.visualize);
+        },
     },
     methods: {
         onCopyLink() {
             const msg = this.localize("Link is copied to your clipboard");
             sendToClipboard(absPath(this.downloadUrl), msg);
         },
-        onDownload() {
-            window.location.href = this.downloadUrl;
+        onDownload(resource) {
+            window.location.href = resource;
         },
         onError() {
-            this.backboneRoute("datasets/error", { dataset_id: this.item.id });
+            this.$router.push(this.itemUrls.reportError);
         },
         onInfo() {
-            this.backboneRoute(`datasets/${this.item.id}/details`);
+            this.$router.push(this.itemUrls.showDetails);
         },
         onRerun() {
-            this.backboneRoute(`root?job_id=${this.item.creating_job}`);
+            this.$router.push(`/root?job_id=${this.item.creating_job}`, { force: true });
         },
         onVisualize() {
-            const name = this.item.name || "";
-            const title = `Visualization of ${name}`;
-            const path = `visualizations?dataset_id=${this.item.id}`;
-            const redirectParams = {
-                path: path,
-                title: title,
-                tryIframe: false,
-            };
-            if (!this.iframeAdd(redirectParams)) {
-                this.backboneRoute(path);
-            }
+            const title = `Visualization of ${this.item.name || ""}`;
+            this.$router.push(this.itemUrls.visualize, { title });
         },
         onHighlight() {
             this.$emit("toggleHighlights");

@@ -1,5 +1,7 @@
-from .context import GalaxySeleniumContextImpl
-from .context import init as c_init
+from .context import (
+    GalaxySeleniumContextImpl,
+    init as c_init,
+)
 
 
 def init(config=None):

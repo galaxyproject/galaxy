@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h3>Inheritance Chain</h3>
+        <h2 class="h-md">Inheritance Chain</h2>
         <div class="current-dataset chain-box">{{ datasetName }}</div>
         <div v-if="inherit_chain && inherit_chain.length > 0">
             <div v-for="({ name, dep }, i) in inherit_chain" :key="i">
