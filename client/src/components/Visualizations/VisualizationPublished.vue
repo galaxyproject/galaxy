@@ -1,5 +1,5 @@
 <template>
-    <Published :details="visualization">
+    <Published :item="visualization">
         <template v-slot>
             <CenterFrame :src="getUrl" />
         </template>

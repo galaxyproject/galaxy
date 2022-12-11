@@ -68,21 +68,21 @@ class RefgenieToolDataTable(TabularToolDataTable):
         self,
         config_element,
         tool_data_path,
+        tool_data_path_files,
         from_shed_config=False,
         filename=None,
-        tool_data_path_files=None,
         other_config_dict=None,
-    ):
+    ) -> None:
         super().__init__(
             config_element,
             tool_data_path,
+            tool_data_path_files,
             from_shed_config,
             filename,
-            tool_data_path_files,
             other_config_dict=other_config_dict,
         )
         self.config_element = config_element
-        self.data = []
+        self.data: List[List[str]] = []
         self.configure_and_load(config_element, tool_data_path, from_shed_config)
 
     def configure_and_load(self, config_element, tool_data_path, from_shed_config=False, url_timeout=10):

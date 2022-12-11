@@ -1,13 +1,14 @@
 <template>
-    <div>
+    <div aria-labelledby="tool-recommendation-heading">
         <div v-if="!deprecated && showMessage" class="infomessagelarge">
-            <h4>Tool recommendation</h4>
+            <h2 id="tool-recommendation-heading" class="h-sm">Tool recommendation</h2>
             You have used {{ getToolId }} tool. For further analysis, you could try using the following/recommended
             tools. The recommended tools are shown in the decreasing order of their scores predicted using machine
             learning analysis on workflows. Therefore, tools at the top may be more useful than the ones at the bottom.
             Please click on one of the following/recommended tools to open its definition.
         </div>
         <div v-else-if="deprecated" class="warningmessagelarge">
+            <h2 id="tool-recommendation-heading" class="h-sm">Tool deprecated</h2>
             You have used {{ getToolId }} tool. {{ deprecatedMessage }}
         </div>
         <div id="tool-recommendation" class="ui-tool-recommendation"></div>

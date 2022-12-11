@@ -78,10 +78,10 @@ export default {
             return this.itemContent ? this.itemContent.name : "...";
         },
         downloadUrl() {
-            return safePath("/api/workflows/${this.args.workflow_id}/download?format=json-download");
+            return safePath(`/api/workflows/${this.args.workflow_id}/download?format=json-download`);
         },
         importUrl() {
-            return safePath("/workflow/imp?id=${this.args.workflow_id}");
+            return safePath(`/workflow/imp?id=${this.args.workflow_id}`);
         },
         itemUrl() {
             return `/api/workflows/${this.args.workflow_id}/download?style=preview`;

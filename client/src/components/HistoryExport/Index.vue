@@ -1,6 +1,6 @@
 <template>
     <span class="history-export-component">
-        <h2>Export history archive</h2>
+        <h1 class="h-lg">Export history archive</h1>
         <span v-if="initializingFileSources">
             <loading-span :message="initializeFileSourcesMessage" />
         </span>

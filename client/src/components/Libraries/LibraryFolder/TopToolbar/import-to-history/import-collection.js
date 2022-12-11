@@ -1,6 +1,6 @@
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import mod_library_model from "../library-model";
 import _ from "underscore";
 import Backbone from "backbone";

@@ -104,21 +104,21 @@ class MockApp(di.Container, GalaxyDataTestApp):
     job_metrics: JobMetrics
     stop: bool
 
-    def __init__(self, config=None, **kwargs):
+    def __init__(self, config=None, **kwargs) -> None:
         super().__init__()
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
         self[BasicSharedApp] = cast(BasicSharedApp, self)
-        self[MinimalManagerApp] = cast(MinimalManagerApp, self)
-        self[StructuredApp] = cast(StructuredApp, self)
+        self[MinimalManagerApp] = cast(MinimalManagerApp, self)  # type: ignore[type-abstract]
+        self[StructuredApp] = cast(StructuredApp, self)  # type: ignore[type-abstract]
         self[idencoding.IdEncodingHelper] = self.security
         self.name = kwargs.get("name", "galaxy")
         self[SharedModelMapping] = self.model
         self[GalaxyModelMapping] = self.model
         sts_config = ShortTermStorageConfiguration(short_term_storage_directory=os.path.join(config.data_dir, "sts"))
         sts_manager = ShortTermStorageManager(sts_config)
-        self[ShortTermStorageAllocator] = sts_manager  # type: ignore[misc]
-        self[ShortTermStorageMonitor] = sts_manager  # type: ignore[misc]
+        self[ShortTermStorageAllocator] = sts_manager  # type: ignore[type-abstract]
+        self[ShortTermStorageMonitor] = sts_manager  # type: ignore[type-abstract]
         self[galaxy_scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)

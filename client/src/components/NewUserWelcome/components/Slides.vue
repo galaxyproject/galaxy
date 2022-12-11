@@ -6,13 +6,13 @@
         <hr />
         <b-carousel indicators controls :interval="0" no-animation align="center" position="float">
             <b-carousel-slide v-for="(slide, idx) in slides" :key="idx">
-                <h3 class="carousel-caption">
+                <h2 class="carousel-caption h-md">
                     {{ slide.text | localize }}
-                </h3>
+                </h2>
                 <img class="carousel-fig" :src="imgUrl(slide.file)" :class="slide.size" :alt="slide.alt" />
             </b-carousel-slide>
             <b-carousel-slide>
-                <h3>{{ "Enjoy using Galaxy!" | localize }}</h3>
+                <h2 class="h-md">{{ "Enjoy using Galaxy!" | localize }}</h2>
                 <img class="large-img" :src="imgUrl('sections/galaxy_logo.png')" alt="Galaxy logo" />
             </b-carousel-slide>
         </b-carousel>

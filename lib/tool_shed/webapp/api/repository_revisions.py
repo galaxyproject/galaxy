@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Callable,
+    Dict,
+)
 
 from sqlalchemy import and_
 
@@ -21,7 +25,7 @@ log = logging.getLogger(__name__)
 class RepositoryRevisionsController(BaseAPIController):
     """RESTful controller for interactions with tool shed repository revisions."""
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {
             "id": trans.security.encode_id,
             "repository_id": trans.security.encode_id,

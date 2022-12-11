@@ -2,12 +2,12 @@ import json
 import logging
 import os
 import uuid
-from collections import namedtuple
 from typing import (
     Any,
     cast,
     Dict,
     List,
+    NamedTuple,
     Optional,
     Tuple,
 )
@@ -69,6 +69,7 @@ from galaxy.tools.parameters.basic import (
     RuntimeValue,
     workflow_building_modes,
 )
+from galaxy.util.hash_util import md5_hash_str
 from galaxy.util.json import (
     safe_dumps,
     safe_loads,
@@ -82,9 +83,9 @@ from galaxy.util.search import (
 from galaxy.web import url_for
 from galaxy.work.context import WorkRequestContext
 from galaxy.workflow.modules import (
-    is_tool_module_type,
     module_factory,
     ToolModule,
+    WorkflowModule,
     WorkflowModuleInjector,
 )
 from galaxy.workflow.refactor.execute import WorkflowRefactorExecutor
@@ -94,7 +95,10 @@ from galaxy.workflow.refactor.schema import (
 )
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
-from galaxy.workflow.steps import attach_ordered_steps
+from galaxy.workflow.steps import (
+    attach_ordered_steps,
+    has_cycles,
+)
 
 log = logging.getLogger(__name__)
 
@@ -166,7 +170,6 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         query = query.options(latest_workflow_load)
         query = query.filter(or_(*filters))
         query = query.filter(model.StoredWorkflow.table.c.hidden == (true() if show_hidden else false()))
-        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if payload.search:
             search_query = payload.search
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
@@ -194,6 +197,9 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                     elif key == "is":
                         if q == "published":
                             query = query.filter(model.StoredWorkflow.published == true())
+                        elif q == "deleted":
+                            query = query.filter(model.StoredWorkflow.deleted == true())
+                            show_deleted = true
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
@@ -213,6 +219,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                             term,
                         )
                     )
+        query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if include_total_count:
             total_matches = query.count()
         else:
@@ -490,7 +497,13 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         return invocations, total_matches
 
 
-CreatedWorkflow = namedtuple("CreatedWorkflow", ["stored_workflow", "workflow", "missing_tools"])
+MissingToolsT = List[Tuple[str, str, Optional[str], str]]
+
+
+class CreatedWorkflow(NamedTuple):
+    stored_workflow: StoredWorkflow
+    workflow: model.Workflow
+    missing_tools: MissingToolsT
 
 
 class WorkflowSerializer(sharable.SharableModelSerializer):
@@ -523,7 +536,7 @@ class WorkflowContentsManager(UsesAnnotations):
             dict_or_raw_description = RawWorkflowDescription(dict_or_raw_description)
         return dict_or_raw_description
 
-    def read_workflow_from_path(self, app, user, path, allow_in_directory=None):
+    def read_workflow_from_path(self, app, user, path, allow_in_directory=None) -> model.Workflow:
         trans = WorkRequestContext(app=self.app, user=user)
 
         as_dict = {"src": "from_path", "path": path}
@@ -577,7 +590,8 @@ class WorkflowContentsManager(UsesAnnotations):
         source=None,
         add_to_menu=False,
         hidden=False,
-    ):
+        is_subworkflow=False,
+    ) -> CreatedWorkflow:
         data = raw_workflow_description.as_dict
         # Put parameters in workflow mode
         trans.workflow_building_mode = workflow_building_modes.ENABLED
@@ -596,6 +610,7 @@ class WorkflowContentsManager(UsesAnnotations):
             raw_workflow_description,
             workflow_create_options,
             name=name,
+            is_subworkflow=is_subworkflow,
         )
         if "uuid" in data:
             workflow.uuid = data["uuid"]
@@ -685,8 +700,14 @@ class WorkflowContentsManager(UsesAnnotations):
         return workflow, errors
 
     def _workflow_from_raw_description(
-        self, trans, raw_workflow_description, workflow_state_resolution_options, name, **kwds
-    ):
+        self,
+        trans,
+        raw_workflow_description,
+        workflow_state_resolution_options,
+        name,
+        is_subworkflow: bool = False,
+        **kwds,
+    ) -> Tuple[model.Workflow, MissingToolsT]:
         # don't commit the workflow or attach its part to the sa session - just build a
         # a transient model to operate on or render.
         dry_run = kwds.pop("dry_run", False)
@@ -737,7 +758,7 @@ class WorkflowContentsManager(UsesAnnotations):
 
         # Keep track of tools required by the workflow that are not available in
         # the local Galaxy instance.  Each tuple in the list of missing_tool_tups
-        # will be ( tool_id, tool_name, tool_version ).
+        # will be (tool_id, tool_name, tool_version, step_id).
         missing_tool_tups = []
         for step_dict in self.__walk_step_dicts(data):
             if not dry_run:
@@ -749,8 +770,7 @@ class WorkflowContentsManager(UsesAnnotations):
         module_kwds.update(kwds)  # TODO: maybe drop this?
         for step_dict in self.__walk_step_dicts(data):
             module, step = self.__module_from_dict(trans, steps, steps_by_external_id, step_dict, **module_kwds)
-            is_tool = is_tool_module_type(module.type)
-            if is_tool and module.tool is None:
+            if isinstance(module, ToolModule) and module.tool is None:
                 missing_tool_tup = (module.tool_id, module.get_name(), module.tool_version, step_dict["id"])
                 if missing_tool_tup not in missing_tool_tups:
                     missing_tool_tups.append(missing_tool_tup)
@@ -760,8 +780,12 @@ class WorkflowContentsManager(UsesAnnotations):
         # Second pass to deal with connections between steps
         self.__connect_workflow_steps(steps, steps_by_external_id, dry_run)
 
-        # Order the steps if possible
-        attach_ordered_steps(workflow, steps)
+        workflow.has_cycles = True
+        workflow.steps = steps
+        # we can't reorder subworkflows, as step connections would become invalid
+        if not is_subworkflow:
+            # Order the steps if possible
+            attach_ordered_steps(workflow)
 
         return workflow, missing_tool_tups
 
@@ -853,7 +877,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if len(workflow.steps) == 0:
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
-        if attach_ordered_steps(workflow, workflow.steps):
+        if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
         trans.workflow_building_mode = workflow_building_modes.USE_HISTORY
         module_injector = WorkflowModuleInjector(trans)
@@ -861,9 +885,10 @@ class WorkflowContentsManager(UsesAnnotations):
         step_version_changes = []
         missing_tools = []
         errors = {}
+        module_injector.inject_all(workflow, exact_tools=False, ignore_tool_missing_exception=True)
         for step in workflow.steps:
             try:
-                module_injector.inject(step, steps=workflow.steps, exact_tools=False)
+                module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException as e:
                 # FIXME: if a subworkflow lacks multiple tools we report only the first missing tool
                 if e.tool_id not in missing_tools:
@@ -945,7 +970,7 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         if len(workflow.steps) == 0:
             raise exceptions.MessageException("Workflow cannot be run because it does not have any steps.")
-        if attach_ordered_steps(workflow, workflow.steps):
+        if has_cycles(workflow):
             raise exceptions.MessageException("Workflow cannot be run because it contains cycles.")
 
         # Ensure that the user has a history
@@ -1015,15 +1040,16 @@ class WorkflowContentsManager(UsesAnnotations):
                 input_dicts.append(input_dict)
             return input_dicts
 
+        module_injector = WorkflowModuleInjector(trans)
+        module_injector.inject_all(workflow, ignore_tool_missing_exception=True, exact_tools=False)
         step_dicts = []
         for step in workflow.steps:
-            module_injector = WorkflowModuleInjector(trans)
             step_dict = {}
             step_dict["order_index"] = step.order_index
-            if hasattr(step, "annotation") and step.annotation is not None:
-                step_dict["annotation"] = step.annotation
+            if step.annotations:
+                step_dict["annotation"] = step.annotations[0].annotation
             try:
-                module_injector.inject(step, steps=workflow.steps, exact_tools=False)
+                module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException as e:
                 step_dict["label"] = f"Unknown Tool with id '{e.tool_id}'"
                 step_dicts.append(step_dict)
@@ -1477,6 +1503,7 @@ class WorkflowContentsManager(UsesAnnotations):
         item["name"] = workflow.name
         item["url"] = url_for("workflow", id=item["id"])
         item["owner"] = stored.user.username
+        item["email_hash"] = md5_hash_str(stored.user.email)
         item["slug"] = stored.slug
         inputs = {}
         for step in workflow.input_steps:
@@ -1616,7 +1643,7 @@ class WorkflowContentsManager(UsesAnnotations):
         steps_by_external_id: Dict[str, model.WorkflowStep],
         step_dict,
         **kwds,
-    ):
+    ) -> Tuple[WorkflowModule, model.WorkflowStep]:
         """Create a WorkflowStep model object and corresponding module
         representing type-specific functionality from the incoming dictionary.
         """
@@ -1645,6 +1672,7 @@ class WorkflowContentsManager(UsesAnnotations):
         steps.append(step)
         external_id = step_dict["id"]
         steps_by_external_id[external_id] = step
+        step.order_index = external_id
         if "workflow_outputs" in step_dict:
             workflow_outputs = step_dict["workflow_outputs"]
             found_output_names = set()
@@ -1711,7 +1739,11 @@ class WorkflowContentsManager(UsesAnnotations):
     def __build_embedded_subworkflow(self, trans, data, workflow_state_resolution_options):
         raw_workflow_description = self.ensure_raw_description(data)
         subworkflow = self.build_workflow_from_raw_description(
-            trans, raw_workflow_description, workflow_state_resolution_options, hidden=True
+            trans,
+            raw_workflow_description,
+            workflow_state_resolution_options,
+            hidden=True,
+            is_subworkflow=True,
         ).workflow
         return subworkflow
 

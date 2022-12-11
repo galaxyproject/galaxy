@@ -879,13 +879,13 @@ class SnpSiftDbNSFP(Text):
                 unicodify(e),
             )
 
-        def set_peek(self, dataset):
-            if not dataset.dataset.purged:
-                dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
-                dataset.blurb = f"{dataset.metadata.reference_name}"
-            else:
-                dataset.peek = "file does not exist"
-                dataset.blurb = "file purged from disc"
+    def set_peek(self, dataset):
+        if not dataset.dataset.purged:
+            dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
+            dataset.blurb = f"{dataset.metadata.reference_name}"
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disc"
 
 
 @build_sniff_from_prefix

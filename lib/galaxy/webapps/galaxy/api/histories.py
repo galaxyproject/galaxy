@@ -21,7 +21,6 @@ from fastapi import (
 )
 from pydantic.fields import Field
 from pydantic.main import BaseModel
-from starlette.responses import FileResponse
 
 from galaxy.managers.context import (
     ProvidesHistoryContext,
@@ -51,6 +50,7 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
+from galaxy.webapps.base.api import GalaxyFileResponse
 from galaxy.webapps.galaxy.api import (
     as_form,
     depends,
@@ -373,7 +373,7 @@ class FastAPIHistories:
         "/api/histories/{id}/exports/{jeha_id}",
         name="history_archive_download",
         summary=("If ready and available, return raw contents of exported history as a downloadable archive."),
-        response_class=FileResponse,
+        response_class=GalaxyFileResponse,
         responses={
             200: {
                 "description": "The archive file containing the History.",
@@ -394,7 +394,7 @@ class FastAPIHistories:
         jeha = self.service.get_ready_history_export(trans, id, jeha_id)
         media_type = self.service.get_archive_media_type(jeha)
         file_path = self.service.get_archive_download_path(trans, jeha)
-        return FileResponse(
+        return GalaxyFileResponse(
             path=file_path,
             media_type=media_type,
             filename=jeha.export_name,

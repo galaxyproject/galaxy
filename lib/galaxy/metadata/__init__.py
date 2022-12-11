@@ -35,15 +35,6 @@ class MetadataCollectionStrategy(metaclass=abc.ABCMeta):
 
     extended = False
 
-    def invalidate_external_metadata(self, datasets, sa_session):
-        """Invalidate written files."""
-
-    def set_job_runner_external_pid(self, pid, sa_session):
-        pass
-
-    def cleanup_external_metadata(self, sa_session):
-        pass
-
     @abc.abstractmethod
     def setup_external_metadata(
         self,
@@ -137,6 +128,7 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
         job_metadata=None,
         provided_metadata_style=None,
         compute_tmp_dir=None,
+        compute_version_path=None,
         include_command=True,
         max_metadata_value_size=0,
         max_discovered_files=None,
@@ -240,6 +232,8 @@ class PortableDirectoryMetadataGenerator(MetadataCollectionStrategy):
             )
             metadata_params["job_params"] = job.raw_param_dict()
             metadata_params["output_collections"] = output_collections
+            if compute_version_path:
+                metadata_params["compute_version_path"] = compute_version_path
 
         with open(metadata_params_path, "w") as f:
             json.dump(metadata_params, f)

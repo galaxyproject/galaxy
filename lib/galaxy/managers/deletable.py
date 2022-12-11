@@ -14,7 +14,7 @@ from typing import (
     Set,
 )
 
-from galaxy.model import _HasTable
+from galaxy.model import Base
 from .base import (
     Deserializer,
     ModelValidator,
@@ -32,7 +32,7 @@ class DeletableManagerMixin:
     removed by an admin/script.
     """
 
-    def _session_setattr(self, item: _HasTable, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
         ...
 
     def delete(self, item, flush=True, **kwargs):
@@ -91,7 +91,7 @@ class PurgableManagerMixin(DeletableManagerMixin):
     file).
     """
 
-    def _session_setattr(self, item: _HasTable, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
         ...
 
     def purge(self, item, flush=True, **kwargs):

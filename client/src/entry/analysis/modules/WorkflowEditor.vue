@@ -1,8 +1,8 @@
 <template>
     <Editor
         v-if="editorConfig"
-        :id="workflowId"
-        :data-managers="editorConfig.workflows"
+        :id="editorConfig.id"
+        :data-managers="editorConfig.dataManagers"
         :initial-version="editorConfig.initialVersion"
         :module-sections="editorConfig.moduleSections"
         :tags="editorConfig.tags"
@@ -19,16 +19,30 @@ export default {
     },
     data() {
         return {
-            workflowId: Query.get("id"),
+            storedWorkflowId: null,
+            workflowId: null,
             editorConfig: null,
         };
     },
-    created() {
-        this.getState();
+    watch: {
+        "$route.params": {
+            handler() {
+                this.getEditorConfig();
+            },
+            immediate: true,
+        },
     },
     methods: {
-        async getState() {
-            this.editorConfig = await urlData({ url: `/workflow/editor?id=${this.workflowId}` });
+        async getEditorConfig() {
+            const storedWorkflowId = Query.get("id");
+            const workflowId = Query.get("workflow_id");
+            const params = {};
+            if (workflowId) {
+                params.workflow_id = workflowId;
+            } else if (storedWorkflowId) {
+                params.id = storedWorkflowId;
+            }
+            this.editorConfig = await urlData({ url: "/workflow/editor", params });
         },
     },
 };

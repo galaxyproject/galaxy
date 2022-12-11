@@ -1966,9 +1966,13 @@ class BaseDataToolParameter(ToolParameter):
                         dataset_count += 1
                         do_validate(dataset_instance)
                 elif isinstance(v, DatasetCollectionElement):
-                    for dataset_instance in v.child_collection.dataset_instances:
+                    if v.hda:
                         dataset_count += 1
-                        do_validate(dataset_instance)
+                        do_validate(v.hda)
+                    else:
+                        for dataset_instance in v.child_collection.dataset_instances:
+                            dataset_count += 1
+                            do_validate(dataset_instance)
                 else:
                     dataset_count += 1
                     do_validate(v)
@@ -2120,6 +2124,8 @@ class DataToolParameter(BaseDataToolParameter):
                         "the previously selected dataset has entered an unusable state", self.name
                     )
                 elif hasattr(v, "dataset"):
+                    if isinstance(v, DatasetCollectionElement):
+                        v = v.hda
                     match = dataset_matcher.hda_match(v)
                     if match and match.implicit_conversion:
                         v.implicit_conversion = True

@@ -10,14 +10,15 @@
         <div id="right">
             <div class="m-3">
                 <div v-if="modelTitle">
-                    <h4>About this {{ modelTitle }}</h4>
-                    <h3>{{ details.title || details.name }}</h3>
-                    <StatelessTags v-if="details.tags" class="tags mt-2" :value="details.tags" :disabled="true" />
+                    <h1 class="h-sm">About this {{ modelTitle }}</h1>
+                    <h2 class="h-md">{{ item.title || item.name }}</h2>
+                    <img class="float-right" :src="gravatarSource" alt="user avatar" />
+                    <StatelessTags v-if="item.tags" class="tags mt-2" :value="item.tags" :disabled="true" />
                     <br />
-                    <h4>Author</h4>
+                    <h2 class="h-sm">Author</h2>
                     <div>{{ owner }}</div>
                     <hr />
-                    <h4>Related Pages</h4>
+                    <h2 class="h-sm">Related Pages</h2>
                     <div>
                         <router-link :to="urlAll">All published {{ plural }}.</router-link>
                     </div>
@@ -25,7 +26,7 @@
                         <router-link :to="publishedByUser"> Published {{ plural }} by {{ owner }}. </router-link>
                     </div>
                 </div>
-                <LoadingSpan v-else message="Loading details" />
+                <LoadingSpan v-else message="Loading item details" />
             </div>
         </div>
     </div>
@@ -40,21 +41,24 @@ export default {
         StatelessTags,
     },
     props: {
-        details: {
+        item: {
             type: Object,
             required: true,
         },
     },
     computed: {
+        gravatarSource() {
+            return `https://secure.gravatar.com/avatar/${this.item.email_hash}?d=identicon`;
+        },
         modelTitle() {
-            const modelClass = this.details ? this.details.model_class : "Item";
+            const modelClass = this.item ? this.item.model_class : "Item";
             if (modelClass == "StoredWorkflow") {
                 return "Workflow";
             }
             return modelClass;
         },
         owner() {
-            return this.details.owner || this.details.username || "Unavailable";
+            return this.item.owner || this.item.username || "Unavailable";
         },
         plural() {
             if (this.modelTitle == "History") {
@@ -66,7 +70,7 @@ export default {
             return this.plural.toLowerCase();
         },
         publishedByUser() {
-            return `/${this.pluralPath}/list_published?f-username=${this.details.username}`;
+            return `/${this.pluralPath}/list_published?f-username=${this.item.username}`;
         },
         urlAll() {
             return `/${this.pluralPath}/list_published`;

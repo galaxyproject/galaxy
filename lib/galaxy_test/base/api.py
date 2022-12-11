@@ -1,6 +1,10 @@
 import os
 from contextlib import contextmanager
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 from urllib.parse import (
     urlencode,
     urljoin,
@@ -38,7 +42,7 @@ def celery_config():
 
 class UsesCeleryTasks:
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config: Dict[str, Any]) -> None:
         config["enable_celery_tasks"] = True
         config["metadata_strategy"] = f'{config.get("metadata_strategy", "directory")}_celery'
         config.update({"celery_conf": {"broker_url": CELERY_BROKER}})
@@ -148,6 +152,9 @@ class UsesApiTestCaseMixin:
     def _get(self, *args, **kwds):
         return self.galaxy_interactor.get(*args, **kwds)
 
+    def _head(self, *args, **kwds):
+        return self.galaxy_interactor.head(*args, **kwds)
+
     def _post(self, *args, **kwds):
         return self.galaxy_interactor.post(*args, **kwds)
 
@@ -198,6 +205,9 @@ class ApiTestInteractor(BaseInteractor):
     # testing.
     def get(self, *args, **kwds):
         return self._get(*args, **kwds)
+
+    def head(self, *args, **kwds):
+        return self._head(*args, **kwds)
 
     def post(self, *args, **kwds):
         return self._post(*args, **kwds)

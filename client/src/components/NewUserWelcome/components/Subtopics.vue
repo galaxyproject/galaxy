@@ -2,7 +2,7 @@
     <div>
         <header class="main-header">
             <h1 class="text-center my-3">{{ title | localize }}</h1>
-            <h4 class="text-center my-3">{{ intro | localize }}</h4>
+            <h2 class="text-center my-3 h-sm">{{ intro | localize }}</h2>
         </header>
         <b-row class="justify-content-md-center mb-3">
             <b-card-group v-for="(subject, idx) in topics" :key="idx">

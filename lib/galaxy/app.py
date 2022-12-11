@@ -232,7 +232,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.name = "galaxy"
         self.is_webapp = False
         # Read config file and check for errors
-        self.config: Any = self._register_singleton(config.Configuration, config.Configuration(**kwargs))
+        self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
         self.config.check()
         self._configure_object_store(fsmon=True)
         self._register_singleton(BaseObjectStore, self.object_store)
@@ -393,13 +393,6 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.security = IdEncodingHelper(id_secret=self.config.id_secret)
         BaseDatabaseIdField.security = self.security
 
-    def _configure_tool_shed_registry(self):
-        # Set up the tool sheds registry
-        if os.path.isfile(self.config.tool_sheds_config_file):
-            self.tool_shed_registry = tool_shed_registry.Registry(self.config.tool_sheds_config_file)
-        else:
-            self.tool_shed_registry = tool_shed_registry.Registry()
-
     def _configure_engines(self, db_url, install_db_url, combined_install_database):
         trace_logger = getattr(self, "trace_logger", None)
         engine = build_engine(
@@ -498,7 +491,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
     def __init__(self, configure_logging=True, use_converters=True, use_display_applications=True, **kwargs):
         super().__init__(**kwargs)
-        self._register_singleton(MinimalManagerApp, self)
+        self._register_singleton(MinimalManagerApp, self)  # type: ignore[type-abstract]
         self.execution_timer_factory = self._register_singleton(
             ExecutionTimerFactory, ExecutionTimerFactory(self.config)
         )
@@ -526,8 +519,8 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         short_term_storage_config = ShortTermStorageConfiguration(**short_term_storage_config_kwds)
         short_term_storage_manager = ShortTermStorageManager(config=short_term_storage_config)
-        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)  # type: ignore[misc]
-        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)  # type: ignore[misc]
+        self._register_singleton(ShortTermStorageAllocator, short_term_storage_manager)  # type: ignore[type-abstract]
+        self._register_singleton(ShortTermStorageMonitor, short_term_storage_manager)  # type: ignore[type-abstract]
 
         # Tag handler
         self.tag_handler = self._register_singleton(GalaxyTagHandler)
@@ -550,7 +543,7 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
             ConfiguredFileSources, ConfiguredFileSources.from_app_config(self.config)
         )
 
-        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[misc]
+        self.vault = self._register_singleton(Vault, VaultFactory.from_app(self))  # type: ignore[type-abstract]
         # Load security policy.
         self.security_agent = self.model.security_agent
         self.host_security_agent = galaxy.model.security.HostAgent(
@@ -574,6 +567,22 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         galaxy.model.set_datatypes_registry(self.datatypes_registry)
         self.configure_sentry_client()
 
+        self._configure_tool_shed_registry()
+        self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
+
+    def _configure_tool_shed_registry(self) -> None:
+        # Set up the tool sheds registry
+        if os.path.isfile(self.config.tool_sheds_config_file):
+            self.tool_shed_registry = tool_shed_registry.Registry(self.config.tool_sheds_config_file)
+        else:
+            self.tool_shed_registry = tool_shed_registry.Registry()
+
+    @property
+    def is_job_handler(self) -> bool:
+        return (
+            self.config.track_jobs_in_database and self.job_config.is_handler
+        ) or not self.config.track_jobs_in_database
+
 
 class UniverseApplication(StructuredApp, GalaxyManagerApplication):
     """Encapsulates the state of a Universe application"""
@@ -595,7 +604,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             ("database connection", self._shutdown_model),
             ("application stack", self._shutdown_application_stack),
         ]
-        self._register_singleton(StructuredApp, self)
+        self._register_singleton(StructuredApp, self)  # type: ignore[type-abstract]
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
@@ -603,9 +612,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # queue_worker *can* be initialized with a queue, but here we don't
         # want to and we'll allow postfork to bind and start it.
         self.queue_worker = self._register_singleton(GalaxyQueueWorker, GalaxyQueueWorker(self))
-
-        self._configure_tool_shed_registry()
-        self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
 
         self.dependency_resolvers_view = self._register_singleton(
             DependencyResolversView, DependencyResolversView(self)
@@ -666,7 +672,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Tours registry
         tour_registry = build_tours_registry(self.config.tour_config_dir)
         self.tour_registry = tour_registry
-        self[ToursRegistry] = tour_registry  # type: ignore[misc]
+        self[ToursRegistry] = tour_registry  # type: ignore[type-abstract]
         # Webhooks registry
         self.webhooks_registry = self._register_singleton(WebhooksRegistry, WebhooksRegistry(self.config.webhooks_dir))
         # Heartbeat for thread profiling
@@ -674,12 +680,11 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.auth_manager = self._register_singleton(auth.AuthManager, auth.AuthManager(self.config))
         # Start the heartbeat process if configured and available
         if self.config.use_heartbeat:
-            if heartbeat.Heartbeat:
-                self.heartbeat = heartbeat.Heartbeat(
-                    self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log
-                )
-                self.heartbeat.daemon = True
-                self.application_stack.register_postfork_function(self.heartbeat.start)
+            self.heartbeat = heartbeat.Heartbeat(
+                self.config, period=self.config.heartbeat_interval, fname=self.config.heartbeat_log
+            )
+            self.heartbeat.daemon = True
+            self.application_stack.register_postfork_function(self.heartbeat.start)
 
         self.authnz_manager = None
         if self.config.enable_oidc:
@@ -769,12 +774,6 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
 
     def _shutdown_application_stack(self):
         self.application_stack.shutdown()
-
-    @property
-    def is_job_handler(self) -> bool:
-        return (
-            self.config.track_jobs_in_database and self.job_config.is_handler
-        ) or not self.config.track_jobs_in_database
 
 
 class StatsdStructuredExecutionTimer(StructuredExecutionTimer):

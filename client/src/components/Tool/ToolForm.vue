@@ -44,18 +44,20 @@
                         itemtype="https://schema.org/CreativeWork"
                         @onChangeVersion="onChangeVersion">
                         <template v-slot:body>
-                            <ToolCardSection title="Tool Parameters">
+                            <div class="mt-2 mb-4">
+                                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                                 <FormDisplay
                                     :id="toolId"
                                     :inputs="formConfig.inputs"
                                     :validation-scroll-to="validationScrollTo"
                                     @onChange="onChange"
                                     @onValidation="onValidation" />
-                            </ToolCardSection>
+                            </div>
 
-                            <ToolCardSection
+                            <div
                                 v-if="emailAllowed(config, user) || remapAllowed || reuseAllowed(user)"
-                                title="Additional Options">
+                                class="mt-2 mb-4">
+                                <Heading h2 separator bold size="sm"> Additional Options </Heading>
                                 <FormElement
                                     v-if="emailAllowed(config, user)"
                                     id="send_email_notification"
@@ -77,7 +79,7 @@
                                     title="Attempt to re-use jobs with identical parameters?"
                                     help="This may skip executing jobs that you have already run."
                                     type="boolean" />
-                            </ToolCardSection>
+                            </div>
                         </template>
                         <template v-slot:header-buttons>
                             <ButtonSpinner
@@ -117,10 +119,10 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolSuccess from "./ToolSuccess";
-import ToolCardSection from "./ToolCardSection";
 import ToolRecommendation from "../ToolRecommendation";
 import UserHistories from "components/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
+import Heading from "components/Common/Heading";
 
 export default {
     components: {
@@ -136,7 +138,7 @@ export default {
         ToolRecommendation,
         UserHistories,
         Webhook,
-        ToolCardSection,
+        Heading,
     },
     props: {
         id: {

@@ -1,13 +1,14 @@
 """
 API operations around galaxy.web.short_term_storage infrastructure.
 """
-from starlette.responses import FileResponse
+from uuid import UUID
 
 from galaxy.web.short_term_storage import (
     ShortTermStorageMonitor,
     ShortTermStorageServeCancelledInformation,
     ShortTermStorageServeCompletedInformation,
 )
+from galaxy.webapps.base.api import GalaxyFileResponse
 from . import (
     depends,
     Router,
@@ -19,14 +20,14 @@ router = Router(tags=["short_term_storage"])
 @router.cbv
 class FastAPIShortTermStorage:
     # typing here is not ideal, mypy is the issue xref https://github.com/python/mypy/issues/5374
-    short_term_storage_monitor: ShortTermStorageMonitor = depends(ShortTermStorageMonitor)  # type: ignore[misc]
+    short_term_storage_monitor: ShortTermStorageMonitor = depends(ShortTermStorageMonitor)  # type: ignore[type-abstract]
 
     @router.get(
         "/api/short_term_storage/{storage_request_id}/ready",
         summary="Determine if specified storage request ID is ready for download.",
         response_description="Boolean indicating if the storage is ready.",
     )
-    def is_ready(self, storage_request_id: str) -> bool:
+    def is_ready(self, storage_request_id: UUID) -> bool:
         storage_target = self.short_term_storage_monitor.recover_target(storage_request_id)
         return self.short_term_storage_monitor.is_ready(storage_target)
 
@@ -34,7 +35,7 @@ class FastAPIShortTermStorage:
         "/api/short_term_storage/{storage_request_id}",
         summary="Serve the staged download specified by request ID.",
         response_description="Raw contents of the file.",
-        response_class=FileResponse,
+        response_class=GalaxyFileResponse,
         responses={
             200: {
                 "description": "The archive file containing the History.",
@@ -44,11 +45,11 @@ class FastAPIShortTermStorage:
             },
         },
     )
-    def serve(self, storage_request_id: str):
+    def serve(self, storage_request_id: UUID):
         storage_target = self.short_term_storage_monitor.recover_target(storage_request_id)
         serve_info = self.short_term_storage_monitor.get_serve_info(storage_target)
         if isinstance(serve_info, ShortTermStorageServeCompletedInformation):
-            return FileResponse(
+            return GalaxyFileResponse(
                 path=serve_info.target.path,
                 media_type=serve_info.mime_type,
                 filename=serve_info.filename,

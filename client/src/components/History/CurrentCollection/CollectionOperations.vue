@@ -7,6 +7,7 @@
                     class="rounded-0 text-decoration-none"
                     size="sm"
                     variant="link"
+                    :href="downloadUrl"
                     @click="onDownload">
                     <Icon class="mr-1" icon="download" />
                     <span>Download</span>

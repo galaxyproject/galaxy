@@ -940,7 +940,6 @@ class MetadataInRangeValidator(InRangeValidator):
                 raise ValueError(f"{self.metadata_name} Metadata missing")
             except ValueError:
                 raise ValueError(f"{self.metadata_name} must be a float or an integer")
-            log.error(f"MetadataInRangeValidato.validate value_to_check {value_to_check}")
             super().validate(value_to_check, trans)
 
 

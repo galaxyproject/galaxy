@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="workflow">
-            <h3 class="mb-4">Workflow Export of `{{ workflow.name }}`</h3>
+            <h1 class="mb-4 h-lg">Workflow Export of `{{ workflow.name }}`</h1>
             <div v-if="workflow.importable && workflow.slug">
                 <a :href="importUrl">{{ importUrl }}</a>
                 <div>

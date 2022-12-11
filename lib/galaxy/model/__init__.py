@@ -97,7 +97,6 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import exists
 from typing_extensions import Protocol
 
@@ -146,7 +145,10 @@ from galaxy.util.form_builder import (
     WorkflowField,
     WorkflowMappingField,
 )
-from galaxy.util.hash_util import new_insecure_hash
+from galaxy.util.hash_util import (
+    md5_hash_str,
+    new_insecure_hash,
+)
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -173,6 +175,12 @@ YIELD_PER_ROWS = 100
 
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
+
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
+
     from galaxy.datatypes.data import Data
     from galaxy.tools import DefaultToolState
     from galaxy.workflow.modules import WorkflowModule
@@ -182,6 +190,8 @@ if TYPE_CHECKING:
         __table__: Table
 
 else:
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
+
     _HasTable = object
 
 
@@ -193,7 +203,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     return UUID(str(uuid))
 
 
-class Base(metaclass=DeclarativeMeta):
+class Base(_HasTable, metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata
@@ -204,7 +214,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class RepresentById(_HasTable):
+class RepresentById:
     id: int
 
     def __repr__(self):
@@ -287,11 +297,11 @@ class SerializeFilesHandler(Protocol):
 class SerializationOptions:
     def __init__(
         self,
-        for_edit,
-        serialize_dataset_objects=None,
+        for_edit: bool,
+        serialize_dataset_objects: Optional[bool] = None,
         serialize_files_handler: Optional[SerializeFilesHandler] = None,
-        strip_metadata_files=None,
-    ):
+        strip_metadata_files: Optional[bool] = None,
+    ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
             serialize_dataset_objects = for_edit
@@ -381,7 +391,7 @@ class UsesCreateAndUpdateTime:
         self.update_time = now()
 
 
-class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
+class WorkerProcess(Base, UsesCreateAndUpdateTime):
     __tablename__ = "worker_process"
     __table_args__ = (UniqueConstraint("server_name", "hostname"),)
 
@@ -857,7 +867,7 @@ class User(Base, Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken(Base, _HasTable):
+class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
@@ -3345,7 +3355,7 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(Base, StorableObject, Serializable, _HasTable):
+class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
 
     id = Column(Integer, primary_key=True)
@@ -3820,6 +3830,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     purged: bool
+    creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"
@@ -7428,7 +7439,11 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship("WorkflowInvocationStep", back_populates="workflow_invocation")
+    steps = relationship(
+        "WorkflowInvocationStep",
+        back_populates="workflow_invocation",
+        order_by=lambda: WorkflowInvocationStep.order_index,
+    )
     workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
@@ -7905,6 +7920,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         ),
         back_populates="workflow_invocation_step",
         viewonly=True,
+    )
+    order_index = column_property(
+        select([WorkflowStep.order_index]).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
 
     subworkflow_invocation_id: column_property
@@ -8800,7 +8818,7 @@ class CustosAuthnzToken(Base, RepresentById):
     user = relationship("User", back_populates="custos_auth")
 
 
-class CloudAuthz(Base, _HasTable):
+class CloudAuthz(Base):
     __tablename__ = "cloudauthz"
 
     id = Column(Integer, primary_key=True)
@@ -8836,7 +8854,7 @@ class CloudAuthz(Base, _HasTable):
         )
 
 
-class Page(Base, Dictifiable, RepresentById):
+class Page(Base, HasTags, Dictifiable, RepresentById):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -8892,6 +8910,7 @@ class Page(Base, Dictifiable, RepresentById):
         "importable",
         "deleted",
         "username",
+        "email_hash",
     ]
 
     def to_dict(self, view="element"):
@@ -8906,6 +8925,11 @@ class Page(Base, Dictifiable, RepresentById):
     @property
     def username(self):
         return self.user.username
+
+    # email needed for hash generation
+    @property
+    def email_hash(self):
+        return md5_hash_str(self.user.email)
 
 
 class PageRevision(Base, Dictifiable, RepresentById):
@@ -8942,7 +8966,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page = relationship("Page", back_populates="users_shared_with")
 
 
-class Visualization(Base, RepresentById):
+class Visualization(Base, HasTags, RepresentById):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),

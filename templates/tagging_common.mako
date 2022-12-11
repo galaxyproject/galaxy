@@ -77,7 +77,7 @@ from markupsafe import escape
 
         item_tag_names = []
         for ta in item_tags:
-            item_tag_names.append(escape(ta.tag.name))
+            item_tag_names.append(escape(f"#{ta.value}" if ta.value else ta.tag.name))
     %>
 
     <div id="tags-${tagged_item_id}"></div>

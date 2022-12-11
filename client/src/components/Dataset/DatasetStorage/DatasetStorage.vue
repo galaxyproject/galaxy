@@ -1,6 +1,6 @@
 <template>
     <div>
-        <h3 v-if="includeTitle">Dataset Storage</h3>
+        <h2 v-if="includeTitle" class="h-md">Dataset Storage</h2>
         <div v-if="errorMessage" class="error">{{ errorMessage }}</div>
         <loading-span v-else-if="storageInfo == null"> </loading-span>
         <div v-else-if="discarded">

@@ -3,6 +3,7 @@ from urllib.parse import urljoin
 from requests import get
 
 from galaxy_test.base.api_util import baseauth_headers
+from galaxy_test.base.decorators import requires_new_user
 from ._framework import ApiTestCase
 
 TEST_USER_EMAIL = "auth_user_test@bx.psu.edu"
@@ -10,6 +11,7 @@ TEST_USER_PASSWORD = "testpassword1"
 
 
 class TestAuthenticateApi(ApiTestCase):
+    @requires_new_user
     def test_auth(self):
         self._setup_user(TEST_USER_EMAIL, TEST_USER_PASSWORD)
         baseauth_url = self._api_url("authenticate/baseauth", use_key=False)

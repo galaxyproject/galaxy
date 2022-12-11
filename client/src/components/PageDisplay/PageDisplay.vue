@@ -1,6 +1,6 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <Published :details="page">
+        <Published :item="page">
             <template v-slot>
                 <div v-if="!loading">
                     <markdown
@@ -57,7 +57,7 @@ export default {
     },
     created() {
         urlData({ url: this.dataUrl }).then((data) => {
-            this.page = { ...data };
+            this.page = data;
         });
     },
     methods: {

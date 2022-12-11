@@ -1,5 +1,6 @@
 import json
 
+import pytest
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -617,6 +618,30 @@ steps:
         self.move_center_of_canvas(xoffset=100, yoffset=100)
         self.workflow_editor_connect("nested_workflow#workflow_output", "metadata_bam#input_bam")
         self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
+
+    @pytest.mark.xfail
+    @selenium_test
+    def test_edit_subworkflow(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  nested_workflow:
+    run:
+        class: GalaxyWorkflow
+        inputs: []
+        steps:
+          - tool_id: create_2
+            label: create_2
+"""
+        )
+        editor = self.components.workflow_editor
+        node = editor.node._(label="nested_workflow")
+        node.wait_for_and_click()
+        editor.edit_subworkflow.wait_for_and_click()
+        node = editor.node._(label="create_2")
+        node.wait_for_and_click()
 
     @selenium_test
     def test_editor_duplicate_node(self):

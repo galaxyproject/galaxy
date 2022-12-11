@@ -288,7 +288,7 @@ def job_config_xml_to_dict(config, root):
 class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
-    These features are configured in the job configuration, by default, ``job_conf.xml``
+    These features are configured in the job configuration, by default, ``job_conf.yml``
     """
 
     runner_plugins: List[dict]
@@ -362,14 +362,24 @@ class JobConfiguration(ConfiguresHandlers):
         try:
             if "job_config" in self.app.config.config_dict:
                 job_config_dict = self.app.config.config_dict["job_config"]
+                log.debug("Read job configuration inline from Galaxy config")
             else:
                 job_config_file = self.app.config.job_config_file
+                if not self.app.config.is_set("job_config_file") and not os.path.exists(job_config_file):
+                    job_config_file = os.path.join(os.path.dirname(self.app.config.config_file), "job_conf.xml")
+                    if os.path.exists(job_config_file):
+                        log.warning(
+                            "Implicit loading of job_conf.xml has been deprecated and will be removed in a future"
+                            f" release of Galaxy. Please convert to YAML at {self.app.config.job_config_file} or"
+                            f" explicitly set `job_config_file` to {job_config_file} to remove this message"
+                        )
                 if ".xml" in job_config_file:
                     tree = load(job_config_file)
                     job_config_dict = self.__parse_job_conf_xml(tree)
                 else:
                     with open(job_config_file) as f:
                         job_config_dict = yaml.safe_load(f)
+                log.debug(f"Read job configuration from file: {job_config_file}")
 
             # Load tasks if configured
             if self.app.config.use_tasked_jobs:
@@ -2005,7 +2015,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     except OSError as e:
                         if e.errno != errno.ENOENT:
                             raise
-                self.external_output_metadata.cleanup_external_metadata(self.sa_session)
             if delete_files:
                 self.object_store.delete(
                     self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
@@ -2141,16 +2150,6 @@ class MinimalJobWrapper(HasResourceParameters):
         if meta:
             return ExpressionContext(meta, job_context)
         return job_context
-
-    def invalidate_external_metadata(self):
-        job = self.get_job()
-        self.external_output_metadata.invalidate_external_metadata(
-            [
-                output_dataset_assoc.dataset
-                for output_dataset_assoc in job.output_datasets + job.output_library_datasets
-            ],
-            self.sa_session,
-        )
 
     def setup_external_metadata(
         self,

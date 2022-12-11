@@ -5,6 +5,10 @@ import tarfile
 from collections import namedtuple
 from io import StringIO
 from time import strftime
+from typing import (
+    Callable,
+    Dict,
+)
 
 from sqlalchemy import (
     and_,
@@ -289,7 +293,7 @@ class RepositoriesController(BaseAPIController):
             return []
         return repository.installable_revisions(self.app)
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {
             "id": trans.security.encode_id,
             "repository_id": trans.security.encode_id,
@@ -374,11 +378,17 @@ class RepositoriesController(BaseAPIController):
                     )
                 ]
                 repository = trans.sa_session.query(self.app.model.Repository).filter(*clause_list).first()
+                if not repository:
+                    log.warning(f"Repository {owner}/{name} does not exist, skipping")
+                    continue
                 for changeset, changehash in repository.installable_revisions(self.app):
                     metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(
                         self.app, repository, changehash
                     )
-                    tools = metadata.metadata["tools"]
+                    tools = metadata.metadata.get("tools")
+                    if not tools:
+                        log.warning(f"Repository {owner}/{name}/{changehash} does not contain valid tools, skipping")
+                        continue
                     for tool in tools:
                         if tool["guid"] in tool_ids:
                             repository_found.append("%d:%s" % (int(changeset), changehash))

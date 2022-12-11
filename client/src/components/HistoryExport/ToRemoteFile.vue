@@ -13,7 +13,7 @@
         </div>
         <div v-else-if="jobComplete">
             <b-alert show variant="success" dismissible @dismissed="reset">
-                <h4>Done!</h4>
+                <h2 class="h-sm">Done!</h2>
                 <p>History successfully exported.</p>
             </b-alert>
         </div>

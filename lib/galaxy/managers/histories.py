@@ -92,7 +92,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def is_owner(
         self,
-        item: model._HasTable,
+        item: model.Base,
         user: Optional[model.User],
         current_history: Optional[model.History] = None,
         **kwargs: Any,
@@ -440,6 +440,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "detailed",
             [
                 "contents_url",
+                "email_hash",
                 "empty",
                 "size",
                 "user_id",

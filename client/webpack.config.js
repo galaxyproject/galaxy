@@ -43,7 +43,7 @@ module.exports = (env = {}, argv = {}) => {
             filename: "[name].bundled.js",
         },
         resolve: {
-            extensions: [".js", ".json", ".vue", ".scss"],
+            extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
@@ -89,6 +89,15 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.vue$/,
                     loader: "vue-loader",
+                },
+                {
+                    test: /\.tsx?$/,
+                    exclude: /node_modules/,
+                    loader: "ts-loader",
+                    options: {
+                        configFile: "tsconfig.webpack.json",
+                        appendTsSuffixTo: [/\.vue$/],
+                    },
                 },
                 {
                     test: /\.mjs$/,

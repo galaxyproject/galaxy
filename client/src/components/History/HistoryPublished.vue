@@ -1,5 +1,5 @@
 <template>
-    <Published :details="history">
+    <Published :item="history">
         <template v-slot>
             <HistoryView :id="id" />
         </template>

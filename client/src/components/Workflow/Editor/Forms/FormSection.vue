@@ -12,7 +12,7 @@
             :value="deleteActionValue"
             title="Output cleanup"
             type="boolean"
-            help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
+            help="Upon completion of this step, delete unchecked outputs from completed workflow steps if they are no longer required as inputs."
             @input="onInput" />
         <FormOutput
             v-for="(output, index) in outputs"

@@ -30,7 +30,7 @@ TestFile = collections.namedtuple("TestFile", "value path")
 TestDef = Tuple[bytes, bytes, Optional[Dict[str, Any]], Optional[Type[AssertionError]]]
 
 
-def test_file_list():
+def _test_file_list():
     files = []
     for b, ext in [(F1, ".txt"), (F2, ".txt"), (F3, ".pdf"), (F4, ".txt"), (MULTILINE_MATCH, ".txt"), (F1, ".txt.gz")]:
         with tempfile.NamedTemporaryFile(mode="wb", suffix=ext, delete=False) as out:
@@ -42,7 +42,7 @@ def test_file_list():
 
 
 def generate_tests(multiline=False):
-    f1, f2, f3, f4, multiline_match, f5 = test_file_list()
+    f1, f2, f3, f4, multiline_match, f5 = _test_file_list()
     tests: List[TestDef]
     if multiline:
         tests = [(multiline_match, f1, {"lines_diff": 0, "sort": True}, None)]
@@ -60,7 +60,7 @@ def generate_tests(multiline=False):
 
 
 def generate_tests_sim_size():
-    f1, f2, f3, f4, multiline_match, f5 = test_file_list()
+    f1, f2, f3, f4, multiline_match, f5 = _test_file_list()
     # tests for equal files
     tests: List[TestDef] = [
         (f1, f1, None, None),  # pass default values

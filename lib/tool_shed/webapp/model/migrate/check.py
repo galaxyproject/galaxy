@@ -27,14 +27,14 @@ migrate_repository = repository.Repository(migrate_repository_directory)
 
 def create_or_verify_database(url, engine_options=None):
     """
-    Check that the database is use-able, possibly creating it if empty (this is
+    Check that the database is useable, possibly creating it if empty (this is
     the only time we automatically create tables, otherwise we force the
     user to do it using the management script so they can create backups).
 
     1) Empty database --> initialize with latest version and return
     2) Database older than migration support --> fail and require manual update
     3) Database at state where migrate support introduced --> add version control information but make no changes (might still require manual update)
-    4) Database versioned but out of date --> fail with informative message, user must run "sh manage_db.sh upgrade"
+    4) Database versioned but out of date --> fail with informative message, user must run "sh manage_toolshed_db.sh upgrade"
 
     """
     engine_options = engine_options or {}
@@ -81,7 +81,7 @@ def create_or_verify_database(url, engine_options=None):
             migrate_repository.versions.latest,
         )
         exception_msg += "Back up your database and then migrate the schema by running the following from your Galaxy installation directory:"
-        exception_msg += "\n\nsh manage_db.sh upgrade tool_shed\n"
+        exception_msg += "\n\nsh manage_toolshed_db.sh upgrade\n"
         raise Exception(exception_msg)
     else:
         log.info("At database version %d" % db_schema.version)

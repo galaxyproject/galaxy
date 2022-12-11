@@ -338,7 +338,7 @@ class JobHandlerQueue(Monitors):
         # Already dispatched and running
         job_wrapper = self.job_wrapper(job)
         # Use the persisted destination as its params may differ from
-        # what's in the job_conf xml
+        # what's in the job config
         job_destination = JobDestination(
             id=job.destination_id, runner=job.job_runner_name, params=job.destination_params
         )
@@ -738,7 +738,7 @@ class JobHandlerQueue(Monitors):
                 # History is job.state_history
                 started = None
                 finished = None
-                for history in sorted(job.state_history, key=lambda h: h.update_time):
+                for history in sorted(job.state_history, key=lambda h: h.create_time):
                     if history.state == "running":
                         started = history.create_time
                     elif history.state == "ok":
