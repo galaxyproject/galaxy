@@ -3,7 +3,7 @@ import MockConfigProvider from "components/providers/MockConfigProvider";
 import MockCurrentUser from "components/providers/MockCurrentUser";
 import MockProvider from "components/providers/MockProvider";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import DiskUsageSummary from "./DiskUsageSummary";
 import { userStore } from "../../../store/userStore/userStore";
 import Vuex from "vuex";

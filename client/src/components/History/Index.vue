@@ -6,6 +6,7 @@
                     v-if="!breadcrumbs.length"
                     :list-offset="listOffset"
                     :history="currentHistory"
+                    :filterable="true"
                     v-on="handlers"
                     @view-collection="onViewCollection">
                     <template v-slot:navigation>

@@ -4320,9 +4320,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     def get_display_applications(self, trans):
         return self.datatype.get_display_applications_by_dataset(self, trans)
 
-    def get_visualizations(self):
-        return self.datatype.get_visualizations(self)
-
     def get_datasources(self, trans):
         """
         Returns datasources for dataset; if datasources are not available

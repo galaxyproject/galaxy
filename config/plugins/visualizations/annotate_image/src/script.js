@@ -437,11 +437,12 @@ window.bundleEntries.load = function (opt) {
         });
     };
 
+    const safe_download_url = `${options.root}${dataset.download_url}`;
     $.ajax({
-        url: dataset.download_url,
+        url: safe_download_url,
         success: function(content) {
             const $chartViewer = $("#" + opt.target);
-            $chartViewer.html("<img id='image-annotate' src='" + dataset.download_url + "' />");
+            $chartViewer.html("<img id='image-annotate' src='" + safe_download_url + "' />");
             $chartViewer.css("overflow", "auto");
             $chartViewer.css("position", "relative");
             const $image = $chartViewer.find("img");
