@@ -220,6 +220,9 @@ class ConditionalDependencies:
     def check_python_ldap(self):
         return "ldap" in self.authenticators or "activedirectory" in self.authenticators
 
+    def check_ldap3(self):
+        return "ldap3" in self.authenticators
+
     def check_python_pam(self):
         return "PAM" in self.authenticators
 

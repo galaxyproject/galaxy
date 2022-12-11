@@ -34,7 +34,7 @@ Currently, we provide two variants of LDAP authenticator namely, `ldap` and `lda
 `ldap` is based on [python-ldap](https://www.python-ldap.org/en/python-ldap-3.4.3/) module which is a wrapper around 
 OpenLDAP's client library `libldap`. As of writing, `python-ldap` does not provide pre-build wheel packages and hence, OpenLDAP client libraries are prerequisites for building `python-ldap`. 
 
-On the otherhand, `ldap3` is pure Python implementation of OpenLDAP client library and has no external dependencies. This package works out-of-the-box and we recommend to use it when OpenLDAP client libraries are available on the host. 
+On the otherhand, `ldap3` is pure Python implementation of OpenLDAP client library and has no external dependencies. This package works out-of-the-box and we recommend to use it when OpenLDAP client libraries are not available on the host. 
 
 These same mechanisms can also be configured by proxies serving Galaxy (e.g. nginx or Apache), but configuring them
 within Galaxy allows users to use the Galaxy UI for logging in instead of relying on a proxy.

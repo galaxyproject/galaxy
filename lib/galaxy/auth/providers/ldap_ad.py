@@ -314,7 +314,7 @@ class LDAP3(LDAP):
         # Check if server URL has scheme
         # If no scheme is provided, assume it to be ldap
         if "ldap" not in server_url:
-            server_url = "ldap://{server_url}".format(server_url=server_url)
+            server_url = "ldaps://{server_url}".format(server_url=server_url)
         # Check if TLS is available
         if server_url.startswith("ldaps://"):
             self.ldap_tls = True
@@ -430,7 +430,7 @@ class LDAP3(LDAP):
                 whoami = conn.extend.standard.who_am_i()
                 # Unbind connection
                 conn.unbind()
-            except Exception:
+            except ldap3.LDAPExtensionError:
                 # The "Who am I?" extended operation is not supported by this LDAP server
                 pass
             else:
