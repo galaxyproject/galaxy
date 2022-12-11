@@ -131,16 +131,18 @@ class UploadController(BaseUIController):
                         undesirable_dirs_removed,
                         undesirable_files_removed,
                     ) = repository_content_util.upload_tar(
-                        trans,
-                        rdah,
-                        tdah,
+                        trans.app,
+                        trans.request.host,
+                        trans.user.username,
                         repository,
-                        tar,
                         uploaded_file,
                         upload_point,
-                        remove_repo_files_not_in_tar,
                         commit_message,
-                        new_repo_alert,
+                        remove_repo_files_not_in_tar=remove_repo_files_not_in_tar,
+                        new_repo_alert=new_repo_alert,
+                        rdah=rdah,
+                        tdah=tdah,
+                        tar=tar,
                     )
                 elif uploaded_directory:
                     (

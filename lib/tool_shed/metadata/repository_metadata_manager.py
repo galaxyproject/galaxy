@@ -1042,7 +1042,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # repository_metadata table record is not needed.
         return False
 
-    def reset_all_metadata_on_repository_in_tool_shed(self):
+    def reset_all_metadata_on_repository_in_tool_shed(self, repository_clone_url=None):
         """Reset all metadata on a single repository in a tool shed."""
         assert self.repository
         log.debug(f"Resetting all metadata on repository: {self.repository.name}")
@@ -1062,7 +1062,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             ctx = repo[changeset]
             log.debug("Cloning repository changeset revision: %s", str(ctx.rev()))
             assert self.repository_clone_url
-            cloned_ok, error_message = hg_util.clone_repository(self.repository_clone_url, work_dir, str(ctx.rev()))
+            repository_clone_url = repository_clone_url or self.repository_clone_url
+            cloned_ok, error_message = hg_util.clone_repository(repository_clone_url, work_dir, str(ctx.rev()))
             if cloned_ok:
                 log.debug("Generating metadata for changeset revision: %s", str(ctx.rev()))
                 self.set_changeset_revision(str(ctx))
@@ -1080,9 +1081,11 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         # self.SUBSET - ancestor metadata is a subset of current metadata, so continue from current
                         # self.NOT_EQUAL_AND_NOT_SUBSET - ancestor metadata is neither equal to nor a subset of current
                         # metadata, so persist ancestor metadata.
+                        log.info(f"amd {ancestor_metadata_dict}")
                         comparison = self.compare_changeset_revisions(
                             ancestor_changeset_revision, ancestor_metadata_dict
                         )
+                        log.info(f"comparison {comparison}")
                         if comparison in [self.NO_METADATA, self.EQUAL, self.SUBSET]:
                             ancestor_changeset_revision = self.changeset_revision
                             ancestor_metadata_dict = self.metadata_dict
@@ -1131,6 +1134,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
                 self.app, encoded_repository_id, changeset_revision
             )
+            log.info(f"changeset_is {changeset_revision} with rm {repository_metadata}")
             if repository_metadata:
                 metadata = repository_metadata.metadata
                 if metadata:
@@ -1153,7 +1157,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 # first changeset_revision will be the "old_id" in the tool config.
                 for tool_dict in tool_dicts:
                     tool_versions_dict[tool_dict["guid"]] = tool_dict["id"]
+                log.info(f"reset_all... tool_dicts is {tool_dicts}")
             else:
+                log.info(f"reset_all... tool_dicts is {tool_dicts}")
                 for tool_dict in tool_dicts:
                     parent_id = self.get_parent_id(
                         encoded_repository_id,
@@ -1164,6 +1170,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                     )
                     tool_versions_dict[tool_dict["guid"]] = parent_id
             if tool_versions_dict:
+                print(
+                    f"\n reset_all_tool_versions:: id: {encoded_repository_id} rmi: {repository_metadata.id} d: {tool_versions_dict}\n"
+                )
                 repository_metadata.tool_versions = tool_versions_dict
                 self.sa_session.add(repository_metadata)
                 session = self.sa_session()
@@ -1217,9 +1226,11 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             status = "error"
         return message, status
 
-    def set_repository(self, repository):
+    def set_repository(self, repository, repository_clone_url=None):
         super().set_repository(repository)
-        self.repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(self.user, repository)
+        self.repository_clone_url = repository_clone_url or common_util.generate_clone_url_for_repository_in_tool_shed(
+            self.user, repository
+        )
 
     def set_repository_metadata(self, host, content_alert_str="", **kwd):
         """

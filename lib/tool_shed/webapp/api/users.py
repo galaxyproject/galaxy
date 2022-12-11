@@ -13,6 +13,7 @@ from galaxy.security.validate_user_input import (
     validate_publicname,
 )
 from galaxy.webapps.base.controller import BaseAPIController
+from tool_shed.managers.users import create_user
 
 log = logging.getLogger(__name__)
 
@@ -50,18 +51,7 @@ class UsersController(BaseAPIController):
         return user_dict
 
     def __create_user(self, trans, email, username, password):
-        user = trans.app.model.User(email=email)
-        user.set_password_cleartext(password)
-        user.username = username
-        if trans.app.config.user_activation_on:
-            user.active = False
-        else:
-            user.active = True  # Activation is off, every new user is active by default.
-        trans.sa_session.add(user)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        trans.app.security_agent.create_private_user_role(user)
-        return user
+        return create_user(trans.app, email, username, password)
 
     def __get_value_mapper(self, trans):
         value_mapper = {"id": trans.security.encode_id}

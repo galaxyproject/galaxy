@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import tarfile
 from collections import namedtuple
 from io import StringIO
 from time import strftime
@@ -24,11 +23,11 @@ from galaxy.exceptions import (
     ActionInputError,
     ConfigDoesNotAllowException,
     InsufficientPermissionsException,
+    MessageException,
     ObjectNotFound,
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
-from galaxy.util import checkers
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
@@ -38,15 +37,13 @@ from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
 )
-from tool_shed.dependencies import attribute_handlers
+from tool_shed.managers.repositories import upload_tar_and_set_metadata
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.util import (
     commit_util,
     encoding_util,
-    hg_util,
     metadata_util,
-    repository_content_util,
     repository_util,
     tool_util,
 )
@@ -1013,9 +1010,6 @@ class RepositoriesController(BaseAPIController):
         """
 
         # Example URL: http://localhost:9009/api/repositories/f9cad7b01a472135
-        rdah = attribute_handlers.RepositoryDependencyAttributeHandler(self.app, unpopulate=False)
-        tdah = attribute_handlers.ToolDependencyAttributeHandler(self.app, unpopulate=False)
-
         repository = repository_util.get_repository_in_tool_shed(self.app, id)
 
         if not (
@@ -1028,10 +1022,7 @@ class RepositoriesController(BaseAPIController):
                 "err_msg": "You do not have permission to update this repository.",
             }
 
-        repo_dir = repository.repo_path(self.app)
-
         upload_point = commit_util.get_upload_point(repository, **kwd)
-        tip = repository.tip()
 
         file_data = payload.get("file")
         # Code stolen from gx's upload_common.py
@@ -1046,73 +1037,21 @@ class RepositoriesController(BaseAPIController):
 
         commit_message = kwd.get("commit_message", "Uploaded")
 
-        uploaded_file = open(file_data["local_filename"], "rb")
         uploaded_file_name = file_data["local_filename"]
-
-        isgzip = False
-        isbz2 = False
-        isgzip = checkers.is_gzip(uploaded_file_name)
-        if not isgzip:
-            isbz2 = checkers.is_bz2(uploaded_file_name)
-        if isgzip or isbz2:
-            # Open for reading with transparent compression.
-            tar = tarfile.open(uploaded_file_name, "r:*")
-        else:
-            tar = tarfile.open(uploaded_file_name)
-
-        new_repo_alert = False
-        remove_repo_files_not_in_tar = True
-
-        (
-            ok,
-            message,
-            files_to_remove,
-            content_alert_str,
-            undesirable_dirs_removed,
-            undesirable_files_removed,
-        ) = repository_content_util.upload_tar(
-            trans,
-            rdah,
-            tdah,
-            repository,
-            tar,
-            uploaded_file,
-            upload_point,
-            remove_repo_files_not_in_tar,
-            commit_message,
-            new_repo_alert,
-        )
-        upload_message = message
-        files_removed = util.listify(undesirable_dirs_removed) + util.listify(undesirable_files_removed)
-        if ok:
-            # Update the repository files for browsing.
-            hg_util.update_repository(repo_dir)
-            # Get the new repository tip.
-            if tip == repository.tip():
-                trans.response.status = 400
-                message = "No changes to repository."
-                ok = False
-            else:
-                rmm = repository_metadata_manager.RepositoryMetadataManager(
-                    app=self.app, user=trans.user, repository=repository
-                )
-                status, error_message = rmm.set_repository_metadata_due_to_new_tip(
-                    trans.request.host, content_alert_str=content_alert_str, **kwd
-                )
-                if error_message:
-                    ok = False
-                    trans.response.status = 500
-                    message = error_message
-        else:
-            trans.response.status = 500
+        try:
+            message = upload_tar_and_set_metadata(
+                self.app,
+                trans.request.host,
+                trans.user,
+                repository,
+                uploaded_file_name,
+                upload_point,
+                commit_message,
+            )
+            rval = {"message": message}
+        except MessageException as e:
+            trans.response.status = e.status_code
+            rval = {"err_msg": str(e)}
         if os.path.exists(uploaded_file_name):
             os.remove(uploaded_file_name)
-        if not ok:
-            return {
-                "err_msg": message,
-                "content_alert": content_alert_str,
-                "files_removed": files_removed,
-                "upload_message": upload_message,
-            }
-        else:
-            return {"message": message}
+        return rval
