@@ -138,7 +138,6 @@ export default {
             if (pjas[this.emailPayloadKey]) {
                 pjas[this.emailActionKey] = true;
             }
-            console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
             this.formData = pjas;
         },
         setEmailAction(pjas) {

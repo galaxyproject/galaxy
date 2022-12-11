@@ -80,8 +80,6 @@ export default {
             const element = document.getElementById("galaxy_main");
             if (element) {
                 element.style["pointer-events"] = disableEvents ? "none" : "auto";
-            } else {
-                console.warn("UploadModal::setIframeEvents - `galaxy_main` not found.");
             }
         },
     },
