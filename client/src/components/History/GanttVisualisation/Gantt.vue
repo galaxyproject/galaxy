@@ -5,15 +5,18 @@
                 <b-alert v-if="historiesLoading || isLoading" class="m-2" variant="info" show>
                     <LoadingSpan message="Loading Gantt Visualization" />
                 </b-alert>
+                <b-alert v-if="emptyHistory" class="m-2" variant="info" show>
+                    <EmptyHistory />
+                </b-alert>
                 <div class="sticky">
                     <div class="timeButtonsDiv">
-                        <button id="QDayView" @click="changeQDayView">Quarter Day View</button>
-                        <button id="HDayView" @click="changeHDayView">Half Day View</button>
-                        <button id="dayView" @click="changeDayView">Day View</button>
-                        <button id="weekView" @click="changeWeekView">Week View</button>
-                        <button id="monthView" @click="changeMonthView">Month View</button>
-                        <button id="hourView" @click="changeHourView">Hour View</button>
-                        <button id="minuteView" @click="changeMinuteView">Minute View</button>
+                        <button id="QDayView" :disabled="emptyHistory" @click="changeQDayView">Quarter Day View</button>
+                        <button id="HDayView" :disabled="emptyHistory" @click="changeHDayView">Half Day View</button>
+                        <button id="dayView" :disabled="emptyHistory" @click="changeDayView">Day View</button>
+                        <button id="weekView" :disabled="emptyHistory" @click="changeWeekView">Week View</button>
+                        <button id="monthView" :disabled="emptyHistory" @click="changeMonthView">Month View</button>
+                        <button id="hourView" :disabled="emptyHistory" @click="changeHourView">Hour View</button>
+                        <button id="minuteView" :disabled="emptyHistory" @click="changeMinuteView">Minute View</button>
                     </div>
                 </div>
                 <div>
@@ -40,12 +43,14 @@ import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import LoadingSpan from "components/LoadingSpan";
 import DateTimeModal from "./DateTimeModal.vue";
+import EmptyHistory from "./EmptyHistory.vue";
 import moment from "moment";
 
 export default {
     name: "Gantt",
     components: {
         LoadingSpan,
+        EmptyHistory,
         CurrentUser,
         UserHistories,
         DateTimeModal,
@@ -61,6 +66,7 @@ export default {
             currentlyProcessing: false,
             isLoading: true,
             openModal: false,
+            emptyHistory: false,
             dateTimeVal: new Date().toLocaleString("en-GB"),
             start_time: null,
             end_time: null,
@@ -81,7 +87,6 @@ export default {
                 // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
                 this.currentlyProcessing = false;
                 this.historyId = newHistoryId;
-                // this.accountingArray = [];
                 if (this.historyId !== undefined) {
                     this.getHistoryItems();
                 }
@@ -89,11 +94,25 @@ export default {
             }
         },
         historyContent(newContent, oldContent) {
-            if (newContent && !this.currentlyProcessing) {
+            if (newContent && newContent.length > 0 && !this.currentlyProcessing) {
+                this.emptyHistory = false;
                 this.historyItems = newContent;
                 this.getData();
+            } else if (newContent && newContent.length == 0) {
+                this.emptyHistory = true;
             }
             this.createKeyedColorForButtons();
+        },
+        emptyHistory(newEmpty, oldEmpty) {
+            if (newEmpty === true) {
+                var container = document.getElementsByClassName("gantt");
+                if (container) {
+                    // We will make .gantt empty so that old data from the visualization is removed
+                    this.accountingArray = [];
+                    this.accountingArrayMinutes = [];
+                    container[0].innerHTML = "";
+                }
+            }
         },
         ganttView(newval, oldval) {
             if (oldval == "Minute") {
