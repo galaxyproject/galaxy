@@ -15,7 +15,7 @@
             :help="item.help"
             :local="item.target === 'galaxy_main'"
             :link="item.link"
-            :workflowCompatible="item.is_workflow_compatible"
+            :workflow-compatible="item.is_workflow_compatible"
             :version="item.version"
             @open="() => onOpen(item)" />
         <div>
