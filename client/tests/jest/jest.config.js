@@ -19,7 +19,6 @@ module.exports = {
     clearMocks: true,
     coverageDirectory: "coverage",
     globals: { __webpack_public_path__: "" },
-    moduleDirectories: ["<rootDir>/src", "<rootDir>/node_modules"],
     moduleFileExtensions: ["js", "ts", "json", "vue", "yml", "txt"],
     modulePaths: ["<rootDir>/src/", "<rootDir>/tests/", "<rootDir>/node_modules/", "./"],
     moduleNameMapper: {
