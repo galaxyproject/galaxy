@@ -1,7 +1,6 @@
 import json
 import os
 
-from galaxy_test.base.populators import uses_test_history
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_PARAMETER_INPUT_INTEGER_DEFAULT,
     WORKFLOW_RUNTIME_PARAMETER_SIMPLE,
@@ -262,7 +261,6 @@ steps:
         )
         self.workflow_populator.dump_workflow(workflow_id)
 
-    @uses_test_history()
     def test_conditional_ints(self, history_id):
         self._run_jobs(
             """

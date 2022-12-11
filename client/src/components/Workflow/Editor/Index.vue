@@ -229,6 +229,7 @@ import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import Vue from "vue";
+import { ConfirmDialog } from "composables/confirmDialog";
 
 export default {
     components: {
@@ -362,6 +363,11 @@ export default {
         },
     },
     watch: {
+        id(newId, oldId) {
+            if (oldId) {
+                this._loadCurrent(newId);
+            }
+        },
         annotation(newAnnotation, oldAnnotation) {
             if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
@@ -490,7 +496,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `/workflows/edit?id=${contentId}`;
+            const editUrl = `/workflows/edit?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {
@@ -536,7 +542,7 @@ export default {
             if (stepCount < 10) {
                 this.copyIntoWorkflow(workflowId);
             } else {
-                const confirmed = await this.$bvModal.msgBoxConfirm(
+                const confirmed = await ConfirmDialog.confirm(
                     `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
                 );
                 if (confirmed) {
@@ -563,7 +569,7 @@ export default {
                 .then((response) => {
                     this.onWorkflowMessage("Workflow saved as", "success");
                     this.hideModal();
-                    this.onNavigate(`${getAppRoot()}workflow/editor?id=${response.data}`, true);
+                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`, true);
                 })
                 .catch((response) => {
                     this.onWorkflowError("Saving workflow failed, please contact an administrator.");

@@ -1,3 +1,4 @@
+import abc
 import errno
 import logging
 import os
@@ -1347,6 +1348,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         filters = self._filter_factory.build_filters(trans)
         return lambda element, item_type: _filter_for_panel(element, item_type, filters, context)
 
+    @abc.abstractmethod
     def _looks_like_a_tool(self, path: str) -> bool:
         ...
 

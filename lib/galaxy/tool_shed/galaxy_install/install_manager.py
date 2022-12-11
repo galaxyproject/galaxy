@@ -126,7 +126,7 @@ class InstallRepositoryManager:
         shed_tool_conf=None,
         reinstalling=False,
         tool_panel_section_mapping=None,
-    ):
+    ) -> None:
         """
         Generate the metadata for the installed tool shed repository, among other things.
         This method is called when an administrator is installing a new repository or
@@ -206,6 +206,7 @@ class InstallRepositoryManager:
                 )
         if "data_manager" in irmm_metadata_dict:
             dmh = data_manager.DataManagerHandler(self.app)
+            assert shed_config_dict
             dmh.install_data_managers(
                 self.app.config.shed_data_manager_config_file,
                 irmm_metadata_dict,

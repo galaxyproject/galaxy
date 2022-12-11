@@ -7,7 +7,7 @@
         <template v-slot:footer>
             <div v-if="!loading">
                 <b-alert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
-                    <h4 class="alert-heading">Failed to retrieve details.</h4>
+                    <h2 class="alert-heading h-sm">Failed to retrieve details.</h2>
                     {{ errorMessage }}
                 </b-alert>
                 <b-link

@@ -2,9 +2,19 @@
 
 This datatype was created for use with the iSEE interactive tool.
 """
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
-from galaxy.datatypes.data import Data
+from galaxy.datatypes.data import (
+    Data,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.metadata import MetadataElement
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 class HDF5SummarizedExperiment(Data):
@@ -46,11 +56,11 @@ class HDF5SummarizedExperiment(Data):
             description="Summarized experiment data array",
         )
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
         """Override parent init metadata."""
         Data.init_meta(self, dataset, copy_from=copy_from)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """Generate primary file to represent dataset."""
         return f"""
               <html>
@@ -67,9 +77,12 @@ class HDF5SummarizedExperiment(Data):
               </html>
               """
 
-    def sniff(self, filename):
-        """Not sure whether this is necessary (or possible) with binaries."""
+    def sniff(self, filename: str) -> bool:
+        """
+        Returns false and the user must manually set.
+        """
+        return False
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Return the mime type of the datatype."""
         return "text/html"

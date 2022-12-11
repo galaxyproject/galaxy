@@ -167,7 +167,7 @@ class LintContext:
         return len(self.warn_messages) > 0
 
     def lint(self, name: str, lint_func: Callable[[LintTargetType, "LintContext"], None], lint_target: LintTargetType):
-        name = name.replace("tsts", "tests")[len("lint_") :]
+        name = name[len("lint_") :]
         if name in self.skip_types:
             return
 

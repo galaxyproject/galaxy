@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 class TestWorkflowEditorToolUpgradeWithToolShedTool(SeleniumIntegrationTestCase, UsesShed):
     dataset_populator: "SeleniumSessionDatasetPopulator"
-    requires_admin = True
+    run_as_admin = True
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):

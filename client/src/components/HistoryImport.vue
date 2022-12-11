@@ -1,5 +1,7 @@
 <template>
-    <b-card body-class="history-import-component" title="Import a history from an archive">
+    <div class="history-import-component" aria-labelledby="history-import-heading">
+        <h1 id="history-import-heading" class="h-lg">Import a history from an archive</h1>
+
         <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
@@ -8,6 +10,7 @@
                 header="History import job ended in error"
                 :job="jobError" />
         </b-alert>
+
         <div v-if="initializing">
             <loading-span message="Loading server configuration." />
         </div>
@@ -16,7 +19,7 @@
         </div>
         <div v-else-if="complete">
             <b-alert :show="complete" variant="success" dismissible @dismissed="complete = false">
-                <h4>Done!</h4>
+                <span class="mb-1 h-sm">Done!</span>
                 <p>History imported, check out <a :href="historyLink">your histories</a>.</p>
             </b-alert>
         </div>
@@ -42,23 +45,35 @@
                         </b-form-radio>
                     </b-form-radio-group>
                 </b-form-group>
-                <b-form-group v-if="importType == 'externalUrl'" label="Archived History URL">
+
+                <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
+                    <b-alert v-if="showImportUrlWarning" variant="warning" show>
+                        It looks like you are trying to import a published history from another galaxy instance. You can
+                        only import histories via an archive URL.
+                        <ExternalLink
+                            href="https://training.galaxyproject.org/training-material/faqs/galaxy/histories_transfer_entire_histories_from_one_galaxy_server_to_another.html">
+                            Read more on the GTN
+                        </ExternalLink>
+                    </b-alert>
+
                     <b-form-input v-model="sourceURL" type="url" />
                 </b-form-group>
-                <b-form-group v-if="importType == 'upload'" label="Archived History File">
+                <b-form-group v-else-if="importType === 'upload'" label="Archived History File">
                     <b-form-file v-model="sourceFile" />
                 </b-form-group>
-                <b-form-group v-show="importType == 'remoteFilesUri'" label="Remote File">
+                <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
                     <files-input ref="filesInput" v-model="sourceRemoteFilesUri" />
                 </b-form-group>
-                <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady"
-                    >Import history</b-button
-                >
+
+                <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady">
+                    Import history
+                </b-button>
             </b-form>
         </div>
-    </b-card>
+    </div>
 </template>
+
 <script>
 import { getAppRoot } from "onload/loadConfig";
 import axios from "axios";
@@ -73,6 +88,9 @@ import { errorMessageAsString } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";
 import JobError from "components/JobInformation/JobError";
 import { Services } from "components/FilesDialog/services";
+import { ref, watch } from "vue";
+import { refDebounced } from "@vueuse/core";
+import ExternalLink from "./ExternalLink";
 
 library.add(faFolderOpen);
 library.add(faUpload);
@@ -80,13 +98,32 @@ library.add(faExternalLinkAlt);
 Vue.use(BootstrapVue);
 
 export default {
-    components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan },
+    components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan, ExternalLink },
+    setup() {
+        const sourceURL = ref("");
+        const debouncedURL = refDebounced(sourceURL, 200);
+        const mayBeHistoryUrlRegEx = /\/u(ser)?\/.+\/h(istory)?\/.+/;
+
+        const showImportUrlWarning = ref(false);
+
+        watch(
+            () => debouncedURL.value,
+            (val) => {
+                const url = val ?? "";
+                showImportUrlWarning.value = Boolean(url.match(mayBeHistoryUrlRegEx));
+            }
+        );
+
+        return {
+            sourceURL,
+            showImportUrlWarning,
+        };
+    },
     data() {
         return {
             initializing: true,
             importType: "externalUrl",
             sourceFile: null,
-            sourceURL: null,
             sourceRemoteFilesUri: null,
             errorMessage: null,
             waitingOnJob: false,

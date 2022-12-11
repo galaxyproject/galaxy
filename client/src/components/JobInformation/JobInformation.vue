@@ -1,7 +1,7 @@
 <template>
     <div>
         <job-details-provider auto-refresh :job-id="job_id" @update:result="updateJob" />
-        <h3>Job Information</h3>
+        <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
@@ -46,7 +46,7 @@
                     :code-item="job.traceback" />
                 <tr v-if="job">
                     <td>Tool Exit Code:</td>
-                    <td id="exist-code">{{ job.exit_code }}</td>
+                    <td id="exit-code">{{ job.exit_code }}</td>
                 </tr>
                 <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
                     <td>Job Messages</td>

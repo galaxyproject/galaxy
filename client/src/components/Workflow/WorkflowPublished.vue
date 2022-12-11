@@ -1,5 +1,5 @@
 <template>
-    <Published :details="workflow">
+    <Published :item="workflow">
         <template v-slot>
             <WorkflowDisplay :args="{ workflow_id: id }" :workflow="workflow" :expanded="true" />
         </template>

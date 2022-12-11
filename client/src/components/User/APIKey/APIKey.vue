@@ -32,7 +32,7 @@ getAPIKey();
 
 <template>
     <section class="api-key d-flex flex-column">
-        <h2 v-localize>Manage API Key</h2>
+        <h1 v-localize class="h-lg">Manage API Key</h1>
 
         <span v-localize class="mb-2">
             An API key will allow you to access via web API. Please note that this key acts as an alternate means to

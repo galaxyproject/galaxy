@@ -7,7 +7,7 @@ from .framework import (
 
 
 class TestAdminDependencyContainers(SeleniumIntegrationTestCase):
-    requires_admin = True
+    run_as_admin = True
 
     @selenium_test
     def test_admin_containers_display(self):

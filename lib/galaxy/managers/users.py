@@ -4,6 +4,7 @@ Manager and Serializer for Users.
 import hashlib
 import logging
 import random
+import re
 import socket
 import time
 from datetime import datetime
@@ -24,6 +25,7 @@ from galaxy import (
     schema,
     util,
 )
+from galaxy.config import templates
 from galaxy.managers import (
     base,
     deletable,
@@ -55,6 +57,8 @@ you may want to notify an administrator.
 If you're having trouble using the link when clicking it from email client, you
 can also copy and paste it into your browser.
 """
+TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.txt"
+HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH = "mail/activation-email.html"
 
 
 class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
@@ -411,7 +415,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
         tags = [(f"{name}:{val}" if val else name) for name, val in tags]
-        return sorted(tags)
+        # consider named tags while sorting
+        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """
@@ -480,42 +485,25 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             controller="user", action="activate", activation_token=activation_token, email=escape(email), qualified=True
         )
         host = self.__get_host(trans)
-        custom_message = ""
-        if self.app.config.custom_activation_email_message:
-            custom_message = f"{self.app.config.custom_activation_email_message}\n\n"
-        body = (
-            "Hello %s,\n\n"
-            "In order to complete the activation process for %s begun on %s at %s, please click "
-            "on the following link to verify your account:\n\n"
-            "%s \n\n"
-            "By clicking on the above link and opening a Galaxy account you are also confirming "
-            "that you have read and agreed to Galaxy's Terms and Conditions for use of this "
-            "service (%s). This includes a quota limit of one account per user. Attempts to "
-            "subvert this limit by creating multiple accounts or through any other method may "
-            "result in termination of all associated accounts and data.\n\n"
-            "Please contact us if you need help with your account at: %s. You can also browse "
-            "resources available"
-            " at: %s. \n\n"
-            "More about the Galaxy Project can be found at galaxyproject.org\n\n"
-            "%s"
-            "Your Galaxy Team"
-            % (
-                escape(username),
-                escape(email),
-                datetime.utcnow().strftime("%D"),
-                trans.request.host,
-                activation_link,
-                self.app.config.terms_url,
-                self.app.config.error_email_to,
-                self.app.config.instance_resource_url,
-                custom_message,
-            )
-        )
+        template_context = {
+            "name": escape(username),
+            "user_email": escape(email),
+            "date": datetime.utcnow().strftime("%D"),
+            "hostname": trans.request.host,
+            "activation_url": activation_link,
+            "terms_url": self.app.config.terms_url,
+            "contact_email": self.app.config.error_email_to,
+            "instance_resource_url": self.app.config.instance_resource_url,
+            "custom_message": self.app.config.custom_activation_email_message,
+            "expiry_days": self.app.config.activation_grace_period,
+        }
+        body = templates.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        html = templates.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
         to = email
         frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = "Galaxy Account Activation"
         try:
-            util.send_mail(frm, to, subject, body, self.app.config)
+            util.send_mail(frm, to, subject, body, self.app.config, html=html)
             return True
         except Exception:
             log.debug(body)

@@ -51,6 +51,14 @@ mapping:
           file_path, etc.). Defaults to `database/` if running Galaxy from source or
           `<config_dir>/data` otherwise.
 
+      templates_dir:
+        type: str
+        path_resolves_to: config_dir
+        required: false
+        default: templates
+        desc: |
+          The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.
+
       cache_dir:
         type: str
         default: cache
@@ -305,6 +313,7 @@ mapping:
       tool_dependency_dir:
         type: str
         default: dependencies
+        path_resolves_to: data_dir
         required: false
         desc: |
           Various dependency resolver configuration parameters will have defaults set relative
@@ -314,8 +323,6 @@ mapping:
           Set the string to null to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
-
-          The value of this option will be resolved with respect to <data_dir>.
 
       dependency_resolvers_config_file:
         type: str
@@ -578,6 +585,7 @@ mapping:
       involucro_path:
         type: str
         default: involucro
+        path_resolves_to: tool_dependency_dir
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -585,8 +593,6 @@ mapping:
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
-
-          The value of this option will be resolved with respect to <tool_dependency_dir>.
 
       involucro_auto_init:
         type: bool
@@ -1360,7 +1366,8 @@ mapping:
         required: false
         per_host: true
         desc: |
-          Display the "Galaxy" text in the masthead.
+          This option has been deprecated, use the `logo_src` instead to change the
+          default logo including the galaxy brand title.
 
       pretty_datetime_format:
         type: str
@@ -1437,7 +1444,7 @@ mapping:
           Galaxy via the API.
 
           If you plan to run Interactive Tools make sure the docker container
-          can reach this URL. For more details see `job_conf.xml.interactivetools`.
+          can reach this URL.
 
       galaxy_infrastructure_web_port:
         type: int
@@ -2974,7 +2981,7 @@ mapping:
 
       job_config_file:
         type: str
-        default: job_conf.xml
+        default: job_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
@@ -2987,7 +2994,7 @@ mapping:
           By default, Galaxy manages and executes jobs from within a single process and
           notifies itself of new jobs via in-memory queues.  Jobs are run locally on
           the system on which Galaxy is started.  Advanced job running capabilities can
-          be configured through the job configuration file.
+          be configured through the job configuration file or the <job_config> option.
 
       job_config:
         !include job_config_schema.yml
@@ -3039,10 +3046,10 @@ mapping:
         desc: |
           When jobs fail due to job runner problems, Galaxy can be configured to retry
           these or reroute the jobs to new destinations. Very fine control of this is
-          available with resubmit declarations in job_conf.xml. For simple deployments
+          available with resubmit declarations in the job config. For simple deployments
           of Galaxy though, the following attribute can define resubmission conditions
           for all job destinations. If any job destination defines even one
-          resubmission condition explicitly in job_conf.xml - the condition described
+          resubmission condition explicitly in the job config - the condition described
           by this option will not apply to that destination. For instance, the condition:
           'attempt < 3 and unknown_error and (time_running < 300 or time_since_queued < 300)'
           would retry up to two times jobs that didn't fail due to detected memory or

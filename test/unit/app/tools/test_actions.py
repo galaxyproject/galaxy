@@ -1,5 +1,8 @@
 import string
-from typing import cast
+from typing import (
+    cast,
+    Optional,
+)
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
@@ -228,14 +231,16 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
 
 
-def quick_output(format, format_source=None, change_format_xml=None):
+def quick_output(
+    format: str, format_source: Optional[str] = None, change_format_xml: Optional[str] = None
+) -> ToolOutput:
     test_output = ToolOutput("test_output")
     test_output.format = format
     test_output.format_source = format_source
     if change_format_xml:
-        test_output.change_format = XML(change_format_xml)
+        test_output.change_format = XML(change_format_xml).findall("change_format")
     else:
-        test_output.change_format = None
+        test_output.change_format = []
     return test_output
 
 

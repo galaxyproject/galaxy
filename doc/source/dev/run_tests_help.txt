@@ -19,7 +19,7 @@
 'run_tests.sh -selenium (test_selector)' for running specified selenium web tests (using pytest selector syntax)
 
 This wrapper script largely serves as a point documentation and convenience for
-running Galaxy's Python tests. Most Python tests shipped with Galaxy can be run with
+running Galaxy's Python tests. All Python tests shipped with Galaxy can be run with
 pytest directly. Galaxy's client unit tests can be run with make client-test
 or yarn directly as documented in detail in client/README.md.
 
@@ -44,7 +44,7 @@ The main test types are as follows:
    framework twill to test ToolShed related functionality. These are
    located in lib/tool_shed/test.
 
-Python testing is mostly done via pytest. Specific tests can be selected
+Python testing is done via pytest. Specific tests can be selected
 using the syntax described at https://docs.pytest.org/en/latest/how-to/usage.html .
 A few examples are shown below.
 
@@ -142,8 +142,8 @@ Extra options:
  --no_cleanup          Do not delete temp files for Python functional tests
                        (-toolshed, -framework, etc...)
  --coverage            Generate a test coverage report. This option currently
-                       should work with every test that uses pytest, but the
-                       results may not be reliable with selenium or other
+                       works with every Python test, but the
+                       results may not be reliable with Selenium or other
                        frameworks that primarily test the client.
  --debug               On python test error or failure invoke a pdb shell for
                        interactive debugging of the test
@@ -169,6 +169,11 @@ can be used to control the Galaxy functional testing processing. Command-line
 options above like (--external_url) will set environment variables - in such
 cases the command line argument takes precedent over environment variables set
 at the time of running this script.
+
+General Test Environment Variables
+
+GALAXY_TEST_COVERAGE            If set, it is equivalent to passing the
+                                --coverage option.
 
 Functional Test Environment Variables
 
@@ -228,9 +233,6 @@ GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
 GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 config/shed_tool_conf.xml) used when testing
                                 installed to tools with -installed.
-GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
-                                is fairly limited and not compatible with parrallel testing
-                                so should be limited to debugging one off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.
@@ -239,9 +241,4 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
-
-Unit Test Environment Variables
-
-GALAXY_TEST_INCLUDE_SLOW - Used in unit tests to trigger slower tests that
-                           aren't included by default with --unit/-u.
 

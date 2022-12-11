@@ -12,12 +12,16 @@ from typing import (
     Optional,
     Union,
 )
-from uuid import uuid4
+from uuid import (
+    UUID,
+    uuid4,
+)
 
 from galaxy.exceptions import (
     InternalServerError,
     MessageException,
     NoContentException,
+    ObjectNotFound,
 )
 from galaxy.exceptions.error_codes import error_codes_by_int_code
 from galaxy.util import (
@@ -62,7 +66,7 @@ class ShortTermStorageTargetSecurity:
 
 @dataclass
 class ShortTermStorageTarget:
-    request_id: str  # uuid
+    request_id: UUID
     raw_path: str
 
     @property
@@ -144,7 +148,7 @@ class ShortTermStorageMonitor(metaclass=abc.ABCMeta):
         """Cleanup old requests."""
 
     @abc.abstractmethod
-    def recover_target(self, request_id: str) -> ShortTermStorageTarget:
+    def recover_target(self, request_id: UUID) -> ShortTermStorageTarget:
         """Return an existing ShortTermStorageTarget from a specified request_id."""
 
 
@@ -161,7 +165,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
     ) -> ShortTermStorageTarget:
         if security is None:
             security = ShortTermStorageTargetSecurity()
-        request_id = str(uuid4())
+        request_id = uuid4()
         target_directory = self._directory(request_id)
         target = ShortTermStorageTarget(request_id=request_id, raw_path=str(target_directory / "target"))
         safe_makedirs(target_directory)
@@ -180,8 +184,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         self._store_metadata(target_directory, "request", request_info)
         return target
 
-    def recover_target(self, request_id: str) -> ShortTermStorageTarget:
-        assert is_uuid(request_id)  # secure the directory structure...
+    def recover_target(self, request_id: UUID) -> ShortTermStorageTarget:
         target_directory = self._directory(request_id)
         target = ShortTermStorageTarget(request_id=request_id, raw_path=str(target_directory / "target"))
         return target
@@ -244,18 +247,20 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
 
     def _load_metadata(self, target_directory: Path, meta_name: str):
         meta_path = target_directory / f"{meta_name}.json"
+        if not meta_path.exists():
+            raise ObjectNotFound
         with open(meta_path) as f:
             return json.load(f)
 
-    def _directory(self, target: Union[str, ShortTermStorageTarget]) -> Path:
+    def _directory(self, target: Union[UUID, ShortTermStorageTarget]) -> Path:
         if isinstance(target, ShortTermStorageTarget):
             request_id = target.request_id
         else:
             request_id = target
-        relative_directory = directory_hash_id(request_id) + [request_id]
+        relative_directory = directory_hash_id(request_id) + [str(request_id)]
         return self._root.joinpath(*relative_directory)
 
-    def _cleanup_if_needed(self, request_id: str):
+    def _cleanup_if_needed(self, request_id: UUID):
         request_metadata = self._load_metadata(self._directory(request_id), "request")
         duration = request_metadata["duration"]
         creation_datetime_str = request_metadata["created"]
@@ -266,7 +271,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         if request_seconds > duration:
             self._delete(request_id)
 
-    def _delete(self, request_id: str):
+    def _delete(self, request_id: UUID):
         shutil.rmtree(self._directory(request_id))
 
     def cleanup(self):
@@ -274,7 +279,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
             request_id = os.path.basename(directory)
             if not is_uuid(request_id):
                 continue
-            self._cleanup_if_needed(request_id)
+            self._cleanup_if_needed(UUID(request_id))
 
     @property
     def _root(self) -> Path:
@@ -282,7 +287,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
 
 
 @contextlib.contextmanager
-def storage_context(short_term_storage_request_id: str, short_term_storage_monitor: ShortTermStorageMonitor):
+def storage_context(short_term_storage_request_id: UUID, short_term_storage_monitor: ShortTermStorageMonitor):
     target = short_term_storage_monitor.recover_target(short_term_storage_request_id)
     try:
         yield target

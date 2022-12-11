@@ -211,8 +211,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/login/confirm")
-    webapp.add_client_route("/tools/advanced_search")
-    webapp.add_client_route("/tools/view")
+    webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
@@ -587,9 +586,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(
-        "/api/workflows/menu", action="get_workflow_menu", controller="workflows", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.connect(
@@ -632,13 +628,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{workflow_id}/download",
         controller="workflows",
         action="workflow_dict",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "show_versions",
-        "/api/workflows/{workflow_id}/versions",
-        controller="workflows",
-        action="show_versions",
         conditions=dict(method=["GET"]),
     )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
@@ -1268,7 +1257,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # Merge the global and local configurations
     conf = global_conf.copy()
     conf.update(local_conf)
-    debug = asbool(conf.get("debug", False))
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
@@ -1326,20 +1314,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
 
         app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
-    # Various debug middleware that can only be turned on if the debug
-    # flag is set, either because they are insecure or greatly hurt
-    # performance
-    if debug:
-        # Middleware to check for WSGI compliance
-        if asbool(conf.get("use_lint", False)):
-            from paste import lint
-
-            app = wrap_if_allowed(app, stack, lint.make_middleware, name="paste.lint", args=(conf,))
-        # Middleware to run the python profiler on each request
-        if asbool(conf.get("use_profile", False)):
-            from paste.debug import profile
-
-            app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf,))
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)

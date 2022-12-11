@@ -30,13 +30,16 @@ export default Backbone.View.extend({
         this.$text = this.$(".text");
         this._fullscreen(this.$el, 20);
         this.chart.on("redraw", function (confirmed) {
-            if (!self.chart.get("modified") || !self._asBoolean(self.chart.plugin.specs.confirm) || confirmed) {
+            if (!self.chart.get("modified") || !self.chart.requiresConfirmation || confirmed) {
                 self.app.deferred.execute(function (process) {
                     console.debug("viewer:redraw() - Redrawing...");
                     self._draw(process, self.chart);
                 });
             } else {
-                self.chart.state("info", "Please confirm the settings before rendering the results.");
+                self.chart.state(
+                    "info",
+                    "Please review the chart settings in the menu to the right and select 'Confirm' to render the visualization."
+                );
             }
         });
         this.chart.on("set:state", function () {
@@ -66,11 +69,6 @@ export default Backbone.View.extend({
                     $container.show();
             }
         });
-    },
-
-    /** Get boolean as string */
-    _asBoolean: function (value) {
-        return String(value).toLowerCase() == "true";
     },
 
     /** Force resize to fullscreen */

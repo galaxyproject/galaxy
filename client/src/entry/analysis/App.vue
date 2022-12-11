@@ -5,7 +5,6 @@
             <Masthead
                 v-if="showMasthead"
                 id="masthead"
-                :display-galaxy-brand="config.display_galaxy_brand"
                 :brand="config.brand"
                 :logo-url="config.logo_url"
                 :logo-src="config.logo_src"
@@ -35,6 +34,8 @@
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <div id="dd-helper" />
+        <Toast ref="toastRef" />
+        <ConfirmDialog ref="confirmDialogRef" />
     </div>
 </template>
 <script>
@@ -46,10 +47,25 @@ import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy
 import { fetchMenu } from "entry/analysis/menu";
 import { WindowManager } from "layout/window-manager";
 import { safePath } from "utils/redirect";
+import Toast from "components/Toast";
+import ConfirmDialog from "components/ConfirmDialog";
+import { setToastComponentRef } from "composables/toast";
+import { setConfirmDialogComponentRef } from "composables/confirmDialog";
+import { ref } from "vue";
 
 export default {
     components: {
         Masthead,
+        Toast,
+        ConfirmDialog,
+    },
+    setup() {
+        const toastRef = ref(null);
+        setToastComponentRef(toastRef);
+        const confirmDialogRef = ref(null);
+        setConfirmDialogComponentRef(confirmDialogRef);
+
+        return { toastRef, confirmDialogRef };
     },
     data() {
         return {

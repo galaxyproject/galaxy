@@ -3,6 +3,7 @@ from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
 from typing import (
+    Any,
     Callable,
     Optional,
 )
@@ -97,7 +98,7 @@ def set_job_metadata(
     extended_metadata_collection: bool,
     job_id: int,
     sa_session: galaxy_scoped_session,
-):
+) -> None:
     return abort_when_job_stops(
         set_metadata_portable,
         session=sa_session,
@@ -219,12 +220,13 @@ def is_aborted(session: galaxy_scoped_session, job_id: int):
     ).scalar()
 
 
-def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs):
+def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs) -> Any:
     if not is_aborted(session, job_id):
-        future = celery_app.fork_pool.schedule(
+        future = celery_app.fork_pool.submit(
             function,
+            timeout=None,
             *args,
-            kwargs=kwargs,
+            **kwargs,
         )
         while True:
             try:
@@ -260,7 +262,7 @@ def fetch_data(
     job_id: int,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
-):
+) -> str:
     job = sa_session.query(model.Job).get(job_id)
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)

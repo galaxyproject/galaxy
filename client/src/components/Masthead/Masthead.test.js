@@ -1,7 +1,7 @@
 import Vuex from "vuex";
 import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { WindowManager } from "layout/window-manager";
 import { loadWebhookMenuItems } from "./_webhooks";
 import { userStore } from "store/userStore";
@@ -10,6 +10,9 @@ import { getActiveTab } from "./utilities";
 
 jest.mock("app");
 jest.mock("./_webhooks");
+jest.mock("vue-router/composables", () => ({
+    useRoute: jest.fn(() => ({ name: "Home" })),
+}));
 
 describe("Masthead.vue", () => {
     let wrapper;
@@ -93,14 +96,6 @@ describe("Masthead.vue", () => {
     it("test basic active tab matching", () => {
         expect(getActiveTab("root", tabs)).toBe("analysis");
         expect(getActiveTab("_menu_url", tabs)).toBe("shared");
-    });
-
-    it("should disable brand when displayGalaxyBrand is true", async () => {
-        expect(wrapper.find(".navbar-brand-title").text()).toBe("Galaxy");
-        await wrapper.setProps({ brand: "Foo " });
-        expect(wrapper.find(".navbar-brand-title").text()).toBe("Galaxy Foo");
-        await wrapper.setProps({ displayGalaxyBrand: false });
-        expect(wrapper.find(".navbar-brand-title").text()).toBe("Foo");
     });
 
     it("should render simple tab item links", () => {

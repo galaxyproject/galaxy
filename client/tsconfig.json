@@ -1,9 +1,18 @@
 {
+    "extends": "@vue/tsconfig/tsconfig.json",
     "compilerOptions": {
-        "allowJs": true,
+        "target": "es2016",
+        "module": "es6",
         "baseUrl": "./src",
-        "jsx": "preserve",
-        "noEmit": true
+
+        "allowJs": true,
+        "checkJs": false,
+
+        "outDir": "./dist/build",
+        "allowSyntheticDefaultImports": true
     },
-    "exclude": ["tests", "node_modules"]
+    "vueCompilerOptions": {
+        "target": 2.7
+    },
+    "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"],
 }

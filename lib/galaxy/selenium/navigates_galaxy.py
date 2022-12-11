@@ -350,12 +350,12 @@ class NavigatesGalaxy(HasDriver):
             endpoint = f"histories/{history_id}?view={view}"
         return self.api_get(endpoint)
 
-    def current_history(self):
+    def current_history(self) -> Dict[str, Any]:
         full_url = self.build_url("history/current_history_json", for_selenium=False)
         response = requests.get(full_url, cookies=self.selenium_to_requests_cookies(), timeout=DEFAULT_SOCKET_TIMEOUT)
         return response.json()
 
-    def current_history_id(self):
+    def current_history_id(self) -> str:
         return self.current_history()["id"]
 
     def latest_history_item(self):
@@ -1393,7 +1393,7 @@ class NavigatesGalaxy(HasDriver):
 
     def tool_parameter_edit_rules(self):
         rules_div_element = self.tool_parameter_div("rules")
-        edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, "i.fa-edit")
+        edit_button_element = rules_div_element.find_element(By.CSS_SELECTOR, ".form-rules-edit button")
         edit_button_element.click()
 
     def tool_set_value(self, expanded_parameter_id, value, expected_type=None):
@@ -1515,21 +1515,17 @@ class NavigatesGalaxy(HasDriver):
 
     @edit_details
     def history_panel_add_tags(self, tags):
-        tag_icon = self.components.history_panel.tag_icon
-        tag_area = self.components.history_panel.tag_area
-        tag_area_input = self.components.history_panel.tag_area_input
+        tag_area_button = self.components.history_panel.tag_area_button
 
-        # if the tag editor is not present but the tag_icon is, then click it
-        if not tag_icon.is_absent and (tag_area.is_absent or not tag_area.is_displayed):
-            tag_icon.wait_for_and_click()
-
-        input_element = tag_area_input.wait_for_and_click()
-        self.sleep_for(self.wait_types.UX_RENDER)
+        tag_area_button.wait_for_and_click()
+        input_element = self.components.history_panel.tag_area_input.wait_for_visible()
 
         for tag in tags:
             input_element.send_keys(tag)
             self.send_enter(input_element)
             self.sleep_for(self.wait_types.UX_RENDER)
+
+        self.send_escape(input_element)
 
     @edit_details
     def history_panel_rename(self, new_name):
@@ -1934,7 +1930,15 @@ class NavigatesGalaxy(HasDriver):
             # Wait for select2 options to load and then click to add this one.
             self.send_enter(text_element)
         else:
-            select_elem = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")[0]
+            candidate_elements = drop_elem.find_elements(By.CSS_SELECTOR, ".select2-result-label")
+            # try to find exact match
+            for elem in candidate_elements:
+                if elem.text == value:
+                    select_elem = elem
+                    break
+            else:
+                # Pick first match. We're replacing select2 anyway ...
+                select_elem = elem
             action_chains = self.action_chains()
             action_chains.move_to_element(select_elem).click().perform()
         self.wait_for_selector_absent_or_hidden("#select2-drop")

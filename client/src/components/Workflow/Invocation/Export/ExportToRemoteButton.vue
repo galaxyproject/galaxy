@@ -1,7 +1,7 @@
 <script setup>
 import { watch } from "vue";
 import { BButton } from "bootstrap-vue";
-import { useTaskMonitor } from "composables/useTaskMonitor";
+import { useTaskMonitor } from "composables/taskMonitor";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const { isRunning, isCompleted, hasFailed, requestHasFailed, waitForTask } = useTaskMonitor();

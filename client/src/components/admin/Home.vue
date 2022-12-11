@@ -1,12 +1,15 @@
 <template>
     <div>
-        <h2>Administration</h2>
-        Please visit
+        <h1>Administration</h1>
 
-        <a href="https://galaxyproject.org/admin" target="_blank">the Galaxy administration hub</a> to learn how to keep
-        your Galaxy in best shape.
+        <p>
+            Please visit
 
-        <h4>Server</h4>
+            <a href="https://galaxyproject.org/admin" target="_blank">the Galaxy administration hub</a> to learn how to
+            keep your Galaxy in best shape.
+        </p>
+
+        <Heading h2 icon="fa-server" size="md">Server</Heading>
         <ul>
             <li>
                 <strong>
@@ -42,7 +45,7 @@
             </li>
         </ul>
 
-        <h4>User Management</h4>
+        <Heading h2 icon="fa-user" size="md">User Management</Heading>
         <ul>
             <li>
                 <strong>
@@ -82,7 +85,7 @@
             </li>
         </ul>
 
-        <h4>Tool Management</h4>
+        <Heading h2 icon="fa-wrench" size="md">Tool Management</Heading>
         <ul>
             <li>
                 <strong>
@@ -116,7 +119,14 @@
 </template>
 
 <script>
+import Heading from "components/Common/Heading.vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faServer, faUser, faWrench);
+
 export default {
+    components: { Heading },
     props: {
         isToolshedInstalled: {
             type: Boolean,

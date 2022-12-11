@@ -123,6 +123,7 @@
                                         :highlight="getHighlight(item)"
                                         :selected="isSelected(item)"
                                         :selectable="showSelection"
+                                        :filterable="filterable"
                                         @tag-click="onTagClick"
                                         @tag-change="onTagChange"
                                         @toggleHighlights="toggleHighlights"
@@ -144,7 +145,7 @@
 
 <script>
 import Vue from "vue";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { mapActions } from "vuex";
 import { HistoryItemsProvider } from "components/providers/storeProviders";
 import LoadingSpan from "components/LoadingSpan";
@@ -166,7 +167,7 @@ import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 import SelectionChangeWarning from "./HistoryOperations/SelectionChangeWarning";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
-import { Services as DatasetServices } from "components/Dataset/services";
+import { copyDataset } from "components/Dataset/services";
 
 export default {
     components: {
@@ -194,6 +195,7 @@ export default {
         filter: { type: String, default: "" },
         writable: { type: Boolean, default: true },
         showControls: { type: Boolean, default: true },
+        filterable: { type: Boolean, default: false },
     },
     data() {
         return {
@@ -253,9 +255,6 @@ export default {
         filter(newVal) {
             this.filterText = newVal;
         },
-    },
-    created() {
-        this.datasetServices = new DatasetServices();
     },
     methods: {
         ...mapActions("history", ["loadHistoryById"]),
@@ -338,8 +337,7 @@ export default {
             const data = JSON.parse(evt.dataTransfer.getData("text"))[0];
             const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
             if (data.history_id != this.historyId) {
-                this.datasetServices
-                    .copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
+                copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
                     .then(() => {
                         if (data.history_content_type === "dataset") {
                             Toast.info("Dataset copied to history");

@@ -5,7 +5,7 @@
         <Alert v-else-if="loading" message="Waiting for data" variant="info" />
         <div v-else-if="dataManagers && !dataManagers.length">
             <Alert variant="primary">
-                <h4 class="alert-heading">None installed</h4>
+                <span class="alert-heading h-sm">None installed</span>
                 You do not currently have any Data Managers installed.
             </Alert>
         </div>

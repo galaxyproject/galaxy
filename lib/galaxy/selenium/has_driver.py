@@ -3,6 +3,7 @@
 This should be mixed into classes with a self.driver and self.default_timeout
 attribute.
 """
+import abc
 from typing import (
     List,
     Optional,
@@ -215,6 +216,7 @@ class HasDriver:
         else:
             element.send_keys(key)
 
+    @abc.abstractmethod
     def timeout_for(self, **kwds) -> float:
         ...
 

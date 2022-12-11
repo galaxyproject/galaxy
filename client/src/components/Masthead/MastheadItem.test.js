@@ -1,24 +1,22 @@
-import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 import MastheadItem from "./MastheadItem.vue";
 
 describe("MastheadItem.vue", () => {
     let wrapper;
     let localVue;
-    let active;
-    let menu;
 
     beforeEach(() => {
         localVue = getLocalVue();
     });
 
-    function m() {
+    function m(active, menu) {
         const tab = {
             id: "mytab",
             menu: menu,
         };
 
-        return shallowMount(MastheadItem, {
+        return mount(MastheadItem, {
             propsData: {
                 tab,
                 activeTab: active,
@@ -28,18 +26,14 @@ describe("MastheadItem.vue", () => {
     }
 
     it("should render active tab with menus", async () => {
-        active = "mytab";
-        menu = true;
-        wrapper = m();
-        expect(wrapper.vm.classes.active).toBe(true);
-        expect(wrapper.vm.menu).toBe(true);
+        wrapper = m("mytab", true);
+        expect(wrapper.classes("active")).toBe(true);
+        expect(wrapper.classes("b-nav-dropdown")).toBe(true);
     });
 
     it("should render inactive tabs without menus", async () => {
-        active = "othertab";
-        menu = false;
-        wrapper = m();
-        expect(wrapper.vm.classes.active).toBe(false);
-        expect(wrapper.vm.menu).toBe(false);
+        wrapper = m("othertab", false);
+        expect(wrapper.classes("active")).toBe(false);
+        expect(wrapper.classes("b-nav-dropdown")).toBe(false);
     });
 });

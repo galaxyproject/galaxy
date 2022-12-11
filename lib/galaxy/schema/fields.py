@@ -94,15 +94,13 @@ class EncodedDatabaseIdField(str, BaseDatabaseIdField):
         return cls.security.decode_id(v)
 
 
-def ModelClassField(class_name: str) -> str:
+def ModelClassField():
     """Represents a database model class name annotated as a constant
     pydantic Field.
     :param class_name: The name of the database class.
     :return: A constant pydantic Field with default annotations for model classes.
     """
     return Field(
-        class_name,
         title="Model class",
         description="The name of the database model class.",
-        const=True,  # Make this field constant
     )

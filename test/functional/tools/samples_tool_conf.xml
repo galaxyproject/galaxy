@@ -66,6 +66,7 @@
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
   <tool file="metadata_bam.xml" />
+  <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_bed.xml" />
   <tool file="metadata_biom1.xml" />
@@ -161,6 +162,7 @@
   <tool file="identifier_multiple_in_conditional.xml" />
   <tool file="identifier_multiple_in_repeat.xml" />
   <tool file="identifier_collection.xml" />
+  <tool file="identifier_all_collection_types.xml"/>
   <tool file="identifier_in_actions.xml" />
   <tool file="fail_identifier.xml" />
   <tool file="fail_writing_work_dir_file.xml" />

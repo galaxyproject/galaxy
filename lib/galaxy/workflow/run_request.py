@@ -11,7 +11,6 @@ from typing import (
 
 from galaxy import exceptions
 from galaxy.model import (
-    Dataset,
     History,
     HistoryDatasetAssociation,
     LibraryDataset,
@@ -383,16 +382,6 @@ def build_workflow_run_configs(
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), content.dataset
                     )
-                elif input_source == "uuid":
-                    dataset = trans.sa_session.query(Dataset).filter(Dataset.uuid == input_id).first()
-                    if dataset is None:
-                        # this will need to be changed later. If federation code is avalible, then a missing UUID
-                        # could be found amoung fereration partners
-                        raise exceptions.RequestParameterInvalidException(f"Input cannot find UUID: {input_id}.")
-                    assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
-                        trans.get_current_user_roles(), dataset
-                    )
-                    content = history.add_dataset(dataset)
                 elif input_source == "hdca":
                     content = app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", input_id)
                 else:

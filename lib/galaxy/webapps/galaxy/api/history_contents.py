@@ -73,7 +73,6 @@ from galaxy.webapps.galaxy.api.common import (
 from galaxy.webapps.galaxy.services.history_contents import (
     CreateHistoryContentFromStore,
     CreateHistoryContentPayload,
-    DatasetDetailsType,
     DirectionOptions,
     HistoriesContentsService,
     HistoryContentsFilterList,
@@ -234,7 +233,7 @@ def parse_legacy_index_query_params(
     else:
         content_types = [e.value for e in HistoryContentType]
 
-    id_list: Optional[List[DecodedDatabaseIdField]] = None
+    id_list = None
     if ids:
         id_list = util.listify(ids)
         # If explicit ids given, always used detailed result.
@@ -257,7 +256,7 @@ def parse_legacy_index_query_params(
 def parse_dataset_details(details: Optional[str]):
     """Parses the different values that the `dataset_details` parameter
     can have from a string."""
-    dataset_details: Optional[DatasetDetailsType] = None
+    dataset_details = None
     if details is not None and details != "all":
         dataset_details = set(util.listify(details))
     else:  # either None or 'all'

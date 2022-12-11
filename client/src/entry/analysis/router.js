@@ -32,18 +32,19 @@ import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
 import HistoryPublished from "components/History/HistoryPublished";
+import HistoryPublishedList from "components/History/HistoryPublishedList";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
-import NewUserConfirmation from "components/login/NewUserConfirmation";
+import NewUserConfirmation from "components/Login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
 import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
-import ToolAdvancedSearch from "components/Panels/Common/ToolAdvancedSearch";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
+import ToolsList from "components/ToolsList/ToolsList";
 import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
 import TrsImport from "components/Workflow/Import/TrsImport";
@@ -228,6 +229,11 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/list_published",
+                        component: HistoryPublishedList,
+                        props: true,
+                    },
+                    {
                         path: "histories/:historyId/export",
                         component: HistoryExport,
                         props: true,
@@ -249,6 +255,10 @@ export function getRouter(Galaxy) {
                     {
                         path: "login/confirm",
                         component: NewUserConfirmation,
+                        props: {
+                            registrationWarningMessage: Galaxy.config.registration_warning_message,
+                            termsUrl: Galaxy.config.terms_url,
+                        },
                     },
                     {
                         path: "pages/create",
@@ -308,8 +318,8 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "tools/advanced_search",
-                        component: ToolAdvancedSearch,
+                        path: "tools/list",
+                        component: ToolsList,
                         props: (route) => {
                             return {
                                 ...route.query,

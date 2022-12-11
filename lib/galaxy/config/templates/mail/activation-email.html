@@ -1,0 +1,108 @@
+Edit this template to customise the "account activation" HTML email your
+users will receive.
+
+If you are adding URLs into this, remember that only absolute URLS (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the html with Jinja2
+syntax, like {{ variable_name }}. They will be rendered into the text before
+the email is sent:
+
+- name                     The user's name
+- user_email               The user's email
+- date                     Date of registration
+- hostname                 Your galaxy's hostname
+- activation_url           The account activation URL
+- terms_url                Your T&Cs URL
+- contact_email            Your galaxy's contact email
+- instance_resource_url    Your galaxy's resource website URL
+- expiry_days              Days until the activation link expires
+- custom_message           Your Galaxy config custom_activation_email_message
+
+Template begins here >>>>>>
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Galaxy account activation</title>
+
+    <!-- Load custom font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet">
+  </head>
+  <body style="font-family: 'Roboto', sans-serif;">
+
+    <h3 style="font-size: 18pt;">Thanks for signing up to use Galaxy!</h3>
+
+    <p style="font-size: 14pt;">
+      Hello {{ name }},<br><br>
+
+      In order to complete the activation process for {{ user_email }} (begun on
+      {{ date }} at {{ hostname }}), please
+      <a href="{{ activation_url }}">click here</a>
+      to verify your account.
+      <br><br>
+
+      By clicking on the above link and opening a Galaxy account you are also
+      confirming that you have read and agreed to
+      {% if terms_url %}
+      <a href="{{ terms_url }}">Galaxy's Terms and Conditions</a>
+      {% else %}
+      Galaxy's Terms and Conditions.
+      {% endif %}
+      for use of this service. This includes a data storage limit per user
+      account. Attempts to subvert this limit by creating multiple accounts or
+      through any other method may result in termination of all associated
+      accounts and data.
+      <br><br>
+
+      <ul style="font-size: 14pt;">
+        {% if contact_email %}
+        <li>
+          If you need help with your account, please contact us at
+          <a href="mailto:{{ contact_email }}">{{ contact_email }}</a>
+        </li>
+        {% endif %}
+        {% if instance_resource_url %}
+        <li>
+          Browse available resources:
+          <a href="{{ instance_resource_url }}">{{ instance_resource_url }}</a>
+        </li>
+        {% endif %}
+        <li>
+          Find out more about the Galaxy Project at
+          <a href="galaxyproject.org">galaxyproject.org</a>.
+        </li>
+      </ul>
+    </p>
+
+    {% if custom_message %}
+    <p>{{ custom_message }}</p>
+    {% endif %}
+    <br>
+
+    <p style="font-size: 14pt;">
+      Regards,<br>
+      Your Galaxy Team
+    </p>
+
+    <img
+      style="width: 130px; height: auto; margin: 15px 0;"
+      src="https://galaxyproject.org/images/galaxy-logos/galaxy_project_logo_square.png"
+      alt="Galaxy project logo"
+    >
+
+    <br><br>
+
+    <p style="font-size: 11pt;">
+      If you cannot click on the link above, please copy and paste the
+      following URL into your browser:<br>
+      {{ activation_url }}<br><br>
+      If this account was not created by you, please disregard this email and
+      the account will be automatically terminated.
+    </p>
+
+  </body>
+</html>

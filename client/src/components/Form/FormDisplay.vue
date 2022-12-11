@@ -57,11 +57,11 @@ export default {
         },
         collapsedEnableIcon: {
             type: String,
-            default: "fa fa-caret-square-o-down",
+            default: "far fa-caret-square-down",
         },
         collapsedDisableIcon: {
             type: String,
-            default: "fa fa-caret-square-o-up",
+            default: "far fa-caret-square-up",
         },
         validationScrollTo: {
             type: Array,

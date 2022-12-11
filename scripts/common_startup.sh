@@ -163,7 +163,6 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             fi
         fi
     fi
-    setup_gravity_state_dir
 fi
 
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV

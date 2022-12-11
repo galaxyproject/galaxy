@@ -1,7 +1,7 @@
 <template>
     <section class="m-3 details" data-description="edit details">
         <b-button
-            v-if="writeable && !currentUser.isAnonymous"
+            :disabled="currentUser.isAnonymous || !writeable"
             class="edit-button ml-1 float-right"
             data-description="editor toggle"
             size="sm"
@@ -67,7 +67,7 @@
 <script>
 import { mapGetters } from "vuex";
 import short from "components/directives/v-short";
-import { StatelessTags } from "components/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 
 export default {
     components: {

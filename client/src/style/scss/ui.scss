@@ -102,15 +102,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     cursor: pointer;
 }
 
-.ui-btn-back-to-top {
-    bottom: 2em;
-    position: fixed;
-    opacity: 0.5;
-}
-.ui-btn-back-to-top:hover {
-    opacity: 1;
-}
-
 // thumbnails
 .ui-thumbnails {
     .ui-thumbnails-item {
@@ -139,62 +130,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
         .ui-thumbnails-text {
             text-decoration: underline;
         }
-    }
-}
-
-// table form elements
-.ui-form-element {
-    margin-top: $ui-margin-vertical;
-    margin-bottom: $ui-margin-vertical;
-    overflow: visible;
-    clear: both;
-    .ui-form-title {
-        word-wrap: break-word;
-        font-weight: bold;
-        .icon {
-            cursor: pointer;
-            font-size: 1.2em;
-        }
-    }
-    .ui-form-field {
-        position: relative;
-        margin-top: $ui-margin-vertical;
-        .ui-form-wp-source {
-            border-left-width: 10px;
-        }
-        .ui-form-wp-target {
-            box-shadow: none;
-            border-top: none;
-            border-bottom: none;
-            border-right: none;
-            border-left-width: 5px;
-            font-style: italic;
-        }
-        .ui-form-backdrop {
-            z-index: 10;
-            position: absolute;
-            top: 0px;
-            width: 100%;
-            height: 100%;
-            background: $white;
-            display: block;
-            opacity: 0;
-            cursor: default;
-        }
-    }
-    .ui-form-preview {
-        @extend .ui-input;
-        margin-top: $ui-margin-vertical;
-        border-color: transparent !important;
-        box-shadow: none !important;
-        height: auto !important;
-    }
-}
-
-.ui-form-element-disabled {
-    @extend .ui-form-element;
-    .ui-form-title {
-        font-weight: normal;
     }
 }
 
@@ -476,4 +411,40 @@ $ui-margin-horizontal-large: $margin-v * 2;
 /* Gap utility for flexbox. Bootstrap Gap ony works for grid */
 .flex-gapx-1 {
     column-gap: 0.25rem;
+}
+
+/* Heading Sizes */
+.h-xl {
+    font-size: $h1-font-size;
+}
+
+.h-lg {
+    font-size: $h2-font-size;
+}
+
+.h-md {
+    font-size: $h3-font-size;
+}
+
+.h-sm {
+    font-size: $h4-font-size;
+}
+
+.h-text {
+    font-size: $font-size-base;
+}
+
+// makes a button element look like a link
+.ui-link {
+    border: none !important;
+    background: none !important;
+    padding: 0 !important;
+    color: $brand-primary;
+    display: inline;
+    line-height: unset;
+    vertical-align: unset;
+
+    &:hover {
+        text-decoration: underline;
+    }
 }

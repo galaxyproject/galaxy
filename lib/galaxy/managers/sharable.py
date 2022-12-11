@@ -45,6 +45,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import ready_name_for_url
+from galaxy.util.hash_util import md5_hash_str
 
 if TYPE_CHECKING:
     from sqlalchemy.orm import Query
@@ -383,7 +384,17 @@ class SharableModelSerializer(
     def __init__(self, app, **kwargs):
         super().__init__(app, **kwargs)
         self.add_view(
-            "sharing", ["id", "title", "importable", "published", "username", "username_and_slug", "users_shared_with"]
+            "sharing",
+            [
+                "id",
+                "title",
+                "email_hash",
+                "importable",
+                "published",
+                "username",
+                "username_and_slug",
+                "users_shared_with",
+            ],
         )
 
     def add_serializers(self):
@@ -398,10 +409,16 @@ class SharableModelSerializer(
                 "username": self.serialize_username,
                 "username_and_slug": self.serialize_username_and_slug,
                 "users_shared_with": self.serialize_users_shared_with,
+                "email_hash": self.serialize_email_hash,
             }
         )
         # these use the default serializer but must still be white-listed
         self.serializable_keyset.update(["importable", "published", "slug"])
+
+    def serialize_email_hash(self, item, key, **context):
+        if not (item.user and item.user.email):
+            return None
+        return md5_hash_str(item.user.email)
 
     def serialize_title(self, item, key, **context):
         if hasattr(item, "title"):

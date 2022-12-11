@@ -11,6 +11,7 @@ import { iconPlugin } from "components/plugins/icons";
 import BootstrapVue from "bootstrap-vue";
 import Vuex from "vuex";
 import _l from "utils/localization";
+import { PiniaVuePlugin } from "pinia";
 
 const defaultComparator = (a, b) => a == b;
 
@@ -145,7 +146,13 @@ export const showAll = (vm) => {
 
 // waits n milliseconds and then promise resolves
 // usage: await wait(500);
-export const wait = (n) => timer(n).pipe(take(1)).toPromise();
+export const wait = (n) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, n);
+    });
+};
 
 // Gets a localVue with custom directives
 export function getLocalVue(instrumentLocalization = false) {
@@ -153,6 +160,7 @@ export function getLocalVue(instrumentLocalization = false) {
     const mockedDirective = {
         bind() {},
     };
+    localVue.use(PiniaVuePlugin);
     localVue.use(Vuex);
     localVue.use(BootstrapVue);
     const l = instrumentLocalization ? testLocalize : _l;

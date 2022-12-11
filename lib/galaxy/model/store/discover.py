@@ -15,6 +15,7 @@ from typing import (
     List,
     NamedTuple,
     Optional,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -31,6 +32,9 @@ from galaxy.util import (
     ExecutionTimer,
 )
 from galaxy.util.hash_util import HASH_NAME_MAP
+
+if TYPE_CHECKING:
+    from galaxy.model.store import ModelExportStore
 
 log = logging.getLogger(__name__)
 
@@ -457,18 +461,21 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     def add_output_dataset_association(self, name, dataset):
         """If discovering outputs for a job, persist output dataset association."""
 
+    @abc.abstractmethod
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         """Add datasets to the history this context points at."""
 
     def job_id(self):
         return ""
 
+    @abc.abstractmethod
     def persist_object(self, obj):
         """Add the target to the persistence layer."""
 
-    def persist_library_folder(self, library_folder):
+    def persist_library_folder(self, library_folder: galaxy.model.LibraryFolder) -> None:  # noqa: B027
         """Add library folder to sessionless export. Noop for session export."""
 
+    @abc.abstractmethod
     def flush(self):
         """If database bound, flush the persisted objects to ensure IDs."""
 
@@ -528,7 +535,7 @@ class UnusedMetadataSourceProvider(MetadataSourceProvider):
 class SessionlessModelPersistenceContext(ModelPersistenceContext):
     """A variant of ModelPersistenceContext that persists to an export store instead of database directly."""
 
-    def __init__(self, object_store, export_store, working_directory):
+    def __init__(self, object_store, export_store: "ModelExportStore", working_directory: str) -> None:
         self._permission_provider = UnusedPermissionProvider()
         self._metadata_source_provider = UnusedMetadataSourceProvider()
         self._object_store = object_store
@@ -603,7 +610,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
         parent_folder.folders.append(nested_folder)
         return nested_folder
 
-    def persist_library_folder(self, library_folder):
+    def persist_library_folder(self, library_folder: galaxy.model.LibraryFolder) -> None:
         self.export_store.export_library_folder(library_folder)
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):

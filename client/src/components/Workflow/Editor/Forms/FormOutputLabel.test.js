@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import FormOutputLabel from "./FormOutputLabel";
 import { ActiveOutputs } from "components/Workflow/Editor/modules/outputs";
 

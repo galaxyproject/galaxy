@@ -1,6 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import DatasetStorage from "./DatasetStorage";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
@@ -79,7 +79,7 @@ describe("Dataset Storage", () => {
         await mountWithResponse(TEST_STORAGE_API_RESPONSE_WITHOUT_ID);
         expect(wrapper.findAll("loading-span-stub").length).toBe(0);
         expect(wrapper.vm.descriptionRendered).toBeNull();
-        const header = wrapper.findAll("h3");
+        const header = wrapper.findAll("h2");
         expect(header.length).toBe(1);
         expect(header.at(0).text()).toBe("Dataset Storage");
         const byIdSpan = wrapper.findAll(".display-os-by-id");
@@ -95,7 +95,7 @@ describe("Dataset Storage", () => {
         expect(wrapper.findAll("loading-span-stub").length).toBe(0);
         expect(wrapper.vm.storageInfo.object_store_id).toBe("foobar");
         expect(wrapper.vm.descriptionRendered).toBeNull();
-        const header = wrapper.findAll("h3");
+        const header = wrapper.findAll("h2");
         expect(header.length).toBe(1);
         expect(header.at(0).text()).toBe("Dataset Storage");
         const byIdSpan = wrapper.findAll(".display-os-by-id");
@@ -109,7 +109,7 @@ describe("Dataset Storage", () => {
         expect(wrapper.findAll("loading-span-stub").length).toBe(0);
         expect(wrapper.vm.storageInfo.object_store_id).toBe("foobar");
         expect(wrapper.vm.descriptionRendered).toBe(TEST_RENDERED_MARKDOWN_AS_HTML);
-        const header = wrapper.findAll("h3");
+        const header = wrapper.findAll("h2");
         expect(header.length).toBe(1);
         expect(header.at(0).text()).toBe("Dataset Storage");
         const byIdSpan = wrapper.findAll(".display-os-by-id");
