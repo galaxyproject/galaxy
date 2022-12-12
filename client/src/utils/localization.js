@@ -7,7 +7,7 @@ import localeStrings from "i18n!nls/locale";
 
 let localeStringsSubset = [];
 
-export default function localize(strToLocalize) {
+export function localize(strToLocalize) {
     return localeStringsSubset[strToLocalize] || strToLocalize;
 }
 
@@ -50,3 +50,5 @@ export function _getUserLocale(user, config) {
     }
     return locale;
 }
+
+export default localize;
