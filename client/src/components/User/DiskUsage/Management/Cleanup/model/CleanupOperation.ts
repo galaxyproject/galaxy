@@ -1,13 +1,14 @@
 import type { CleanableSummary } from "./CleanableSummary";
 import type { CleanupResult } from "./CleanupResult";
 
-interface PaginationOptions {
+export interface PaginationOptions {
     limit?: number;
     offset?: number;
     sortBy?: string;
+    sortDesc?: boolean;
 }
 
-interface CleanableItemBase {
+export interface CleanableItemBase {
     id: string;
     name: string;
     size: number;

@@ -7,9 +7,11 @@ import {
     fetchDiscardedHistories,
     fetchDiscardedHistoriesSummary,
 } from "../services";
+import type { CleanupCategory } from "./model";
 
-export const cleanupCategories = [
+export const cleanupCategories: CleanupCategory[] = [
     {
+        id: "discarded_items",
         name: _l("Discarded Items"),
         operations: [
             {
