@@ -61,6 +61,7 @@
   <tool file="unicode_stream.xml" />
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
+  <tool file="metadata_interval.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="metadata_bcf.xml" />
   <tool file="metadata_biom1.xml" />
