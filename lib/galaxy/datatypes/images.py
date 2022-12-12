@@ -13,8 +13,8 @@ import mrcfile
 import numpy as np
 import tifffile
 
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import (
     FileParameter,
     MetadataElement,

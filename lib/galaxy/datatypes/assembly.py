@@ -13,7 +13,7 @@ from galaxy.datatypes import (
     data,
     sequence,
 )
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,

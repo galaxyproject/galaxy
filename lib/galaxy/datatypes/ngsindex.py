@@ -5,7 +5,7 @@ import logging
 import os
 from typing import TYPE_CHECKING
 
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from .metadata import MetadataElement
 from .text import Html
 

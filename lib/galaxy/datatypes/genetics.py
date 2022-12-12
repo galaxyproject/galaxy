@@ -28,9 +28,9 @@ from urllib.parse import quote_plus
 from markupsafe import escape
 
 from galaxy.datatypes import metadata
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.data import (
     DatatypeValidation,
-    GeneratePrimaryFileDataset,
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement

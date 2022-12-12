@@ -26,10 +26,8 @@ from isatools import (
 from markupsafe import escape
 
 from galaxy import util
-from galaxy.datatypes.data import (
-    Data,
-    GeneratePrimaryFileDataset,
-)
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes.data import Data
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 

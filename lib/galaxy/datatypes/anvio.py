@@ -10,7 +10,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
 

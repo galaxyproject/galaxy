@@ -17,8 +17,8 @@ from typing import (
 
 import yaml
 
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.data import (
-    GeneratePrimaryFileDataset,
     get_file_peek,
     Headers,
     Text,

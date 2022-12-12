@@ -12,10 +12,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes.data import (
-    Data,
-    GeneratePrimaryFileDataset,
-)
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
 

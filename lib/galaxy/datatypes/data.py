@@ -20,12 +20,10 @@ from typing import (
 )
 
 from markupsafe import escape
-from typing_extensions import (
-    Literal,
-    Protocol,
-)
+from typing_extensions import Literal
 
 from galaxy import util
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
 )
@@ -81,11 +79,6 @@ DOWNLOAD_FILENAME_PATTERN_COLLECTION_ELEMENT = "Galaxy${hdca_hid}-[${hdca_name}_
 DEFAULT_MAX_PEEK_SIZE = 1000000  # 1 MB
 
 Headers = Dict[str, Any]
-
-
-class GeneratePrimaryFileDataset(Protocol):
-    extra_files_path: str
-    metadata: Any
 
 
 class DatatypeConverterNotFoundException(Exception):

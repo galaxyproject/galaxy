@@ -4,7 +4,7 @@ Datatype classes for tracks/track views within galaxy.
 import logging
 from typing import TYPE_CHECKING
 
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.text import Html
 from . import binary
 

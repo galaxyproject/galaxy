@@ -4,10 +4,8 @@ Neo4j Composite Dataset
 import logging
 from typing import TYPE_CHECKING
 
-from galaxy.datatypes.data import (
-    Data,
-    GeneratePrimaryFileDataset,
-)
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
 

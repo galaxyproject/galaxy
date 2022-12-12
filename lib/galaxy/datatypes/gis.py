@@ -3,8 +3,8 @@ GIS classes
 """
 from typing import TYPE_CHECKING
 
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance

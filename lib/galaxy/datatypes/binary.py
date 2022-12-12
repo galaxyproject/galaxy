@@ -33,10 +33,10 @@ from bx.seq.twobit import (
 
 from galaxy import util
 from galaxy.datatypes import metadata
+from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
 from galaxy.datatypes.data import (
     Data,
     DatatypeValidation,
-    GeneratePrimaryFileDataset,
     get_file_peek,
 )
 from galaxy.datatypes.dataproviders.column import (
