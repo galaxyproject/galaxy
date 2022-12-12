@@ -1,9 +1,21 @@
 <tool id="CONVERTER_vcf_bgzip_to_tabix_0" name="Convert BGZ VCF to tabix" version="1.0.1" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
+        <requirement type="package" version="1.14">htslib</requirement>
     </requirements>
-    <command>python '$__tool_directory__/interval_to_tabix_converter.py' -P 'vcf' '' '$input1' '$output1'</command>
+    <command><![CDATA[
+        ln -s '$input1' input.bgz &&
+        tabix 
+            -p vcf
+            input.bgz
+        &&
+        if [ ! -s input.bgz.tbi ]; then
+            >&2 echo "The converted tabix index file is empty, meaning the input data is invalid.";
+            exit 1;
+        fi
+        &&
+        mv input.bgz.tbi '$output1'
+    ]]></command>
     <inputs>
         <param format="vcf_bgzip" name="input1" type="data" label="Choose BGZIP'd VCF file"/>
     </inputs>
