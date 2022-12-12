@@ -89,7 +89,6 @@ onBeforeMount(() => {
     entryPointStore = useEntryPointStore();
     entryPointStore.ensurePollingEntryPoints();
     entryPointStore.$subscribe((mutation, state) => {
-        console.log(`updating visibility with: ${state.entryPoints.length}`);
         updateVisibility(state.entryPoints.length > 0);
     });
 });
