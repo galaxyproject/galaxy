@@ -32,6 +32,11 @@ class HasCreatingJobProperty(Protocol):
         ...
 
 
+class HasClearAssociatedFiles(Protocol):
+    def clear_associated_files(self, metadata_safe: bool = False, purge: bool = False) -> None:
+        ...
+
+
 class Dataset_t1(HasExtraFilesPathProperty, HasFilesNameProperty, Protocol):
     name: str
     extension: str

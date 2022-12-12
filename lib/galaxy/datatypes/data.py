@@ -26,6 +26,7 @@ from galaxy import util
 from galaxy.datatypes._protocols import (
     Dataset_t1,
     GeneratePrimaryFileDataset,
+    HasClearAssociatedFiles,
     HasCreatingJobProperty,
 )
 from galaxy.datatypes.metadata import (
@@ -804,11 +805,11 @@ class Data(metaclass=DataMeta):
     # We need to clear associated files before we set metadata
     # so that as soon as metadata starts to be set, e.g. implicitly converted datasets are deleted and no longer available 'while' metadata is being set, not just after
     # We'll also clear after setting metadata, for backwards compatibility
-    def after_setting_metadata(self, dataset: "DatasetInstance") -> None:
+    def after_setting_metadata(self, dataset: HasClearAssociatedFiles) -> None:
         """This function is called on the dataset after metadata is set."""
         dataset.clear_associated_files(metadata_safe=True)
 
-    def before_setting_metadata(self, dataset: "DatasetInstance") -> None:
+    def before_setting_metadata(self, dataset: HasClearAssociatedFiles) -> None:
         """This function is called on the dataset before metadata is set."""
         dataset.clear_associated_files(metadata_safe=True)
 
