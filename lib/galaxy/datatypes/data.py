@@ -25,6 +25,7 @@ from typing_extensions import Literal
 from galaxy import util
 from galaxy.datatypes._protocols import (
     Dataset_t1,
+    Dataset_t2,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -911,7 +912,7 @@ class Data(metaclass=DataMeta):
         """
         return data_format in self.dataproviders
 
-    def dataprovider(self, dataset: "DatasetInstance", data_format: str, **settings):
+    def dataprovider(self, dataset: Dataset_t2, data_format: str, **settings):
         """
         Base dataprovider factory for all datatypes that returns the proper provider
         for the given `data_format` or raises a `NoProviderAvailable`.
@@ -924,19 +925,17 @@ class Data(metaclass=DataMeta):
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")
-    def base_dataprovider(self, dataset: "DatasetInstance", **settings) -> p_dataproviders.base.DataProvider:
+    def base_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.base.DataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.base.DataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk", p_dataproviders.chunk.ChunkDataProvider.settings)
-    def chunk_dataprovider(self, dataset: "DatasetInstance", **settings) -> p_dataproviders.chunk.ChunkDataProvider:
+    def chunk_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.chunk.ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.ChunkDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk64", p_dataproviders.chunk.Base64ChunkDataProvider.settings)
-    def chunk64_dataprovider(
-        self, dataset: "DatasetInstance", **settings
-    ) -> p_dataproviders.chunk.Base64ChunkDataProvider:
+    def chunk64_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.chunk.Base64ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
@@ -1132,9 +1131,7 @@ class Text(Data):
 
     # ------------- Dataproviders
     @p_dataproviders.decorators.dataprovider_factory("line", p_dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(
-        self, dataset: "DatasetInstance", **settings
-    ) -> p_dataproviders.line.FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.line.FilteredLineDataProvider:
         """
         Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.
@@ -1143,9 +1140,7 @@ class Text(Data):
         return p_dataproviders.line.FilteredLineDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("regex-line", p_dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(
-        self, dataset: "DatasetInstance", **settings
-    ) -> p_dataproviders.line.RegexLineDataProvider:
+    def regex_line_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.line.RegexLineDataProvider:
         """
         Returns an iterator over the dataset's lines
         optionally including/excluding lines that match one or more regex filters.

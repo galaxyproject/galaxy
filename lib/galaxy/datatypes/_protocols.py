@@ -37,10 +37,15 @@ class HasClearAssociatedFiles(Protocol):
         ...
 
 
-class Dataset_t1(HasExtraFilesPathProperty, HasFileNameProperty, Protocol):
-    name: str
-    extension: str
-
-
 class GeneratePrimaryFileDataset(HasExtraFilesPathProperty, HasMetadata, Protocol):
     ...
+
+
+class Dataset_t1(HasExtraFilesPathProperty, HasFileNameProperty, Protocol):
+    name: str
+    extension: str  # TODO reconcile: ext vs. extension
+
+
+class Dataset_t2(HasMetadata, HasFileNameProperty, Protocol):
+    datatype: Any
+    ext: str  # TODO reconcile: ext vs. extension
