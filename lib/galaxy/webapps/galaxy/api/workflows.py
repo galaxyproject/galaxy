@@ -138,17 +138,6 @@ class WorkflowsAPIController(
         self.tool_recommendations = recommendations.ToolRecommendations()
 
     @expose_api
-    def get_workflow_menu(self, trans: ProvidesUserContext, **kwd):
-        """
-        Get workflows present in the tools panel
-        GET /api/workflows/menu
-        """
-        user = trans.user
-        ids_in_menu = [x.stored_workflow_id for x in user.stored_workflow_menu_entries]
-        workflows = self.get_workflows_list(trans, **kwd)
-        return {"ids_in_menu": ids_in_menu, "workflows": workflows}
-
-    @expose_api
     def set_workflow_menu(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         Save workflow menu to be shown in the tool panel
@@ -187,50 +176,6 @@ class WorkflowsAPIController(
         trans.set_message(message)
         return {"message": message, "status": "done"}
 
-    def get_workflows_list(
-        self,
-        trans: ProvidesUserContext,
-        missing_tools=False,
-        show_published=None,
-        show_shared=None,
-        show_hidden=False,
-        show_deleted=False,
-        **kwd,
-    ):
-        """
-        Displays a collection of workflows.
-
-        :param  show_published:      Optional boolean to include published workflows
-                                     If unspecified this behavior depends on whether the request
-                                     is coming from an authenticated session. The default is true
-                                     for annonymous API requests and false otherwise.
-        :type   show_published:      boolean
-        :param  show_hidden:         if True, show hidden workflows
-        :type   show_hidden:         boolean
-        :param  show_deleted:        if True, show deleted workflows
-        :type   show_deleted:        boolean
-        :param  show_shared:         Optional boolean to include shared workflows.
-                                     If unspecified this behavior depends on show_deleted/show_hidden.
-                                     Defaulting to false if show_hidden or show_deleted is true or else
-                                     false.
-        :param  missing_tools:       if True, include a list of missing tools per workflow
-        :type   missing_tools:       boolean
-        """
-        show_published = util.string_as_bool_or_none(show_published)
-        show_hidden = util.string_as_bool(show_hidden)
-        show_deleted = util.string_as_bool(show_deleted)
-        missing_tools = util.string_as_bool(missing_tools)
-        show_shared = util.string_as_bool_or_none(show_shared)
-        payload = WorkflowIndexPayload(
-            show_published=show_published,
-            show_hidden=show_hidden,
-            show_deleted=show_deleted,
-            show_shared=show_shared,
-            missing_tools=missing_tools,
-        )
-        workflows, _ = self.service.index(trans, payload)
-        return workflows
-
     @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
         """
@@ -266,26 +211,6 @@ class WorkflowsAPIController(
                     version = i
                     break
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
-
-    @expose_api
-    def show_versions(self, trans: GalaxyWebTransaction, workflow_id, **kwds):
-        """
-        GET /api/workflows/{encoded_workflow_id}/versions
-
-        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                          by default.
-        :type   instance:                 boolean
-
-        Lists all versions of this workflow.
-        """
-        instance = util.string_as_bool(kwds.get("instance", "false"))
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(
-            trans, workflow_id, by_stored_id=not instance
-        )
-        return [
-            {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
-            for i, w in enumerate(reversed(stored_workflow.workflows))
-        ]
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
@@ -1205,6 +1130,10 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
+InstanceQueryParam: Optional[bool] = Query(
+    default=False, title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID."
+)
+
 query_tags = [
     IndexQueryTag("name", "The stored workflow's name.", "n"),
     IndexQueryTag(
@@ -1239,7 +1168,6 @@ SkipStepCountsQueryParam: bool = Query(
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
-    invocations_service: InvocationsService = depends(InvocationsService)
 
     @router.get(
         "/api/workflows",
@@ -1368,6 +1296,72 @@ class FastAPIWorkflows:
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    @router.delete(
+        "/api/workflows/{workflow_id}",
+        summary="Add the deleted flag to a workflow.",
+    )
+    def delete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.delete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/undelete",
+        summary="Remove the deleted flag from a workflow.",
+    )
+    def undelete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.undelete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/versions",
+        summary="List all versions of a workflow.",
+    )
+    def show_versions(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        instance: Optional[bool] = InstanceQueryParam,
+    ):
+        return self.service.get_versions(trans, workflow_id, instance)
+
+    @router.get(
+        "/api/workflows/menu",
+        summary="Get workflows present in the tools panel.",
+    )
+    def get_workflow_menu(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        show_deleted: Optional[bool] = DeletedQueryParam,
+        show_hidden: Optional[bool] = HiddenQueryParam,
+        missing_tools: Optional[bool] = MissingToolsQueryParam,
+        show_published: Optional[bool] = ShowPublishedQueryParam,
+        show_shared: Optional[bool] = ShowSharedQueryParam,
+    ):
+        payload = WorkflowIndexPayload(
+            show_published=show_published,
+            show_hidden=show_hidden,
+            show_deleted=show_deleted,
+            show_shared=show_shared,
+            missing_tools=missing_tools,
+        )
+        return self.service.get_workflow_menu(
+            trans,
+            payload=payload,
+        )
+
+
+@router.cbv
+class FastAPIInvocations:
+    invocations_service: InvocationsService = depends(InvocationsService)
+
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
         summary="Prepare a workflow invocation export-style download.",
@@ -1400,30 +1394,6 @@ class FastAPIWorkflows:
             payload,
         )
         return rval
-
-    @router.delete(
-        "/api/workflows/{workflow_id}",
-        summary="Add the deleted flag to a workflow.",
-    )
-    def delete_workflow(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-    ):
-        self.service.delete(trans, workflow_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.post(
-        "/api/workflows/{workflow_id}/undelete",
-        summary="Remove the deleted flag from a workflow.",
-    )
-    def undelete_workflow(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-    ):
-        self.service.undelete(trans, workflow_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(

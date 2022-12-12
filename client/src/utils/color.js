@@ -18,7 +18,8 @@ export function keyedColorScheme(strKey) {
 
     const [r, g, b] = hsluvToRgb([hue, 100, lightness]);
     const primary = `rgb(${r * 255},${g * 255},${b * 255})`;
-    const darker = hsluvToHex([hue, 100, lightness - 20]);
+    const darker = hsluvToHex([hue, 100, lightness * 0.9]);
+    const dimmed = hsluvToHex([hue, 100, lightness * 0.95]);
 
-    return { primary, darker };
+    return { primary, darker, dimmed };
 }

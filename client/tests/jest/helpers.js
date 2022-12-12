@@ -146,7 +146,13 @@ export const showAll = (vm) => {
 
 // waits n milliseconds and then promise resolves
 // usage: await wait(500);
-export const wait = (n) => timer(n).pipe(take(1)).toPromise();
+export const wait = (n) => {
+    return new Promise((resolve) => {
+        setTimeout(() => {
+            resolve();
+        }, n);
+    });
+};
 
 // Gets a localVue with custom directives
 export function getLocalVue(instrumentLocalization = false) {

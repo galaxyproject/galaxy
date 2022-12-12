@@ -240,10 +240,11 @@ window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     const chart = options.chart;
     const dataset = options.dataset;
+    const safe_download_url = `${options.root}${dataset.download_url}`;
     $.ajax({
-        url: dataset.download_url,
+        url: safe_download_url,
         success: () => {
-            MapViewer.loadFile(dataset.download_url, dataset.extension, options, chart);
+            MapViewer.loadFile(safe_download_url, dataset.extension, options, chart);
         },
         error: () => {
             chart.state("failed", "Failed to access dataset.");

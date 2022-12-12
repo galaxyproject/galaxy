@@ -49,7 +49,9 @@ influxdb
 # Deep learning packages for tool recommendation
 tensorflow==2.7.2
 
-# weasyprint has problematic requirements so make it optional (i.e. cairo)
+# weasyprint has problematic requirements (cairo, Pango, see:
+# https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#linux)
+# so make it optional
 # xref https://github.com/galaxyproject/galaxy/pull/9651
 # Run run.sh or common_startup script with GALAXY_DEPENDENCIES_INSTALL_WEASYPRINT=1
 # to install weasyprint as part of Galaxy's conditonal dependency instalation process.

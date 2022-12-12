@@ -171,7 +171,7 @@ endif
 
 
 update-client-api-schema: node-deps
-	$(IN_VENV) cd client && python ../scripts/dump_openapi_schema.py | yarn run openapi-typescript --output src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(IN_VENV) cd client && python ../scripts/dump_openapi_schema.py _schema.json && node openapi_to_schema.mjs _schema.json > src/schema/schema.ts && npx prettier --write src/schema/schema.ts && rm _schema.json
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
