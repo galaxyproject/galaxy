@@ -22,6 +22,10 @@ class HasId(Protocol):
     id: int
 
 
+class HasMetadata(Protocol):
+    metadata: Any
+
+
 class Dataset_t1(HasExtraFilesPathProperty, HasFilesNameProperty, Protocol):
     name: str
     extension: str

@@ -12,6 +12,7 @@ from typing import (
 
 import yaml
 
+from galaxy.datatypes._protocols import HasMetadata
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -59,7 +60,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         return "".join(table)
 
-    def _peek(self, dataset: "DatasetInstance", simple: bool = False) -> List:
+    def _peek(self, dataset: HasMetadata, simple: bool = False) -> List:
         peek = [("Type", dataset.metadata.semantic_type), ("UUID", dataset.metadata.uuid)]
         if not simple:
             if dataset.metadata.semantic_type != "Visualization":
