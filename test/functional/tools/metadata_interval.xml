@@ -8,15 +8,15 @@
   </outputs>
   <tests>
     <test>
-      <param name="input" value="test.txt" ftype="interval" >
-        <metadata name="chromCol" value="2"/>
-        <metadata name="startCol" value="3"/>
-        <metadata name="endCol" value="4"/>
+      <param name="input" value="droPer1.gff" ftype="interval" >
+        <metadata name="chromCol" value="1"/>
+        <metadata name="startCol" value="4"/>
+        <metadata name="endCol" value="5"/>
       </param>
       <!-- This ouptut tests setting input metadata above -->
       <output name="output_of_input_metadata" ftype="txt">
         <assert_contents>
-          <has_line line="2 3 4" />
+          <has_line line="1 4 5" />
         </assert_contents>
       </output>
     </test>
