@@ -152,17 +152,33 @@ class GalaxyFileResponse(FileResponse):
             await self.background()
 
 
+def get_error_response_for_request(request: Request, exc: MessageException) -> JSONResponse:
+    error_dict = api_error_message(None, exception=exc)
+    status_code = exc.status_code
+    path = request.url.path
+    if "ga4gh" in path:
+        # When serving GA4GH APIs use limited exceptions to conform their expected
+        # error schema. Tailored to DRS currently.
+        content = {"status_code": status_code, "msg": error_dict["err_msg"]}
+    else:
+        content = error_dict
+
+    retry_after: typing.Optional[int] = getattr(exc, "retry_after", None)
+    headers: typing.Dict[str, str] = {}
+    if retry_after:
+        headers["Retry-After"] = str(retry_after)
+    return JSONResponse(status_code=status_code, content=content, headers=headers)
+
+
 def add_exception_handler(app: FastAPI) -> None:
     @app.exception_handler(RequestValidationError)
     async def validate_exception_middleware(request: Request, exc: RequestValidationError) -> Response:
-        exc = validation_error_to_message_exception(exc)
-        error_dict = api_error_message(None, exception=exc)
-        return JSONResponse(status_code=400, content=error_dict)
+        message_exception = validation_error_to_message_exception(exc)
+        return get_error_response_for_request(request, message_exception)
 
     @app.exception_handler(MessageException)
     async def message_exception_middleware(request: Request, exc: MessageException) -> Response:
-        error_dict = api_error_message(None, exception=exc)
-        return JSONResponse(status_code=exc.status_code, content=error_dict)
+        return get_error_response_for_request(request, exc)
 
 
 def add_request_id_middleware(app: FastAPI):
