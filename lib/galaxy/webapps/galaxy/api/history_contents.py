@@ -511,22 +511,22 @@ class FastAPIHistoryContents:
     @router.post(
         "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
         summary="Prepare an short term storage object that the collection will be downloaded to.",
+        include_in_schema=False,
+    )
+    @router.post(
+        "/api/dataset_collections/{id}/prepare_download",
+        summary="Prepare an short term storage object that the collection will be downloaded to.",
         responses={
             200: {
                 "description": "Short term storage reference for async monitoring of this download.",
             },
             501: {"description": "Required asynchronous tasks required for this operation not available."},
         },
-    )
-    @router.post(
-        "/api/dataset_collections/{id}/prepare_download",
-        summary="Prepare an short term storage object that the collection will be downloaded to.",
         tags=["dataset collections"],
     )
     def prepare_collection_download(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
     ) -> AsyncFile:
         """The history dataset collection will be written as a `zip` archive to the
