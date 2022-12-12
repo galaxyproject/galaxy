@@ -6,8 +6,12 @@
     <command><![CDATA[
         ln -s '$bgzip' input.bgz &&
         tabix 
-        #if $input1.ext in ['bed', 'gff', 'vcf']
-            -p $input1.ext
+        #if $input1.is_of_type('bed')
+            -p bed
+        #elif $input1.is_of_type('vcf')
+            -p vcf
+        #elif $input1.is_of_type('gff')
+            -p gff
         #else
              -s ${input1.metadata.chromCol}
              -b ${input1.metadata.startCol}
