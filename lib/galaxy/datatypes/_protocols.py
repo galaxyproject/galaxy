@@ -12,7 +12,7 @@ class HasExtraFilesPathProperty(Protocol):
         ...
 
 
-class HasFilesNameProperty(Protocol):
+class HasFileNameProperty(Protocol):
     @property
     def file_name(self):
         ...
@@ -37,7 +37,7 @@ class HasClearAssociatedFiles(Protocol):
         ...
 
 
-class Dataset_t1(HasExtraFilesPathProperty, HasFilesNameProperty, Protocol):
+class Dataset_t1(HasExtraFilesPathProperty, HasFileNameProperty, Protocol):
     name: str
     extension: str
 

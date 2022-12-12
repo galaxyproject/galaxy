@@ -28,6 +28,7 @@ from galaxy.datatypes._protocols import (
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
+    HasFileNameProperty,
 )
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
@@ -997,7 +998,7 @@ class Text(Data):
             log.error(f"Unable to estimate lines in file {dataset.file_name}")
             return None
 
-    def count_data_lines(self, dataset: "DatasetInstance") -> Optional[int]:
+    def count_data_lines(self, dataset: HasFileNameProperty) -> Optional[int]:
         """
         Count the number of lines of data in dataset,
         skipping all blank lines and comments.
