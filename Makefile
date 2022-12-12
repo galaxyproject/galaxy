@@ -170,8 +170,19 @@ else
 endif
 
 
-update-client-api-schema: node-deps
-	$(IN_VENV) cd client && python ../scripts/dump_openapi_schema.py _schema.json && node openapi_to_schema.mjs _schema.json > src/schema/schema.ts && npx prettier --write src/schema/schema.ts && rm _schema.json
+build-api-schema:
+	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.json
+
+remove-api-schema:
+	rm _schema.json
+
+update-client-api-schema: node-deps build-api-schema
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.json > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(MAKE) remove-api-schema
+
+lint-api-schema: build-api-schema
+	$(IN_VENV) npx --yes @redocly/cli lint _schema.json
+	$(MAKE) remove-api-schema
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build

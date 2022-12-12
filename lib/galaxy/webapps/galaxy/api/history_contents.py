@@ -716,7 +716,7 @@ class FastAPIHistoryContents:
         summary="Build and return a compressed archive of the selected history contents.",
     )
     @router.get(
-        "/api/histories/{history_id}/contents/archive/{id}",
+        "/api/histories/{history_id}/contents/archive",
         summary="Build and return a compressed archive of the selected history contents.",
     )
     def archive(

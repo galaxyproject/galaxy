@@ -203,13 +203,22 @@ class Model(BaseModel):
             # even if it is generated from a default value.
             # Pass `mark_required_in_schema=True` when constructing a pydantic Field instance
             # to indicate that the field is always present.
-            for prop_key, prop in schema.get("properties", {}).items():
+            remove_prop_keys = set()  # hidden items shouldn't be added to schema
+            properties = schema.get("properties", {})
+            for prop_key, prop in properties.items():
                 required_in_schema = prop.pop("mark_required_in_schema", None)
+                hidden = prop.get("hidden")
+                if hidden:
+                    remove_prop_keys.add(prop_key)
                 if required_in_schema:
+                    # const is not valid in response?
+                    prop.pop("const", None)
                     if "required" in schema:
                         schema["required"].append(prop_key)
                     else:
                         schema["required"] = [prop_key]
+            for prop_key_to_remove in remove_prop_keys:
+                del properties[prop_key_to_remove]
 
 
 class UserModel(Model):
@@ -2268,8 +2277,8 @@ class ToolShedRepository(Model):
     tool_shed_url: str = Field(
         title="Tool Shed URL", default="https://toolshed.g2.bx.psu.edu/", description="Tool Shed target"
     )
-    name: str = Field(name="Name", description="Name of repository")
-    owner: str = Field(name="Owner", description="Owner of repository")
+    name: str = Field(title="Name", description="Name of repository")
+    owner: str = Field(title="Owner", description="Owner of repository")
 
 
 class ToolShedRepositoryChangeset(ToolShedRepository):
@@ -2279,12 +2288,12 @@ class ToolShedRepositoryChangeset(ToolShedRepository):
 class InstalledRepositoryToolShedStatus(Model):
     # See https://github.com/galaxyproject/galaxy/issues/10453
     latest_installable_revision: str = Field(
-        name="Latest installed revision", description="Most recent version avialable on the tool shed"
+        title="Latest installed revision", description="Most recent version avialable on the tool shed"
     )
     revision_update: str
     revision_upgrade: Optional[str]
     repository_deprecated: str = Field(
-        name="Repository deprecated", description="Repository has been depreciated on the tool shed"
+        title="Repository deprecated", description="Repository has been depreciated on the tool shed"
     )
 
 
@@ -2296,27 +2305,27 @@ class InstalledToolShedRepository(Model):
         description="Encoded ID of the install tool shed repository.",
     )
     status: str
-    name: str = Field(name="Name", description="Name of repository")
-    owner: str = Field(name="Owner", description="Owner of repository")
+    name: str = Field(title="Name", description="Name of repository")
+    owner: str = Field(title="Owner", description="Owner of repository")
     deleted: bool
     # This should be an int... but it would break backward compatiblity. Probably switch it at some point anyway?
     ctx_rev: str = Field(
-        name="Changeset revision number",
+        title="Changeset revision number",
         description="The linearized 0-based index of the changeset on the tool shed (0, 1, 2,...)",
     )
     error_message: str = Field("Installation error message, the empty string means no error was recorded")
     installed_changeset_revision: str = Field(
-        name="Installed changeset revision",
+        title="Installed changeset revision",
         description="Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a repository is updated.",
     )
-    tool_shed: str = Field(name="Tool shed", description="Hostname of the tool shed this was installed from")
+    tool_shed: str = Field(title="Tool shed", description="Hostname of the tool shed this was installed from")
     dist_to_shed: bool
     uninstalled: bool
     changeset_revision: str = Field(
-        name="Changeset revision", description="Changeset revision of the repository - a mercurial commit hash"
+        title="Changeset revision", description="Changeset revision of the repository - a mercurial commit hash"
     )
     tool_shed_status: Optional[InstalledRepositoryToolShedStatus] = Field(
-        name="Latest updated status from the tool shed"
+        title="Latest updated status from the tool shed"
     )
 
 
