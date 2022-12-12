@@ -171,17 +171,17 @@ endif
 
 
 build-api-schema:
-	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.json
+	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
 
 remove-api-schema:
-	rm _schema.json
+	rm _schema.yaml
 
 update-client-api-schema: node-deps build-api-schema
-	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.json > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
 lint-api-schema: build-api-schema
-	$(IN_VENV) npx --yes @redocly/cli lint _schema.json
+	$(IN_VENV) npx --yes @redocly/cli lint _schema.yaml
 	$(MAKE) remove-api-schema
 
 client: node-deps ## Rebuild client-side artifacts for local development.
