@@ -30,6 +30,7 @@ from galaxy.datatypes import (
     data,
     metadata,
 )
+from galaxy.datatypes._protocols import HasFilesNameProperty
 from galaxy.datatypes.binary import _BamOrSam
 from galaxy.datatypes.data import (
     DatatypeValidation,
@@ -153,7 +154,7 @@ class TabularData(Text):
             }
         )
 
-    def _read_chunk(self, trans, dataset: "DatasetInstance", offset: int, ck_size: Optional[int] = None):
+    def _read_chunk(self, trans, dataset: HasFilesNameProperty, offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
