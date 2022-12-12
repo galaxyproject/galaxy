@@ -26,6 +26,8 @@ from galaxy import util
 from galaxy.datatypes._protocols import (
     Dataset_t1,
     Dataset_t2,
+    Dataset_t3,
+    Dataset_t4,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -597,7 +599,7 @@ class Data(metaclass=DataMeta):
 
     def _download_filename(
         self,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t4,
         to_ext: Optional[str] = None,
         hdca: Optional["HistoryDatasetCollectionAssociation"] = None,
         element_identifier: Optional[str] = None,
@@ -771,7 +773,7 @@ class Data(metaclass=DataMeta):
     def convert_dataset(
         self,
         trans,
-        original_dataset: "HistoryDatasetAssociation",
+        original_dataset: Dataset_t3,
         target_type: str,
         return_output: bool = False,
         visible: bool = True,

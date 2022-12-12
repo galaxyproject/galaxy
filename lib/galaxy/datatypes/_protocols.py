@@ -49,3 +49,18 @@ class Dataset_t1(HasExtraFilesPathProperty, HasFileNameProperty, Protocol):
 class Dataset_t2(HasMetadata, HasFileNameProperty, Protocol):
     datatype: Any
     ext: str  # TODO reconcile: ext vs. extension
+
+
+class Dataset_t3(Protocol):
+    hid: str
+    ext: str  # TODO reconcile: ext vs. extension
+
+
+class Dataset_t4(Protocol):
+    hid: str
+    name: str
+    extension: str  # TODO reconcile: ext vs. extension
+
+
+class Dataset_t5(HasFileNameProperty, Dataset_t4, Protocol):
+    ...
