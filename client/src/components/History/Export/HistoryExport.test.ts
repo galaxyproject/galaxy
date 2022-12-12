@@ -5,9 +5,9 @@ import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,
     RECENT_STS_DOWNLOAD_RECORD,
-} from "components/Common/models/testData/exportData";
+} from "@/components/Common/models/testData/exportData";
 import flushPromises from "flush-promises";
-import type { components } from "schema";
+import type { components } from "@/schema";
 import { getLocalVue } from "../../../../tests/jest/helpers";
 import HistoryExport from "./HistoryExport.vue";
 import { getExportRecords } from "./services";

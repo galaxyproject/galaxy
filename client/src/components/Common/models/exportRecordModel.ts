@@ -1,5 +1,5 @@
 import { formatDistanceToNow, parseISO } from "date-fns";
-import type { components } from "schema";
+import type { components } from "@/schema";
 
 type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 
