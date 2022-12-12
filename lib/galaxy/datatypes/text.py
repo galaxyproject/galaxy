@@ -17,7 +17,10 @@ from typing import (
 
 import yaml
 
-from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import (
+    GeneratePrimaryFileDataset,
+    HasCreatingJobProperty,
+)
 from galaxy.datatypes.data import (
     get_file_peek,
     Headers,
@@ -1094,7 +1097,9 @@ class Yaml(Text):
         """Returns the mime type of the datatype"""
         return "application/yaml"
 
-    def _yield_user_file_content(self, trans, from_dataset: "DatasetInstance", filename: str, headers: Headers) -> IO:
+    def _yield_user_file_content(
+        self, trans, from_dataset: HasCreatingJobProperty, filename: str, headers: Headers
+    ) -> IO:
         # Override non-standard application/yaml mediatype with
         # text/plain, so preview is shown in preview iframe,
         # instead of downloading the file.

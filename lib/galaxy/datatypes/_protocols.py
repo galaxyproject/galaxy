@@ -26,6 +26,12 @@ class HasMetadata(Protocol):
     metadata: Any
 
 
+class HasCreatingJobProperty(Protocol):
+    @property
+    def creating_job(self):
+        ...
+
+
 class Dataset_t1(HasExtraFilesPathProperty, HasFilesNameProperty, Protocol):
     name: str
     extension: str
