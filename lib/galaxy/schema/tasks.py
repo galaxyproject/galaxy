@@ -12,7 +12,7 @@ from .schema import (
     DatasetSourceType,
     HistoryContentType,
     ModelStoreFormat,
-    StoreExportPayload,
+    ShortTermStoreExportPayload,
     WriteStoreToPayload,
 )
 from ..schema import PdfDocumentType
@@ -46,16 +46,15 @@ class RequestUser(BaseModel):
     # session_id: Optional[str]
 
 
-class GenerateHistoryDownload(StoreExportPayload):
+class GenerateHistoryDownload(ShortTermStoreExportPayload):
     history_id: int
-    short_term_storage_request_id: UUID
     user: RequestUser
+    export_association_id: Optional[int]
 
 
-class GenerateHistoryContentDownload(StoreExportPayload):
+class GenerateHistoryContentDownload(ShortTermStoreExportPayload):
     content_type: HistoryContentType
     content_id: int
-    short_term_storage_request_id: UUID
     user: RequestUser
 
 
@@ -63,9 +62,8 @@ class BcoGenerationTaskParametersMixin(BcoGenerationParametersMixin):
     galaxy_url: str
 
 
-class GenerateInvocationDownload(StoreExportPayload, BcoGenerationTaskParametersMixin):
+class GenerateInvocationDownload(ShortTermStoreExportPayload, BcoGenerationTaskParametersMixin):
     invocation_id: int
-    short_term_storage_request_id: UUID
     user: RequestUser
 
 
@@ -83,6 +81,7 @@ class WriteHistoryContentTo(WriteStoreToPayload):
 class WriteHistoryTo(WriteStoreToPayload):
     history_id: int
     user: RequestUser
+    export_association_id: Optional[int]
 
 
 class ImportModelStoreTaskRequest(BaseModel):

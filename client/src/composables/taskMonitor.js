@@ -4,13 +4,14 @@ import axios from "axios";
 const SUCCESS_STATE = "SUCCESS";
 const FAILURE_STATE = "FAILURE";
 const TASK_READY_STATES = [SUCCESS_STATE, FAILURE_STATE];
-const POLL_DELAY = 1000;
+const DEFAULT_POLL_DELAY = 1000;
 
 /**
  * Composable for waiting on Galaxy background tasks.
  */
 export function useTaskMonitor() {
     let timeout = null;
+    let pollDelay = DEFAULT_POLL_DELAY;
 
     const isRunning = ref(false);
     const status = ref(null);
@@ -21,7 +22,8 @@ export function useTaskMonitor() {
     const hasFailed = computed(() => status.value === FAILURE_STATE);
     const queryStateUrl = computed(() => `/api/tasks/${currentTaskId.value}/state`);
 
-    function waitForTask(taskId) {
+    function waitForTask(taskId, pollDelayInMs = DEFAULT_POLL_DELAY) {
+        pollDelay = pollDelayInMs;
         resetState();
         currentTaskId.value = taskId;
         isRunning.value = true;
@@ -46,7 +48,7 @@ export function useTaskMonitor() {
         resetTimeout();
         timeout = setTimeout(() => {
             fetchTaskStatus(taskId);
-        }, POLL_DELAY);
+        }, pollDelay);
     }
 
     function handleError(err) {
@@ -69,8 +71,9 @@ export function useTaskMonitor() {
     return {
         /**
          * Waits for a particular task ID to be completed.
-         * While the task is pending, the state will be updated every second by polling the server.
+         * While the task is pending, the state will be updated every `pollDelayInMs` by polling the server.
          * @param {string} taskId The task ID
+         * @param {Number} pollDelayInMs The time (milliseconds) between poll requests to update the task state.
          */
         waitForTask,
         /**
