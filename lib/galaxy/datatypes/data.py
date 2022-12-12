@@ -23,7 +23,10 @@ from markupsafe import escape
 from typing_extensions import Literal
 
 from galaxy import util
-from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import (
+    Dataset_t1,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
 )
@@ -339,7 +342,7 @@ class Data(metaclass=DataMeta):
         return error, msg, messagetype
 
     def _archive_composite_dataset(
-        self, trans, data: "DatasetInstance", headers: Headers, do_action: str = "zip"
+        self, trans, data: Dataset_t1, headers: Headers, do_action: str = "zip"
     ) -> Tuple[Union[ZipstreamWrapper, str], Headers]:
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
