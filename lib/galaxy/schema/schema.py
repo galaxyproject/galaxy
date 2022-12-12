@@ -195,6 +195,22 @@ class Model(BaseModel):
             LibraryFolderDatabaseIdField: lambda v: LibraryFolderDatabaseIdField.encode(v),
         }
 
+        @staticmethod
+        def schema_extra(schema: Dict[str, Any], model) -> None:
+            # pydantic doesn't currently allow creating a constant that isn't optional,
+            # which makes sense for validation, but an openapi schema that describes
+            # a response should be able to declare that a field is always present,
+            # even if it is generated from a default value.
+            # Pass `mark_required_in_schema=True` when constructing a pydantic Field instance
+            # to indicate that the field is always present.
+            for prop_key, prop in schema.get("properties", {}).items():
+                required_in_schema = prop.pop("mark_required_in_schema", None)
+                if required_in_schema:
+                    if "required" in schema:
+                        schema["required"].append(prop_key)
+                    else:
+                        schema["required"] = [prop_key]
+
 
 class UserModel(Model):
     """User in a transaction context."""
@@ -205,13 +221,13 @@ class UserModel(Model):
     active: bool = Field(title="Active", description="User is active")
     deleted: bool = Field(title="Deleted", description="User is deleted")
     last_password_change: Optional[datetime] = Field(title="Last password change", description="")
-    model_class: Annotated[USER_MODEL_CLASS, ModelClassField()]
+    model_class: USER_MODEL_CLASS = ModelClassField(USER_MODEL_CLASS)
 
 
 class GroupModel(Model):
     """User group model"""
 
-    model_class: Annotated[GROUP_MODEL_CLASS, ModelClassField()]
+    model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
     id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
@@ -603,7 +619,7 @@ class HDAExtended(HDADetailed):
 class DCSummary(Model):
     """Dataset Collection summary information."""
 
-    model_class: Annotated[DC_MODEL_CLASS, ModelClassField()]
+    model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     id: DecodedDatabaseIdField = EntityIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
@@ -617,7 +633,7 @@ class HDAObject(Model):
     """History Dataset Association Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[HDA_MODEL_CLASS, ModelClassField()]
+    model_class: HDA_MODEL_CLASS = ModelClassField(HDA_MODEL_CLASS)
     state: Dataset.states = DatasetStateField
     hda_ldda: DatasetSourceType = HdaLddaField
     history_id: DecodedDatabaseIdField = HistoryIdField
@@ -630,7 +646,7 @@ class DCObject(Model):
     """Dataset Collection Object"""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[DC_MODEL_CLASS, ModelClassField()]
+    model_class: DC_MODEL_CLASS = ModelClassField(DC_MODEL_CLASS)
     collection_type: CollectionType = CollectionTypeField
     populated: Optional[bool] = PopulatedField
     element_count: Optional[int] = ElementCountField
@@ -642,7 +658,7 @@ class DCESummary(Model):
     """Dataset Collection Element summary information."""
 
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[DCE_MODEL_CLASS, ModelClassField()]
+    model_class: DCE_MODEL_CLASS = ModelClassField(DCE_MODEL_CLASS)
     element_index: int = Field(
         ...,
         title="Element Index",
@@ -748,7 +764,7 @@ class HDCJobStateSummary(Model):
 class HDCASummary(HistoryItemCommon):
     """History Dataset Collection Association summary information."""
 
-    model_class: Annotated[HDCA_MODEL_CLASS, ModelClassField()]
+    model_class: HDCA_MODEL_CLASS = ModelClassField(HDCA_MODEL_CLASS)
     type: Annotated[
         Literal["collection"],
         Field(
@@ -906,7 +922,7 @@ class UpdateHistoryContentsPayload(HistoryBase):
 class HistorySummary(HistoryBase):
     """History summary information."""
 
-    model_class: Annotated[HISTORY_MODEL_CLASS, ModelClassField()]
+    model_class: HISTORY_MODEL_CLASS = ModelClassField(HISTORY_MODEL_CLASS)
     id: DecodedDatabaseIdField = EntityIdField
     name: str = Field(
         ...,
@@ -1485,7 +1501,7 @@ class JobIdResponse(Model):
 
 class JobBaseModel(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[JOB_MODEL_CLASS, ModelClassField()]
+    model_class: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
     tool_id: str = Field(
         ...,
         title="Tool ID",
@@ -1533,15 +1549,15 @@ class ItemStateSummary(Model):
 
 
 class JobStateSummary(ItemStateSummary):
-    model: Annotated[Literal["Job"], ModelClassField()]
+    model: Literal["Job"] = ModelClassField("Job")
 
 
 class ImplicitCollectionJobsStateSummary(ItemStateSummary):
-    model: Annotated[Literal["ImplicitCollectionJobs"], ModelClassField()]
+    model: Literal["ImplicitCollectionJobs"] = ModelClassField("ImplicitCollectionJobs")
 
 
 class WorkflowInvocationStateSummary(ItemStateSummary):
-    model: Annotated[Literal["WorkflowInvocation"], ModelClassField()]
+    model: Literal["WorkflowInvocation"] = ModelClassField("WorkflowInvocation")
 
 
 class JobSummary(JobBaseModel):
@@ -1708,7 +1724,7 @@ class JobFullDetails(JobDetails):
 
 class StoredWorkflowSummary(Model):
     id: DecodedDatabaseIdField = EntityIdField
-    model_class: Annotated[STORED_WORKFLOW_MODEL_CLASS, ModelClassField()]
+    model_class: STORED_WORKFLOW_MODEL_CLASS = ModelClassField(STORED_WORKFLOW_MODEL_CLASS)
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     name: str = Field(
@@ -2197,7 +2213,7 @@ class BasicRoleModel(Model):
 class RoleModel(BasicRoleModel):
     description: Optional[str] = RoleDescriptionField
     url: RelativeUrl = RelativeUrlField
-    model_class: Annotated[Literal["Role"], ModelClassField()]
+    model_class: Literal["Role"] = ModelClassField("Role")
 
 
 class RoleDefinitionModel(Model):
@@ -2273,7 +2289,7 @@ class InstalledRepositoryToolShedStatus(Model):
 
 
 class InstalledToolShedRepository(Model):
-    model_class: Annotated[Literal["ToolShedRepository"], ModelClassField()] = "ToolShedRepository"
+    model_class: Literal["ToolShedRepository"] = ModelClassField("ToolShedRepository")
     id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2327,7 +2343,7 @@ class LibraryPermissionScope(str, Enum):
 
 
 class LibraryLegacySummary(Model):
-    model_class: Annotated[Literal["Library"], ModelClassField()]
+    model_class: Literal["Library"] = ModelClassField("Library")
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",
@@ -2574,7 +2590,7 @@ class LibraryFolderPermissionsPayload(LibraryPermissionsPayloadBase):
 
 
 class LibraryFolderDetails(Model):
-    model_class: Annotated[Literal["LibraryFolder"], ModelClassField()]
+    model_class: Literal["LibraryFolder"] = ModelClassField("LibraryFolder")
     id: LibraryFolderDatabaseIdField = Field(
         ...,
         title="ID",
@@ -3195,7 +3211,7 @@ class PageSummary(PageSummaryBase):
         title="ID",
         description="Encoded ID of the Page.",
     )
-    model_class: Annotated[PAGE_MODEL_CLASS, ModelClassField()]
+    model_class: PAGE_MODEL_CLASS = ModelClassField(PAGE_MODEL_CLASS)
     username: str = Field(
         ...,  # Required
         title="Username",
