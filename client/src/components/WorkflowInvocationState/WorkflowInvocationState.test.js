@@ -1,6 +1,6 @@
 import WorkflowInvocationState from "./WorkflowInvocationState";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import Vuex from "vuex";
 import invocationData from "../Workflow/test/json/invocation.json";
 

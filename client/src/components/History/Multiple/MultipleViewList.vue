@@ -70,8 +70,8 @@ export default {
         const isScrollable = ref(false);
         const { arrived } = useAnimationFrameScroll(scrollContainer);
 
-        useAnimationFrameResizeObserver(scrollContainer, () => {
-            isScrollable.value = scrollContainer.value.scrollWidth >= scrollContainer.value.clientWidth;
+        useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) => {
+            isScrollable.value = scrollSize.width >= clientSize.width + 1;
         });
 
         const scrolledLeft = computed(() => !isScrollable.value || arrived.left);

@@ -1,5 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import TourList from "./TourList.vue";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";

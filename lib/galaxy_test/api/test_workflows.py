@@ -1053,7 +1053,6 @@ steps:
     def test_base64_import(self):
         base64_url = "base64://" + base64.b64encode(workflow_str.encode("utf-8")).decode("utf-8")
         response = self._post("workflows", data={"archive_source": base64_url})
-        print(response.content)
         response.raise_for_status()
         workflow_id = response.json()["id"]
         workflow = self._download_workflow(workflow_id)

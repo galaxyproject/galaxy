@@ -2308,6 +2308,18 @@ class JobImportHistoryArchive(Base, RepresentById):
     history = relationship("History")
 
 
+class StoreExportAssociation(Base, RepresentById):
+    __tablename__ = "store_export_association"
+    __table_args__ = (Index("ix_store_export_object", "object_id", "object_type"),)
+
+    id = Column(Integer, primary_key=True)
+    task_uuid = Column(UUIDType(), index=True, unique=True)
+    create_time = Column(DateTime, default=now)
+    object_type = Column(TrimmedString(32))
+    object_id = Column(Integer)
+    export_metadata = Column(JSONType)
+
+
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"
 
@@ -4319,9 +4331,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
 
     def get_display_applications(self, trans):
         return self.datatype.get_display_applications_by_dataset(self, trans)
-
-    def get_visualizations(self):
-        return self.datatype.get_visualizations(self)
 
     def get_datasources(self, trans):
         """

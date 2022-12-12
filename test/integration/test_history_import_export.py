@@ -1,3 +1,4 @@
+import os
 import tarfile
 from uuid import uuid4
 
@@ -41,6 +42,14 @@ class TestImportExportHistoryViaTasksIntegration(
     def handle_galaxy_config_kwds(cls, config):
         PosixFileSourceSetup.handle_galaxy_config_kwds(config, cls)
         UsesCeleryTasks.handle_galaxy_config_kwds(config)
+        cls.setup_ftp_config(config)
+
+    @classmethod
+    def setup_ftp_config(cls, config):
+        ftp_dir = cls.temp_config_dir("ftp")
+        os.makedirs(ftp_dir)
+        config["ftp_upload_dir"] = ftp_dir
+        config["ftp_upload_site"] = "ftp://cow.com"
 
     def setUp(self):
         super().setUp()
@@ -92,6 +101,80 @@ class TestImportExportHistoryViaTasksIntegration(
                 )
                 bai_metadata = imported_bam_details["meta_files"][0]
                 assert bai_metadata["file_type"] == "bam_index"
+
+    def test_import_export_ftp(self):
+        history_name = f"for_export_ftp_async_{uuid4()}"
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+
+        model_store_format = "rocrate.zip"
+        target_uri = f"gxftp://history.{model_store_format}"
+
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
+        self.dataset_populator.import_history_from_uri_async(target_uri, model_store_format)
+
+        last_history = self._get("histories?limit=1").json()
+        assert len(last_history) == 1
+        imported_history = last_history[0]
+        imported_history_id = imported_history["id"]
+        assert imported_history_id != history_id
+        assert imported_history["name"] == history_name
+
+    def test_export_tracking(self):
+        history_name = f"for_export_tracking_{uuid4()}"
+        history_id = self.dataset_populator.setup_history_for_export_testing(history_name)
+        model_store_format = "rocrate.zip"
+        target_uri = f"gxfiles://posix_test/history.{model_store_format}"
+
+        # Initially there are no export records
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) == 0
+
+        # Export to a remote file source
+        self.dataset_populator.export_history_to_uri_async(history_id, target_uri, model_store_format)
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) == 1
+        last_record = export_records[0]
+        self._wait_for_export_task_on_record(last_record)
+        assert last_record["ready"] is True
+
+        # Check metadata
+        assert last_record["up_to_date"] is True
+        assert last_record["export_metadata"]
+        assert last_record["export_metadata"]["request_data"]
+        assert last_record["export_metadata"]["request_data"]["payload"]
+        assert last_record["export_metadata"]["request_data"]["payload"]["target_uri"] == target_uri
+        assert last_record["export_metadata"]["result_data"]
+        assert last_record["export_metadata"]["result_data"]["success"] is True
+
+        # Track temporal direct download
+        self.dataset_populator.download_history_to_store(history_id)
+        # We should have two records now
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        assert len(export_records) == 2
+        last_record = export_records[0]
+        self._wait_for_export_task_on_record(last_record)
+        assert last_record["ready"] is True
+
+        # Check metadata
+        assert last_record["up_to_date"] is True
+        assert last_record["export_metadata"]
+        assert last_record["export_metadata"]["request_data"]
+        assert last_record["export_metadata"]["request_data"]["payload"]
+        assert last_record["export_metadata"]["request_data"]["payload"]["short_term_storage_request_id"] is not None
+        assert last_record["export_metadata"]["request_data"]["payload"]["duration"] is not None
+        assert last_record["export_metadata"]["result_data"]
+        assert last_record["export_metadata"]["result_data"]["success"] is True
+
+        # After modifying the history the records must be outdated
+        self.dataset_populator.new_dataset(history_id)
+        export_records = self.dataset_populator.get_history_export_tasks(history_id)
+        for record in export_records:
+            assert record["up_to_date"] is False
+
+    def _wait_for_export_task_on_record(self, record):
+        if record["preparing"]:
+            assert record["task_uuid"]
+            self.dataset_populator.wait_on_task_id(record["task_uuid"])
 
 
 class TestImportExportHistoryContentsViaTasksIntegration(IntegrationTestCase, UsesCeleryTasks):

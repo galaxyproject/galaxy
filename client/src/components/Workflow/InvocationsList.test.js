@@ -2,7 +2,7 @@ import InvocationsList from "./InvocationsList";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import mockInvocationData from "./test/json/invocation.json";
 import { parseISO, formatDistanceToNow } from "date-fns";
 

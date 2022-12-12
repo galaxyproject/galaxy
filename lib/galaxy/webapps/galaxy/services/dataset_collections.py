@@ -12,6 +12,10 @@ from pydantic import (
     Field,
     ValidationError,
 )
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy import exceptions
 from galaxy.datatypes.registry import Registry
@@ -64,7 +68,7 @@ class DatasetCollectionAttributesResult(Model):
     dbkey: str = Field(..., description="TODO")
     # Are the following fields really used/needed?
     extension: str = Field(..., description="The dataset file extension.", example="txt")
-    model_class: str = ModelClassField("HistoryDatasetCollectionAssociation")
+    model_class: Annotated[Literal["HistoryDatasetCollectionAssociation"], ModelClassField()]
     dbkeys: Optional[Set[str]]
     extensions: Optional[Set[str]]
     tags: TagCollection

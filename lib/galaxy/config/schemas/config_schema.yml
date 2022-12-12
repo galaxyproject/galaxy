@@ -313,6 +313,7 @@ mapping:
       tool_dependency_dir:
         type: str
         default: dependencies
+        path_resolves_to: data_dir
         required: false
         desc: |
           Various dependency resolver configuration parameters will have defaults set relative
@@ -322,8 +323,6 @@ mapping:
           Set the string to null to explicitly disable tool dependency handling.
           If this option is set to none or an invalid path, installing tools with dependencies
           from the Tool Shed or in Conda will fail.
-
-          The value of this option will be resolved with respect to <data_dir>.
 
       dependency_resolvers_config_file:
         type: str
@@ -586,6 +585,7 @@ mapping:
       involucro_path:
         type: str
         default: involucro
+        path_resolves_to: tool_dependency_dir
         required: false
         desc: |
           involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -593,8 +593,6 @@ mapping:
           the location of involucro on the Galaxy host. This is ignored if the relevant
           container resolver isn't enabled, and will install on demand unless
           involucro_auto_init is set to false.
-
-          The value of this option will be resolved with respect to <tool_dependency_dir>.
 
       involucro_auto_init:
         type: bool
@@ -2786,6 +2784,58 @@ mapping:
           Only set this if you need to bootstrap Galaxy, in particular to create
           a real admin user account via API.
           You should probably not set this on a production server.
+
+      ga4gh_service_id:
+        type: str
+        required: false
+        desc: |
+          Service ID for GA4GH services (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using the URL the target API requests are made against.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+          This value should likely reflect your service's URL. For instance for usegalaxy.org
+          this value should be org.usegalaxy. Particular Galaxy implementations will treat this
+          value as a prefix and append the service type to this ID. For instance for the DRS
+          service "id" (available via the DRS API) for the above configuration value would be
+          org.usegalaxy.drs.
+
+      ga4gh_service_organization_name:
+        type: str
+        required: false
+        desc: |
+          Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using ga4gh_service_id.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      ga4gh_service_organization_url:
+        type: str
+        required: False
+        desc: |
+          Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using the URL the target API requests are made against.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      ga4gh_service_environment:
+        type: str
+        required: False
+        desc: |
+          Service environment (exposed via the service-info endpoint for the Galaxy DRS API) for
+          implemented GA4GH services.
+
+          Suggested values are prod, test, dev, staging.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 
       enable_tool_tags:
         type: bool

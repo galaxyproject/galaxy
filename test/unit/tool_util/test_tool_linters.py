@@ -749,6 +749,20 @@ TESTS_DISCOVER_OUTPUTS = """
 </tool>
 """
 
+TESTS_EXPECT_NUM_OUTPUTS_FILTER = """
+<tool>
+    <outputs>
+        <data>
+            <filter/>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_failure="false">
+        </test>
+    </tests>
+</tool>
+"""
+
 # tool xml for xml_order linter
 XML_ORDER = """
 <tool>
@@ -1584,6 +1598,14 @@ def test_tests_discover_outputs(lint_ctx):
     )
     assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 4
+
+
+def test_tests_expect_num_outputs_filter(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_EXPECT_NUM_OUTPUTS_FILTER)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
+    assert "Test should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert len(lint_ctx.error_messages) == 0
 
 
 def test_xml_order(lint_ctx):
