@@ -16,7 +16,7 @@
             -s ${input1.metadata.chromCol}
             -b ${input1.metadata.startCol}
             -e ${input1.metadata.endCol}
-            ## TODO --zero-based information missing in interval datatype
+            ## --zero-based information missing in interval datatype
         #end if
         input.bgz
         &&
