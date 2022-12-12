@@ -4,13 +4,14 @@ import localeStrings from "i18n!nls/locale";
  * @param {String} strToLocalize
  * @returns
  */
-var localize = function (strToLocalize) {
-    return localeStrings[strToLocalize] || strToLocalize;
-};
 
-localize.cacheNonLocalized = false;
+let localeStringsSubset = [];
 
-localize._setUserLocale = function _setUserLocale(user, config) {
+export default function localize(strToLocalize) {
+    return localeStringsSubset[strToLocalize] || strToLocalize;
+}
+
+export function _setUserLocale(user, config) {
     const global_locale =
         config.default_locale && config.default_locale != "auto" ? config.default_locale.toLowerCase() : false;
 
@@ -36,19 +37,16 @@ localize._setUserLocale = function _setUserLocale(user, config) {
     const locale = user_locale || nav_locale || global_locale;
 
     sessionStorage.setItem("currentLocale", locale);
-};
+}
 
-localize._getUserLocale = function _getUserLocale(user, config) {
+export function _getUserLocale(user, config) {
     let locale = null;
     if (Object.prototype.hasOwnProperty.call(localeStrings, "__root")) {
         locale = sessionStorage.getItem("currentLocale");
         if (locale) {
-            // eslint-disable-next-line no-import-assign
-            localeStrings =
+            localeStringsSubset =
                 localeStrings["__" + locale] || localeStrings["__" + locale.split("-")[0]] || localeStrings.__root;
         }
     }
     return locale;
-};
-
-export default localize;
+}
