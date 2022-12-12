@@ -1,11 +1,5 @@
 <template>
-    <HistoryItemsProvider
-        :key="historyId"
-        v-slot="{ loading, result: itemsLoaded, count: totalItemsInQuery }"
-        :history-id="historyId"
-        :offset="offset"
-        :update-time="history.update_time"
-        :filter-text="filterText">
+    <div>
         <ExpandedItems
             v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
             :scope-key="historyId"
@@ -140,14 +134,15 @@
                 </section>
             </SelectedItems>
         </ExpandedItems>
-    </HistoryItemsProvider>
+    </div>
 </template>
 
 <script>
 import Vue from "vue";
 import { Toast } from "composables/toast";
-import { mapActions } from "vuex";
-import { HistoryItemsProvider } from "components/providers/storeProviders";
+import { mapActions as vuexMapActions } from "vuex";
+import { mapActions, mapState, storeToRefs } from "pinia";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
@@ -179,7 +174,6 @@ export default {
         HistoryDropZone,
         HistoryEmpty,
         HistoryFilters,
-        HistoryItemsProvider,
         HistoryOperations,
         HistorySelectionOperations,
         HistorySelectionStatus,
@@ -199,19 +193,24 @@ export default {
     },
     data() {
         return {
+            error: null,
             filterText: "",
             highlights: {},
             highlightsKey: null,
             invisible: {},
+            itemsLoaded: [],
+            loading: false,
             offset: 0,
             showAdvanced: false,
             showDropZone: false,
+            totalItemsInQuery: 0,
             operationRunning: null,
             operationError: null,
             querySelectionBreak: false,
         };
     },
     computed: {
+        ...mapState(useHistoryItemsStore, ["getHistoryItems"]),
         /** @returns {String} */
         historyId() {
             return this.history.id;
@@ -234,10 +233,12 @@ export default {
         },
         /** @returns {Date} */
         lastChecked() {
-            return this.$store.getters.getLastCheckedTime();
+            const { getLastCheckedTime } = storeToRefs(useHistoryItemsStore());
+            return getLastCheckedTime.value;
         },
         isWatching() {
-            return this.$store.getters.getWatchingVisibility();
+            const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
+            return getWatchingVisibility.value;
         },
     },
     watch: {
@@ -245,19 +246,25 @@ export default {
             this.invisible = {};
             this.offset = 0;
             this.resetHighlights();
+            this.loadHistoryItems();
         },
         historyId(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.operationRunning = null;
                 this.resetHighlights();
+                this.loadHistoryItems();
             }
         },
         filter(newVal) {
             this.filterText = newVal;
         },
     },
+    async mounted() {
+        await this.loadHistoryItems();
+    },
     methods: {
-        ...mapActions("history", ["loadHistoryById"]),
+        ...vuexMapActions("history", ["loadHistoryById"]),
+        ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
             return this.highlights[this.getItemKey(item)];
         },
@@ -269,6 +276,20 @@ export default {
         },
         isDataset(item) {
             return item.history_content_type == "dataset";
+        },
+        async loadHistoryItems() {
+            this.loading = true;
+            try {
+                await this.fetchHistoryItems(this.historyId, this.filterText, this.offset);
+                this.itemsLoaded = this.getHistoryItems(this.historyId, this.filterText); // computed?
+                const { getTotalMatchesCount } = storeToRefs(useHistoryItemsStore());
+                this.totalItemsInQuery = getTotalMatchesCount.value;
+                this.error = null;
+                this.loading = false;
+            } catch (error) {
+                this.error = error;
+                this.loading = false;
+            }
         },
         onDelete(item) {
             this.setInvisible(item);

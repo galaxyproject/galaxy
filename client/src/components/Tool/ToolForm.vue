@@ -224,17 +224,17 @@ export default {
             const Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
                 console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+                // Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
             }
         });
     },
-    beforeDestroy() {
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
-            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
-        }
-    },
+    // beforeDestroy() {
+    //     const Galaxy = getGalaxyInstance();
+    //     if (Galaxy && Galaxy.currHistoryPanel) {
+    //         Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
+    //         console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
+    //     }
+    // },
     methods: {
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
