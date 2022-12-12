@@ -30,7 +30,7 @@ function onDrop(event) {
 
 <template>
     <b-modal v-model="isFileOverDocument" :modal-class="modalClass" hide-header hide-footer centered>
-        <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload them</div>
+        <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload</div>
     </b-modal>
 </template>
 
