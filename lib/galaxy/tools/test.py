@@ -44,7 +44,7 @@ def description_from_tool_object(tool, test_index, raw_test_dict) -> ToolTestDes
     num_outputs = raw_test_dict.get("expect_num_outputs", None)
     if num_outputs:
         num_outputs = int(num_outputs)
-    maxseconds = raw_test_dict.get("maxseconds", None)
+    maxseconds = raw_test_dict.get("maxseconds", 86400)
     if maxseconds is not None:
         maxseconds = int(maxseconds)
 
