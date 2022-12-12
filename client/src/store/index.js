@@ -10,7 +10,6 @@ import VuexPersistence from "vuex-persist";
 
 import config from "config";
 
-import { jobStore } from "stores/jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
 import { configStore } from "./configStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
@@ -61,7 +60,6 @@ export function createStore() {
             dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
-            informationStore: jobStore,
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,
             gridSearch: gridSearchStore,
