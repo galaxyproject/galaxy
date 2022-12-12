@@ -1,4 +1,4 @@
-import { bytesToString } from "utils/utils";
+import { bytesToString } from "@/utils/utils";
 
 interface SummaryDataResponse {
     totalSize: number;
