@@ -15,9 +15,9 @@
         grep -e '^"#"' -e '^track' -v '$input1' 
         |
         sort 
-        #if $input1.ext == "vcf"
+        #if $input1.is_of_type('vcf')
             -k1,1 -k2,2n
-        #elif $input1.ext == "gff"
+        #elif $input1.is_of_type('gff')
             -s -k1,1 -k4,4n
         #else
             -k${input1.metadata.chromCol},${input1.metadata.chromCol}
