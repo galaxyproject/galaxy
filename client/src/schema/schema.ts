@@ -507,47 +507,6 @@ export interface paths {
          */
         put: operations["update_permissions_api_histories__history_id__contents__dataset_id__permissions_put"];
     };
-    "/api/histories/{history_id}/contents/{direction}/{hid}/{limit}": {
-        /**
-         * Get content items around a particular `HID`.
-         * @description .. warning:: For internal use to support the scroller functionality.
-         *
-         * This endpoint provides random access to a large history without having
-         * to know exactly how many pages are in the final query. Pick a target HID
-         * and filters, and the endpoint will get a maximum of `limit` history items "around" the `hid`.
-         *
-         * Additional counts are provided in the HTTP headers.
-         *
-         * The `direction` determines what items are selected:
-         *
-         * a) item counts:
-         *
-         *    - total matches-up:   hid < {hid}
-         *    - total matches-down: hid > {hid}
-         *    - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
-         *    - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
-         *    - displayed matches-down: hid > {hid}
-         *    - displayed matches:      displayed matches-up + displayed matches-down
-         *
-         * b) {limit} history items:
-         *
-         *    - if direction == "before": hid <= {hid}
-         *    - if direction == "after":  hid > {hid}
-         *    - if direction == "near":   "near" {hid}, so that
-         *      n. items before <= limit // 2,
-         *      n. items after <= limit // 2 + 1.
-         *
-         * .. note:: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters,
-         *     it uses the following syntax for query parameters::
-         *
-         *         ?[field]-[operator]=[value]
-         *
-         *     Example::
-         *
-         *         ?update_time-gt=2015-01-29
-         */
-        get: operations["contents_near_api_histories__history_id__contents__direction___hid___limit__get"];
-    };
     "/api/histories/{history_id}/contents/{history_content_id}/display": {
         /**
          * Displays (preview) or downloads dataset content.
@@ -1287,6 +1246,10 @@ export interface paths {
          */
         get: operations["index_api_workflows_get"];
     };
+    "/api/workflows/menu": {
+        /** Get workflows present in the tools panel. */
+        get: operations["get_workflow_menu_api_workflows_menu_get"];
+    };
     "/api/workflows/{id}/disable_link_access": {
         /**
          * Makes this item inaccessible by a URL link.
@@ -1343,6 +1306,10 @@ export interface paths {
     "/api/workflows/{workflow_id}/undelete": {
         /** Remove the deleted flag from a workflow. */
         post: operations["undelete_workflow_api_workflows__workflow_id__undelete_post"];
+    };
+    "/api/workflows/{workflow_id}/versions": {
+        /** List all versions of a workflow. */
+        get: operations["show_versions_api_workflows__workflow_id__versions_get"];
     };
 }
 
@@ -2654,12 +2621,6 @@ export interface components {
              */
             purge?: boolean;
         };
-        /**
-         * DirectionOptions
-         * @description An enumeration.
-         * @enum {string}
-         */
-        DirectionOptions: "near" | "before" | "after";
         /**
          * DisplayApp
          * @description Basic linked information about an application that can display certain datatypes.
@@ -4011,169 +3972,6 @@ export interface components {
              * @enum {string}
              */
             type: "hdca";
-        };
-        /**
-         * HistoryActiveContentCounts
-         * @description Contains the number of active, deleted or hidden items in a History.
-         */
-        HistoryActiveContentCounts: {
-            /**
-             * Active
-             * @description Number of active datasets.
-             */
-            active: number;
-            /**
-             * Deleted
-             * @description Number of deleted datasets.
-             */
-            deleted: number;
-            /**
-             * Hidden
-             * @description Number of hidden datasets.
-             */
-            hidden: number;
-        };
-        /**
-         * HistoryBeta
-         * @description History detailed information used in the new Beta History.
-         */
-        HistoryBeta: {
-            /**
-             * Annotation
-             * @description An annotation to provide details or to help understand the purpose and usage of this item.
-             */
-            annotation: string;
-            /**
-             * Active Contents
-             * @description Contains the number of active, deleted or hidden items in the History.
-             */
-            contents_active: components["schemas"]["HistoryActiveContentCounts"];
-            /**
-             * Contents URL
-             * @description The relative URL to access the contents of this History.
-             */
-            contents_url: string;
-            /**
-             * Count
-             * @description The number of items in the history.
-             */
-            count: number;
-            /**
-             * Create Time
-             * Format: date-time
-             * @description The time and date this item was created.
-             */
-            create_time: string;
-            /**
-             * Deleted
-             * @description Whether this item is marked as deleted.
-             */
-            deleted: boolean;
-            /**
-             * Empty
-             * @description Whether this History has any content.
-             */
-            empty: boolean;
-            /**
-             * Genome Build
-             * @description TODO
-             * @default ?
-             */
-            genome_build?: string;
-            /**
-             * HID Counter
-             * @description TODO
-             */
-            hid_counter: number;
-            /**
-             * ID
-             * @description The encoded ID of this entity.
-             */
-            id: string;
-            /**
-             * Importable
-             * @description Whether this History can be imported by other users with a shared link.
-             */
-            importable: boolean;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @enum {string}
-             */
-            model_class: "History";
-            /**
-             * Name
-             * @description The name of the history.
-             */
-            name: string;
-            /**
-             * Nice Size
-             * @description Human-readable size of the contents of this history.
-             * @example 95.4 MB
-             */
-            nice_size: string;
-            /**
-             * Published
-             * @description Whether this resource is currently publicly available to all users.
-             */
-            published: boolean;
-            /**
-             * Purged
-             * @description Whether this History has been permanently removed.
-             */
-            purged: boolean;
-            /**
-             * Size
-             * @description The total size of the contents of this history in bytes.
-             */
-            size: number;
-            /**
-             * Slug
-             * @description Part of the URL to uniquely identify this History by link in a readable way.
-             */
-            slug?: string;
-            /**
-             * State
-             * @description The current state of the History based on the states of the datasets it contains.
-             */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
-            /**
-             * State Counts
-             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
-             */
-            state_details: {
-                [key: string]: number | undefined;
-            };
-            /**
-             * State IDs
-             * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
-             */
-            state_ids: {
-                [key: string]: string[] | undefined;
-            };
-            tags: components["schemas"]["TagCollection"];
-            /**
-             * Update Time
-             * Format: date-time
-             * @description The last time and date this item was updated.
-             */
-            update_time: string;
-            /**
-             * URL
-             * @deprecated
-             * @description The relative URL to access this item.
-             */
-            url: string;
-            /**
-             * User ID
-             * @description The encoded ID of the user that owns this History.
-             */
-            user_id: string;
-            /**
-             * Username and slug
-             * @description The relative URL in the form of /u/{username}/h/{slug}
-             */
-            username_and_slug?: string;
         };
         /**
          * HistoryContentBulkOperationPayload
@@ -9061,9 +8859,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>
                     )[];
                 };
@@ -9104,9 +8901,8 @@ export interface operations {
                 content: {
                     "application/json":
                         | components["schemas"]["JobImportHistoryResponse"]
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -9158,9 +8954,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>
                     )[];
                 };
@@ -9196,9 +8991,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -9234,9 +9028,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -9266,9 +9059,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -9299,9 +9091,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -9351,9 +9142,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>
                     )[];
                 };
@@ -9404,9 +9194,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json": (
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>
                     )[];
                 };
@@ -9442,9 +9231,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -9484,9 +9272,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -9527,9 +9314,8 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
                         | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
                         | Record<string, never>;
                 };
             };
@@ -10058,84 +9844,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DatasetAssociationRoles"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    contents_near_api_histories__history_id__contents__direction___hid___limit__get: {
-        /**
-         * Get content items around a particular `HID`.
-         * @description .. warning:: For internal use to support the scroller functionality.
-         *
-         * This endpoint provides random access to a large history without having
-         * to know exactly how many pages are in the final query. Pick a target HID
-         * and filters, and the endpoint will get a maximum of `limit` history items "around" the `hid`.
-         *
-         * Additional counts are provided in the HTTP headers.
-         *
-         * The `direction` determines what items are selected:
-         *
-         * a) item counts:
-         *
-         *    - total matches-up:   hid < {hid}
-         *    - total matches-down: hid > {hid}
-         *    - total matches:      total matches-up + total matches-down + 1 (+1 for hid == {hid})
-         *    - displayed matches-up:   hid <= {hid} (hid == {hid} is included)
-         *    - displayed matches-down: hid > {hid}
-         *    - displayed matches:      displayed matches-up + displayed matches-down
-         *
-         * b) {limit} history items:
-         *
-         *    - if direction == "before": hid <= {hid}
-         *    - if direction == "after":  hid > {hid}
-         *    - if direction == "near":   "near" {hid}, so that
-         *      n. items before <= limit // 2,
-         *      n. items after <= limit // 2 + 1.
-         *
-         * .. note:: This endpoint uses slightly different filter params syntax. Instead of using `q`/`qv` parameters,
-         *     it uses the following syntax for query parameters::
-         *
-         *         ?[field]-[operator]=[value]
-         *
-         *     Example::
-         *
-         *         ?update_time-gt=2015-01-29
-         */
-        parameters: {
-            /** @description A timestamp in ISO format to check if the history has changed since this particular date/time. If it hasn't changed, no additional processing will be done and 204 status code will be returned. */
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            query?: {
-                since?: string;
-                view?: string;
-                keys?: string;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the History. */
-            /** @description The target `HID` to get content around it. */
-            /** @description Determines what items are selected before, after or near the target `hid`. */
-            /** @description The maximum number of content items to return above and below the target `HID`. */
-            path: {
-                history_id: string;
-                hid: number;
-                direction: components["schemas"]["DirectionOptions"];
-                limit: number;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["HistoryContentsResult"];
                 };
             };
             /** @description Validation Error */
@@ -13924,6 +13632,39 @@ export interface operations {
             };
         };
     };
+    get_workflow_menu_api_workflows_menu_get: {
+        /** Get workflows present in the tools panel. */
+        parameters?: {
+            /** @description Whether to restrict result to deleted workflows. */
+            /** @description Whether to restrict result to hidden workflows. */
+            /** @description Whether to include a list of missing tools per workflow entry */
+            query?: {
+                show_deleted?: boolean;
+                show_hidden?: boolean;
+                missing_tools?: boolean;
+                show_published?: boolean;
+                show_shared?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     disable_link_access_api_workflows__id__disable_link_access_put: {
         /**
          * Makes this item inaccessible by a URL link.
@@ -14170,6 +13911,36 @@ export interface operations {
     undelete_workflow_api_workflows__workflow_id__undelete_post: {
         /** Remove the deleted flag from a workflow. */
         parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Stored Workflow. */
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_versions_api_workflows__workflow_id__versions_get: {
+        /** List all versions of a workflow. */
+        parameters: {
+            query?: {
+                instance?: boolean;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
