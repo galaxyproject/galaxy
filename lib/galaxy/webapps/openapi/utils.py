@@ -185,7 +185,7 @@ def generate_operation_summary(*, route: routing.APIRoute, method: str) -> str:
 def get_openapi_operation_metadata(*, route: routing.APIRoute, method: str, operation_ids: Set[str]) -> Dict[str, Any]:
     operation: Dict[str, Any] = {}
     if route.tags:
-        operation["tags"] = route.tags
+        operation["tags"] = list(set(route.tags))
     operation["summary"] = generate_operation_summary(route=route, method=method)
     if route.description:
         operation["description"] = route.description
