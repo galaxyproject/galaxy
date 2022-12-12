@@ -202,7 +202,7 @@ class TestFolderContentsApi(ApiTestCase):
             self._assert_index_count_is_correct(response, expected_contents_count=1)
 
     @requires_new_library
-    def test_index_permissions_include_deleted(self, history_id):
+    def test_index_permissions_include_deleted(self, history_id) -> None:
         folder_name = "Test Folder Contents Index permissions include deleted"
         folder_id = self._create_folder_in_library(folder_name)
 
