@@ -5,7 +5,7 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
-import { watch, computed, ref } from "vue";
+import { watch, computed, ref, reactive } from "vue";
 import { onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
 import { useEntryPointStore } from "../../stores/entryPointStore";
@@ -50,8 +50,19 @@ const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
+let entryPointStore;
+const its_menu = reactive({
+    id: "interactive",
+    url: "/interactivetool_entry_points/list",
+    tooltip: "See Running Interactive Tools",
+    icon: "fa-cogs",
+    hidden: true,
+});
+
 /* computed */
-const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
+const allTabs = computed(() => {
+    return [].concat(props.tabs, its_menu, extensionTabs.value);
+});
 
 /* methods */
 function setActiveTab() {
@@ -60,6 +71,9 @@ function setActiveTab() {
 }
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
+}
+function updateVisibility(isActive) {
+    its_menu.hidden = !isActive;
 }
 
 /* watchers */
@@ -72,8 +86,12 @@ watch(
 
 /* lifecyle */
 onBeforeMount(() => {
-    const entryPointStore = useEntryPointStore();
+    entryPointStore = useEntryPointStore();
     entryPointStore.ensurePollingEntryPoints();
+    entryPointStore.$subscribe((mutation, state) => {
+        console.log(`updating visibility with: ${state.entryPoints.length}`);
+        updateVisibility(state.entryPoints.length > 0);
+    });
 });
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
