@@ -1,3 +1,62 @@
+<script setup>
+import { computed, ref } from "vue";
+import VirtualList from "vue-virtual-scroll-list";
+import MultipleViewItem from "./MultipleViewItem";
+import { useHistoryStore } from "stores/historyStore";
+import SelectorModal from "components/History/Modals/SelectorModal";
+import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
+import { useAnimationFrameResizeObserver } from "composables/sensors/animationFrameResizeObserver";
+
+const historyStore = useHistoryStore();
+
+const props = defineProps({
+    histories: {
+        type: Array,
+        required: true,
+    },
+    currentHistory: {
+        type: Object,
+        required: true,
+    },
+    handlers: {
+        type: Object,
+        required: true,
+    },
+    filter: {
+        type: String,
+        default: "",
+    },
+});
+
+const isScrollable = ref(false);
+const scrollContainer = ref(null);
+const { arrived } = useAnimationFrameScroll(scrollContainer);
+useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) => {
+    isScrollable.value = scrollSize.width >= clientSize.width + 1;
+});
+const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
+const scrolledRight = computed(() => !isScrollable.value || arrived.right);
+
+const selectedHistories = computed(() => historyStore.pinnedHistories);
+
+function removeHistoryFromList(history) {
+    historyStore.unpinHistory(history.id);
+}
+
+if (!selectedHistories.value.length) {
+    historyStore.pinHistory(props.histories[0]);
+}
+
+function addHistoriesToList(histories) {
+    histories.forEach((history) => {
+        const historyExists = selectedHistories.value.find((h) => h.id === history.id);
+        if (!historyExists) {
+            historyStore.pinHistory(history.id);
+        }
+    });
+}
+</script>
+
 <template>
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
@@ -31,91 +90,6 @@
         </div>
     </div>
 </template>
-
-<script>
-import { mapActions, mapState } from "pinia";
-import VirtualList from "vue-virtual-scroll-list";
-import MultipleViewItem from "./MultipleViewItem";
-import { useHistoryStore } from "stores/historyStore";
-import SelectorModal from "components/History/Modals/SelectorModal";
-import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
-import { useAnimationFrameResizeObserver } from "composables/sensors/animationFrameResizeObserver";
-import { computed, ref } from "vue";
-
-export default {
-    components: {
-        VirtualList,
-        SelectorModal,
-    },
-    props: {
-        histories: {
-            type: Array,
-            required: true,
-        },
-        currentHistory: {
-            type: Object,
-            required: true,
-        },
-        handlers: {
-            type: Object,
-            required: true,
-        },
-        filter: {
-            type: String,
-            default: "",
-        },
-    },
-    setup() {
-        const scrollContainer = ref(null);
-        const isScrollable = ref(false);
-        const { arrived } = useAnimationFrameScroll(scrollContainer);
-
-        useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) => {
-            isScrollable.value = scrollSize.width >= clientSize.width + 1;
-        });
-
-        const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
-        const scrolledRight = computed(() => !isScrollable.value || arrived.right);
-
-        return {
-            scrollContainer,
-            scrolledLeft,
-            scrolledRight,
-        };
-    },
-    data() {
-        return {
-            MultipleViewItem,
-        };
-    },
-    computed: {
-        ...mapState(useHistoryStore, ["pinnedHistories"]),
-        selectedHistories() {
-            return this.pinnedHistories;
-        },
-    },
-    created() {
-        if (!this.selectedHistories.length) {
-            const firstHistory = this.histories[0];
-            this.pinHistory(firstHistory.id);
-        }
-    },
-    methods: {
-        ...mapActions(useHistoryStore, ["pinHistory", "unpinHistory"]),
-        addHistoriesToList(histories) {
-            histories.forEach((history) => {
-                const historyExists = this.selectedHistories.find((h) => h.id == history.id);
-                if (!historyExists) {
-                    this.pinHistory(history.id);
-                }
-            });
-        },
-        removeHistoryFromList(history) {
-            this.unpinHistory(history.id);
-        },
-    },
-};
-</script>
 
 <style lang="scss" scoped>
 .list-container {
