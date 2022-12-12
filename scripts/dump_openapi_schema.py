@@ -6,7 +6,10 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 import click
 import yaml
-from pydantic.networks import AnyUrl, url_regex
+from pydantic.networks import (
+    AnyUrl,
+    url_regex,
+)
 
 from galaxy.webapps.galaxy.fast_app import get_openapi_schema
 
