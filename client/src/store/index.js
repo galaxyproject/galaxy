@@ -10,7 +10,7 @@ import VuexPersistence from "vuex-persist";
 
 import config from "config";
 
-import { jobStore } from "../stores/jobStore";
+import { jobStore } from "./../stores/jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
 import { configStore } from "./configStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
