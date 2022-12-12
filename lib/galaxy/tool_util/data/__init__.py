@@ -32,7 +32,10 @@ from typing import (
 )
 
 import requests
-from typing_extensions import TypedDict
+from typing_extensions import (
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.exceptions import MessageException
@@ -50,7 +53,6 @@ from ._schema import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.config import GalaxyAppConfiguration
     from galaxy.tools.data_manager.manager import DataManager
 
 log = logging.getLogger(__name__)
@@ -61,6 +63,11 @@ TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 <tables>
 </tables>
 """
+
+
+class StoresConfigFilePaths(Protocol):
+    def get(self, key: Any, default: Optional[Any]) -> Optional[Any]:
+        ...
 
 
 class ToolDataPathFiles:
@@ -145,7 +152,7 @@ class ToolDataTable(Dictifiable):
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
         filename: Optional[StrPath] = None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         self.name = config_element.get("name")
         self.comment_char = config_element.get("comment_char")
@@ -273,7 +280,7 @@ class TabularToolDataTable(ToolDataTable):
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
         filename: Optional[StrPath] = None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         super().__init__(
             config_element,
@@ -835,7 +842,7 @@ class ToolDataTableManager(Dictifiable):
         tool_data_path: str,
         config_filename: Optional[Union[StrPath, List[StrPath]]] = None,
         tool_data_table_config_path_set=None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
@@ -933,7 +940,7 @@ class ToolDataTableManager(Dictifiable):
         from_shed_config: bool,
         filename: StrPath,
         tool_data_path_files: ToolDataPathFiles,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> ToolDataTable:
         table_type = table_elem.get("type", "tabular")
         assert table_type in self.tool_data_table_types, f"Unknown data table type '{table_type}'"
