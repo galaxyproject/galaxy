@@ -31,6 +31,5 @@ class Dataset_t1(HasExtraFilesPathProperty, HasFilesNameProperty, Protocol):
     extension: str
 
 
-class GeneratePrimaryFileDataset(Protocol):
-    extra_files_path: str
-    metadata: Any
+class GeneratePrimaryFileDataset(HasExtraFilesPathProperty, HasMetadata, Protocol):
+    ...
