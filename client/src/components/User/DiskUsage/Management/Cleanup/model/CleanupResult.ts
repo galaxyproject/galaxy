@@ -1,14 +1,20 @@
 import { bytesToString } from "utils/utils";
 
+interface CleanupResultResponse {
+    totalItemCount: number;
+    totalFreeBytes: number;
+    errors: string[];
+    errorMessage?: string;
+}
+
 /**
  * Contains information about the result of the cleaning operation.
  */
 export class CleanupResult {
-    constructor(props = {}) {
-        this.totalItemCount = props.totalItemCount || 0;
-        this.totalFreeBytes = props.totalFreeBytes || 0;
-        this.errors = props.errors || [];
-        this.errorMessage = props.errorMessage || null;
+    private _data: CleanupResultResponse;
+
+    constructor(data: CleanupResultResponse = { totalFreeBytes: 0, totalItemCount: 0, errors: [] }) {
+        this._data = data;
     }
 
     /**
@@ -16,8 +22,8 @@ export class CleanupResult {
      * It doesn't mean the operation completely failed.
      * @returns {boolean}
      */
-    get hasSomeErrors() {
-        return this.errors.length > 0;
+    get hasSomeErrors(): boolean {
+        return this._data.errors.length > 0;
     }
 
     /**
@@ -25,24 +31,24 @@ export class CleanupResult {
      * This means not even partial cleaning was made.
      * @returns {boolean}
      */
-    get hasFailed() {
-        return this.errorMessage !== null;
+    get hasFailed(): boolean {
+        return Boolean(this._data.errorMessage);
     }
 
     /**
      * Whether the cleanup operation was executed without errors.
      * @returns {boolean}
      */
-    get success() {
-        return !this.hasSomeErrors && !this.errorMessage;
+    get success(): boolean {
+        return !this.hasSomeErrors && !this._data.errorMessage;
     }
 
     /**
      * The number of items successfully cleaned.
      * @returns {number}
      */
-    get totalCleaned() {
-        return this.totalItemCount - this.errors.length;
+    get totalCleaned(): number {
+        return this._data.totalItemCount - this._data.errors.length;
     }
 
     /**
@@ -50,15 +56,15 @@ export class CleanupResult {
      * free some items but not all of them.
      * @returns {boolean}
      */
-    get isPartialSuccess() {
-        return this.errors.length > 0 && this.totalCleaned > 0;
+    get isPartialSuccess(): boolean {
+        return this._data.errors.length > 0 && this.totalCleaned > 0;
     }
 
     /**
      * The total amount of disk space freed by the cleanup operation.
      * @returns {String}
      */
-    get niceTotalFreeBytes() {
-        return bytesToString(this.totalFreeBytes, true);
+    get niceTotalFreeBytes(): string {
+        return bytesToString(this._data.totalFreeBytes, true, undefined);
     }
 }

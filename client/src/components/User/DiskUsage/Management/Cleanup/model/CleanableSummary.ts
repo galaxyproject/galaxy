@@ -1,35 +1,41 @@
 import { bytesToString } from "utils/utils";
 
+interface SummaryDataResponse {
+    totalSize: number;
+    totalItems: number;
+}
+
 /**
  * Contains summary information about how much storage space can be recovered by removing
  * a collection of items from it.
  */
 export class CleanableSummary {
-    constructor(data) {
-        this._totalSize = data.totalSize;
-        this._totalItems = data.totalItems;
+    private _data: SummaryDataResponse;
+
+    constructor(data: SummaryDataResponse) {
+        this._data = data;
     }
 
     /**
      * The total size in bytes that can be recovered by removing all the items.
      * @returns {Number}
      */
-    get totalSize() {
-        return this._totalSize;
+    get totalSize(): number {
+        return this._data.totalSize;
     }
 
     /**
      * The human readable total amount of disk space that can be recovered.
      * @returns {String}
      */
-    get niceTotalSize() {
-        return bytesToString(this.totalSize, true);
+    get niceTotalSize(): string {
+        return bytesToString(this.totalSize, true, undefined);
     }
 
     /**
      * The total number of items that could be removed.
      */
     get totalItems() {
-        return this._totalItems;
+        return this._data.totalItems;
     }
 }
