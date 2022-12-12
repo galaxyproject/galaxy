@@ -1,4 +1,4 @@
-<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.2" hidden="true" profile="16.04">
+<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.3" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <macros>
         <xml name="assert_size" tokens="value" token_delta="10">
@@ -18,6 +18,7 @@
         #if $input1.is_of_type('vcf')
             -k1,1 -k2,2n
         #elif $input1.is_of_type('gff')
+            ## stable sort on start column (only) ..
             -s -k1,1 -k4,4n
         #else
             -k${input1.metadata.chromCol},${input1.metadata.chromCol}
@@ -40,30 +41,46 @@
             <output name="output1" ftype="bgzip" value="droPer1.bgzip" decompress="true">
                 <expand macro="assert_size" value="131"/>
             </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n -k3,3n"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
             <output name="output1" ftype="bgzip">
                 <expand macro="assert_size" value="299"/>
             </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n -k3,3n"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
             <output name="output1" ftype="bgzip" value="bgzip_filter_by_feature_count_out2.bgzip" decompress="true">
                 <expand macro="assert_size" value="638"/>
             </output>
+            <assert_command>
+                <has_text text="-k1,1 -k4,4n"/>
+                <has_text text="-k5,5" negate="true"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
             <output name="output1" ftype="bgzip" value="2.bgzip" decompress="true">
                 <expand macro="assert_size" value="208"/>
             </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n -k3,3n"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
             <output name="output1" ftype="bgzip" value="bgzip_to_maf_in.bgzip" decompress="true">
                 <expand macro="assert_size" value="707"/>
             </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="gtf" value="cufflinks_out1.gtf"/>
@@ -72,6 +89,10 @@
                     <has_size value="270" delta="10" />
                 </assert_contents>
             </output>
+            <assert_command>
+                <has_text text="-k1,1 -k4,4n"/>
+                <has_text text="-k5,5" negate="true"/>
+            </assert_command>
         </test>
     </tests>
     <help>
