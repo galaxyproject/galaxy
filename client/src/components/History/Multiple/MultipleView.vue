@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref } from "vue";
-import LoadingSpan from "components/LoadingSpan.vue";
-import MultipleViewList from "./MultipleViewList.vue";
-import DebouncedInput from "components/DebouncedInput";
-import CurrentUser from "components/providers/CurrentUser";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTimes } from "@fortawesome/free-solid-svg-icons";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import UserHistories from "components/providers/UserHistories";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DebouncedInput from "@/components/DebouncedInput";
+import CurrentUser from "@/components/providers/CurrentUser";
+import UserHistories from "@/components/providers/UserHistories";
+import MultipleViewList from "./MultipleViewList.vue";
 
 const filter = ref("");
 
