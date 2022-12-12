@@ -32,6 +32,7 @@ from typing import (
 )
 
 import requests
+from typing_extensions import TypedDict
 
 from galaxy import util
 from galaxy.exceptions import MessageException
@@ -102,9 +103,30 @@ class ToolDataPathFiles:
             return os.path.exists(path)
 
 
+ErrorListT = List[str]
+FileNameInfoT = TypedDict(
+    "FileNameInfoT",
+    {
+        "found": bool,
+        "filename": str,
+        "from_shed_config": bool,
+        "tool_data_path": Optional[StrPath],
+        "config_element": Optional[Element],
+        "tool_shed_repository": Optional[Dict[str, Any]],
+        "errors": ErrorListT,
+    },
+)
+LoadInfoT = Tuple[Tuple[Element, Optional[StrPath]], Dict[str, Any]]
+
+
 class ToolDataTable(Dictifiable):
     type_key: str
     data: List[List[str]]
+    empty_field_value: str
+    empty_field_values: Dict[Optional[str], str]
+    filenames: Dict[str, FileNameInfoT]
+    _load_info: LoadInfoT
+    _merged_load_info: List[Tuple[Type["ToolDataTable"], LoadInfoT]]
 
     @classmethod
     def from_dict(cls, d):
@@ -131,7 +153,7 @@ class ToolDataTable(Dictifiable):
         self.empty_field_values: Dict[str, str] = {}
         self.allow_duplicate_entries = util.asbool(config_element.get("allow_duplicate_entries", True))
         self.here = os.path.dirname(filename) if filename else None
-        self.filenames: Dict[str, Dict[str, Any]] = {}
+        self.filenames: Dict[str, FileNameInfoT] = {}
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
@@ -157,7 +179,7 @@ class ToolDataTable(Dictifiable):
             self._loaded_content_version += 1
         return self._loaded_content_version
 
-    def get_empty_field_by_name(self, name):
+    def get_empty_field_by_name(self, name: Optional[str]) -> str:
         return self.empty_field_values.get(name, self.empty_field_value)
 
     def _add_entry(
@@ -355,7 +377,7 @@ class TabularToolDataTable(ToolDataTable):
                         filename = f"{corrected_filename}.sample"
                         found = True
 
-            errors: List[str] = []
+            errors: ErrorListT = []
             if found:
                 self.extend_data_with(filename, errors=errors)
                 self._update_version()
@@ -478,14 +500,14 @@ class TabularToolDataTable(ToolDataTable):
         if "name" not in self.columns:
             self.columns["name"] = self.columns["value"]
 
-    def extend_data_with(self, filename: str, errors: Optional[List[str]] = None) -> None:
+    def extend_data_with(self, filename: str, errors: Optional[ErrorListT] = None) -> None:
         here = os.path.dirname(os.path.abspath(filename))
         self.data.extend(self.parse_file_fields(filename, errors=errors, here=here))
         if not self.allow_duplicate_entries:
             self._deduplicate_data()
 
     def parse_file_fields(
-        self, filename: str, errors: Optional[List[str]] = None, here: str = "__HERE__"
+        self, filename: str, errors: Optional[ErrorListT] = None, here: str = "__HERE__"
     ) -> List[List[str]]:
         """
         Parse separated lines from file and return a list of tuples.
