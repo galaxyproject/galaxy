@@ -203,13 +203,22 @@ class Model(BaseModel):
             # even if it is generated from a default value.
             # Pass `mark_required_in_schema=True` when constructing a pydantic Field instance
             # to indicate that the field is always present.
-            for prop_key, prop in schema.get("properties", {}).items():
+            remove_prop_keys = set()  # hidden items shouldn't be added to schema
+            properties = schema.get("properties", {})
+            for prop_key, prop in properties.items():
                 required_in_schema = prop.pop("mark_required_in_schema", None)
+                hidden = prop.get("hidden")
+                if hidden:
+                    remove_prop_keys.add(prop_key)
                 if required_in_schema:
+                    # const is not valid in response?
+                    prop.pop("const", None)
                     if "required" in schema:
                         schema["required"].append(prop_key)
                     else:
                         schema["required"] = [prop_key]
+            for prop_key_to_remove in remove_prop_keys:
+                del properties[prop_key_to_remove]
 
 
 class UserModel(Model):
