@@ -212,7 +212,7 @@ class JobInstrumenter(JobInstrumenterI):
                 if properties:
                     per_plugin_properties[plugin.plugin_type] = properties
             except Exception:
-                log.exception("Failed to collect job properties for plugin %s", plugin)
+                log.warning("Failed to collect job properties for plugin %s", plugin)
         return per_plugin_properties
 
     def __plugins_from_source(self, plugins_source):
