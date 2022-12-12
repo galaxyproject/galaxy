@@ -1,5 +1,5 @@
 import { ref } from "vue";
-import { fetcher } from "schema";
+import { fetcher } from "@/schema";
 
 import type { Ref } from "vue";
 

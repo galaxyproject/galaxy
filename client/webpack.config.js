@@ -6,6 +6,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
+const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -43,6 +44,7 @@ module.exports = (env = {}, argv = {}) => {
             filename: "[name].bundled.js",
         },
         resolve: {
+            plugins: [new TsconfigPathsPlugin({ extensions: [".ts", ".js", ".json", ".vue", ".scss"] })],
             extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {

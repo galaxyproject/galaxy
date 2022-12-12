@@ -1,6 +1,6 @@
-import { fetcher } from "schema";
-import { safePath } from "utils/redirect";
 import type { FetchArgType } from "openapi-typescript-fetch";
+import { fetcher } from "@/schema";
+import { safePath } from "@/utils/redirect";
 
 const _getDatasets = fetcher.path("/api/datasets").method("get").create();
 type GetDatasetsApiOptions = FetchArgType<typeof _getDatasets>;
