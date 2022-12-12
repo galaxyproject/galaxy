@@ -1,11 +1,15 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase,
+    SeleniumIntegrationTestCase,
 )
 
 
-class TestHistoryExport(SeleniumTestCase):
+class TestHistoryExport(SeleniumIntegrationTestCase):
     ensure_registered = True
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        config["enable_celery_tasks"] = False
 
     @selenium_test
     def test_history_export(self):

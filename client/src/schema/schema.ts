@@ -390,9 +390,9 @@ export interface paths {
         /** Returns deleted histories for the current user. */
         get: operations["index_deleted_api_histories_deleted_get"];
     };
-    "/api/histories/deleted/{id}/undelete": {
+    "/api/histories/deleted/{history_id}/undelete": {
         /** Restores a deleted history with the given ID (that hasn't been purged). */
-        post: operations["undelete_api_histories_deleted__id__undelete_post"];
+        post: operations["undelete_api_histories_deleted__history_id__undelete_post"];
     };
     "/api/histories/from_store": {
         /** Create histories from a model store. */
@@ -413,6 +413,18 @@ export interface paths {
     "/api/histories/shared_with_me": {
         /** Return all histories that are shared with the current user. */
         get: operations["shared_with_me_api_histories_shared_with_me_get"];
+    };
+    "/api/histories/{history_id}": {
+        /** Returns the history with the given ID. */
+        get: operations["history_api_histories__history_id__get"];
+        /** Updates the values for the history with the given ID. */
+        put: operations["update_api_histories__history_id__put"];
+        /** Marks the history with the given ID as deleted. */
+        delete: operations["delete_api_histories__history_id__delete"];
+    };
+    "/api/histories/{history_id}/citations": {
+        /** Return all the citations for the tools used to produce the datasets in the history. */
+        get: operations["citations_api_histories__history_id__citations_get"];
     };
     "/api/histories/{history_id}/contents": {
         /**
@@ -654,6 +666,63 @@ export interface paths {
          */
         post: operations["create_from_store_api_histories__history_id__contents_from_store_post"];
     };
+    "/api/histories/{history_id}/custom_builds_metadata": {
+        /** Returns meta data for custom builds. */
+        get: operations["get_custom_builds_metadata_api_histories__history_id__custom_builds_metadata_get"];
+    };
+    "/api/histories/{history_id}/disable_link_access": {
+        /**
+         * Makes this item inaccessible by a URL link.
+         * @description Makes this item inaccessible by a URL link and return the current sharing status.
+         */
+        put: operations["disable_link_access_api_histories__history_id__disable_link_access_put"];
+    };
+    "/api/histories/{history_id}/enable_link_access": {
+        /**
+         * Makes this item accessible by a URL link.
+         * @description Makes this item accessible by a URL link and return the current sharing status.
+         */
+        put: operations["enable_link_access_api_histories__history_id__enable_link_access_put"];
+    };
+    "/api/histories/{history_id}/exports": {
+        /**
+         * Get previous history exports.
+         * @description By default the legacy job-based history exports (jeha) are returned.
+         *
+         * Change the `accept` content type header to return the new task-based history exports.
+         */
+        get: operations["get_history_exports_api_histories__history_id__exports_get"];
+        /**
+         * Start job (if needed) to create history export for corresponding history.
+         * @deprecated
+         * @description This will start a job to create a history export archive.
+         *
+         * Calling this endpoint multiple times will return the 202 status code until the archive
+         * has been completely generated and is ready to download. When ready, it will return
+         * the 200 status code along with the download link information.
+         *
+         * If the history will be exported to a `directory_uri`, instead of returning the download
+         * link information, the Job ID will be returned so it can be queried to determine when
+         * the file has been written.
+         *
+         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+         * `/api/histories/{id}/write_store` instead.
+         */
+        put: operations["archive_export_api_histories__history_id__exports_put"];
+    };
+    "/api/histories/{history_id}/exports/{jeha_id}": {
+        /**
+         * If ready and available, return raw contents of exported history as a downloadable archive.
+         * @deprecated
+         * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
+         * of the history export - when ready, that route will return 200 status
+         * code (instead of 202) and this route can be used to download the archive.
+         *
+         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+         * `/api/histories/{id}/write_store` instead.
+         */
+        get: operations["history_archive_download_api_histories__history_id__exports__jeha_id__get"];
+    };
     "/api/histories/{history_id}/jobs_summary": {
         /**
          * Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
@@ -670,104 +739,48 @@ export interface paths {
         /** Materialize a deferred library or HDA dataset into real, usable dataset in specified history. */
         post: operations["materialize_to_history_api_histories__history_id__materialize_post"];
     };
-    "/api/histories/{id}": {
-        /** Returns the history with the given ID. */
-        get: operations["history_api_histories__id__get"];
-        /** Updates the values for the history with the given ID. */
-        put: operations["update_api_histories__id__put"];
-        /** Marks the history with the given ID as deleted. */
-        delete: operations["delete_api_histories__id__delete"];
-    };
-    "/api/histories/{id}/citations": {
-        /** Return all the citations for the tools used to produce the datasets in the history. */
-        get: operations["citations_api_histories__id__citations_get"];
-    };
-    "/api/histories/{id}/custom_builds_metadata": {
-        /** Returns meta data for custom builds. */
-        get: operations["get_custom_builds_metadata_api_histories__id__custom_builds_metadata_get"];
-    };
-    "/api/histories/{id}/disable_link_access": {
-        /**
-         * Makes this item inaccessible by a URL link.
-         * @description Makes this item inaccessible by a URL link and return the current sharing status.
-         */
-        put: operations["disable_link_access_api_histories__id__disable_link_access_put"];
-    };
-    "/api/histories/{id}/enable_link_access": {
-        /**
-         * Makes this item accessible by a URL link.
-         * @description Makes this item accessible by a URL link and return the current sharing status.
-         */
-        put: operations["enable_link_access_api_histories__id__enable_link_access_put"];
-    };
-    "/api/histories/{id}/exports": {
-        /** Get previous history exports (to links). Effectively returns serialized JEHA objects. */
-        get: operations["index_exports_api_histories__id__exports_get"];
-        /**
-         * Start job (if needed) to create history export for corresponding history.
-         * @description This will start a job to create a history export archive.
-         *
-         * Calling this endpoint multiple times will return the 202 status code until the archive
-         * has been completely generated and is ready to download. When ready, it will return
-         * the 200 status code along with the download link information.
-         *
-         * If the history will be exported to a `directory_uri`, instead of returning the download
-         * link information, the Job ID will be returned so it can be queried to determine when
-         * the file has been written.
-         */
-        put: operations["archive_export_api_histories__id__exports_put"];
-    };
-    "/api/histories/{id}/exports/{jeha_id}": {
-        /**
-         * If ready and available, return raw contents of exported history as a downloadable archive.
-         * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
-         * of the history export - when ready, that route will return 200 status
-         * code (instead of 202) and this route can be used to download the archive.
-         */
-        get: operations["history_archive_download_api_histories__id__exports__jeha_id__get"];
-    };
-    "/api/histories/{id}/prepare_store_download": {
+    "/api/histories/{history_id}/prepare_store_download": {
         /** Return a short term storage token to monitor download of the history. */
-        post: operations["prepare_store_download_api_histories__id__prepare_store_download_post"];
+        post: operations["prepare_store_download_api_histories__history_id__prepare_store_download_post"];
     };
-    "/api/histories/{id}/publish": {
+    "/api/histories/{history_id}/publish": {
         /**
          * Makes this item public and accessible by a URL link.
          * @description Makes this item publicly available by a URL link and return the current sharing status.
          */
-        put: operations["publish_api_histories__id__publish_put"];
+        put: operations["publish_api_histories__history_id__publish_put"];
     };
-    "/api/histories/{id}/share_with_users": {
+    "/api/histories/{history_id}/share_with_users": {
         /**
          * Share this item with specific users.
          * @description Shares this item with specific users and return the current sharing status.
          */
-        put: operations["share_with_users_api_histories__id__share_with_users_put"];
+        put: operations["share_with_users_api_histories__history_id__share_with_users_put"];
     };
-    "/api/histories/{id}/sharing": {
+    "/api/histories/{history_id}/sharing": {
         /**
          * Get the current sharing status of the given item.
          * @description Return the sharing status of the item.
          */
-        get: operations["sharing_api_histories__id__sharing_get"];
+        get: operations["sharing_api_histories__history_id__sharing_get"];
     };
-    "/api/histories/{id}/slug": {
+    "/api/histories/{history_id}/slug": {
         /**
          * Set a new slug for this shared item.
          * @description Sets a new slug to access this item by URL. The new slug must be unique.
          */
-        put: operations["set_slug_api_histories__id__slug_put"];
+        put: operations["set_slug_api_histories__history_id__slug_put"];
     };
-    "/api/histories/{id}/unpublish": {
+    "/api/histories/{history_id}/unpublish": {
         /**
          * Removes this item from the published list.
          * @description Removes this item from the published list and return the current sharing status.
          */
-        put: operations["unpublish_api_histories__id__unpublish_put"];
+        put: operations["unpublish_api_histories__history_id__unpublish_put"];
     };
-    "/api/histories/{id}/write_store": {
+    "/api/histories/{history_id}/write_store": {
         /** Prepare history for export-style download and write to supplied URI. */
-        post: operations["write_store_api_histories__id__write_store_post"];
+        post: operations["write_store_api_histories__history_id__write_store_post"];
     };
     "/api/invocations/{invocation_id}/biocompute": {
         /**
@@ -2709,6 +2722,50 @@ export interface components {
             include_hidden?: boolean;
         };
         /**
+         * ExportObjectMetadata
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ExportObjectMetadata: {
+            request_data: components["schemas"]["ExportObjectRequestMetadata"];
+            result_data?: components["schemas"]["ExportObjectResultMetadata"];
+        };
+        /**
+         * ExportObjectRequestMetadata
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ExportObjectRequestMetadata: {
+            /** Object Id */
+            object_id: string;
+            object_type: components["schemas"]["ExportObjectType"];
+            /** Payload */
+            payload:
+                | components["schemas"]["WriteStoreToPayload"]
+                | components["schemas"]["ShortTermStoreExportPayload"];
+            /** User Id */
+            user_id?: string;
+        };
+        /**
+         * ExportObjectResultMetadata
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ExportObjectResultMetadata: {
+            /** Error */
+            error?: string;
+            /** Success */
+            success: boolean;
+        };
+        /**
+         * ExportObjectType
+         * @description Types of objects that can be exported.
+         * @enum {string}
+         */
+        ExportObjectType: "history" | "invocation";
+        /**
+         * ExportTaskListResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /**
          * ExtraFiles
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4569,10 +4626,10 @@ export interface components {
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
         /**
-         * JobExportHistoryArchiveCollection
+         * JobExportHistoryArchiveListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        JobExportHistoryArchiveCollection: components["schemas"]["JobExportHistoryArchiveModel"][];
+        JobExportHistoryArchiveListResponse: components["schemas"]["JobExportHistoryArchiveModel"][];
         /**
          * JobExportHistoryArchiveModel
          * @description Base model definition with common configuration used by all derived models.
@@ -4597,7 +4654,7 @@ export interface components {
             external_download_permanent_url: string;
             /**
              * ID
-             * @description The encoded database ID of the job that is currently processing a particular request.
+             * @description The encoded database ID of the export request.
              */
             id: string;
             /**
@@ -4607,17 +4664,17 @@ export interface components {
             job_id: string;
             /**
              * Preparing
-             * @description Whether the history archive is currently being built or in preparation.
+             * @description Whether the archive is currently being built or in preparation.
              */
             preparing: boolean;
             /**
              * Ready
-             * @description Whether the export history job has completed successfully and the archive is ready to download
+             * @description Whether the export has completed successfully and the archive is ready
              */
             ready: boolean;
             /**
              * Up to Date
-             * @description False, if a new export archive should be generated for the corresponding history.
+             * @description False, if a new export archive should be generated.
              */
             up_to_date: boolean;
         };
@@ -5419,6 +5476,45 @@ export interface components {
             to_posix_lines?: boolean;
         };
         /**
+         * ObjectExportTaskResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ObjectExportTaskResponse: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            export_metadata?: components["schemas"]["ExportObjectMetadata"];
+            /**
+             * ID
+             * @description The encoded database ID of the export request.
+             */
+            id: string;
+            /**
+             * Preparing
+             * @description Whether the archive is currently being built or in preparation.
+             */
+            preparing: boolean;
+            /**
+             * Ready
+             * @description Whether the export has completed successfully and the archive is ready
+             */
+            ready: boolean;
+            /**
+             * Task ID
+             * Format: uuid4
+             * @description The identifier of the task processing the export.
+             */
+            task_uuid: string;
+            /**
+             * Up to Date
+             * @description False, if a new export archive should be generated.
+             */
+            up_to_date: boolean;
+        };
+        /**
          * PageContentFormat
          * @description An enumeration.
          * @enum {string}
@@ -6179,6 +6275,42 @@ export interface components {
              * @default []
              */
             users_shared_with?: components["schemas"]["UserEmail"][];
+        };
+        /**
+         * ShortTermStoreExportPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ShortTermStoreExportPayload: {
+            /** Duration */
+            duration?: number | number;
+            /**
+             * Include deleted
+             * @description Include file contents for deleted datasets (if include_files is True).
+             * @default false
+             */
+            include_deleted?: boolean;
+            /**
+             * Include Files
+             * @description include materialized files in export when available
+             * @default true
+             */
+            include_files?: boolean;
+            /**
+             * Include hidden
+             * @description Include file contents for hidden datasets (if include_files is True).
+             * @default false
+             */
+            include_hidden?: boolean;
+            /**
+             * @description format of model store to export
+             * @default tar.gz
+             */
+            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            /**
+             * Short Term Storage Request Id
+             * Format: uuid
+             */
+            short_term_storage_request_id: string;
         };
         /**
          * Src
@@ -9041,7 +9173,7 @@ export interface operations {
             };
         };
     };
-    undelete_api_histories_deleted__id__undelete_post: {
+    undelete_api_histories_deleted__history_id__undelete_post: {
         /** Restores a deleted history with the given ID (that hasn't been purged). */
         parameters: {
             /** @description View to be passed to the serializer */
@@ -9056,7 +9188,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         responses: {
@@ -9277,6 +9409,155 @@ export interface operations {
                         | components["schemas"]["HistorySummary"]
                         | Record<string, never>
                     )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_api_histories__history_id__get: {
+        /** Returns the history with the given ID. */
+        parameters: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                view?: string;
+                keys?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["HistoryBeta"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_histories__history_id__put: {
+        /** Updates the values for the history with the given ID. */
+        parameters: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                view?: string;
+                keys?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["HistoryBeta"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_histories__history_id__delete: {
+        /** Marks the history with the given ID as deleted. */
+        parameters: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            query?: {
+                purge?: boolean;
+                view?: string;
+                keys?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeleteHistoryPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["HistoryBeta"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | components["schemas"]["HistorySummary"]
+                        | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    citations_api_histories__history_id__citations_get: {
+        /** Return all the citations for the tools used to produce the datasets in the history. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>[];
                 };
             };
             /** @description Validation Error */
@@ -10682,6 +10963,220 @@ export interface operations {
             };
         };
     };
+    get_custom_builds_metadata_api_histories__history_id__custom_builds_metadata_get: {
+        /** Returns meta data for custom builds. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CustomBuildsMetadataResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disable_link_access_api_histories__history_id__disable_link_access_put: {
+        /**
+         * Makes this item inaccessible by a URL link.
+         * @description Makes this item inaccessible by a URL link and return the current sharing status.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    enable_link_access_api_histories__history_id__enable_link_access_put: {
+        /**
+         * Makes this item accessible by a URL link.
+         * @description Makes this item accessible by a URL link and return the current sharing status.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_history_exports_api_histories__history_id__exports_get: {
+        /**
+         * Get previous history exports.
+         * @description By default the legacy job-based history exports (jeha) are returned.
+         *
+         * Change the `accept` content type header to return the new task-based history exports.
+         */
+        parameters: {
+            /** @description The maximum number of items to return. */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description A list of history exports */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobExportHistoryArchiveListResponse"];
+                    "application/vnd.galaxy.task.export+json": components["schemas"]["ExportTaskListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_export_api_histories__history_id__exports_put: {
+        /**
+         * Start job (if needed) to create history export for corresponding history.
+         * @deprecated
+         * @description This will start a job to create a history export archive.
+         *
+         * Calling this endpoint multiple times will return the 202 status code until the archive
+         * has been completely generated and is ready to download. When ready, it will return
+         * the 200 status code along with the download link information.
+         *
+         * If the history will be exported to a `directory_uri`, instead of returning the download
+         * link information, the Job ID will be returned so it can be queried to determine when
+         * the file has been written.
+         *
+         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+         * `/api/histories/{id}/write_store` instead.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ExportHistoryArchivePayload"];
+            };
+        };
+        responses: {
+            /** @description Object containing url to fetch export from. */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["JobExportHistoryArchiveModel"]
+                        | components["schemas"]["JobIdResponse"];
+                };
+            };
+            /** @description The exported archive file is not ready yet. */
+            202: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    history_archive_download_api_histories__history_id__exports__jeha_id__get: {
+        /**
+         * If ready and available, return raw contents of exported history as a downloadable archive.
+         * @deprecated
+         * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
+         * of the history export - when ready, that route will return 200 status
+         * code (instead of 202) and this route can be used to download the archive.
+         *
+         * **Deprecation notice**: Please use `/api/histories/{id}/prepare_store_download` or
+         * `/api/histories/{id}/write_store` instead.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            /**
+             * @description The ID of the specific Job Export History Association or `latest` (default) to download the last generated archive.
+             * @example latest
+             */
+            path: {
+                history_id: string;
+                jeha_id: string | "latest";
+            };
+        };
+        responses: {
+            /** @description The archive file containing the History. */
+            200: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     index_jobs_summary_api_histories__history_id__jobs_summary_get: {
         /**
          * Return job state summary info for jobs, implicit groups jobs for collections or workflow invocations.
@@ -10759,350 +11254,7 @@ export interface operations {
             };
         };
     };
-    history_api_histories__id__get: {
-        /** Returns the history with the given ID. */
-        parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            query?: {
-                view?: string;
-                keys?: string;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_api_histories__id__put: {
-        /** Updates the values for the history with the given ID. */
-        parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            query?: {
-                view?: string;
-                keys?: string;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": Record<string, never>;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_api_histories__id__delete: {
-        /** Marks the history with the given ID as deleted. */
-        parameters: {
-            /** @description View to be passed to the serializer */
-            /** @description Comma-separated list of keys to be passed to the serializer */
-            query?: {
-                purge?: boolean;
-                view?: string;
-                keys?: string;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["DeleteHistoryPayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json":
-                        | components["schemas"]["HistoryBeta"]
-                        | components["schemas"]["HistoryDetailed"]
-                        | components["schemas"]["HistorySummary"]
-                        | Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    citations_api_histories__id__citations_get: {
-        /** Return all the citations for the tools used to produce the datasets in the history. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_custom_builds_metadata_api_histories__id__custom_builds_metadata_get: {
-        /** Returns meta data for custom builds. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["CustomBuildsMetadataResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    disable_link_access_api_histories__id__disable_link_access_put: {
-        /**
-         * Makes this item inaccessible by a URL link.
-         * @description Makes this item inaccessible by a URL link and return the current sharing status.
-         */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["SharingStatus"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    enable_link_access_api_histories__id__enable_link_access_put: {
-        /**
-         * Makes this item accessible by a URL link.
-         * @description Makes this item accessible by a URL link and return the current sharing status.
-         */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["SharingStatus"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    index_exports_api_histories__id__exports_get: {
-        /** Get previous history exports (to links). Effectively returns serialized JEHA objects. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobExportHistoryArchiveCollection"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    archive_export_api_histories__id__exports_put: {
-        /**
-         * Start job (if needed) to create history export for corresponding history.
-         * @description This will start a job to create a history export archive.
-         *
-         * Calling this endpoint multiple times will return the 202 status code until the archive
-         * has been completely generated and is ready to download. When ready, it will return
-         * the 200 status code along with the download link information.
-         *
-         * If the history will be exported to a `directory_uri`, instead of returning the download
-         * link information, the Job ID will be returned so it can be queried to determine when
-         * the file has been written.
-         */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            path: {
-                id: string;
-            };
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["ExportHistoryArchivePayload"];
-            };
-        };
-        responses: {
-            /** @description Object containing url to fetch export from. */
-            200: {
-                content: {
-                    "application/json":
-                        | components["schemas"]["JobExportHistoryArchiveModel"]
-                        | components["schemas"]["JobIdResponse"];
-                };
-            };
-            /** @description The exported archive file is not ready yet. */
-            202: never;
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    history_archive_download_api_histories__id__exports__jeha_id__get: {
-        /**
-         * If ready and available, return raw contents of exported history as a downloadable archive.
-         * @description See ``PUT /api/histories/{id}/exports`` to initiate the creation
-         * of the history export - when ready, that route will return 200 status
-         * code (instead of 202) and this route can be used to download the archive.
-         */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The encoded database identifier of the History. */
-            /**
-             * @description The ID of the specific Job Export History Association or `latest` (default) to download the last generated archive.
-             * @example latest
-             */
-            path: {
-                id: string;
-                jeha_id: string | "latest";
-            };
-        };
-        responses: {
-            /** @description The archive file containing the History. */
-            200: never;
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    prepare_store_download_api_histories__id__prepare_store_download_post: {
+    prepare_store_download_api_histories__history_id__prepare_store_download_post: {
         /** Return a short term storage token to monitor download of the history. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -11111,7 +11263,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         requestBody: {
@@ -11134,7 +11286,7 @@ export interface operations {
             };
         };
     };
-    publish_api_histories__id__publish_put: {
+    publish_api_histories__history_id__publish_put: {
         /**
          * Makes this item public and accessible by a URL link.
          * @description Makes this item publicly available by a URL link and return the current sharing status.
@@ -11146,7 +11298,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         responses: {
@@ -11164,7 +11316,7 @@ export interface operations {
             };
         };
     };
-    share_with_users_api_histories__id__share_with_users_put: {
+    share_with_users_api_histories__history_id__share_with_users_put: {
         /**
          * Share this item with specific users.
          * @description Shares this item with specific users and return the current sharing status.
@@ -11176,7 +11328,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         requestBody: {
@@ -11199,7 +11351,7 @@ export interface operations {
             };
         };
     };
-    sharing_api_histories__id__sharing_get: {
+    sharing_api_histories__history_id__sharing_get: {
         /**
          * Get the current sharing status of the given item.
          * @description Return the sharing status of the item.
@@ -11211,7 +11363,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         responses: {
@@ -11229,7 +11381,7 @@ export interface operations {
             };
         };
     };
-    set_slug_api_histories__id__slug_put: {
+    set_slug_api_histories__history_id__slug_put: {
         /**
          * Set a new slug for this shared item.
          * @description Sets a new slug to access this item by URL. The new slug must be unique.
@@ -11241,7 +11393,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         requestBody: {
@@ -11260,7 +11412,7 @@ export interface operations {
             };
         };
     };
-    unpublish_api_histories__id__unpublish_put: {
+    unpublish_api_histories__history_id__unpublish_put: {
         /**
          * Removes this item from the published list.
          * @description Removes this item from the published list and return the current sharing status.
@@ -11272,7 +11424,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         responses: {
@@ -11290,7 +11442,7 @@ export interface operations {
             };
         };
     };
-    write_store_api_histories__id__write_store_post: {
+    write_store_api_histories__history_id__write_store_post: {
         /** Prepare history for export-style download and write to supplied URI. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -11299,7 +11451,7 @@ export interface operations {
             };
             /** @description The encoded database identifier of the History. */
             path: {
-                id: string;
+                history_id: string;
             };
         };
         requestBody: {

@@ -61,6 +61,7 @@ JOB_MODEL_CLASS = Literal["Job"]
 STORED_WORKFLOW_MODEL_CLASS = Literal["StoredWorkflow"]
 PAGE_MODEL_CLASS = Literal["Page"]
 
+OptionalNumberT = Optional[Union[int, float]]
 
 # Generic and common Field annotations that can be reused across models
 
@@ -1348,6 +1349,11 @@ class StoreExportPayload(Model):
     )
 
 
+class ShortTermStoreExportPayload(StoreExportPayload):
+    short_term_storage_request_id: UUID
+    duration: OptionalNumberT
+
+
 class BcoGenerationParametersMixin(BaseModel):
     bco_merge_history_metadata: bool = Field(
         default=False, description="When reading tags/annotations to generate BCO object include history metadata."
@@ -1378,31 +1384,34 @@ class WriteStoreToPayload(StoreExportPayload):
     )
 
 
-class JobExportHistoryArchiveModel(Model):
-    id: DecodedDatabaseIdField = Field(
+class ObjectExportResponseBase(Model):
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
-        description="The encoded database ID of the job that is currently processing a particular request.",
-    )
-    job_id: DecodedDatabaseIdField = Field(
-        ...,
-        title="Job ID",
-        description="The encoded database ID of the job that generated this history export archive.",
+        description="The encoded database ID of the export request.",
     )
     ready: bool = Field(
         ...,
         title="Ready",
-        description="Whether the export history job has completed successfully and the archive is ready to download",
+        description="Whether the export has completed successfully and the archive is ready",
     )
     preparing: bool = Field(
         ...,
         title="Preparing",
-        description="Whether the history archive is currently being built or in preparation.",
+        description="Whether the archive is currently being built or in preparation.",
     )
     up_to_date: bool = Field(
         ...,
         title="Up to Date",
-        description="False, if a new export archive should be generated for the corresponding history.",
+        description="False, if a new export archive should be generated.",
+    )
+
+
+class JobExportHistoryArchiveModel(ObjectExportResponseBase):
+    job_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Job ID",
+        description="The encoded database ID of the job that generated this history export archive.",
     )
     download_url: RelativeUrl = Field(
         ...,
@@ -1421,8 +1430,47 @@ class JobExportHistoryArchiveModel(Model):
     )
 
 
-class JobExportHistoryArchiveCollection(Model):
+class ExportObjectType(str, Enum):
+    """Types of objects that can be exported."""
+
+    HISTORY = "history"
+    INVOCATION = "invocation"
+
+
+class ExportObjectRequestMetadata(Model):
+    object_id: EncodedDatabaseIdField
+    object_type: ExportObjectType
+    user_id: Optional[EncodedDatabaseIdField]
+    payload: Union[WriteStoreToPayload, ShortTermStoreExportPayload]
+
+
+class ExportObjectResultMetadata(Model):
+    success: bool
+    error: Optional[str]
+
+
+class ExportObjectMetadata(Model):
+    request_data: ExportObjectRequestMetadata
+    result_data: Optional[ExportObjectResultMetadata]
+
+
+class ObjectExportTaskResponse(ObjectExportResponseBase):
+    task_uuid: UUID4 = Field(
+        ...,
+        title="Task ID",
+        description="The identifier of the task processing the export.",
+    )
+    create_time: datetime = CreateTimeField
+    export_metadata: Optional[ExportObjectMetadata]
+
+
+class JobExportHistoryArchiveListResponse(Model):
     __root__: List[JobExportHistoryArchiveModel]
+
+
+class ExportTaskListResponse(Model):
+    __root__: List[ObjectExportTaskResponse]
+    __accept_type__ = "application/vnd.galaxy.task.export+json"
 
 
 class LabelValuePair(Model):

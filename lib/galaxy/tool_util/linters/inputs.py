@@ -475,7 +475,7 @@ def lint_inputs(tool_xml, lint_ctx):
 
     # check if there is an output with the same name as an input
     outputs = tool_xml.find("./outputs")
-    if outputs:
+    if outputs is not None:
         for output in outputs:
             if output.get("name") in input_names:
                 lint_ctx.error(
