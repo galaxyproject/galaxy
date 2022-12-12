@@ -18,6 +18,10 @@ class HasFilesNameProperty(Protocol):
         ...
 
 
+class HasId(Protocol):
+    id: int
+
+
 class Dataset_t1(HasExtraFilesPathProperty, HasFilesNameProperty, Protocol):
     name: str
     extension: str

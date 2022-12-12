@@ -22,6 +22,7 @@ from bx.intervals.io import (
 
 from galaxy import util
 from galaxy.datatypes import metadata
+from galaxy.datatypes._protocols import HasId
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.dataproviders.dataset import (
     DatasetDataProvider,
@@ -757,7 +758,7 @@ class Bed12(BedStrict):
 
 class _RemoteCallMixin:
     def _get_remote_call_url(
-        self, redirect_url: str, site_name: str, dataset: "DatasetInstance", type: str, app, base_url: str
+        self, redirect_url: str, site_name: str, dataset: HasId, type: str, app, base_url: str
     ) -> str:
         """Retrieve the URL to call out to an external site and retrieve data.
         This routes our external URL through a local galaxy instance which makes
