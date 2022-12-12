@@ -13,9 +13,10 @@
         #elif $input1.is_of_type('gff')
             -p gff
         #else
-             -s ${input1.metadata.chromCol}
-             -b ${input1.metadata.startCol}
-             -e ${input1.metadata.endCol}
+            -s ${input1.metadata.chromCol}
+            -b ${input1.metadata.startCol}
+            -e ${input1.metadata.endCol}
+            ## TODO --zero-based information missing in interval datatype
         #end if
         input.bgz
         &&
@@ -40,7 +41,14 @@
     <tests>
         <test>
             <param name="input1" ftype="bed" value="droPer1.bed"/>
-            <output name="output1" ftype="tabix" value="droPer1.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="133"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p bed"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
@@ -49,18 +57,42 @@
                     <has_size value="110" delta="10"/>
                 </assert_contents>
             </output>
+            <assert_command>
+                <has_text text="-p" negate="true"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" ftype="tabix" value="tabix_filter_by_feature_count_out2.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="120"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p gff"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
-            <output name="output1" ftype="tabix" value="2.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="247"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p" negate="true"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
-            <output name="output1" ftype="tabix" value="tabix_to_maf_in.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="148"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p vcf"/>
+            </assert_command>
         </test>
     </tests>
     <help>

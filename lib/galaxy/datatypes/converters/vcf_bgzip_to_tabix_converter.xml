@@ -1,4 +1,4 @@
-<tool id="CONVERTER_vcf_bgzip_to_tabix_0" name="Convert BGZ VCF to tabix" version="1.0.1" hidden="true" profile="16.04">
+<tool id="CONVERTER_vcf_bgzip_to_tabix_0" name="Convert BGZ VCF to tabix" version="1.0.2" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="1.14">htslib</requirement>
@@ -25,7 +25,11 @@
     <tests>
         <test>
             <param name="input1" ftype="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip"/>
-            <output name="output1" ftype="tabix" value="tabix_to_maf_in_to_tabix.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="148"/>
+                </assert_contents>
+            </output>
         </test>
     </tests>
     <help>
