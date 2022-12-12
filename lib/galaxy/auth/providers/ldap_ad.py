@@ -12,6 +12,7 @@ has external dependencies like openldap client libs. ldap3 is a pure Python LDAP
 """
 
 import logging
+from urllib.parse import urlparse
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.security.validate_user_input import transform_publicname
@@ -320,18 +321,17 @@ class LDAP3(LDAP):
             self.ldap_tls = True
         else:
             self.ldap_tls = False
+        # Get server address and port
+        url_obj = urlparse(server_url)
+        server_address = url_obj.hostname
         try:
-            # Get server address and port
-            server_address, server_port = server_url.split("//")[-1].split(":")
-        except ValueError:
-            server_address = server_url.split("//")[-1]
+            server_port = int(url_obj.port)
+        except TypeError:
             # If port is not specified use standard port numbers based on TLS
             if self.ldap_tls:
                 server_port = 636
             else:
                 server_port = 389
-        # Ensure server_port is integer
-        server_port = int(server_port)
         # Create server object
         self.server = ldap3.Server(server_address, port=server_port, use_ssl=self.ldap_tls, get_info=ldap3.ALL)
         # Set auto_bind
@@ -464,7 +464,7 @@ if __name__ == "__main__":
         "bind-password": "{password}",
         "search-fields": "uid",
         "search-filter": "(uid={username})",
-        "search-base": "cn=users,cn=accounts,dc=demo,dc=freeipa,dc=org",
+        "search-base": "cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org",
         "redact_username_in_logs": False,
         "auto-register-username": "{uid}",
         "auto-register-email": "{uid}@example.com",
