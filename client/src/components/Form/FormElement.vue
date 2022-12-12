@@ -26,6 +26,7 @@ export interface FormElementProps {
     help?: string;
     error?: string;
     backbonejs?: boolean;
+    disabled?: boolean;
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
