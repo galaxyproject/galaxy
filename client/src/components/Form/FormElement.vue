@@ -227,7 +227,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :type="props.type ?? 'float'"
                 :workflow-building-mode="workflowBuildingMode" />
             <FormSelection
-                v-else-if="props.type == 'select' && attrs.display == 'radio'"
+                v-else-if="props.type === 'select' && ['radio', 'checkboxes'].includes(attrs.display)"
                 :id="id"
                 v-model="currentValue"
                 :data="attrs.data"
