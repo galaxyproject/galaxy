@@ -43,13 +43,13 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         getLatestCreateTime: (state) => {
             return state.latestCreateTime;
         },
-        getTotalMatchesCount: (state) => { 
+        getTotalMatchesCount: (state) => {
             return state.totalMatchesCount;
         },
         getLastCheckedTime: (state) => {
             return state.lastCheckedTime;
         },
-        getWatchingVisibility: (state) =>{
+        getWatchingVisibility: (state) => {
             return state.isWatching;
         },
     },

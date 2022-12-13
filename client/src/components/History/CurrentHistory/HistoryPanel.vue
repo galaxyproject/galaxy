@@ -1,140 +1,138 @@
 <template>
-    <div>
-        <ExpandedItems
-            v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
-            :scope-key="historyId"
-            :get-item-key="(item) => item.type_id">
-            <SelectedItems
-                v-slot="{
-                    selectedItems,
-                    showSelection,
-                    isQuerySelection,
-                    selectionSize,
-                    setShowSelection,
-                    selectAllInCurrentQuery,
-                    isSelected,
-                    setSelected,
-                    resetSelection,
-                }"
-                :scope-key="queryKey"
-                :get-item-key="(item) => item.type_id"
-                :filter-text="filterText"
-                :total-items-in-query="totalItemsInQuery"
-                @query-selection-break="querySelectionBreak = true">
-                <section
-                    class="history-layout d-flex flex-column w-100"
-                    @drop.prevent="onDrop"
-                    @dragenter.prevent="onDragEnter"
-                    @dragover.prevent
-                    @dragleave.prevent="onDragLeave">
-                    <slot name="navigation" :history="history" />
-                    <HistoryFilters
+    <ExpandedItems
+        v-slot="{ expandedCount, isExpanded, setExpanded, collapseAll }"
+        :scope-key="historyId"
+        :get-item-key="(item) => item.type_id">
+        <SelectedItems
+            v-slot="{
+                selectedItems,
+                showSelection,
+                isQuerySelection,
+                selectionSize,
+                setShowSelection,
+                selectAllInCurrentQuery,
+                isSelected,
+                setSelected,
+                resetSelection,
+            }"
+            :scope-key="queryKey"
+            :get-item-key="(item) => item.type_id"
+            :filter-text="filterText"
+            :total-items-in-query="totalItemsInQuery"
+            @query-selection-break="querySelectionBreak = true">
+            <section
+                class="history-layout d-flex flex-column w-100"
+                @drop.prevent="onDrop"
+                @dragenter.prevent="onDragEnter"
+                @dragover.prevent
+                @dragleave.prevent="onDragLeave">
+                <slot name="navigation" :history="history" />
+                <HistoryFilters
+                    v-if="showControls"
+                    class="content-operations-filters mx-3"
+                    :filter-text.sync="filterText"
+                    :show-advanced.sync="showAdvanced" />
+                <section v-if="!showAdvanced">
+                    <HistoryDetails
+                        :history="history"
+                        :writeable="writable"
+                        @update:history="$emit('updateHistory', $event)" />
+                    <HistoryMessages :history="history" />
+                    <HistoryCounter
                         v-if="showControls"
-                        class="content-operations-filters mx-3"
+                        :history="history"
+                        :is-watching="isWatching"
+                        :last-checked="lastChecked"
                         :filter-text.sync="filterText"
-                        :show-advanced.sync="showAdvanced" />
-                    <section v-if="!showAdvanced">
-                        <HistoryDetails
-                            :history="history"
-                            :writeable="writable"
-                            @update:history="$emit('updateHistory', $event)" />
-                        <HistoryMessages :history="history" />
-                        <HistoryCounter
-                            v-if="showControls"
-                            :history="history"
-                            :is-watching="isWatching"
-                            :last-checked="lastChecked"
-                            :filter-text.sync="filterText"
-                            @reloadContents="reloadContents" />
-                        <HistoryOperations
-                            v-if="showControls"
-                            :history="history"
-                            :show-selection="showSelection"
-                            :expanded-count="expandedCount"
-                            :has-matches="hasMatches(itemsLoaded)"
-                            :operation-running.sync="operationRunning"
-                            @update:show-selection="setShowSelection"
-                            @collapse-all="collapseAll">
-                            <template v-slot:selection-operations>
-                                <HistorySelectionOperations
-                                    :history="history"
-                                    :filter-text="filterText"
-                                    :content-selection="selectedItems"
-                                    :selection-size="selectionSize"
-                                    :is-query-selection="isQuerySelection"
-                                    :total-items-in-query="totalItemsInQuery"
-                                    :operation-running.sync="operationRunning"
-                                    @update:show-selection="setShowSelection"
-                                    @operation-error="onOperationError"
-                                    @hide-selection="onHideSelection"
-                                    @reset-selection="resetSelection" />
-                                <HistorySelectionStatus
-                                    v-if="showSelection"
-                                    :selection-size="selectionSize"
-                                    @select-all="selectAllInCurrentQuery(itemsLoaded)"
-                                    @reset-selection="resetSelection" />
-                            </template>
-                        </HistoryOperations>
-                        <SelectionChangeWarning :query-selection-break="querySelectionBreak" />
-                        <OperationErrorDialog
-                            v-if="operationError"
-                            :operation-error="operationError"
-                            @hide="operationError = null" />
-                    </section>
-                    <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
-                        <history-drop-zone v-if="showDropZone" />
-                        <div>
-                            <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
-                                <b-alert class="m-2" variant="info" show>
-                                    <LoadingSpan message="Loading History" />
-                                </b-alert>
-                            </div>
-                            <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
-                                <LoadingSpan message="Processing operation" />
-                            </b-alert>
-                            <div v-else-if="itemsLoaded.length === 0">
-                                <HistoryEmpty v-if="queryDefault" class="m-2" />
-                                <b-alert v-else class="m-2" variant="info" show>
-                                    No data found for selected filter.
-                                </b-alert>
-                            </div>
-                            <ListingLayout
-                                v-else
-                                :offset="listOffset"
-                                :items="itemsLoaded"
-                                :query-key="queryKey"
-                                @scroll="onScroll">
-                                <template v-slot:item="{ item, currentOffset }">
-                                    <ContentItem
-                                        v-if="!invisible[item.hid]"
-                                        :id="item.hid"
-                                        is-history-item
-                                        :item="item"
-                                        :name="item.name"
-                                        :writable="writable"
-                                        :expand-dataset="isExpanded(item)"
-                                        :is-dataset="isDataset(item)"
-                                        :highlight="getHighlight(item)"
-                                        :selected="isSelected(item)"
-                                        :selectable="showSelection"
-                                        :filterable="filterable"
-                                        @tag-click="onTagClick"
-                                        @tag-change="onTagChange"
-                                        @toggleHighlights="toggleHighlights"
-                                        @update:expand-dataset="setExpanded(item, $event)"
-                                        @update:selected="setSelected(item, $event)"
-                                        @view-collection="$emit('view-collection', item, currentOffset)"
-                                        @delete="onDelete(item)"
-                                        @undelete="onUndelete(item)"
-                                        @unhide="onUnhide(item)" />
-                                </template>
-                            </ListingLayout>
-                        </div>
-                    </section>
+                        @reloadContents="reloadContents" />
+                    <HistoryOperations
+                        v-if="showControls"
+                        :history="history"
+                        :show-selection="showSelection"
+                        :expanded-count="expandedCount"
+                        :has-matches="hasMatches(itemsLoaded)"
+                        :operation-running.sync="operationRunning"
+                        @update:show-selection="setShowSelection"
+                        @collapse-all="collapseAll">
+                        <template v-slot:selection-operations>
+                            <HistorySelectionOperations
+                                :history="history"
+                                :filter-text="filterText"
+                                :content-selection="selectedItems"
+                                :selection-size="selectionSize"
+                                :is-query-selection="isQuerySelection"
+                                :total-items-in-query="totalItemsInQuery"
+                                :operation-running.sync="operationRunning"
+                                @update:show-selection="setShowSelection"
+                                @operation-error="onOperationError"
+                                @hide-selection="onHideSelection"
+                                @reset-selection="resetSelection" />
+                            <HistorySelectionStatus
+                                v-if="showSelection"
+                                :selection-size="selectionSize"
+                                @select-all="selectAllInCurrentQuery(itemsLoaded)"
+                                @reset-selection="resetSelection" />
+                        </template>
+                    </HistoryOperations>
+                    <SelectionChangeWarning :query-selection-break="querySelectionBreak" />
+                    <OperationErrorDialog
+                        v-if="operationError"
+                        :operation-error="operationError"
+                        @hide="operationError = null" />
                 </section>
-            </SelectedItems>
-        </ExpandedItems>
-    </div>
+                <section v-if="!showAdvanced" class="position-relative flex-grow-1 scroller">
+                    <history-drop-zone v-if="showDropZone" />
+                    <div>
+                        <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
+                            <b-alert class="m-2" variant="info" show>
+                                <LoadingSpan message="Loading History" />
+                            </b-alert>
+                        </div>
+                        <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
+                            <LoadingSpan message="Processing operation" />
+                        </b-alert>
+                        <div v-else-if="itemsLoaded.length === 0">
+                            <HistoryEmpty v-if="queryDefault" class="m-2" />
+                            <b-alert v-else class="m-2" variant="info" show>
+                                No data found for selected filter.
+                            </b-alert>
+                        </div>
+                        <ListingLayout
+                            v-else
+                            :offset="listOffset"
+                            :items="itemsLoaded"
+                            :query-key="queryKey"
+                            @scroll="onScroll">
+                            <template v-slot:item="{ item, currentOffset }">
+                                <ContentItem
+                                    v-if="!invisible[item.hid]"
+                                    :id="item.hid"
+                                    is-history-item
+                                    :item="item"
+                                    :name="item.name"
+                                    :writable="writable"
+                                    :expand-dataset="isExpanded(item)"
+                                    :is-dataset="isDataset(item)"
+                                    :highlight="getHighlight(item)"
+                                    :selected="isSelected(item)"
+                                    :selectable="showSelection"
+                                    :filterable="filterable"
+                                    @tag-click="onTagClick"
+                                    @tag-change="onTagChange"
+                                    @toggleHighlights="toggleHighlights"
+                                    @update:expand-dataset="setExpanded(item, $event)"
+                                    @update:selected="setSelected(item, $event)"
+                                    @view-collection="$emit('view-collection', item, currentOffset)"
+                                    @delete="onDelete(item)"
+                                    @undelete="onUndelete(item)"
+                                    @unhide="onUnhide(item)" />
+                            </template>
+                        </ListingLayout>
+                    </div>
+                </section>
+            </section>
+        </SelectedItems>
+    </ExpandedItems>
 </template>
 
 <script>
