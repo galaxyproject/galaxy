@@ -1,10 +1,10 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref, onMounted, onUnmounted } from "vue";
 import { useRoute, useRouter } from "vue-router/composables";
 import { useUserStore } from "@/stores/userStore";
 import HistoryIndex from "@/components/History/Index.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox";
+import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 import CenterFrame from "./CenterFrame.vue";
