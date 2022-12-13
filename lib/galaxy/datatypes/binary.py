@@ -35,6 +35,7 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     Dataset_t2,
+    Dataset_t6,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.data import (
@@ -563,7 +564,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
-    def to_archive(self, dataset: "DatasetInstance", name: str = "") -> Iterable:
+    def to_archive(self, dataset: Dataset_t6, name: str = "") -> Iterable:
         rel_paths = []
         file_paths = []
         rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")

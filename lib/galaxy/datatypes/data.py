@@ -28,6 +28,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t3,
     Dataset_t4,
+    Dataset_t6,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -411,7 +412,7 @@ class Data(metaclass=DataMeta):
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return open(dataset.file_name, mode="rb"), headers
 
-    def to_archive(self, dataset: "DatasetInstance", name: str = "") -> Iterable:
+    def to_archive(self, dataset: Dataset_t6, name: str = "") -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 

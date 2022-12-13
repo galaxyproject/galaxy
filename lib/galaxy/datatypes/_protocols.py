@@ -70,3 +70,8 @@ class Dataset_t4(HasName, Protocol):
 
 class Dataset_t5(HasFileNameProperty, Dataset_t4, Protocol):
     ...
+
+
+class Dataset_t6(HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, Protocol):
+    datatype: Any
+    extension: str  # TODO reconcile: ext vs. extension
