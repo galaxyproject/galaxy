@@ -32,6 +32,7 @@ from galaxy.datatypes import (
 )
 from galaxy.datatypes._protocols import (
     Dataset_t2,
+    Dataset_t8,
     HasFileNameProperty,
 )
 from galaxy.datatypes.binary import _BamOrSam
@@ -304,7 +305,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset: "DatasetInstance", skipchars: Optional[List] = None, **kwargs) -> str:
+    def make_html_peek_rows(self, dataset: Dataset_t8, skipchars: Optional[List] = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []

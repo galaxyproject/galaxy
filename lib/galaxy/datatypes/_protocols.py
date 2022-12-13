@@ -18,6 +18,12 @@ class HasFileNameProperty(Protocol):
         ...
 
 
+class HasPeekProperty(Protocol):
+    @property
+    def peek(self):
+        ...
+
+
 class HasId(Protocol):
     id: int
 
@@ -83,3 +89,8 @@ class Dataset_t6(HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, Pr
 
 class Dataset_t7(HasDataset, HasName, Protocol):
     ...
+
+
+class Dataset_t8(HasMetadata, HasId, HasPeekProperty, Protocol):
+    def set_peek(self) -> None:
+        ...
