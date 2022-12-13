@@ -1,9 +1,9 @@
 import _l from "@/utils/localization";
 import {
-    cleanupDatasets,
+    cleanupDiscardedDatasets,
     fetchDiscardedDatasets,
     fetchDiscardedDatasetsSummary,
-    cleanupHistories,
+    cleanupDiscardedHistories,
     fetchDiscardedHistories,
     fetchDiscardedHistoriesSummary,
 } from "../services";
@@ -24,7 +24,7 @@ export const cleanupCategories: CleanupCategory[] = [
                 ),
                 fetchSummary: fetchDiscardedDatasetsSummary,
                 fetchItems: fetchDiscardedDatasets,
-                cleanupItems: cleanupDatasets,
+                cleanupItems: cleanupDiscardedDatasets,
             },
             {
                 id: "deleted_histories",
@@ -36,7 +36,7 @@ export const cleanupCategories: CleanupCategory[] = [
                 ),
                 fetchSummary: fetchDiscardedHistoriesSummary,
                 fetchItems: fetchDiscardedHistories,
-                cleanupItems: cleanupHistories,
+                cleanupItems: cleanupDiscardedHistories,
             },
         ],
     },

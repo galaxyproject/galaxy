@@ -1,9 +1,14 @@
 import { bytesToString } from "@/utils/utils";
 
-interface CleanupResultResponse {
+export interface ItemError {
+    name: string;
+    reason: string;
+}
+
+export interface CleanupResultResponse {
     totalItemCount: number;
     totalFreeBytes: number;
-    errors: string[];
+    errors: ItemError[];
     errorMessage?: string;
 }
 

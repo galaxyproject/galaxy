@@ -8,11 +8,10 @@ export interface PaginationOptions {
     sortDesc?: boolean;
 }
 
-export interface CleanableItemBase {
+export interface CleanableItem {
     id: string;
     name: string;
     size: number;
-    update_time: Date;
 }
 
 /**
@@ -47,7 +46,7 @@ export interface CleanupOperation {
      * @param options The filter options for sorting and pagination of the items.
      * @returns An array of items that can be potentially `cleaned` and match the filtering params.
      */
-    fetchItems: <T extends CleanableItemBase>(options: PaginationOptions) => Promise<T[]>;
+    fetchItems: (options: PaginationOptions) => Promise<CleanableItem[]>;
 
     /**
      * Processes the given items to free up some user storage space and provides a result
@@ -55,5 +54,5 @@ export interface CleanupOperation {
      * @param items An array of items to be `cleaned`
      * @returns The result of the cleanup operation.
      */
-    cleanupItems: <T extends CleanableItemBase>(items: T[]) => Promise<CleanupResult>;
+    cleanupItems: (items: CleanableItem[]) => Promise<CleanupResult>;
 }
