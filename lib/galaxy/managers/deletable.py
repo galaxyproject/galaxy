@@ -12,7 +12,11 @@ from typing import (
     Any,
     Dict,
     Set,
+    TYPE_CHECKING
 )
+
+if TYPE_CHECKING:
+    from bioblend.galaxy import GalaxyInstance
 
 from galaxy.model import Base
 from .base import (
@@ -32,16 +36,32 @@ class DeletableManagerMixin:
     removed by an admin/script.
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(
+        self, 
+        item: Base, 
+        attr: str, 
+        val: Any, 
+        flush: bool = True
+    ) -> Dict[str, Any]:
         ...
 
-    def delete(self, item, flush=True, **kwargs):
+    def delete(
+        self, 
+        item: str, 
+        flush: bool = True, 
+        **kwargs
+    ) -> Dict[str, Any]:
         """
         Mark as deleted and return.
         """
         return self._session_setattr(item, "deleted", True, flush=flush)
 
-    def undelete(self, item, flush=True, **kwargs):
+    def undelete(
+        self, 
+        item: str, 
+        flush: bool = True, 
+        **kwargs
+    ) -> Dict[str, Any]: 
         """
         Mark as not deleted and return.
         """
@@ -62,7 +82,13 @@ class DeletableDeserializerMixin:
     def add_deserializers(self):
         self.deserializers["deleted"] = self.deserialize_deleted
 
-    def deserialize_deleted(self, item, key, val, **context):
+    def deserialize_deleted(
+        self, 
+        item: str, 
+        key: str, 
+        val: Any, 
+        **context
+    ) -> Dict[str, Any]:
         """
         Delete or undelete `item` based on `val` then return `item.deleted`.
         """
@@ -91,10 +117,21 @@ class PurgableManagerMixin(DeletableManagerMixin):
     file).
     """
 
-    def _session_setattr(self, item: Base, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(
+        self, 
+        item: Base, 
+        attr: str, 
+        val: Any, 
+        flush: bool = True
+    ) -> Dict[str, Any]:
         ...
 
-    def purge(self, item, flush=True, **kwargs):
+    def purge(
+        self, 
+        item, 
+        flush: bool = True, 
+        **kwargs
+    ) -> Dict[str, Any]:
         """
         Mark as purged and return.
 
@@ -119,7 +156,13 @@ class PurgableDeserializerMixin(DeletableDeserializerMixin):
         DeletableDeserializerMixin.add_deserializers(self)
         self.deserializers["purged"] = self.deserialize_purged
 
-    def deserialize_purged(self, item, key, val, **context):
+    def deserialize_purged(
+        self, 
+        item: str, 
+        key: str, 
+        val: Any, 
+        **context
+    ) -> Dict[str, Any]:
         """
         If `val` is True, purge `item` and return `item.purged`.
         """
