@@ -46,7 +46,7 @@ def test_root_list():
 
     a1 = actions[1]
     assert a1.action_type == "update_step_label"
-    assert isinstance(a1, UpdateStepLabelAction, a1)
+    assert isinstance(a1, UpdateStepLabelAction)
     assert isinstance(a1.step, StepReferenceByOrderIndex)
     assert a1.step.order_index == 5
 
