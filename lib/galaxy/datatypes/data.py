@@ -33,6 +33,7 @@ from galaxy.datatypes._protocols import (
     HasCreatingJobProperty,
     HasFileNameProperty,
     HasInfo,
+    HasMetadata,
     HasName,
 )
 from galaxy.datatypes.metadata import (
@@ -254,9 +255,7 @@ class Data(metaclass=DataMeta):
     def set_meta(self, dataset: "DatasetInstance", *, overwrite: bool = True, **kwd) -> None:
         """Unimplemented method, allows guessing of metadata from contents of file"""
 
-    def missing_meta(
-        self, dataset: "DatasetInstance", check: Optional[List] = None, skip: Optional[List] = None
-    ) -> bool:
+    def missing_meta(self, dataset: HasMetadata, check: Optional[List] = None, skip: Optional[List] = None) -> bool:
         """
         Checks for empty metadata values.
         Returns False if no non-optional metadata is missing and the missing metadata key otherwise.
