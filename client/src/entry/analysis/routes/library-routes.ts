@@ -1,10 +1,11 @@
-import Base from "entry/analysis/modules/Base";
-import LibrariesList from "components/Libraries/LibrariesList";
-import LibraryFolder from "components/Libraries/LibraryFolder/LibraryFolder";
-import LibraryFolderDatasetPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions";
-import LibraryFolderPermissions from "components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions";
-import LibraryDataset from "components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset";
-import LibraryPermissions from "components/Libraries/LibraryPermissions/LibraryPermissions";
+import Base from "entry/analysis/modules/Base.vue";
+import LibrariesList from "@/components/Libraries/LibrariesList.vue";
+import LibraryFolder from "@/components/Libraries/LibraryFolder/LibraryFolder.vue";
+import LibraryFolderDatasetPermissions from "@/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions.vue";
+import LibraryFolderPermissions from "@/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions.vue";
+import LibraryDataset from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue";
+import LibraryPermissions from "@/components/Libraries/LibraryPermissions/LibraryPermissions.vue";
+import type { Route } from "vue-router";
 
 export default [
     {
@@ -23,9 +24,10 @@ export default [
                 path: "folders/:folder_id/page/:page",
                 name: "LibraryFolder",
                 component: LibraryFolder,
-                props(route) {
+                props(route: Route) {
                     const props = { ...route.params };
                     if (props.page) {
+                        // TODO: fix cast
                         props.page = +props.page;
                     }
                     return props;
