@@ -58,7 +58,7 @@ class UsesCeleryTasks:
             if os.environ.get("GALAXY_TEST_EXTERNAL") is None:
                 from galaxy.celery import celery_app
 
-                if celery_app.fork_pool:
+                if hasattr(celery_app, "fork_pool"):
                     celery_app.fork_pool.stop()
                     celery_app.fork_pool.join(timeout=5)
 
