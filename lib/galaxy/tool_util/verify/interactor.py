@@ -15,11 +15,13 @@ from logging import getLogger
 from typing import (
     Any,
     Callable,
+    cast,
     Dict,
     Generator,
     List,
     NamedTuple,
     Optional,
+    Union,
 )
 
 import requests
@@ -29,10 +31,15 @@ from packaging.version import (
 )
 from requests import Response
 from requests.cookies import RequestsCookieJar
-from typing_extensions import Protocol
+from typing_extensions import (
+    Literal,
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import (
+    AssertionList,
     TestCollectionDef,
     TestCollectionOutputDef,
 )
@@ -78,8 +85,46 @@ class OutputsDict(dict):
 
 JobDataT = Dict[str, Any]
 JobDataCallbackT = Callable[[JobDataT], None]
-ToolTestDictT = Dict[str, Any]
-ToolTestDictsT = List[ToolTestDictT]
+ValidToolTestDict = TypedDict(
+    "ValidToolTestDict",
+    {
+        "inputs": Any,
+        "outputs": Any,
+        "output_collections": List[Dict[str, Any]],
+        "stdout": AssertionList,
+        "stderr": AssertionList,
+        "expect_exit_code": Optional[int],
+        "expect_failure": bool,
+        "expect_test_failure": bool,
+        "maxseconds": Optional[int],
+        "num_outputs": Optional[int],
+        "command_line": AssertionList,
+        "command_version": AssertionList,
+        "required_files": List[Any],
+        "required_data_tables": List[Any],
+        "required_loc_files": List[str],
+        "error": Literal[False],
+        "tool_id": str,
+        "tool_version": str,
+        "test_index": int,
+    },
+)
+
+InvalidToolTestDict = TypedDict(
+    "InvalidToolTestDict",
+    {
+        "error": Literal[True],
+        "tool_id": str,
+        "tool_version": str,
+        "test_index": int,
+        "inputs": Any,
+        "exception": str,
+        "maxseconds": Optional[int],
+    },
+)
+
+ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
+ToolTestDictsT = List[ToolTestDict]
 
 
 def stage_data_in_history(
@@ -1272,7 +1317,7 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
-    testdef = ToolTestDescription(tool_test_dict)
+    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
     _handle_def_errors(testdef)
 
     created_history = False
