@@ -1,4 +1,4 @@
-import Base from "entry/analysis/modules/Base.vue";
+import BaseModule from "entry/analysis/modules/BaseModule.vue";
 import LibrariesList from "@/components/Libraries/LibrariesList.vue";
 import LibraryFolder from "@/components/Libraries/LibraryFolder/LibraryFolder.vue";
 import LibraryFolderDatasetPermissions from "@/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderDatasetPermissions.vue";
@@ -10,7 +10,7 @@ import type { Route } from "vue-router";
 export default [
     {
         path: "/libraries",
-        component: Base,
+        component: BaseModule,
         children: [
             { path: "", component: LibrariesList },
             {
