@@ -275,6 +275,8 @@ class WorkflowsAPIController(
                             server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
                             trs_tool_id = parts["tool_id"]
                             trs_version_id = parts["version_id"]
+                            payload["trs_tool_id"] = trs_tool_id
+                            payload["trs_version_id"] = trs_version_id
                         else:
                             raise exceptions.MessageException("Invalid TRS URL.")
                     else:
