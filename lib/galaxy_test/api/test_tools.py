@@ -1472,7 +1472,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         dynamic_param_error = None
         test_driver = self.driver_or_skip_test_if_remote()
         try:
-            test_driver.run_tool_test("dbkey_output_action", tool_test_dicts=tool_test_dicts)
+            test_driver.run_tool_test("dbkey_output_action", _tool_test_dicts=tool_test_dicts)
         except Exception as e:
             dynamic_param_error = getattr(e, "dynamic_param_error", False)
         assert dynamic_param_error is None
@@ -1486,7 +1486,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         )
         dynamic_param_error = None
         try:
-            test_driver.run_tool_test("dbkey_output_action", tool_test_dicts=tool_test_dicts)
+            test_driver.run_tool_test("dbkey_output_action", _tool_test_dicts=tool_test_dicts)
         except Exception as e:
             dynamic_param_error = getattr(e, "dynamic_param_error", False)
         assert dynamic_param_error
@@ -1501,7 +1501,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         dynamic_param_error = None
         try:
             test_driver.run_tool_test(
-                "dbkey_output_action", tool_test_dicts=tool_test_dicts, register_job_data=register_job_data
+                "dbkey_output_action", _tool_test_dicts=tool_test_dicts, register_job_data=register_job_data
             )
         except Exception as e:
             dynamic_param_error = getattr(e, "dynamic_param_error", False)
@@ -1515,7 +1515,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         try:
             test_driver.run_tool_test(
                 "dbkey_output_action",
-                tool_test_dicts=tool_test_dicts,
+                _tool_test_dicts=tool_test_dicts,
                 skip_on_dynamic_param_errors=True,
                 register_job_data=register_job_data,
             )

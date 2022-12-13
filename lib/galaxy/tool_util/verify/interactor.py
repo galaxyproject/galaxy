@@ -1273,16 +1273,16 @@ def verify_tool(
     publish_history: bool = False,
     force_path_paste: bool = False,
     maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
-    tool_test_dicts: Optional[ToolTestDictsT] = None,
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
+    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
     if client_test_config is None:
         client_test_config = NullClientTestConfig()
-    tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+    tool_test_dicts = _tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     if "test_index" not in tool_test_dict:
         tool_test_dict["test_index"] = test_index
