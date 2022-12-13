@@ -33,6 +33,7 @@ from galaxy.datatypes._protocols import (
     HasCreatingJobProperty,
     HasFileNameProperty,
     HasInfo,
+    HasName,
 )
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
@@ -634,7 +635,7 @@ class Data(metaclass=DataMeta):
 
         return string.Template(filename_pattern).substitute(**template_values)
 
-    def display_name(self, dataset: "DatasetInstance") -> str:
+    def display_name(self, dataset: HasName) -> str:
         """Returns formatted html of dataset name"""
         try:
             return escape(unicodify(dataset.name, "utf-8"))

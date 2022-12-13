@@ -30,6 +30,10 @@ class HasInfo(Protocol):
     info: str
 
 
+class HasName(Protocol):
+    name: str
+
+
 class HasCreatingJobProperty(Protocol):
     @property
     def creating_job(self):
