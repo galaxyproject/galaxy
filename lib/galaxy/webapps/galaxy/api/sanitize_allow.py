@@ -8,6 +8,8 @@ from typing import (
     Dict,
 )
 
+from fastapi import Query
+
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.webapps.galaxy.api import DependsOnTrans
 from . import Router
@@ -15,6 +17,11 @@ from . import Router
 log = logging.getLogger(__name__)
 
 router = Router(tags=["configuration"])
+
+ToolIDQueryParam: str = Query(
+    title="tool_id only",
+    description="ID string of tool to add or delete",
+)
 
 
 @router.cbv
@@ -27,7 +34,7 @@ class FastAPISanitizeAllowController:
         return self._generate_allowlist(trans)
 
     @router.put("/api/sanitize_allow", require_admin=True)
-    def create(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
+    def create(self, tool_id: str = ToolIDQueryParam, trans: ProvidesUserContext = DependsOnTrans):
         """
         Add a new tool_id to the allowlist.
         """
@@ -37,7 +44,7 @@ class FastAPISanitizeAllowController:
         return self._generate_allowlist(trans)
 
     @router.delete("/api/sanitize_allow", require_admin=True)
-    def delete(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
+    def delete(self, tool_id: str = ToolIDQueryParam, trans: ProvidesUserContext = DependsOnTrans):
         """
         Remove tool_id from allowlist.
         """
