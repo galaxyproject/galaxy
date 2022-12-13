@@ -22,7 +22,6 @@ class FastAPISanitizeAllowController:
     @router.get("/api/sanitize_allow", require_admin=True)
     async def index(self, trans: ProvidesUserContext = DependsOnTrans):
         """
-        GET /api/sanitize_allow
         Return an object showing the current state of the toolbox and allow list.
         """
         return self._generate_allowlist(trans)
