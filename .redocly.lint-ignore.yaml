@@ -27,18 +27,6 @@ _schema.json:
       #/paths/~1api~1dataset_collections~1{id}~1prepare_download/post/parameters/0/name
     - >-
       #/paths/~1api~1histories~1{history_id}~1contents~1archive~1{id}/get/parameters
-  operation-4xx-response:
-    - '#/paths/~1api~1datatypes~1converters/get/responses'
-    - '#/paths/~1api~1datatypes~1edam_data/get/responses'
-    - '#/paths/~1api~1datatypes~1edam_data~1detailed/get/responses'
-    - '#/paths/~1api~1datatypes~1edam_formats/get/responses'
-    - '#/paths/~1api~1datatypes~1edam_formats~1detailed/get/responses'
-    - '#/paths/~1api~1datatypes~1mapping/get/responses'
-    - '#/paths/~1api~1datatypes~1sniffers/get/responses'
-    - '#/paths/~1api~1licenses/get/responses'
-    - '#/paths/~1api~1tours/get/responses'
-    - '#/paths/~1api~1version/get/responses'
-    - '#/paths/~1ga4gh~1drs~1v1~1service-info/get/responses'
   security-defined:
     - '#/paths/~1api~1datatypes/get'
     - '#/paths/~1api~1datatypes~1converters/get'
