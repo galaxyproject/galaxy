@@ -757,6 +757,7 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         actual_recommendations = ["Filter1", "Grouping1"]
         route = "workflows/get_tool_predictions"
         response = self._post(route, data=request)
+        time.sleep(1)
         recommendation_response = response.json()
         is_empty = bool(recommendation_response["current_tool"])
         if is_empty is False:
