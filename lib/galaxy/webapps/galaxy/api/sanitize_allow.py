@@ -39,7 +39,7 @@ class FastAPISanitizeAllowController:
         return self._generate_allowlist(trans)
 
     @router.delete("/api/sanitize_allow", require_admin=True)
-    async def delete(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
+   def delete(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
         """
         DELETE /api/sanitize_allow
         Remove tool_id from allowlist.
