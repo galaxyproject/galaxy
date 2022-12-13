@@ -94,6 +94,17 @@
                 <has_text text="-p vcf"/>
             </assert_command>
         </test>
+        <test>
+            <param name="input1" ftype="gtf" value="cufflinks_out1.gtf"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="125"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p gff"/>
+            </assert_command>
+        </test>        
     </tests>
     <help>
     </help>
