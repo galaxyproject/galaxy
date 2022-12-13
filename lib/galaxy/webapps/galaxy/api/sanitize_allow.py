@@ -1,31 +1,45 @@
 """
 API operations allowing clients to retrieve and modify the HTML sanitization allow list.
 """
+
 import logging
 from typing import (
     Any,
     Dict,
 )
 
+from fastapi.routing import APIRouter
+from fastapi_utils.cbv import cbv
+
 from galaxy import web
 from galaxy.webapps.base.controller import BaseAPIController
+from galaxy.managers.context import ProvidesUserContext
+
+from galaxy.webapps.galaxy.api import (
+    depends,
+    DependsOnTrans,
+    Router,
+)
+
+from . import Router
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["sanitize_allow"])
 
-class SanitizeAllowController(BaseAPIController):
-    @web.require_admin
-    @web.expose_api
-    def index(self, trans, **kwd):
+
+@router.cbv
+class FastAPISanitizeAllowController:
+    @router.get("/api/sanitize_allow", require_admin=True)
+    async def index(self, trans: ProvidesUserContext = DependsOnTrans):
         """
         GET /api/sanitize_allow
         Return an object showing the current state of the toolbox and allow list.
         """
         return self._generate_allowlist(trans)
 
-    @web.require_admin
-    @web.expose_api
-    def create(self, trans, tool_id, **kwd):
+    @router.put("/api/sanitize_allow", require_admin=True)
+    async def create(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
         """
         PUT /api/sanitize_allow
         Add a new tool_id to the allowlist.
@@ -35,9 +49,8 @@ class SanitizeAllowController(BaseAPIController):
             self._save_allowlist(trans)
         return self._generate_allowlist(trans)
 
-    @web.require_admin
-    @web.expose_api
-    def delete(self, trans, tool_id, **kwd):
+    @router.delete("/api/sanitize_allow", require_admin=True)
+    async def delete(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
         """
         DELETE /api/sanitize_allow
         Remove tool_id from allowlist.
