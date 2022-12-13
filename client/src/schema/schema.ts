@@ -78,7 +78,7 @@ export interface paths {
          * returned short term storage object. Progress tracking this file's creation
          * can be tracked with the short_term_storage API.
          */
-        post: operations["dataset_collections__prepare_download"];
+        post: operations["prepare_collection_download_api_dataset_collections__id__prepare_download_post"];
     };
     "/api/dataset_collections/{id}/suitable_converters": {
         /** Returns a list of applicable converters for all datatypes in the given collection. */
@@ -498,7 +498,7 @@ export interface paths {
          * returned short term storage object. Progress tracking this file's creation
          * can be tracked with the short_term_storage API.
          */
-        post: operations["history_contents__prepare_download_dataset_collection"];
+        post: operations["prepare_collection_download_api_histories__history_id__contents_dataset_collections__id__prepare_download_post"];
     };
     "/api/histories/{history_id}/contents/datasets/{id}/materialize": {
         /** Materialize a deferred dataset into real, usable dataset. */
@@ -7819,7 +7819,7 @@ export interface operations {
             };
         };
     };
-    dataset_collections__prepare_download: {
+    prepare_collection_download_api_dataset_collections__id__prepare_download_post: {
         /**
          * Prepare an short term storage object that the collection will be downloaded to.
          * @description The history dataset collection will be written as a `zip` archive to the
@@ -7831,13 +7831,15 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The ID of the History. */
             /** @description The ID of the `HDCA` contained in the history. */
             path: {
+                history_id: string;
                 id: string;
             };
         };
         responses: {
-            /** @description Short term storage reference for async monitoring of this download. */
+            /** @description Successful Response */
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
@@ -7849,8 +7851,6 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-            /** @description Required asynchronous tasks required for this operation not available. */
-            501: never;
         };
     };
     suitable_converters_api_dataset_collections__id__suitable_converters_get: {
@@ -10329,7 +10329,7 @@ export interface operations {
             };
         };
     };
-    history_contents__prepare_download_dataset_collection: {
+    prepare_collection_download_api_histories__history_id__contents_dataset_collections__id__prepare_download_post: {
         /**
          * Prepare an short term storage object that the collection will be downloaded to.
          * @description The history dataset collection will be written as a `zip` archive to the

@@ -295,15 +295,6 @@ def parse_index_jobs_summary_params(
     return HistoryContentsIndexJobsSummaryParams(ids=util.listify(ids), types=util.listify(types))
 
 
-STORE_DOWNLOAD_DESCRIPTION = "Prepare an short term storage object that the collection will be downloaded to."
-STORE_DOWNLOAD_RESPONSES = {
-    200: {
-        "description": "Short term storage reference for async monitoring of this download.",
-    },
-    501: {"description": "Required asynchronous tasks required for this operation not available."},
-}
-
-
 @router.cbv
 class FastAPIHistoryContents:
     service: HistoriesContentsService = depends(HistoriesContentsService)
@@ -519,32 +510,23 @@ class FastAPIHistoryContents:
 
     @router.post(
         "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download",
-        summary=STORE_DOWNLOAD_DESCRIPTION,
-        responses=STORE_DOWNLOAD_RESPONSES,
-        operation_id="history_contents__prepare_download_dataset_collection",
+        summary="Prepare an short term storage object that the collection will be downloaded to.",
+        responses={
+            200: {
+                "description": "Short term storage reference for async monitoring of this download.",
+            },
+            501: {"description": "Required asynchronous tasks required for this operation not available."},
+        },
     )
-    def prepare_collection_download_hc(
+    @router.post(
+        "/api/dataset_collections/{id}/prepare_download",
+        summary="Prepare an short term storage object that the collection will be downloaded to.",
+        tags=["dataset collections"],
+    )
+    def prepare_collection_download(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
-        id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
-    ) -> AsyncFile:
-        """The history dataset collection will be written as a `zip` archive to the
-        returned short term storage object. Progress tracking this file's creation
-        can be tracked with the short_term_storage API.
-        """
-        return self.service.prepare_collection_download(trans, id)
-
-    @router.post(
-        "/api/dataset_collections/{id}/prepare_download",
-        summary=STORE_DOWNLOAD_DESCRIPTION,
-        responses=STORE_DOWNLOAD_RESPONSES,
-        operation_id="dataset_collections__prepare_download",
-        tags=["dataset collections"],
-    )
-    def prepare_collection_download_dc(
-        self,
-        trans: ProvidesHistoryContext = DependsOnTrans,
         id: DecodedDatabaseIdField = HistoryHDCAIDPathParam,
     ) -> AsyncFile:
         """The history dataset collection will be written as a `zip` archive to the

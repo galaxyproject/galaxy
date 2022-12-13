@@ -24,4 +24,6 @@ _schema.yaml:
     - '#/paths/~1api~1histories~1{history_id}~1contents~1{type}s~1{id}'
   path-parameters-defined:
     - >-
+      #/paths/~1api~1dataset_collections~1{id}~1prepare_download/post/parameters/0/name
+    - >-
       #/paths/~1api~1histories~1{history_id}~1contents~1archive~1{id}/get/parameters
