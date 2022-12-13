@@ -1078,6 +1078,8 @@ export interface paths {
          * @description Get the list of all available data tables.
          */
         get: operations["index_api_tool_data_get"];
+        /** Import a data manager bundle */
+        post: operations["create_api_tool_data_post"];
     };
     "/api/tool_data/{table_name}": {
         /**
@@ -4540,6 +4542,50 @@ export interface components {
             states?: {
                 [key: string]: number | undefined;
             };
+        };
+        /** ImportToolDataBundle */
+        ImportToolDataBundle: {
+            /** Source */
+            source:
+                | components["schemas"]["ImportToolDataBundleDatasetSource"]
+                | components["schemas"]["ImportToolDataBundleUriSource"];
+        };
+        /**
+         * ImportToolDataBundleDatasetSource
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ImportToolDataBundleDatasetSource: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
+            id: string;
+            /**
+             * src
+             * @description Indicates that the tool data should be resolved from a dataset.
+             * @enum {string}
+             */
+            src: "hda" | "ldda";
+        };
+        /**
+         * ImportToolDataBundleUriSource
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ImportToolDataBundleUriSource: {
+            /**
+             * src
+             * @description Indicates that the tool data should be resolved by a URI.
+             * @enum {string}
+             */
+            src: "uri";
+            /**
+             * uri
+             * @description URI to fetch tool data bundle from (file:// URIs are fine because this is an admin-only operation)
+             */
+            uri: string;
         };
         /**
          * InstalledRepositoryToolShedStatus
@@ -13338,6 +13384,34 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["ToolDataEntryList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_tool_data_post: {
+        /** Import a data manager bundle */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ImportToolDataBundle"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
                 };
             };
             /** @description Validation Error */
