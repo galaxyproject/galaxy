@@ -245,7 +245,7 @@ class Data(metaclass=DataMeta):
     def groom_dataset_content(self, file_name: str) -> None:
         """This function is called on an output dataset file if dataset_content_needs_grooming returns True."""
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         # Metadata should be left mostly uninitialized.  Dataset will
         # handle returning default values when metadata is not set.
         # copy_from allows metadata to be passed in that will be

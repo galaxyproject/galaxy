@@ -31,6 +31,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     Dataset_t10,
     GeneratePrimaryFileDataset,
+    HasMetadata,
 )
 from galaxy.datatypes.data import (
     DatatypeValidation,
@@ -833,7 +834,7 @@ class RexpBase(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         if copy_from:
             dataset.metadata = copy_from.metadata
 

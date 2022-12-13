@@ -9,7 +9,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes._protocols import Dataset_t10
+from galaxy.datatypes._protocols import (
+    Dataset_t10,
+    HasMetadata,
+)
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -127,7 +130,7 @@ class Sabund(Otu):
         """
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -171,7 +174,7 @@ class GroupAbund(Otu):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip: Optional[int] = 1, **kwd) -> None:
@@ -352,7 +355,7 @@ class DistanceMatrix(Text):
         no_value="?",
     )
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, skip: Optional[int] = 0, **kwd) -> None:
@@ -377,7 +380,7 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         """Initialize secondary structure map datatype"""
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -442,7 +445,7 @@ class SquareDistanceMatrix(DistanceMatrix):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:

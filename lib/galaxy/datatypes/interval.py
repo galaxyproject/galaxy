@@ -25,6 +25,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     Dataset_t2,
     HasId,
+    HasMetadata,
 )
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.dataproviders.dataset import (
@@ -127,7 +128,7 @@ class Interval(Tabular):
         Tabular.__init__(self, **kwd)
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(

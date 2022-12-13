@@ -25,7 +25,10 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import Dataset_t10
+from galaxy.datatypes._protocols import (
+    Dataset_t10,
+    HasMetadata,
+)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import (
@@ -1012,7 +1015,7 @@ class Maf(Alignment):
         optional=True,
     )
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
