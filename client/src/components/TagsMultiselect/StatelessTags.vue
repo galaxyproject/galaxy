@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import Multiselect from "vue-multiselect";
-import Tag from "./Tag.vue";
 import { ref, computed } from "vue";
+import Multiselect from "vue-multiselect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useUserTags } from "composables/user";
-import { useToast } from "composables/toast";
-import { useUid } from "composables/utils/uid";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
+import Tag from "./Tag.vue";
+import { useUserTags } from "@/composables/user";
+import { useToast } from "@/composables/toast";
+import { useUid } from "@/composables/utils/uid";
 
 import type { Ref } from "vue";
 
@@ -119,12 +119,12 @@ function onTagClicked(tag: string) {
             v-if="!disabled"
             ref="multiselectElement"
             placeholder="Add Tags"
-            openDirection="bottom"
+            open-direction="bottom"
             :value="tags"
             :options="userTags"
             :multiple="true"
             :taggable="true"
-            :closeOnSelect="false"
+            :close-on-select="false"
             @tag="onAddTag"
             @input="onInput"
             @open="onOpen"

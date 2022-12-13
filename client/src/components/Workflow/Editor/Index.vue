@@ -721,7 +721,6 @@ export default {
             this.lastQueue
                 .enqueue(loadWorkflow, { id, version, workflow: this })
                 .then((data) => {
-                    console.debug("Editor - Loading workflow:", id);
                     this._loadEditorData(data);
                 })
                 .catch((response) => {
