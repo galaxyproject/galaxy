@@ -49,8 +49,7 @@ class GeneratePrimaryFileDataset(HasExtraFilesPathProperty, HasMetadata, Protoco
     ...
 
 
-class Dataset_t1(HasExtraFilesPathProperty, HasFileNameProperty, Protocol):
-    name: str
+class Dataset_t1(HasName, HasExtraFilesPathProperty, HasFileNameProperty, Protocol):
     extension: str  # TODO reconcile: ext vs. extension
 
 
@@ -64,9 +63,8 @@ class Dataset_t3(Protocol):
     ext: str  # TODO reconcile: ext vs. extension
 
 
-class Dataset_t4(Protocol):
+class Dataset_t4(HasName, Protocol):
     hid: str
-    name: str
     extension: str  # TODO reconcile: ext vs. extension
 
 
