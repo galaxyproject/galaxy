@@ -1,35 +1,34 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from "vue";
-import axios, { type AxiosError, type AxiosPromise, type AxiosResponse } from "axios";
-import { getAppRoot } from "@/onload/loadConfig";
+import { fetcher } from "@/schema";
+import type { FetchArgType } from "openapi-typescript-fetch";
 
 const jobLock = ref(false);
-const jobLockDisplay = ref(false);
+const jobLockUpdating = ref(true);
 
-watch(jobLock, (newVal) => {
-    handleJobLock(axios.put(`${getAppRoot()}api/job_lock`, { active: jobLock.value }));
+const jobLockStatus = fetcher.path("/api/job_lock").method("get").create();
+const jobLockUpdate = fetcher.path("/api/job_lock").method("put").create();
+
+watch(jobLock, async (newVal) => {
+    jobLockUpdating.value = true;
+    const { data } = await jobLockUpdate({ active: jobLock.value } as FetchArgType<typeof jobLockUpdate>);
+    jobLock.value = data.active;
+    jobLockUpdating.value = false;
 });
 
-onMounted(() => {
-    handleJobLock(axios.get(`${getAppRoot()}api/job_lock`));
+onMounted(async () => {
+    // TODO: see if we can upstream an optional arg when no params are required?
+    // i.e. jobLockStatus() instead of jobLockStatus({})
+    const response = await jobLockStatus({});
+    jobLock.value = response.data.active;
+    jobLockUpdating.value = false;
 });
-
-function handleJobLock(axiosPromise: AxiosPromise) {
-    axiosPromise
-        .then((response: AxiosResponse) => {
-            jobLock.value = response.data.active;
-            jobLockDisplay.value = response.data.active;
-        })
-        .catch((error: AxiosError) => {
-            console.error(error);
-        });
-}
 </script>
 <template>
     <b-form-group>
-        <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" switch size="lg">
+        <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" :disabled="jobLockUpdating" switch size="lg">
             Job dispatching is currently
-            <strong>{{ jobLockDisplay ? "locked" : "unlocked" }}</strong>
+            <strong>{{ jobLock ? "locked" : "unlocked" }}</strong>
         </b-form-checkbox>
     </b-form-group>
 </template>
