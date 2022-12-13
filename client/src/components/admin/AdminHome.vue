@@ -1,3 +1,19 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
+import Heading from "@/components/Common/Heading.vue";
+
+interface FormElementProps {
+    isToolshedInstalled?: boolean;
+}
+
+const props = withDefaults(defineProps<FormElementProps>(), {
+    isToolshedInstalled: false,
+});
+
+//@ts-ignore bad library types
+library.add(faServer, faUser, faWrench);
+</script>
 <template>
     <div>
         <h1>Administration</h1>
@@ -93,7 +109,7 @@
                 </strong>
                 - Manage HTML rendering for installed tools' output datasets.
             </li>
-            <li v-if="isToolshedInstalled">
+            <li v-if="props.isToolshedInstalled">
                 <strong>
                     <router-link to="/admin/toolshed">Install and Uninstall</router-link>
                 </strong>
@@ -117,21 +133,3 @@
         </ul>
     </div>
 </template>
-
-<script>
-import Heading from "components/Common/Heading.vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faServer, faUser, faWrench } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faServer, faUser, faWrench);
-
-export default {
-    components: { Heading },
-    props: {
-        isToolshedInstalled: {
-            type: Boolean,
-            default: false,
-        },
-    },
-};
-</script>
