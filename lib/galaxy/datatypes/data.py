@@ -29,6 +29,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t3,
     Dataset_t4,
     Dataset_t6,
+    Dataset_t7,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -949,7 +950,7 @@ class Data(metaclass=DataMeta):
                 mime = DEFAULT_MIME_TYPE
         headers["content-type"] = mime
 
-    def handle_dataset_as_image(self, hda: "DatasetInstance") -> str:
+    def handle_dataset_as_image(self, hda: Dataset_t7) -> str:
         raise Exception("Unimplemented Method")
 
     def __getstate__(self) -> Dict[str, Any]:

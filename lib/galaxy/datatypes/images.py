@@ -13,7 +13,10 @@ import mrcfile
 import numpy as np
 import tifffile
 
-from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import (
+    Dataset_t7,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
     FileParameter,
@@ -68,7 +71,7 @@ class Image(data.Data):
         """Determine if the file is in this format"""
         return check_image_type(filename, self.image_formats)
 
-    def handle_dataset_as_image(self, hda: "DatasetInstance") -> str:
+    def handle_dataset_as_image(self, hda: Dataset_t7) -> str:
         dataset = hda.dataset
         name = hda.name or ""
         with open(dataset.file_name, "rb") as f:

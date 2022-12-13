@@ -34,6 +34,10 @@ class HasName(Protocol):
     name: str
 
 
+class HasDataset(Protocol):
+    dataset: Any  # TODO tighten
+
+
 class HasCreatingJobProperty(Protocol):
     @property
     def creating_job(self):
@@ -75,3 +79,7 @@ class Dataset_t5(HasFileNameProperty, Dataset_t4, Protocol):
 class Dataset_t6(HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, Protocol):
     datatype: Any
     extension: str  # TODO reconcile: ext vs. extension
+
+
+class Dataset_t7(HasDataset, HasName, Protocol):
+    ...
