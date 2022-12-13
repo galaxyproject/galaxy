@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from "vue";
 import { useConfig } from "@/composables/config";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
