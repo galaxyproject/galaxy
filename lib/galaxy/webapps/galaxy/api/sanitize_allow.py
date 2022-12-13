@@ -8,18 +8,9 @@ from typing import (
     Dict,
 )
 
-from fastapi.routing import APIRouter
-from fastapi_utils.cbv import cbv
-
-from galaxy import web
-from galaxy.webapps.base.controller import BaseAPIController
 from galaxy.managers.context import ProvidesUserContext
 
-from galaxy.webapps.galaxy.api import (
-    depends,
-    DependsOnTrans,
-    Router,
-)
+from galaxy.webapps.galaxy.api import DependsOnTrans
 
 from . import Router
 
