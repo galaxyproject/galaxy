@@ -14,20 +14,20 @@ from . import Router
 
 log = logging.getLogger(__name__)
 
-router = Router(tags=["sanitize_allow"])
+router = Router(tags=["configuration"])
 
 
 @router.cbv
 class FastAPISanitizeAllowController:
     @router.get("/api/sanitize_allow", require_admin=True)
-    async def index(self, trans: ProvidesUserContext = DependsOnTrans):
+    def index(self, trans: ProvidesUserContext = DependsOnTrans):
         """
         Return an object showing the current state of the toolbox and allow list.
         """
         return self._generate_allowlist(trans)
 
     @router.put("/api/sanitize_allow", require_admin=True)
-   def create(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
+    def create(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
         """
         Add a new tool_id to the allowlist.
         """
@@ -37,7 +37,7 @@ class FastAPISanitizeAllowController:
         return self._generate_allowlist(trans)
 
     @router.delete("/api/sanitize_allow", require_admin=True)
-   def delete(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
+    def delete(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
         """
         Remove tool_id from allowlist.
         """
