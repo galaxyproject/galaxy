@@ -1054,6 +1054,26 @@ export interface paths {
         /** Show */
         get: operations["show_api_roles__id__get"];
     };
+    "/api/sanitize_allow": {
+        /**
+         * Index
+         * @description GET /api/sanitize_allow
+         * Return an object showing the current state of the toolbox and allow list.
+         */
+        get: operations["index_api_sanitize_allow_get"];
+        /**
+         * Create
+         * @description PUT /api/sanitize_allow
+         * Add a new tool_id to the allowlist.
+         */
+        put: operations["create_api_sanitize_allow_put"];
+        /**
+         * Delete
+         * @description DELETE /api/sanitize_allow
+         * Remove tool_id from allowlist.
+         */
+        delete: operations["delete_api_sanitize_allow_delete"];
+    };
     "/api/short_term_storage/{storage_request_id}": {
         /** Serve the staged download specified by request ID. */
         get: operations["serve_api_short_term_storage__storage_request_id__get"];
@@ -13314,6 +13334,93 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["RoleModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_api_sanitize_allow_get: {
+        /**
+         * Index
+         * @description GET /api/sanitize_allow
+         * Return an object showing the current state of the toolbox and allow list.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_sanitize_allow_put: {
+        /**
+         * Create
+         * @description PUT /api/sanitize_allow
+         * Add a new tool_id to the allowlist.
+         */
+        parameters: {
+            query: {
+                tool_id: Record<string, never>;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_sanitize_allow_delete: {
+        /**
+         * Delete
+         * @description DELETE /api/sanitize_allow
+         * Remove tool_id from allowlist.
+         */
+        parameters: {
+            query: {
+                tool_id: Record<string, never>;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
