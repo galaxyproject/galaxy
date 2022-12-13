@@ -182,6 +182,16 @@ class NavigatesGalaxy(HasDriver):
     def build_url(self, url: str, for_selenium: bool = True) -> str:
         """Build URL to the target Galaxy."""
 
+    @abstractmethod
+    def screenshot(self, label: str) -> None:
+        """Take a screenshot of the current browser with the specified label."""
+
+    def screenshot_if(self, label: Optional[str]) -> Optional[str]:
+        target = None
+        if label:
+            target = self.screenshot(label)
+        return target
+
     default_password = DEFAULT_PASSWORD
     wait_types = WAIT_TYPES
     # set to True to reload each invocation (good for interactive test building)
@@ -1141,9 +1151,7 @@ class NavigatesGalaxy(HasDriver):
             self.components.libraries.folder.select_import_dir_item(name=name).wait_for_and_click()
         self.components.libraries.folder.import_dir_btn.wait_for_and_click()
 
-    def create_new_library(self, login=True):
-        if login:
-            self.admin_login()
+    def create_new_library(self):
         self.libraries_open()
         self.name = self._get_random_name(prefix="testcontents")
         self.libraries_index_create(self.name)
@@ -1244,8 +1252,8 @@ class NavigatesGalaxy(HasDriver):
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_import_dir)
         self.select_dataset_from_lib_import_modal(filenames)
 
-    def navigate_to_new_library(self, login=True):
-        self.create_new_library(login)
+    def navigate_to_new_library(self):
+        self.create_new_library()
         self.libraries_open_with_name(self.name)
 
     def wait_for_overlays_cleared(self):
@@ -1382,8 +1390,8 @@ class NavigatesGalaxy(HasDriver):
     def tagging_add(self, tags, auto_closes=True, parent_selector=""):
         for i, tag in enumerate(tags):
             if auto_closes or i == 0:
-                tag_area = f"{parent_selector}.tags-input input[type='text']"
-                tag_area = self.wait_for_selector_clickable(tag_area)
+                tag_area_selector = f"{parent_selector}.tags-input input[type='text']"
+                tag_area = self.wait_for_selector_clickable(tag_area_selector)
                 tag_area.click()
 
             tag_area.send_keys(tag)

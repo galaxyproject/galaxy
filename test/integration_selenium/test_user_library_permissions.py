@@ -84,6 +84,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
     def create_lib_and_permit_adding(self, email):
         # logout of the current user, only admin can create new libraries
         self.logout()
+        self.admin_login()
         self.create_new_library()
         self.libraries_index_search_for(self.name)
         # open permission manage dialog
