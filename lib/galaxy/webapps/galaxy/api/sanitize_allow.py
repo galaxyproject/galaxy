@@ -29,7 +29,6 @@ class FastAPISanitizeAllowController:
     @router.put("/api/sanitize_allow", require_admin=True)
    def create(self, tool_id, trans: ProvidesUserContext = DependsOnTrans):
         """
-        PUT /api/sanitize_allow
         Add a new tool_id to the allowlist.
         """
         if tool_id not in trans.app.config.sanitize_allowlist:
