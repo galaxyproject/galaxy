@@ -14,6 +14,7 @@ from typing import (
 
 from galaxy import util
 from galaxy.datatypes import data
+from galaxy.datatypes._protocols import HasMetadata
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -449,7 +450,7 @@ class Vtk:
                 dataset.metadata.cells = int(line.split()[1])
         return dataset, dataset_type
 
-    def get_blurb(self, dataset: "DatasetInstance") -> str:
+    def get_blurb(self, dataset: HasMetadata) -> str:
         blurb = ""
         if dataset.metadata.vtk_version is not None:
             blurb += f"VTK Version {str(dataset.metadata.vtk_version)}"
