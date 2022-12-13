@@ -25,6 +25,7 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import metadata
+from galaxy.datatypes._protocols import Dataset_t10
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import (
@@ -1067,7 +1068,7 @@ class Maf(Alignment):
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset: "DatasetInstance", skipchars: Optional[List] = None) -> str:
+    def make_html_table(self, dataset: Dataset_t10, skipchars: Optional[List] = None) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:

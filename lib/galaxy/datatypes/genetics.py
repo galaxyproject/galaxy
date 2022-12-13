@@ -28,7 +28,10 @@ from urllib.parse import quote_plus
 from markupsafe import escape
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import (
+    Dataset_t10,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.data import (
     DatatypeValidation,
     Text,
@@ -142,7 +145,7 @@ class GenomeGraphs(Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def make_html_table(self, dataset: "DatasetInstance", **kwargs) -> str:
+    def make_html_table(self, dataset: Dataset_t10, **kwargs) -> str:
         """
         Create HTML table, used for displaying peek
         """

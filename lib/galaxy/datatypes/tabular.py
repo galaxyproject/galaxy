@@ -34,6 +34,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t8,
     Dataset_t9,
+    Dataset_t10,
     HasFileNameProperty,
 )
 from galaxy.datatypes.binary import _BamOrSam
@@ -239,7 +240,7 @@ class TabularData(Text):
             markdown += indicate_data_truncated()
         return pre_formatted_contents(markdown)
 
-    def make_html_table(self, dataset: "DatasetInstance", **kwargs) -> str:
+    def make_html_table(self, dataset: Dataset_t10, **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
         try:
             out = ['<table cellspacing="0" cellpadding="3">']
@@ -1236,7 +1237,7 @@ class Eland(Tabular):
         ]
 
     def make_html_table(
-        self, dataset: "DatasetInstance", skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
+        self, dataset: Dataset_t10, skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
     ) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []

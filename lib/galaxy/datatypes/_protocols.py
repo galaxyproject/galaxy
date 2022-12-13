@@ -98,3 +98,7 @@ class Dataset_t8(HasMetadata, HasId, HasPeekProperty, Protocol):
 
 class Dataset_t9(HasMetadata, HasId, Protocol):
     ...
+
+
+class Dataset_t10(Dataset_t8, HasFileNameProperty, HasName, Protocol):
+    ...
