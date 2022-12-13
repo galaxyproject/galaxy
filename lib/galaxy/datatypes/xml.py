@@ -9,6 +9,7 @@ from typing import (
 )
 
 from galaxy import util
+from galaxy.datatypes._protocols import Dataset_t2
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
 from galaxy.datatypes.metadata import MetadataElement
@@ -81,7 +82,7 @@ class GenericXml(data.Text):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("xml", XMLDataProvider.settings)
-    def xml_dataprovider(self, dataset: "DatasetInstance", **settings) -> XMLDataProvider:
+    def xml_dataprovider(self, dataset: Dataset_t2, **settings) -> XMLDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return XMLDataProvider(dataset_source, **settings)
 
