@@ -330,63 +330,39 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # This changeset_revision is an ancestor of self.changeset_revision which is associated
         # with self.metadata_dict.  A new repository_metadata record will be created only
         # when this method returns the constant value self.NOT_EQUAL_AND_NOT_SUBSET.
-        ancestor_datatypes = ancestor_metadata_dict.get("datatypes", [])
         ancestor_tools = ancestor_metadata_dict.get("tools", [])
         ancestor_guids = [tool_dict["guid"] for tool_dict in ancestor_tools]
         ancestor_guids.sort()
-        ancestor_readme_files = ancestor_metadata_dict.get("readme_files", [])
         ancestor_repository_dependencies_dict = ancestor_metadata_dict.get("repository_dependencies", {})
         ancestor_repository_dependencies = ancestor_repository_dependencies_dict.get("repository_dependencies", [])
         ancestor_tool_dependencies = ancestor_metadata_dict.get("tool_dependencies", {})
-        ancestor_workflows = ancestor_metadata_dict.get("workflows", [])
         ancestor_data_manager = ancestor_metadata_dict.get("data_manager", {})
-        current_datatypes = self.metadata_dict.get("datatypes", [])
         current_tools = self.metadata_dict.get("tools", [])
         current_guids = [tool_dict["guid"] for tool_dict in current_tools]
         current_guids.sort()
-        current_readme_files = self.metadata_dict.get("readme_files", [])
         current_repository_dependencies_dict = self.metadata_dict.get("repository_dependencies", {})
         current_repository_dependencies = current_repository_dependencies_dict.get("repository_dependencies", [])
         current_tool_dependencies = self.metadata_dict.get("tool_dependencies", {})
-        current_workflows = self.metadata_dict.get("workflows", [])
         current_data_manager = self.metadata_dict.get("data_manager", {})
         # Handle case where no metadata exists for either changeset.
-        no_datatypes = not ancestor_datatypes and not current_datatypes
-        no_readme_files = not ancestor_readme_files and not current_readme_files
         no_repository_dependencies = not ancestor_repository_dependencies and not current_repository_dependencies
         no_tool_dependencies = not ancestor_tool_dependencies and not current_tool_dependencies
         no_tools = not ancestor_guids and not current_guids
-        no_workflows = not ancestor_workflows and not current_workflows
         no_data_manager = not ancestor_data_manager and not current_data_manager
-        if (
-            no_datatypes
-            and no_readme_files
-            and no_repository_dependencies
-            and no_tool_dependencies
-            and no_tools
-            and no_workflows
-            and no_data_manager
-        ):
+        if no_repository_dependencies and no_tool_dependencies and no_tools and no_data_manager:
             return self.NO_METADATA
-        # Uncomment the following if we decide that README files should affect how installable
-        # repository revisions are defined.  See the NOTE in self.compare_readme_files().
-        # readme_file_comparision = self.compare_readme_files( ancestor_readme_files, current_readme_files )
         repository_dependency_comparison = self.compare_repository_dependencies(
             ancestor_repository_dependencies, current_repository_dependencies
         )
         tool_dependency_comparison = self.compare_tool_dependencies(
             ancestor_tool_dependencies, current_tool_dependencies
         )
-        workflow_comparison = self.compare_workflows(ancestor_workflows, current_workflows)
-        datatype_comparison = self.compare_datatypes(ancestor_datatypes, current_datatypes)
         data_manager_comparison = self.compare_data_manager(ancestor_data_manager, current_data_manager)
         # Handle case where all metadata is the same.
         if (
             ancestor_guids == current_guids
             and repository_dependency_comparison == self.EQUAL
             and tool_dependency_comparison == self.EQUAL
-            and workflow_comparison == self.EQUAL
-            and datatype_comparison == self.EQUAL
             and data_manager_comparison == self.EQUAL
         ):
             return self.EQUAL
@@ -394,16 +370,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # readme_file_is_subset = readme_file_comparision in [ self.EQUAL, self.SUBSET ]
         repository_dependency_is_subset = repository_dependency_comparison in self.SUBSET_VALUES
         tool_dependency_is_subset = tool_dependency_comparison in self.SUBSET_VALUES
-        workflow_dependency_is_subset = workflow_comparison in self.SUBSET_VALUES
-        datatype_is_subset = datatype_comparison in self.SUBSET_VALUES
         datamanager_is_subset = data_manager_comparison in self.SUBSET_VALUES
-        if (
-            repository_dependency_is_subset
-            and tool_dependency_is_subset
-            and workflow_dependency_is_subset
-            and datatype_is_subset
-            and datamanager_is_subset
-        ):
+        if repository_dependency_is_subset and tool_dependency_is_subset and datamanager_is_subset:
             is_subset = True
             for guid in ancestor_guids:
                 if guid not in current_guids:
@@ -440,56 +408,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             if ancestor_metadata == current_metadata:
                 return self.EQUAL
             return self.SUBSET
-        return self.NOT_EQUAL_AND_NOT_SUBSET
-
-    def compare_datatypes(self, ancestor_datatypes, current_datatypes):
-        """Determine if ancestor_datatypes is the same as or a subset of current_datatypes."""
-        # Each datatype dict looks something like:
-        # {"dtype": "galaxy.datatypes.images:Image", "extension": "pdf", "mimetype": "application/pdf"}
-        if len(ancestor_datatypes) <= len(current_datatypes):
-            for ancestor_datatype in ancestor_datatypes:
-                # Currently the only way to differentiate datatypes is by name.
-                ancestor_datatype_dtype = ancestor_datatype["dtype"]
-                ancestor_datatype_extension = ancestor_datatype["extension"]
-                ancestor_datatype_mimetype = ancestor_datatype.get("mimetype", None)
-                found_in_current = False
-                for current_datatype in current_datatypes:
-                    if (
-                        current_datatype["dtype"] == ancestor_datatype_dtype
-                        and current_datatype["extension"] == ancestor_datatype_extension
-                        and current_datatype.get("mimetype", None) == ancestor_datatype_mimetype
-                    ):
-                        found_in_current = True
-                        break
-                if not found_in_current:
-                    return self.NOT_EQUAL_AND_NOT_SUBSET
-            if len(ancestor_datatypes) == len(current_datatypes):
-                return self.EQUAL
-            else:
-                return self.SUBSET
-        return self.NOT_EQUAL_AND_NOT_SUBSET
-
-    def compare_readme_files(self, ancestor_readme_files, current_readme_files):
-        """Determine if ancestor_readme_files is equal to or a subset of current_readme_files."""
-        # NOTE: Although repository README files are considered a Galaxy utility similar to tools,
-        # repository dependency definition files, etc., we don't define installable repository revisions
-        # based on changes to README files.  To understand why, consider the following scenario:
-        # 1. Upload the filtering tool to a new repository - this will result in installable revision 0.
-        # 2. Upload a README file to the repository - this will move the installable revision from revision
-        #    0 to revision 1.
-        # 3. Delete the README file from the repository - this will move the installable revision from
-        #    revision 1 to revision 2.
-        # The above scenario is the current behavior, and that is why this method is not currently called.
-        # This method exists only in case we decide to change this current behavior.
-        # The lists of readme files looks something like: ["database/community_files/000/repo_2/readme.txt"]
-        if len(ancestor_readme_files) <= len(current_readme_files):
-            for ancestor_readme_file in ancestor_readme_files:
-                if ancestor_readme_file not in current_readme_files:
-                    return self.NOT_EQUAL_AND_NOT_SUBSET
-            if len(ancestor_readme_files) == len(current_readme_files):
-                return self.EQUAL
-            else:
-                return self.SUBSET
         return self.NOT_EQUAL_AND_NOT_SUBSET
 
     def compare_repository_dependencies(self, ancestor_repository_dependencies, current_repository_dependencies):
@@ -567,38 +485,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                     return self.NOT_EQUAL_AND_NOT_SUBSET
             # At this point we know that ancestor_tool_dependencies is at least a subset of current_tool_dependencies.
             if len(ancestor_tool_dependencies) == len(current_tool_dependencies):
-                return self.EQUAL
-            else:
-                return self.SUBSET
-        return self.NOT_EQUAL_AND_NOT_SUBSET
-
-    def compare_workflows(self, ancestor_workflows, current_workflows):
-        """
-        Determine if ancestor_workflows is the same as current_workflows or if ancestor_workflows
-        is a subset of current_workflows.
-        """
-        if len(ancestor_workflows) <= len(current_workflows):
-            for ancestor_workflow_tup in ancestor_workflows:
-                # ancestor_workflows is a list of tuples where each contained tuple is
-                # [ <relative path to the .ga file in the repository>, <exported workflow dict> ]
-                ancestor_workflow_dict = ancestor_workflow_tup[1]
-                # Currently the only way to differentiate workflows is by name.
-                ancestor_workflow_name = ancestor_workflow_dict["name"]
-                num_ancestor_workflow_steps = len(ancestor_workflow_dict["steps"])
-                found_in_current = False
-                for current_workflow_tup in current_workflows:
-                    current_workflow_dict = current_workflow_tup[1]
-                    # Assume that if the name and number of steps are euqal, then the workflows
-                    # are the same.  Of course, this may not be true...
-                    if (
-                        current_workflow_dict["name"] == ancestor_workflow_name
-                        and len(current_workflow_dict["steps"]) == num_ancestor_workflow_steps
-                    ):
-                        found_in_current = True
-                        break
-                if not found_in_current:
-                    return self.NOT_EQUAL_AND_NOT_SUBSET
-            if len(ancestor_workflows) == len(current_workflows):
                 return self.EQUAL
             else:
                 return self.SUBSET
@@ -770,43 +656,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                     self.app.model.Repository.table.c.deleted == false()
                 )
 
-    def new_datatypes_metadata_required(self, repository_metadata):
-        """
-        Compare the last saved metadata for each datatype in the repository with the new metadata
-        in self.metadata_dict to determine if a new repository_metadata table record is required
-        or if the last saved metadata record can be updated for datatypes instead.
-        """
-        # Datatypes are stored in metadata as a list of dictionaries that looks like:
-        # [{'dtype': 'galaxy.datatypes.data:Text', 'subclass': 'True', 'extension': 'acedb'}]
-        if "datatypes" in self.metadata_dict:
-            current_datatypes = self.metadata_dict["datatypes"]
-            if repository_metadata:
-                metadata = repository_metadata.metadata
-                if metadata:
-                    if "datatypes" in metadata:
-                        ancestor_datatypes = metadata["datatypes"]
-                        # The saved metadata must be a subset of the new metadata.
-                        datatype_comparison = self.compare_datatypes(ancestor_datatypes, current_datatypes)
-                        if datatype_comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
-                            return True
-                        else:
-                            return False
-                    else:
-                        # The new metadata includes datatypes, but the stored metadata does not,
-                        # so we can update the stored metadata.
-                        return False
-                else:
-                    # There is no stored metadata, so we can update the metadata column in the
-                    # repository_metadata table.
-                    return False
-            else:
-                # There is no stored repository metadata, so we need to create a new repository_metadata
-                # table record.
-                return True
-        # self.metadata_dict includes no metadata for datatypes, so a new repository_metadata
-        # table record is not needed.
-        return False
-
     def new_metadata_required_for_utilities(self):
         """
         This method compares the last stored repository_metadata record associated with self.repository
@@ -820,60 +669,11 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         repository_metadata = metadata_util.get_latest_repository_metadata(
             self.app, self.repository.id, downloadable=False
         )
-        datatypes_required = self.new_datatypes_metadata_required(repository_metadata)
-        # Uncomment the following if we decide that README files should affect how installable
-        # repository revisions are defined.  See the NOTE in the compare_readme_files() method.
-        # readme_files_required = sewlf.new_readme_files_metadata_required( repository_metadata )
         repository_dependencies_required = self.new_repository_dependency_metadata_required(repository_metadata)
         tools_required = self.new_tool_metadata_required(repository_metadata)
         tool_dependencies_required = self.new_tool_dependency_metadata_required(repository_metadata)
-        workflows_required = self.new_workflow_metadata_required(repository_metadata)
-        if (
-            datatypes_required
-            or repository_dependencies_required
-            or tools_required
-            or tool_dependencies_required
-            or workflows_required
-        ):
+        if repository_dependencies_required or tools_required or tool_dependencies_required:
             return True
-        return False
-
-    def new_readme_files_metadata_required(self, repository_metadata):
-        """
-        Compare the last saved metadata for each readme file in the repository with the new metadata
-        in self.metadata_dict to determine if a new repository_metadata table record is required or
-        if the last saved metadata record can be updated for readme files instead.
-        """
-        # Repository README files are kind of a special case because they have no effect on reproducibility.
-        # We'll simply inspect the file names to determine if any that exist in the saved metadata are
-        # eliminated from the new metadata in self.metadata_dict.
-        if "readme_files" in self.metadata_dict:
-            current_readme_files = self.metadata_dict["readme_files"]
-            if repository_metadata:
-                metadata = repository_metadata.metadata
-                if metadata:
-                    if "readme_files" in metadata:
-                        ancestor_readme_files = metadata["readme_files"]
-                        # The saved metadata must be a subset of the new metadata.
-                        readme_file_comparison = self.compare_readme_files(ancestor_readme_files, current_readme_files)
-                        if readme_file_comparison == self.NOT_EQUAL_AND_NOT_SUBSET:
-                            return True
-                        else:
-                            return False
-                    else:
-                        # The new metadata includes readme_files, but the stored metadata does not, so
-                        # we can update the stored metadata.
-                        return False
-                else:
-                    # There is no stored metadata, so we can update the metadata column in the repository_metadata
-                    # table.
-                    return False
-            else:
-                # There is no stored repository metadata, so we need to create a new repository_metadata
-                # table record.
-                return True
-        # self.metadata_dict includes no metadata for readme_files, so a new repository_metadata
-        # table record is not needed.
         return False
 
     def new_repository_dependency_metadata_required(self, repository_metadata):
@@ -1022,25 +822,6 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 # self.metadata_dict includes no metadata for tool dependencies, so a new repository_metadata
                 # record is not needed.
                 return False
-
-    def new_workflow_metadata_required(self, repository_metadata):
-        """
-        Currently everything about an exported workflow except the name is hard-coded, so
-        there's no real way to differentiate versions of exported workflows.  If this changes
-        at some future time, this method should be enhanced accordingly.
-        """
-        if "workflows" in self.metadata_dict:
-            if repository_metadata:
-                # The repository has metadata, so update the workflows value -
-                # no new record is needed.
-                return False
-            else:
-                # There is no saved repository metadata, so we need to create a
-                # new repository_metadata table record.
-                return True
-        # self.metadata_dict includes no metadata for workflows, so a new
-        # repository_metadata table record is not needed.
-        return False
 
     def reset_all_metadata_on_repository_in_tool_shed(self, repository_clone_url=None):
         """Reset all metadata on a single repository in a tool shed."""
