@@ -7,6 +7,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.datatypes._protocols import Dataset_t2
 from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
@@ -63,7 +64,7 @@ class Xgmml(xml.GenericXml):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", XMLDataProvider.settings)
-    def node_edge_dataprovider(self, dataset: "DatasetInstance", **settings) -> "XGMMLGraphDataProvider":
+    def node_edge_dataprovider(self, dataset: Dataset_t2, **settings) -> "XGMMLGraphDataProvider":
         dataset_source = DatasetDataProvider(dataset)
         return XGMMLGraphDataProvider(dataset_source, **settings)
 
@@ -103,7 +104,7 @@ class Sif(tabular.Tabular):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", ColumnarDataProvider.settings)
-    def node_edge_dataprovider(self, dataset: "DatasetInstance", **settings) -> "SIFGraphDataProvider":
+    def node_edge_dataprovider(self, dataset: Dataset_t2, **settings) -> "SIFGraphDataProvider":
         dataset_source = DatasetDataProvider(dataset)
         return SIFGraphDataProvider(dataset_source, **settings)
 
