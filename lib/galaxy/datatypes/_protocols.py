@@ -26,6 +26,10 @@ class HasMetadata(Protocol):
     metadata: Any
 
 
+class HasInfo(Protocol):
+    info: str
+
+
 class HasCreatingJobProperty(Protocol):
     @property
     def creating_job(self):

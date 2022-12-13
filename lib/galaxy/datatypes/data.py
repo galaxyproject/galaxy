@@ -32,6 +32,7 @@ from galaxy.datatypes._protocols import (
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
     HasFileNameProperty,
+    HasInfo,
 )
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
@@ -640,7 +641,7 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "name unavailable"
 
-    def display_info(self, dataset: "DatasetInstance") -> str:
+    def display_info(self, dataset: HasInfo) -> str:
         """Returns formatted html of dataset info"""
         try:
             # Change new line chars to html
