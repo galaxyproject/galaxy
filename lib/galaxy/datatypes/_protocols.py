@@ -94,3 +94,7 @@ class Dataset_t7(HasDataset, HasName, Protocol):
 class Dataset_t8(HasMetadata, HasId, HasPeekProperty, Protocol):
     def set_peek(self) -> None:
         ...
+
+
+class Dataset_t9(HasMetadata, HasId, Protocol):
+    ...

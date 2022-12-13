@@ -33,6 +33,7 @@ from galaxy.datatypes import (
 from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t8,
+    Dataset_t9,
     HasFileNameProperty,
 )
 from galaxy.datatypes.binary import _BamOrSam
@@ -251,7 +252,7 @@ class TabularData(Text):
 
     def make_html_peek_header(
         self,
-        dataset: "DatasetInstance",
+        dataset: Dataset_t9,
         skipchars: Optional[List] = None,
         column_names: Optional[List] = None,
         column_number_format: str = "%s",
