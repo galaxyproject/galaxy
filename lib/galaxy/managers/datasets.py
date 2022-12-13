@@ -5,6 +5,7 @@ import glob
 import logging
 import os
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
@@ -24,14 +25,16 @@ from galaxy.managers import (
     secured,
     users,
 )
+from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.hash_util import memory_bound_hexdigest
 
 log = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
 
-class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
+class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManagerMixin, deletable.PurgableManagerMixin):
     """
     Manipulate datasets: the components contained in DatasetAssociations/DatasetInstances/HDAs/LDDAs
     """
@@ -92,13 +95,13 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
     # .... accessibility
     # datasets can implement the accessible interface, but accessibility is checked in an entirely different way
     #   than those resources that have a user attribute (histories, pages, etc.)
-    def is_accessible(self, dataset, user, **kwargs):
+    def is_accessible(self, item: Any, user: Optional[model.User], **kwargs) -> bool:
         """
         Is this dataset readable/viewable to user?
         """
         if self.user_manager.is_admin(user, trans=kwargs.get("trans")):
             return True
-        if self.has_access_permission(dataset, user):
+        if self.has_access_permission(item, user):
             return True
         return False
 
@@ -108,6 +111,48 @@ class DatasetManager(base.ModelManager, secured.AccessibleManagerMixin, deletabl
         """
         roles = user.all_roles_exploiting_cache() if user else []
         return self.app.security_agent.can_access_dataset(roles, dataset)
+
+    def compute_hash(self, request: ComputeDatasetHashTaskRequest):
+        # For files in extra_files_path
+        dataset = self.by_id(request.dataset_id)
+        extra_files_path = request.extra_files_path
+        if extra_files_path:
+            extra_dir = dataset.extra_files_path_name
+            file_path = self.app.object_store.get_filename(dataset, extra_dir=extra_dir, alt_name=extra_files_path)
+        else:
+            file_path = dataset.file_name
+        hash_function = request.hash_function
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
+        extra_files_path = request.extra_files_path
+        dataset_hash = model.DatasetHash(
+            hash_function=hash_function.value,
+            hash_value=calculated_hash_value,
+            extra_files_path=extra_files_path,
+        )
+        dataset_hash.dataset = dataset
+        # TODO: replace/update if the combination of dataset_id/hash_function has already
+        # been stored.
+        sa_session = self.session()
+        hash = (
+            sa_session.query(model.DatasetHash)
+            .filter(
+                model.DatasetHash.dataset_id == dataset.id,
+                model.DatasetHash.hash_function == hash_function,
+                model.DatasetHash.extra_files_path == extra_files_path,
+            )
+            .one_or_none()
+        )
+        if hash is None:
+            sa_session.add(dataset_hash)
+            sa_session.flush()
+        else:
+            old_hash_value = hash.hash_value
+            if old_hash_value != calculated_hash_value:
+                log.warning(
+                    f"Re-calculated dataset hash for dataset [{dataset.id}] and new hash value [{calculated_hash_value}] does not equal previous hash value [{old_hash_value}]."
+                )
+            else:
+                log.debug("Duplicated dataset hash request, no update to the database.")
 
     # TODO: implement above for groups
     # TODO: datatypes?
@@ -237,7 +282,10 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
 
 # ============================================================================= AKA DatasetInstanceManager
 class DatasetAssociationManager(
-    base.ModelManager, secured.AccessibleManagerMixin, secured.OwnableManagerMixin, deletable.PurgableManagerMixin
+    base.ModelManager[model.DatasetInstance],
+    secured.AccessibleManagerMixin,
+    secured.OwnableManagerMixin,
+    deletable.PurgableManagerMixin,
 ):
     """
     DatasetAssociation/DatasetInstances are intended to be working
@@ -247,7 +295,6 @@ class DatasetAssociationManager(
 
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class: Type[model.DatasetInstance]
     app: MinimalManagerApp
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
@@ -256,12 +303,12 @@ class DatasetAssociationManager(
         super().__init__(app)
         self.dataset_manager = DatasetManager(app)
 
-    def is_accessible(self, dataset_assoc, user, **kwargs):
+    def is_accessible(self, item, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Is this DA accessible to `user`?
         """
         # defer to the dataset
-        return self.dataset_manager.is_accessible(dataset_assoc.dataset, user, **kwargs)
+        return self.dataset_manager.is_accessible(item.dataset, user, **kwargs)
 
     def delete(self, item, flush: bool = True, stop_job: bool = False, **kwargs):
         """
@@ -471,16 +518,8 @@ class DatasetAssociationManager(
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
         elif action == "set_permissions":
 
-            def to_role_id(encoded_role_id):
-                role_id = base.decode_id(self.app, encoded_role_id)
-                return role_id
-
             def parameters_roles_or_none(role_type):
-                encoded_role_ids = kwd.get(role_type, kwd.get(f"{role_type}_ids[]", None))
-                if encoded_role_ids is not None:
-                    return list(map(to_role_id, encoded_role_ids))
-                else:
-                    return None
+                return kwd.get(role_type, kwd.get(f"{role_type}_ids[]"))
 
             access_roles = parameters_roles_or_none("access")
             manage_roles = parameters_roles_or_none("manage")

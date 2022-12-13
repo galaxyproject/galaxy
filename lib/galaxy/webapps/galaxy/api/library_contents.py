@@ -36,7 +36,7 @@ from galaxy.webapps.base.controller import (
     UsesFormDefinitionsMixin,
     UsesLibraryMixinItems,
 )
-from . import BaseGalaxyAPIController
+from galaxy.webapps.galaxy.api import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
@@ -258,10 +258,10 @@ class LibraryContentsController(
             raise exceptions.RequestParameterMissingException("Missing required 'folder_id' parameter.")
         folder_id = payload.pop("folder_id")
         _, folder_id = self._decode_library_content_id(folder_id)
+        folder_id = trans.security.decode_id(folder_id)
         # security is checked in the downstream controller
         parent = self.get_library_folder(trans, folder_id, check_ownership=False, check_accessible=False)
         # The rest of the security happens in the library_common controller.
-        real_folder_id = trans.security.encode_id(parent.id)
 
         payload["tag_using_filenames"] = util.string_as_bool(payload.get("tag_using_filenames", None))
         payload["tags"] = util.listify(payload.get("tags", None))
@@ -276,11 +276,11 @@ class LibraryContentsController(
         if create_type == "file":
             if from_hda_id:
                 return self._copy_hda_to_library_folder(
-                    trans, self.hda_manager, self.decode_id(from_hda_id), real_folder_id, ldda_message
+                    trans, self.hda_manager, self.decode_id(from_hda_id), folder_id, ldda_message
                 )
             if from_hdca_id:
                 return self._copy_hdca_to_library_folder(
-                    trans, self.hda_manager, self.decode_id(from_hdca_id), real_folder_id, ldda_message
+                    trans, self.hda_manager, self.decode_id(from_hdca_id), folder_id, ldda_message
                 )
 
         # check for extended metadata, store it and pop it out of the param
@@ -289,9 +289,9 @@ class LibraryContentsController(
 
         # Now create the desired content object, either file or folder.
         if create_type == "file":
-            status, output = self._upload_library_dataset(trans, library_id, real_folder_id, **payload)
+            status, output = self._upload_library_dataset(trans, folder_id, **payload)
         elif create_type == "folder":
-            status, output = self._create_folder(trans, real_folder_id, library_id, **payload)
+            status, output = self._create_folder(trans, folder_id, **payload)
         elif create_type == "collection":
             # Not delegating to library_common, so need to check access to parent
             # folder here.
@@ -334,8 +334,7 @@ class LibraryContentsController(
                 )
             return rval
 
-    def _upload_library_dataset(self, trans, library_id, folder_id, **kwd):
-        replace_id = kwd.get("replace_id", None)
+    def _upload_library_dataset(self, trans, folder_id: int, **kwd):
         replace_dataset: Optional[LibraryDataset] = None
         upload_option = kwd.get("upload_option", "upload_file")
         dbkey = kwd.get("dbkey", "?")
@@ -346,21 +345,10 @@ class LibraryContentsController(
         roles = kwd.get("roles", "")
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        if replace_id not in ["", None, "None"]:
-            replace_dataset = trans.sa_session.query(LibraryDataset).get(trans.security.decode_id(replace_id))
-            self._check_access(trans, is_admin, replace_dataset, current_user_roles)
-            self._check_modify(trans, is_admin, replace_dataset, current_user_roles)
-            library = replace_dataset.folder.parent_library
-            folder = replace_dataset.folder
-            # The name is stored - by the time the new ldda is created, replace_dataset.name
-            # will point to the new ldda, not the one it's replacing.
-            if not last_used_build:
-                last_used_build = replace_dataset.library_dataset_dataset_association.dbkey
-        else:
-            folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(trans.security.decode_id(folder_id))
-            self._check_access(trans, is_admin, folder, current_user_roles)
-            self._check_add(trans, is_admin, folder, current_user_roles)
-            library = folder.parent_library
+        folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder_id)
+        self._check_access(trans, is_admin, folder, current_user_roles)
+        self._check_add(trans, is_admin, folder, current_user_roles)
+        library = folder.parent_library
         if folder and last_used_build in ["None", None, "?"]:
             last_used_build = folder.genome_build
         error = False
@@ -377,7 +365,7 @@ class LibraryContentsController(
             return 400, message
         else:
             created_outputs_dict = self._upload_dataset(
-                trans, folder_id=trans.security.encode_id(folder.id), replace_dataset=replace_dataset, **kwd
+                trans, folder_id=folder.id, replace_dataset=replace_dataset, **kwd
             )
             if created_outputs_dict:
                 if type(created_outputs_dict) == str:

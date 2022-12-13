@@ -1,7 +1,7 @@
 <template>
     <div>
         <job-details-provider auto-refresh :job-id="job_id" @update:result="updateJob" />
-        <h3>Job Information</h3>
+        <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
@@ -79,7 +79,7 @@ import CodeRow from "./CodeRow.vue";
 import { JobDetailsProvider } from "components/providers/JobProvider";
 import UtcDate from "components/UtcDate";
 import CopyToClipboard from "components/CopyToClipboard";
-import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "utils/job-states-model";
 import { formatDuration, intervalToDuration } from "date-fns";
 
 export default {

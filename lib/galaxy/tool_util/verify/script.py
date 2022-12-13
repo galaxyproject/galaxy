@@ -1,16 +1,24 @@
 #!/usr/bin/env python
 
 import argparse
+import concurrent.futures.thread
 import datetime as dt
 import json
 import logging
 import os
 import sys
 import tempfile
-from collections import namedtuple
 from concurrent.futures import (
     thread,
     ThreadPoolExecutor,
+)
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    NamedTuple,
+    Optional,
 )
 
 import yaml
@@ -18,6 +26,7 @@ import yaml
 from galaxy.tool_util.verify.interactor import (
     DictClientTestConfig,
     GalaxyInteractorApi,
+    ToolTestDictsT,
     verify_tool,
 )
 
@@ -29,16 +38,27 @@ ALL_VERSION = "*"
 LATEST_VERSION = None
 
 
-TestReference = namedtuple("TestReference", ["tool_id", "tool_version", "test_index"])
-TestException = namedtuple("TestException", ["tool_id", "exception", "was_recorded"])
+class TestReference(NamedTuple):
+    tool_id: str
+    tool_version: Optional[str]
+    test_index: int
+
+
+class TestException(NamedTuple):
+    tool_id: str
+    exception: Exception
+    was_recorded: bool
 
 
 class Results:
-    def __init__(self, default_suitename, test_json, append=False, galaxy_url=None):
+    test_exceptions: List[TestException]
+
+    def __init__(
+        self, default_suitename: str, test_json: str, append: bool = False, galaxy_url: Optional[str] = None
+    ) -> None:
         self.test_json = test_json or "-"
         self.galaxy_url = galaxy_url
         test_results = []
-        test_exceptions = []
         suitename = default_suitename
         if append:
             assert test_json != "-"
@@ -48,16 +68,16 @@ class Results:
                 if "suitename" in previous_results:
                     suitename = previous_results["suitename"]
         self.test_results = test_results
-        self.test_exceptions = test_exceptions
+        self.test_exceptions = []
         self.suitename = suitename
 
-    def register_result(self, result):
+    def register_result(self, result: Dict[str, Any]) -> None:
         self.test_results.append(result)
 
-    def register_exception(self, test_exception):
+    def register_exception(self, test_exception: TestException) -> None:
         self.test_exceptions.append(test_exception)
 
-    def already_successful(self, test_reference):
+    def already_successful(self, test_reference: TestReference) -> bool:
         test_data = self._previous_test_data(test_reference)
         if test_data:
             if "status" in test_data and test_data["status"] == "success":
@@ -65,7 +85,7 @@ class Results:
 
         return False
 
-    def already_executed(self, test_reference):
+    def already_executed(self, test_reference: TestReference) -> bool:
         test_data = self._previous_test_data(test_reference)
         if test_data:
             if "status" in test_data and test_data["status"] != "skipped":
@@ -73,7 +93,7 @@ class Results:
 
         return False
 
-    def _previous_test_data(self, test_reference):
+    def _previous_test_data(self, test_reference: TestReference) -> Optional[Dict[str, Any]]:
         test_id = _test_id_for_reference(test_reference)
         for test_result in self.test_results:
             if test_result.get("id") != test_id:
@@ -86,7 +106,7 @@ class Results:
 
         return None
 
-    def write(self):
+    def write(self) -> None:
         tests = sorted(self.test_results, key=lambda el: el["id"])
         n_passed, n_failures, n_skips = 0, 0, 0
         n_errors = len([e for e in self.test_exceptions if not e.was_recorded])
@@ -124,56 +144,37 @@ class Results:
             with open(self.test_json, "w") as f:
                 json.dump(report_obj, f)
 
-    def info_message(self):
+    def info_message(self) -> str:
         messages = []
         passed_tests = self._tests_with_status("success")
         messages.append("Passed tool tests ({}): {}".format(len(passed_tests), [t["id"] for t in passed_tests]))
         failed_tests = self._tests_with_status("failure")
         messages.append("Failed tool tests ({}): {}".format(len(failed_tests), [t["id"] for t in failed_tests]))
-        skiped_tests = self._tests_with_status("skip")
-        messages.append("Skipped tool tests ({}): {}".format(len(skiped_tests), [t["id"] for t in skiped_tests]))
+        skipped_tests = self._tests_with_status("skip")
+        messages.append("Skipped tool tests ({}): {}".format(len(skipped_tests), [t["id"] for t in skipped_tests]))
         errored_tests = self._tests_with_status("error")
         messages.append("Errored tool tests ({}): {}".format(len(errored_tests), [t["id"] for t in errored_tests]))
         return "\n".join(messages)
 
-    @property
-    def success_count(self):
-        self._tests_with_status("success")
-
-    @property
-    def skip_count(self):
-        self._tests_with_status("skip")
-
-    @property
-    def error_count(self):
-        return self._tests_with_status("error") + len(self.test_exceptions)
-
-    @property
-    def failure_count(self):
-        return self._tests_with_status("failure")
-
-    def _tests_with_status(self, status):
+    def _tests_with_status(self, status: str) -> List[Dict[str, Any]]:
         return [t for t in self.test_results if t.get("data", {}).get("status") == status]
 
 
 def test_tools(
-    galaxy_interactor,
-    test_references,
-    results,
-    log=None,
-    parallel_tests=1,
-    history_per_test_case=False,
-    history_name=None,
-    no_history_reuse=False,
-    no_history_cleanup=False,
-    publish_history=False,
-    retries=0,
-    verify_kwds=None,
-):
-    """Run through tool tests and write report.
-
-    Refactor this into Galaxy in 21.01.
-    """
+    galaxy_interactor: GalaxyInteractorApi,
+    test_references: List[TestReference],
+    results: Results,
+    log: Optional[logging.Logger] = None,
+    parallel_tests: int = 1,
+    history_per_test_case: bool = False,
+    history_name: Optional[str] = None,
+    no_history_reuse: bool = False,
+    no_history_cleanup: bool = False,
+    publish_history: bool = False,
+    retries: int = 0,
+    verify_kwds: Optional[Dict[str, Any]] = None,
+) -> None:
+    """Run through tool tests and write report."""
     verify_kwds = (verify_kwds or {}).copy()
     tool_test_start = dt.datetime.now()
     history_created = False
@@ -218,8 +219,8 @@ def test_tools(
             try:
                 executor.shutdown(wait=True)
             except KeyboardInterrupt:
-                executor._threads.clear()
-                thread._threads_queues.clear()
+                executor._threads.clear()  # type: ignore[attr-defined]
+                thread._threads_queues.clear()  # type: ignore[attr-defined]
             results.write()
             if log:
                 if results.test_json == "-":
@@ -233,7 +234,7 @@ def test_tools(
                 galaxy_interactor.delete_history(test_history)
 
 
-def _test_id_for_reference(test_reference):
+def _test_id_for_reference(test_reference: "TestReference") -> str:
     tool_id = test_reference.tool_id
     tool_version = test_reference.tool_version
     test_index = test_reference.test_index
@@ -250,15 +251,15 @@ def _test_id_for_reference(test_reference):
 
 
 def _test_tool(
-    executor,
-    test_reference,
-    results,
-    galaxy_interactor,
-    log,
-    retries,
-    publish_history,
-    verify_kwds,
-):
+    executor: concurrent.futures.thread.ThreadPoolExecutor,
+    test_reference: "TestReference",
+    results: Results,
+    galaxy_interactor: GalaxyInteractorApi,
+    log: Optional[logging.Logger],
+    retries: int,
+    publish_history: bool,
+    verify_kwds: Dict[str, Any],
+) -> None:
     tool_id = test_reference.tool_id
     tool_version = test_reference.tool_version
     test_index = test_reference.test_index
@@ -269,7 +270,7 @@ def _test_tool(
 
     test_id = _test_id_for_reference(test_reference)
 
-    def run_test():
+    def run_test() -> None:
         run_retries = retries
         job_data = None
         job_exception = None
@@ -320,16 +321,16 @@ def _test_tool(
 
 
 def build_case_references(
-    galaxy_interactor,
-    tool_id=ALL_TOOLS,
-    tool_version=LATEST_VERSION,
-    test_index=ALL_TESTS,
-    page_size=0,
-    page_number=0,
-    test_filters=None,
-    log=None,
-):
-    test_references = []
+    galaxy_interactor: GalaxyInteractorApi,
+    tool_id: str = ALL_TOOLS,
+    tool_version: Optional[str] = LATEST_VERSION,
+    test_index: int = ALL_TESTS,
+    page_size: int = 0,
+    page_number: int = 0,
+    test_filters: Optional[List[Callable[[TestReference], bool]]] = None,
+    log: Optional[logging.Logger] = None,
+) -> List[TestReference]:
+    test_references: List[TestReference] = []
     if tool_id == ALL_TOOLS:
         tests_summary = galaxy_interactor.get_tests_summary()
         for tool_id, tool_versions_dict in tests_summary.items():
@@ -339,7 +340,7 @@ def build_case_references(
                     test_references.append(test_reference)
     else:
         assert tool_id
-        tool_test_dicts = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version) or {}
+        tool_test_dicts: ToolTestDictsT = galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
         for i, tool_test_dict in enumerate(tool_test_dicts):
             this_tool_version = tool_test_dict.get("tool_version", tool_version)
             this_test_index = i
@@ -348,7 +349,7 @@ def build_case_references(
                 test_references.append(test_reference)
 
     if test_filters is not None and len(test_filters) > 0:
-        filtered_test_references = []
+        filtered_test_references: List[TestReference] = []
         for test_reference in test_references:
             skip_test = False
             for test_filter in test_filters:
@@ -358,7 +359,10 @@ def build_case_references(
                     skip_test = True
             if not skip_test:
                 filtered_test_references.append(test_reference)
-        log.info(f"Skipping {len(test_references)-len(filtered_test_references)} out of {len(test_references)} tests.")
+        if log is not None:
+            log.info(
+                f"Skipping {len(test_references)-len(filtered_test_references)} out of {len(test_references)} tests."
+            )
         test_references = filtered_test_references
 
     if page_size > 0:
@@ -369,7 +373,7 @@ def build_case_references(
     return test_references
 
 
-def main(argv=None):
+def main(argv=None) -> None:
     if argv is None:
         argv = sys.argv[1:]
 
@@ -381,7 +385,11 @@ def main(argv=None):
         sys.exit(1)
 
 
-def run_tests(args, test_filters=None, log=None):
+def run_tests(
+    args: argparse.Namespace,
+    test_filters: Optional[List[Callable[[TestReference], bool]]] = None,
+    log: Optional[logging.Logger] = None,
+) -> None:
     # Split out argument parsing so we can quickly build other scripts - such as a script
     # to run all tool tests for a workflow by just passing in a custom test_filters.
     test_filters = test_filters or []
@@ -461,12 +469,10 @@ def run_tests(args, test_filters=None, log=None):
     exceptions = results.test_exceptions
     if exceptions:
         exception = exceptions[0]
-        if hasattr(exception, "exception"):
-            exception = exception.exception
-        raise exception
+        raise exception.exception
 
 
-def setup_global_logger(name, log_file=None, verbose=False):
+def setup_global_logger(name: str, log_file: Optional[str] = None, verbose: bool = False) -> logging.Logger:
     formatter = logging.Formatter("%(asctime)s %(levelname)-5s - %(message)s")
     console = logging.StreamHandler()
     console.setFormatter(formatter)
@@ -487,7 +493,7 @@ def setup_global_logger(name, log_file=None, verbose=False):
     return logger
 
 
-def arg_parser():
+def arg_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=DESCRIPTION)
     parser.add_argument("-u", "--galaxy-url", default="http://localhost:8080", help="Galaxy URL")
     parser.add_argument("-k", "--key", default=None, help="Galaxy User API Key")

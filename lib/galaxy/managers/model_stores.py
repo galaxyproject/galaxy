@@ -1,20 +1,34 @@
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from galaxy import model
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.jobs.manager import JobManager
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.users import UserManager
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import (
+    DirectoryModelExportStore,
     ImportDiscardedDataType,
     ImportOptions,
     ObjectImportTracker,
     source_to_import_store,
 )
-from galaxy.schema.schema import HistoryContentType
+from galaxy.schema.schema import (
+    ExportObjectMetadata,
+    ExportObjectRequestMetadata,
+    ExportObjectResultMetadata,
+    ExportObjectType,
+    HistoryContentType,
+    ShortTermStoreExportPayload,
+    WriteStoreToPayload,
+)
 from galaxy.schema.tasks import (
+    BcoGenerationTaskParametersMixin,
     GenerateHistoryContentDownload,
     GenerateHistoryDownload,
     GenerateInvocationDownload,
@@ -25,6 +39,7 @@ from galaxy.schema.tasks import (
     WriteInvocationTo,
 )
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.version import VERSION
 from galaxy.web.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
@@ -58,6 +73,7 @@ class ModelStoreManager:
         self,
         app: MinimalManagerApp,
         history_manager: HistoryManager,
+        export_tracker: StoreExportTracker,
         sa_session: galaxy_scoped_session,
         job_manager: JobManager,
         short_term_storage_monitor: ShortTermStorageMonitor,
@@ -67,6 +83,7 @@ class ModelStoreManager:
         self._sa_session = sa_session
         self._job_manager = job_manager
         self._history_manager = history_manager
+        self._export_tracker = export_tracker
         self._short_term_storage_monitor = short_term_storage_monitor
         self._user_manager = user_manager
 
@@ -79,9 +96,7 @@ class ModelStoreManager:
 
         history = self._sa_session.query(model.History).get(history_id)
         # symlink files on export, on worker files will tarred up in a dereferenced manner.
-        with model.store.DirectoryModelExportStore(
-            store_directory, app=self._app, export_files="symlink"
-        ) as export_store:
+        with DirectoryModelExportStore(store_directory, app=self._app, export_files="symlink") as export_store:
             export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
         job = self._sa_session.query(model.Job).get(job_id)
         job.state = model.Job.states.NEW
@@ -94,13 +109,21 @@ class ModelStoreManager:
         export_files = "symlink" if request.include_files else None
         include_hidden = request.include_hidden
         include_deleted = request.include_deleted
-        with storage_context(
-            request.short_term_storage_request_id, self._short_term_storage_monitor
-        ) as short_term_storage_target:
-            with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-                short_term_storage_target.path
-            ) as export_store:
-                export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
+        export_metadata = self.set_history_export_request_metadata(request)
+        try:
+            with storage_context(
+                request.short_term_storage_request_id, self._short_term_storage_monitor
+            ) as short_term_storage_target:
+                with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
+                    short_term_storage_target.path
+                ) as export_store:
+                    export_store.export_history(history, include_hidden=include_hidden, include_deleted=include_deleted)
+                self.set_history_export_result_metadata(request.export_association_id, export_metadata, success=True)
+        except Exception as e:
+            self.set_history_export_result_metadata(
+                request.export_association_id, export_metadata, success=False, error=str(e)
+            )
+            raise
 
     def prepare_history_content_download(self, request: GenerateHistoryContentDownload):
         model_store_format = request.model_store_format
@@ -126,9 +149,12 @@ class ModelStoreManager:
         with storage_context(
             request.short_term_storage_request_id, self._short_term_storage_monitor
         ) as short_term_storage_target:
-            with model.store.get_export_store_factory(self._app, model_store_format, export_files=export_files)(
-                short_term_storage_target.path
-            ) as export_store:
+            with model.store.get_export_store_factory(
+                self._app,
+                model_store_format,
+                export_files=export_files,
+                bco_export_options=self._bco_export_options(request),
+            )(short_term_storage_target.path) as export_store:
                 invocation = self._sa_session.query(model.WorkflowInvocation).get(request.invocation_id)
                 export_store.export_workflow_invocation(
                     invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
@@ -143,12 +169,24 @@ class ModelStoreManager:
             self._app,
             model_store_format,
             export_files=export_files,
+            bco_export_options=self._bco_export_options(request),
             user_context=user_context,
         )(target_uri) as export_store:
             invocation = self._sa_session.query(model.WorkflowInvocation).get(request.invocation_id)
             export_store.export_workflow_invocation(
                 invocation, include_hidden=request.include_hidden, include_deleted=request.include_deleted
             )
+
+    def _bco_export_options(self, request: BcoGenerationTaskParametersMixin):
+        return model.store.BcoExportOptions(
+            galaxy_url=request.galaxy_url,
+            galaxy_version=VERSION,
+            merge_history_metadata=request.bco_merge_history_metadata,
+            override_environment_variables=request.bco_override_environment_variables,
+            override_empirical_error=request.bco_override_empirical_error,
+            override_algorithmic_error=request.bco_override_algorithmic_error,
+            override_xref=request.bco_override_xref,
+        )
 
     def write_history_content_to(self, request: WriteHistoryContentTo):
         model_store_format = request.model_store_format
@@ -172,13 +210,54 @@ class ModelStoreManager:
         export_files = "symlink" if request.include_files else None
         target_uri = request.target_uri
         user_context = self._build_user_context(request.user.user_id)
-        with model.store.get_export_store_factory(
-            self._app, model_store_format, export_files=export_files, user_context=user_context
-        )(target_uri) as export_store:
-            history = self._history_manager.by_id(request.history_id)
-            export_store.export_history(
-                history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+        export_metadata = self.set_history_export_request_metadata(request)
+        try:
+            with model.store.get_export_store_factory(
+                self._app, model_store_format, export_files=export_files, user_context=user_context
+            )(target_uri) as export_store:
+                history = self._history_manager.by_id(request.history_id)
+                export_store.export_history(
+                    history, include_hidden=request.include_hidden, include_deleted=request.include_deleted
+                )
+                self.set_history_export_result_metadata(request.export_association_id, export_metadata, success=True)
+        except Exception as e:
+            self.set_history_export_result_metadata(
+                request.export_association_id, export_metadata, success=False, error=str(e)
             )
+            raise
+
+    def set_history_export_request_metadata(
+        self, request: Union[WriteHistoryTo, GenerateHistoryDownload]
+    ) -> Optional[ExportObjectMetadata]:
+        if request.export_association_id is None:
+            return None
+        request_dict = request.dict()
+        request_payload = (
+            WriteStoreToPayload(**request_dict)
+            if isinstance(request, WriteHistoryTo)
+            else ShortTermStoreExportPayload(**request_dict)
+        )
+        export_metadata = ExportObjectMetadata(
+            request_data=ExportObjectRequestMetadata(
+                object_id=request.history_id,
+                object_type=ExportObjectType.HISTORY,
+                user_id=request.user.user_id,
+                payload=request_payload,
+            ),
+        )
+        self._export_tracker.set_export_association_metadata(request.export_association_id, export_metadata)
+        return export_metadata
+
+    def set_history_export_result_metadata(
+        self,
+        export_association_id: Optional[int],
+        export_metadata: Optional[ExportObjectMetadata],
+        success: bool,
+        error: Optional[str] = None,
+    ):
+        if export_association_id is not None and export_metadata is not None:
+            export_metadata.result_data = ExportObjectResultMetadata(success=success, error=error)
+            self._export_tracker.set_export_association_metadata(export_association_id, export_metadata)
 
     def import_model_store(self, request: ImportModelStoreTaskRequest):
         import_options = ImportOptions(
@@ -197,8 +276,8 @@ class ModelStoreManager:
             model_store_format=request.model_store_format,
             user_context=user_context,
         )
-        new_history = history is None and not request.for_library
-        if new_history:
+        create_new_history = history is None and not request.for_library
+        if create_new_history:
             if not model_import_store.defines_new_history():
                 raise RequestParameterInvalidException("Supplied model store doesn't define new history to import.")
             with model_import_store.target_history(legacy_history_naming=False) as new_history:
@@ -207,7 +286,7 @@ class ModelStoreManager:
         else:
             object_tracker = model_import_store.perform_import(
                 history=history,
-                new_history=new_history,
+                new_history=create_new_history,
             )
         return object_tracker
 
@@ -236,8 +315,8 @@ def create_objects_from_store(
         model_store_format=payload.model_store_format,
         user_context=user_context,
     )
-    new_history = history is None and not for_library
-    if new_history:
+    create_new_history = history is None and not for_library
+    if create_new_history:
         if not model_import_store.defines_new_history():
             raise RequestParameterInvalidException("Supplied model store doesn't define new history to import.")
         with model_import_store.target_history(legacy_history_naming=False) as new_history:
@@ -246,6 +325,6 @@ def create_objects_from_store(
     else:
         object_tracker = model_import_store.perform_import(
             history=history,
-            new_history=new_history,
+            new_history=create_new_history,
         )
     return object_tracker

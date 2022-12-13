@@ -8,13 +8,18 @@ import logging
 import typing
 from abc import abstractmethod
 from typing import (
+    Any,
+    Callable,
     Dict,
     List,
+    NamedTuple,
+    Optional,
 )
 
 from boltons.iterutils import remap
 
 from galaxy import model
+from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
     tool_output_to_structure,
@@ -33,7 +38,7 @@ if typing.TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 SINGLE_EXECUTION_SUCCESS_MESSAGE = "Tool ${tool_id} created job ${job_id}"
-BATCH_EXECUTION_MESSAGE = "Executed ${job_count} job(s) for tool ${tool_id} request"
+BATCH_EXECUTION_MESSAGE = "Created ${job_count} job(s) for tool ${tool_id} request"
 
 
 class PartialJobExecution(Exception):
@@ -41,28 +46,31 @@ class PartialJobExecution(Exception):
         self.execution_tracker = execution_tracker
 
 
-MappingParameters = collections.namedtuple("MappingParameters", ["param_template", "param_combinations"])
+class MappingParameters(NamedTuple):
+    param_template: Dict[str, Any]
+    param_combinations: List[Dict[str, Any]]
 
 
 def execute(
     trans,
     tool: "Tool",
-    mapping_params,
+    mapping_params: MappingParameters,
     history: model.History,
-    rerun_remap_job_id=None,
-    collection_info=None,
-    workflow_invocation_uuid=None,
-    invocation_step=None,
-    max_num_jobs=None,
-    job_callback=None,
-    completed_jobs=None,
-    workflow_resource_parameters=None,
-    validate_outputs=False,
+    rerun_remap_job_id: Optional[int] = None,
+    collection_info: Optional[MatchingCollections] = None,
+    workflow_invocation_uuid: Optional[str] = None,
+    invocation_step: Optional[model.WorkflowInvocationStep] = None,
+    max_num_jobs: Optional[int] = None,
+    job_callback: Optional[Callable] = None,
+    completed_jobs: Optional[Dict[int, Optional[model.Job]]] = None,
+    workflow_resource_parameters: Optional[Dict[str, Any]] = None,
+    validate_outputs: bool = False,
 ):
     """
     Execute a tool and return object containing summary (output data, number of
     failures, etc...).
     """
+    completed_jobs = completed_jobs or {}
     if max_num_jobs is not None:
         assert invocation_step is not None
     if rerun_remap_job_id:
@@ -180,19 +188,11 @@ def execute(
             raw_tool_source = tool.tool_source.to_string()
             async_result = (
                 setup_fetch_data.s(job_id, raw_tool_source=raw_tool_source)
-                # Should we route tasks to queues more dynamically ?
-                # That could be one way to route tasks to the resources
-                # that they require.
-                # Unfortunately it looks like discovering new queues or
-                # joining queues by a wildcard is not considered in scope
-                # for standard celery workers.
-                # We could implement that for ourselves though.
-                # For now we just hardcode galaxy.internal (default, with access to db etc) and galaxy.external (cancelable).
-                | fetch_data.s(job_id=job_id).set(queue="galaxy.external")
+                | fetch_data.s(job_id=job_id)
                 | set_job_metadata.s(
                     extended_metadata_collection="extended" in tool.app.config.metadata_strategy,
                     job_id=job_id,
-                ).set(queue="galaxy.external", link_error=finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source))
+                ).set(link_error=finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source))
                 | finish_job.si(job_id=job_id, raw_tool_source=raw_tool_source)
             )()
             job2.set_runner_external_id(async_result.task_id)

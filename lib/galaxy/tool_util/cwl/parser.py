@@ -110,174 +110,6 @@ class InputInstanceArrayDict(TypedDict):
     blocks: List[InputInstanceDict]
 
 
-def tool_proxy(tool_path=None, tool_object=None, strict_cwl_validation=True, tool_directory=None, uuid=None):
-    """Provide a proxy object to cwltool data structures to just
-    grab relevant data.
-    """
-    ensure_cwltool_available()
-    tool = _to_cwl_tool_object(
-        tool_path=tool_path,
-        tool_object=tool_object,
-        strict_cwl_validation=strict_cwl_validation,
-        tool_directory=tool_directory,
-        uuid=uuid,
-    )
-    return tool
-
-
-def tool_proxy_from_persistent_representation(persisted_tool, strict_cwl_validation=True, tool_directory=None):
-    """Load a ToolProxy from a previously persisted representation."""
-    ensure_cwltool_available()
-    if PERSISTED_REPRESENTATION == "cwl_tool_object":
-        kwds = {"cwl_tool_object": ToolProxy.from_persistent_representation(persisted_tool)}
-    else:
-        raw_process_reference = persisted_tool  # ???
-        kwds = {"raw_process_reference": ToolProxy.from_persistent_representation(raw_process_reference)}
-    uuid = persisted_tool["uuid"]
-    tool = _to_cwl_tool_object(
-        uuid=uuid, strict_cwl_validation=strict_cwl_validation, tool_directory=tool_directory, **kwds
-    )
-    return tool
-
-
-def workflow_proxy(workflow_path, strict_cwl_validation=True):
-    ensure_cwltool_available()
-    workflow = _to_cwl_workflow_object(workflow_path, strict_cwl_validation=strict_cwl_validation)
-    return workflow
-
-
-def load_job_proxy(job_directory, strict_cwl_validation=True):
-    ensure_cwltool_available()
-    job_objects_path = os.path.join(job_directory, JOB_JSON_FILE)
-    job_objects = json.load(open(job_objects_path))
-    job_inputs = job_objects["job_inputs"]
-    output_dict = job_objects["output_dict"]
-    # Any reason to retain older tool_path variant of this? Probably not?
-    if "tool_path" in job_objects:
-        tool_path = job_objects["tool_path"]
-        cwl_tool = tool_proxy(tool_path, strict_cwl_validation=strict_cwl_validation)
-    else:
-        persisted_tool = job_objects["tool_representation"]
-        cwl_tool = tool_proxy_from_persistent_representation(
-            persisted_tool=persisted_tool, strict_cwl_validation=strict_cwl_validation
-        )
-    cwl_job = cwl_tool.job_proxy(job_inputs, output_dict, job_directory=job_directory)
-    return cwl_job
-
-
-def _to_cwl_tool_object(
-    tool_path=None,
-    tool_object=None,
-    cwl_tool_object=None,
-    raw_process_reference=None,
-    strict_cwl_validation=False,
-    tool_directory=None,
-    uuid=None,
-):
-    if uuid is None:
-        uuid = str(uuid4())
-    schema_loader = _schema_loader(strict_cwl_validation)
-    if raw_process_reference is None and tool_path is not None:
-        assert cwl_tool_object is None
-        assert tool_object is None
-
-        raw_process_reference = schema_loader.raw_process_reference(tool_path)
-        cwl_tool = schema_loader.tool(
-            raw_process_reference=raw_process_reference,
-        )
-    elif tool_object is not None:
-        assert raw_process_reference is None
-        assert cwl_tool_object is None
-
-        # Allow loading tools from YAML...
-        as_str = json.dumps(tool_object)
-        tool_object = yaml_no_ts().load(as_str)
-        path = tool_directory
-        if path is None:
-            path = os.getcwd()
-        uri = f"{ref_resolver.file_uri(path)}/"
-        sourceline.add_lc_filename(tool_object, uri)
-        raw_process_reference = schema_loader.raw_process_reference_for_object(tool_object, uri=uri)
-        cwl_tool = schema_loader.tool(
-            raw_process_reference=raw_process_reference,
-        )
-    else:
-        cwl_tool = cwl_tool_object
-
-    if isinstance(cwl_tool, int):
-        raise Exception("Failed to load tool.")
-
-    raw_tool = cwl_tool.tool
-    # Apply Galaxy hacks to CWL tool representation to bridge semantic differences
-    # between Galaxy and cwltool.
-    _hack_cwl_requirements(cwl_tool)
-    check_requirements(raw_tool)
-    return _cwl_tool_object_to_proxy(cwl_tool, uuid, raw_process_reference=raw_process_reference, tool_path=tool_path)
-
-
-def _cwl_tool_object_to_proxy(cwl_tool, uuid, raw_process_reference=None, tool_path=None):
-    raw_tool = cwl_tool.tool
-    if "class" not in raw_tool:
-        raise Exception("File does not declare a class, not a valid Draft 3+ CWL tool.")
-
-    process_class = raw_tool["class"]
-    if process_class == "CommandLineTool":
-        proxy_class = CommandLineToolProxy
-    elif process_class == "ExpressionTool":
-        proxy_class = ExpressionToolProxy
-    else:
-        raise Exception("File not a CWL CommandLineTool.")
-    top_level_object = tool_path is not None
-    if top_level_object and ("cwlVersion" not in raw_tool):
-        raise Exception("File does not declare a CWL version, pre-draft 3 CWL tools are not supported.")
-
-    proxy = proxy_class(cwl_tool, uuid, raw_process_reference, tool_path)
-    return proxy
-
-
-def _to_cwl_workflow_object(workflow_path, strict_cwl_validation=None):
-    proxy_class = WorkflowProxy
-    cwl_workflow = _schema_loader(strict_cwl_validation).tool(path=workflow_path)
-    raw_workflow = cwl_workflow.tool
-    check_requirements(raw_workflow, tool=False)
-
-    proxy = proxy_class(cwl_workflow, workflow_path)
-    return proxy
-
-
-def _schema_loader(strict_cwl_validation):
-    target_schema_loader = schema_loader if strict_cwl_validation else non_strict_non_validating_schema_loader
-    return target_schema_loader
-
-
-def _hack_cwl_requirements(cwl_tool):
-    move_to_hints: List[int] = []
-    for i, requirement in enumerate(cwl_tool.requirements):
-        if requirement["class"] == DOCKER_REQUIREMENT:
-            move_to_hints.insert(0, i)
-
-    for i in move_to_hints:
-        del cwl_tool.requirements[i]
-        cwl_tool.hints.append(requirement)
-
-
-def check_requirements(rec, tool=True):
-    if isinstance(rec, dict):
-        if "requirements" in rec:
-            for r in rec["requirements"]:
-                if tool:
-                    possible = SUPPORTED_TOOL_REQUIREMENTS
-                else:
-                    possible = SUPPORTED_WORKFLOW_REQUIREMENTS
-                if r["class"] not in possible:
-                    raise Exception(f"Unsupported requirement {r['class']}")
-        for d in rec:
-            check_requirements(rec[d], tool=tool)
-    if isinstance(rec, list):
-        for d in rec:
-            check_requirements(d, tool=tool)
-
-
 class ToolProxy(metaclass=ABCMeta):
 
     _class: str
@@ -354,7 +186,7 @@ class ToolProxy(metaclass=ABCMeta):
         }
 
     @staticmethod
-    def from_persistent_representation(as_object):
+    def from_persistent_representation(as_object) -> "ToolProxy":
         """Recover an object serialized with to_persistent_representation."""
         if "class" not in as_object:
             raise Exception("Failed to deserialize tool proxy from JSON object - no class found.")
@@ -365,6 +197,29 @@ class ToolProxy(metaclass=ABCMeta):
         to_unpickle = base64.b64decode(as_object["pickle"])
         loaded_object = pickle.loads(to_unpickle)
         return loaded_object
+
+    @property
+    def requirements(self) -> List:
+        return getattr(self._tool, "requirements", [])
+
+    def hints_or_requirements_of_class(self, class_name: str) -> List:
+        reqs_and_hints = self.requirements + getattr(self._tool, "hints", [])
+        return [hint for hint in reqs_and_hints if hint["class"] == class_name]
+
+    def software_requirements(self) -> List:
+        # Roughest imaginable pass at parsing requirements, really need to take in specs, handle
+        # multiple versions, etc...
+        requirements = []
+        for hint in self.hints_or_requirements_of_class("SoftwareRequirement"):
+            packages = hint.get("packages", [])
+            for package in packages:
+                versions = package.get("version", [])
+                first_version = None if not versions else versions[0]
+                requirements.append((package["package"], first_version))
+        return requirements
+
+    def resource_requirements(self) -> List:
+        return self.hints_or_requirements_of_class("ResourceRequirement")
 
 
 class CommandLineToolProxy(ToolProxy):
@@ -436,35 +291,6 @@ class CommandLineToolProxy(ToolProxy):
                 return hint["dockerPull"]
 
         return None
-
-    def hints_or_requirements_of_class(self, class_name):
-        tool = self._tool.tool
-        reqs_and_hints = tool.get("requirements", []) + tool.get("hints", [])
-        for hint in reqs_and_hints:
-            if hint["class"] == class_name:
-                yield hint
-
-    def software_requirements(self):
-        # Roughest imaginable pass at parsing requirements, really need to take in specs, handle
-        # multiple versions, etc...
-        tool = self._tool.tool
-        reqs_and_hints = tool.get("requirements", []) + tool.get("hints", [])
-        requirements = []
-        for hint in reqs_and_hints:
-            if hint["class"] == "SoftwareRequirement":
-                packages = hint.get("packages", [])
-                for package in packages:
-                    versions = package.get("version", [])
-                    first_version = None if not versions else versions[0]
-                    requirements.append((package["package"], first_version))
-        return requirements
-
-    def resource_requirements(self):
-        return [r for r in self.requirements if r["class"] == "ResourceRequirement"]
-
-    @property
-    def requirements(self):
-        return getattr(self._tool, "requirements", [])
 
 
 class ExpressionToolProxy(CommandLineToolProxy):
@@ -897,6 +723,169 @@ class WorkflowProxy:
         return cwl_obj.get("doc", None)
 
 
+def tool_proxy(
+    tool_path=None, tool_object=None, strict_cwl_validation=True, tool_directory=None, uuid=None
+) -> ToolProxy:
+    """Provide a proxy object to cwltool data structures to just
+    grab relevant data.
+    """
+    ensure_cwltool_available()
+    return _to_cwl_tool_object(
+        tool_path=tool_path,
+        tool_object=tool_object,
+        strict_cwl_validation=strict_cwl_validation,
+        tool_directory=tool_directory,
+        uuid=uuid,
+    )
+
+
+def tool_proxy_from_persistent_representation(
+    persisted_tool, strict_cwl_validation=True, tool_directory=None
+) -> ToolProxy:
+    """Load a ToolProxy from a previously persisted representation."""
+    ensure_cwltool_available()
+    if PERSISTED_REPRESENTATION == "cwl_tool_object":
+        kwds = {"cwl_tool_object": ToolProxy.from_persistent_representation(persisted_tool)}
+    else:
+        raw_process_reference = persisted_tool  # ???
+        kwds = {"raw_process_reference": ToolProxy.from_persistent_representation(raw_process_reference)}
+    uuid = persisted_tool["uuid"]
+    return _to_cwl_tool_object(
+        uuid=uuid, strict_cwl_validation=strict_cwl_validation, tool_directory=tool_directory, **kwds
+    )
+
+
+def workflow_proxy(workflow_path, strict_cwl_validation=True) -> WorkflowProxy:
+    ensure_cwltool_available()
+    return _to_cwl_workflow_object(workflow_path, strict_cwl_validation=strict_cwl_validation)
+
+
+def load_job_proxy(job_directory, strict_cwl_validation=True) -> JobProxy:
+    ensure_cwltool_available()
+    job_objects_path = os.path.join(job_directory, JOB_JSON_FILE)
+    job_objects = json.load(open(job_objects_path))
+    job_inputs = job_objects["job_inputs"]
+    output_dict = job_objects["output_dict"]
+    # Any reason to retain older tool_path variant of this? Probably not?
+    if "tool_path" in job_objects:
+        tool_path = job_objects["tool_path"]
+        cwl_tool = tool_proxy(tool_path, strict_cwl_validation=strict_cwl_validation)
+    else:
+        persisted_tool = job_objects["tool_representation"]
+        cwl_tool = tool_proxy_from_persistent_representation(
+            persisted_tool=persisted_tool, strict_cwl_validation=strict_cwl_validation
+        )
+    return cwl_tool.job_proxy(job_inputs, output_dict, job_directory=job_directory)
+
+
+def _to_cwl_tool_object(
+    tool_path=None,
+    tool_object=None,
+    cwl_tool_object=None,
+    raw_process_reference=None,
+    strict_cwl_validation=False,
+    tool_directory=None,
+    uuid=None,
+) -> ToolProxy:
+    if uuid is None:
+        uuid = str(uuid4())
+    schema_loader = _schema_loader(strict_cwl_validation)
+    if raw_process_reference is None and tool_path is not None:
+        assert cwl_tool_object is None
+        assert tool_object is None
+
+        raw_process_reference = schema_loader.raw_process_reference(tool_path)
+        cwl_tool = schema_loader.tool(
+            raw_process_reference=raw_process_reference,
+        )
+    elif tool_object is not None:
+        assert raw_process_reference is None
+        assert cwl_tool_object is None
+
+        # Allow loading tools from YAML...
+        as_str = json.dumps(tool_object)
+        tool_object = yaml_no_ts().load(as_str)
+        path = tool_directory
+        if path is None:
+            path = os.getcwd()
+        uri = f"{ref_resolver.file_uri(path)}/"
+        sourceline.add_lc_filename(tool_object, uri)
+        raw_process_reference = schema_loader.raw_process_reference_for_object(tool_object, uri=uri)
+        cwl_tool = schema_loader.tool(
+            raw_process_reference=raw_process_reference,
+        )
+    else:
+        cwl_tool = cwl_tool_object
+
+    if isinstance(cwl_tool, int):
+        raise Exception("Failed to load tool.")
+
+    raw_tool = cwl_tool.tool
+    # Apply Galaxy hacks to CWL tool representation to bridge semantic differences
+    # between Galaxy and cwltool.
+    _hack_cwl_requirements(cwl_tool)
+    check_requirements(raw_tool)
+    return _cwl_tool_object_to_proxy(cwl_tool, uuid, raw_process_reference=raw_process_reference, tool_path=tool_path)
+
+
+def _cwl_tool_object_to_proxy(cwl_tool, uuid, raw_process_reference=None, tool_path=None) -> ToolProxy:
+    raw_tool = cwl_tool.tool
+    if "class" not in raw_tool:
+        raise Exception("File does not declare a class, not a valid Draft 3+ CWL tool.")
+
+    process_class = raw_tool["class"]
+    if process_class == "CommandLineTool":
+        proxy_class = CommandLineToolProxy
+    elif process_class == "ExpressionTool":
+        proxy_class = ExpressionToolProxy
+    else:
+        raise Exception("File not a CWL CommandLineTool.")
+    top_level_object = tool_path is not None
+    if top_level_object and ("cwlVersion" not in raw_tool):
+        raise Exception("File does not declare a CWL version, pre-draft 3 CWL tools are not supported.")
+
+    return proxy_class(cwl_tool, uuid, raw_process_reference, tool_path)
+
+
+def _to_cwl_workflow_object(workflow_path, strict_cwl_validation=None) -> WorkflowProxy:
+    cwl_workflow = _schema_loader(strict_cwl_validation).tool(path=workflow_path)
+    raw_workflow = cwl_workflow.tool
+    check_requirements(raw_workflow, tool=False)
+    return WorkflowProxy(cwl_workflow, workflow_path)
+
+
+def _schema_loader(strict_cwl_validation):
+    return schema_loader if strict_cwl_validation else non_strict_non_validating_schema_loader
+
+
+def _hack_cwl_requirements(cwl_tool):
+    move_to_hints: List[int] = []
+    for i, requirement in enumerate(cwl_tool.requirements):
+        if requirement["class"] == DOCKER_REQUIREMENT:
+            move_to_hints.insert(0, i)
+
+    for i in move_to_hints:
+        del cwl_tool.requirements[i]
+        cwl_tool.hints.append(requirement)
+
+
+def check_requirements(rec, tool=True):
+    if isinstance(rec, dict):
+        if "requirements" in rec:
+            for r in rec["requirements"]:
+                if tool:
+                    possible = SUPPORTED_TOOL_REQUIREMENTS
+                else:
+                    possible = SUPPORTED_WORKFLOW_REQUIREMENTS
+                if r["class"] not in possible:
+                    raise Exception(f"Unsupported requirement {r['class']}")
+        for d in rec:
+            check_requirements(rec[d], tool=tool)
+    if isinstance(rec, list):
+        for d in rec:
+            check_requirements(d, tool=tool)
+
+
 def split_step_references(step_references, workflow_id=None, multiple=True):
     """Split a CWL step input or output reference into step id and name."""
     # Trim off the workflow id part of the reference.
@@ -939,69 +928,12 @@ def split_step_references(step_references, workflow_id=None, multiple=True):
         return split_references[0]
 
 
-def build_step_proxy(workflow_proxy, step, index):
+def build_step_proxy(workflow_proxy: WorkflowProxy, step, index):
     step_type = step.embedded_tool.tool["class"]
     if step_type == "Workflow":
         return SubworkflowStepProxy(workflow_proxy, step, index)
     else:
         return ToolStepProxy(workflow_proxy, step, index)
-
-
-class BaseStepProxy:
-    def __init__(self, workflow_proxy, step, index):
-        self._workflow_proxy = workflow_proxy
-        self._step = step
-        self._index = index
-        self._uuid = str(uuid4())
-        self._input_proxies = None
-
-    @property
-    def step_class(self):
-        return self.cwl_tool_object.tool["class"]
-
-    @property
-    def cwl_id(self):
-        return self._step.id
-
-    @property
-    def cwl_workflow_id(self):
-        return self._workflow_proxy.cwl_id
-
-    @property
-    def requirements(self):
-        return self._step.requirements
-
-    @property
-    def hints(self):
-        return self._step.hints
-
-    @property
-    def label(self):
-        label = self._workflow_proxy.jsonld_id_to_label(self._step.id)
-        return label
-
-    def galaxy_workflow_outputs_list(self):
-        return self._workflow_proxy.get_outputs_for_label(self.label)
-
-    @property
-    def cwl_tool_object(self):
-        return self._step.embedded_tool
-
-    @property
-    def input_proxies(self):
-        if self._input_proxies is None:
-            input_proxies = []
-            cwl_inputs = self._step.tool["inputs"]
-            for cwl_input in cwl_inputs:
-                input_proxies.append(InputProxy(self, cwl_input))
-            self._input_proxies = input_proxies
-        return self._input_proxies
-
-    def inputs_to_dicts(self):
-        inputs_as_dicts = []
-        for input_proxy in self.input_proxies:
-            inputs_as_dicts.append(input_proxy.to_dict())
-        return inputs_as_dicts
 
 
 class InputProxy:
@@ -1050,6 +982,54 @@ class InputProxy:
         if "default" in self._cwl_input:
             as_dict["default"] = self._cwl_input["default"]
         return as_dict
+
+
+class BaseStepProxy:
+    def __init__(self, workflow_proxy: WorkflowProxy, step, index):
+        self._workflow_proxy = workflow_proxy
+        self._step = step
+        self._index = index
+        self._uuid = str(uuid4())
+        cwl_inputs = self._step.tool["inputs"]
+        self.input_proxies = [InputProxy(self, cwl_input) for cwl_input in cwl_inputs]
+
+    @property
+    def step_class(self):
+        return self.cwl_tool_object.tool["class"]
+
+    @property
+    def cwl_id(self):
+        return self._step.id
+
+    @property
+    def cwl_workflow_id(self):
+        return self._workflow_proxy.cwl_id
+
+    @property
+    def requirements(self):
+        return self._step.requirements
+
+    @property
+    def hints(self):
+        return self._step.hints
+
+    @property
+    def label(self):
+        label = self._workflow_proxy.jsonld_id_to_label(self._step.id)
+        return label
+
+    def galaxy_workflow_outputs_list(self):
+        return self._workflow_proxy.get_outputs_for_label(self.label)
+
+    @property
+    def cwl_tool_object(self):
+        return self._step.embedded_tool
+
+    def inputs_to_dicts(self):
+        inputs_as_dicts = []
+        for input_proxy in self.input_proxies:
+            inputs_as_dicts.append(input_proxy.to_dict())
+        return inputs_as_dicts
 
 
 class ToolStepProxy(BaseStepProxy):
@@ -1133,18 +1113,6 @@ def remove_pickle_problems(obj):
     if hasattr(obj, "steps"):
         obj.steps = [remove_pickle_problems(s) for s in obj.steps]
     return obj
-
-
-class WorkflowToolReference(metaclass=ABCMeta):
-    pass
-
-
-class EmbeddedWorkflowToolReference(WorkflowToolReference):
-    pass
-
-
-class ExternalWorkflowToolReference(WorkflowToolReference):
-    pass
 
 
 def _outer_field_to_input_instance(field):
@@ -1316,7 +1284,7 @@ class InputInstance:
                 as_dict["value"] = "0"
             if self.input_type == INPUT_TYPE.FLOAT:
                 as_dict["value"] = "0.0"
-            elif self.input_type == INPUT_TYPE.DATA_COLLECTON:
+            elif self.input_type == INPUT_TYPE.DATA_COLLECTION:
                 as_dict["collection_type"] = self.collection_type
             return as_dict
 

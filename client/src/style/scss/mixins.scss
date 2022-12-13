@@ -5,6 +5,21 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "~@fortawesome/fontawesome-free/scss/fontawesome";
 @import "~@fortawesome/fontawesome-free/scss/_variables";
 
+@mixin user-select($select) {
+    -webkit-touch-callout: #{$select};
+    @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
+        #{$pre + user-select}: #{$select};
+    }
+    #{user-select}: #{$select};
+}
+
+@mixin border-radius($radius) {
+    // from font-awesome 3.0
+    -webkit-border-radius: $radius;
+    -moz-border-radius: $radius;
+    border-radius: $radius;
+}
+
 // Utility mixin expands to container edges
 @mixin fill() {
     position: relative;

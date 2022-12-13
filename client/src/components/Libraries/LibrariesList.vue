@@ -63,8 +63,10 @@
                         class="form-control input_library_name"
                         rows="3" />
 
-                    <div v-else-if="row.item.deleted && include_deleted" class="deleted-item">{{ row.item.name }}</div>
-                    <b-link v-else :to="{ path: `folders/${row.item.root_folder_id}` }">{{ row.item.name }}</b-link>
+                    <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
+                    <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">{{
+                        row.item.name
+                    }}</b-link>
                 </template>
                 <template v-slot:cell(description)="{ item }">
                     <LibraryEditField
@@ -128,7 +130,7 @@
                         size="sm"
                         class="lib-btn permission_library_btn"
                         :title="'Permissions of ' + row.item.name"
-                        :to="{ path: `/${row.item.id}/permissions` }">
+                        :to="{ path: `/libraries/${row.item.id}/permissions` }">
                         <font-awesome-icon icon="users" />
                         Manage
                     </b-button>
@@ -187,7 +189,7 @@ import { getAppRoot } from "onload/loadConfig";
 import BootstrapVue from "bootstrap-vue";
 import { Services } from "./services";
 import { fields } from "./table-fields";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { MAX_DESCRIPTION_LENGTH, DEFAULT_PER_PAGE, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
@@ -217,7 +219,7 @@ export default {
             perPage: DEFAULT_PER_PAGE,
             librariesList: [],
             maxDescriptionLength: MAX_DESCRIPTION_LENGTH,
-            include_deleted: false,
+            includeDeleted: false,
             exclude_restricted: false,
             filterOn: [],
             excluded: [],
@@ -248,11 +250,11 @@ export default {
     created() {
         this.root = getAppRoot();
         this.services = new Services({ root: this.root });
-        this.loadLibraries(this.include_deleted);
+        this.loadLibraries(this.includeDeleted);
     },
     methods: {
-        loadLibraries(include_deleted = false) {
-            this.services.getLibraries(include_deleted).then((result) => (this.librariesList = result));
+        loadLibraries(includeDeleted = false) {
+            this.services.getLibraries(includeDeleted).then((result) => (this.librariesList = result));
         },
         toggleEditMode(item) {
             item.editMode = !item.editMode;
@@ -287,7 +289,7 @@ export default {
                     Toast.success("Library has been marked deleted.");
                     deletedLib.deleted = true;
                     this.toggleEditMode(deletedLib);
-                    if (!this.include_deleted) {
+                    if (!this.includeDeleted) {
                         this.hideOn("deleted", false);
                     }
                 },
@@ -306,9 +308,9 @@ export default {
             this.filter = value;
         },
         toggle_include_deleted(isDeletedIncluded) {
-            this.include_deleted = isDeletedIncluded;
-            if (this.include_deleted) {
-                this.services.getLibraries(this.include_deleted).then((result) => {
+            this.includeDeleted = isDeletedIncluded;
+            if (this.includeDeleted) {
+                this.services.getLibraries(this.includeDeleted).then((result) => {
                     this.librariesList = this.librariesList.concat(result);
                     this.$refs.libraries_list.refresh();
                 });

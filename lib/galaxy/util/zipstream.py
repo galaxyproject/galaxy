@@ -1,5 +1,12 @@
 import os
 import zlib
+from typing import (
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Set,
+)
 from urllib.parse import quote
 
 import zipstream
@@ -11,25 +18,27 @@ CRC32_MAX = 1459
 
 
 class ZipstreamWrapper:
-    def __init__(self, archive_name=None, upstream_mod_zip=False, upstream_gzip=False):
+    def __init__(
+        self, archive_name: Optional[str] = None, upstream_mod_zip: bool = False, upstream_gzip: bool = False
+    ) -> None:
         self.upstream_mod_zip = upstream_mod_zip
         self.archive_name = archive_name
         if not self.upstream_mod_zip:
             self.archive = zipstream.ZipFile(
                 allowZip64=True, compression=zipstream.ZIP_STORED if upstream_gzip else zipstream.ZIP_DEFLATED
             )
-        self.files = []
-        self.directories = set()
+        self.files: List[str] = []
+        self.directories: Set[str] = set()
         self.size = 0
 
-    def response(self):
+    def response(self) -> Iterator[bytes]:
         if self.upstream_mod_zip:
             dir_lines = [f"0 0 @directory {directory}" for directory in self.directories]
             yield "\n".join(dir_lines + self.files).encode()
         else:
             yield from iter(self.archive)
 
-    def get_headers(self):
+    def get_headers(self) -> Dict[str, str]:
         headers = {}
         if self.archive_name:
             headers["Content-Disposition"] = f'attachment; filename="{self.archive_name}.zip"'
@@ -39,7 +48,7 @@ class ZipstreamWrapper:
             headers["Content-Type"] = "application/x-zip-compressed"
         return headers
 
-    def add_path(self, path, archive_name):
+    def add_path(self, path: str, archive_name: str) -> None:
         size = int(os.stat(path).st_size)
         if self.upstream_mod_zip:
             # calculating crc32 would defeat the point of using mod-zip, but if we ever calculate hashsums we should consider this
@@ -59,7 +68,7 @@ class ZipstreamWrapper:
             self.size += size
             self.archive.write(path, archive_name)
 
-    def write(self, path, archive_name=None):
+    def write(self, path: str, archive_name: Optional[str] = None) -> None:
         if os.path.isdir(path):
             pardir = os.path.join(path, os.pardir)
             for root, directories, files in safe_walk(path):

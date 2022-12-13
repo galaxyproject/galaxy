@@ -8,6 +8,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -137,7 +138,9 @@ class User(BaseUser):
             status = "error"
         else:
             # check user is allowed to register
-            message, status = trans.app.auth_manager.check_registration_allowed(email, username, password)
+            message, status = trans.app.auth_manager.check_registration_allowed(
+                email, username, password, trans.request
+            )
             if not message:
                 # Create the user, save all the user info and login to Galaxy
                 if params.get("create_user_button", False):
@@ -313,7 +316,7 @@ class User(BaseUser):
         message = escape(util.restore_text(params.get("message", "")))
         status = params.get("status", "done")
         if params.get("new_api_key_button", False):
-            self.create_api_key(trans, trans.user)
+            ApiKeyManager(trans.app).create_api_key(trans.user)
             message = "Generated a new web API key"
             status = "done"
         return trans.fill_template(

@@ -1,8 +1,8 @@
 from galaxy.exceptions import error_codes
-from .test_pages import BasePageApiTestCase
+from .test_pages import BasePagesApiTestCase
 
 
-class PageRevisionsApiTestCase(BasePageApiTestCase):
+class TestPageRevisionsApi(BasePagesApiTestCase):
     def test_create(self):
         page_json = self._create_valid_page_with_slug("pr1")
         revision_data = dict(content="<p>NewContent!</p>")

@@ -163,7 +163,6 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
             fi
         fi
     fi
-    setup_gravity_state_dir
 fi
 
 # activate virtualenv or conda env, sets $GALAXY_VIRTUAL_ENV and $GALAXY_CONDA_ENV
@@ -183,7 +182,7 @@ fi
 
 requirement_args="-r requirements.txt"
 if [ $DEV_WHEELS -eq 1 ]; then
-    requirement_args="-r ${GALAXY_DEV_REQUIREMENTS}"
+    requirement_args="$requirement_args -r ${GALAXY_DEV_REQUIREMENTS}"
 fi
 
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off

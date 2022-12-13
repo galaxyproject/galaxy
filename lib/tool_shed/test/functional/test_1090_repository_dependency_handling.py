@@ -25,21 +25,8 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        galaxy_admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert (
-            galaxy_admin_user is not None
-        ), f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_and_populate_column_repository(self):
         """Create a category for this test suite and add repositories to it."""
@@ -50,7 +37,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -75,7 +62,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             description=convert_repository_description,
             long_description=convert_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -92,17 +79,13 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             )
 
     def test_0015_create_and_upload_dependency_files(self):
-        convert_repository = self.test_db_util.get_repository_by_name_and_owner(
-            convert_repository_name, common.test_user_1_name
-        )
-        column_repository = self.test_db_util.get_repository_by_name_and_owner(
-            column_repository_name, common.test_user_1_name
-        )
+        convert_repository = self._get_repository_by_name_and_owner(convert_repository_name, common.test_user_1_name)
+        column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
         repository_dependencies_path = self.generate_temp_path("test_1085", additional_paths=["column"])
         repository_tuple = (
             self.url,
             convert_repository.name,
-            convert_repository.user.username,
+            convert_repository.owner,
             self.get_repository_tip(convert_repository),
         )
         self.create_repository_dependency(
@@ -111,7 +94,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         repository_tuple = (
             self.url,
             column_repository.name,
-            column_repository.user.username,
+            column_repository.owner,
             self.get_repository_tip(column_repository),
         )
         self.create_repository_dependency(
@@ -121,41 +104,19 @@ class TestRepositoryDependencies(ShedTwillTestCase):
     def test_0020_install_repositories(self):
         """Install column_maker into column_maker tool panel section and install repository dependencies."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             column_repository_name,
             common.test_user_1_name,
             category_name,
             install_tool_dependencies=False,
             install_repository_dependencies=True,
             new_tool_panel_section_label="column_maker",
-            strings_displayed=["install_repository_dependencies"],
         )
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            column_repository_name, common.test_user_1_name
-        )
-        browse_strings_displayed = [
-            "convert_chars_1085",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_1085",
-            "Add column",
-            installed_column_repository.installed_changeset_revision,
-        ]
-        strings_displayed = [
-            "convert_chars_1085",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-            "column_maker_1085",
-            installed_column_repository.installed_changeset_revision,
-            "Installed repository dependencies",
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=browse_strings_displayed)
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("convert_chars_1085", "column_maker_1085")
+        self._assert_is_not_missing_dependency(installed_convert_repository, "column_maker_1085")
 
     def test_0025_uninstall_column_repository(self):
         """uninstall column_maker, verify same section"""
@@ -179,40 +140,26 @@ class TestRepositoryDependencies(ShedTwillTestCase):
         installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(
+        self.reinstall_repository_api(
             installed_column_repository,
             install_tool_dependencies=False,
             install_repository_dependencies=False,
             new_tool_panel_section_label="new_column_maker",
-            no_changes=False,
         )
-        strings_displayed = [
-            "column_maker_1085",
-            "Add column",
-            self.url.replace("http://", ""),
-            installed_column_repository.installed_changeset_revision,
-        ]
-        self.display_installed_repository_manage_page(installed_column_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("column_maker_1085")
 
     def test_0040_reinstall_convert_repository(self):
         """reinstall convert_chars into new section 'new_convert_chars' (no_changes = false), no dependencies"""
         installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(
+        self.reinstall_repository_api(
             installed_convert_repository,
             install_tool_dependencies=False,
             install_repository_dependencies=False,
             new_tool_panel_section_label="new_convert_chars",
-            no_changes=False,
         )
-        strings_displayed = [
-            "convert_chars_1085",
-            "Convert delimiters",
-            self.url.replace("http://", ""),
-            installed_convert_repository.installed_changeset_revision,
-        ]
-        self.display_installed_repository_manage_page(installed_convert_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("convert_chars_1085")
 
     # The following check fails somewhere around 5% of the time maybe on Jenkins.
     # https://jenkins.galaxyproject.org/job/docker-toolshed/5578/

@@ -7,6 +7,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -250,11 +251,8 @@ class ResourceRequirement:
         except ValueError:
             self.runtime_required = True
 
-    @staticmethod
-    def from_dict(resource_dict):
-        resource_type = next(iter(resource_dict.keys()))
-        value_or_expression = resource_dict[resource_type]
-        return ResourceRequirement(value_or_expression=value_or_expression, resource_type=resource_type)
+    def to_dict(self) -> Dict:
+        return {"resource_type": self.resource_type, "value_or_expression": self.value_or_expression}
 
     def get_value(self, runtime: Optional[Dict] = None, js_evaluator: Optional[Callable] = None):
         if self.runtime_required:
@@ -290,14 +288,11 @@ def resource_requirements_from_list(requirements) -> List[ResourceRequirement]:
     return rr
 
 
-def parse_requirements_from_dict(root_dict):
-    requirements = root_dict.get("requirements", [])
-    resource_requirements = resource_requirements_from_list(requirements)
-    containers = root_dict.get("containers", [])
+def parse_requirements_from_lists(software_requirements, containers, resource_requirements) -> Tuple:
     return (
-        ToolRequirements.from_list(requirements),
+        ToolRequirements.from_list(software_requirements),
         [ContainerDescription.from_dict(c) for c in containers],
-        resource_requirements,
+        resource_requirements_from_list(resource_requirements),
     )
 
 

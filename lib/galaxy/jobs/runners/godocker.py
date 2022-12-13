@@ -124,7 +124,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
     runner_name = "GodockerJobRunner"
 
     def __init__(self, app, nworkers, **kwargs):
-        """1: Get runner_param_specs from job_conf.xml
+        """1: Get runner_param_specs from the job config
         2: Initialise job runner parent object
         3: Login to godocker and store the token
         4: Start the worker and monitor threads

@@ -5,6 +5,10 @@ import tarfile
 from collections import namedtuple
 from io import StringIO
 from time import strftime
+from typing import (
+    Callable,
+    Dict,
+)
 
 from sqlalchemy import (
     and_,
@@ -289,7 +293,7 @@ class RepositoriesController(BaseAPIController):
             return []
         return repository.installable_revisions(self.app)
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {
             "id": trans.security.encode_id,
             "repository_id": trans.security.encode_id,
@@ -534,37 +538,6 @@ class RepositoriesController(BaseAPIController):
         return response_dict
 
     @web.legacy_expose_api
-    def repository_ids_for_setting_metadata(self, trans, my_writable=False, **kwd):
-        """
-        GET /api/repository_ids_for_setting_metadata
-
-        Displays a collection (list) of repository ids ordered for setting metadata.
-
-        :param key: the API key of the Tool Shed user.
-        :param my_writable (optional): if the API key is associated with an admin user in the Tool Shed, setting this param value
-                                       to True will restrict resetting metadata to only repositories that are writable by the user
-                                       in addition to those repositories of type tool_dependency_definition.  This param is ignored
-                                       if the current user is not an admin user, in which case this same restriction is automatic.
-        """
-        if trans.user_is_admin:
-            my_writable = util.asbool(my_writable)
-        else:
-            my_writable = True
-        handled_repository_ids = []
-        repository_ids = []
-        rmm = repository_metadata_manager.RepositoryMetadataManager(self.app, trans.user)
-        query = rmm.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=False)
-        # Make sure repositories of type tool_dependency_definition are first in the list.
-        for repository in query:
-            if repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                repository_ids.append(trans.security.encode_id(repository.id))
-        # Now add all remaining repositories to the list.
-        for repository in query:
-            if repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                repository_ids.append(trans.security.encode_id(repository.id))
-        return repository_ids
-
-    @web.legacy_expose_api
     def reset_metadata_on_repositories(self, trans, payload, **kwd):
         """
         PUT /api/repositories/reset_metadata_on_repositories
@@ -665,7 +638,7 @@ class RepositoriesController(BaseAPIController):
     @web.legacy_expose_api
     def reset_metadata_on_repository(self, trans, payload, **kwd):
         """
-        PUT /api/repositories/reset_metadata_on_repository
+        POST /api/repositories/reset_metadata_on_repository
 
         Resets all metadata on a specified repository in the Tool Shed.
 
@@ -852,17 +825,23 @@ class RepositoriesController(BaseAPIController):
 
         :param id: the encoded id of the Repository object
 
+        :param downloadable_only: Return only downloadable revisions (defaults to True).
+                                  Added for test cases - shouldn't be considered part of the stable API.
+
         :returns:   A dictionary containing the specified repository's metadata, by changeset,
                     recursively including dependencies and their metadata.
 
         :not found:  Empty dictionary.
         """
         recursive = util.asbool(kwd.get("recursive", "True"))
+        downloadable_only = util.asbool(kwd.get("downloadable_only", "True"))
         all_metadata = {}
         repository = repository_util.get_repository_in_tool_shed(
             self.app, id, eagerload_columns=["downloadable_revisions"]
         )
-        for changeset, changehash in repository.installable_revisions(self.app):
+        for changeset, changehash in metadata_util.get_metadata_revisions(
+            self.app, repository, sort_revisions=True, downloadable=downloadable_only
+        ):
             metadata = metadata_util.get_current_repository_metadata_for_changeset_revision(
                 self.app, repository, changehash
             )

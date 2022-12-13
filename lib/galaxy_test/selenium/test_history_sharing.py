@@ -7,7 +7,7 @@ from .framework import (
 VALID_LOGIN_RETRIES = 3
 
 
-class HistorySharingTestCase(SeleniumTestCase):
+class TestHistorySharing(SeleniumTestCase):
     @selenium_test
     def test_sharing_valid(self):
         user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
@@ -120,7 +120,7 @@ class HistorySharingTestCase(SeleniumTestCase):
         )
 
 
-class HistoryRequiresLoginSeleniumTestCase(SeleniumTestCase):
+class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
 
     ensure_registered = True
 

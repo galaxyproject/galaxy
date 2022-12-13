@@ -1,6 +1,5 @@
-import unittest
-
 from galaxy import model
+from galaxy.util.unittest import TestCase
 from galaxy.workflow.run import WorkflowProgress
 from .workflow_support import (
     MockApp,
@@ -64,7 +63,7 @@ steps:
 UNSCHEDULED_STEP = object()
 
 
-class WorkflowProgressTestCase(unittest.TestCase):
+class TestWorkflowProgress(TestCase):
     def setUp(self):
         self.app = MockApp()
         self.inputs_by_step_id = {}
@@ -87,7 +86,7 @@ class WorkflowProgressTestCase(unittest.TestCase):
                 workflow_invocation_step.workflow_step_id = step_id
                 workflow_invocation_step.state = "scheduled"
                 workflow_invocation_step.workflow_step = self._step(i)
-                self.assertEqual(step_id, self._step(i).id)
+                assert step_id == self._step(i).id
                 # workflow_invocation_step.workflow_invocation = self.invocation
                 self.invocation.steps.append(workflow_invocation_step)
 
@@ -223,8 +222,17 @@ class MockModuleInjector:
     def __init__(self, progress):
         self.progress = progress
 
-    def inject(self, step, step_args=None):
+    def inject(self, step, step_args=None, steps=None, **kwargs):
         step.module = MockModule(self.progress)
+
+    def inject_all(self, workflow, param_map=None, ignore_tool_missing_exception=True, **kwargs):
+        param_map = param_map or {}
+        for step in workflow.steps:
+            step_args = param_map.get(step.id, {})
+            self.inject(step, step_args=step_args)
+
+    def compute_runtime_state(self, step, step_args=None):
+        pass
 
 
 class MockModule:

@@ -44,7 +44,7 @@ class Validator(abc.ABC):
         param elem the validator element
         return an object of a Validator subclass that corresponds to the type attribute of the validator element
         """
-        _type = elem.get("type", None)
+        _type = elem.get("type")
         assert _type is not None, "Required 'type' attribute missing from validator"
         return validator_types[_type].from_element(param, elem)
 
@@ -129,7 +129,7 @@ class RegexValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message", None), elem.text, elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.text, elem.get("negate", "false"))
 
     def __init__(self, message, expression, negate):
         if message is None:
@@ -154,7 +154,7 @@ class ExpressionValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message", None), elem.text, elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.text, elem.get("negate", "false"))
 
     def __init__(self, message, expression, negate):
         if message is None:
@@ -214,7 +214,7 @@ class InRangeValidator(ExpressionValidator):
     @classmethod
     def from_element(cls, param, elem):
         return cls(
-            elem.get("message", None),
+            elem.get("message"),
             elem.get("min"),
             elem.get("max"),
             elem.get("exclude_min", "false"),
@@ -289,7 +289,7 @@ class LengthValidator(InRangeValidator):
 
     @classmethod
     def from_element(cls, param, elem):
-        return cls(elem.get("message", None), elem.get("min", None), elem.get("max", None), elem.get("negate", "false"))
+        return cls(elem.get("message"), elem.get("min"), elem.get("max"), elem.get("negate", "false"))
 
     def __init__(self, message, length_min, length_max, negate):
         if message is None:
@@ -346,7 +346,7 @@ class DatasetOkValidator(Validator):
     @classmethod
     def from_element(cls, param, elem):
         negate = elem.get("negate", "false")
-        message = elem.get("message", None)
+        message = elem.get("message")
         if message is None:
             if negate == "false":
                 message = "The selected dataset is still being generated, select another dataset or wait until it is completed"
@@ -404,7 +404,7 @@ class DatasetEmptyValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate=='false' else ''}empty files."
@@ -462,7 +462,7 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"The selected dataset's extra_files_path directory is {'non-' if negate == 'true' else ''}empty or does {'not ' if negate == 'false' else ''}exist, this tool expects {'non-' if negate == 'false' else ''}empty extra_files_path directories associated with the selected input."
@@ -534,7 +534,7 @@ class MetadataValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         return cls(
             message=message, check=elem.get("check", ""), skip=elem.get("skip", ""), negate=elem.get("negate", "false")
         )
@@ -607,7 +607,7 @@ class UnspecifiedBuildValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"{'Unspecified' if negate == 'false' else 'Specified'} genome build, click the pencil icon in the history item to {'set' if negate == 'false' else 'remove'} the genome build"
@@ -655,7 +655,7 @@ class NoOptionsValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             message = f"{'No options' if negate == 'false' else 'Options'} available for selection"
@@ -694,7 +694,7 @@ class EmptyTextfieldValidator(Validator):
 
     @classmethod
     def from_element(cls, param, elem):
-        message = elem.get("message", None)
+        message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
             if negate == "false":
@@ -730,7 +730,7 @@ class MetadataInFileColumnValidator(Validator):
         metadata_column = int(elem.get("metadata_column", 0))
         split = elem.get("split", "\t")
         message = elem.get("message", f"Value for metadata {metadata_name} was not found in {filename}.")
-        line_startswith = elem.get("line_startswith", None)
+        line_startswith = elem.get("line_startswith")
         if line_startswith:
             line_startswith = line_startswith.strip()
         negate = elem.get("negate", "false")
@@ -914,7 +914,7 @@ class MetadataInRangeValidator(InRangeValidator):
         metadata_name = metadata_name.strip()
         ret = cls(
             metadata_name,
-            elem.get("message", None),
+            elem.get("message"),
             elem.get("min"),
             elem.get("max"),
             elem.get("exclude_min", "false"),
@@ -964,11 +964,3 @@ validator_types = dict(
 
 deprecated_validator_types = dict(dataset_metadata_in_file=MetadataInFileColumnValidator)
 validator_types.update(deprecated_validator_types)
-
-
-def get_suite():
-    """Get unittest suite for this module"""
-    import doctest
-    import sys
-
-    return doctest.DocTestSuite(sys.modules[__name__])

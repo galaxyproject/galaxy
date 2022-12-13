@@ -1,3 +1,12 @@
+.upload-dialog {
+    width: 900px;
+}
+
+.upload-dialog-body {
+    height: 500px;
+    overflow: hidden;
+}
+
 .upload-button {
     @extend .w-100;
     @extend .mb-2;

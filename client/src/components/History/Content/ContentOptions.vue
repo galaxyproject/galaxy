@@ -17,6 +17,7 @@
             v-if="isDataset"
             :disabled="displayDisabled"
             :title="displayButtonTitle"
+            :tabindex="tabindex"
             class="display-btn px-1"
             size="sm"
             variant="link"
@@ -25,9 +26,10 @@
             <icon icon="eye" />
         </b-button>
         <b-button
-            v-if="isHistoryItem"
+            v-if="writable && isHistoryItem"
             :disabled="editDisabled"
             :title="editButtonTitle"
+            :tabindex="tabindex"
             class="edit-btn px-1"
             size="sm"
             variant="link"
@@ -36,7 +38,8 @@
             <icon icon="pen" />
         </b-button>
         <b-button
-            v-if="isHistoryItem && !isDeleted"
+            v-if="writable && isHistoryItem && !isDeleted"
+            :tabindex="tabindex"
             class="delete-btn px-1"
             title="Delete"
             size="sm"
@@ -45,7 +48,8 @@
             <icon icon="trash" />
         </b-button>
         <b-button
-            v-if="isHistoryItem && isDeleted"
+            v-if="writable && isHistoryItem && isDeleted"
+            :tabindex="tabindex"
             class="undelete-btn px-1"
             title="Undelete"
             size="sm"
@@ -54,7 +58,8 @@
             <icon icon="trash-restore" />
         </b-button>
         <b-button
-            v-if="isHistoryItem && !isVisible"
+            v-if="writable && isHistoryItem && !isVisible"
+            :tabindex="tabindex"
             class="unhide-btn px-1"
             title="Unhide"
             size="sm"
@@ -69,12 +74,14 @@
 import { prependPath } from "utils/redirect.js";
 export default {
     props: {
+        writable: { type: Boolean, default: true },
         isDataset: { type: Boolean, required: true },
         isDeleted: { type: Boolean, default: false },
         isHistoryItem: { type: Boolean, required: true },
         isVisible: { type: Boolean, default: true },
         state: { type: String, default: "" },
         itemUrls: { type: Object, required: true },
+        keyboardSelectable: { type: Boolean, default: true },
     },
     computed: {
         displayButtonTitle() {
@@ -84,7 +91,7 @@ export default {
             return "Display";
         },
         displayDisabled() {
-            return ["discarded", "new", "upload"].includes(this.state);
+            return ["discarded", "new", "upload", "queued"].includes(this.state);
         },
         editButtonTitle() {
             if (this.editDisabled) {
@@ -109,6 +116,9 @@ export default {
         },
         showCollectionDetailsUrl() {
             return prependPath(this.itemUrls.showDetails);
+        },
+        tabindex() {
+            return this.keyboardSelectable ? "0" : "-1";
         },
     },
 };

@@ -3,8 +3,8 @@
         <loading-span v-if="loading" message="Loading dataset" />
         <div v-else>
             <ContentItem
-                is-history-item
                 :id="item.hid"
+                is-history-item
                 :item="item"
                 :name="item.name"
                 :expand-dataset="expandDataset"

@@ -12,7 +12,7 @@ SHOW_KEYS = INDEX_KEYS + ["user_id", "model_class", "revisions", "latest_revisio
 REVISION_KEYS = ["id", "title", "visualization_id", "dbkey", "model_class", "config"]
 
 
-class VisualizationsApiTestCase(ApiTestCase, SharingApiTests):
+class TestVisualizationsApi(ApiTestCase, SharingApiTests):
 
     api_name = "visualizations"
 

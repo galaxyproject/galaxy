@@ -222,8 +222,10 @@ def get_openapi_path(
             parameters: List[Dict[str, Any]] = []
             flat_dependant = get_flat_dependant(route.dependant, skip_repeats=True)
             security_definitions, operation_security = get_openapi_security_definitions(flat_dependant=flat_dependant)
-            if operation_security:
-                operation.setdefault("security", []).extend(operation_security)
+            # https://redocly.com/docs/cli/rules/security-defined/#api-design-principles
+            # be explicit that this is an unsecured endpoint, no API token is needed
+            # (unless required by proxy)
+            operation.setdefault("security", []).extend(operation_security)
             if security_definitions:
                 security_schemes.update(security_definitions)
             all_route_params = get_flat_params(route.dependant)
@@ -370,7 +372,7 @@ def get_openapi(
     *,
     title: str,
     version: str,
-    openapi_version: str = "3.0.2",
+    openapi_version: str = "3.0.3",
     description: Optional[str] = None,
     routes: Sequence[BaseRoute],
     tags: Optional[List[Dict[str, Any]]] = None,

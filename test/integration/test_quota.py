@@ -2,7 +2,7 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-class QuotaIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestQuotaIntegration(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     @classmethod

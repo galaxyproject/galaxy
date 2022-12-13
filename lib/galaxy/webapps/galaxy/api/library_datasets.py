@@ -18,8 +18,8 @@ from galaxy import (
 )
 from galaxy.actions.library import LibraryActions
 from galaxy.exceptions import ObjectNotFound
-from galaxy.managers import base as managers_base
 from galaxy.managers import (
+    base as managers_base,
     folders,
     lddas,
     library_datasets,
@@ -529,7 +529,7 @@ class LibraryDatasetsController(BaseGalaxyAPIController, UsesVisualizationMixin,
         for input in tool.inputs.values():
             if input.type == "upload_dataset":
                 dataset_upload_inputs.append(input)
-        library_bunch = upload_common.handle_library_params(trans, {}, trans.security.encode_id(folder.id))
+        library_bunch = upload_common.handle_library_params(trans, {}, folder.id)
         abspath_datasets = []
         kwd["filesystem_paths"] = path
         if source in ["importdir_folder"]:

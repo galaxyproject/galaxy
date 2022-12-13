@@ -1,4 +1,8 @@
 import json
+from typing import (
+    Dict,
+    List,
+)
 
 import packaging.version
 
@@ -8,10 +12,14 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
 )
 from .interface import (
+    AssertionDict,
+    AssertionList,
     InputSource,
     PageSource,
     PagesSource,
     ToolSource,
+    ToolSourceTest,
+    ToolSourceTests,
 )
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
@@ -27,10 +35,10 @@ class YamlToolSource(ToolSource):
 
     language = "yaml"
 
-    def __init__(self, root_dict, source_path=None):
+    def __init__(self, root_dict: Dict, source_path=None):
         self.root_dict = root_dict
         self._source_path = source_path
-        self._macro_paths = []
+        self._macro_paths: List[str] = []
 
     @property
     def source_path(self):
@@ -89,7 +97,12 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("runtime_version", {}).get("interpreter", None)
 
     def parse_requirements_and_containers(self):
-        return requirements.parse_requirements_from_dict(self.root_dict)
+        mixed_requirements = self.root_dict.get("requirements", [])
+        return requirements.parse_requirements_from_lists(
+            software_requirements=[r for r in mixed_requirements if r.get("type") != "resource"],
+            containers=self.root_dict.get("containers", []),
+            resource_requirements=[r for r in mixed_requirements if r.get("type") == "resource"],
+        )
 
     def parse_input_pages(self):
         # All YAML tools have only one page (feature is deprecated)
@@ -168,9 +181,9 @@ class YamlToolSource(ToolSource):
         )
         return output_collection
 
-    def parse_tests_to_dict(self):
-        tests = []
-        rval = dict(tests=tests)
+    def parse_tests_to_dict(self) -> ToolSourceTests:
+        tests: List[ToolSourceTest] = []
+        rval: ToolSourceTests = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
@@ -187,9 +200,9 @@ class YamlToolSource(ToolSource):
         return self.root_dict.get("entry_points", [])
 
     def parse_python_template_version(self):
-        python_template_version = self.root_dict.get("python_template_version", None)
+        python_template_version = self.root_dict.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.parse(python_template_version)
+            python_template_version = packaging.version.Version(python_template_version)
         return python_template_version
 
     def to_string(self):
@@ -197,7 +210,7 @@ class YamlToolSource(ToolSource):
         return json.dumps(self.root_dict)
 
 
-def _parse_test(i, test_dict):
+def _parse_test(i, test_dict) -> ToolSourceTest:
     inputs = test_dict["inputs"]
     if is_dict(inputs):
         new_inputs = []
@@ -222,7 +235,7 @@ def _parse_test(i, test_dict):
             name = output["name"]
             value = output.get("file", None)
             attributes = output
-            new_outputs.append((name, value, attributes))
+            new_outputs.append({"name": name, "value": value, "attributes": attributes})
 
     for output in new_outputs:
         attributes = output["attributes"]
@@ -237,8 +250,6 @@ def _parse_test(i, test_dict):
         attributes["extra_files"] = []
         # TODO
         attributes["metadata"] = {}
-        # TODO
-        assert_list = []
         assert_list = __to_test_assert_list(attributes.get("asserts", []))
         attributes["assert_list"] = assert_list
         _ensure_has(attributes, defaults)
@@ -255,7 +266,7 @@ def _parse_test(i, test_dict):
     return test_dict
 
 
-def __to_test_assert_list(assertions):
+def __to_test_assert_list(assertions) -> AssertionList:
     def expand_dict_form(item):
         key, value = item
         new_value = value.copy()
@@ -265,7 +276,7 @@ def __to_test_assert_list(assertions):
     if is_dict(assertions):
         assertions = map(expand_dict_form, assertions.items())
 
-    assert_list = []
+    assert_list: List[AssertionDict] = []
     for assertion in assertions:
         # TODO: not handling nested assertions correctly,
         # not sure these are used though.
@@ -273,7 +284,7 @@ def __to_test_assert_list(assertions):
         if "children" in assertion:
             children = assertion["children"]
             del assertion["children"]
-        assert_dict = dict(
+        assert_dict: AssertionDict = dict(
             tag=assertion["that"],
             attributes=assertion,
             children=children,

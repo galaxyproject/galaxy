@@ -294,7 +294,8 @@ class InteractiveToolManager:
                     rval = "{}/{}".format(rval.rstrip("/"), entry_point.entry_url.lstrip("/"))
             else:
                 rval = self.get_entry_point_path(trans, entry_point)
-
+                if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
+                    rval = f"{protocol}//{request_host}{rval}"
             return rval
 
     def get_entry_point_subdomain(self, trans, entry_point):
@@ -319,8 +320,7 @@ class InteractiveToolManager:
                 rval = f"/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/"
         if entry_point.entry_url:
             rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
-        if rval[0] != "/":
-            rval = f"/{rval}"
+        rval = "/" + rval.lstrip("/")
         return rval
 
     def access_entry_point_target(self, trans, entry_point_id):

@@ -13,25 +13,14 @@ category_name = "Test 0010 Repository With Tool Dependencies"
 log = logging.getLogger(__name__)
 
 
-class ToolWithToolDependencies(ShedTwillTestCase):
+class TestToolWithToolDependencies(ShedTwillTestCase):
     """Test installing a repository with tool dependencies."""
 
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(admin_user)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0010 category and upload the freebayes repository to it, if necessary."""
@@ -44,7 +33,7 @@ class ToolWithToolDependencies(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             self.upload_file(
@@ -92,7 +81,7 @@ class ToolWithToolDependencies(ShedTwillTestCase):
                 uncompress_file=False,
                 remove_repo_files_not_in_tar=False,
                 commit_message="Uploaded malformed tool dependency XML.",
-                strings_displayed=["Exception attempting to parse", "not well-formed"],
+                strings_displayed=["Exception attempting to parse", "invalid element name"],
                 strings_not_displayed=[],
             )
             self.upload_file(
@@ -124,7 +113,7 @@ class ToolWithToolDependencies(ShedTwillTestCase):
         """Browse the available tool sheds in this Galaxy instance and preview the freebayes tool."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.browse_tool_shed(url=self.url, strings_displayed=[category_name])
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         self.browse_category(category, strings_displayed=[repository_name])
         strings_displayed = [repository_name, "Valid tools", "Tool dependencies"]
         self.preview_repository_in_tool_shed(
@@ -133,33 +122,21 @@ class ToolWithToolDependencies(ShedTwillTestCase):
 
     def test_0015_install_freebayes_repository(self):
         """Install the freebayes repository without installing tool dependencies."""
-        strings_displayed = [
-            "Never installed",
-            "install all needed dependencies",
-        ]
-        strings_displayed.extend(["freebayes", "0.9.4_9696d0ce8a9", "samtools", "0.1.18"])
-        self.install_repository(
+        self._install_repository(
             repository_name,
             common.test_user_1_name,
             category_name,
-            strings_displayed=strings_displayed,
             install_tool_dependencies=False,
             new_tool_panel_section_label="test_1010",
         )
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        strings_displayed = [
-            "freebayes_0010",
-            "Galaxy's freebayes tool",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "FreeBayes"])
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
+        assert self.get_installed_repository_for(
+            common.test_user_1, repository_name, installed_repository.installed_changeset_revision
+        )
+        self._assert_has_valid_tool_with_name("FreeBayes")
+        self._assert_repo_has_tool_with_id(installed_repository, "freebayes")
 
     def test_0020_verify_installed_repository_metadata(self):
         """Verify that resetting the metadata on an installed repository does not change the metadata."""

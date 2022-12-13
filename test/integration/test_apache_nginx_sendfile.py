@@ -1,13 +1,12 @@
 import os
 
-from galaxy_test.base.populators import (
-    DatasetPopulator,
-    uses_test_history,
-)
+from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver.integration_util import IntegrationTestCase
 
 
-class NginxAccelHeaderIntegrationTestCase(IntegrationTestCase):
+class TestNginxAccelHeader(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -16,7 +15,6 @@ class NginxAccelHeaderIntegrationTestCase(IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         config["nginx_x_accel_redirect_base"] = "/redirect"
 
-    @uses_test_history()
     def test_dataset_download(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id=history_id, wait=True)
         head_response = self._head(f"histories/{history_id}/contents/{hda['id']}/display", {"raw": "True"})
@@ -28,7 +26,9 @@ class NginxAccelHeaderIntegrationTestCase(IntegrationTestCase):
         assert display_response.headers["x-accel-redirect"].startswith("/redirect")
 
 
-class ApacheSendFileHeaderIntegrationTestCase(IntegrationTestCase):
+class TestApacheSendFileHeader(IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -37,7 +37,6 @@ class ApacheSendFileHeaderIntegrationTestCase(IntegrationTestCase):
     def handle_galaxy_config_kwds(cls, config):
         config["apache_xsendfile"] = True
 
-    @uses_test_history()
     def test_dataset_download(self, history_id):
         hda = self.dataset_populator.new_dataset(history_id=history_id, wait=True)
         head_response = self._head(f"histories/{history_id}/contents/{hda['id']}/display", {"raw": "True"})

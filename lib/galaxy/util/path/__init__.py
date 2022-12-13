@@ -12,6 +12,7 @@ from operator import getitem
 from os import (
     extsep,
     makedirs,
+    PathLike,
     stat,
     walk,
 )
@@ -27,9 +28,18 @@ from os.path import (
     pardir,
     realpath,
     relpath,
+    sep as separator,
 )
-from os.path import sep as separator
 from pathlib import Path
+from typing import (
+    AnyStr,
+    Iterator,
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 try:
     from grp import getgrgid
@@ -43,12 +53,26 @@ except ImportError:
 
 import galaxy.util
 
+# Stable in Python 3.10 path types
+if TYPE_CHECKING:
+    StrPath = Union[str, PathLike[str]]
+    BytesPath = Union[bytes, PathLike[bytes]]
+    GenericPath = Union[AnyStr, PathLike[AnyStr]]
+    StrOrBytesPath = Union[str, bytes, PathLike[str], PathLike[bytes]]
+else:
+    StrPath = Union[str, PathLike]
+    BytesPath = Union[bytes, PathLike]
+    GenericPath = Union[AnyStr, PathLike]
+    StrOrBytesPath = Union[str, bytes, PathLike, PathLike]
+
+AllowListT = Optional[List[GenericPath]]
+
 WALK_MAX_DIRS = 10000
 
 log = logging.getLogger(__name__)
 
 
-def safe_path(path, allowlist=None):
+def safe_path(path: GenericPath, allowlist: AllowListT = None):
     """Ensure that a the absolute location of the path (after following symlinks) is either itself or on the allowlist
     of acceptable locations.
 
@@ -63,7 +87,7 @@ def safe_path(path, allowlist=None):
     return any(__contains(dirname(path), path, allowlist=allowlist))
 
 
-def safe_contains(prefix, path, allowlist=None, real=None):
+def safe_contains(prefix: GenericPath, path: GenericPath, allowlist: AllowListT = None, real=None):
     """Ensure a path is contained within another path.
 
     Given any two filesystem paths, ensure that ``path`` is contained in ``prefix``. If ``path`` exists (either as an
@@ -94,7 +118,7 @@ class _SafeContainsDirectoryChecker:
         self.prefix = prefix
         self.real_dirpath = realpath(join(prefix, dirpath))
 
-    def check(self, filename):
+    def check(self, filename: GenericPath) -> bool:
         dirpath_path = join(self.real_dirpath, filename)
         if islink(dirpath_path):
             return safe_contains(self.prefix, filename, allowlist=self.allowlist)
@@ -102,7 +126,7 @@ class _SafeContainsDirectoryChecker:
             return safe_contains(self.prefix, filename, allowlist=self.allowlist, real=dirpath_path)
 
 
-def safe_makedirs(path):
+def safe_makedirs(path: GenericPath) -> None:
     """Safely make a directory, do not fail if it already exists or is created during execution.
 
     :type path:     string
@@ -119,7 +143,7 @@ def safe_makedirs(path):
                 raise
 
 
-def safe_relpath(path):
+def safe_relpath(path: GenericPath) -> bool:
     """Determine whether a relative path references a path outside its root.
 
     This is a path computation: the filesystem is not accessed to confirm the existence or nature of ``path``.
@@ -152,7 +176,7 @@ def safe_walk(path, allowlist=None):
 
         if allowlist and i % WALK_MAX_DIRS == 0:
             raise RuntimeError(
-                "Breaking out of walk of %s after %s iterations (most likely infinite symlink recursion) at: %s"
+                "Breaking out of walk of %r after %s iterations (most likely infinite symlink recursion) at: %r"
                 % (path, WALK_MAX_DIRS, dirpath)
             )
         _prefix = partial(join, dirpath)
@@ -176,7 +200,7 @@ def safe_walk(path, allowlist=None):
         yield (dirpath, dirnames, filenames)
 
 
-def unsafe_walk(path, allowlist=None, username=None):
+def unsafe_walk(path: GenericPath, allowlist: AllowListT = None, username: Optional[str] = None):
     """Walk a path and ensure that none of its contents are symlinks outside the path.
 
     It is assumed that ``path`` itself has already been validated e.g. with :func:`safe_relpath` or
@@ -200,7 +224,7 @@ def unsafe_walk(path, allowlist=None, username=None):
     return unsafe_paths
 
 
-def __path_permission_for_user(path, username):
+def __path_permission_for_user(path: GenericPath, username: str) -> bool:
     """
     :type path:         string
     :param path:        a directory or file to check
@@ -227,7 +251,7 @@ def __path_permission_for_user(path, username):
     return False
 
 
-def full_path_permission_for_user(prefix, path, username, skip_prefix=False):
+def full_path_permission_for_user(prefix, path, username: str, skip_prefix=False):
     """
     Assuming username is identical to the os username, this checks that the
     given user can read the specified path by checking the file permission
@@ -260,7 +284,7 @@ def full_path_permission_for_user(prefix, path, username, skip_prefix=False):
     return can_read
 
 
-def joinext(root, ext):
+def joinext(root: str, ext: str) -> str:
     """
     Roughly the reverse of os.path.splitext.
 
@@ -274,7 +298,7 @@ def joinext(root, ext):
     return extsep.join((root.rstrip(extsep), ext.lstrip(extsep)))
 
 
-def has_ext(path, ext, aliases=False, ignore=None):
+def has_ext(path: AnyStr, ext: str, aliases=False, ignore=None):
     """
     Determine whether ``path`` has extension ``ext``
 
@@ -297,7 +321,7 @@ def has_ext(path, ext, aliases=False, ignore=None):
         return _ext == ext
 
 
-def get_ext(path, ignore=None, canonicalize=True):
+def get_ext(path: AnyStr, ignore=None, canonicalize=True) -> str:
     """
     Return the extension of ``path``
 
@@ -335,7 +359,7 @@ class Extensions(dict):
                 return v
         raise KeyError(key)
 
-    def canonicalize(self, ext):
+    def canonicalize(self, ext: str) -> str:
         # shouldn't raise an IndexError because it should raise a KeyError first
         return self[ext][0]
 
@@ -373,7 +397,7 @@ def external_chown(path, pwent, external_chown_script, description="file"):
         return False
 
 
-def __listify(item):
+def __listify(item) -> Union[list, tuple]:
     """A non-splitting version of :func:`galaxy.util.listify`."""
     if not item:
         return []
@@ -386,7 +410,7 @@ def __listify(item):
 # helpers
 
 
-def __walk(path):
+def __walk(path: GenericPath) -> Iterator[GenericPath]:
     for dirpath, dirnames, filenames in walk(path):
         for name in dirnames:
             yield join(dirpath, name)
@@ -394,7 +418,9 @@ def __walk(path):
             yield join(dirpath, name)
 
 
-def __contains(prefix, path, allowlist=None, real=None):
+def __contains(
+    prefix: GenericPath, path: GenericPath, allowlist: AllowListT = None, real: Optional[GenericPath] = None
+):
     real = real or realpath(join(prefix, path))
     yield not relpath(real, prefix).startswith(pardir)
     for aldir in allowlist or []:
@@ -402,20 +428,20 @@ def __contains(prefix, path, allowlist=None, real=None):
         yield not relpath(real, aldir).startswith(pardir)
 
 
-def __ext_strip_sep(ext):
+def __ext_strip_sep(ext: str) -> str:
     return ext.lstrip(extsep)
 
 
-def __splitext_no_sep(path):
-    path = galaxy.util.unicodify(path)
-    return (path.rsplit(extsep, 1) + [""])[0:2]
+def __splitext_no_sep(path: AnyStr) -> List[str]:
+    path_as_str = galaxy.util.unicodify(path)
+    return (path_as_str.rsplit(extsep, 1) + [""])[0:2]
 
 
-def __splitext_ignore(path, ignore=None):
+def __splitext_ignore(path: AnyStr, ignore: Optional[Union[List[str], Tuple[str]]] = None) -> Tuple[str, str]:
     # note: unlike os.path.splitext this strips extsep from ext
-    ignore = map(__ext_strip_sep, __listify(ignore))
+    ignore_map = map(__ext_strip_sep, __listify(ignore))
     root, ext = __splitext_no_sep(path)
-    if ext in ignore:
+    if ext in ignore_map:
         new_path = path[0 : (-len(ext) - 1)]
         root, ext = __splitext_no_sep(new_path)
 

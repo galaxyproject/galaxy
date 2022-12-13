@@ -88,7 +88,7 @@ steps:
       intro: "You can filter your history by typing your search term in here. Galaxy supports more advanced filters that can be seen here."
       textinsert: ""
 
-    - element: "#current-history-panel [title='Show history options']"
+    - element: "#current-history-panel [data-description='history options']"
       title: "History Options"
       intro: "In the History menu you will find a lot more useful History options."
       postclick: true

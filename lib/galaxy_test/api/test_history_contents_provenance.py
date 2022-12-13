@@ -10,6 +10,8 @@ ALL_PROV_KEYS = MINIMAL_PROV_KEYS + OTHER_PROV_KEYS
 
 
 class TestProvenance(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)

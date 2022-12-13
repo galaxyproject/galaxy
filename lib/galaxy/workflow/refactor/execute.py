@@ -56,6 +56,7 @@ class WorkflowRefactorExecutor:
         self.raw_workflow_description = raw_workflow_description
         self.workflow = workflow
         self.module_injector = module_injector
+        self.module_injector.inject_all(workflow, ignore_tool_missing_exception=True)
 
     def refactor(self, refactor_request: RefactorActions):
         action_executions = []
@@ -276,7 +277,7 @@ class WorkflowRefactorExecutor:
                     return NO_REPLACEMENT
 
                 if value == target_value:
-                    target_tool_inputs.append((step.order_index, input, prefixed_name))
+                    target_tool_inputs.append((step.order_index, input, prefixed_name))  # noqa: B023
                     replace_tool_state = True
                     return runtime_to_json(ConnectedValue())
                 else:
@@ -459,28 +460,29 @@ class WorkflowRefactorExecutor:
         return self._inject(step, execution)
 
     def _inject(self, step, execution):
-        # inject tool state into module, capture upgrade messages that result
+        # compute runtime state, capture upgrade messages that result
         if not hasattr(step, "module"):
             self.module_injector.inject(step)
-            if getattr(step, "upgrade_messages", None):
-                for key, value in step.upgrade_messages.items():
-                    message = RefactorActionExecutionMessage(
-                        message=value,
-                        message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
-                        input_name=key,
-                        step_label=step.label,
-                        order_index=step.order_index,
-                    )
-                    execution.messages.append(message)
-            if getattr(step.module, "version_changes", None):
-                for version_change in step.module.version_changes:
-                    message = RefactorActionExecutionMessage(
-                        message=version_change,
-                        message_type=RefactorActionExecutionMessageTypeEnum.tool_version_change,
-                        step_label=step.label,
-                        order_index=step.order_index,
-                    )
-                    execution.messages.append(message)
+        self.module_injector.compute_runtime_state(step)
+        if getattr(step, "upgrade_messages", None):
+            for key, value in step.upgrade_messages.items():
+                message = RefactorActionExecutionMessage(
+                    message=value,
+                    message_type=RefactorActionExecutionMessageTypeEnum.tool_state_adjustment,
+                    input_name=key,
+                    step_label=step.label,
+                    order_index=step.order_index,
+                )
+                execution.messages.append(message)
+        if getattr(step.module, "version_changes", None):
+            for version_change in step.module.version_changes:
+                message = RefactorActionExecutionMessage(
+                    message=version_change,
+                    message_type=RefactorActionExecutionMessageTypeEnum.tool_version_change,
+                    step_label=step.label,
+                    order_index=step.order_index,
+                )
+                execution.messages.append(message)
 
         return step
 

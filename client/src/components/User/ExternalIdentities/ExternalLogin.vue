@@ -1,6 +1,8 @@
 <template>
     <div>
-        <b-alert :show="messageShow" :variant="messageVariant" v-html="messageText" />
+        <b-alert :show="messageShow" :variant="messageVariant">
+            {{ messageText }}
+        </b-alert>
         <b-form id="externalLogin">
             <!-- OIDC login-->
             <hr class="my-4" />

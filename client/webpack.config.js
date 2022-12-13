@@ -6,6 +6,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
+const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -34,17 +35,17 @@ module.exports = (env = {}, argv = {}) => {
     const buildconfig = {
         mode: targetEnv,
         entry: {
-            login: ["polyfills", "bundleEntries", "entry/login"],
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
-            admin: ["polyfills", "bundleEntries", "entry/admin"],
             generic: ["polyfills", "bundleEntries", "entry/generic"],
+            toolshed: ["polyfills", "bundleToolshed", "entry/generic"],
         },
         output: {
             path: path.join(__dirname, "../", "/static/dist"),
             filename: "[name].bundled.js",
         },
         resolve: {
-            extensions: [".js", ".json", ".vue", ".scss"],
+            plugins: [new TsconfigPathsPlugin({ extensions: [".ts", ".js", ".json", ".vue", ".scss"] })],
+            extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
@@ -55,6 +56,7 @@ module.exports = (env = {}, argv = {}) => {
                 assert: require.resolve("assert/"),
             },
             alias: {
+                vue$: path.resolve(__dirname, "node_modules/vue/dist/vue.esm.js"),
                 jquery$: `${libsBase}/jquery.custom.js`,
                 jqueryVendor$: `${libsBase}/jquery/jquery.js`,
                 storemodern$: "store/dist/store.modern.js",
@@ -89,6 +91,15 @@ module.exports = (env = {}, argv = {}) => {
                 {
                     test: /\.vue$/,
                     loader: "vue-loader",
+                },
+                {
+                    test: /\.tsx?$/,
+                    exclude: /node_modules/,
+                    loader: "ts-loader",
+                    options: {
+                        configFile: "tsconfig.webpack.json",
+                        appendTsSuffixTo: [/\.vue$/],
+                    },
                 },
                 {
                     test: /\.mjs$/,
@@ -126,6 +137,18 @@ module.exports = (env = {}, argv = {}) => {
                             loader: "expose-loader",
                             options: {
                                 exposes: "bundleEntries",
+                            },
+                        },
+                    ],
+                },
+                // Attaches the bundleToolshed to the window object.
+                {
+                    test: `${scriptsBase}/bundleToolshed`,
+                    use: [
+                        {
+                            loader: "expose-loader",
+                            options: {
+                                exposes: "bundleToolshed",
                             },
                         },
                     ],
@@ -197,6 +220,7 @@ module.exports = (env = {}, argv = {}) => {
             new webpack.DefinePlugin({
                 __targetEnv__: JSON.stringify(targetEnv),
                 __buildTimestamp__: JSON.stringify(buildDate.toISOString()),
+                __license__: JSON.stringify(require("./package.json").license),
             }),
             new VueLoaderPlugin(),
             new MiniCssExtractPlugin({

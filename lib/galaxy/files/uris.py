@@ -23,6 +23,7 @@ from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
 )
+from galaxy.util.drs import fetch_drs_to_file
 
 if TYPE_CHECKING:
     from galaxy.files import ConfiguredFileSources
@@ -36,7 +37,7 @@ def stream_url_to_str(
 ) -> str:
     tmp_file = stream_url_to_file(path, file_sources=file_sources, prefix=prefix)
     try:
-        with open(tmp_file, "r") as f:
+        with open(tmp_file) as f:
             return f.read()
     finally:
         os.remove(tmp_file)
@@ -55,6 +56,10 @@ def stream_url_to_file(
         with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
             temp_name = temp.name
         file_source_path.file_source.realize_to(file_source_path.path, temp_name, user_context=user_context)
+    elif path.startswith("drs://"):
+        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
+            temp_name = temp.name
+            fetch_drs_to_file(path, temp_name)
     elif path.startswith("base64://"):
         with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
             temp_name = temp.name

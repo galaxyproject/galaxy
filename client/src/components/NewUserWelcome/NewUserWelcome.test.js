@@ -1,10 +1,16 @@
 import { shallowMount, mount } from "@vue/test-utils";
-import NewUserWelcome from "./NewUserWelcome.vue";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import testData from "./testData.json";
+import NewUserWelcome from "./NewUserWelcome.vue";
+import { getResource } from "./getResource";
 
 const localVue = getLocalVue();
 import MockConfigProvider from "../providers/MockConfigProvider";
+
+jest.mock("./getResource");
+
+// mock resource connector
+getResource.mockImplementation(() => null);
 
 describe("New user first view", () => {
     let wrapper;
@@ -12,7 +18,7 @@ describe("New user first view", () => {
 
     beforeEach(async () => {
         propsData = {
-            newUserDict: testData,
+            newUser: testData,
         };
         wrapper = mount(NewUserWelcome, {
             propsData,
@@ -40,7 +46,7 @@ describe("New user first view", () => {
 
     beforeEach(async () => {
         propsData = {
-            newUserDict: testData,
+            newUser: testData,
         };
         wrapper = shallowMount(NewUserWelcome, {
             propsData,
@@ -62,7 +68,7 @@ describe("New user first view", () => {
 
     beforeEach(async () => {
         propsData = {
-            newUserDict: testData,
+            newUser: testData,
         };
         wrapper = shallowMount(NewUserWelcome, {
             propsData,

@@ -2,7 +2,7 @@
     <div class="history-size my-1 d-flex justify-content-between">
         <b-button
             v-b-tooltip.hover
-            title="Access Dashboard"
+            title="History Size"
             variant="link"
             size="sm"
             class="rounded-0 text-decoration-none"
@@ -45,8 +45,8 @@
             </b-button>
             <b-button
                 v-b-tooltip.hover
-                :title="'Last refreshed ' + diffToNow"
-                variant="link"
+                :title="reloadButtonTitle"
+                :variant="reloadButtonVariant"
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="reloadContents()">
@@ -57,7 +57,6 @@
 </template>
 
 <script>
-import { backboneRoute } from "components/plugins/legacyNavigation";
 import prettyBytes from "pretty-bytes";
 import { formatDistanceToNowStrict } from "date-fns";
 import { usesDetailedHistoryMixin } from "./usesDetailedHistoryMixin.js";
@@ -71,12 +70,14 @@ export default {
     mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },
+        isWatching: { type: Boolean, default: false },
         lastChecked: { type: Date, default: null },
     },
     data() {
         return {
-            diffToNow: 0,
             reloadButtonCls: "fa fa-sync",
+            reloadButtonTitle: "",
+            reloadButtonVariant: "link",
         };
     },
     mounted() {
@@ -86,13 +87,22 @@ export default {
     },
     methods: {
         onDashboard() {
-            backboneRoute("/storage");
+            this.$router.push("/storage");
         },
         setFilter(newFilterText) {
             this.$emit("update:filter-text", newFilterText);
         },
         updateTime() {
-            this.diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });
+            const diffToNow = formatDistanceToNowStrict(this.lastChecked, { addSuffix: true, includeSeconds: true });
+            const diffToNowSec = Date.now() - this.lastChecked;
+            // if history isn't being watched or hasn't been watched/polled for over 2 minutes
+            if (!this.isWatching || diffToNowSec > 120000) {
+                this.reloadButtonTitle = "Last refreshed " + diffToNow + ". Consider reloading the page.";
+                this.reloadButtonVariant = "danger";
+            } else {
+                this.reloadButtonTitle = "Last refreshed " + diffToNow;
+                this.reloadButtonVariant = "link";
+            }
         },
         async reloadContents() {
             this.$emit("reloadContents");

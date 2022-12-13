@@ -15,7 +15,9 @@ from galaxy_test.driver.integration_setup import (
 )
 
 
-class PosixFileSourceIntegrationTestCase(PosixFileSourceSetup, integration_util.IntegrationTestCase):
+class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         PosixFileSourceSetup.handle_galaxy_config_kwds(

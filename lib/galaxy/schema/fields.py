@@ -1,6 +1,7 @@
 import re
 
 from pydantic import Field
+from typing_extensions import get_args
 
 from galaxy.security.idencoding import IdEncodingHelper
 
@@ -27,13 +28,22 @@ class BaseDatabaseIdField:
         return v
 
     @classmethod
+    def ensure_valid(cls, v: str):
+        len_v = len(v)
+        if len_v % ENCODED_ID_LENGTH_MULTIPLE:
+            raise ValueError("Invalid id length, must be multiple of 16")
+        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
+        if not m:
+            raise ValueError("Invalid characters in encoded ID")
+
+    @classmethod
     def __modify_schema__(cls, field_schema):
         # __modify_schema__ should mutate the dict it receives in place,
         # the returned value will be ignored
         field_schema.update(
-            min_length=16,
+            minLength=16,
             pattern="[0-9a-fA-F]+",
-            examples=["0123456789ABCDEF"],
+            example=["0123456789ABCDEF"],
             type="string",
         )
 
@@ -46,16 +56,28 @@ class DecodedDatabaseIdField(int, BaseDatabaseIdField):
     def validate(cls, v):
         if not isinstance(v, str):
             raise TypeError("String required")
-        if v.startswith("F"):
-            # Library Folder ids start with an additional "F"
-            v = v[1:]
-        len_v = len(v)
-        if len_v % ENCODED_ID_LENGTH_MULTIPLE:
-            raise ValueError("Invalid id length, must be multiple of 16")
-        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
-        if not m:
-            raise ValueError("Invalid characters in encoded ID")
+        cls.ensure_valid(v)
         return cls(cls.security.decode_id(v))
+
+    @classmethod
+    def encode(cls, v) -> str:
+        return cls.security.encode_id(v)
+
+
+class LibraryFolderDatabaseIdField(int, BaseDatabaseIdField):
+    @classmethod
+    def validate(cls, v):
+        if not isinstance(v, str):
+            raise TypeError("String required")
+        if not v.startswith("F"):
+            raise TypeError("Invalid library folder ID. Folder IDs must start with an 'F'")
+        v = v[1:]
+        cls.ensure_valid(v)
+        return cls(cls.security.decode_id(v))
+
+    @classmethod
+    def encode(cls, v) -> str:
+        return f"F{cls.security.encode_id(v)}"
 
 
 class EncodedDatabaseIdField(str, BaseDatabaseIdField):
@@ -65,28 +87,33 @@ class EncodedDatabaseIdField(str, BaseDatabaseIdField):
             return cls(cls.security.encode_id(v))
         if not isinstance(v, str):
             raise TypeError("String required")
-        if v.startswith("F"):
-            # Library Folder ids start with an additional "F"
-            len_v = len(v) - 1
-        else:
-            len_v = len(v)
-        if len_v % ENCODED_ID_LENGTH_MULTIPLE:
-            raise ValueError("Invalid id length, must be multiple of 16")
-        m = ENCODED_DATABASE_ID_PATTERN.fullmatch(v.lower())
-        if not m:
-            raise ValueError("Invalid characters in encoded ID")
+        cls.ensure_valid(v)
         return cls(v)
 
+    @classmethod
+    def decode(cls, v) -> int:
+        return cls.security.decode_id(v)
 
-def ModelClassField(class_name: str) -> str:
+
+def literal_to_value(arg):
+    val = get_args(arg)
+    if not val:
+        return arg
+    if len(val) > 1:
+        raise Exception("Can't extract default argument for unions")
+    return val[0]
+
+
+def ModelClassField(default_value=...):
     """Represents a database model class name annotated as a constant
     pydantic Field.
     :param class_name: The name of the database class.
     :return: A constant pydantic Field with default annotations for model classes.
     """
     return Field(
-        class_name,
+        literal_to_value(default_value),
         title="Model class",
         description="The name of the database model class.",
-        const=True,  # Make this field constant
+        const=True,
+        mark_required_in_schema=True,
     )

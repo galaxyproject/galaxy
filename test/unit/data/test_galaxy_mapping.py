@@ -1,7 +1,6 @@
 import collections
 import os
 import random
-import unittest
 import uuid
 from tempfile import NamedTemporaryFile
 from typing import List
@@ -23,6 +22,7 @@ from galaxy.model.orm.util import (
     get_object_session,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.util.unittest import TestCase
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
 datatypes_registry.load_datatypes()
@@ -37,7 +37,7 @@ skip_if_not_postgres_base = pytest.mark.skipif(
 )
 
 
-class BaseModelTestCase(unittest.TestCase):
+class BaseModelTestCase(TestCase):
     model: mapping.GalaxyModelMapping
 
     @classmethod
@@ -76,7 +76,7 @@ class BaseModelTestCase(unittest.TestCase):
         cls.model.session.expunge_all()
 
 
-class MappingTests(BaseModelTestCase):
+class TestMappings(BaseModelTestCase):
     def test_ratings(self):
         user_email = "rater@example.com"
         u = model.User(email=user_email, password="password")
@@ -239,7 +239,7 @@ class MappingTests(BaseModelTestCase):
         for i in range(elements):
             assert c1[i] == dces[i]
 
-    def test_dataset_instance_order(self):
+    def test_dataset_instance_order(self) -> None:
         u = model.User(email="mary@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
         elements = []
@@ -310,7 +310,7 @@ class MappingTests(BaseModelTestCase):
             .first()
             .collection
         )
-        self.assertEqual(len(loaded_dataset_collection.elements), 2)
+        assert len(loaded_dataset_collection.elements) == 2
         assert loaded_dataset_collection.collection_type == "pair"
         assert loaded_dataset_collection["left"] == dce1
         assert loaded_dataset_collection["right"] == dce2
@@ -332,7 +332,7 @@ class MappingTests(BaseModelTestCase):
 
         # TODO:
         # loaded_dataset_collection = self.query( model.DatasetCollection ).filter( model.DatasetCollection.name == "LibraryCollectionTest1" ).first()
-        # self.assertEqual(len(loaded_dataset_collection.datasets), 2)
+        # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
 
     def test_nested_collection_attributes(self):
@@ -485,19 +485,13 @@ class MappingTests(BaseModelTestCase):
 
         # Make some changes and commit them
         u = model.User(email="james@foo.bar.baz", password="password")
-        # gs = model.GalaxySession()
         h1 = model.History(name="History 1", user=u)
-        # h1.queries.append( model.Query( "h1->q1" ) )
-        # h1.queries.append( model.Query( "h1->q2" ) )
         h2 = model.History(name=("H" * 1024))
         self.persist(u, h1, h2)
-        # q1 = model.Query( "h2->q1" )
         metadata = dict(chromCol=1, startCol=2, endCol=3)
         d1 = model.HistoryDatasetAssociation(
             extension="interval", metadata=metadata, history=h2, create_dataset=True, sa_session=self.model.session
         )
-        # h2.queries.append( q1 )
-        # h2.queries.append( model.Query( "h2->q2" ) )
         self.persist(d1)
 
         # Check
@@ -509,8 +503,8 @@ class MappingTests(BaseModelTestCase):
         assert len(user.histories) == 1
         assert user.histories[0].name == "History 1"
         hists = self.model.session.query(model.History).all()
-        hist0 = [history for history in hists if history.name == "History 1"][0]
-        hist1 = [history for history in hists if history.name == "H" * 255][0]
+        hist0 = [history for history in hists if history.id == h1.id][0]
+        hist1 = [history for history in hists if history.id == h2.id][0]
         assert hist0.name == "History 1"
         assert hist1.name == ("H" * 255)
         assert hist0.user == user
@@ -518,7 +512,7 @@ class MappingTests(BaseModelTestCase):
         assert hist1.datasets[0].metadata.chromCol == 1
         # The filename test has moved to objectstore
         # id = hist1.datasets[0].id
-        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + ( "/dataset_%d.dat" % id )
+        # assert hist1.datasets[0].file_name == os.path.join( "/tmp", *directory_hash_id( id ) ) + f"/dataset_{id}.dat"
         # Do an update and check
         hist1.name = "History 2b"
         self.expunge()
@@ -570,7 +564,7 @@ class MappingTests(BaseModelTestCase):
         task.add_metric("gx", "galaxy_slots", 5)
         task.add_metric("system", "system_name", "localhost")
 
-        big_value = ":".join("%d" % i for i in range(2000))
+        big_value = ":".join(f"{i}" for i in range(2000))
         task.add_metric("env", "BIG_PATH", big_value)
         self.persist(task)
         # Ensure big values truncated
@@ -606,7 +600,7 @@ class MappingTests(BaseModelTestCase):
             )
             return list(map(lambda hda: hda.name, history.contents_iter(**kwds)))
 
-        self.assertEqual(contents_iter_names(), ["1", "2", "3", "4"])
+        assert contents_iter_names() == ["1", "2", "3", "4"]
         assert contents_iter_names(deleted=False) == ["1", "2"]
         assert contents_iter_names(visible=True) == ["1", "3"]
         assert contents_iter_names(visible=False) == ["2", "4"]
@@ -997,7 +991,7 @@ class MappingTests(BaseModelTestCase):
 
 
 @skip_if_not_postgres_base
-class PostgresMappingTests(MappingTests):
+class TestPostgresMappings(TestMappings):
     @classmethod
     def _db_uri(cls):
         base = os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE")
@@ -1050,9 +1044,3 @@ class MockObjectStore:
 
     def update_from_file(self, *arg, **kwds):
         pass
-
-
-def get_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(MappingTests("test_basic"))
-    return suite

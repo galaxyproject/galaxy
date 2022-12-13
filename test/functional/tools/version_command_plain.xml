@@ -18,6 +18,9 @@ cp '$input' '$output'
             <assert_command>
                 <not_has_text text="VERSION"/>
             </assert_command>
+            <assert_command_version>
+                <has_text text="4.0.0" />
+            </assert_command_version>
         </test>
     </tests>
 </tool>

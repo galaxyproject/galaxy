@@ -15,7 +15,7 @@ from galaxy.managers.workflows import (
     WorkflowsManager,
 )
 from galaxy.schema.schema import WorkflowIndexQueryPayload
-from galaxy.tool_shed.tool_shed_registry import Registry
+from galaxy.util.tool_shed.tool_shed_registry import Registry
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
@@ -98,6 +98,41 @@ class WorkflowsService(ServiceBase):
                 workflows.append(workflows_by_toolshed[repo_tag])
             return workflows, total_matches
         return rval, total_matches
+
+    def delete(self, trans, workflow_id):
+        workflow_to_delete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
+        self._workflows_manager.check_security(trans, workflow_to_delete)
+        self._workflows_manager.delete(workflow_to_delete)
+
+    def undelete(self, trans, workflow_id):
+        workflow_to_undelete = self._workflows_manager.get_stored_workflow(trans, workflow_id)
+        self._workflows_manager.check_security(trans, workflow_to_undelete)
+        self._workflows_manager.undelete(workflow_to_undelete)
+
+    def get_versions(self, trans, workflow_id, instance):
+        stored_workflow = self._workflows_manager.get_stored_accessible_workflow(
+            trans, workflow_id, by_stored_id=not instance
+        )
+        return [
+            {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
+            for i, w in enumerate(reversed(stored_workflow.workflows))
+        ]
+
+    def get_workflow_menu(self, trans, payload):
+        ids_in_menu = [x.stored_workflow_id for x in trans.user.stored_workflow_menu_entries]
+        workflows = self._get_workflows_list(
+            trans,
+            payload,
+        )
+        return {"ids_in_menu": ids_in_menu, "workflows": workflows}
+
+    def _get_workflows_list(
+        self,
+        trans: ProvidesUserContext,
+        payload,
+    ):
+        workflows, _ = self.index(trans, payload)
+        return workflows
 
     def __get_full_shed_url(self, url):
         for shed_url in self._tool_shed_registry.tool_sheds.values():

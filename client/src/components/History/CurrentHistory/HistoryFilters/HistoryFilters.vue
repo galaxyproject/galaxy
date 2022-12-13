@@ -17,11 +17,16 @@
                     :pressed="showAdvanced"
                     :variant="showAdvanced ? 'info' : 'secondary'"
                     data-description="show advanced filter toggle"
+                    aria-label="Show advanced filter"
                     @click="onToggle">
                     <icon v-if="showAdvanced" icon="angle-double-up" />
                     <icon v-else icon="angle-double-down" />
                 </b-button>
-                <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
+                <b-button
+                    size="sm"
+                    aria-label="Clear filters"
+                    data-description="clear filters"
+                    @click="updateFilter('')">
                     <icon icon="times" />
                 </b-button>
             </b-input-group-append>
@@ -77,11 +82,10 @@
 </template>
 
 <script>
-import { getFilters, toAlias } from "store/historyStore/model/filtering";
 import DebouncedInput from "components/DebouncedInput";
-import { STATES } from "components/History/Content/model/states";
-import { getFilterText } from "./filterConversion";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
+import { STATES } from "components/History/Content/model/states";
+import { getFilters, getFilterText, toAlias } from "utils/filterConversion";
 
 export default {
     components: {

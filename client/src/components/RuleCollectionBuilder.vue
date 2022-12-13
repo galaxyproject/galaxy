@@ -1,5 +1,5 @@
 <template>
-    <state-div v-if="state == 'build'">
+    <state-div v-if="state == 'build'" class="rule-collection-builder">
         <!-- Different instructions if building up from individual datasets vs.
         initial data import.-->
         <rule-modal-header v-if="ruleView == 'source'"
@@ -529,7 +529,7 @@
             </b-row>
         </rule-modal-footer>
     </state-div>
-    <state-div v-else-if="state == 'wait'">
+    <state-div v-else-if="state == 'wait'" class="rule-collection-builder">
         <rule-modal-header v-if="importType == 'datasets'">
             {{
                 l(
@@ -548,7 +548,7 @@
             <b-button class="creator-cancel-btn" tabindex="-1" @click="cancel">{{ l("Close") }}</b-button>
         </rule-modal-footer>
     </state-div>
-    <state-div v-else-if="state == 'error'">
+    <state-div v-else-if="state == 'error'" class="rule-collection-builder">
         <!-- TODO: steal styling from paired collection builder warning... -->
         <rule-modal-header>A problem was encountered.</rule-modal-header>
         <rule-modal-middle>
@@ -574,11 +574,11 @@ import _l from "utils/localization";
 import { refreshContentsWrapper } from "utils/data";
 import HotTable from "@handsontable/vue";
 import UploadUtils from "mvc/upload/upload-utils";
-import JobStatesModel from "mvc/history/job-states-model";
-import RuleDefs from "mvc/rules/rule-definitions";
+import JobStatesModel from "utils/job-states-model";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import Select2 from "components/Select2";
+import RuleDefs from "components/RuleBuilder/rule-definitions";
 import ColumnSelector from "components/RuleBuilder/ColumnSelector";
 import RegularExpressionInput from "components/RuleBuilder/RegularExpressionInput";
 import RuleDisplay from "components/RuleBuilder/RuleDisplay";
@@ -1148,6 +1148,13 @@ export default {
                 this.addColumnRegexReplacement = null;
             }
         },
+        addColumnRegexGroupCount: function (oldVal, newVal) {
+            if (oldVal != newVal) {
+                if (newVal < 1) {
+                    this.addColumnRegexGroupCount = 1;
+                }
+            }
+        },
     },
     created() {
         if (this.elementsType !== "collection_contents") {
@@ -1184,10 +1191,10 @@ export default {
                 });
 
             // TODO: provider...
-            UploadUtils.getUploadGenomes(UploadUtils.DEFAULT_GENOME)
-                .then((genomes) => {
-                    this.genomes = genomes;
-                    this.genome = UploadUtils.DEFAULT_GENOME;
+            UploadUtils.getUploadDbKeys(UploadUtils.DEFAULT_DBKEY)
+                .then((dbKeys) => {
+                    this.genomes = dbKeys;
+                    this.genome = UploadUtils.DEFAULT_DBKEY;
                 })
                 .catch((err) => {
                     console.log("Error in RuleCollectionBuilder, unable to load genomes", err);
@@ -1254,7 +1261,7 @@ export default {
                 if (this.extension !== UploadUtils.DEFAULT_EXTENSION) {
                     asJson.extension = this.extension;
                 }
-                if (this.genome !== UploadUtils.DEFAULT_GENOME) {
+                if (this.genome !== UploadUtils.DEFAULT_DBKEY) {
                     asJson.genome = this.genome;
                 }
             }
@@ -1750,160 +1757,162 @@ export default {
 </script>
 
 <style src="../../node_modules/handsontable/dist/handsontable.full.css"></style>
-<style>
-.table-column {
-    width: 100%;
-    overflow: hidden;
-}
-.select2-container {
-    min-width: 60px;
-}
-.vertical #hot-table {
-    width: 100%;
-    overflow: hidden;
-    height: 400px;
-}
-.horizontal #hot-table {
-    width: 100%;
-    overflow: hidden;
-    height: 250px;
-}
-.rule-builder-body {
-    height: 400px;
-}
-.rule-column.vertical {
-    height: 400px;
-}
-.rule-column.horizontal {
-    height: 150px;
-}
-.rules-container-full {
-    width: 100%;
-    height: 400px;
-}
-.rules-container {
-    border: 1px dashed #ccc;
-    padding: 5px;
-}
-.rules-container-vertical {
-    width: 300px;
-    height: 400px;
-}
-.rules-container-horizontal {
-    width: 100%;
-    height: 150px;
-}
-.rules-container .title {
-    font-weight: bold;
-}
-.rule-summary {
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-.rule-edit-buttons {
-    margin: 5px;
-}
-.rules {
-    flex-grow: 1;
-    overflow-y: scroll;
-    padding: 0px;
-}
-.rule-source {
-    height: 400px;
-}
-.rules li {
-    list-style-type: circle;
-    list-style-position: inside;
-    padding: 5px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-}
-.rule-column-selector li {
-    list-style-type: circle;
-    list-style-position: inside;
-    padding: 5px;
-    padding-top: 0px;
-    padding-bottom: 0px;
-}
-.rules .rule-error {
-    display: block;
-    margin-left: 10px;
-    font-style: italic;
-    color: red;
-}
-.rule-warning {
-    display: block;
-    margin-left: 10px;
-    font-style: italic;
-    color: #e28809;
-}
-.rule-summary .title {
-    font-size: 1.1em;
-}
-.rule-highlight {
-    font-style: italic;
-    font-weight: bold;
-}
-.rules-buttons {
-}
-.rule-footer-inputs label {
-    padding-left: 20px;
-    align-self: baseline;
-}
-.rule-footer-inputs .select2-container {
-    align-self: baseline;
-}
-.rule-footer-inputs {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    align-items: baseline;
-}
-.rule-footer-inputs input {
-    align-self: baseline;
-}
-.extension-select {
-    flex: 1;
-    max-width: 120px;
-    min-width: 60px;
-}
-.genome-select {
-    flex: 1;
-    max-width: 300px;
-    min-width: 120px;
-}
-.collection-name {
-    flex: 1;
-    min-width: 120px;
-    max-width: 500px;
-}
-.rule-footer-genome-group {
-    flex: 2;
-    display: flex;
-}
-.rule-footer-extension-group {
-    flex: 1;
-    display: flex;
-}
-.rule-footer-name-group {
-    flex: 3;
-    display: flex;
-    flex-direction: row-reverse;
-}
-.fa-edit,
-.fa-times,
-.fa-wrench {
-    cursor: pointer;
-}
-.fa-history {
-    cursor: pointer;
-}
-.menu-option {
-    padding-left: 5px;
-}
-.alert-area li {
-    list-style: circle;
-    margin-left: 32px;
+<style lang="scss">
+.rule-collection-builder {
+    .table-column {
+        width: 100%;
+        overflow: hidden;
+    }
+    .select2-container {
+        min-width: 60px;
+    }
+    .vertical #hot-table {
+        width: 100%;
+        overflow: hidden;
+        height: 400px;
+    }
+    .horizontal #hot-table {
+        width: 100%;
+        overflow: hidden;
+        height: 250px;
+    }
+    .rule-builder-body {
+        height: 400px;
+    }
+    .rule-column.vertical {
+        height: 400px;
+    }
+    .rule-column.horizontal {
+        height: 150px;
+    }
+    .rules-container-full {
+        width: 100%;
+        height: 400px;
+    }
+    .rules-container {
+        border: 1px dashed #ccc;
+        padding: 5px;
+    }
+    .rules-container-vertical {
+        width: 300px;
+        height: 400px;
+    }
+    .rules-container-horizontal {
+        width: 100%;
+        height: 150px;
+    }
+    .rules-container .title {
+        font-weight: bold;
+    }
+    .rule-summary {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+    .rule-edit-buttons {
+        margin: 5px;
+    }
+    .rules {
+        flex-grow: 1;
+        overflow-y: scroll;
+        padding: 0px;
+    }
+    .rule-source {
+        height: 400px;
+    }
+    .rules li {
+        list-style-type: circle;
+        list-style-position: inside;
+        padding: 5px;
+        padding-top: 0px;
+        padding-bottom: 0px;
+    }
+    .rule-column-selector li {
+        list-style-type: circle;
+        list-style-position: inside;
+        padding: 5px;
+        padding-top: 0px;
+        padding-bottom: 0px;
+    }
+    .rules .rule-error {
+        display: block;
+        margin-left: 10px;
+        font-style: italic;
+        color: red;
+    }
+    .rule-warning {
+        display: block;
+        margin-left: 10px;
+        font-style: italic;
+        color: #e28809;
+    }
+    .rule-summary .title {
+        font-size: 1.1em;
+    }
+    .rule-highlight {
+        font-style: italic;
+        font-weight: bold;
+    }
+    .rules-buttons {
+    }
+    .rule-footer-inputs label {
+        padding-left: 20px;
+        align-self: baseline;
+    }
+    .rule-footer-inputs .select2-container {
+        align-self: baseline;
+    }
+    .rule-footer-inputs {
+        display: flex;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        align-items: baseline;
+    }
+    .rule-footer-inputs input {
+        align-self: baseline;
+    }
+    .extension-select {
+        flex: 1;
+        max-width: 120px;
+        min-width: 60px;
+    }
+    .genome-select {
+        flex: 1;
+        max-width: 300px;
+        min-width: 120px;
+    }
+    .collection-name {
+        flex: 1;
+        min-width: 120px;
+        max-width: 500px;
+    }
+    .rule-footer-genome-group {
+        flex: 2;
+        display: flex;
+    }
+    .rule-footer-extension-group {
+        flex: 1;
+        display: flex;
+    }
+    .rule-footer-name-group {
+        flex: 3;
+        display: flex;
+        flex-direction: row-reverse;
+    }
+    .fa-edit,
+    .fa-times,
+    .fa-wrench {
+        cursor: pointer;
+    }
+    .fa-history {
+        cursor: pointer;
+    }
+    .menu-option {
+        padding-left: 5px;
+    }
+    .alert-area li {
+        list-style: circle;
+        margin-left: 32px;
+    }
 }
 </style>

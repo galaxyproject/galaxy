@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services";
 import LibraryDataset from "./LibraryDataset";
@@ -29,7 +29,7 @@ const mockDatatypesProvider = {
         });
     },
 };
-const mockGenomeProvider = {
+const mockDbKeyProvider = {
     render() {
         return this.$scopedSlots.default({
             loading: false,
@@ -72,7 +72,7 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = f
         propsData,
         stubs: {
             DatatypesProvider: mockDatatypesProvider,
-            GenomeProvider: mockGenomeProvider,
+            DbKeyProvider: mockDbKeyProvider,
             CurrentUser: {
                 render() {
                     return this.$scopedSlots.default({

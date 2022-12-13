@@ -1,5 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import Index from "./Index";
 
 const localVue = getLocalVue();
@@ -60,24 +60,14 @@ describe("Index", () => {
     }
 
     it("resolved datatypes", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         expect(wrapper.datatypesMapper).not.toBeNull();
         expect(wrapper.datatypes).not.toBeNull();
         expect(wrapper.canvasManager).not.toBeNull();
     });
 
-    it("routes to run to URL and respects Galaxy prefix", async () => {
-        mountAndWaitForCreated();
-        Object.defineProperty(window, "location", {
-            value: "original",
-            writable: true,
-        });
-        wrapper.vm.onRun();
-        expect(window.location).toBe("prefix/workflows/run?id=workflow_id");
-    });
-
     it("routes to run to download URL and respects Galaxy prefix", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         Object.defineProperty(window, "location", {
             value: "original",
             writable: true,
@@ -87,8 +77,8 @@ describe("Index", () => {
     });
 
     it("tracks changes to annotations", async () => {
-        mountAndWaitForCreated();
-        expect(wrapper.hasChanges).toBeFalsy();
+        await mountAndWaitForCreated();
+        expect(wrapper.vm.hasChanges).toBeFalsy();
         await wrapper.setData({ annotation: "original annotation" });
         expect(wrapper.vm.hasChanges).toBeTruthy();
 
@@ -102,7 +92,7 @@ describe("Index", () => {
     });
 
     it("tracks changes to name", async () => {
-        mountAndWaitForCreated();
+        await mountAndWaitForCreated();
         expect(wrapper.hasChanges).toBeFalsy();
         await wrapper.setData({ name: "original name" });
         expect(wrapper.vm.hasChanges).toBeTruthy();
@@ -117,9 +107,10 @@ describe("Index", () => {
     });
 
     it("prevents navigation only if hasChanges", async () => {
-        mountAndWaitForCreated();
-        expect(window.onbeforeunload()).toBeFalsy();
-        wrapper.vm.onChange();
-        expect(window.onbeforeunload()).toBeTruthy();
+        await mountAndWaitForCreated();
+        expect(wrapper.vm.hasChanges).toBeFalsy();
+        await wrapper.vm.onChange();
+        const confirmationRequired = wrapper.emitted()["update:confirmation"][0][0];
+        expect(confirmationRequired).toBeTruthy();
     });
 });

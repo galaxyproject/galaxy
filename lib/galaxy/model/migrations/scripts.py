@@ -127,8 +127,8 @@ def _pop_config_file(argv: List[str]) -> Optional[str]:
 
 
 def add_db_urls_to_command_arguments(argv: List[str], gxy_url: str, tsi_url: str) -> None:
-    _insert_x_argument(argv, "tsi_url", tsi_url)
-    _insert_x_argument(argv, "gxy_url", gxy_url)
+    _insert_x_argument(argv, f"{TSI}_url", tsi_url)
+    _insert_x_argument(argv, f"{GXY}_url", gxy_url)
 
 
 def _insert_x_argument(argv, key: str, value: str) -> None:

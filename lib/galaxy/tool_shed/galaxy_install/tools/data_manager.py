@@ -2,15 +2,27 @@ import errno
 import logging
 import os
 import time
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from galaxy.util import (
+    Element,
     etree,
     parse_xml_string,
     xml_to_string,
 )
+from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
 from . import tool_panel_manager
+
+if TYPE_CHECKING:
+    from galaxy.tools.data_manager.manager import DataManager
 
 log = logging.getLogger(__name__)
 
@@ -21,18 +33,20 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 
 
 class DataManagerHandler:
+    root: Optional[Element] = None
+
     def __init__(self, app):
         self.app = app
 
     @property
-    def data_managers_path(self):
+    def data_managers_path(self) -> Optional[str]:
         tree, error_message = parse_xml(self.app.config.shed_data_manager_config_file)
         if tree:
             root = tree.getroot()
             return root.get("tool_path", None)
         return None
 
-    def data_manager_config_elems_to_xml_file(self, config_elems, config_filename):
+    def _data_manager_config_elems_to_xml_file(self, config_elems: List[Element], config_filename: StrPath) -> None:
         """
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
@@ -49,18 +63,18 @@ class DataManagerHandler:
             with RenamedTemporaryFile(config_filename, mode="w") as fh:
                 fh.write(xml_to_string(root))
         except Exception:
-            log.exception("Exception in DataManagerHandler.data_manager_config_elems_to_xml_file")
+            log.exception("Exception in DataManagerHandler._data_manager_config_elems_to_xml_file")
 
     def install_data_managers(
         self,
-        shed_data_manager_conf_filename,
-        metadata_dict,
-        shed_config_dict,
-        relative_install_dir,
+        shed_data_manager_conf_filename: StrPath,
+        metadata_dict: Dict[str, Any],
+        shed_config_dict: Dict[str, Any],
+        relative_install_dir: StrPath,
         repository,
         repository_tools_tups,
-    ):
-        rval = []
+    ) -> List["DataManager"]:
+        rval: List["DataManager"] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
             repository_tools_by_guid = {}
@@ -163,7 +177,7 @@ class DataManagerHandler:
             # Persist the altered shed_data_manager_config file.
             if data_manager_config_has_changes:
                 reload_count = self.app.data_managers._reload_count
-                self.data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)
+                self._data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)
                 while self.app.data_managers._reload_count <= reload_count:
                     time.sleep(0.1)  # Wait for shed_data_manager watcher thread to pick up changes
         return rval
@@ -215,4 +229,4 @@ class DataManagerHandler:
                     self.app.data_managers.load_manager_from_elem(elem)
                 # Persist the altered shed_data_manager_config file.
                 if data_manager_config_has_changes:
-                    self.data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)
+                    self._data_manager_config_elems_to_xml_file(config_elems, shed_data_manager_conf_filename)

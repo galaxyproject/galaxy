@@ -4,7 +4,7 @@ import UploadModal from "./UploadModal";
 import UploadModalContent from "./UploadModalContent";
 import store from "../../store";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 
 import MockCurrentUser from "../providers/MockCurrentUser";
 import MockCurrentHistory from "../providers/MockCurrentHistory";

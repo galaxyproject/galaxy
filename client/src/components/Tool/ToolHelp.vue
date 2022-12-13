@@ -1,30 +1,42 @@
+<script setup>
+import { useFormattedToolHelp } from "composables/formattedToolHelp";
+
+const props = defineProps({
+    content: {
+        type: String,
+        required: true,
+    },
+});
+
+const { formattedContent } = useFormattedToolHelp(props.content);
+</script>
+
 <template>
-    <div class="form-help form-text mt-4" v-html="formattedContent" />
+    <div class="form-help form-text" v-html="formattedContent" />
 </template>
 
-<script>
-import $ from "jquery";
-import { getAppRoot } from "onload/loadConfig";
+<style lang="scss" scoped>
+@import "scss/theme/blue.scss";
 
-export default {
-    props: {
-        content: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        formattedContent() {
-            const $tmpl = $("<div/>").append(this.content);
-            $tmpl.find("a").attr("target", "_blank");
-            $tmpl.find("img").each(function () {
-                const img_src = $(this).attr("src");
-                if (img_src.indexOf("admin_toolshed") !== -1) {
-                    $(this).attr("src", getAppRoot() + img_src);
-                }
-            });
-            return $tmpl.html();
-        },
-    },
-};
-</script>
+.form-help {
+    &:deep(h3) {
+        font-size: $h4-font-size;
+        font-weight: bold;
+    }
+
+    &:deep(h4) {
+        font-size: $h5-font-size;
+        font-weight: bold;
+    }
+
+    &:deep(h5) {
+        font-size: $h6-font-size;
+        font-weight: bold;
+    }
+
+    &:deep(h6) {
+        font-size: $h6-font-size;
+        text-decoration: underline;
+    }
+}
+</style>

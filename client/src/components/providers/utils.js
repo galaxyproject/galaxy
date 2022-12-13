@@ -1,4 +1,4 @@
-import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "utils/job-states-model";
 import { snakeCase } from "snake-case";
 
 export function stateIsTerminal(result) {

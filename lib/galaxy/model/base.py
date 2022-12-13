@@ -80,7 +80,7 @@ class ModelMapping(Bunch):
             del self.scoped_registry.registry[request_id]
 
     @property
-    def context(self):
+    def context(self) -> scoped_session:
         return self.session
 
     @property

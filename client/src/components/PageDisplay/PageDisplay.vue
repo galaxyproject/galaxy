@@ -1,25 +1,37 @@
 <template>
     <config-provider v-slot="{ config, loading }">
-        <markdown
-            v-if="!loading"
-            :markdown-config="markdownConfig"
-            :enable_beta_markdown_export="config.enable_beta_markdown_export"
-            :download-endpoint="stsUrl(config)"
-            :export-link="exportUrl"
-            @onEdit="onEdit" />
+        <Published :item="page">
+            <template v-slot>
+                <div v-if="!loading">
+                    <markdown
+                        v-if="page.content_format == 'markdown'"
+                        :markdown-config="page"
+                        :enable_beta_markdown_export="config.enable_beta_markdown_export"
+                        :download-endpoint="stsUrl(config)"
+                        :export-link="exportUrl"
+                        @onEdit="onEdit" />
+                    <PageHtml v-else :page="page" />
+                </div>
+                <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
+            </template>
+        </Published>
     </config-provider>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
+import { urlData } from "utils/url";
+import { safePath } from "utils/redirect";
 import ConfigProvider from "components/providers/ConfigProvider";
-import Markdown from "components/Markdown/Markdown.vue";
+import Markdown from "components/Markdown/Markdown";
+import Published from "components/Common/Published";
+import PageHtml from "./PageHtml";
 
 export default {
     components: {
         ConfigProvider,
         Markdown,
+        PageHtml,
+        Published,
     },
     props: {
         pageId: {
@@ -29,39 +41,31 @@ export default {
     },
     data() {
         return {
-            markdownConfig: {},
+            page: {},
         };
     },
     computed: {
         dataUrl() {
-            return `${getAppRoot()}api/pages/${this.pageId}`;
+            return `/api/pages/${this.pageId}`;
         },
         exportUrl() {
             return `${this.dataUrl}.pdf`;
         },
         editUrl() {
-            return `${getAppRoot()}page/edit_content?id=${this.pageId}`;
+            return `/pages/editor?id=${this.pageId}`;
         },
     },
     created() {
-        this.getContent().then((data) => {
-            this.markdownConfig = { ...data, markdown: data.content };
+        urlData({ url: this.dataUrl }).then((data) => {
+            this.page = data;
         });
     },
     methods: {
         onEdit() {
-            window.location = this.editUrl;
+            window.location = safePath(this.editUrl);
         },
         stsUrl(config) {
             return `${this.dataUrl}/prepare_download`;
-        },
-        async getContent() {
-            try {
-                const response = await axios.get(this.dataUrl);
-                return response.data;
-            } catch (e) {
-                return `Failed to retrieve content. ${e}`;
-            }
         },
     },
 };

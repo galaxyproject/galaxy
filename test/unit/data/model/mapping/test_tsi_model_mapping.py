@@ -8,19 +8,17 @@ from datetime import (
 )
 
 from galaxy.model import tool_shed_install as model
-from .testing_utils import (
+from galaxy.model.unittest_utils.mapping_testing_utils import (
     AbstractBaseTest,
     collection_consists_of_objects,
 )
-from ..testing_utils import (
+from galaxy.model.unittest_utils.model_testing_utils import (
     dbcleanup,
     delete_from_database,
-    get_plugin_full_name,
     get_stored_obj,
 )
 
-model_fixtures = get_plugin_full_name("mapping.testing_utils.tsi_model_fixtures")
-pytest_plugins = [model_fixtures]
+pytest_plugins = ["galaxy.model.unittest_utils.tsi_model_fixtures"]
 
 
 class BaseTest(AbstractBaseTest):

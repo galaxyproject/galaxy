@@ -308,27 +308,27 @@ class DataSourceParser:
             if test_type == "isinstance":
                 # is test_attr attribute an instance of result
                 # TODO: wish we could take this further but it would mean passing in the datatypes_registry
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return isinstance(getter(o), result)
 
             elif test_type == "has_dataprovider":
                 # does the object itself have a datatype attr and does that datatype have the given dataprovider
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return hasattr(getter(o), "has_dataprovider") and getter(o).has_dataprovider(result)
 
             elif test_type == "has_attribute":
                 # does the object itself have attr in 'result' (no equivalence checking)
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return hasattr(getter(o), result)
 
             elif test_type == "not_eq":
 
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return str(getter(o)) != result
 
             else:
                 # default to simple (string) equilavance (coercing the test_attr to a string)
-                def test_fn(o, result):
+                def test_fn(o, result, getter=getter):
                     return str(getter(o)) == result
 
             tests.append({"type": test_type, "result": test_result, "result_type": test_result_type, "fn": test_fn})

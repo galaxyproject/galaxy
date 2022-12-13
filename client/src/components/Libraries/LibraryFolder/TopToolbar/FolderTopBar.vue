@@ -3,7 +3,7 @@
         <div class="form-inline d-flex align-items-center mb-2">
             <b-button
                 class="mr-1 btn btn-secondary"
-                :to="{ path: `/` }"
+                :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
                 <font-awesome-icon icon="home" />
@@ -38,7 +38,7 @@
                                     from User Directory
                                 </a>
                                 <div v-if="library_import_dir || allow_library_path_paste">
-                                    <h5 class="dropdown-header cursor-pointer">Admins only</h5>
+                                    <h2 class="dropdown-header cursor-pointer h-text">Admins only</h2>
                                     <a
                                         v-if="library_import_dir"
                                         class="dropdown-item cursor-pointer"
@@ -61,7 +61,7 @@
                             class="primary-button dropdown-toggle add-to-history"
                             data-toggle="dropdown">
                             <font-awesome-icon icon="book" />
-                            Export to History <span class="caret"></span>
+                            Add to History <span class="caret"></span>
                         </button>
                         <div class="dropdown-menu" role="menu">
                             <a
@@ -101,11 +101,7 @@
                     </button>
                     <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
                     <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
-                        <b-form-checkbox
-                            id="checkbox-1"
-                            :checked="include_deleted"
-                            name="checkbox-1"
-                            @input="toggle_include_deleted($event)">
+                        <b-form-checkbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
                             include deleted
                         </b-form-checkbox>
                     </div>
@@ -129,7 +125,7 @@ import { initTopBarIcons } from "components/Libraries/icons";
 import mod_import_dataset from "./import-to-history/import-dataset";
 import mod_import_collection from "./import-to-history/import-collection";
 import mod_add_datasets from "./add-datasets";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import download from "./download";
 import mod_utils from "utils/utils";
 import { getAppRoot } from "onload/loadConfig";
@@ -155,7 +151,7 @@ export default {
             type: String,
             required: true,
         },
-        include_deleted: {
+        includeDeleted: {
             type: Boolean,
             required: true,
         },
@@ -244,7 +240,7 @@ export default {
                 const selected = await this.services.getFilteredFolderContents(
                     this.folder_id,
                     this.unselected,
-                    this.$parent.search_text
+                    this.$parent.searchText
                 );
                 this.$emit("setBusy", false);
                 return selected;
@@ -340,9 +336,6 @@ export default {
                 },
                 cache: true,
             });
-        },
-        toggle_include_deleted: function (value) {
-            this.$emit("fetchFolderContents", value);
         },
         updateContent: function () {
             this.$emit("fetchFolderContents");

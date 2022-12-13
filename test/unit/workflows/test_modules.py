@@ -257,7 +257,7 @@ class MapOverTestCase(NamedTuple):
     steps: Dict[int, Any]
 
 
-def _construct_steps_for_map_over():
+def _construct_steps_for_map_over() -> List[MapOverTestCase]:
     test_case = MapOverTestCase
     # these are the cartesian product of
     # data_input = ['dataset', 'list', 'list:pair', 'list:list']
@@ -441,6 +441,7 @@ def __from_step(**kwds):
     step = __step(**kwds)
     injector = modules.WorkflowModuleInjector(trans)
     injector.inject(step, exact_tools=False)
+    injector.compute_runtime_state(step)
     module = step.module
     module.test_step = step
     return module

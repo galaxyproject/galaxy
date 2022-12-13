@@ -1,8 +1,6 @@
-import datetime
 import logging
 import os
 import re
-from enum import Enum
 from typing import (
     Any,
     cast,
@@ -25,9 +23,9 @@ from typing_extensions import (
 )
 
 from galaxy import exceptions
-from galaxy.celery.tasks import change_datatype
-from galaxy.celery.tasks import materialize as materialize_task
 from galaxy.celery.tasks import (
+    change_datatype,
+    materialize as materialize_task,
     prepare_dataset_collection_download,
     prepare_history_content_download,
     write_history_content_to,
@@ -68,7 +66,10 @@ from galaxy.schema import (
     SerializationParams,
     ValueFilterQueryParams,
 )
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    LibraryFolderDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnyBulkOperationParams,
     AnyHistoryContentItem,
@@ -79,8 +80,6 @@ from galaxy.schema.schema import (
     ChangeDatatypeOperationParams,
     ChangeDbkeyOperationParams,
     ColletionSourceType,
-    ContentsNearResult,
-    ContentsNearStats,
     CreateNewCollectionPayload,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
@@ -113,7 +112,6 @@ from galaxy.schema.tasks import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web.short_term_storage import ShortTermStorageAllocator
-from galaxy.webapps.galaxy.api.common import parse_serialization_params
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ConsumesModelStores,
@@ -125,19 +123,8 @@ from galaxy.webapps.galaxy.services.base import (
 
 log = logging.getLogger(__name__)
 
-DatasetDetailsType = Union[Set[EncodedDatabaseIdField], Literal["all"]]
-
+DatasetDetailsType = Union[Set[DecodedDatabaseIdField], Literal["all"]]
 HistoryItemModel = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
-
-
-class DirectionOptions(str, Enum):
-    near = "near"
-    before = "before"
-    after = "after"
-
-
-HistoryContentFilter = List[Any]  # Lists with [attribute:str, operator:str, value:Any]
-HistoryContentsFilterList = List[HistoryContentFilter]
 
 
 class HistoryContentsIndexParams(Model):
@@ -150,7 +137,7 @@ class HistoryContentsIndexParams(Model):
 class LegacyHistoryContentsIndexParams(Model):
     """Query parameters exclusively used by the *legacy version* of `index` operation."""
 
-    ids: Optional[List[EncodedDatabaseIdField]]
+    ids: Optional[List[DecodedDatabaseIdField]]
     types: List[HistoryContentType]
     dataset_details: Optional[DatasetDetailsType]
     deleted: Optional[bool]
@@ -160,7 +147,7 @@ class LegacyHistoryContentsIndexParams(Model):
 class HistoryContentsIndexJobsSummaryParams(Model):
     """Query parameters exclusively used by the `index_jobs_summary` operation."""
 
-    ids: List[EncodedDatabaseIdField] = []
+    ids: List[DecodedDatabaseIdField] = []
     types: List[JobSourceType] = []
 
 
@@ -178,7 +165,7 @@ class CreateHistoryContentPayloadFromCopy(CreateHistoryContentPayloadBase):
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
     )
-    content: Optional[EncodedDatabaseIdField] = Field(
+    content: Optional[Union[DecodedDatabaseIdField, LibraryFolderDatabaseIdField]] = Field(
         None,
         title="Content",
         description=(
@@ -202,7 +189,7 @@ class CollectionElementIdentifier(Model):
         title="Source",
         description="The source of the element.",
     )
-    id: Optional[EncodedDatabaseIdField] = Field(
+    id: Optional[DecodedDatabaseIdField] = Field(
         None,
         title="ID",
         description="The encoded ID of the element.",
@@ -298,7 +285,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def index(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         params: HistoryContentsIndexParams,
         legacy_params: LegacyHistoryContentsIndexParams,
         serialization_params: SerializationParams,
@@ -317,7 +304,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def show(
         self,
         trans,
-        id: EncodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         serialization_params: SerializationParams,
         contents_type: HistoryContentType,
         fuzzy_count: Optional[int] = None,
@@ -361,13 +348,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def prepare_store_download(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         payload: StoreExportPayload,
         contents_type: HistoryContentType = HistoryContentType.dataset,
     ) -> AsyncFile:
         model_store_format = payload.model_store_format
         if contents_type == HistoryContentType.dataset:
-            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            hda = self.hda_manager.get_accessible(id, trans.user)
             content_id = hda.id
             content_name = hda.name
         elif contents_type == HistoryContentType.dataset_collection:
@@ -394,13 +381,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def write_store(
         self,
         trans: ProvidesHistoryContext,
-        id: EncodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         payload: WriteStoreToPayload,
         contents_type: HistoryContentType = HistoryContentType.dataset,
     ):
         ensure_celery_tasks_enabled(trans.app.config)
         if contents_type == HistoryContentType.dataset:
-            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            hda = self.hda_manager.get_accessible(id, trans.user)
             content_id = hda.id
         elif contents_type == HistoryContentType.dataset_collection:
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
@@ -432,13 +419,12 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             raise exceptions.RequestParameterInvalidException(
                 f"The number of ids ({len(ids)}) and types ({len(types)}) must match."
             )
-        decoded_ids = self.decode_ids(ids)
-        return [self.encode_all_ids(job_state) for job_state in fetch_job_states(trans.sa_session, decoded_ids, types)]
+        return [self.encode_all_ids(job_state) for job_state in fetch_job_states(trans.sa_session, ids, types)]
 
     def show_jobs_summary(
         self,
         trans,
-        id: EncodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         contents_type: HistoryContentType,
     ) -> AnyJobStateSummary:
         """
@@ -458,7 +444,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         job = None
         implicit_collection_jobs = None
         if contents_type == HistoryContentType.dataset:
-            hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+            hda = self.hda_manager.get_accessible(id, trans.user)
             job = hda.creating_job
         elif contents_type == HistoryContentType.dataset_collection:
             dataset_collection_instance = self.__get_accessible_collection(trans, id)
@@ -471,7 +457,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         assert job is None or implicit_collection_jobs is None
         return self.encode_all_ids(summarize_jobs_to_dict(trans.sa_session, job or implicit_collection_jobs))
 
-    def get_dataset_collection_archive_for_download(self, trans, id: EncodedDatabaseIdField):
+    def get_dataset_collection_archive_for_download(self, trans, id: DecodedDatabaseIdField):
         """
         Download the content of a HistoryDatasetCollection as a tgz archive
         while maintaining approximate collection structure.
@@ -481,7 +467,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         dataset_collection_instance = self.__get_accessible_collection(trans, id)
         return self.__stream_dataset_collection(trans, dataset_collection_instance)
 
-    def prepare_collection_download(self, trans, id: EncodedDatabaseIdField) -> AsyncFile:
+    def prepare_collection_download(self, trans, id: DecodedDatabaseIdField) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
         dataset_collection_instance = self.__get_accessible_collection(trans, id)
         archive_name = f"{dataset_collection_instance.hid}: {dataset_collection_instance.name}"
@@ -504,7 +490,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def create(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         payload: CreateHistoryContentPayload,
         serialization_params: SerializationParams,
     ) -> Union[AnyHistoryContentItem, List[AnyHistoryContentItem]]:
@@ -514,7 +500,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         ..note:
             Currently, a user can only copy an HDA from a history that the user owns.
         """
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
 
         serialization_params.default_view = "detailed"
         history_content_type = payload.type
@@ -531,11 +517,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def create_from_store(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         payload: CreateHistoryContentFromStore,
         serialization_params: SerializationParams,
     ) -> List[AnyHistoryContentItem]:
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         object_tracker = self.create_objects_from_store(
             trans,
             payload,
@@ -561,14 +547,13 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         trans,
         request: MaterializeDatasetInstanceRequest,
     ) -> AsyncTaskResultSummary:
-        history_id = self.decode_id(request.history_id)
         # DO THIS JUST TO MAKE SURE IT IS OWNED...
-        self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+        self.history_manager.get_owned(request.history_id, trans.user, current_history=trans.history)
         assert trans.app.config.enable_celery_tasks
         task_request = MaterializeDatasetInstanceTaskRequest(
-            history_id=history_id,
+            history_id=request.history_id,
             source=request.source,
-            content=self.decode_id(request.content),
+            content=request.content,
             user=trans.async_request_user,
         )
         results = materialize_task.delay(request=task_request)
@@ -577,7 +562,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def update_permissions(
         self,
         trans,
-        history_content_id: EncodedDatabaseIdField,
+        history_content_id: DecodedDatabaseIdField,
         payload: UpdateDatasetPermissionsPayload,
     ) -> DatasetAssociationRoles:
         """
@@ -596,19 +581,17 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                     RequestParameterMissingException
         """
         payload_dict = payload.dict(by_alias=True)
-        hda = self.hda_manager.get_owned(
-            self.decode_id(history_content_id), trans.user, current_history=trans.history, trans=trans
-        )
+        hda = self.hda_manager.get_owned(history_content_id, trans.user, current_history=trans.history, trans=trans)
         assert hda is not None
         self.hda_manager.update_permissions(trans, hda, **payload_dict)
         roles = self.hda_manager.serialize_dataset_association_roles(trans, hda)
-        return DatasetAssociationRoles.parse_obj(roles)
+        return DatasetAssociationRoles.construct(**roles)
 
     def update(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
-        id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         payload: Dict[str, Any],
         serialization_params: SerializationParams,
         contents_type: HistoryContentType,
@@ -634,7 +617,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def update_batch(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         payload: UpdateHistoryContentsBatchPayload,
         serialization_params: SerializationParams,
     ) -> List[AnyHistoryContentItem]:
@@ -652,15 +635,14 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :returns:   an error object if an error occurred or a dictionary containing
                     any values that were different from the original and, therefore, updated
         """
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         items = payload.items
-        hda_ids = []
-        hdca_ids = []
+        hda_ids: List[DecodedDatabaseIdField] = []
+        hdca_ids: List[DecodedDatabaseIdField] = []
         for item in items:
             contents_type = item.history_content_type
             if contents_type == HistoryContentType.dataset:
-                decoded_id = self.decode_id(item.id)
-                hda_ids.append(decoded_id)
+                hda_ids.append(item.id)
             else:
                 hdca_ids.append(item.id)
         payload_dict = payload.dict(exclude_unset=True)
@@ -681,11 +663,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def bulk_operation(
         self,
         trans: ProvidesHistoryContext,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         filter_query_params: ValueFilterQueryParams,
         payload: HistoryContentBulkOperationPayload,
     ) -> HistoryContentBulkOperationResult:
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
         self._validate_bulk_operation_params(payload, trans.user, trans)
         contents: List[HistoryItemModel]
@@ -705,7 +687,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         success_count = len(contents) - len(errors)
         return HistoryContentBulkOperationResult.construct(success_count=success_count, errors=errors)
 
-    def validate(self, trans, history_id: EncodedDatabaseIdField, history_content_id: EncodedDatabaseIdField):
+    def validate(self, trans, history_id: DecodedDatabaseIdField, history_content_id: DecodedDatabaseIdField):
         """
         Validates the metadata associated with a dataset within a History.
 
@@ -717,8 +699,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         :rtype:     dict
         :returns:   TODO
         """
-        decoded_id = self.decode_id(history_content_id)
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
+        decoded_id = history_content_id
+        history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         hda = self.hda_manager.get_owned_ids([decoded_id], history=history)[0]
         if hda:
             self.hda_manager.set_metadata(trans, hda, overwrite=True, validate=True)
@@ -727,7 +709,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def delete(
         self,
         trans,
-        id,
+        id: DecodedDatabaseIdField,
         serialization_params: SerializationParams,
         contents_type: HistoryContentType,
         payload: DeleteHistoryContentPayload,
@@ -741,14 +723,14 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             async_result = self.dataset_collection_manager.delete(
                 trans, "history", id, recursive=payload.recursive, purge=payload.purge
             )
-            return {"id": id, "deleted": True, "async_result": async_result is not None}
+            return {"id": self.encode_id(id), "deleted": True, "async_result": async_result is not None}
         else:
             raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
 
     def archive(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         filter_query_params: FilterQueryParams,
         filename: Optional[str] = "",
         dry_run: Optional[bool] = True,
@@ -790,7 +772,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             return parent_names
 
         # get the history used for the contents query and check for accessibility
-        history = self.history_manager.get_accessible(trans.security.decode_id(history_id), trans.user)
+        history = self.history_manager.get_accessible(history_id, trans.user)
         archive_base_name = filename or name_to_filename(history.name)
 
         # this is the fn applied to each dataset contained in the query
@@ -843,7 +825,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         # if dry_run, return the structure as json for debugging
         if dry_run:
-            return HistoryContentsArchiveDryRunResult.parse_obj(paths_and_files)
+            return HistoryContentsArchiveDryRunResult.construct(__root__=paths_and_files)
 
         # create the archive, add the dataset files, then stream the archive as a download
         archive = ZipstreamWrapper(
@@ -855,189 +837,10 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             archive.write(file_path, archive_path)
         return archive
 
-    def contents_near(
-        self,
-        trans,
-        history_id: EncodedDatabaseIdField,
-        serialization_params: SerializationParams,
-        filter_params: HistoryContentsFilterList,
-        direction: DirectionOptions,
-        hid: int,
-        limit: int,
-        since: Optional[datetime.datetime] = None,
-    ) -> Optional[ContentsNearResult]:
-        """
-        Return {limit} history items "near" the {hid}. The {direction} determines what items
-        are selected:
-
-        - before: select items with hid < {hid}
-        - after:  select items with hid > {hid}
-        - near:   select items "around" {hid}, so that
-          n. items before <= limit // 2,
-          n. items after <= limit // 2 + 1
-
-        Additional counts provided in the HTTP headers.
-        """
-        history: History = self.history_manager.get_accessible(
-            self.decode_id(history_id), trans.user, current_history=trans.history
-        )
-
-        # while polling, check to see if the history has changed
-        # if it hasn't then we can short-circuit the poll request
-        if since:
-            # sqlalchemy DateTime columns are not timezone aware, but `since` may be a timezone aware
-            # DateTime object if a timezone offset is provided (https://github.com/samuelcolvin/pydantic/blob/5ccbdcb5904f35834300b01432a665c75dc02296/pydantic/datetime_parse.py#L179).
-            # If a timezone is provided (since.tzinfo is not None) we convert to UTC and remove tzinfo so that comparison with history.update_time is correct.
-            since = since if since.tzinfo is None else since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-            if history.update_time <= since:
-                return None
-
-        order_by_dsc = self.build_order_by(self.history_contents_manager, "hid-dsc")
-        order_by_asc = self.build_order_by(self.history_contents_manager, "hid-asc")
-        min_hid, max_hid = self._get_filtered_extrema(history, filter_params, order_by_dsc, order_by_asc)
-        up_total_count, down_total_count = self._get_total_counts(history, filter_params, hid)
-
-        if direction == DirectionOptions.after:  # seek up: contents > hid (newer)
-            _hid_params = self._hid_greater_than(hid)
-            matches = self._get_matches(history, filter_params, _hid_params, order_by_asc, limit, serialization_params)
-            expanded = self._expand_contents(trans, matches, serialization_params)
-            expanded.reverse()
-            item_counts = self._set_item_counts(
-                matches_up=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count
-            )
-
-        elif direction == DirectionOptions.before:  # seek down: contents <= hid (older)
-            _hid_params = self._hid_less_than(hid)
-            matches = self._get_matches(history, filter_params, _hid_params, order_by_dsc, limit, serialization_params)
-            expanded = self._expand_contents(trans, matches, serialization_params)
-            item_counts = self._set_item_counts(
-                matches_down=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count
-            )
-
-        elif direction == DirectionOptions.near:  # seek up, down; then reverse up, and combine
-            up_limit, down_limit = self._get_limits(limit)
-
-            _hid_params = self._hid_greater_than(hid)
-            up_matches = self._get_matches(
-                history, filter_params, _hid_params, order_by_asc, up_limit, serialization_params
-            )
-            up_expanded = self._expand_contents(trans, up_matches, serialization_params)
-            up_expanded.reverse()
-
-            _hid_params = self._hid_less_or_equal_than(hid)  # note <=: we are including the item with hid == {hid}
-            down_matches = self._get_matches(
-                history, filter_params, _hid_params, order_by_dsc, down_limit, serialization_params
-            )
-            down_expanded = self._expand_contents(trans, down_matches, serialization_params)
-
-            expanded = up_expanded + down_expanded
-            item_counts = self._set_item_counts(
-                matches_up=len(up_matches),
-                matches_down=len(down_matches),
-                total_matches_up=up_total_count,
-                total_matches_down=down_total_count,
-            )
-
-        stats = ContentsNearStats(
-            max_hid=max_hid,
-            min_hid=min_hid,
-            history_size=history.disk_size,
-            history_empty=history.empty,
-            **item_counts,
-        )
-        return ContentsNearResult(contents=expanded, stats=stats)
-
-    def _get_limits(self, limit):
-        q, r = divmod(limit, 2)
-        return q, q + r
-
-    def _set_item_counts(self, *, matches_up=0, total_matches_up=0, matches_down=0, total_matches_down=0):
-        counts = {}
-        counts["matches"] = matches_up + matches_down
-        counts["matches_up"] = matches_up
-        counts["matches_down"] = matches_down
-        counts["total_matches"] = total_matches_up + total_matches_down + 1  # + 1 for hid == {hid}
-        counts["total_matches_up"] = total_matches_up
-        counts["total_matches_down"] = total_matches_down
-        return counts
-
-    def _hid_greater_than(self, hid: int) -> HistoryContentsFilterList:
-        return [["hid", "gt", hid]]
-
-    def _hid_less_than(self, hid: int) -> HistoryContentsFilterList:
-        return [["hid", "lt", hid]]
-
-    def _hid_less_or_equal_than(self, hid: int) -> HistoryContentsFilterList:
-        return [["hid", "le", hid]]
-
-    def _get_total_counts(self, history, filter_params, hid):
-        def get_count(params, hid_params):
-            params = params + hid_params
-            count_filters = self.history_contents_filters.parse_filters(params)
-            return self.history_contents_manager.contents_count(history, count_filters)
-
-        params = self._copy_excluding_update_time(filter_params)
-        total_up = get_count(params, self._hid_greater_than(hid))
-        total_down = get_count(params, self._hid_less_than(hid))
-        return total_up, total_down
-
-    def _get_matches(self, history, filter_params, hid_params, order_by, limit, serialization_params):
-        params = filter_params + hid_params
-        filters = self.history_contents_filters.parse_filters(params)
-        contents = self.history_contents_manager.contents(
-            history,
-            filters=filters,
-            limit=limit,
-            offset=0,
-            order_by=order_by,
-            serialization_params=serialization_params,
-        )
-        return contents
-
-    def _copy_excluding_update_time(self, filter_params):
-        return [f for f in filter_params if f[0] != "update_time"]
-
-    # Adds subquery details to initial contents results, perhaps better realized
-    # as a proc or view.
-    def _expand_contents(self, trans, contents, serialization_params: SerializationParams):
-        rval = []
-        for content in contents:
-            if isinstance(content, HistoryDatasetAssociation):
-                dataset = self.hda_serializer.serialize_to_view(
-                    content, user=trans.user, trans=trans, **serialization_params.dict()
-                )
-                rval.append(dataset)
-            elif isinstance(content, HistoryDatasetCollectionAssociation):
-                collection = self.hdca_serializer.serialize_to_view(
-                    content, user=trans.user, trans=trans, **serialization_params.dict()
-                )
-                rval.append(collection)
-        return rval
-
-    def _get_filtered_extrema(self, history, filter_params, order_by_dsc, order_by_asc):
-        extrema_params = parse_serialization_params(keys="hid", default_view="summary")
-        extrema_filter_params = self._copy_excluding_update_time(filter_params)
-        extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
-
-        max_row_result = self.history_contents_manager.contents(
-            history, limit=1, filters=extrema_filters, order_by=order_by_dsc, serialization_params=extrema_params
-        )
-        max_row = max_row_result.pop() if len(max_row_result) else None
-
-        min_row_result = self.history_contents_manager.contents(
-            history, limit=1, filters=extrema_filters, order_by=order_by_asc, serialization_params=extrema_params
-        )
-        min_row = min_row_result.pop() if len(min_row_result) else None
-
-        max_hid = max_row.hid if max_row else None
-        min_hid = min_row.hid if min_row else None
-
-        return min_hid, max_hid
-
     def __delete_dataset(
-        self, trans, id: EncodedDatabaseIdField, purge: bool, stop_job: bool, serialization_params: SerializationParams
+        self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool, serialization_params: SerializationParams
     ):
-        hda = self.hda_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+        hda = self.hda_manager.get_owned(id, trans.user, current_history=trans.history)
         self.hda_manager.error_if_uploading(hda)
 
         async_result = None
@@ -1050,22 +853,21 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         rval["async_result"] = async_result is not None
         return rval
 
-    def __update_dataset_collection(self, trans, id: EncodedDatabaseIdField, payload: Dict[str, Any]):
+    def __update_dataset_collection(self, trans, id: DecodedDatabaseIdField, payload: Dict[str, Any]):
         return self.dataset_collection_manager.update(trans, "history", id, payload)
 
     def __update_dataset(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
-        id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         payload: Dict[str, Any],
         serialization_params: SerializationParams,
     ):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        decoded_id = self.decode_id(id)
-        history = self.history_manager.get_owned(self.decode_id(history_id), trans.user, current_history=trans.history)
-        hda = self.__datasets_for_update(trans, history, [decoded_id], payload)[0]
+        history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+        hda = self.__datasets_for_update(trans, history, [id], payload)[0]
         if hda:
             self.__deserialize_dataset(trans, hda, payload)
             serialization_params.default_view = "detailed"
@@ -1074,7 +876,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             )
         return {}
 
-    def __datasets_for_update(self, trans, history: History, hda_ids: List[int], payload: Dict[str, Any]):
+    def __datasets_for_update(
+        self, trans, history: History, hda_ids: List[DecodedDatabaseIdField], payload: Dict[str, Any]
+    ):
         anonymous_user = not trans.user_is_admin and trans.user is None
         if anonymous_user:
             anon_allowed_payload = {}
@@ -1105,7 +909,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def __index_legacy(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         legacy_params: LegacyHistoryContentsIndexParams,
     ) -> HistoryContentsResult:
         """Legacy implementation of the `index` action."""
@@ -1124,7 +928,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     def __index_v2(
         self,
         trans,
-        history_id: EncodedDatabaseIdField,
+        history_id: DecodedDatabaseIdField,
         params: HistoryContentsIndexParams,
         serialization_params: SerializationParams,
         filter_query_params: FilterQueryParams,
@@ -1191,7 +995,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         content,
         dataset_details: Optional[DatasetDetailsType] = None,
     ):
-        encoded_content_id = self.encode_id(content.id)
+        encoded_content_id = content.id
         detailed = dataset_details and (dataset_details == "all" or (encoded_content_id in dataset_details))
         if isinstance(content, HistoryDatasetAssociation):
             view = "detailed" if detailed else "summary"
@@ -1218,7 +1022,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         serializer: Optional[ModelSerializer] = None
         if isinstance(content, HistoryDatasetAssociation):
             serializer = self.hda_serializer
-            if dataset_details and (dataset_details == "all" or self.encode_id(content.id) in dataset_details):
+            if dataset_details and (dataset_details == "all" or content.id in dataset_details):
                 view = "detailed"
         elif isinstance(content, HistoryDatasetCollectionAssociation):
             serializer = self.hdca_serializer
@@ -1253,27 +1057,25 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             **kwds,
         )
 
-    def _get_history(self, trans, history_id: EncodedDatabaseIdField) -> History:
+    def _get_history(self, trans, history_id: DecodedDatabaseIdField) -> History:
         """Retrieves the History with the given ID or raises an error if the current user cannot access it."""
-        history = self.history_manager.get_accessible(
-            self.decode_id(history_id), trans.user, current_history=trans.history
-        )
+        history = self.history_manager.get_accessible(history_id, trans.user, current_history=trans.history)
         return history
 
     def __show_dataset(
         self,
         trans,
-        id: EncodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         serialization_params: SerializationParams,
     ):
         serialization_params.default_view = "detailed"
-        hda = self.hda_manager.get_accessible(self.decode_id(id), trans.user)
+        hda = self.hda_manager.get_accessible(id, trans.user)
         return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
 
     def __show_dataset_collection(
         self,
         trans,
-        id: EncodedDatabaseIdField,
+        id: DecodedDatabaseIdField,
         serialization_params: SerializationParams,
         fuzzy_count: Optional[int] = None,
     ):
@@ -1281,7 +1083,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         view = serialization_params.view or "element"
         return self.__collection_dict(trans, dataset_collection_instance, view=view, fuzzy_count=fuzzy_count)
 
-    def __get_accessible_collection(self, trans, id: EncodedDatabaseIdField):
+    def __get_accessible_collection(self, trans, id: DecodedDatabaseIdField):
         return self.dataset_collection_manager.get_dataset_collection_instance(
             trans=trans,
             instance_type="history",
@@ -1302,7 +1104,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             if content is None:
                 raise exceptions.RequestParameterMissingException("'content' id of lda or hda is missing")
 
-            folder_id = self.folder_manager.cut_and_decode(trans, content)
+            folder_id = content
             folder = self.folder_manager.get(trans, folder_id)
 
             current_user_roles = trans.get_current_user_roles()
@@ -1368,17 +1170,18 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         trans.sa_session.flush()
         return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
 
-    def __create_hda_from_ldda(self, trans, history: History, ldda_id: EncodedDatabaseIdField):
-        decoded_ldda_id = self.decode_id(ldda_id)
+    def __create_hda_from_ldda(self, trans, history: History, ldda_id: int):
+        decoded_ldda_id = ldda_id
         ld = self.ldda_manager.get(trans, decoded_ldda_id)
         if type(ld) is not LibraryDataset:
-            raise exceptions.RequestParameterInvalidException(f"Library content id ( {ldda_id} ) is not a dataset")
+            raise exceptions.RequestParameterInvalidException(
+                f"Library content id ( {self.encode_id(ldda_id)} ) is not a dataset"
+            )
         hda = ld.library_dataset_dataset_association.to_history_dataset_association(history, add_to_history=True)
         return hda
 
-    def __create_hda_from_copy(self, trans, history: History, original_hda_id: EncodedDatabaseIdField):
-        unencoded_hda_id = self.decode_id(original_hda_id)
-        original = self.hda_manager.get_accessible(unencoded_hda_id, trans.user)
+    def __create_hda_from_copy(self, trans, history: History, original_hda_id: int):
+        original = self.hda_manager.get_accessible(original_hda_id, trans.user)
         # check for access on history that contains the original hda as well
         self.history_manager.error_unless_accessible(original.history, trans.user, current_history=trans.history)
         hda = self.hda_manager.copy(original, history=history)
@@ -1520,7 +1323,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         contents: List[HistoryItemModel] = []
 
         dataset_items = filter(lambda item: item.history_content_type == HistoryContentType.dataset, items)
-        datasets_ids = map(lambda dataset: self.decode_id(dataset.id), dataset_items)
+        datasets_ids = map(lambda dataset: dataset.id, dataset_items)
         contents.extend(self.hda_manager.get_owned_ids(datasets_ids, history))
 
         collection_items = filter(

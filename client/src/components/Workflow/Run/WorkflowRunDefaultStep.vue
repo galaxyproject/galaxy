@@ -27,6 +27,10 @@ import FormMessage from "components/Form/FormMessage";
 import FormCard from "components/Form/FormCard";
 import { visitInputs } from "components/Form/utilities";
 import { getTool } from "./services";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faEdit, faUndo } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faEdit, faUndo);
 
 export default {
     components: {
@@ -60,16 +64,16 @@ export default {
             modelInputs: this.model.inputs,
         };
     },
+    computed: {
+        icon() {
+            return WorkflowIcons[this.model.step_type];
+        },
+    },
     watch: {
         validationScrollTo() {
             if (this.validationScrollTo.length > 0) {
                 this.expanded = true;
             }
-        },
-    },
-    computed: {
-        icon() {
-            return WorkflowIcons[this.model.step_type];
         },
     },
     methods: {

@@ -10,7 +10,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 CHAINED_DYNDESTS_JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "chained_dyndest_job_conf.xml")
 
 
-class ChainedDynamicDestinationIntegrationTestCase(BaseJobEnvironmentIntegrationTestCase):
+class TestChainedDynamicDestinationIntegration(BaseJobEnvironmentIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

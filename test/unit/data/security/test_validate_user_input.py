@@ -32,7 +32,7 @@ def test_validate_username():
     assert validate_publicname_str("test user") != ""
 
 
-def test_validate_email():
+def test_validate_email_str():
     assert validate_email_str("test@foo.com") == ""
     assert validate_email_str("test-dot.user@foo.com") == ""
     assert validate_email_str("test-plus+user@foo.com") == ""

@@ -24,6 +24,7 @@ USER_EMAIL = "user@bx.psu.edu"
 
 
 class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     library_dir: ClassVar[str]
     user_library_dir: ClassVar[str]
     ftp_upload_dir: ClassVar[str]
@@ -68,7 +69,7 @@ class ConfiguresRemoteFilesIntegrationTestCase(integration_util.IntegrationTestC
         return ftp_dir
 
 
-class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
+class TestRemoteFilesIntegration(ConfiguresRemoteFilesIntegrationTestCase):
     def test_index(self):
         index = self.galaxy_interactor.get("remote_files?target=importdir").json()
         self._assert_index_empty(index)
@@ -255,7 +256,7 @@ class RemoteFilesIntegrationTestCase(ConfiguresRemoteFilesIntegrationTestCase):
         assert c["li_attr"]["full_path"] == "subdir1/c"
 
 
-class RemoteFilesNotConfiguredIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestRemoteFilesNotConfiguredIntegration(integration_util.IntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

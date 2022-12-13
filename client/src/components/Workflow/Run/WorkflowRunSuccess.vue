@@ -26,10 +26,10 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { WorkflowInvocationState } from "components/WorkflowInvocationState";
-import Webhooks from "mvc/webhooks";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
+import Webhooks from "utils/webhooks";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
+import { refreshContentsWrapper } from "utils/data";
 
 export default {
     components: {
@@ -45,11 +45,6 @@ export default {
             required: true,
         },
     },
-    data() {
-        return {
-            refreshHistoryTimeout: null,
-        };
-    },
     computed: {
         ...mapGetters("history", ["currentHistoryId"]),
         timesExecuted() {
@@ -60,7 +55,7 @@ export default {
         },
         historyTarget() {
             if (this.multipleInvocations) {
-                return `${getAppRoot()}history/view_multiple`;
+                return `${getAppRoot()}histories/view_multiple`;
             } else {
                 return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
             }
@@ -78,26 +73,7 @@ export default {
             toolId: null,
             toolVersion: null,
         });
-        this._refreshHistory();
-    },
-    methods: {
-        _refreshHistory() {
-            // remove when disabling backbone history
-            const Galaxy = getGalaxyInstance();
-            var history = Galaxy && Galaxy.currHistoryPanel && Galaxy.currHistoryPanel.model;
-            if (this.refreshHistoryTimeout) {
-                window.clearTimeout(this.refreshHistoryTimeout);
-            }
-            if (history && history.refresh) {
-                history.refresh().success(() => {
-                    if (history.numOfUnfinishedShownContents() === 0) {
-                        this.refreshHistoryTimeout = window.setTimeout(() => {
-                            this._refreshHistory();
-                        }, history.UPDATE_DELAY);
-                    }
-                });
-            }
-        },
+        refreshContentsWrapper();
     },
 };
 </script>

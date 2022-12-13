@@ -68,22 +68,9 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
     def test_0000_initiate_users_and_category(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
 
     def test_0005_create_libx11_repository(self):
         """Create and populate package_x11_client_1_5_proto_7_0_0470.
@@ -93,13 +80,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         Create and populate a repository named package_x11_client_1_5_proto_7_0 that contains only a single file named tool_dependencies.xml.
         Keep the repository type as the default "Unrestricted".
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=package_libx11_repository_name,
             description=package_libx11_repository_description,
             long_description=package_libx11_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
@@ -124,13 +111,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         above package_x11_client_1_5_proto_7_0 repository. Upload the tool_dependencues.xml file such that it does not have a changeset_revision
         defined so it will get automatically populated.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=package_emboss_repository_name,
             description=package_emboss_repository_description,
             long_description=package_emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Upload the edited tool dependency definition to the package_emboss_5_0_0 repository.
@@ -155,13 +142,13 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         on the package_emboss_5_0_0 repository above. Upload the tool_dependencies.xml file such that it does not have a change set_revision defined
         so it will get automatically populated.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=emboss_repository_name,
             description=emboss_repository_description,
             long_description=emboss_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         # Populate emboss_5 with tool and dependency definitions.
@@ -183,7 +170,7 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         This is step 4 - Add a comment to the tool_dependencies.xml file to be uploaded to the package_x11_client_1_5_prot_7_0 repository, creating
         a new installable changeset revision at the repository tip.
         """
-        package_x11_repository = self.test_db_util.get_repository_by_name_and_owner(
+        package_x11_repository = self._get_repository_by_name_and_owner(
             package_libx11_repository_name, common.test_user_1_name
         )
         # Upload the tool dependency definition to the package_x11_client_1_5_proto_7_0_0470 repository.
@@ -198,9 +185,10 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
             strings_displayed=[],
             strings_not_displayed=[],
         )
-        assert len(package_x11_repository.metadata_revisions) == 1, (
+        count = self._get_metadata_revision_count(package_x11_repository)
+        assert count == 1, (
             "package_x11_client_1_5_proto_7_0_0470 has incorrect number of metadata revisions, expected 1 but found %d"
-            % len(package_x11_repository.metadata_revisions)
+            % count
         )
 
     def test_0025_upload_updated_tool_dependency_to_package_emboss(self):
@@ -210,7 +198,7 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         the change set_revision attribute so that it gets automatically populated when uploaded. After uploading the file,
         the package_emboss_5_0_0 repository should have 2 installable changeset revisions.
         """
-        package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
+        package_emboss_repository = self._get_repository_by_name_and_owner(
             package_emboss_repository_name, common.test_user_1_name
         )
         # Populate package_emboss_5_0_0_0470 with updated tool dependency definition.
@@ -225,10 +213,9 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
             strings_displayed=[],
             strings_not_displayed=[],
         )
-        assert (
-            len(package_emboss_repository.metadata_revisions) == 2
-        ), "package_emboss_5_0_0_0470 has incorrect number of metadata revisions, expected 2 but found %d" % len(
-            package_emboss_repository.metadata_revisions
+        count = self._get_metadata_revision_count(package_emboss_repository)
+        assert count == 2, (
+            "package_emboss_5_0_0_0470 has incorrect number of metadata revisions, expected 2 but found %d" % count
         )
 
     def test_0030_upload_updated_tool_dependency_to_emboss_5_repository(self):
@@ -238,9 +225,7 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         changeset_revision attribute so that it gets automatically populated when uploaded. After uploading the file,
         the emboss5 repository should have 2 installable metadata revisions.
         """
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         # Populate package_emboss_5_0_0_0470 with updated tool dependency definition.
         self.upload_file(
             emboss_repository,
@@ -253,16 +238,15 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
             strings_displayed=[],
             strings_not_displayed=[],
         )
-        assert (
-            len(emboss_repository.metadata_revisions) == 2
-        ), "package_emboss_5_0_0_0470 has incorrect number of metadata revisions"
+        count = self._get_metadata_revision_count(emboss_repository)
+        assert count == 2, "package_emboss_5_0_0_0470 has incorrect number of metadata revisions"
 
     def test_0035_modify_package_x11_repository_type(self):
         """Set package_x11_client_1_5_proto_7_0 type tool_dependency_definition.
 
         This is step 7 - Change the repository type of the package_x11_client_1_5_proto_7_0 repository to be tool_dependency_definition.
         """
-        package_x11_repository = self.test_db_util.get_repository_by_name_and_owner(
+        package_x11_repository = self._get_repository_by_name_and_owner(
             package_libx11_repository_name, common.test_user_1_name
         )
         self.edit_repository_information(package_x11_repository, repository_type="tool_dependency_definition")
@@ -272,7 +256,7 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
 
         This is step 8 - Change the repository type of the package_emboss_5_0_0 repository to be tool_dependency_definition.
         """
-        package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
+        package_emboss_repository = self._get_repository_by_name_and_owner(
             package_emboss_repository_name, common.test_user_1_name
         )
         self.edit_repository_information(package_emboss_repository, repository_type="tool_dependency_definition")
@@ -283,23 +267,19 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
         This is step 9 - Reset metadata on the package_emboss_5_0_0 and package_x11_client_1_5_proto_7_0 repositories. They should
         now have only their tip as the installable revision.
         """
-        package_emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
+        package_emboss_repository = self._get_repository_by_name_and_owner(
             package_emboss_repository_name, common.test_user_1_name
         )
-        package_x11_repository = self.test_db_util.get_repository_by_name_and_owner(
+        package_x11_repository = self._get_repository_by_name_and_owner(
             package_libx11_repository_name, common.test_user_1_name
         )
         self.reset_repository_metadata(package_emboss_repository)
         self.reset_repository_metadata(package_x11_repository)
-        assert (
-            len(package_emboss_repository.metadata_revisions) == 1
-        ), "Repository package_emboss_5_0_0 has %d installable revisions, expected 1." % len(
-            package_emboss_repository.metadata_revisions
-        )
-        assert (
-            len(package_x11_repository.metadata_revisions) == 1
-        ), "Repository package_x11_client_1_5_proto_7_0 has %d installable revisions, expected 1." % len(
-            package_x11_repository.metadata_revisions
+        count = self._get_metadata_revision_count(package_emboss_repository)
+        assert count == 1, "Repository package_emboss_5_0_0 has %d installable revisions, expected 1." % count
+        count = self._get_metadata_revision_count(package_x11_repository)
+        assert count == 1, (
+            "Repository package_x11_client_1_5_proto_7_0 has %d installable revisions, expected 1." % count
         )
 
     def test_0050_reset_emboss_5_metadata(self):
@@ -307,10 +287,7 @@ class TestEnvironmentInheritance(ShedTwillTestCase):
 
         This is step 10 - Reset metadata on the emboss_5 repository. It should now have only its tip as the installable revision.
         """
-        emboss_repository = self.test_db_util.get_repository_by_name_and_owner(
-            emboss_repository_name, common.test_user_1_name
-        )
+        emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
         self.reset_repository_metadata(emboss_repository)
-        assert (
-            len(emboss_repository.metadata_revisions) == 1
-        ), "Repository emboss_5 has %d installable revisions, expected 1." % len(emboss_repository.metadata_revisions)
+        count = self._get_metadata_revision_count(emboss_repository)
+        assert count == 1, "Repository emboss_5 has %d installable revisions, expected 1." % count

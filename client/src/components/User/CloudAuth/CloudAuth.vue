@@ -6,7 +6,7 @@
             </b-alert>
 
             <hgroup class="cloud-auth-title">
-                <h1 v-localize>Manage Cloud Authorization</h1>
+                <h1 v-localize class="h-lg">Manage Cloud Authorization</h1>
                 <nav class="operations">
                     <ul>
                         <li class="cloudKeyHelp">

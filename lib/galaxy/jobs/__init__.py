@@ -8,6 +8,7 @@ import json
 import logging
 import os
 import pwd
+import shlex
 import shutil
 import sys
 import time
@@ -287,7 +288,7 @@ def job_config_xml_to_dict(config, root):
 class JobConfiguration(ConfiguresHandlers):
     """A parser and interface to advanced job management features.
 
-    These features are configured in the job configuration, by default, ``job_conf.xml``
+    These features are configured in the job configuration, by default, ``job_conf.yml``
     """
 
     runner_plugins: List[dict]
@@ -361,14 +362,24 @@ class JobConfiguration(ConfiguresHandlers):
         try:
             if "job_config" in self.app.config.config_dict:
                 job_config_dict = self.app.config.config_dict["job_config"]
+                log.debug("Read job configuration inline from Galaxy config")
             else:
                 job_config_file = self.app.config.job_config_file
+                if not self.app.config.is_set("job_config_file") and not os.path.exists(job_config_file):
+                    job_config_file = os.path.join(os.path.dirname(self.app.config.config_file), "job_conf.xml")
+                    if os.path.exists(job_config_file):
+                        log.warning(
+                            "Implicit loading of job_conf.xml has been deprecated and will be removed in a future"
+                            f" release of Galaxy. Please convert to YAML at {self.app.config.job_config_file} or"
+                            f" explicitly set `job_config_file` to {job_config_file} to remove this message"
+                        )
                 if ".xml" in job_config_file:
                     tree = load(job_config_file)
                     job_config_dict = self.__parse_job_conf_xml(tree)
                 else:
                     with open(job_config_file) as f:
                         job_config_dict = yaml.safe_load(f)
+                log.debug(f"Read job configuration from file: {job_config_file}")
 
             # Load tasks if configured
             if self.app.config.use_tasked_jobs:
@@ -1115,6 +1126,10 @@ class MinimalJobWrapper(HasResourceParameters):
         # Should the job handler split this job up?
         return self.app.config.use_tasked_jobs and self.tool.parallelism
 
+    @property
+    def is_cwl_job(self):
+        return self.tool.tool_type == "cwl"
+
     def get_job_runner_url(self):
         log.warning(f"({self.job_id}) Job runner URLs are deprecated, use destinations instead.")
         return self.job_destination.url
@@ -1575,7 +1590,6 @@ class MinimalJobWrapper(HasResourceParameters):
 
     def set_job_destination(self, job_destination, external_id=None, flush=True, job=None):
         """Subclasses should implement this to persist a destination, if necessary."""
-        pass
 
     def _set_object_store_ids(self, job):
         if job.object_store_id:
@@ -2001,7 +2015,6 @@ class MinimalJobWrapper(HasResourceParameters):
                     except OSError as e:
                         if e.errno != errno.ENOENT:
                             raise
-                self.external_output_metadata.cleanup_external_metadata(self.sa_session)
             if delete_files:
                 self.object_store.delete(
                     self.get_job(), base_dir="job_work", entire_dir=True, dir_only=True, obj_dir=True
@@ -2125,10 +2138,8 @@ class MinimalJobWrapper(HasResourceParameters):
             raise Exception(f"Unknown target type [{target}]")
 
     def get_tool_provided_job_metadata(self):
-        if self.tool_provided_job_metadata is not None:
-            return self.tool_provided_job_metadata
-
-        self.tool_provided_job_metadata = self.tool.tool_provided_metadata(self)
+        if self.tool_provided_job_metadata is None:
+            self.tool_provided_job_metadata = self.tool.tool_provided_metadata(self)
         return self.tool_provided_job_metadata
 
     def get_dataset_finish_context(self, job_context, output_dataset_assoc):
@@ -2139,16 +2150,6 @@ class MinimalJobWrapper(HasResourceParameters):
         if meta:
             return ExpressionContext(meta, job_context)
         return job_context
-
-    def invalidate_external_metadata(self):
-        job = self.get_job()
-        self.external_output_metadata.invalidate_external_metadata(
-            [
-                output_dataset_assoc.dataset
-                for output_dataset_assoc in job.output_datasets + job.output_library_datasets
-            ],
-            self.sa_session,
-        )
 
     def setup_external_metadata(
         self,
@@ -2260,6 +2261,8 @@ class MinimalJobWrapper(HasResourceParameters):
             return None
 
         exec_dir = kwds.get("exec_dir", os.path.abspath(os.getcwd()))
+        monitor_command = self.get_destination_configuration("container_monitor_command")
+        get_ip_method = self.get_destination_configuration("container_monitor_get_ip_method")
         work_dir = self.working_directory
         configs_dir = ensure_configs_directory(work_dir)
         container_config = os.path.join(configs_dir, "container_config.json")
@@ -2281,10 +2284,17 @@ class MinimalJobWrapper(HasResourceParameters):
             callback_url = endpoint_base % (galaxy_url, encoded_job_id, job_key)
             container_config_dict["callback_url"] = callback_url
 
+        if get_ip_method:
+            assert get_ip_method.startswith("command:"), f"Unsupported get_ip_method: {get_ip_method}"
+            container_config_dict["get_ip_method"] = get_ip_method
+
         with open(container_config, "w") as f:
             json.dump(container_config_dict, f)
 
-        return f"(python '{exec_dir}'/lib/galaxy_ext/container_monitor/monitor.py &); sleep 1 "
+        if not monitor_command:
+            _monitor_py = shlex.quote(os.path.join(exec_dir, "lib/galaxy_ext/container_monitor/monitor.py"))
+            monitor_command = f"python {_monitor_py}"
+        return f"({monitor_command} &); sleep 1 "
 
     @property
     def user(self):

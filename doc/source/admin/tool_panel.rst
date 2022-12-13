@@ -13,7 +13,7 @@ In the past, the file named by your ``tool_config_file`` configuration setting i
 
 Tool Shed tools
 ~~~~~~~~~~~~~~~
-For purposes of the Galaxy [Tool Shed](/src/toolshed/index.md) the ``tool_config_file`` setting allows for a comma-separated list of files (e.g., ``tool_config_file = tool_conf.xml,shed_tool_conf.xml``,etc.). The additional shed-related tool panel configuration files (``shed_tool_conf.xml``, etc.) are automatically modified when you install or uninstall a Tool Shed repository (that contains tools) to your Galaxy.
+For purposes of the Galaxy `Tool Shed <https://galaxyproject.org/toolshed/>`__, the ``tool_config_file`` setting allows for a comma-separated list of files (e.g., ``tool_config_file = tool_conf.xml,shed_tool_conf.xml``,etc.). The additional shed-related tool panel configuration files (``shed_tool_conf.xml``, etc.) are automatically modified when you install or uninstall a Tool Shed repository (that contains tools) to your Galaxy.
 
 Migrated tools
 ~~~~~~~~~~~~~~

@@ -1,31 +1,32 @@
 <template>
-    <Details
+    <DetailsLayout
         :name="dsc.name"
         :tags="dsc.tags"
         :writeable="writeable"
         :show-annotation="false"
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
-            <h3 v-short="dsc.name || 'Collection'" data-description="collection name display" />
+            <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
+            <h2 v-short="dsc.name || 'Collection'" class="h-md" data-description="collection name display" />
             <CollectionDescription
                 :job-state-summary="jobState"
                 :collection-type="dsc.collection_type"
                 :element-count="dsc.element_count"
                 :elements-datatypes="dsc.elements_datatypes" />
         </template>
-    </Details>
+    </DetailsLayout>
 </template>
 
 <script>
 import short from "components/directives/v-short";
-import Details from "components/History/Layout/Details";
+import DetailsLayout from "components/History/Layout/DetailsLayout";
 import CollectionDescription from "components/History/Content/Collection/CollectionDescription";
 import { JobStateSummary } from "components/History/Content/Collection/JobStateSummary";
 
 export default {
     components: {
         CollectionDescription,
-        Details,
+        DetailsLayout,
     },
     directives: {
         short,

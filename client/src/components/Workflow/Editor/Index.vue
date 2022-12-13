@@ -129,8 +129,8 @@
                                     @onUpgrade="onUpgrade" />
                             </div>
                         </div>
-                        <div ref="right-panel" class="unified-panel-body workflow-right">
-                            <div class="m-2">
+                        <div ref="right-panel" class="unified-panel-body workflow-right p-2">
+                            <div>
                                 <FormTool
                                     v-if="hasActiveNodeTool"
                                     :key="activeNodeId"
@@ -229,6 +229,7 @@ import WorkflowAttributes from "./Attributes";
 import ZoomControl from "./ZoomControl";
 import WorkflowNode from "./Node";
 import Vue from "vue";
+import { ConfirmDialog } from "composables/confirmDialog";
 
 export default {
     components: {
@@ -362,21 +363,29 @@ export default {
         },
     },
     watch: {
-        annotation: function (newAnnotation, oldAnnotation) {
+        id(newId, oldId) {
+            if (oldId) {
+                this._loadCurrent(newId);
+            }
+        },
+        annotation(newAnnotation, oldAnnotation) {
             if (newAnnotation != oldAnnotation) {
                 this.hasChanges = true;
             }
         },
-        name: function (newName, oldName) {
+        name(newName, oldName) {
             if (newName != oldName) {
                 this.hasChanges = true;
             }
         },
-        steps: function (newSteps, oldSteps) {
+        steps(newSteps, oldSteps) {
             this.hasChanges = true;
         },
-        nodes: function (newNodes, oldNodes) {
+        nodes(newNodes, oldNodes) {
             this.hasChanges = true;
+        },
+        hasChanges() {
+            this.$emit("update:confirmation", this.hasChanges);
         },
     },
     created() {
@@ -389,13 +398,6 @@ export default {
             this.canvasManager = new WorkflowCanvas(this, this.$refs.canvas);
             this._loadCurrent(this.id, this.version);
         });
-
-        // Notify user if workflow has not been saved yet
-        window.onbeforeunload = () => {
-            if (this.hasChanges) {
-                return "There are unsaved changes to your workflow which will be lost.";
-            }
-        };
         hide_modal();
     },
     methods: {
@@ -494,7 +496,7 @@ export default {
             this.showInPanel = "attributes";
         },
         onEditSubworkflow(contentId) {
-            const editUrl = `${getAppRoot()}workflow/editor?workflow_id=${contentId}`;
+            const editUrl = `/workflows/edit?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
         async onClone(node) {
@@ -526,7 +528,7 @@ export default {
         copyIntoWorkflow(id = null) {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
-            loadWorkflow(this, id, null, true).then((data) => {
+            loadWorkflow({ workflow: this, id, appendData: true }).then((data) => {
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
                 this.onInsertedStateMessages(insertedStateMessages);
@@ -540,7 +542,7 @@ export default {
             if (stepCount < 10) {
                 this.copyIntoWorkflow(workflowId);
             } else {
-                const confirmed = await this.$bvModal.msgBoxConfirm(
+                const confirmed = await ConfirmDialog.confirm(
                     `Warning this will add ${stepCount} new steps into your current workflow.  You may want to consider using a subworkflow instead.`
                 );
                 if (confirmed) {
@@ -567,7 +569,7 @@ export default {
                 .then((response) => {
                     this.onWorkflowMessage("Workflow saved as", "success");
                     this.hideModal();
-                    this.onNavigate(`${getAppRoot()}workflow/editor?id=${response.data}`, true);
+                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`, true);
                 })
                 .catch((response) => {
                     this.onWorkflowError("Saving workflow failed, please contact an administrator.");
@@ -635,21 +637,14 @@ export default {
             this.markdownText = markdown;
         },
         onRun() {
-            const runUrl = `${getAppRoot()}workflows/run?id=${this.id}`;
+            const runUrl = `/workflows/run?id=${this.id}`;
             this.onNavigate(runUrl);
         },
-        onNavigate(url, force = false) {
-            if (!force && this.hasChanges) {
-                this.onSave(true).then(() => {
-                    window.location = url;
-                });
-            } else {
-                if (this.hasChanges) {
-                    window.onbeforeunload = false;
-                    this.hideModal();
-                }
-                window.location = url;
-            }
+        onNavigate(url) {
+            this.onSave(true).then(() => {
+                this.hasChanges = false;
+                this.$router.push(url);
+            });
         },
         onZoom(zoomLevel) {
             this.zoomLevel = this.canvasManager.setZoom(zoomLevel);
@@ -723,7 +718,8 @@ export default {
         },
         _loadCurrent(id, version) {
             this.onWorkflowMessage("Loading workflow...", "progress");
-            loadWorkflow(this, id, version)
+            this.lastQueue
+                .enqueue(loadWorkflow, { id, version, workflow: this })
                 .then((data) => {
                     this._loadEditorData(data);
                 })

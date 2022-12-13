@@ -32,8 +32,8 @@ from galaxy.schema.fetch_data import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tools import Tool
 from galaxy.tools.search import ToolBoxSearch
+from galaxy.webapps.galaxy.services._fetch_util import validate_and_normalize_targets
 from galaxy.webapps.galaxy.services.base import ServiceBase
-from ._fetch_util import validate_and_normalize_targets
 
 log = logging.getLogger(__name__)
 
@@ -132,8 +132,8 @@ class ToolsService(ServiceBase):
         # dataset upload.
         history_id = payload.get("history_id")
         if history_id:
-            decoded_id = self.decode_id(history_id)
-            target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
+            history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
+            target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
         else:
             target_history = None
 

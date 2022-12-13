@@ -1,4 +1,4 @@
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 
 export const MAX_DESCRIPTION_LENGTH = 40;
 export const DEFAULT_PER_PAGE = 10;

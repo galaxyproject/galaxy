@@ -1,4 +1,5 @@
-import { createLocalVue, mount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 import Monitor from "./Monitor";
 
 jest.mock("app");
@@ -33,16 +34,19 @@ Services.mockImplementation(() => {
 
 describe("Monitor", () => {
     it("test monitor", async () => {
-        const localVue = createLocalVue();
-        const wrapper = mount(Monitor, localVue);
+        const localVue = getLocalVue();
+        const wrapper = mount(Monitor, { localVue });
         await localVue.nextTick();
         const headers = wrapper.findAll("th");
-        expect(headers.length).toBe(2);
+        expect(headers.length).toBe(3);
         expect(headers.at(0).text()).toBe("Name");
         expect(headers.at(1).text()).toBe("Status");
+
         const cells = wrapper.findAll("td");
-        expect(cells.length).toBe(4);
+        expect(cells.length).toBe(6);
         expect(cells.at(0).text()).toBe("name_0 (owner_0)");
-        expect(cells.at(2).text()).toBe("name_1 (owner_1)");
+        expect(cells.at(1).text()).toContain("status_0_0");
+        expect(cells.at(3).text()).toBe("name_1 (owner_1)");
+        expect(cells.at(4).text()).toContain("status_1");
     });
 });

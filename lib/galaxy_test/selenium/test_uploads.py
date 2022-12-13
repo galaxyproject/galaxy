@@ -1,7 +1,6 @@
 import os
 
 import pytest
-from selenium.webdriver.common.keys import Keys
 
 from .framework import (
     selenium_test,
@@ -10,7 +9,7 @@ from .framework import (
 )
 
 
-class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
+class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
     @selenium_test
     def test_upload_file(self):
         self.perform_upload(self.get_filename("1.sam"))
@@ -51,7 +50,7 @@ class UploadsTestCase(SeleniumTestCase, UsesHistoryItemAssertions):
 
         self.history_panel_click_item_title(hid=1, wait=True)
         self.history_panel_item_view_dataset_details(1)
-        param_values = self.driver.find_elements_by_css_selector("#tool-parameters td.tool-parameter-value")
+        param_values = self.driver.find_elements(self.by.CSS_SELECTOR, "#tool-parameters td.tool-parameter-value")
         request_json = param_values[1].text
         for data in paste_content:
             assert f'"paste_content": "{data}"' in request_json
@@ -201,7 +200,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element_by_css_selector("input[type='number']")
+        filter_input = filter_editor_element.find_element(self.by.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_example_1_4_filter_header")
@@ -418,7 +417,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         rule_builder.menu_item_rule_type(rule_type="add-filter-count").wait_for_and_click()
         filter_editor = rule_builder.rule_editor(rule_type="add-filter-count")
         filter_editor_element = filter_editor.wait_for_visible()
-        filter_input = filter_editor_element.find_element_by_css_selector("input[type='number']")
+        filter_input = filter_editor_element.find_element(self.by.CSS_SELECTOR, "input[type='number']")
         filter_input.clear()
         filter_input.send_keys("1")
         self.screenshot("rules_deferred_datasets_4_filter_header")
@@ -481,12 +480,12 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder
         table_elem = rule_builder.table.wait_for_visible()
-        first_cell = table_elem.find_elements_by_css_selector("td")[0]
+        first_cell = table_elem.find_elements(self.by.CSS_SELECTOR, "td")[0]
         action_chains = self.action_chains()
         action_chains.move_to_element(first_cell)
         action_chains.click(first_cell)
         for _ in range(15):
-            action_chains.send_keys(Keys.ARROW_RIGHT)
+            action_chains.send_keys(self.keys.ARROW_RIGHT)
         action_chains.perform()
 
     def _setup_uniprot_example(self):

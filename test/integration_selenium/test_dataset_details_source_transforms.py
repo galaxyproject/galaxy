@@ -1,11 +1,17 @@
+from typing import TYPE_CHECKING
+
 from galaxy_test.driver.integration_setup import PosixFileSourceSetup
 from .framework import (
     selenium_test,
     SeleniumIntegrationTestCase,
 )
 
+if TYPE_CHECKING:
+    from galaxy_test.selenium.framework import SeleniumSessionDatasetPopulator
 
-class DatasetSourceTransformSeleniumIntegrationTestCase(PosixFileSourceSetup, SeleniumIntegrationTestCase):
+
+class TestDatasetSourceTransformSeleniumIntegration(PosixFileSourceSetup, SeleniumIntegrationTestCase):
+    dataset_populator: "SeleniumSessionDatasetPopulator"
     ensure_registered = True
     include_test_data_dir = True
 
@@ -82,7 +88,7 @@ class DatasetSourceTransformSeleniumIntegrationTestCase(PosixFileSourceSetup, Se
         self._write_file_fixtures()
 
 
-class DatasetSourceTransformInModelStoreSeleniumIntegrationTestCase(DatasetSourceTransformSeleniumIntegrationTestCase):
+class TestDatasetSourceTransformInModelStoreSeleniumIntegration(TestDatasetSourceTransformSeleniumIntegration):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

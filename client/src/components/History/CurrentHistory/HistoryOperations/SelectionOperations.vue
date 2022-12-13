@@ -91,7 +91,7 @@
             title-tag="h2"
             @ok="changeDbkeyOfSelected">
             <p v-localize>Select a new Database/Build for {{ numSelected }} items:</p>
-            <GenomeProvider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
+            <db-key-provider v-slot="{ item: dbkeys, loading: loadingDbKeys }">
                 <SingleItemSelector
                     collection-name="Database/Builds"
                     :loading="loadingDbKeys"
@@ -99,7 +99,7 @@
                     :current-item-id="selectedDbKey"
                     class="mb-5 pb-5"
                     @update:selected-item="onSelectedDbKey" />
-            </GenomeProvider>
+            </db-key-provider>
         </b-modal>
         <b-modal
             id="change-datatype-of-selected-content"
@@ -151,17 +151,17 @@ import {
     addTagsToSelectedContent,
     removeTagsFromSelectedContent,
 } from "components/History/model/crud";
+import { checkFilter, getQueryDict } from "utils/filterConversion";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
-import { checkFilter, getQueryDict } from "store/historyStore/model/filtering";
-import { GenomeProvider, DatatypesProvider } from "components/providers";
+import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 import ConfigProvider from "components/providers/ConfigProvider";
 
 export default {
     components: {
-        GenomeProvider,
+        DbKeyProvider,
         DatatypesProvider,
         SingleItemSelector,
         StatelessTags,
@@ -314,7 +314,7 @@ export default {
             await this.buildNewCollection("rules");
         },
         async buildNewCollection(collectionType) {
-            const modalResult = await buildCollectionModal(collectionType, this.history.id, this.contentSelection);
+            const modalResult = await buildCollectionModal(collectionType, this.contentSelection, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested

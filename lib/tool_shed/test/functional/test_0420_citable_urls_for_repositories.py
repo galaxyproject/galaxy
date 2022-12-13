@@ -37,15 +37,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_repository(self):
         """Create and populate the filtering_0420 repository
@@ -64,7 +56,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=strings_displayed,
         )
         self.upload_file(
@@ -88,7 +80,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         Add valid change set revision 1.
         The repository should now contain two changeset revisions, 0:<revision hash> and 1:<revision hash>.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="readme.txt",
@@ -132,10 +124,10 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         Visit the following url and check for strings: ``<tool shed base url>/view/user1/filtering_0420`` .
         The resulting page should contain change set revision 1
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)
-        encoded_repository_id = self.security.encode_id(repository.id)
+        encoded_repository_id = repository.id
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/bview_repository?id=<encoded repository ID>
@@ -162,10 +154,10 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         The resulting page should not contain change set revision 1, but should contain change set revision 0.
         """
         global first_changeset_hash
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)
-        encoded_repository_id = self.security.encode_id(repository.id)
+        encoded_repository_id = repository.id
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>
@@ -192,10 +184,10 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
 
     def test_0030_load_sharable_url_with_invalid_changeset_revision(self):
         """Load a citable url with an invalid changeset revision specified."""
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
         encoded_user_id = self.security.encode_id(test_user_1.id)
-        encoded_repository_id = self.security.encode_id(repository.id)
+        encoded_repository_id = repository.id
         invalid_changeset_hash = "invalid"
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.

@@ -4,7 +4,7 @@ from galaxy import model
 from .test_galaxy_mapping import BaseModelTestCase
 
 
-class MutableColumnTest(BaseModelTestCase):
+class TestMutableColumn(BaseModelTestCase):
     def persist_and_reload(self, item):
         item_id = item.id
         self.model.session.flush()

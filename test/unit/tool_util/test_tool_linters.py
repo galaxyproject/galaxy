@@ -420,6 +420,34 @@ INPUTS_TYPE_CHILD_COMBINATIONS = """
 </tool>
 """
 
+INPUTS_DUPLICATE_NAMES = """
+<tool>
+    <inputs>
+        <param name="dup" type="text"/>
+        <param name="dup" type="text"/>
+        <param name="dup_in_section" type="text"/>
+        <section name="sec">
+            <param name="dup_in_section" type="text"/>
+        </section>
+        <conditional name="cond">
+            <param name="dup_in_cond" type="select">
+                <option value="a">a</option>
+                <option value="b">b</option>
+            </param>
+            <when value="a">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+            <when value="b">
+                <param name="dup_in_cond" type="text"/>
+            </when>
+        </conditional>
+        <param name="dup_in_output" type="text"/>
+    </inputs>
+    <outputs>
+        <data name="dup_in_output"/>
+    </outputs>
+</tool>
+"""
 
 # test tool xml for outputs linter
 OUTPUTS_MISSING = """
@@ -608,6 +636,7 @@ TESTS_EXPECT_FAILURE_OUTPUT = """
         <test expect_failure="true">
             <output name="test"/>
         </test>
+        <test expect_num_outputs="1" expect_failure="true"/>
     </tests>
 </tool>
 """
@@ -715,6 +744,20 @@ TESTS_DISCOVER_OUTPUTS = """
             <output_collection name="collection_name" count="1">
                 <element/>
             </output_collection>
+        </test>
+    </tests>
+</tool>
+"""
+
+TESTS_EXPECT_NUM_OUTPUTS_FILTER = """
+<tool>
+    <outputs>
+        <data>
+            <filter/>
+        </data>
+    </outputs>
+    <tests>
+        <test expect_failure="false">
         </test>
     </tests>
 </tool>
@@ -1233,6 +1276,19 @@ def test_inputs_type_child_combinations(lint_ctx):
     assert len(lint_ctx.error_messages) == 3
 
 
+def test_inputs_duplicate_names(lint_ctx):
+    tool_source = get_xml_tool_source(INPUTS_DUPLICATE_NAMES)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
+    assert "Tool defines multiple parameters with the same name: 'dup'" in lint_ctx.error_messages
+    assert (
+        "Tool defines an output with a name equal to the name of an input: 'dup_in_output'" in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 2
+
+
 def test_inputs_repeats(lint_ctx):
     tool_source = get_xml_tool_source(REPEATS)
     run_lint(lint_ctx, inputs.lint_repeats, tool_source)
@@ -1409,7 +1465,7 @@ def test_stdio_invalid_match(lint_ctx):
 
 def test_tests_absent(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_ABSENT)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "No tests found, most tools should define test cases." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1419,7 +1475,7 @@ def test_tests_absent(lint_ctx):
 
 def test_tests_data_source(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_ABSENT_DATA_SOURCE)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "No tests found, that should be OK for data_sources." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1429,7 +1485,7 @@ def test_tests_data_source(lint_ctx):
 
 def test_tests_param_output_names(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_PARAM_OUTPUT_NAMES)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "1 test(s) found." in lint_ctx.valid_messages
     assert "Test 1: Found test param tag without a name defined." in lint_ctx.error_messages
     assert "Test 1: Test param non_existent_test_name not found in the inputs" in lint_ctx.error_messages
@@ -1451,18 +1507,22 @@ def test_tests_param_output_names(lint_ctx):
 
 def test_tests_expect_failure_output(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_EXPECT_FAILURE_OUTPUT)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "No valid test(s) found." in lint_ctx.warn_messages
     assert "Test 1: Cannot specify outputs in a test expecting failure." in lint_ctx.error_messages
+    assert (
+        "Test 2: Cannot make assumptions on the number of outputs in a test expecting failure."
+        in lint_ctx.error_messages
+    )
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 1
+    assert len(lint_ctx.error_messages) == 2
 
 
 def test_tests_without_expectations(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_WO_EXPECTATIONS)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert (
         "Test 1: No outputs or expectations defined for tests, this test is likely invalid." in lint_ctx.warn_messages
     )
@@ -1475,7 +1535,7 @@ def test_tests_without_expectations(lint_ctx):
 
 def test_tests_valid(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_VALID)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "1 test(s) found." in lint_ctx.valid_messages
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 1
@@ -1485,7 +1545,7 @@ def test_tests_valid(lint_ctx):
 
 def test_tests_asserts(lint_ctx):
     tool_source = get_xml_tool_source(ASSERTS)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert "Test 1: unknown assertion 'invalid'" in lint_ctx.error_messages
     assert "Test 1: unknown attribute 'invalid_attrib' for 'has_text'" in lint_ctx.error_messages
     assert "Test 1: missing attribute 'text' for 'has_text'" in lint_ctx.error_messages
@@ -1504,7 +1564,7 @@ def test_tests_asserts(lint_ctx):
 
 def test_tests_output_type_mismatch(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_OUTPUT_TYPE_MISMATCH)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert (
         "Test 1: test output collection_name does not correspond to a 'data' output, but a 'collection'"
         in lint_ctx.error_messages
@@ -1519,7 +1579,7 @@ def test_tests_output_type_mismatch(lint_ctx):
 
 def test_tests_discover_outputs(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
-    run_lint(lint_ctx, tests.lint_tsts, tool_source)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
     assert (
         "Test 3: test output 'data_name' must have a 'count' attribute and/or 'discovered_dataset' children"
         in lint_ctx.error_messages
@@ -1538,6 +1598,14 @@ def test_tests_discover_outputs(lint_ctx):
     )
     assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 4
+
+
+def test_tests_expect_num_outputs_filter(lint_ctx):
+    tool_source = get_xml_tool_source(TESTS_EXPECT_NUM_OUTPUTS_FILTER)
+    run_lint(lint_ctx, tests.lint_tests, tool_source)
+    assert "Test should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert len(lint_ctx.error_messages) == 0
 
 
 def test_xml_order(lint_ctx):
@@ -1686,9 +1754,9 @@ def test_linting_cwl_tool(lint_ctx):
         tool_source = tool_sources[0][1]
         lint_tool_source_with(lint_ctx, tool_source)
     assert "Tool defines a version [0.0.1]." in lint_ctx.valid_messages
-    assert "Tool defines a name [tool]." in lint_ctx.valid_messages
-    assert "Tool defines an id [tool]." in lint_ctx.valid_messages
-    assert "Tool specifies profile version [16.04]." in lint_ctx.valid_messages
+    assert "Tool defines a name [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool defines an id [tool.cwl]." in lint_ctx.valid_messages
+    assert "Tool specifies profile version [17.09]." in lint_ctx.valid_messages
     assert "CWL appears to be valid." in lint_ctx.info_messages
     assert "Description of tool is empty or absent." in lint_ctx.warn_messages
     assert "Tool does not specify a DockerPull source." in lint_ctx.warn_messages

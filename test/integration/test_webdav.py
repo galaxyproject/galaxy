@@ -18,7 +18,9 @@ skip_if_no_webdav = pytest.mark.skipif(not os.environ.get("GALAXY_TEST_WEBDAV"),
 
 
 @skip_if_no_webdav
-class WebDavIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestWebDavIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

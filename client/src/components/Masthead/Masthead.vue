@@ -1,121 +1,105 @@
-<template>
-    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-center">
-        <b-navbar-brand :href="brandLink" aria-label="homepage">
-            <img alt="logo" class="navbar-brand-image" :src="brandImage" />
-            <img v-if="brandImageSecondary" alt="logo" class="navbar-brand-image" :src="brandImageSecondary" />
-            <span class="navbar-brand-title">{{ brandTitle }}</span>
-        </b-navbar-brand>
-        <b-navbar-nav>
-            <masthead-item
-                v-for="(tab, idx) in tabs"
-                v-show="!(tab.hidden === undefined ? false : tab.hidden)"
-                :key="`tab-${idx}`"
-                :tab="tab"
-                :active-tab="activeTab">
-            </masthead-item>
-        </b-navbar-nav>
-        <div ref="quota-meter-container" class="quota-meter-container" />
-    </b-navbar>
-</template>
-
-<script>
+<script setup>
 import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
-import { fetchMenu } from "layout/menu";
 import { loadWebhookMenuItems } from "./_webhooks";
+import QuotaMeter from "./QuotaMeter";
+import { safePath } from "utils/redirect";
+import { getActiveTab } from "./utilities";
+import { watch, computed, ref } from "vue";
+import { onMounted } from "vue";
+import { useRoute } from "vue-router/composables";
 
-export default {
-    name: "Masthead",
-    components: {
-        BNavbar,
-        BNavbarBrand,
-        BNavbarNav,
-        MastheadItem,
+// basics
+const route = useRoute();
+const emit = defineEmits(["open-url"]);
+
+/* props */
+const props = defineProps({
+    tabs: {
+        type: Array,
+        default: () => [],
     },
-    props: {
-        displayGalaxyBrand: {
-            type: Boolean,
-            default: true,
-        },
-        brand: {
-            type: String,
-            default: null,
-        },
-        brandLink: {
-            type: String,
-            default: null,
-        },
-        brandImage: {
-            type: String,
-            default: null,
-        },
-        brandImageSecondary: {
-            type: String,
-            default: null,
-        },
-        initialActiveTab: {
-            type: String,
-            default: null,
-        },
-        mastheadState: {
-            type: Object,
-            default: null,
-        },
-        menuOptions: {
-            type: Object,
-            default: null,
-        },
+    brand: {
+        type: String,
+        default: null,
     },
-    data() {
-        return {
-            activeTab: null,
-            baseTabs: [],
-            extensionTabs: [],
-        };
+    initialActiveTab: {
+        type: String,
+        default: "analysis",
     },
-    computed: {
-        brandTitle() {
-            let brandTitle = this.displayGalaxyBrand ? "Galaxy " : "";
-            if (this.brand) {
-                brandTitle += this.brand;
-            }
-            return brandTitle;
-        },
-        tabs() {
-            const windowTabs = [this.mastheadState.windowManager.buttonActive];
-            const tabs = [].concat(this.baseTabs, this.extensionTabs, windowTabs);
-            return tabs.map(this._tabToJson);
-        },
+    logoUrl: {
+        type: String,
+        default: null,
     },
-    created() {
-        this.activeTab = this.initialActiveTab;
-        this.baseTabs = fetchMenu(this.menuOptions);
-        loadWebhookMenuItems(this.extensionTabs);
+    logoSrc: {
+        type: String,
+        default: null,
     },
-    mounted() {
-        this.mastheadState.quotaMeter.setElement(this.$refs["quota-meter-container"]);
-        this.mastheadState.quotaMeter.render();
+    logoSrcSecondary: {
+        type: String,
+        default: null,
     },
-    methods: {
-        addItem(item) {
-            this.tabs.push(item);
-        },
-        highlight(activeTab) {
-            this.activeTab = activeTab;
-        },
-        _tabToJson(el) {
-            const defaults = {
-                visible: true,
-                target: "_parent",
-            };
-            let asJson;
-            if (el.toJSON instanceof Function) {
-                asJson = el.toJSON();
-            } else {
-                asJson = el;
-            }
-            return Object.assign({}, defaults, asJson);
-        },
+    windowTab: {
+        type: Object,
+        default: null,
     },
-};
+});
+
+/* refs */
+const activeTab = ref(props.initialActiveTab);
+const extensionTabs = ref([]);
+const windowToggle = ref(false);
+
+/* computed */
+const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
+
+/* methods */
+function setActiveTab() {
+    const currentRoute = route.path;
+    activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
+}
+function onWindowToggle() {
+    windowToggle.value = !windowToggle.value;
+}
+
+/* watchers */
+watch(
+    () => route.path,
+    () => {
+        setActiveTab();
+    }
+);
+
+/* lifecyle */
+onMounted(() => {
+    loadWebhookMenuItems(extensionTabs.value);
+    setActiveTab();
+});
 </script>
+
+<template>
+    <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+        <b-navbar-nav>
+            <b-navbar-brand id="analysis" :href="safePath(logoUrl)" aria-label="homepage">
+                <b-button v-b-tooltip.hover variant="link" size="sm" title="Home">
+                    <img alt="logo" :src="safePath(logoSrc)" />
+                    <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
+                </b-button>
+            </b-navbar-brand>
+            <b-nav-item v-if="brand" class="navbar-brand-title" disabled>
+                {{ brand }}
+            </b-nav-item>
+        </b-navbar-nav>
+        <b-navbar-nav>
+            <masthead-item
+                v-for="(tab, idx) in allTabs"
+                v-show="tab.hidden !== true"
+                :key="`tab-${idx}`"
+                :tab="tab"
+                :active-tab="activeTab"
+                @open-url="emit('open-url', $event)" />
+            <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
+        </b-navbar-nav>
+        <quota-meter />
+    </b-navbar>
+</template>

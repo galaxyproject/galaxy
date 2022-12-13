@@ -3,6 +3,7 @@ import logging
 import os
 from typing import (
     Set,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -12,6 +13,9 @@ from galaxy.datatypes.sniff import (
     iter_headers,
 )
 from .tabular import Tabular
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -23,12 +27,12 @@ class GoldenPath(Tabular):
     edam_format = "format_3693"
     file_ext = "agp"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         # AGPFile reads and validates entire file.
         AGPFile(dataset.file_name)
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checks for and does cursory validation on data that looks like AGP
 
@@ -337,22 +341,18 @@ class AGPLine(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def __str__(self):
         """Return the tab delimited AGP line"""
-        pass
 
     @abc.abstractmethod
     def __iter__(self):
         """Return the AGP line's iterator"""
-        pass
 
     @abc.abstractmethod
     def _validate_numerics(self):
         """Ensure all numeric fields and positive integers."""
-        pass
 
     @abc.abstractmethod
     def _validate_strings(self):
         """Ensure all text fields are strings."""
-        pass
 
     def _validate_obj_coords(self):
         if self.obj_beg > self.obj_end:
@@ -367,7 +367,6 @@ class AGPLine(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _validate_line(self):
         """Final remaining validations specific to the gap or sequence AGP lines."""
-        pass
 
 
 class AGPSeqLine(AGPLine):

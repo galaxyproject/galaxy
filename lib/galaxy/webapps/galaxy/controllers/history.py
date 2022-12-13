@@ -2,15 +2,8 @@ import logging
 
 from dateutil.parser import isoparse
 from markupsafe import escape
-from sqlalchemy import (
-    false,
-    null,
-    true,
-)
-from sqlalchemy.orm import (
-    joinedload,
-    undefer,
-)
+from sqlalchemy import false
+from sqlalchemy.orm import undefer
 
 from galaxy import (
     exceptions,
@@ -26,7 +19,6 @@ from galaxy.model.item_attrs import (
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     listify,
-    parse_int,
     sanitize_text,
     string_as_bool,
     unicodify,
@@ -48,7 +40,6 @@ from galaxy.webapps.base.controller import (
     SUCCESS,
     WARNING,
 )
-from ._create_history_template import render_item
 from ..api import depends
 
 log = logging.getLogger(__name__)
@@ -223,77 +214,8 @@ class SharedHistoryListGrid(grids.Grid):
         return query.filter(model.HistoryUserShareAssociation.user == trans.user)
 
 
-class HistoryAllPublishedGrid(grids.Grid):
-    class NameURLColumn(grids.PublicURLColumn, NameColumn):
-        pass
-
-    title = "Published Histories"
-    model_class = model.History
-    default_sort_key = "update_time"
-    default_filter = dict(public_url="All", username="All", tags="All")
-    use_paging = True
-    num_rows_per_page = 50
-    columns = [
-        NameURLColumn("Name", key="name", filterable="advanced"),
-        grids.OwnerAnnotationColumn(
-            "Annotation",
-            key="annotation",
-            model_annotation_association_class=model.HistoryAnnotationAssociation,
-            filterable="advanced",
-        ),
-        grids.OwnerColumn("Owner", key="username", model_class=model.User, filterable="advanced"),
-        grids.CommunityRatingColumn("Community Rating", key="rating"),
-        grids.CommunityTagsColumn(
-            "Community Tags",
-            key="tags",
-            model_tag_association_class=model.HistoryTagAssociation,
-            filterable="advanced",
-            grid_name="PublicHistoryListGrid",
-        ),
-        grids.ReverseSortColumn("Last Updated", key="update_time", format=time_ago),
-    ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search name, annotation, owner, and tags",
-            cols_to_filter=[columns[0], columns[1], columns[2], columns[4]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-
-    def build_initial_query(self, trans, **kwargs):
-        # TODO: Tags are still loaded one at a time, consider doing this all at once:
-        # - joinedload would keep everything in one query but would explode the number of rows and potentially
-        #   result in unneeded info transferred over the wire.
-        # - subqueryload("tags").subqueryload("tag") would probably be better under postgres but I'd
-        #   like some performance data against a big database first - might cause problems?
-
-        # - Pull down only username from associated User table since that is all that is used
-        #   (can be used during search). Need join in addition to the joinedload since it is used in
-        #   the .count() query which doesn't respect the joinedload options  (could eliminate this with #5523).
-        # - Undefer average_rating column to prevent loading individual ratings per-history.
-        # - Eager load annotations - this causes a left join which might be inefficient if there were
-        #   potentially many items per history (like if joining HDAs for instance) but there should only
-        #   be at most one so this is fine.
-        return (
-            trans.sa_session.query(self.model_class)
-            .join("user")
-            .options(joinedload("user").load_only("username"), joinedload("annotations"), undefer("average_rating"))
-        )
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        # A public history is published, has a slug, and is not deleted.
-        return (
-            query.filter(self.model_class.published == true())
-            .filter(self.model_class.slug != null())
-            .filter(self.model_class.deleted == false())
-        )
-
-
 class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings):
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
-    history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
     slug_builder: SlugBuilder = depends(SlugBuilder)
 
@@ -313,12 +235,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # ......................................................................... lists
     stored_list_grid = HistoryListGrid()
     shared_list_grid = SharedHistoryListGrid()
-    published_list_grid = HistoryAllPublishedGrid()
-
-    @web.expose
-    @web.json
-    def list_published(self, trans, **kwargs):
-        return self.published_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
     @web.require_login("work with multiple histories")
@@ -521,106 +437,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             show_hidden=string_as_bool(show_hidden),
         )
 
-    @web.expose
-    @web.json
-    def display_structured(self, trans, id=None):
-        """
-        Display a history as a nested structure showing the jobs and workflow
-        invocations that created each dataset (if any).
-        """
-        # Get history
-        if id is None:
-            id = trans.history.id
-        else:
-            id = self.decode_id(id)
-        # Expunge history from the session to allow us to force a reload
-        # with a bunch of eager loaded joins
-        trans.sa_session.expunge(trans.history)
-        history = (
-            trans.sa_session.query(model.History)
-            .options(
-                joinedload("active_datasets")
-                .joinedload("creating_job_associations")
-                .joinedload("job")
-                .joinedload("workflow_invocation_step")
-                .joinedload("workflow_invocation")
-                .joinedload("workflow"),
-            )
-            .get(id)
-        )
-        if not (
-            history
-            and (
-                (history.user and trans.user and history.user.id == trans.user.id)
-                or (trans.history and history.id == trans.history.id)
-                or trans.user_is_admin
-            )
-        ):
-            return trans.show_error_message("Cannot display history structure.")
-        # Resolve jobs and workflow invocations for the datasets in the history
-        # items is filled with items (hdas, jobs, or workflows) that go at the
-        # top level
-        items = []
-        # First go through and group hdas by job, if there is no job they get
-        # added directly to items
-        jobs = {}
-        for hda in history.active_datasets:
-            if hda.visible is False:
-                continue
-            # Follow "copied from ..." association until we get to the original
-            # instance of the dataset
-            original_hda = hda
-            # while original_hda.copied_from_history_dataset_association:
-            #     original_hda = original_hda.copied_from_history_dataset_association
-            # Check if the job has a creating job, most should, datasets from
-            # before jobs were tracked, or from the upload tool before it
-            # created a job, may not
-            if not original_hda.creating_job_associations:
-                items.append((hda, None))
-            # Attach hda to correct job
-            # -- there should only be one creating_job_association, so this
-            #    loop body should only be hit once
-            for assoc in original_hda.creating_job_associations:
-                job = assoc.job
-                if job in jobs:
-                    jobs[job].append((hda, None))
-                else:
-                    jobs[job] = [(hda, None)]
-        # Second, go through the jobs and connect to workflows
-        wf_invocations = {}
-        for job, hdas in jobs.items():
-            # Job is attached to a workflow step, follow it to the
-            # workflow_invocation and group
-            if job.workflow_invocation_step:
-                wf_invocation = job.workflow_invocation_step.workflow_invocation
-                if wf_invocation in wf_invocations:
-                    wf_invocations[wf_invocation].append((job, hdas))
-                else:
-                    wf_invocations[wf_invocation] = [(job, hdas)]
-            # Not attached to a workflow, add to items
-            else:
-                items.append((job, hdas))
-        # Finally, add workflow invocations to items, which should now
-        # contain all hdas with some level of grouping
-        items.extend(wf_invocations.items())
-        # Sort items by age
-        items.sort(key=(lambda x: x[0].create_time), reverse=True)
-        # logic taken from mako files
-        from galaxy.managers import hdas
-
-        hda_serializer = hdas.HDASerializer(trans.app)
-        hda_dicts = []
-        id_hda_dict_map = {}
-        for hda in history.active_datasets:
-            hda_dict = hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, view="detailed")
-            id_hda_dict_map[hda_dict["id"]] = hda_dict
-            hda_dicts.append(hda_dict)
-
-        html_template = ""
-        for entity, children in items:
-            html_template += render_item(trans, entity, children)
-        return {"name": history.name, "history_json": hda_dicts, "template": html_template}
-
     @expose_api_anonymous
     def view(self, trans, id=None, show_deleted=False, show_hidden=False, use_panels=True):
         """
@@ -658,23 +474,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             "allow_user_dataset_purge": trans.app.config.allow_user_dataset_purge,
         }
 
-    @web.require_login("use more than one Galaxy history")
-    @web.expose
-    def view_multiple(self, trans, include_deleted_histories=False, order="update_time", limit=10):
-        """ """
-        current_history_id = trans.security.encode_id(trans.history.id)
-        # TODO: allow specifying user_id for admin?
-        include_deleted_histories = string_as_bool(include_deleted_histories)
-        limit = parse_int(limit, min_val=1, default=10, allow_none=True)
-
-        return trans.fill_template_mako(
-            "history/view_multiple.mako",
-            current_history_id=current_history_id,
-            include_deleted_histories=include_deleted_histories,
-            order=order,
-            limit=limit,
-        )
-
     @web.expose
     def display_by_username_and_slug(self, trans, username, slug):
         """
@@ -683,44 +482,23 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # Get history.
         session = trans.sa_session
         user = session.query(model.User).filter_by(username=username).first()
-        history = (
-            trans.sa_session.query(model.History)
-            .options(joinedload("tags"))
-            .options(joinedload("annotations"))
-            .filter_by(user=user, slug=slug, deleted=False)
-            .first()
-        )
+        history = trans.sa_session.query(model.History).filter_by(user=user, slug=slug, deleted=False).first()
         if history is None:
             raise web.httpexceptions.HTTPNotFound()
+
         # Security check raises error if user cannot access history.
         self.history_manager.error_unless_accessible(history, trans.user, current_history=trans.history)
 
-        # Get rating data.
-        user_item_rating = 0
-        if trans.get_user():
-            user_item_rating = self.get_user_item_rating(trans.sa_session, trans.get_user(), history)
-            if user_item_rating:
-                user_item_rating = user_item_rating.rating
-            else:
-                user_item_rating = 0
-        ave_item_rating, num_ratings = self.get_ave_item_rating_data(trans.sa_session, history)
+        # Encode history id.
+        history_id = trans.security.encode_id(history.id)
 
-        # create ownership flag for template, dictify models
-        user_is_owner = trans.user == history.user
-        history_dictionary = self.history_serializer.serialize_to_view(
-            history, view="dev-detailed", user=trans.user, trans=trans
-        )
-        history_dictionary["annotation"] = self.get_item_annotation_str(trans.sa_session, history.user, history)
-
-        return trans.fill_template_mako(
-            "history/display.mako",
-            item=history,
-            item_data=[],
-            user_is_owner=user_is_owner,
-            history_dict=history_dictionary,
-            user_item_rating=user_item_rating,
-            ave_item_rating=ave_item_rating,
-            num_ratings=num_ratings,
+        # Redirect to client.
+        return trans.response.send_redirect(
+            web.url_for(
+                controller="published",
+                action="history",
+                id=history_id,
+            )
         )
 
     @web.legacy_expose_api
@@ -867,19 +645,6 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         trans.sa_session.flush()
         return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
         # TODO: used in index.mako
-
-    @web.expose
-    @web.require_login("rate items")
-    @web.json
-    def rate_async(self, trans, id, rating):
-        """Rate a history asynchronously and return updated community data."""
-        history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if not history:
-            return trans.show_error_message("The specified history does not exist.")
-        # Rate history.
-        self.rate_item(trans.sa_session, trans.get_user(), history, rating)
-        return self.get_ave_item_rating_data(trans.sa_session, history)
-        # TODO: used in display_base.mako
 
     @web.expose
     @web.json

@@ -8,6 +8,7 @@
                 <!-- regular dot and dot on numpad have different codes -->
                 <b-form-input
                     v-model="currentValue"
+                    :no-wheel="true"
                     :step="step"
                     size="sm"
                     :type="fieldType"

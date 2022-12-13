@@ -369,6 +369,17 @@
             <param id="insecure">false</param>
             <!-- False to communicate with Chronos over HTTPS; true otherwise-->
         </plugin>
+        <plugin id="aws_batch" type="runner" load="galaxy.jobs.runners.aws:AWSBatchJobRunner">
+            <!-- Run `aws configure` with aws cli or set params below -->
+            <!-- <param id="aws_access_key_id">xxxxxxxxx</param>
+            <param id="aws_secret_access_key">xxxxxxxxxxxxxxxxxxx</param>
+            <param id="region">us-west-1</param> -->
+            <!--
+               This runner requires that an AWS EFS is mounted as a local drive  and all Galaxy
+               job-related paths, such as objects, job_directory, tool_directory and so on, are placed
+               in the EFS drive.
+            -->
+        </plugin>
         <!-- Additionally any plugin or destination (below) may define an "enabled" parameter that should
              evaluate to True or False. When setup using
                 <param id="enabled" from_environ="<VAR>">True|False</param>
@@ -1065,9 +1076,10 @@
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
             <param id="container_monitor">true</param>
-            <!-- Flag for appending the container monitor command to jobs. This should be set to false
-                 when running Interactive Tools with the kubernetes runner, but is needed for running with the
-                 local docker runner.
+            <!-- Flag for appending the container monitor command to jobs. The monitor is responsible for determining
+                 the IP and port of the container and reporting it to Galaxy. This should be set to false when running
+                 Interactive Tools with the kubernetes runner, but is needed for running with local, DRM, and
+                 non-Kubernetes Pulsar docker runners.
             -->
         </destination>
         <destination id="kubernetes" runner="k8s">
@@ -1126,7 +1138,42 @@
             <param id="max_retries">0</param>
             <!-- Number of retries to attempt if a command returns a non-zero status -->
         </destination>
-
+        <destination id="aws_batch_auto" runner="aws_batch">
+            <param id="docker_enabled">true</param>
+            <!-- `docker_enabled = true` is always required -->
+            <param id="job_queue">arn_for_Fargate_job_queue, arn_for_EC2_job_queue</param>
+            <!-- Fargate and non-GPU EC2 -->
+            <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+            <param id="vcpu">1</param>
+            <param id="memory">2048</param>
+            <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+            <param id="efs_mount_point">/mnt/efs/fs1</param>
+            <!-- This is the location where the EFS is mounted -->
+            <param id="fargate_version">1.4.0</param>
+            <!-- `fargate_version` is required to use Fargate compute resources -->
+            <param id="auto_platform">true</param>
+            <!-- To let AWS Batch retry on failed jobs, set the number of attempts to 2-10 and `on_exit` conditions -->
+            <!-- 
+            <param id="retry_attempts">2</param>
+            <param id="retry_on_exit_statusReason">...</param>
+            <param id="retry_on_exit_reason">...</param>
+            <param id="retry_on_exit_exitCode">...</param>
+            <param id="retry_on_exit_action">exit</param>
+            -->
+        </destination>
+        <destination id="aws_batch_gpu" runner="aws_batch">
+            <param id="docker_enabled">true</param>
+            <!-- `docker_enabled = true` is always required -->
+            <param id="job_queue">arn_for_gpu_job_queue</param>
+            <!-- Job queue must be built on GPU-specific compute environment -->
+            <param id="job_role_arn">arn:aws:iam::xxxxxxxxxxxxxxxxxx</param>
+            <param id="vcpu">4</param>
+            <param id="memory">20000</param>
+            <param id="gpu">1</param>
+            <param id="efs_filesystem_id">fs-xxxxxxxxxxxxxx</param>
+            <param id="efs_mount_point">/mnt/efs/fs1</param>
+             <!-- This is the location where the EFS is mounted -->
+        </destination>
         <!-- Templatized destinations - macros can be used to create templated
         destinations with reduced XML duplication. Here we are creating 4 destinations in 4 lines instead of 28 using the macros defined below.
         -->

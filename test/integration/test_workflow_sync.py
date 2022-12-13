@@ -13,7 +13,7 @@ from galaxy_test.base.workflow_fixtures import WORKFLOW_SIMPLE_CAT_TWICE
 from galaxy_test.driver import integration_util
 
 
-class WorkflowSyncTestCase(integration_util.IntegrationTestCase):
+class TestWorkflowSync(integration_util.IntegrationTestCase):
 
     framework_tool_and_types = True
     require_admin_user = True

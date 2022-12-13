@@ -4,19 +4,34 @@ Mock infrastructure for testing ModelManagers.
 import os
 import shutil
 import tempfile
-from typing import Any
+from typing import (
+    Any,
+    cast,
+    Optional,
+)
 
 from galaxy import (
     di,
     quota,
 )
+from galaxy.app import UniverseApplication
 from galaxy.auth import AuthManager
 from galaxy.celery import set_thread_app
 from galaxy.config import CommonConfigurationMixin
+from galaxy.config_watchers import ConfigWatchers
+from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
+from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.hdas import HDAManager
+from galaxy.managers.histories import HistoryManager
+from galaxy.managers.jobs import JobSearch
 from galaxy.managers.users import UserManager
+from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import tags
-from galaxy.model.base import SharedModelMapping
+from galaxy.model.base import (
+    ModelMapping,
+    SharedModelMapping,
+)
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.unittest_utils import (
@@ -30,6 +45,8 @@ from galaxy.structured_app import (
     StructuredApp,
 )
 from galaxy.tool_util.deps.containers import NullContainerFinder
+from galaxy.tools import ToolBox
+from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
@@ -74,28 +91,45 @@ def buildMockEnviron(**kwargs):
 
 class MockApp(di.Container, GalaxyDataTestApp):
     config: "MockAppConfig"
+    amqp_type: str
+    job_search: Optional[JobSearch] = None
+    toolbox: ToolBox
+    tool_cache: ToolCache
+    install_model: ModelMapping
+    watchers: ConfigWatchers
+    dataset_collection_manager: DatasetCollectionManager
+    hda_manager: HDAManager
+    workflow_manager: WorkflowsManager
+    history_manager: HistoryManager
+    job_metrics: JobMetrics
+    stop: bool
 
-    def __init__(self, config=None, **kwargs):
+    def __init__(self, config=None, **kwargs) -> None:
         super().__init__()
         config = config or MockAppConfig(**kwargs)
         GalaxyDataTestApp.__init__(self, config=config, **kwargs)
-        self[BasicSharedApp] = self
-        self[MinimalManagerApp] = self
-        self[StructuredApp] = self
+        self[BasicSharedApp] = cast(BasicSharedApp, self)
+        self[MinimalManagerApp] = cast(MinimalManagerApp, self)  # type: ignore[type-abstract]
+        self[StructuredApp] = cast(StructuredApp, self)  # type: ignore[type-abstract]
         self[idencoding.IdEncodingHelper] = self.security
         self.name = kwargs.get("name", "galaxy")
         self[SharedModelMapping] = self.model
         self[GalaxyModelMapping] = self.model
         sts_config = ShortTermStorageConfiguration(short_term_storage_directory=os.path.join(config.data_dir, "sts"))
         sts_manager = ShortTermStorageManager(sts_config)
-        self[ShortTermStorageAllocator] = sts_manager
-        self[ShortTermStorageMonitor] = sts_manager
+        self[ShortTermStorageAllocator] = sts_manager  # type: ignore[type-abstract]
+        self[ShortTermStorageMonitor] = sts_manager  # type: ignore[type-abstract]
         self[galaxy_scoped_session] = self.model.context
         self.visualizations_registry = MockVisualizationsRegistry()
         self.tag_handler = tags.GalaxyTagHandler(self.model.context)
         self[tags.GalaxyTagHandler] = self.tag_handler
         self.quota_agent = quota.DatabaseQuotaAgent(self.model)
-        self.job_config = Bunch(dynamic_params=None, destinations={}, assign_handler=lambda *args, **kwargs: None)
+        self.job_config = Bunch(
+            dynamic_params=None,
+            destinations={},
+            assign_handler=lambda *args, **kwargs: None,
+            get_job_tool_configurations=lambda ids, tool_classes: [Bunch(handler=Bunch())],
+        )
         self.tool_data_tables = ToolDataTableManager(tool_data_path=self.config.tool_data_path)
         self.dataset_collections_service = None
         self.container_finder = NullContainerFinder()
@@ -105,7 +139,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
         self.job_manager = NoopManager()
         self.application_stack = ApplicationStack()
         self.auth_manager = AuthManager(self.config)
-        self.user_manager = UserManager(self)
+        self.user_manager = UserManager(cast(BasicSharedApp, self))
         self.execution_timer_factory = Bunch(get_timer=StructuredExecutionTimer)
         self.interactivetool_manager = Bunch(create_interactivetool=lambda *args, **kwargs: None)
         self.is_job_handler = False
@@ -122,6 +156,9 @@ class MockApp(di.Container, GalaxyDataTestApp):
         # need to wait.
         return True
 
+    def reindex_tool_search(self) -> None:
+        raise NotImplementedError
+
 
 class MockLock:
     def __enter__(self):
@@ -133,7 +170,7 @@ class MockLock:
 
 class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
     class MockSchema(Bunch):
-        pass
+        defaults = {"tool_dependency_dir": "dependencies"}
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -171,6 +208,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         self.shed_tool_config_file = "config/shed_tool_conf.xml"
         self.shed_tool_config_file_set = False
+        self.update_integrated_tool_panel = True
         self.enable_beta_edam_toolbox = False
         self.preserve_python_environment = "always"
         self.enable_beta_gdpr = False
@@ -228,7 +266,7 @@ class MockWebapp:
 
 class MockTrans:
     def __init__(self, app=None, user=None, history=None, **kwargs):
-        self.app = app or MockApp(**kwargs)
+        self.app = cast(UniverseApplication, app or MockApp(**kwargs))
         self.model = self.app.model
         self.webapp = MockWebapp(self.app.security, **kwargs)
         self.sa_session = self.app.model.session

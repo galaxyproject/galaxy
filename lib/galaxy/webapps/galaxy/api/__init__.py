@@ -48,20 +48,19 @@ try:
 except ImportError:
     request_context = None  # type: ignore[assignment]
 
-from galaxy import app as galaxy_app
 from galaxy import (
+    app as galaxy_app,
     model,
     web,
 )
 from galaxy.exceptions import (
     AdminRequiredException,
     UserCannotRunAsException,
-    UserInvalidRunAsException,
 )
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model import User
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.decorators import require_admin_message
@@ -91,7 +90,7 @@ async def get_app_with_request_session() -> AsyncGenerator[StructuredApp, None]:
         app.model.unset_request_id(request_id)
 
 
-DependsOnApp = Depends(get_app_with_request_session)
+DependsOnApp = cast(StructuredApp, Depends(get_app_with_request_session))
 
 
 T = TypeVar("T")
@@ -118,7 +117,7 @@ def get_session_manager(app: StructuredApp = DependsOnApp) -> GalaxySessionManag
 
 
 def get_session(
-    session_manager: GalaxySessionManager = Depends(get_session_manager),
+    session_manager=cast(GalaxySessionManager, Depends(get_session_manager)),
     security: IdEncodingHelper = depends(IdEncodingHelper),
     galaxysession: str = Security(api_key_cookie),
 ) -> Optional[model.GalaxySession]:
@@ -131,11 +130,10 @@ def get_session(
 
 
 def get_api_user(
-    security: IdEncodingHelper = depends(IdEncodingHelper),
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
-    run_as: Optional[EncodedDatabaseIdField] = Header(
+    run_as: Optional[DecodedDatabaseIdField] = Header(
         default=None,
         title="Run as User",
         description=(
@@ -150,19 +148,15 @@ def get_api_user(
     user = user_manager.by_api_key(api_key=api_key)
     if run_as:
         if user_manager.user_can_do_run_as(user):
-            try:
-                decoded_run_as_id = security.decode_id(run_as)
-            except Exception:
-                raise UserInvalidRunAsException
-            return user_manager.by_id(decoded_run_as_id)
+            return user_manager.by_id(run_as)
         else:
             raise UserCannotRunAsException
     return user
 
 
 def get_user(
-    galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
-    api_user: Optional[User] = Depends(get_api_user),
+    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
+    api_user=cast(Optional[User], Depends(get_api_user)),
 ) -> Optional[User]:
     if galaxy_session:
         return galaxy_session.user
@@ -226,7 +220,7 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
         return self.__response.headers
 
 
-DependsOnUser = Depends(get_user)
+DependsOnUser = cast(Optional[User], Depends(get_user))
 
 
 def get_current_history_from_session(galaxy_session: Optional[model.GalaxySession]) -> Optional[model.History]:
@@ -239,8 +233,8 @@ def get_trans(
     request: Request,
     response: Response,
     app: StructuredApp = DependsOnApp,
-    user: Optional[User] = Depends(get_user),
-    galaxy_session: Optional[model.GalaxySession] = Depends(get_session),
+    user=cast(Optional[User], Depends(get_user)),
+    galaxy_session=cast(Optional[model.GalaxySession], Depends(get_session)),
 ) -> SessionRequestContext:
     url_builder = UrlBuilder(request)
     galaxy_request = GalaxyASGIRequest(request)
@@ -256,7 +250,7 @@ def get_trans(
     )
 
 
-DependsOnTrans = Depends(get_trans)
+DependsOnTrans: SessionRequestContext = cast(SessionRequestContext, Depends(get_trans))
 
 
 def get_admin_user(trans: SessionRequestContext = DependsOnTrans):

@@ -81,7 +81,7 @@ class BoolBinaryOperation:
         return f"({sep.join(map(str, self.args))})"
 
     def __bool__(self):
-        return self.evalop(bool(a) for a in self.args)
+        return self.evalop(bool(a) for a in self.args)  # type: ignore[misc,call-arg]
 
     __nonzero__ = __bool__
 

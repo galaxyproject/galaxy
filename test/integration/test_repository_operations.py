@@ -2,8 +2,8 @@ import os
 from collections import namedtuple
 
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.base.uses_shed import UsesShed
 from galaxy_test.driver import integration_util
+from galaxy_test.driver.uses_shed import UsesShed
 from tool_shed.util import hg_util
 
 REPO_TYPE = namedtuple("REPO_TYPE", "name owner changeset")
@@ -61,7 +61,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         self.uninstall_repository(*repo)
 
     def test_repository_update(self):
-        response = self._install_repository(revision=REVISION_4, version="0.0.3")[0]
+        response = self._install_repository(revision=REVISION_4, version="0.0.3", allow_upgraded=True)[0]
         assert int(response["ctx_rev"]) >= 4
         latest_revision = response["changeset_revision"]
         repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"]).json()
@@ -100,12 +100,16 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
             shed_config.write(shed_text)
         self._get("/api/tool_shed_repositories/check_for_updates", data={"id": response["id"]}, admin=True).json()
         # At this point things should look like there is minor update available
-        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"]).json()
-        assert repo_response["tool_shed_status"]["revision_update"] == "True"
-        assert repo_response["changeset_revision"] == REVISION_3
-        assert repo_response["ctx_rev"] == "3"
+        repo_response = self._get("/api/tool_shed_repositories/%s" % response["id"])
+        repo_response.raise_for_status()
+        repo_json = repo_response.json()
+        assert repo_json["tool_shed_status"]["revision_update"] == "True"
+        assert repo_json["changeset_revision"] == REVISION_3
+        assert repo_json["ctx_rev"] == "3"
         # now install revision 4 (or newer) (a.k.a a minor update)
-        response = self._install_repository(revision=REVISION_4, version="0.0.3", verify_tool_absent=False)[0]
+        response = self._install_repository(
+            revision=REVISION_4, version="0.0.3", verify_tool_absent=False, allow_upgraded=True
+        )[0]
         assert response["changeset_revision"] == latest_revision
         assert response["installed_changeset_revision"] == REVISION_3
         # should be 4 or newer
@@ -116,15 +120,31 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         assert tool["version"] == "0.0.2"
         self.uninstall_repository(REPO.owner, REPO.name, REPO.changeset)
         response = self.get_tool(assert_ok=False)
+        assert (
+            "err_msg" in response
+        ), f"Expected an error message after tool install but response was {response.content}"
         assert response["err_msg"]
+        assert self.get_installed_repository_for(REPO.owner, REPO.name, REPO.changeset) is None
 
-    def _install_repository(self, revision=None, version="0.0.2", verify_tool_absent=True):
+    def _install_repository(self, revision=None, version="0.0.2", verify_tool_absent=True, allow_upgraded=False):
         if verify_tool_absent:
             response = self.get_tool(assert_ok=False)
             assert response["err_msg"]
-        install_response = self.install_repository(REPO.owner, REPO.name, revision or REPO.changeset)
+        owner = REPO.owner
+        name = REPO.name
+        revision = revision or REPO.changeset
+        install_response = self.install_repository(owner, name, revision)
         tool = self.get_tool()
         assert tool.get("version") == version, tool
+        if not allow_upgraded:
+            install_repository = self.get_installed_repository_for(owner, name, revision)
+            assert install_repository
+            assert self.get_installed_repository(install_repository["id"])
+        else:
+            # Maybe there was a newer changeset with the same version - that is fine, just make
+            # sure we installed this repo at some version.
+            installed_repositories = self.index_repositories(owner, name)
+            assert len(installed_repositories) > 0
         return install_response
 
     def get_tool(self, assert_ok=True):

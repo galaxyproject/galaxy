@@ -15,9 +15,10 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
 pip install --upgrade pip setuptools wheel
-pip install -r../lib/galaxy/dependencies/pinned-lint-requirements.txt
+pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
-# ensure ordered by dependency dag
+# ensure ordered by dependency DAG
+# TODO: add selenium in once type issues are cleared up
 PACKAGE_DIRS=(
     util
     objectstore
@@ -30,6 +31,8 @@ PACKAGE_DIRS=(
     auth
     web_stack
     web_framework
+    navigation
+    tours
     app
     webapps
     test_base
@@ -57,7 +60,7 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
     unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/ --ignore=tool_shed/test/'
     # Ignore exit code 5 (no tests ran)
-    pytest $unit_extra . || test $? -eq 5
+    pytest $unit_extra -m 'not external_dependency_management' . || test $? -eq 5
     make mypy
     cd ..
 done

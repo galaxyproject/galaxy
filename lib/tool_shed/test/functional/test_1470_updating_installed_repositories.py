@@ -32,15 +32,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_filtering_repository(self):
         """Create and populate the filtering_0530 repository."""
@@ -51,7 +43,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
             description=repository_description,
             long_description=repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -72,7 +64,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         This is step 1 - Install a repository into Galaxy.
         """
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             repository_name,
             common.test_user_1_name,
             category_name,
@@ -80,17 +72,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
             install_repository_dependencies=False,
             new_tool_panel_section_label="Filtering",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            repository_name, common.test_user_1_name
-        )
-        strings_displayed = [
-            "filtering_1470",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-            installed_repository.changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("filtering_1470")
 
     def test_0015_update_repository(self):
         """Upload a readme file to the filtering_1470 repository.
@@ -101,7 +83,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         eliminate the process we're testing in this script. So, we upload a readme file.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        repository = self.test_db_util.get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
+        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="filtering/readme.txt",
@@ -123,7 +105,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        self.update_installed_repository(installed_repository)
+        self.update_installed_repository_api(installed_repository)
 
     def test_0025_uninstall_repository(self):
         """Uninstall the filtering_1470 repository.
@@ -143,7 +125,7 @@ class TestUpdateInstalledRepository(ShedTwillTestCase):
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             repository_name, common.test_user_1_name
         )
-        self.reinstall_repository(installed_repository)
+        self.reinstall_repository_api(installed_repository)
 
     def test_0035_verify_absence_of_ghosts(self):
         """Check the count of repositories in the database named filtering_1470 and owned by user1.

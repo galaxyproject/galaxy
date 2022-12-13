@@ -1,5 +1,5 @@
 import * as d3 from "d3";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 
 // Rendering parameters
 const zIndex = 1000;
@@ -66,9 +66,10 @@ class Connector {
     }
     redraw() {
         // Identify handles
+        const canvasContainer = document.getElementById("canvas-container");
         const outputHandle = this.outputHandle;
         const inputHandle = this.inputHandle;
-        if (!outputHandle || !inputHandle) {
+        if (!canvasContainer || !outputHandle || !inputHandle) {
             return;
         }
         if (this.dragging) {
@@ -82,7 +83,6 @@ class Connector {
         this.canvas.setAttribute("input-handle-id", inputHandle.element.getAttribute("id"));
 
         // Find the position of each handle
-        const canvasContainer = document.getElementById("canvas-container");
         const canvasZoom = this.manager.canvasZoom;
 
         const relativeLeft = (e) => (offset(e).left - offset(canvasContainer).left) / canvasZoom + handleMarginX;

@@ -3,30 +3,30 @@
         <UserHistories v-if="user" v-slot="{ currentHistory, handlers, historiesLoading }" :user="user">
             <div v-if="historiesLoading">computing tour requirements...</div>
             <b-modal
+                v-else-if="loginRequired(user)"
                 id="tour-requirement-unment"
                 v-model="showRequirementDialog"
                 static
                 ok-only
-                hide-header
-                v-else-if="loginRequired(user)">
-                <b-alert show variant="danger"> You must login to Galaxy to use this tour. </b-alert>
+                hide-header>
+                <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
             </b-modal>
             <b-modal
+                v-else-if="adminRequired(user)"
                 id="tour-requirement-unment"
                 v-model="showRequirementDialog"
                 static
                 ok-only
-                hide-header
-                v-else-if="adminRequired(user)">
+                hide-header>
                 <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
             </b-modal>
             <b-modal
+                v-else-if="newHistoryRequired(currentHistory, handlers)"
                 id="tour-requirement-unment"
                 v-model="showRequirementDialog"
                 static
                 ok-only
-                hide-header
-                v-else-if="newHistoryRequired(currentHistory, handlers)">
+                hide-header>
                 <b-alert show variant="danger">
                     This tour is designed to run on a new history, please create a new history before running it.
                     <a @click.prevent="handlers.createNewHistory()">Click here</a> to create a new history.

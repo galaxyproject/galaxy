@@ -4,7 +4,9 @@ import os
 import time
 import urllib.parse
 from operator import itemgetter
+from unittest import SkipTest
 
+import pytest
 import requests
 from dateutil.parser import isoparse
 
@@ -14,7 +16,6 @@ from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     skip_without_tool,
-    uses_test_history,
     wait_on,
     wait_on_state,
     WorkflowPopulator,
@@ -22,21 +23,23 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class JobsApiTestCase(ApiTestCase, TestsTools):
+class TestJobsApi(ApiTestCase, TestsTools):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index(self, history_id):
         # Create HDA to ensure at least one job exists...
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index()
         assert "__DATA_FETCH__" in map(itemgetter("tool_id"), jobs)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_system_details_admin_only(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(admin=False)
@@ -47,7 +50,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         job = jobs[0]
         self._assert_has_keys(job, "command_line", "external_id")
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_admin_job_list(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs_response = self._get("jobs?view=admin_job_list", admin=False)
@@ -58,7 +61,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         job = jobs[0]
         self._assert_has_keys(job, "command_line", "external_id", "handler")
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_state_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok"))
@@ -80,7 +83,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             message = template % (original_count, new_count)
             raise AssertionError(message)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_date_filter(self, history_id):
         two_weeks_ago = (datetime.datetime.utcnow() - datetime.timedelta(14)).isoformat()
         last_week = (datetime.datetime.utcnow() - datetime.timedelta(7)).isoformat()
@@ -103,7 +106,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
         jobs = self.__jobs_index(data={"date_range_min": two_weeks_ago, "date_range_max": last_week})
         assert today_job_id not in map(itemgetter("id"), jobs)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_history(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
@@ -113,7 +116,7 @@ class JobsApiTestCase(ApiTestCase, TestsTools):
             jobs = self.__jobs_index(data={"history_id": other_history_id})
             assert len(jobs) == 0
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     @skip_without_tool("cat1")
     def test_index_workflow_and_invocation_filter(self, history_id):
         workflow_simple = """
@@ -142,7 +145,7 @@ steps:
         assert len(jobs2) == 1
         assert jobs1 == jobs2
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     @skip_without_tool("multi_data_optional")
     def test_index_workflow_filter_implicit_jobs(self, history_id):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
@@ -176,7 +179,7 @@ steps:
         assert len(workflow_jobs) == 2
         assert len(second_invocation_jobs) == 1
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_limit_and_offset_filter(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
@@ -187,7 +190,7 @@ steps:
         jobs = self.__jobs_index(data={"history_id": history_id, "limit": 0})
         assert len(jobs) == 0
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_search_filter_tool_id(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id})
@@ -200,7 +203,7 @@ steps:
         jobs = self.__jobs_index(data={"history_id": history_id, "search": "tool:'FETCH'"})
         assert len(jobs) == 0
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_search_filter_email(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs = self.__jobs_index(data={"history_id": history_id, "search": "FETCH"})
@@ -233,7 +236,7 @@ steps:
         self._assert_status_code_is(jobs_response, 403)
         assert jobs_response.json() == {"err_msg": "Only admins can index the jobs of others", "err_code": 403006}
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_handler_runner_filters(self, history_id):
         self.__history_with_new_dataset(history_id)
 
@@ -278,7 +281,7 @@ steps:
         ).json()
         assert not jobs
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_index_multiple_states_filter(self, history_id):
         # Initial number of ok jobs
         original_count = len(self.__uploads_with_state("ok", "new"))
@@ -291,7 +294,7 @@ steps:
         new_count = len(self.__uploads_with_state("new", "ok"))
         assert original_count < new_count, new_count
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_show(self, history_id):
         job_properties_tool_run = self.dataset_populator.run_tool(
             tool_id="job_properties",
@@ -338,7 +341,7 @@ steps:
         assert "The bool is not true\n" in job_details["stdout"]
         assert "The bool is very not true\n" in job_details["stderr"]
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_show_security(self, history_id):
         self.__history_with_new_dataset(history_id)
         jobs_response = self._get("jobs", data={"history_id": history_id})
@@ -499,8 +502,8 @@ steps:
             run_response = self._post("tools", data=payload, key=self.master_api_key)
             self._assert_status_code_is(run_response, 400)
 
+    @pytest.mark.require_new_history
     @skip_without_tool("create_2")
-    @uses_test_history(require_new=True)
     def test_deleting_output_keep_running_until_all_deleted(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
 
@@ -523,8 +526,8 @@ steps:
         final_state = wait_on_state(job_state, assert_ok=False, timeout=15)
         assert final_state in ["deleting", "deleted"], final_state
 
+    @pytest.mark.require_new_history
     @skip_without_tool("create_2")
-    @uses_test_history(require_new=True)
     def test_purging_output_keep_running_until_all_purged(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 120)
 
@@ -566,8 +569,8 @@ steps:
         if output_dataset_paths_exist:
             wait_on(paths_deleted, "path deletion")
 
+    @pytest.mark.require_new_history
     @skip_without_tool("create_2")
-    @uses_test_history(require_new=True)
     def test_purging_output_cleaned_after_ok_run(self, history_id):
         job_state, outputs = self._setup_running_two_output_job(history_id, 10)
 
@@ -599,8 +602,6 @@ steps:
             assert not os.path.exists(output_dataset_paths[0])
 
     def _hack_to_skip_test_if_state_ok(self, job_state):
-        from nose.plugins.skip import SkipTest
-
         if job_state().json()["state"] == "ok":
             message = "Job state switch from running to ok too quickly - the rest of the test requires the job to be in a running state. Skipping test."
             raise SkipTest(message)
@@ -639,8 +640,8 @@ steps:
         assert_status_code_is_ok(update_response)
         return update_response
 
+    @pytest.mark.require_new_history
     @skip_without_tool("cat_data_and_sleep")
-    @uses_test_history(require_new=True)
     def test_resume_job(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id, content="samp1\t10.0\nsamp2\t20.0\n")
         hda2 = self.dataset_populator.new_dataset(history_id, content="samp1\t30.0\nsamp2\t40.0\n")
@@ -687,7 +688,7 @@ steps:
         assert_status_code_is_ok(response)
         return response.json()
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         # We first copy the datasets, so that the update time is lower than the job creation time
@@ -711,7 +712,7 @@ steps:
         self._assert_status_code_is(delete_respone, 200)
         self._search(search_payload, expected_search_count=0)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search_handle_identifiers(self, history_id):
         # Test that input name and element identifier of a jobs' output must match for a job to be returned.
         dataset_id = self.__history_with_ok_dataset(history_id)
@@ -727,7 +728,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="identifier_single", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search_delete_outputs(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
@@ -738,7 +739,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search_with_hdca_list_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
         list_id_b = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
@@ -766,7 +767,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="multi_data_param", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search_delete_hdca_output(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
         inputs = json.dumps(
@@ -789,7 +790,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="collection_creates_list", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search_with_hdca_pair_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="pair", history_id=history_id)
         inputs = json.dumps(
@@ -824,7 +825,7 @@ steps:
         self._assert_status_code_is(delete_respone, 200)
         self._search(search_payload, expected_search_count=0)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search_with_hdca_list_pair_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list:pair", history_id=history_id)
         inputs = json.dumps(
@@ -835,7 +836,7 @@ steps:
         )
         self._job_search(tool_id="multi_data_param", history_id=history_id, inputs=inputs)
 
-    @uses_test_history(require_new=True)
+    @pytest.mark.require_new_history
     def test_search_with_hdca_list_pair_collection_mapped_over_pair_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list:pair", history_id=history_id)
         inputs = json.dumps(
@@ -867,7 +868,6 @@ steps:
         return rerun_params
 
     @skip_without_tool("collection_paired_test")
-    @uses_test_history(require_new=False)
     def test_job_build_for_rerun(self, history_id):
         rerun_params = self._get_simple_rerun_params(history_id)
         self._run(
@@ -879,7 +879,6 @@ steps:
         )
 
     @skip_without_tool("collection_paired_test")
-    @uses_test_history(require_new=False)
     def test_dce_submission_security(self, history_id):
         rerun_params = self._get_simple_rerun_params(history_id, private=True)
         with self._different_user():
@@ -894,7 +893,6 @@ steps:
             assert response.status_code == 403
 
     @skip_without_tool("identifier_collection")
-    @uses_test_history(require_new=False)
     def test_job_build_for_rerun_list_list(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
         list_id_b = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
@@ -943,7 +941,7 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
         empty_search_response = self._post("jobs/search", data=search_payload)
         self._assert_status_code_is(empty_search_response, 200)
-        self.assertEqual(len(empty_search_response.json()), 0)
+        assert len(empty_search_response.json()) == 0
         tool_response = self._post("tools", data=search_payload)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
         self._search(search_payload, expected_search_count=1)

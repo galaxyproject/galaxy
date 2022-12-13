@@ -16,7 +16,7 @@ Provides user and current history to modal because it currently has initializati
                 no-enforce-focus
                 hide-footer>
                 <template v-slot:modal-header>
-                    <h4 class="title" tabindex="0">{{ title | localize }}</h4>
+                    <h2 class="title h-sm" tabindex="0">{{ title | localize }}</h2>
                 </template>
 
                 <UploadModalContent
@@ -80,8 +80,6 @@ export default {
             const element = document.getElementById("galaxy_main");
             if (element) {
                 element.style["pointer-events"] = disableEvents ? "none" : "auto";
-            } else {
-                console.warn("UploadModal::setIframeEvents - `galaxy_main` not found.");
             }
         },
     },

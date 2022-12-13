@@ -1,30 +1,32 @@
 import unittest
 
-import pytest
-import requests
-
 from galaxy.model.unittest_utils.store_fixtures import (
     one_ld_library_model_store_dict,
     TEST_LIBRARY_NAME,
 )
+from galaxy.util.unittest_utils import skip_if_github_down
+from galaxy_test.base import api_asserts
+from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
     FILE_URL,
     LibraryPopulator,
-    skip_if_github_down,
     skip_without_asgi,
 )
 from ._framework import ApiTestCase
 
 
-class LibrariesApiTestCase(ApiTestCase):
+class TestLibrariesApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
 
+    @requires_new_library
     def test_create(self):
         data = dict(name="CreateTestLibrary")
         create_response = self._post("libraries", data=data, admin=True, json=True)
@@ -34,6 +36,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library["name"] == "CreateTestLibrary"
 
     @skip_without_asgi
+    @requires_new_library
     def test_create_from_store(self):
         response = self.library_populator.create_from_store(store_dict=one_ld_library_model_store_dict())
         assert isinstance(response, list)
@@ -44,6 +47,7 @@ class LibrariesApiTestCase(ApiTestCase):
         ld = self.library_populator.get_library_contents_with_path(library_summary["id"], "/my cool name")
         assert ld
 
+    @requires_new_library
     def test_delete(self):
         library = self.library_populator.new_library("DeleteTestLibrary")
         create_response = self._delete(f"libraries/{library['id']}", admin=True)
@@ -72,6 +76,7 @@ class LibrariesApiTestCase(ApiTestCase):
         create_response = self._patch(f"libraries/{library['id']}", data=data, admin=False, anon=True, json=True)
         self._assert_status_code_is(create_response, 403)
 
+    @requires_new_library
     def test_update(self):
         library = self.library_populator.new_library("UpdateTestLibrary")
         data = dict(name="ChangedName", description="ChangedDescription", synopsis="ChangedSynopsis")
@@ -83,6 +88,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library["description"] == "ChangedDescription"
         assert library["synopsis"] == "ChangedSynopsis"
 
+    @requires_new_library
     def test_update_non_admins_with_permission(self):
         library = self.library_populator.new_library("UpdateTestLibraryNonAdmin")
         library_id = library["id"]
@@ -101,6 +107,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert library["description"] == "ChangedDescription"
         assert library["synopsis"] == "ChangedSynopsis"
 
+    @requires_new_library
     def test_create_private_library_legacy_permissions(self):
         library = self.library_populator.new_library("LegacyPermissionTestLibrary")
         library_id = library["id"]
@@ -113,6 +120,7 @@ class LibrariesApiTestCase(ApiTestCase):
             create_response = self._create_folder(library)
             self._assert_status_code_is(create_response, 403)
 
+    @requires_new_library
     def test_create_private_library_permissions(self):
         library = self.library_populator.new_library("PermissionTestLibrary")
         library_id = library["id"]
@@ -125,6 +133,7 @@ class LibrariesApiTestCase(ApiTestCase):
             create_response = self._create_folder(library)
             self._assert_status_code_is(create_response, 403)
 
+    @requires_new_library
     def test_get_library_current_permissions(self):
         library = self.library_populator.new_library("GetCurrentPermissionTestLibrary")
         library_id = library["id"]
@@ -145,6 +154,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert role_id in current["manage_library_role_list"][0]
         assert role_id in current["add_library_item_role_list"][0]
 
+    @requires_new_library
     def test_get_library_available_permissions(self):
         library = self.library_populator.new_library("GetAvailablePermissionTestLibrary")
         library_id = library["id"]
@@ -154,6 +164,7 @@ class LibrariesApiTestCase(ApiTestCase):
         available_role_ids = [role["id"] for role in available["roles"]]
         assert role_id in available_role_ids
 
+    @requires_new_library
     def test_get_library_available_permissions_with_query(self):
         library = self.library_populator.new_library("GetAvailablePermissionWithQueryTestLibrary")
         library_id = library["id"]
@@ -172,6 +183,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert available["total"] == 1
         assert available_role_emails[0] == email
 
+    @requires_new_library
     def test_create_library_dataset_bootstrap_user(self, library_name="private_dataset", wait=True):
         library = self.library_populator.new_private_library(library_name)
         payload, files = self.library_populator.create_dataset_request(library, file_type="txt", contents="create_test")
@@ -180,16 +192,18 @@ class LibrariesApiTestCase(ApiTestCase):
         )
         self._assert_status_code_is(create_response, 400)
 
+    @requires_new_library
     def test_create_dataset_denied(self):
         url, payload = self._create_dataset_kwargs()
         with self._different_user():
-            create_response = self._post(url, payload)
+            create_response = self._post(url, payload, json=True)
             self._assert_status_code_is(create_response, 403)
 
+    @requires_new_library
     def test_create_dataset_bootstrap_admin_user(self):
         url, payload = self._create_dataset_kwargs()
         with self._different_user():
-            create_response = self._post(url, payload, key=self.master_api_key)
+            create_response = self._post(url, payload, key=self.master_api_key, json=True)
             self._assert_status_code_is(create_response, 400)
 
     def _create_dataset_kwargs(self):
@@ -201,16 +215,17 @@ class LibrariesApiTestCase(ApiTestCase):
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")["id"]
         return f"folders/{folder_id}/contents", {"from_hda_id": hda_id}
 
+    @requires_new_library
     def test_show_private_dataset_permissions(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library(
             "ForCreateDatasets", wait=True
         )
         with self._different_user():
-            with pytest.raises(requests.exceptions.HTTPError) as exc_info:
-                self.library_populator.show_ld(library["id"], library_dataset["id"])
-            # TODO: this should really be 403 and a proper JSON exception.
-            self._assert_status_code_is(exc_info.value.response, 400)
+            response = self.library_populator.show_ld_raw(library["id"], library_dataset["id"])
+            api_asserts.assert_status_code_is(response, 403)
+            api_asserts.assert_error_code_is(response, 403002)
 
+    @requires_new_library
     def test_create_dataset(self):
         library, library_dataset = self.library_populator.new_library_dataset_in_private_library(
             "ForCreateDatasets", wait=True
@@ -229,6 +244,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert ldda["parent_library_id"] == library["id"]
         assert ldda["file_ext"] == "txt"
 
+    @requires_new_library
     def test_fetch_upload_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
         items = [{"src": "files", "dbkey": "hg19", "info": "my cool bed", "created_from_basename": "4.bed"}]
@@ -246,6 +262,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert dataset["file_ext"] == "bed", dataset
         assert dataset["created_from_basename"] == "4.bed"
 
+    @requires_new_library
     def test_fetch_zip_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("flat_zip")
         bed_test_data_path = self.test_data_resolver.get_filename("4.bed.zip")
@@ -265,16 +282,19 @@ class LibrariesApiTestCase(ApiTestCase):
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 
+    @requires_new_library
     def test_fetch_single_url_to_folder(self):
         library, response = self.library_populator.fetch_single_url_to_folder()
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
         assert dataset["file_size"] == 61, dataset
 
+    @requires_new_library
     def test_fetch_single_url_with_invalid_datatype(self):
         _, response = self.library_populator.fetch_single_url_to_folder("xxx", assert_ok=False)
         self._assert_status_code_is(response, 400)
         assert response.json()["err_msg"] == "Requested extension 'xxx' unknown, cannot upload dataset."
 
+    @requires_new_library
     def test_legacy_upload_unknown_datatype(self):
         library = self.library_populator.new_private_library("ForLegacyUpload")
         folder_response = self._create_folder(library)
@@ -292,6 +312,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert create_response.json() == "Requested extension 'xxx' unknown, cannot upload dataset."
 
     @skip_if_github_down
+    @requires_new_library
     def test_fetch_failed_validation(self):
         # Exception handling is really rough here - we should be creating a dataset in error instead
         # of just failing the job like this.
@@ -327,6 +348,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert dataset["state"] == "error", dataset
 
     @skip_if_github_down
+    @requires_new_library
     def test_fetch_url_archive_to_folder(self):
         history_id, library, destination = self._setup_fetch_to_folder("single_url")
         targets = [
@@ -371,6 +393,7 @@ class LibrariesApiTestCase(ApiTestCase):
     def _setup_fetch_to_folder(self, test_name):
         return self.library_populator.setup_fetch_to_folder(test_name)
 
+    @requires_new_library
     def test_create_dataset_in_folder(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")
         folder_response = self._create_folder(library)
@@ -379,10 +402,11 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3")["id"]
         payload = {"from_hda_id": hda_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
 
+    @requires_new_library
     def test_create_dataset_in_subfolder(self):
         library = self.library_populator.new_private_library("ForCreateDatasets")
         folder_response = self._create_folder(library)
@@ -395,7 +419,7 @@ class LibrariesApiTestCase(ApiTestCase):
         history_id = self.dataset_populator.new_history()
         hda_id = self.dataset_populator.new_dataset(history_id, content="1 2 3 sub")["id"]
         payload = {"from_hda_id": hda_id}
-        create_response = self._post(f"folders/{subfolder_id}/contents", payload)
+        create_response = self._post(f"folders/{subfolder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         self._assert_has_keys(create_response.json(), "name", "id")
         dataset_update_time = create_response.json()["update_time"]
@@ -410,6 +434,7 @@ class LibrariesApiTestCase(ApiTestCase):
         library_id = ld["parent_library_id"]
         return self.library_populator.wait_on_library_dataset(library_id, ld["id"])
 
+    @requires_new_library
     def test_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForUpdateDataset", content=">seq\nATGC", wait=True).json()
         data = {
@@ -421,6 +446,7 @@ class LibrariesApiTestCase(ApiTestCase):
         ld_updated = self._patch_library_dataset(ld["id"], data)
         self._assert_has_keys(ld_updated, "name", "file_ext", "misc_info", "genome_build")
 
+    @requires_new_library
     def test_update_dataset_tags(self):
         ld = self._create_dataset_in_folder_in_library("ForTagtestDataset", wait=True).json()
         data = {"tags": ["#Lancelot", "name:Holy Grail", "blue"]}
@@ -428,6 +454,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_has_keys(ld_updated, "tags")
         assert ld_updated["tags"] == "name:Lancelot, name:HolyGrail, blue"
 
+    @requires_new_library
     def test_invalid_update_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForInvalidUpdateDataset", wait=True).json()
         data = {"file_ext": "nonexisting_type"}
@@ -435,6 +462,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(create_response, 400)
         assert "This Galaxy does not recognize the datatype of:" in create_response.json()["err_msg"]
 
+    @requires_new_library
     def test_detect_datatype_of_dataset_in_folder(self):
         ld = self._create_dataset_in_folder_in_library("ForDetectDataset", wait=True).json()
         data = {"file_ext": "data"}
@@ -446,12 +474,15 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_has_keys(ld_updated, "file_ext")
         assert ld_updated["file_ext"] == "txt"
 
+    @requires_new_library
     def test_ldda_collection_import_to_history(self):
         self._import_to_history(visible=True)
 
+    @requires_new_library
     def test_ldda_collection_import_to_history_hide_source(self):
         self._import_to_history(visible=False)
 
+    @requires_new_library
     def test_import_paired_collection(self):
         ld = self._create_dataset_in_folder_in_library("ForHistoryImport").json()
         history_id = self.dataset_populator.new_history()
@@ -503,6 +534,7 @@ class LibrariesApiTestCase(ApiTestCase):
         assert element["element_identifier"] == element_identifer
         assert element["object"]["visible"] == visible
 
+    @requires_new_library
     def test_create_datasets_in_library_from_collection(self):
         library = self.library_populator.new_private_library("ForCreateDatasetsFromCollection")
         folder_response = self._create_folder(library)
@@ -516,6 +548,7 @@ class LibrariesApiTestCase(ApiTestCase):
         create_response = self._post(f"libraries/{library['id']}/contents", payload)
         self._assert_status_code_is(create_response, 200)
 
+    @requires_new_library
     def test_create_datasets_in_folder_from_collection(self):
         library = self.library_populator.new_private_library("ForCreateDatasetsFromCollection")
         history_id = self.dataset_populator.new_history()
@@ -526,7 +559,7 @@ class LibrariesApiTestCase(ApiTestCase):
         self._assert_status_code_is(folder_response, 200)
         folder_id = folder_response.json()[0]["id"]
         payload = {"from_hdca_id": hdca_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 200)
         assert len(create_response.json()) == 2
         # Also test that anything different from a flat dataset collection list
@@ -535,7 +568,7 @@ class LibrariesApiTestCase(ApiTestCase):
             "outputs"
         ][0]["id"]
         payload = {"from_hdca_id": hdca_pair_id}
-        create_response = self._post(f"folders/{folder_id}/contents", payload)
+        create_response = self._post(f"folders/{folder_id}/contents", payload, json=True)
         self._assert_status_code_is(create_response, 501)
         assert (
             create_response.json()["err_msg"]

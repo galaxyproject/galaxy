@@ -9,7 +9,7 @@
 </template>
 
 <script>
-import RuleDefs from "mvc/rules/rule-definitions";
+import RuleDefs from "./rule-definitions";
 const RULES = RuleDefs.RULES;
 
 export default {
