@@ -182,6 +182,7 @@ update-client-api-schema: node-deps build-api-schema
 
 lint-api-schema: build-api-schema
 	$(IN_VENV) npx --yes @redocly/cli lint _schema.yaml
+	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
 	$(MAKE) remove-api-schema
 
 client: node-deps ## Rebuild client-side artifacts for local development.

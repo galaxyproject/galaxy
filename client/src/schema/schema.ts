@@ -1724,7 +1724,7 @@ export interface components {
             id?: string;
             /**
              * Name
-             * @description A name declared by the bundle author that must be used when materialising this object, overriding any name directly associated with the object itself. The name must be unique with the containing bundle. This string is made up of uppercase and lowercase letters, decimal digits, hypen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
+             * @description A name declared by the bundle author that must be used when materialising this object, overriding any name directly associated with the object itself. The name must be unique with the containing bundle. This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
              */
             name: string;
         };
@@ -4565,7 +4565,7 @@ export interface components {
         InstalledRepositoryToolShedStatus: {
             /**
              * Latest installed revision
-             * @description Most recent version avialable on the tool shed
+             * @description Most recent version available on the tool shed
              */
             latest_installable_revision: string;
             /**
@@ -5573,7 +5573,7 @@ export interface components {
             /**
              * Name
              * @description A string that can be used to name a `DrsObject`.
-             * This string is made up of uppercase and lowercase letters, decimal digits, hypen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
+             * This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
              */
             name?: string;
             /**
@@ -7887,7 +7887,7 @@ export interface operations {
     index_api_datasets_get: {
         /** Search datasets or collections using a query system. */
         parameters?: {
-            /** @description Optional identifier of a History. Use it to restrict the search whithin a particular History. */
+            /** @description Optional identifier of a History. Use it to restrict the search within a particular History. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /**
@@ -12008,7 +12008,7 @@ export interface operations {
              * generally a partial match will be used to filter the query (i.e. in terms of the implementation
              * this means the database operation `ILIKE` will typically be used).
              *
-             * Once the tagged filters are extracted from the search query, the remaing text is just
+             * Once the tagged filters are extracted from the search query, the remaining text is just
              * used to search various documented attributes of the object.
              *
              * ## GitHub-style Tags Available
@@ -14158,7 +14158,7 @@ export interface operations {
              * generally a partial match will be used to filter the query (i.e. in terms of the implementation
              * this means the database operation `ILIKE` will typically be used).
              *
-             * Once the tagged filters are extracted from the search query, the remaing text is just
+             * Once the tagged filters are extracted from the search query, the remaining text is just
              * used to search various documented attributes of the object.
              *
              * ## GitHub-style Tags Available

@@ -2288,7 +2288,7 @@ class ToolShedRepositoryChangeset(ToolShedRepository):
 class InstalledRepositoryToolShedStatus(Model):
     # See https://github.com/galaxyproject/galaxy/issues/10453
     latest_installable_revision: str = Field(
-        title="Latest installed revision", description="Most recent version avialable on the tool shed"
+        title="Latest installed revision", description="Most recent version available on the tool shed"
     )
     revision_update: str
     revision_upgrade: Optional[str]

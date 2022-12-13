@@ -452,7 +452,7 @@ If the tag is quoted, the attribute will be filtered exactly. If the tag is unqu
 generally a partial match will be used to filter the query (i.e. in terms of the implementation
 this means the database operation `ILIKE` will typically be used).
 
-Once the tagged filters are extracted from the search query, the remaing text is just
+Once the tagged filters are extracted from the search query, the remaining text is just
 used to search various documented attributes of the object.
 
 ## GitHub-style Tags Available
