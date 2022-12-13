@@ -4,7 +4,7 @@ import { watchHistoryOnce } from "./watchHistory";
 import { collectionElementsStore } from "store/historyStore/collectionElementsStore";
 import { datasetStore } from "store/historyStore/datasetStore";
 import { historyStore } from "store/historyStore/historyStore";
-import { historyItemsStore } from "store/historyStore/historyItemsStore";
+// import { historyItemsStore } from "store/historyStore/historyItemsStore";
 import { mount, createLocalVue } from "@vue/test-utils";
 import Vuex from "vuex";
 
@@ -61,7 +61,7 @@ describe("watchHistory", () => {
                     collectionElements: collectionElementsStore,
                     dataset: datasetStore,
                     history: historyStore,
-                    historyItems: historyItemsStore,
+                    // historyItems: historyItemsStore,
                 },
             }),
             localVue,

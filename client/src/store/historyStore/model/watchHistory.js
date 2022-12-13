@@ -104,7 +104,7 @@ export async function watchHistory(store = defaultStore) {
         historyItemsStore.setWatchingVisibility(watchingVisibility);
     } finally {
         watchTimeout = setTimeout(() => {
-            watchHistory();
+            watchHistory(store);
         }, throttlePeriod);
     }
 }

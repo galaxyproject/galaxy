@@ -26,7 +26,6 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
     getters: {
         getHistoryItems: (state) => {
             return (historyId, filterText) => {
-                console.log("getHistoryItemsNEW");
                 const itemArray = state.items[historyId] || [];
                 const filters = getFilters(filterText);
                 const filtered = itemArray.filter((item) => {
