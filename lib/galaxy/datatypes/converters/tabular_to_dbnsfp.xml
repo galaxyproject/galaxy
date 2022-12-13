@@ -6,7 +6,7 @@
     <command><![CDATA[
         mkdir '$dbnsfp.extra_files_path' &&
         bgzip -c '$input' > '$dbnsfp.extra_files_path/dbNSFP.gz' &&
-        tabix '$dbnsfp.extra_files_path/dbNSFP.gz'
+        tabix -s 1 -b 2 -e 2 '$dbnsfp.extra_files_path/dbNSFP.gz'
     ]]></command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Choose a dbnsfp tabular file"/>
