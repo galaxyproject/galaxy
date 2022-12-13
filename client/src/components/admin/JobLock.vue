@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, watch, onMounted } from "vue";
 import { fetcher } from "@/schema";
-import type { FetchArgType } from "openapi-typescript-fetch";
 
 const jobLock = ref(false);
 const jobLockUpdating = ref(true);
@@ -11,7 +10,7 @@ const jobLockUpdate = fetcher.path("/api/job_lock").method("put").create();
 
 watch(jobLock, async (newVal) => {
     jobLockUpdating.value = true;
-    const { data } = await jobLockUpdate({ active: jobLock.value } as FetchArgType<typeof jobLockUpdate>);
+    const { data } = await jobLockUpdate({ active: jobLock.value });
     jobLock.value = data.active;
     jobLockUpdating.value = false;
 });
