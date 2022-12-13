@@ -30,6 +30,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t4,
     Dataset_t6,
     Dataset_t7,
+    Dataset_t11,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -988,7 +989,7 @@ class Text(Data):
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
 
-    def estimate_file_lines(self, dataset: "DatasetInstance") -> Optional[int]:
+    def estimate_file_lines(self, dataset: Dataset_t11) -> Optional[int]:
         """
         Perform a rough estimate by extrapolating number of lines from a small read.
         """

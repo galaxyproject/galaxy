@@ -102,3 +102,8 @@ class Dataset_t9(HasMetadata, HasId, Protocol):
 
 class Dataset_t10(Dataset_t8, HasFileNameProperty, HasName, Protocol):
     ...
+
+
+class Dataset_t11(HasFileNameProperty, Protocol):
+    def get_size(self) -> str:
+        ...
