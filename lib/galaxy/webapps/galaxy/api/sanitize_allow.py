@@ -9,9 +9,7 @@ from typing import (
 )
 
 from galaxy.managers.context import ProvidesUserContext
-
 from galaxy.webapps.galaxy.api import DependsOnTrans
-
 from . import Router
 
 log = logging.getLogger(__name__)
