@@ -31,7 +31,7 @@ RoleIDParam: DecodedDatabaseIdField = Path(..., title="RoleID", description="The
 def group_role_to_model(trans, group_id: int, role) -> GroupRoleModel:
     encoded_group_id = DecodedDatabaseIdField.encode(group_id)
     encoded_role_id = DecodedDatabaseIdField.encode(role.id)
-    url = trans.url_builder("group_role", group_id=encoded_group_id, id=encoded_role_id)
+    url = trans.url_builder("group_role", group_id=encoded_group_id, role_id=encoded_role_id)
     return GroupRoleModel.construct(id=encoded_role_id, name=role.name, url=url)
 
 
