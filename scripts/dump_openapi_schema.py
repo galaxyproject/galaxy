@@ -28,8 +28,9 @@ YamlDumper.add_implicit_resolver("!anyurl", url_regex(), None)
 
 @click.command("Write openapi schema to path")
 @click.argument("schema_path", type=click.Path(dir_okay=False, writable=True), required=False)
-def write_open_api_schema(schema_path):
-    openapi_schema = get_openapi_schema()
+@click.option("--openapi-version", type=click.Choice(['3.0.3', '3.1.0']), required=False, default="3.1.0")
+def write_open_api_schema(schema_path, openapi_version):
+    openapi_schema = get_openapi_schema(version=openapi_version)
     if schema_path:
         if schema_path.endswith((".yml", ".yaml")):
             with open(schema_path, "w") as f:

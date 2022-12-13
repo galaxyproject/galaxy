@@ -4,6 +4,7 @@ from typing import (
 )
 
 from a2wsgi import WSGIMiddleware
+from boltons.iterutils import remap
 from fastapi import (
     FastAPI,
     Request,
@@ -156,20 +157,26 @@ def get_fastapi_instance() -> FastAPI:
     )
 
 
-def get_openapi_schema() -> Dict[str, Any]:
+def get_openapi_schema(version="3.1.0") -> Dict[str, Any]:
     """
     Dumps openAPI schema without starting a full app and webserver.
     """
     app = get_fastapi_instance()
     include_all_package_routers(app, "galaxy.webapps.galaxy.api")
-    return get_openapi(
+    schema_3_1_0 = get_openapi(
         title=app.title,
         version=app.version,
-        openapi_version="3.1.0",
+        openapi_version=version,
         description=app.description,
         routes=app.routes,
         license_info=app.license_info,
     )
+    if version.startswith("3.0"):
+        schema = schema_3_1_0
+        drop_exclusive_maximum = lambda path, key, value: False if key == "exclusiveMaximum" else True
+        return remap(schema, visit=drop_exclusive_maximum)
+    else:
+        return schema_3_1_0
 
 
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
