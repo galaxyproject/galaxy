@@ -37,6 +37,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t6,
     GeneratePrimaryFileDataset,
+    HasFileNameProperty,
 )
 from galaxy.datatypes.data import (
     Data,
@@ -607,7 +608,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: HasFileNameProperty, offset: int = 0, ck_size: Optional[int] = None) -> str:
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
