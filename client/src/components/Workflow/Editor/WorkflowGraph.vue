@@ -64,7 +64,6 @@ defineProps({
     },
     datatypesMapper: {
         type: Object,
-        default: null,
     },
     nodes: {
         type: Object,

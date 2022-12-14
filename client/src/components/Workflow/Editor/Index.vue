@@ -66,6 +66,7 @@
                     </div>
                 </div>
                 <workflow-graph
+                    v-if="!datatypesMapperLoading"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :get-manager="getManager"
@@ -180,7 +181,6 @@
 <script>
 import axios from "axios";
 import { LastQueue } from "utils/promise-queue";
-import { getDatatypesMapper } from "components/Datatypes";
 import { fromSimple, toSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
 import { getUntypedWorkflowParameters } from "./modules/parameters";
@@ -208,6 +208,7 @@ import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
 import { useWorkflowStepStore } from "stores/workflowStepStore";
 import { storeToRefs } from "pinia";
+import { useDatatypesMapper } from "@/composables/datatypesMapper";
 
 export default {
     components: {
@@ -252,10 +253,19 @@ export default {
         },
     },
     setup() {
+        const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
         const connectionsStore = useConnectionStore();
         const stepStore = useWorkflowStepStore();
         const { getStepIndex, steps } = storeToRefs(stepStore);
-        return { connectionsStore, stepStore, steps: steps, nodeIndex: getStepIndex };
+        return {
+            connectionsStore,
+            stepStore,
+            steps: steps,
+            nodeIndex: getStepIndex,
+            datatypes,
+            datatypesMapper,
+            datatypesMapperLoading,
+        };
     },
     data() {
         return {
@@ -265,8 +275,6 @@ export default {
             versions: [],
             parameters: null,
             hasChanges: false,
-            datatypesMapper: null,
-            datatypes: [],
             report: {},
             labels: {},
             license: null,
@@ -367,12 +375,7 @@ export default {
     },
     created() {
         this.lastQueue = new LastQueue();
-        getDatatypesMapper(false).then((mapper) => {
-            this.datatypesMapper = mapper;
-            this.datatypes = mapper.datatypes;
-
-            this._loadCurrent(this.id, this.version);
-        });
+        this._loadCurrent(this.id, this.version);
         hide_modal();
     },
     methods: {

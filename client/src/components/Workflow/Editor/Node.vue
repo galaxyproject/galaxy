@@ -148,7 +148,6 @@ export default {
         },
         datatypesMapper: {
             type: Object,
-            default: null,
         },
         activeNodeId: {
             type: Number,
