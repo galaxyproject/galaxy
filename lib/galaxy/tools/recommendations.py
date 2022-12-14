@@ -98,9 +98,13 @@ class ToolRecommendations:
                     return None
 
         inputs = Input(shape=(ToolRecommendations.max_seq_len,))
-        embedding_layer = TokenAndPositionEmbedding(ToolRecommendations.max_seq_len, vocab_size, ToolRecommendations.embed_dim)
+        embedding_layer = TokenAndPositionEmbedding(
+            ToolRecommendations.max_seq_len, vocab_size, ToolRecommendations.embed_dim
+        )
         x = embedding_layer(inputs)
-        transformer_block = TransformerBlock(ToolRecommendations.embed_dim, ToolRecommendations.num_heads, ToolRecommendations.ff_dim)
+        transformer_block = TransformerBlock(
+            ToolRecommendations.embed_dim, ToolRecommendations.num_heads, ToolRecommendations.ff_dim
+        )
         x, weights = transformer_block(x)
         x = GlobalAveragePooling1D()(x)
         x = Dropout(ToolRecommendations.dropout)(x)
