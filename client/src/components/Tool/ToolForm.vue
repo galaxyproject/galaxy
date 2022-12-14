@@ -107,6 +107,8 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { mapState } from "pinia";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
 import { refreshContentsWrapper } from "utils/data";
@@ -189,6 +191,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useHistoryItemsStore, ["getLatestCreateTime"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -219,22 +222,20 @@ export default {
             }
         },
     },
-    created() {
-        this.requestTool().then(() => {
+    watch: {
+        getLatestCreateTime() {
             const Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
-                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-                // Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+                console.debug("History change watcher detected a change.");
+                this.onHistoryChange();
             }
+        },
+    },
+    created() {
+        this.requestTool().then(() => {
+            console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
         });
     },
-    // beforeDestroy() {
-    //     const Galaxy = getGalaxyInstance();
-    //     if (Galaxy && Galaxy.currHistoryPanel) {
-    //         Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
-    //         console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
-    //     }
-    // },
     methods: {
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;

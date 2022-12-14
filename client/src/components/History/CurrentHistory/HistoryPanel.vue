@@ -196,7 +196,6 @@ export default {
             highlights: {},
             highlightsKey: null,
             invisible: {},
-            itemsLoaded: [],
             loading: false,
             offset: 0,
             showAdvanced: false,
@@ -229,11 +228,16 @@ export default {
         isProcessing() {
             return this.operationRunning >= this.history.update_time;
         },
+        /** @returns {Array} */
+        itemsLoaded() {
+            return this.getHistoryItems(this.historyId, this.filterText);
+        },
         /** @returns {Date} */
         lastChecked() {
             const { getLastCheckedTime } = storeToRefs(useHistoryItemsStore());
             return getLastCheckedTime.value;
         },
+        /** @returns {Boolean} */
         isWatching() {
             const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
             return getWatchingVisibility.value;
@@ -279,12 +283,12 @@ export default {
             this.loading = true;
             try {
                 await this.fetchHistoryItems(this.historyId, this.filterText, this.offset);
-                this.itemsLoaded = this.getHistoryItems(this.historyId, this.filterText); // computed?
                 const { getTotalMatchesCount } = storeToRefs(useHistoryItemsStore());
                 this.totalItemsInQuery = getTotalMatchesCount.value;
                 this.error = null;
                 this.loading = false;
             } catch (error) {
+                console.debug("HistoryPanel - Load error.", error);
                 this.error = error;
                 this.loading = false;
             }

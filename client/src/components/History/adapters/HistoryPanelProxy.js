@@ -21,24 +21,6 @@ export class HistoryPanelProxy {
                     callback(new Backbone.Model(model));
                 });
             },
-            // REMOVING THIS, ACCESSING STORE IN TOOLFORM.vue INSTEAD
-            // on(name, callback) {
-            //     this.off();
-            //     this.unsubscribe = historyItemsStore.$subscribe(
-            //         (mutation, state) => state.latestCreateTime,
-            //         () => {
-            //             callback();
-            //             console.debug("History change watcher detected a change.", name);
-            //         }
-            //     );
-            //     console.debug("History change watcher enabled.", name);
-            // },
-            // off(name) {
-            //     if (this.unsubscribe) {
-            //         this.unsubscribe();
-            //         console.debug("History change watcher disabled.", name);
-            //     }
-            // },
         };
 
         // watch the store, update history id
