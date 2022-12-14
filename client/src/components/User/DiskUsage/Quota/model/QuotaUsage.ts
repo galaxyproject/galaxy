@@ -1,71 +1,73 @@
-import { bytesToString } from "utils/utils";
+import { bytesToString } from "@/utils/utils";
 
 export const DEFAULT_QUOTA_SOURCE_LABEL = "Default";
+
+export interface QuotaUsageResponse {
+    quota_source_label?: string;
+    quota_bytes?: number;
+    total_disk_usage: number;
+    quota_percent?: number;
+}
 
 /**
  * Contains information about quota usage for a particular ObjectStore.
  */
 export class QuotaUsage {
-    constructor(data) {
+    private _data: QuotaUsageResponse;
+
+    constructor(data: QuotaUsageResponse) {
         this._data = data;
     }
 
     /**
      * The name of the ObjectStore associated with the quota.
-     * @returns {String}
      */
-    get sourceLabel() {
-        return this._data.quota_source_label || DEFAULT_QUOTA_SOURCE_LABEL;
+    get sourceLabel(): string {
+        return this._data.quota_source_label ?? DEFAULT_QUOTA_SOURCE_LABEL;
     }
 
     /**
      * The maximum allowed disk usage in bytes.
-     * @returns {Number}
      */
-    get quotaInBytes() {
+    get quotaInBytes(): number | undefined {
         return this._data.quota_bytes;
     }
 
     /**
      * The total amount of bytes used in this ObjectStore.
-     * @returns {Number}
      */
-    get totalDiskUsageInBytes() {
+    get totalDiskUsageInBytes(): number {
         return this._data.total_disk_usage;
     }
 
     /**
      * The percentage of used quota.
-     * @returns {Number}
      */
-    get quotaPercent() {
+    get quotaPercent(): number | undefined {
         return this._data.quota_percent;
     }
 
     /**
      * The maximum allowed disk usage as human readable size.
-     * @returns {String}
      */
-    get niceQuota() {
+    get niceQuota(): string {
         if (this.isUnlimited) {
             return "unlimited";
         }
-        return bytesToString(this.quotaInBytes, true);
+        return bytesToString(this.quotaInBytes, true, undefined);
     }
 
     /**
      * The total amount of disk used in this ObjectStore as human readable size.
-     * @returns {String}
      */
-    get niceTotalDiskUsage() {
-        return bytesToString(this.totalDiskUsageInBytes, true);
+    get niceTotalDiskUsage(): string {
+        return bytesToString(this.totalDiskUsageInBytes, true, undefined);
     }
 
     /**
      * Whether this ObjectStore has unlimited quota
-     * @returns {Boolean}
      */
-    get isUnlimited() {
+    get isUnlimited(): boolean {
         return !this.quotaInBytes;
     }
 }
