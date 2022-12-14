@@ -577,7 +577,8 @@ export default {
             const node = this.nodes[nodeId];
             this.lastQueue.enqueue(getModule, newData).then((data) => {
                 // TODO: change data in store, don't change node ...
-                const step = { ...this.steps[nodeId], tool_state: data.tool_state };
+                // also check that PJAs and other modification survive, or limit to input/output ?
+                const step = { ...this.steps[nodeId], ...data };
                 this.onUpdateStep(step);
                 node.setData(data);
             });
