@@ -36,7 +36,7 @@ describe("QuotaUsageSummary.vue", () => {
         const wrapper = mountQuotaUsageSummaryWith(FAKE_QUOTA_USAGES_LIST);
         const expectedTotalBytes = QUOTA_1_BYTES + QUOTA_2_BYTES;
 
-        expect(wrapper.vm.totalQuota).toBe(expectedTotalBytes);
+        expect(wrapper.vm.totalQuotaInBytes).toBe(expectedTotalBytes);
     });
 
     it("should display a quota bar for each quota", () => {
