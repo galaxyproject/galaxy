@@ -23,8 +23,6 @@
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible": "^4.5.10",
-    "@braks/revue-draggable": "file:/Users/mvandenb/src/galaxy/revue-draggable/braks-revue-draggable-no-transform.tgz",
-    "@coddicat/vue-pinch-scroll-zoom": "^3.3.4",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "@fortawesome/fontawesome-svg-core": "^6.2.1",
     "@fortawesome/free-brands-svg-icons": "^5.15.4",
@@ -105,12 +103,7 @@
     "vue-prismjs": "^1.2.0",
     "vue-router": "^3.6.5",
     "vue-rx": "^6.2.0",
-<<<<<<< HEAD
-    "vue-svg-pan-zoom": "1.1.0",
     "vue-virtual-scroll-list": "^2.3.4",
-=======
-    "vue-virtual-scroll-list": "^2.3.3",
->>>>>>> 21d8fc90d6 (Cleanup unused remains)
     "vuedraggable": "2.24.3",
     "vuex": "^3.6.2",
     "vuex-cache": "^3.4.0",
