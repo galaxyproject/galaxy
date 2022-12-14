@@ -260,7 +260,7 @@ class FastAPIDatasets:
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
         extra_params = get_query_parameters_from_request_excluding(request, {"preview", "filename", "to_ext", "raw"})
         display_data, headers = self.service.display(
-            trans, history_content_id, preview, filename, to_ext, raw, **extra_params
+            trans, history_content_id, preview=preview, filename=filename, to_ext=to_ext, raw=raw, **extra_params
         )
         if isinstance(display_data, IOBase):
             file_name = getattr(display_data, "name", None)

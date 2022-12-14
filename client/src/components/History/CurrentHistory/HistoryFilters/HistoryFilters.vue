@@ -82,11 +82,10 @@
 </template>
 
 <script>
-import { getFilters, toAlias } from "store/historyStore/model/filtering";
 import DebouncedInput from "components/DebouncedInput";
-import { STATES } from "components/History/Content/model/states";
-import { getFilterText } from "./filterConversion";
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
+import { STATES } from "components/History/Content/model/states";
+import { getFilters, getFilterText, toAlias } from "utils/filterConversion";
 
 export default {
     components: {

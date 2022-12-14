@@ -1,7 +1,7 @@
 <script setup>
-import { computed, defineProps, defineEmits } from "vue";
+import { computed } from "vue";
 
-const $emit = defineEmits(["input"]);
+const emit = defineEmits(["input"]);
 const props = defineProps({
     value: {
         default: null,
@@ -17,15 +17,20 @@ const currentValue = computed({
         return props.value;
     },
     set: (val) => {
-        $emit("input", val);
+        emit("input", val);
     },
+});
+
+const hasOptions = computed(() => {
+    return props.options.length > 0;
 });
 </script>
 
 <template>
-    <b-form-radio-group v-model="currentValue" stacked>
+    <b-form-radio-group v-if="hasOptions" v-model="currentValue" stacked>
         <b-form-radio v-for="(option, index) in options" :key="index" :value="option[1]">
             {{ option[0] }}
         </b-form-radio>
     </b-form-radio-group>
+    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
 </template>

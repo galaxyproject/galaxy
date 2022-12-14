@@ -9,10 +9,12 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
 from pydantic import Field
+from starlette.datastructures import URL
 
 from galaxy import (
     exceptions as galaxy_exceptions,
@@ -21,7 +23,7 @@ from galaxy import (
     web,
 )
 from galaxy.celery.tasks import compute_dataset_hash
-from galaxy.datatypes import dataproviders
+from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.datasets import DatasetAssociationManager
@@ -40,7 +42,17 @@ from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
 )
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.drs import (
+    AccessMethod,
+    AccessMethodType,
+    AccessURL,
+    Checksum,
+    DrsObject,
+)
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     AnyHDA,
     AnyHistoryContentItem,
@@ -408,6 +420,66 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         result = compute_dataset_hash.delay(request=request)
         return async_task_summary(result)
 
+    def drs_dataset_instance(self, object_id: str) -> Tuple[int, DatasetSourceType]:
+        if object_id.startswith("hda-"):
+            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("hda-") :]), kind="drs")
+            hda_ldda = DatasetSourceType.hda
+        elif object_id.startswith("ldda-"):
+            decoded_object_id = self.decode_id(EncodedDatabaseIdField(object_id[len("ldda-") :]), kind="drs")
+            hda_ldda = DatasetSourceType.ldda
+        else:
+            raise galaxy_exceptions.RequestParameterInvalidException(
+                "Invalid object_id format specified for this Galaxy server"
+            )
+        return decoded_object_id, hda_ldda
+
+    def get_drs_object(self, trans: ProvidesHistoryContext, object_id: str, request_url: URL) -> DrsObject:
+        decoded_object_id, hda_ldda = self.drs_dataset_instance(object_id)
+        dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(decoded_object_id, trans.user)
+        if not trans.app.security_agent.dataset_is_public(dataset_instance.dataset):
+            # Only public datasets may be access as DRS datasets currently
+            raise galaxy_exceptions.ObjectNotFound("Cannot find a public dataset with specified object ID.")
+
+        # TODO: issue warning if not being served on HTTPS @ 443 - required by the spec.
+        self_uri = f"drs://drs.{request_url.components.netloc}/{object_id}"
+        checksums: List[Checksum] = []
+        for dataset_hash in dataset_instance.dataset.hashes:
+            if dataset_hash.extra_files_path:
+                continue
+            type = dataset_hash.hash_function
+            checksum = dataset_hash.hash_value
+            checksums.append(Checksum(type=type, checksum=checksum))
+
+        if len(checksums) == 0:
+            hash_funciton = HashFunctionNameEnum.md5
+            request = ComputeDatasetHashTaskRequest(
+                dataset_id=dataset_instance.dataset.id,
+                extra_files_path=None,
+                hash_function=hash_funciton,
+                user=None,
+            )
+            compute_dataset_hash.delay(request=request)
+            raise galaxy_exceptions.AcceptedRetryLater(
+                "required checksum task for DRS object response launched.", retry_after=60
+            )
+
+        base = str(request_url).split("/ga4gh", 1)[0]
+        access_url = base + f"/api/drs_download/{object_id}"
+
+        access_method = AccessMethod(
+            type=AccessMethodType.https,
+            access_url=AccessURL(url=access_url),
+        )
+
+        return DrsObject(
+            id=object_id,
+            self_uri=self_uri,
+            size=dataset_instance.dataset.file_size,
+            created_time=dataset_instance.create_time,
+            checksums=checksums,
+            access_methods=[access_method],
+        )
+
     def update_permissions(
         self,
         trans: ProvidesHistoryContext,
@@ -449,7 +521,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
     def display(
         self,
         trans: ProvidesHistoryContext,
-        history_content_id: DecodedDatabaseIdField,
+        dataset_id: DecodedDatabaseIdField,
+        hda_ldda: DatasetSourceType = DatasetSourceType.hda,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -466,17 +539,21 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         rval: Any = ""
         try:
-            hda = self.hda_manager.get_accessible(history_content_id, trans.user)
+            dataset_instance = self.dataset_manager_by_type[hda_ldda].get_accessible(dataset_id, trans.user)
             if raw:
                 if filename and filename != "index":
                     object_store = trans.app.object_store
-                    dir_name = hda.dataset.extra_files_path_name
-                    file_path = object_store.get_filename(hda.dataset, extra_dir=dir_name, alt_name=filename)
+                    dir_name = dataset_instance.dataset.extra_files_path_name
+                    file_path = object_store.get_filename(
+                        dataset_instance.dataset, extra_dir=dir_name, alt_name=filename
+                    )
                 else:
-                    file_path = hda.file_name
+                    file_path = dataset_instance.file_name
                 rval = open(file_path, "rb")
             else:
-                rval, headers = hda.datatype.display_data(trans, hda, preview, filename, to_ext, **kwd)
+                rval, headers = dataset_instance.datatype.display_data(
+                    trans, dataset_instance, preview, filename, to_ext, **kwd
+                )
         except galaxy_exceptions.MessageException:
             raise
         except Exception as e:
@@ -824,7 +901,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 return DataResult(data=list(dataset.datatype.dataprovider(dataset, provider, **kwargs)))
 
             else:
-                raise dataproviders.exceptions.NoProviderAvailable(dataset.datatype, provider)
+                raise NoProviderAvailable(dataset.datatype, provider)
 
         # no provider name: look up by datatype
         else:

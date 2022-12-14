@@ -97,7 +97,6 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import exists
 from typing_extensions import Protocol
 
@@ -176,6 +175,12 @@ YIELD_PER_ROWS = 100
 
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
+
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
+
     from galaxy.datatypes.data import Data
     from galaxy.tools import DefaultToolState
     from galaxy.workflow.modules import WorkflowModule
@@ -185,6 +190,8 @@ if TYPE_CHECKING:
         __table__: Table
 
 else:
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
+
     _HasTable = object
 
 
@@ -196,7 +203,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     return UUID(str(uuid))
 
 
-class Base(metaclass=DeclarativeMeta):
+class Base(_HasTable, metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata
@@ -207,7 +214,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class RepresentById(_HasTable):
+class RepresentById:
     id: int
 
     def __repr__(self):
@@ -290,11 +297,11 @@ class SerializeFilesHandler(Protocol):
 class SerializationOptions:
     def __init__(
         self,
-        for_edit,
-        serialize_dataset_objects=None,
+        for_edit: bool,
+        serialize_dataset_objects: Optional[bool] = None,
         serialize_files_handler: Optional[SerializeFilesHandler] = None,
-        strip_metadata_files=None,
-    ):
+        strip_metadata_files: Optional[bool] = None,
+    ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
             serialize_dataset_objects = for_edit
@@ -384,7 +391,7 @@ class UsesCreateAndUpdateTime:
         self.update_time = now()
 
 
-class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
+class WorkerProcess(Base, UsesCreateAndUpdateTime):
     __tablename__ = "worker_process"
     __table_args__ = (UniqueConstraint("server_name", "hostname"),)
 
@@ -860,7 +867,7 @@ class User(Base, Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken(Base, _HasTable):
+class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
@@ -2301,6 +2308,18 @@ class JobImportHistoryArchive(Base, RepresentById):
     history = relationship("History")
 
 
+class StoreExportAssociation(Base, RepresentById):
+    __tablename__ = "store_export_association"
+    __table_args__ = (Index("ix_store_export_object", "object_id", "object_type"),)
+
+    id = Column(Integer, primary_key=True)
+    task_uuid = Column(UUIDType(), index=True, unique=True)
+    create_time = Column(DateTime, default=now)
+    object_type = Column(TrimmedString(32))
+    object_id = Column(Integer)
+    export_metadata = Column(JSONType)
+
+
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"
 
@@ -3348,7 +3367,7 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(Base, StorableObject, Serializable, _HasTable):
+class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
 
     id = Column(Integer, primary_key=True)
@@ -3823,6 +3842,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     purged: bool
+    creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"
@@ -4311,9 +4331,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
 
     def get_display_applications(self, trans):
         return self.datatype.get_display_applications_by_dataset(self, trans)
-
-    def get_visualizations(self):
-        return self.datatype.get_visualizations(self)
 
     def get_datasources(self, trans):
         """
@@ -8810,7 +8827,7 @@ class CustosAuthnzToken(Base, RepresentById):
     user = relationship("User", back_populates="custos_auth")
 
 
-class CloudAuthz(Base, _HasTable):
+class CloudAuthz(Base):
     __tablename__ = "cloudauthz"
 
     id = Column(Integer, primary_key=True)

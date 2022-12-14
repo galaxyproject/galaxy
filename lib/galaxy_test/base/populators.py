@@ -57,6 +57,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     List,
     NamedTuple,
     Optional,
@@ -64,6 +65,7 @@ from typing import (
     Tuple,
     Union,
 )
+from uuid import UUID
 
 import cwltest.utils
 import requests
@@ -98,6 +100,10 @@ from galaxy.util import (
 )
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
+from galaxy_test.base.decorators import (
+    has_requirement,
+    using_requirement,
+)
 from galaxy_test.base.json_schema_utils import JsonSchemaValidator
 from . import api_asserts
 from .api import ApiTestInteractor
@@ -371,10 +377,10 @@ class BaseDatasetPopulator(BasePopulator):
         to_posix_lines=True,
         auto_decompress=True,
         **kwds,
-    ) -> dict:
-        """Create a new history dataset instance (HDA) and return its ID.
+    ) -> Dict[str, Any]:
+        """Create a new history dataset instance (HDA).
 
-        :returns: the HDA id of the new object
+        :returns: a dictionary describing the new HDA
         """
         run_response = self.new_dataset_request(
             history_id,
@@ -711,6 +717,7 @@ class BaseDatasetPopulator(BasePopulator):
         return self._create_tool_raw(payload)
 
     def _create_tool_raw(self, payload) -> Dict[str, Any]:
+        using_requirement("admin")
         try:
             create_response = self._post("dynamic_tools", data=payload, admin=True)
         except TypeError:
@@ -719,40 +726,49 @@ class BaseDatasetPopulator(BasePopulator):
         return create_response.json()
 
     def list_dynamic_tools(self) -> list:
+        using_requirement("admin")
         list_response = self._get("dynamic_tools", admin=True)
         assert list_response.status_code == 200, list_response
         return list_response.json()
 
     def show_dynamic_tool(self, uuid) -> dict:
+        using_requirement("admin")
         show_response = self._get(f"dynamic_tools/{uuid}", admin=True)
         assert show_response.status_code == 200, show_response
         return show_response.json()
 
     def deactivate_dynamic_tool(self, uuid) -> dict:
+        using_requirement("admin")
         delete_response = self._delete(f"dynamic_tools/{uuid}", admin=True)
         return delete_response.json()
 
+    @abstractmethod
     def _summarize_history(self, history_id: str) -> None:
         """Abstract method for summarizing a target history - override to provide details."""
 
+    def _cleanup_history(self, history_id: str) -> None:
+        self.cancel_history_jobs(history_id)
+
     @contextlib.contextmanager
-    def test_history(self, cancel_executions: bool = True, **kwds):
-        cleanup = "GALAXY_TEST_NO_CLEANUP" not in os.environ
-        history_id = None
-
-        def wrap_up():
-            if cleanup and cancel_executions and history_id:
-                self.cancel_history_jobs(history_id)
-
-        try:
-            history_id = self.new_history()
+    def test_history_for(self, method) -> Generator[str, None, None]:
+        require_new_history = has_requirement(method, "new_history")
+        with self.test_history(require_new=require_new_history) as history_id:
             yield history_id
-            wrap_up()
+
+    @contextlib.contextmanager
+    def test_history(self, require_new: bool = True) -> Generator[str, None, None]:
+        with self._test_history(require_new=require_new, cleanup_callback=self._cleanup_history) as history_id:
+            yield history_id
+
+    @contextlib.contextmanager
+    def _test_history(
+        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+    ) -> Generator[str, None, None]:
+        history_id = self.new_history()
+        try:
+            yield history_id
         except Exception:
-            if history_id:
-                self._summarize_history(history_id)
-            wrap_up()
-            raise
+            cleanup_callback and cleanup_callback(history_id)
 
     def new_history(self, name="API Test History", **kwds) -> str:
         create_history_response = self._post("histories", data=dict(name=name))
@@ -916,7 +932,7 @@ class BaseDatasetPopulator(BasePopulator):
         assert isinstance(transform, list)
         return {t["action"] for t in transform}
 
-    def get_history_dataset_details(self, history_id: str, **kwds) -> dict:
+    def get_history_dataset_details(self, history_id: str, **kwds) -> Dict[str, Any]:
         dataset_id = self.__history_content_id(history_id, **kwds)
         details_response = self.get_history_dataset_details_raw(history_id, dataset_id)
         details_response.raise_for_status()
@@ -1020,11 +1036,14 @@ class BaseDatasetPopulator(BasePopulator):
         return get_storage_response
 
     def get_roles(self) -> list:
+        using_requirement("admin")
         roles_response = self._get("roles", admin=True)
         assert roles_response.status_code == 200
         return roles_response.json()
 
     def get_configuration(self, admin=False) -> Dict[str, Any]:
+        if admin:
+            using_requirement("admin")
         response = self._get("configuration", admin=admin)
         api_asserts.assert_status_code_is_ok(response)
         configuration = response.json()
@@ -1052,6 +1071,7 @@ class BaseDatasetPopulator(BasePopulator):
         return role["id"]
 
     def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
+        using_requirement("admin")
         payload = {
             "name": self.get_random_name(prefix="testpop"),
             "description": description or "Test Role",
@@ -1062,16 +1082,19 @@ class BaseDatasetPopulator(BasePopulator):
         return role_response.json()
 
     def create_quota(self, quota_payload: dict) -> dict:
+        using_requirement("admin")
         quota_response = self._post("quotas", data=quota_payload, admin=True)
         quota_response.raise_for_status()
         return quota_response.json()
 
     def get_quotas(self) -> list:
+        using_requirement("admin")
         quota_response = self._get("quotas", admin=True)
         quota_response.raise_for_status()
         return quota_response.json()
 
     def make_private(self, history_id: str, dataset_id: str) -> dict:
+        using_requirement("admin")
         role_id = self.user_private_role_id()
         # Give manage permission to the user.
         payload = {
@@ -1084,6 +1107,7 @@ class BaseDatasetPopulator(BasePopulator):
         return update_response.json()
 
     def make_public(self, history_id: str) -> dict:
+        using_requirement("new_published_objects")
         sharing_response = self._put(f"histories/{history_id}/publish")
         assert sharing_response.status_code == 200
         return sharing_response.json()
@@ -1108,6 +1132,7 @@ class BaseDatasetPopulator(BasePopulator):
         return wait_on(validated, "dataset validation")
 
     def setup_history_for_export_testing(self, history_name):
+        using_requirement("new_history")
         history_id = self.new_history(name=history_name)
         hda = self.new_dataset(history_id, content="1 2 3", wait=True)
         tags = ["name:name"]
@@ -1209,7 +1234,7 @@ class BaseDatasetPopulator(BasePopulator):
         storage_request_id = self.assert_download_request_ok(download_request_response)
         return self.wait_on_download_request(storage_request_id)
 
-    def assert_download_request_ok(self, download_request_response: Response) -> str:
+    def assert_download_request_ok(self, download_request_response: Response) -> UUID:
         """Assert response is valid and okay and extract storage request ID."""
         api_asserts.assert_status_code_is(download_request_response, 200)
         download_async = download_request_response.json()
@@ -1217,7 +1242,7 @@ class BaseDatasetPopulator(BasePopulator):
         storage_request_id = download_async["storage_request_id"]
         return storage_request_id
 
-    def wait_for_download_ready(self, storage_request_id: str):
+    def wait_for_download_ready(self, storage_request_id: UUID):
         def is_ready():
             is_ready_response = self._get(f"short_term_storage/{storage_request_id}/ready")
             is_ready_response.raise_for_status()
@@ -1244,7 +1269,7 @@ class BaseDatasetPopulator(BasePopulator):
         wait_on(is_ready, "waiting for task to complete")
         return state() == "SUCCESS"
 
-    def wait_on_download_request(self, storage_request_id: str) -> Response:
+    def wait_on_download_request(self, storage_request_id: UUID) -> Response:
         self.wait_for_download_ready(storage_request_id)
         download_contents_response = self._get(f"short_term_storage/{storage_request_id}")
         download_contents_response.raise_for_status()
@@ -1353,6 +1378,20 @@ class BaseDatasetPopulator(BasePopulator):
         task_ok = self.wait_on_task_id(task_id)
         assert task_ok, f"Task: Import history from {target_uri} failed"
 
+    def download_history_to_store(self, history_id: str, extension: str = "tgz", serve_file: bool = False):
+        url = f"histories/{history_id}/prepare_store_download"
+        download_response = self._post(url, dict(include_files=False, model_store_format=extension), json=True)
+        storage_request_id = self.assert_download_request_ok(download_response)
+        self.wait_for_download_ready(storage_request_id)
+        if serve_file:
+            return self._get_to_tempfile(f"short_term_storage/{storage_request_id}")
+
+    def get_history_export_tasks(self, history_id: str):
+        headers = {"accept": "application/vnd.galaxy.task.export+json"}
+        response = self._get(f"histories/{history_id}/exports", headers=headers)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor
@@ -1386,6 +1425,15 @@ class DatasetPopulator(GalaxyInteractorHttpMixin, BaseDatasetPopulator):
 
     def _summarize_history(self, history_id):
         self.galaxy_interactor._summarize_history(history_id)
+
+    @contextlib.contextmanager
+    def _test_history(
+        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+    ) -> Generator[str, None, None]:
+        with self.galaxy_interactor.test_history(
+            require_new=require_new, cleanup_callback=cleanup_callback
+        ) as history_id:
+            yield history_id
 
 
 # Things gxformat2 knows how to upload as workflows
@@ -1947,6 +1995,7 @@ class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, Import
         return upload_response.json()
 
     def _import_tool_response(self, tool) -> Response:
+        using_requirement("admin")
         tool_str = json.dumps(tool, indent=4)
         data = {"representation": tool_str}
         upload_response = self._post("dynamic_tools", data=data, admin=True)
@@ -2216,6 +2265,8 @@ class LibraryPopulator:
         return library
 
     def create_from_store_raw(self, payload: Dict[str, Any]) -> Response:
+        using_requirement("admin")
+        using_requirement("new_library")
         create_response = self.galaxy_interactor.post("libraries/from_store", payload, json=True, admin=True)
         return create_response
 
@@ -2228,6 +2279,8 @@ class LibraryPopulator:
         return create_response.json()
 
     def new_library(self, name):
+        using_requirement("new_library")
+        using_requirement("admin")
         data = dict(name=name)
         create_response = self.galaxy_interactor.post("libraries", data=data, admin=True, json=True)
         return create_response.json()
@@ -2317,6 +2370,7 @@ class LibraryPopulator:
         self._set_permissions(library_id, permissions)
 
     def _set_permissions(self, library_id, permissions):
+        using_requirement("admin")
         response = self.galaxy_interactor.post(
             f"libraries/{library_id}/permissions", data=permissions, admin=True, json=True
         )
@@ -2938,6 +2992,9 @@ class GiDatasetPopulator(GiHttpMixin, BaseDatasetPopulator):
     def __init__(self, gi):
         """Construct a dataset populator from a bioblend GalaxyInstance."""
         self._gi = gi
+
+    def _summarize_history(self, history_id: str) -> None:
+        pass
 
 
 class GiDatasetCollectionPopulator(GiHttpMixin, BaseDatasetCollectionPopulator):

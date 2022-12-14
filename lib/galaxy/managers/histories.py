@@ -36,8 +36,11 @@ from galaxy.managers.base import (
     Serializer,
     SortableManager,
 )
+from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    ExportObjectMetadata,
+    ExportObjectType,
     HDABasicInfo,
     ShareHistoryExtra,
 )
@@ -92,7 +95,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 
     def is_owner(
         self,
-        item: model._HasTable,
+        item: model.Base,
         user: Optional[model.User],
         current_history: Optional[model.History] = None,
         **kwargs: Any,
@@ -351,25 +354,63 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
 
-class HistoryExportView:
-    def __init__(self, app: MinimalManagerApp):
+class HistoryExportManager:
+    export_object_type = ExportObjectType.HISTORY
+
+    def __init__(self, app: MinimalManagerApp, export_tracker: StoreExportTracker):
         self.app = app
+        self.export_tracker = export_tracker
+
+    def get_task_exports(self, trans, history_id: int, limit: Optional[int] = None, offset: Optional[int] = None):
+        """Returns task-based exports associated with this history"""
+        history = self._history(trans, history_id)
+        export_associations = self.export_tracker.get_object_exports(
+            object_id=history_id, object_type=self.export_object_type, limit=limit, offset=offset
+        )
+        return [self._serialize_task_export(export, history) for export in export_associations]
+
+    def create_export_association(self, history_id: int) -> model.StoreExportAssociation:
+        return self.export_tracker.create_export_association(object_id=history_id, object_type=self.export_object_type)
+
+    def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
+        task_uuid = export.task_uuid
+        export_date = export.create_time
+        history_has_changed = history.update_time > export_date
+        json_metadata = export.export_metadata
+        export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
+        is_ready = (
+            export_metadata is not None
+            and export_metadata.result_data is not None
+            and export_metadata.result_data.success
+        )
+        is_export_up_to_date = is_ready and not history_has_changed
+        return {
+            "id": export.id,
+            "ready": is_ready,
+            "preparing": export_metadata is None or export_metadata.result_data is None,
+            "up_to_date": is_export_up_to_date,
+            "task_uuid": task_uuid,
+            "create_time": export_date,
+            "export_metadata": export_metadata,
+        }
 
     def get_exports(self, trans, history_id: int):
+        """Returns job-based exports associated with this history"""
         history = self._history(trans, history_id)
         matching_exports = history.exports
         return [self.serialize(trans, history_id, e) for e in matching_exports]
 
-    def serialize(self, trans, history_id: int, jeha):
+    def serialize(self, trans, history_id: int, jeha: model.JobExportHistoryArchive) -> dict:
         rval = jeha.to_dict()
+        rval["type"] = "job"
         encoded_jeha_id = DecodedDatabaseIdField.encode(jeha.id)
         encoded_history_id = DecodedDatabaseIdField.encode(history_id)
-        api_url = trans.url_builder("history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id)
+        api_url = trans.url_builder("history_archive_download", history_id=encoded_history_id, jeha_id=encoded_jeha_id)
         external_url = trans.url_builder(
-            "history_archive_download", id=encoded_history_id, jeha_id="latest", qualified=True
+            "history_archive_download", history_id=encoded_history_id, jeha_id="latest", qualified=True
         )
         external_permanent_url = trans.url_builder(
-            "history_archive_download", id=encoded_history_id, jeha_id=encoded_jeha_id, qualified=True
+            "history_archive_download", history_id=encoded_history_id, jeha_id=encoded_jeha_id, qualified=True
         )
         rval["download_url"] = api_url
         rval["external_download_latest_url"] = external_url
@@ -494,7 +535,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "nice_size": lambda item, key, **context: item.disk_nice_size,
             "state": self.serialize_history_state,
             "url": lambda item, key, **context: self.url_for(
-                "history", id=self.app.security.encode_id(item.id), context=context
+                "history", history_id=self.app.security.encode_id(item.id), context=context
             ),
             "contents_url": lambda item, key, **context: self.url_for(
                 "history_contents", history_id=self.app.security.encode_id(item.id), context=context

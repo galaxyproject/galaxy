@@ -5,6 +5,7 @@ from abc import (
     abstractproperty,
 )
 from typing import (
+    Any,
     Optional,
     TYPE_CHECKING,
 )
@@ -14,6 +15,8 @@ from galaxy.util.dictifiable import Dictifiable
 
 if TYPE_CHECKING:
     from beaker.cache import Cache
+
+    from ..dependencies import AppInfo
 
 
 class ResolutionCache(Bunch):
@@ -35,17 +38,17 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
     builds_on_resolution = False
     read_only = True  # not used for containers, but set for when they are used like dependency resolvers
 
-    def __init__(self, app_info=None, **kwds):
+    def __init__(self, app_info: Optional["AppInfo"] = None, **kwds) -> None:
         """Default initializer for ``ContainerResolver`` subclasses."""
         self.app_info = app_info
         self.resolver_kwds = kwds
 
-    def _get_config_option(self, key, default=None):
+    def _get_config_option(self, key: str, default: Any = None) -> Any:
         """Look in resolver-specific settings for option and then fallback to
         global settings.
         """
-        if self.app_info and hasattr(self.app_info, key):
-            return getattr(self.app_info, key)
+        if self.app_info:
+            return getattr(self.app_info, key, default)
         else:
             return default
 

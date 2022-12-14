@@ -257,7 +257,7 @@ class MapOverTestCase(NamedTuple):
     steps: Dict[int, Any]
 
 
-def _construct_steps_for_map_over():
+def _construct_steps_for_map_over() -> List[MapOverTestCase]:
     test_case = MapOverTestCase
     # these are the cartesian product of
     # data_input = ['dataset', 'list', 'list:pair', 'list:list']

@@ -5,6 +5,7 @@ from typing import (
     Tuple,
 )
 
+from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -25,6 +26,7 @@ class TestFolderContentsApi(ApiTestCase):
         self.library = self.library_populator.new_private_library("FolderContentsTestsLibrary")
         self.root_folder_id = self._create_folder_in_library("Test Folder Contents")
 
+    @requires_new_library
     def test_create_hda_with_ldda_message(self, history_id):
         hda_id = self._create_hda(history_id)
         ldda_message = "Test message"
@@ -35,6 +37,7 @@ class TestFolderContentsApi(ApiTestCase):
         ldda = self._create_content_in_folder_with_payload(self.root_folder_id, data)
         self._assert_has_keys(ldda, "name", "id")
 
+    @requires_new_library
     def test_create_hdca_with_ldda_message(self, history_id):
         contents = ["dataset01", "dataset02"]
         hdca_id = self._create_hdca_with_contents(history_id, contents)
@@ -46,6 +49,7 @@ class TestFolderContentsApi(ApiTestCase):
         lddas = self._create_content_in_folder_with_payload(self.root_folder_id, data)
         assert len(contents) == len(lddas)
 
+    @requires_new_library
     def test_index(self, history_id):
         folder_id = self._create_folder_in_library("Test Folder Contents Index")
 
@@ -55,6 +59,7 @@ class TestFolderContentsApi(ApiTestCase):
         response = self._get(f"folders/{folder_id}/contents")
         self._assert_index_count_is_correct(response, expected_contents_count=2)
 
+    @requires_new_library
     def test_index_include_deleted(self, history_id):
         folder_name = "Test Folder Contents Index include deleted"
         folder_id = self._create_folder_in_library(folder_name)
@@ -73,6 +78,7 @@ class TestFolderContentsApi(ApiTestCase):
         for content in index_response["folder_contents"]:
             assert content["deleted"] is True
 
+    @requires_new_library
     def test_index_pagination(self, history_id):
         folder_name = "Test Folder Contents Pagination"
         folder_id = self._create_folder_in_library(folder_name)
@@ -136,6 +142,7 @@ class TestFolderContentsApi(ApiTestCase):
         for index in range(actual_limit):
             assert contents[index]["id"] == expected_query_result[index]["id"]
 
+    @requires_new_library
     def test_index_search_text(self, history_id):
         folder_name = "Test Folder Contents Index search text"
         folder_id = self._create_folder_in_library(folder_name)
@@ -159,6 +166,7 @@ class TestFolderContentsApi(ApiTestCase):
             for content in contents:
                 assert search_text.casefold() in content["name"].casefold()
 
+    @requires_new_library
     def test_index_permissions(self, history_id):
         folder_name = "Test Folder Contents Index permissions"
         folder_id = self._create_folder_in_library(folder_name)
@@ -193,7 +201,8 @@ class TestFolderContentsApi(ApiTestCase):
             response = self._get(f"folders/{folder_id}/contents")
             self._assert_index_count_is_correct(response, expected_contents_count=1)
 
-    def test_index_permissions_include_deleted(self, history_id):
+    @requires_new_library
+    def test_index_permissions_include_deleted(self, history_id) -> None:
         folder_name = "Test Folder Contents Index permissions include deleted"
         folder_id = self._create_folder_in_library(folder_name)
 
@@ -247,6 +256,7 @@ class TestFolderContentsApi(ApiTestCase):
             response = self._get(f"folders/{folder_id}/contents?include_deleted={include_deleted}")
             self._assert_index_count_is_correct(response, expected_contents_count=num_non_deleted)
 
+    @requires_new_library
     def test_index_order_by(self, history_id):
         folder_name = "Test Folder Contents Index Order By"
         folder_id = self._create_folder_in_library(folder_name)
@@ -259,7 +269,7 @@ class TestFolderContentsApi(ApiTestCase):
         dataset_names = ["a", "b", "c"]
         ldda_messages = ["Message Z", "Message Y", "Message X"]
         dataset_sizes = [50, 100, 10]
-        file_types = ["txt", "csv", "txt"]
+        file_types = ["txt", "csv", "json"]
         for index, name in enumerate(dataset_names):
             self._create_dataset_in_folder(
                 history_id,
@@ -285,7 +295,7 @@ class TestFolderContentsApi(ApiTestCase):
         self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
 
         order_by = "type"
-        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "b", "a", "c"]
+        expected_order_by_name = ["Folder_A", "Folder_B", "Folder_C", "b", "c", "a"]
         self._assert_folder_order_by_is_expected(folder_id, order_by, sort_desc, expected_order_by_name)
 
         order_by = "size"

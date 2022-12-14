@@ -5,7 +5,7 @@ import BASE_MVC from "./base-mvc";
 import userModel from "./user-model";
 import metricsLogger from "utils/metrics-logger";
 import addLogging from "utils/add-logging";
-import localize from "utils/localization";
+import { localize, _setUserLocale, _getUserLocale } from "utils/localization";
 import { getGalaxyInstance } from "app";
 import { create, dialog } from "utils/data";
 
@@ -77,8 +77,8 @@ GalaxyApp.prototype._init = function (options, bootstrapped) {
     this._initUser(options.user || {});
     this.debug("GalaxyApp.user: ", this.user);
 
-    this.localize._setUserLocale(this.user, this.config);
-    this.localize._getUserLocale();
+    _setUserLocale(this.user, this.config);
+    _getUserLocale();
     this.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
 
     this._setUpListeners();

@@ -10,6 +10,7 @@ from galaxy_test.base.api_asserts import (
     assert_has_keys,
     assert_status_code_is,
 )
+from galaxy_test.base.decorators import requires_admin
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
@@ -21,6 +22,7 @@ class TestRolesApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
+    @requires_admin
     def test_list_and_show(self):
         def check_roles_response(response):
             assert_status_code_is(response, 200)
@@ -56,6 +58,7 @@ class TestRolesApi(ApiTestCase):
         role = role_response.json()
         self.check_role_dict(role, assert_id=user_role_id)
 
+    @requires_admin
     def test_create_invalid_params(self):
         # In theory these low-level validation test cases could be handled in more
         # of a unit test style but it makes sense during the transition from wsgi to
@@ -97,6 +100,7 @@ class TestRolesApi(ApiTestCase):
         assert "name" in response.json()["err_msg"]
         assert "validation_errors" in response.json()
 
+    @requires_admin
     def test_create_valid(self):
         name = self.dataset_populator.get_random_name()
         description = "A test role."
@@ -124,6 +128,7 @@ class TestRolesApi(ApiTestCase):
         assert role["id"] in user_roles_response_ids
         assert role["id"] in different_user_roles_response_ids
 
+    @requires_admin
     def test_show_error_codes(self):
         # Bad role ids are 400.
         response = self._get("roles/badroleid")
@@ -135,6 +140,7 @@ class TestRolesApi(ApiTestCase):
         response = self._get(f"roles/{different_user_role_id}")
         assert_status_code_is(response, 400)
 
+    @requires_admin
     def test_create_only_admin(self):
         response = self._post("roles", json=True)
         assert_status_code_is(response, 403)

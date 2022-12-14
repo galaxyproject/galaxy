@@ -338,7 +338,7 @@ class JobHandlerQueue(Monitors):
         # Already dispatched and running
         job_wrapper = self.job_wrapper(job)
         # Use the persisted destination as its params may differ from
-        # what's in the job_conf xml
+        # what's in the job config
         job_destination = JobDestination(
             id=job.destination_id, runner=job.job_runner_name, params=job.destination_params
         )

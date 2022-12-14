@@ -239,7 +239,7 @@ class TestMappings(BaseModelTestCase):
         for i in range(elements):
             assert c1[i] == dces[i]
 
-    def test_dataset_instance_order(self):
+    def test_dataset_instance_order(self) -> None:
         u = model.User(email="mary@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
         elements = []

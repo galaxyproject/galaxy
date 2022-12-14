@@ -28,7 +28,7 @@ from ..authnz import IdentityProvider
 try:
     import pkce
 except ImportError:
-    pkce = None
+    pkce = None  # type: ignore[assignment]
 
 log = logging.getLogger(__name__)
 STATE_COOKIE_NAME = "galaxy-oidc-state"

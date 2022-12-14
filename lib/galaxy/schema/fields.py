@@ -1,6 +1,7 @@
 import re
 
 from pydantic import Field
+from typing_extensions import get_args
 
 from galaxy.security.idencoding import IdEncodingHelper
 
@@ -40,9 +41,9 @@ class BaseDatabaseIdField:
         # __modify_schema__ should mutate the dict it receives in place,
         # the returned value will be ignored
         field_schema.update(
-            min_length=16,
+            minLength=16,
             pattern="[0-9a-fA-F]+",
-            examples=["0123456789ABCDEF"],
+            example=["0123456789ABCDEF"],
             type="string",
         )
 
@@ -94,15 +95,25 @@ class EncodedDatabaseIdField(str, BaseDatabaseIdField):
         return cls.security.decode_id(v)
 
 
-def ModelClassField(class_name: str) -> str:
+def literal_to_value(arg):
+    val = get_args(arg)
+    if not val:
+        return arg
+    if len(val) > 1:
+        raise Exception("Can't extract default argument for unions")
+    return val[0]
+
+
+def ModelClassField(default_value=...):
     """Represents a database model class name annotated as a constant
     pydantic Field.
     :param class_name: The name of the database class.
     :return: A constant pydantic Field with default annotations for model classes.
     """
     return Field(
-        class_name,
+        literal_to_value(default_value),
         title="Model class",
         description="The name of the database model class.",
-        const=True,  # Make this field constant
+        const=True,
+        mark_required_in_schema=True,
     )

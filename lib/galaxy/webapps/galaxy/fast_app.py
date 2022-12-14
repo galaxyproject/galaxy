@@ -1,3 +1,8 @@
+from typing import (
+    Any,
+    Dict,
+)
+
 from a2wsgi import WSGIMiddleware
 from fastapi import (
     FastAPI,
@@ -142,12 +147,33 @@ def include_legacy_openapi(app, gx_app):
     return app.openapi_schema
 
 
-def initialize_fast_app(gx_wsgi_webapp, gx_app):
-    app = FastAPI(
+def get_fastapi_instance() -> FastAPI:
+    return FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
         openapi_tags=api_tags_metadata,
+        license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
     )
+
+
+def get_openapi_schema() -> Dict[str, Any]:
+    """
+    Dumps openAPI schema without starting a full app and webserver.
+    """
+    app = get_fastapi_instance()
+    include_all_package_routers(app, "galaxy.webapps.galaxy.api")
+    return get_openapi(
+        title=app.title,
+        version=app.version,
+        openapi_version="3.1.0",
+        description=app.description,
+        routes=app.routes,
+        license_info=app.license_info,
+    )
+
+
+def initialize_fast_app(gx_wsgi_webapp, gx_app):
+    app = get_fastapi_instance()
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)

@@ -1,94 +1,67 @@
-<script setup>
-import FormBoolean from "./Elements/FormBoolean";
-import FormHidden from "./Elements/FormHidden";
-import FormInput from "./Elements/FormInput";
-import FormParameter from "./Elements/FormParameter";
-import FormSelection from "./Elements/FormSelection";
-import FormColor from "./Elements/FormColor";
-import FormDirectory from "./Elements/FormDirectory";
-import FormNumber from "./Elements/FormNumber";
+<script setup lang="ts">
+import FormBoolean from "./Elements/FormBoolean.vue";
+import FormHidden from "./Elements/FormHidden.vue";
+import FormInput from "./Elements/FormInput.vue";
+import FormParameter from "./Elements/FormParameter.vue";
+import FormSelection from "./Elements/FormSelection.vue";
+import FormColor from "./Elements/FormColor.vue";
+import FormDirectory from "./Elements/FormDirectory.vue";
+import FormNumber from "./Elements/FormNumber.vue";
+import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExclamation, faTimes, faArrowsAltH } from "@fortawesome/free-solid-svg-icons";
+import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
 
-const props = defineProps({
-    id: {
-        type: String,
-        default: "identifier",
-    },
-    type: {
-        type: String,
-        default: null,
-    },
-    value: {
-        default: null,
-    },
-    title: {
-        type: String,
-        default: null,
-    },
-    refreshOnChange: {
-        type: Boolean,
-        default: false,
-    },
-    help: {
-        type: String,
-        default: null,
-    },
-    error: {
-        type: String,
-        default: null,
-    },
-    backbonejs: {
-        type: Boolean,
-        default: false,
-    },
-    disabled: {
-        type: Boolean,
-        default: false,
-    },
-    attributes: {
-        type: Object,
-        default: null,
-    },
-    collapsedEnableText: {
-        type: String,
-        default: "Enable",
-    },
-    collapsedDisableText: {
-        type: String,
-        default: "Disable",
-    },
-    collapsedEnableIcon: {
-        type: String,
-        default: "far fa-caret-square-down",
-    },
-    collapsedDisableIcon: {
-        type: String,
-        default: "far fa-caret-square-up",
-    },
-    connectedEnableText: {
-        type: String,
-        default: "Remove connection from module.",
-    },
-    connectedDisableText: {
-        type: String,
-        default: "Add connection to module.",
-    },
-    connectedEnableIcon: {
-        type: String,
-        default: "fa fa-times",
-    },
-    connectedDisableIcon: {
-        type: String,
-        default: "fa fa-arrows-alt-h",
-    },
-    workflowBuildingMode: {
-        type: Boolean,
-        default: false,
-    },
+import type { ComputedRef } from "vue";
+import type { FormParameterTypes, FormParameterAttributes, FormParameterValue } from "./parameterTypes";
+
+export interface FormElementProps {
+    id?: string;
+    type?: FormParameterTypes;
+    value?: FormParameterValue;
+    title?: string;
+    refreshOnChange?: boolean;
+    help?: string;
+    error?: string;
+    backbonejs?: boolean;
+    disabled?: boolean;
+    attributes?: FormParameterAttributes;
+    collapsedEnableText?: string;
+    collapsedDisableText?: string;
+    collapsedEnableIcon?: string;
+    collapsedDisableIcon?: string;
+    connectedEnableText?: string;
+    connectedDisableText?: string;
+    connectedEnableIcon?: string;
+    connectedDisableIcon?: string;
+    workflowBuildingMode?: boolean;
+}
+
+const props = withDefaults(defineProps<FormElementProps>(), {
+    id: "identifier",
+    refreshOnChange: false,
+    backbonejs: false,
+    disabled: false,
+    collapsedEnableText: "Enable",
+    collapsedDisableText: "Disable",
+    collapsedEnableIcon: "far fa-caret-square-down",
+    collapsedDisableIcon: "far fa-caret-square-up",
+    connectedEnableText: "Remove connection from module.",
+    connectedDisableText: "Add connection to module.",
+    connectedEnableIcon: "fa fa-times",
+    connectedDisableIcon: "fa fa-arrows-alt-h",
+    workflowBuildingMode: false,
 });
 
-const emit = defineEmits(["input", "change"]);
+const emit = defineEmits<{
+    (e: "input", value: FormParameterValue, id: string): void;
+    (e: "change", shouldRefresh: boolean): void;
+}>();
+
+//@ts-ignore bad library types
+library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSquareUp);
 
 /** TODO: remove attrs computed.
  useAttrs is *not* reactive, and does not play nice with type safety.
@@ -96,15 +69,15 @@ const emit = defineEmits(["input", "change"]);
  but should be removed as soon as that component is removed.
  */
 const attrs = computed(() => props.attributes || useAttrs());
-const collapsibleValue = computed(() => attrs.value["collapsible_value"]);
-const defaultValue = computed(() => attrs.value["default_value"]);
-const connectedValue = { __class__: "ConnectedValue" };
+const collapsibleValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["collapsible_value"]);
+const defaultValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["default_value"]);
+const connectedValue: FormParameterValue = { __class__: "ConnectedValue" };
 
 const connected = ref(false);
 const collapsed = ref(false);
 
 const collapsible = computed(() => !props.disabled && collapsibleValue.value !== undefined);
-const connectable = computed(() => collapsible.value && attrs.value["connectable"]);
+const connectable = computed(() => collapsible.value && Boolean(attrs.value["connectable"]));
 
 // Determines to wether expand or collapse the input
 {
@@ -117,7 +90,7 @@ const connectable = computed(() => collapsible.value && attrs.value["connectable
 }
 
 /** Submits a changed value. */
-function setValue(value) {
+function setValue(value: FormParameterValue) {
     emit("input", value, props.id);
     emit("change", props.refreshOnChange);
 }
@@ -153,7 +126,7 @@ const showField = computed(() => !collapsed.value && !props.disabled);
 const previewText = computed(() => attrs.value["text_value"]);
 const helpText = computed(() => {
     const helpArgument = attrs.value["argument"];
-    if (helpArgument && !props.help.includes(`(${helpArgument})`)) {
+    if (helpArgument && !props.help?.includes(`(${helpArgument})`)) {
         return `${props.help} (${helpArgument})`;
     } else {
         return props.help;
@@ -170,7 +143,9 @@ const currentValue = computed({
 });
 
 const isHiddenType = computed(
-    () => ["hidden", "hidden_data", "baseurl"].includes(props.type) || (props.attributes && props.attributes.titleonly)
+    () =>
+        ["hidden", "hidden_data", "baseurl"].includes(props.type ?? "") ||
+        (props.attributes && props.attributes.titleonly)
 );
 
 const collapseText = computed(() => (collapsed.value ? props.collapsedEnableText : props.collapsedDisableText));
@@ -181,7 +156,7 @@ const isEmpty = computed(() => {
         return true;
     }
 
-    if (["text", "integer", "float", "password"].includes(props.type) && currentValue.value === "") {
+    if (["text", "integer", "float", "password"].includes(props.type ?? "") && currentValue.value === "") {
         return true;
     }
 
@@ -190,14 +165,7 @@ const isEmpty = computed(() => {
 
 const isRequired = computed(() => attrs.value["optional"] === false);
 const isRequiredType = computed(() => props.type !== "boolean");
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExclamation, faTimes, faArrowsAltH } from "@fortawesome/free-solid-svg-icons";
-import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-svg-icons";
-
-library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSquareUp);
+const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !== undefined);
 </script>
 
 <template>
@@ -242,7 +210,9 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 *
                 <span v-if="isEmpty" class="ui-form-title-message warning"> required </span>
             </span>
-            <span v-else-if="isRequiredType && props.title" class="ui-form-title-message"> - optional </span>
+            <span v-else-if="isOptional && isRequiredType && props.title" class="ui-form-title-message">
+                - optional
+            </span>
         </div>
 
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
@@ -254,10 +224,10 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 v-model="currentValue"
                 :max="attrs.max"
                 :min="attrs.min"
-                :type="type"
+                :type="props.type ?? 'float'"
                 :workflow-building-mode="workflowBuildingMode" />
             <FormSelection
-                v-else-if="props.type == 'select' && attrs.display == 'radio'"
+                v-else-if="props.type === 'select' && ['radio', 'checkboxes'].includes(attrs.display)"
                 :id="id"
                 v-model="currentValue"
                 :data="attrs.data"
@@ -267,12 +237,13 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
                 :multiple="attrs.multiple" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
+            <FormRulesEdit v-else-if="type == 'rules'" v-model="currentValue" :target="attrs.target" />
             <FormParameter
                 v-else-if="backbonejs"
                 :id="props.id"
                 v-model="currentValue"
                 :data-label="props.title"
-                :type="props.type"
+                :type="props.type ?? 'text'"
                 :attributes="attrs" />
             <FormInput v-else :id="props.id" v-model="currentValue" :area="attrs['area']" />
         </div>

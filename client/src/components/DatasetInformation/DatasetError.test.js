@@ -1,7 +1,8 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import DatasetError from "./DatasetError";
 import MockProvider from "../providers/MockProvider";
+import MockCurrentUser from "../providers/MockCurrentUser";
 
 jest.mock("components/providers", () => {
     return {}; // stubbed below
@@ -33,6 +34,7 @@ function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user
             }),
             FontAwesomeIcon: false,
             FormElement: false,
+            CurrentUser: MockCurrentUser({ email: "email" }),
         },
     });
 }
@@ -48,7 +50,6 @@ describe("DatasetError", () => {
         expect(messages.at(1).text()).toBe("message_2");
         expect(wrapper.find("#dataset-error-has-empty-inputs")).toBeDefined();
         expect(wrapper.find("#dataset-error-has-duplicate-inputs")).toBeDefined();
-        expect(wrapper.findAll("#dataset-error-email").length).toBe(1);
     });
 
     it("check props without common problems", async () => {

@@ -6,6 +6,7 @@ const MiniCssExtractPlugin = require("mini-css-extract-plugin");
 const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
+const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -43,7 +44,8 @@ module.exports = (env = {}, argv = {}) => {
             filename: "[name].bundled.js",
         },
         resolve: {
-            extensions: [".js", ".json", ".vue", ".scss", ".ts"],
+            plugins: [new TsconfigPathsPlugin({ extensions: [".ts", ".js", ".json", ".vue", ".scss"] })],
+            extensions: [".ts", ".js", ".json", ".vue", ".scss"],
             modules: [scriptsBase, "node_modules", styleBase, testsBase],
             fallback: {
                 timers: require.resolve("timers-browserify"),
@@ -91,14 +93,18 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                 },
                 {
+                    test: /\.tsx?$/,
+                    exclude: /node_modules/,
+                    loader: "ts-loader",
+                    options: {
+                        configFile: "tsconfig.webpack.json",
+                        appendTsSuffixTo: [/\.vue$/],
+                    },
+                },
+                {
                     test: /\.mjs$/,
                     include: /node_modules/,
                     type: "javascript/auto",
-                },
-                {
-                    test: /\.tsx?$/,
-                    use: 'ts-loader',
-                    exclude: /node_modules/,
                 },
                 {
                     test: `${libsBase}/jquery.custom.js`,

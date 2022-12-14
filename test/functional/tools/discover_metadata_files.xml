@@ -1,0 +1,23 @@
+<tool id="discover_metadata_files" name="discover metadata files" version="1.0.0" profile="16.04">
+  <command>
+    <![CDATA[
+mkdir outputs && cp '$input_bam' outputs/output.bam
+  ]]>
+  </command>
+  <inputs>
+    <param name="input_bam" type="data" format="bam" label="BAM File" />
+  </inputs>
+  <outputs>
+    <data format="txt" name="bam_output" label="discovered bam" hidden="true">
+      <discover_datasets pattern="__name__" directory="outputs" ext="bam" visible="true" />
+    </data>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input_bam" value="3.bam" ftype="bam" />
+      <output name="bam_output">
+        <discovered_dataset designation="output.bam" file="3.bam" ftype="bam" />
+      </output>
+    </test>
+  </tests>
+</tool>

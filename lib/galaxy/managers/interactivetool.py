@@ -294,7 +294,8 @@ class InteractiveToolManager:
                     rval = "{}/{}".format(rval.rstrip("/"), entry_point.entry_url.lstrip("/"))
             else:
                 rval = self.get_entry_point_path(trans, entry_point)
-
+                if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
+                    rval = f"{protocol}//{request_host}{rval}"
             return rval
 
     def get_entry_point_subdomain(self, trans, entry_point):

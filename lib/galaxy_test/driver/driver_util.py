@@ -743,8 +743,10 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
     # Can't use in-memory celery broker, just fall back to sqlalchemy
     galaxy_config.update({"celery_conf": {"broker_url": None}})
+    state_dir = tempfile.mkdtemp(suffix="state")
     config = {
         "gravity": {
+            "log_dir": os.path.join(state_dir, "log"),
             "gunicorn": {"bind": f"localhost:{port}", "preload": "false"},
             "gx_it_proxy": {
                 "enable": galaxy_config.get("interactivetools_enable", False),
@@ -755,18 +757,16 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         },
         "galaxy": galaxy_config,
     }
-    state_dir = tempfile.mkdtemp(suffix="state")
     with tempfile.NamedTemporaryFile("w", dir=state_dir, delete=False, suffix=".galaxy.yml") as config_fh:
         json.dump(config, config_fh)
     with tempfile.NamedTemporaryFile(delete=True) as socket:
         supervisord_socket = socket.name
     gravity_env = os.environ.copy()
     gravity_env["SUPERVISORD_SOCKET"] = supervisord_socket
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "register", config_fh.name], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "update"], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "start"], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "update"], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "start"], env=gravity_env)
     return state_dir, lambda: subprocess.check_output(
-        ["galaxyctl", "--state-dir", state_dir, "shutdown"], env=gravity_env
+        ["galaxyctl", "--config-file", config_fh.name, "shutdown"], env=gravity_env
     )
 
 
@@ -832,7 +832,7 @@ class TestDriver:
         self.server_wrappers = []
         self.temp_directories = []
 
-    def setup(self):
+    def setup(self, config_object=None):
         """Called before tests are built."""
 
     def build_tests(self):
@@ -858,7 +858,7 @@ class TestDriver:
             )
         self.server_wrappers = []
 
-    def mkdtemp(self):
+    def mkdtemp(self) -> str:
         """Return a temp directory that is properly cleaned up or not based on the config."""
         temp_directory = tempfile.mkdtemp()
         self.temp_directories.append(temp_directory)

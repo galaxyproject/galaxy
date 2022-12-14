@@ -1,9 +1,23 @@
 <template>
     <span class="align-self-start btn-group">
+        <!-- Special case for collections -->
+        <b-button
+            v-if="isCollection && canShowCollectionDetails"
+            class="collection-job-details-btn px-1"
+            title="Show Details"
+            size="sm"
+            variant="link"
+            :href="showCollectionDetailsUrl"
+            @click.prevent.stop="$emit('showCollectionInfo')">
+            <icon icon="info-circle" />
+        </b-button>
+
+        <!-- Common for all content items -->
         <b-button
             v-if="isDataset"
             :disabled="displayDisabled"
             :title="displayButtonTitle"
+            :tabindex="tabindex"
             class="display-btn px-1"
             size="sm"
             variant="link"
@@ -15,6 +29,7 @@
             v-if="writable && isHistoryItem"
             :disabled="editDisabled"
             :title="editButtonTitle"
+            :tabindex="tabindex"
             class="edit-btn px-1"
             size="sm"
             variant="link"
@@ -24,6 +39,7 @@
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && !isDeleted"
+            :tabindex="tabindex"
             class="delete-btn px-1"
             title="Delete"
             size="sm"
@@ -33,6 +49,7 @@
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && isDeleted"
+            :tabindex="tabindex"
             class="undelete-btn px-1"
             title="Undelete"
             size="sm"
@@ -42,6 +59,7 @@
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && !isVisible"
+            :tabindex="tabindex"
             class="unhide-btn px-1"
             title="Unhide"
             size="sm"
@@ -63,6 +81,7 @@ export default {
         isVisible: { type: Boolean, default: true },
         state: { type: String, default: "" },
         itemUrls: { type: Object, required: true },
+        keyboardSelectable: { type: Boolean, default: true },
     },
     computed: {
         displayButtonTitle() {
@@ -88,6 +107,18 @@ export default {
         },
         editUrl() {
             return prependPath(this.itemUrls.edit);
+        },
+        isCollection() {
+            return !this.isDataset;
+        },
+        canShowCollectionDetails() {
+            return !!this.itemUrls.showDetails;
+        },
+        showCollectionDetailsUrl() {
+            return prependPath(this.itemUrls.showDetails);
+        },
+        tabindex() {
+            return this.keyboardSelectable ? "0" : "-1";
         },
     },
 };

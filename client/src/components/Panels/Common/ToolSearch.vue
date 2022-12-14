@@ -21,7 +21,7 @@
                 size="sm"
                 :placeholder="`any ${sectionLabel}`"
                 list="sectionSelect" />
-            <b-form-datalist id="sectionSelect" :options="sections"></b-form-datalist>
+            <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
             <small class="mt-1">Filter by id:</small>
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
             <small class="mt-1">Filter by help text:</small>
@@ -43,7 +43,7 @@
 <script>
 import { getGalaxyInstance } from "app";
 import DelayedInput from "components/Common/DelayedInput";
-import { searchToolsByKeys } from "../utilities.js";
+import { normalizeTools, searchToolsByKeys } from "../utilities.js";
 
 export default {
     name: "ToolSearch",
@@ -88,13 +88,16 @@ export default {
             const Galaxy = getGalaxyInstance();
             return Galaxy.user.getFavorites().tools;
         },
-        sections() {
+        sectionNames() {
             return this.toolbox.map((section) =>
                 section.name !== undefined && section.name !== "Uncategorized" ? section.name : ""
             );
         },
         sectionLabel() {
             return this.currentPanelView === "default" ? "section" : "ontology";
+        },
+        toolsList() {
+            return normalizeTools(this.toolbox);
         },
     },
     methods: {
@@ -105,8 +108,9 @@ export default {
                 if (this.favorites.includes(q)) {
                     this.$emit("onResults", this.favoritesResults);
                 } else {
-                    const keys = ["name", "description"];
-                    this.$emit("onResults", searchToolsByKeys(this.toolbox, keys, q));
+                    // keys with sorting order
+                    const keys = { exact: 2, name: 1, description: 0 };
+                    this.$emit("onResults", searchToolsByKeys(this.toolsList, keys, q));
                 }
             } else {
                 this.$emit("onResults", null);

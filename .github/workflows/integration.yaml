@@ -54,11 +54,15 @@ jobs:
         run: docker system prune -a -f
       - name: Clean dotnet folder for space
         run: rm -Rf /usr/share/dotnet
+      - name: Install packages
+        # conntrack: mandatory for later k8s versions
+        # ffmpeg: ffprobe needed by media datatypes
+        run: sudo apt-get update && sudo apt-get -y install conntrack ffmpeg
       - name: Setup Minikube
         id: minikube
-        uses: CodingNagger/minikube-setup-action@v1.0.3
+        uses: CodingNagger/minikube-setup-action@v1.0.6
         with:
-          minikube-version: "1.9.0-0_amd64"
+          k8s-version: '1.19.16'
       - name: Launch Minikube
         run: eval ${{ steps.minikube.outputs.launcher }}
       - name: Check pods
@@ -85,8 +89,6 @@ jobs:
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-integration
-      - name: Install ffmpeg
-        run: sudo apt-get update && sudo apt-get -y install ffmpeg
       - name: Run tests
         run: |
           . .ci/minikube-test-setup/start_services.sh

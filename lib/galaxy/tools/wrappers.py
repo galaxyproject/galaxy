@@ -1,3 +1,4 @@
+import abc
 import logging
 import os
 import shlex
@@ -518,6 +519,7 @@ class HasDatasets:
 
     job_working_directory: Optional[str]
 
+    @abc.abstractmethod
     def __iter__(self) -> Iterator[Any]:
         pass
 

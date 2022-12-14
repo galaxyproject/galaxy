@@ -7,17 +7,22 @@ for velvet assembler tool in galaxy
 import logging
 import os
 import re
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes import (
     data,
     sequence,
 )
+from galaxy.datatypes.data import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
 from galaxy.datatypes.text import Html
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +35,7 @@ class Amos(data.Text):
     edam_format = "format_3582"
     file_ext = "afg"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is an amos assembly file format
         Example::
@@ -72,7 +77,7 @@ class Sequences(sequence.Fasta):
     edam_data = "data_0925"
     file_ext = "sequences"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a velveth produced  fasta format
         The id line has 3 fields separated by tabs: sequence_name  sequence_index category::
@@ -106,7 +111,7 @@ class Roadmaps(data.Text):
     edam_format = "format_2561"
     file_ext = "roadmaps"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a velveth produced RoadMap::
           142858  21      1
@@ -168,7 +173,7 @@ class Velvet(Html):
             is_binary=False,
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         log.debug(f"Velvet log info  JJ generate_primary_file {dataset}")
         rval = ["<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
@@ -187,7 +192,7 @@ class Velvet(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -238,6 +243,6 @@ class Velvet(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_meta(self, dataset, **kwd):
-        Html.set_meta(self, dataset, **kwd)
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+        Html.set_meta(self, dataset, overwrite=overwrite, **kwd)
         self.regenerate_primary_file(dataset)

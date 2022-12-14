@@ -189,14 +189,12 @@ export default {
         },
         postChanges(newVersion) {
             const payload = Object.assign({}, this.mainValues);
-            console.debug("FormTool - Posting changes.", payload);
             const options = this.configForm;
             let toolId = options.id;
             let toolVersion = options.version;
             if (newVersion) {
                 toolId = toolId.replace(toolVersion, newVersion);
                 toolVersion = newVersion;
-                console.debug("FormTool - Tool version changed.", toolId, toolVersion);
             }
             this.$emit("onSetData", this.nodeId, {
                 tool_id: toolId,

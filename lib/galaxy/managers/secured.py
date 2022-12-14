@@ -99,7 +99,7 @@ class OwnableManagerMixin:
     def by_id(self, id: int):
         ...
 
-    def is_owner(self, item: model._HasTable, user: Optional[model.User], **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: Optional[model.User], **kwargs: Any) -> bool:
         """
         Return True if user owns the item.
         """

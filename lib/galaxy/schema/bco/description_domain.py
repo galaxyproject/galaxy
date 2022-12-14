@@ -21,8 +21,8 @@ from pydantic import (
 
 
 class XrefItem(BaseModel):
-    namespace: str = Field(..., description="External resource vendor prefix", examples=["pubchem.compound"])
-    name: str = Field(..., description="Name of external reference", examples=["PubChem-compound"])
+    namespace: str = Field(..., description="External resource vendor prefix", example=["pubchem.compound"])
+    name: str = Field(..., description="Name of external reference", example=["PubChem-compound"])
     ids: List[str] = Field(..., description="List of reference identifiers")
     access_time: datetime = Field(..., description="Date and time the external reference was accessed")
 
@@ -68,14 +68,14 @@ class Contributor(BaseModel):
     class Config:
         extra = Extra.forbid
 
-    name: str = Field(..., description="Name of contributor", examples=["Charles Darwin"])
+    name: str = Field(..., description="Name of contributor", example=["Charles Darwin"])
     affiliation: Optional[str] = Field(
-        None, description="Organization the particular contributor is affiliated with", examples=["HMS Beagle"]
+        None, description="Organization the particular contributor is affiliated with", example=["HMS Beagle"]
     )
     email: Optional[EmailStr] = Field(
         None,
         description="electronic means for identification and communication purposes",
-        examples=["name@example.edu"],
+        example=["name@example.edu"],
     )
     contribution: List[ContributionEnum] = Field(
         ..., description="type of contribution determined according to PAV ontology"
@@ -83,13 +83,13 @@ class Contributor(BaseModel):
     orcid: Optional[AnyUrl] = Field(
         None,
         description="Field to record author information. ORCID identifiers allow for the author to curate their information after submission. ORCID identifiers must be valid and must have the prefix ‘https://orcid.org/’",
-        examples=["http://orcid.org/0000-0002-1825-0097"],
+        example=["http://orcid.org/0000-0002-1825-0097"],
     )
 
 
 class PrerequisiteItem(BaseModel):
     name: str = Field(
-        ..., description="Public searchable name for reference or prereq.", examples=["Hepatitis C virus genotype 1"]
+        ..., description="Public searchable name for reference or prereq.", example=["Hepatitis C virus genotype 1"]
     )
     uri: Uri
 
@@ -102,14 +102,14 @@ class PipelineStep(BaseModel):
         ...,
         description="Non-negative integer value representing the position of the tool in a one-dimensional representation of the pipeline.",
     )
-    name: str = Field(..., description="This is a recognized name of the software tool", examples=["HIVE-hexagon"])
+    name: str = Field(..., description="This is a recognized name of the software tool", example=["HIVE-hexagon"])
     description: str = Field(
-        ..., description="Specific purpose of the tool.", examples=["Alignment of reads to a set of references"]
+        ..., description="Specific purpose of the tool.", example=["Alignment of reads to a set of references"]
     )
     version: Optional[str] = Field(
         None,
         description="Version assigned to the instance of the tool used corresponding to the upstream release.",
-        examples=["1.3"],
+        example=["1.3"],
     )
     prerequisite: Optional[List[PrerequisiteItem]] = Field(None, description="Reference or required prereqs")
     input_list: List[Uri] = Field(..., description="URIs (expressed as a URN or URL) of the input files for each tool.")

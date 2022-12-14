@@ -18,14 +18,11 @@ import { invocationStore } from "./invocationStore";
 import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
 import { userStore, userFlagsStore } from "./userStore";
 import { configStore } from "./configStore";
-import { workflowStore } from "./workflowStore";
 import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
-import { dbKeyStore } from "./dbKeyStore";
-import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
 
 // Syncs vuex to Galaxy store until Galaxy vals to not exist
@@ -45,11 +42,10 @@ const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
     reducer: (state) => {
-        const { panels, userFlags, history } = state;
+        const { panels, userFlags } = state;
         return {
             panels,
             userFlags,
-            history: { pinnedHistories: history.pinnedHistories },
         };
     },
 });
@@ -65,11 +61,9 @@ export function createStore() {
             dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
-            datatypeStore: datatypeStore,
             informationStore: jobStore,
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,
-            dbkeyStore: dbKeyStore,
             gridSearch: gridSearchStore,
             history: historyStore,
             historyItems: historyItemsStore,
@@ -78,7 +72,6 @@ export function createStore() {
             tools: toolStore,
             user: userStore,
             userFlags: userFlagsStore,
-            workflows: workflowStore,
         },
     };
 

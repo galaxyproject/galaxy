@@ -27,11 +27,18 @@ def test_base_image_for_targets(target, version, base_image):
     assert base_image_for_targets([target], conda_context) == base_image
 
 
+@pytest.mark.parametrize("use_mamba", [False, True])
 @external_dependency_management
-def test_mulled_build_files_cli(tmpdir):
+def test_mulled_build_files_cli(use_mamba, tmpdir):
     singularity_image_dir = tmpdir.mkdir("singularity image dir")
     target = build_target("zlib")
-    mull_targets([target], command="build-and-test", singularity=True, singularity_image_dir=singularity_image_dir)
+    mull_targets(
+        [target],
+        command="build-and-test",
+        singularity=True,
+        use_mamba=use_mamba,
+        singularity_image_dir=singularity_image_dir,
+    )
     assert singularity_image_dir.join("zlib").exists()
 
 

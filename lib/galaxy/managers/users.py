@@ -4,6 +4,7 @@ Manager and Serializer for Users.
 import hashlib
 import logging
 import random
+import re
 import socket
 import time
 from datetime import datetime
@@ -24,6 +25,7 @@ from galaxy import (
     schema,
     util,
 )
+from galaxy.config import templates
 from galaxy.managers import (
     base,
     deletable,
@@ -38,7 +40,6 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
-from galaxy.util.custom_templates import template
 from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web import url_for
 
@@ -414,7 +415,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
         tags = [(f"{name}:{val}" if val else name) for name, val in tags]
-        return sorted(tags)
+        # consider named tags while sorting
+        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """
@@ -495,8 +497,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             "custom_message": self.app.config.custom_activation_email_message,
             "expiry_days": self.app.config.activation_grace_period,
         }
-        body = template.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
-        html = template.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        body = templates.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        html = templates.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
         to = email
         frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = "Galaxy Account Activation"

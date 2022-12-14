@@ -587,9 +587,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(
-        "/api/workflows/menu", action="get_workflow_menu", controller="workflows", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.connect(
@@ -632,13 +629,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{workflow_id}/download",
         controller="workflows",
         action="workflow_dict",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "show_versions",
-        "/api/workflows/{workflow_id}/versions",
-        controller="workflows",
-        action="show_versions",
         conditions=dict(method=["GET"]),
     )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point

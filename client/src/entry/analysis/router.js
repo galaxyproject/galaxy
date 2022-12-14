@@ -33,6 +33,7 @@ import GridHistory from "components/Grid/GridHistory";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
 import HistoryPublished from "components/History/HistoryPublished";
+import HistoryPublishedList from "components/History/HistoryPublishedList";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
@@ -62,6 +63,7 @@ import { APIKey } from "components/User/APIKey";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
+import HistoryExportTasks from "components/History/Export/HistoryExport";
 import { StorageDashboardRouter } from "components/User/DiskUsage";
 
 Vue.use(VueRouter);
@@ -229,8 +231,15 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/list_published",
+                        component: HistoryPublishedList,
+                        props: true,
+                    },
+                    {
                         path: "histories/:historyId/export",
-                        component: HistoryExport,
+                        get component() {
+                            return Galaxy.config.enable_celery_tasks ? HistoryExportTasks : HistoryExport;
+                        },
                         props: true,
                     },
                     {

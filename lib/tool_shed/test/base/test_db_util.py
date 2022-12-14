@@ -149,7 +149,6 @@ def get_repository_downloadable_revisions(repository_id):
 def get_repository_metadata_for_changeset_revision(
     repository_id: int, changeset_revision: Optional[str]
 ) -> model.RepositoryMetadata:
-    assert sa_session
     repository_metadata = (
         sa_session()
         .query(model.RepositoryMetadata)

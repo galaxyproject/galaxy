@@ -141,21 +141,21 @@ def get_class(class_name):
     return item_class
 
 
-def decode_id(app: BasicSharedApp, id: Any):
+def decode_id(app: BasicSharedApp, id: Any, kind: Optional[str] = None):
     # note: use str - occasionally a fully numeric id will be placed in post body and parsed as int via JSON
     #   resulting in error for valid id
     if isinstance(id, DecodedDatabaseIdField):
         return int(id)
     else:
-        return decode_with_security(app.security, id)
+        return decode_with_security(app.security, id, kind=kind)
 
 
-def decode_with_security(security: IdEncodingHelper, id: Any):
-    return security.decode_id(str(id))
+def decode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str] = None):
+    return security.decode_id(str(id), kind=kind)
 
 
-def encode_with_security(security: IdEncodingHelper, id: Any):
-    return security.encode_id(id)
+def encode_with_security(security: IdEncodingHelper, id: Any, kind: Optional[str] = None):
+    return security.encode_id(id, kind=kind)
 
 
 def get_object(trans, id, class_name, check_ownership=False, check_accessible=False, deleted=None):
@@ -227,7 +227,7 @@ class ModelManager(Generic[U]):
     def session(self) -> scoped_session:
         return self.app.model.context
 
-    def _session_setattr(self, item: model._HasTable, attr: str, val: Any, flush: bool = True):
+    def _session_setattr(self, item: model.Base, attr: str, val: Any, flush: bool = True):
         setattr(item, attr, val)
 
         self.session().add(item)

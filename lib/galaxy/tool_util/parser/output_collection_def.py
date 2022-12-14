@@ -118,7 +118,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         self.recurse = asbool(kwargs.get("recurse", False))
         self.match_relative_path = asbool(kwargs.get("match_relative_path", False))
         if pattern in NAMED_PATTERNS:
-            pattern = NAMED_PATTERNS.get(pattern)
+            pattern = NAMED_PATTERNS[pattern]
         self.pattern = pattern
         self.sort_by = sort_by = kwargs.get("sort_by", DEFAULT_SORT_BY)
         if sort_by.startswith("reverse_"):
@@ -149,7 +149,7 @@ class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
         return as_dict
 
     @property
-    def discover_patterns(self):
+    def discover_patterns(self) -> List[str]:
         return [self.pattern]
 
 

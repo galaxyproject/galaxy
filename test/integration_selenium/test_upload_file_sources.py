@@ -14,7 +14,7 @@ class TestPosixFileSourceSeleniumIntegration(PosixFileSourceSetup, SeleniumInteg
     dataset_populator: "SeleniumSessionDatasetPopulator"
 
     # For simplicity, otherwise need to setup a different file_sources_config_file
-    requires_admin = True
+    run_as_admin = True
 
     @selenium_test
     def test_upload_from_posix(self):
