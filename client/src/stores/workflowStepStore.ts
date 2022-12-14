@@ -1,7 +1,7 @@
 import Vue from "vue";
 import { defineStore } from "pinia";
-import { useConnectionStore } from "stores/workflowConnectionStore";
-import type { Connection } from "stores/workflowConnectionStore";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import type { Connection } from "@/stores/workflowConnectionStore";
 
 interface State {
     steps: { [index: string]: Step };
@@ -32,8 +32,7 @@ interface PostJobActions {
         };
     };
 }
-
-export interface Step {
+export interface NewStep {
     annotation?: string;
     config_form?: object;
     content_id?: string;
@@ -50,6 +49,10 @@ export interface Step {
     type: string;
     uuid?: string;
     workflow_outputs: [];
+}
+
+export interface Step extends NewStep {
+    id: number;
 }
 
 export interface StepInputConnection {
@@ -77,9 +80,10 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
     },
     actions: {
-        addStep(step: Step): Step {
-            const stepId = step.id ? step.id : this.getStepIndex + 1;
-            step.id = stepId;
+        addStep(newStep: NewStep): Step {
+            const stepId = newStep.id ? newStep.id : this.getStepIndex + 1;
+            newStep.id = stepId;
+            const step = newStep as Step;
             console.log("adding step", step.id);
             Vue.set(this.steps, stepId.toString(), step);
             const connectionStore = useConnectionStore();

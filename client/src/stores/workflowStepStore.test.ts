@@ -1,8 +1,8 @@
 import { setActivePinia, createPinia } from "pinia";
 
-import { useWorkflowStepStore } from "stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useConnectionStore } from "./workflowConnectionStore";
-import type { Step, StepInputConnection } from "stores/workflowStepStore";
+import type { NewStep, StepInputConnection } from "@/stores/workflowStepStore";
 
 const stepInputConnection: StepInputConnection = {
     "1": {
@@ -11,7 +11,7 @@ const stepInputConnection: StepInputConnection = {
     },
 };
 
-const workflowStepZero: Step = {
+const workflowStepZero: NewStep = {
     input_connections: {},
     inputs: [],
     name: "a step",
@@ -22,7 +22,7 @@ const workflowStepZero: Step = {
     workflow_outputs: [],
 };
 
-const workflowStepOne: Step = { ...workflowStepZero, input_connections: stepInputConnection };
+const workflowStepOne: NewStep = { ...workflowStepZero, input_connections: stepInputConnection };
 
 describe("Connection Store", () => {
     beforeEach(() => {
@@ -38,9 +38,10 @@ describe("Connection Store", () => {
     });
     it("removes step", () => {
         const stepStore = useWorkflowStepStore();
-        stepStore.addStep(workflowStepZero);
-        stepStore.removeStep(workflowStepZero.id);
-        expect(stepStore.getStep[0]).toBe(undefined);
+        const addedStep = stepStore.addStep(workflowStepZero);
+        expect(addedStep.id).toBe(0);
+        stepStore.removeStep(addedStep.id);
+        expect(stepStore.getStep(0)).toBe(undefined);
     });
     it("creates connection if step has connection", () => {
         const stepStore = useWorkflowStepStore();
@@ -53,9 +54,9 @@ describe("Connection Store", () => {
         const stepStore = useWorkflowStepStore();
         const connectionStore = useConnectionStore();
         stepStore.addStep(workflowStepZero);
-        stepStore.addStep(workflowStepOne);
+        const stepOne = stepStore.addStep(workflowStepOne);
         expect(connectionStore.connections.length).toBe(1);
-        stepStore.removeStep(workflowStepOne.id);
+        stepStore.removeStep(stepOne.id);
         expect(connectionStore.connections.length).toBe(0);
     });
 });

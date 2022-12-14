@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { useWorkflowStepStore } from "stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 interface State {
     connections: Connection[];

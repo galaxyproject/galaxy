@@ -1,11 +1,11 @@
 import { setActivePinia, createPinia } from "pinia";
 
-import { useConnectionStore, getTerminalId } from "stores/workflowConnectionStore";
-import { useWorkflowStepStore } from "stores/workflowStepStore";
-import type { Connection, InputTerminal, OutputTerminal } from "stores/workflowConnectionStore";
-import type { Step } from "stores/workflowStepStore";
+import { useConnectionStore, getTerminalId } from "@/stores/workflowConnectionStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import type { Connection, InputTerminal, OutputTerminal } from "@/stores/workflowConnectionStore";
+import type { NewStep } from "@/stores/workflowStepStore";
 
-const workflowStepZero: Step = {
+const workflowStepZero: NewStep = {
     input_connections: {},
     inputs: [],
     name: "a step",
@@ -16,7 +16,7 @@ const workflowStepZero: Step = {
     workflow_outputs: [],
 };
 
-const workflowStepOne: Step = { ...workflowStepZero };
+const workflowStepOne: NewStep = { ...workflowStepZero };
 
 const inputTerminal: InputTerminal = {
     stepId: 1,
