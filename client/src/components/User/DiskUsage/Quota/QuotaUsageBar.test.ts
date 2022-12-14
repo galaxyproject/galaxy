@@ -1,31 +1,26 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import QuotaUsageBar from "./QuotaUsageBar";
+import { QuotaUsage } from "./model";
+import QuotaUsageBar from "./QuotaUsageBar.vue";
 
 const localVue = getLocalVue();
 
-const NON_DEFAULT_QUOTA_USAGE = {
-    sourceLabel: "The label",
-    quotaInBytes: 68468436,
-    totalDiskUsageInBytes: 4546654,
-    quotaPercent: 20,
-    niceQuota: "X MB",
-    niceTotalDiskUsage: "Y MB",
-    isUnlimited: false,
-};
+const NON_DEFAULT_QUOTA_USAGE: QuotaUsage = new QuotaUsage({
+    quota_source_label: "The label",
+    quota_bytes: 68468436,
+    total_disk_usage: 4546654,
+    quota_percent: 20,
+});
 
-const UNLIMITED_USAGE = {
-    sourceLabel: "Unlimited",
-    quotaInBytes: null,
-    totalDiskUsageInBytes: 4546654,
-    quotaPercent: null,
-    niceQuota: "unlimited",
-    niceTotalDiskUsage: "Y MB",
-    isUnlimited: true,
-};
+const UNLIMITED_USAGE: QuotaUsage = new QuotaUsage({
+    quota_source_label: "Unlimited",
+    quota_bytes: undefined,
+    total_disk_usage: 4546654,
+    quota_percent: undefined,
+});
 
-function mountQuotaUsageBarWith(quotaUsage) {
-    const wrapper = mount(QuotaUsageBar, { propsData: { quotaUsage } }, localVue);
+function mountQuotaUsageBarWith(quotaUsage: QuotaUsage) {
+    const wrapper = mount(QuotaUsageBar, { propsData: { quotaUsage }, localVue });
     return wrapper;
 }
 
@@ -43,7 +38,7 @@ describe("QuotaUsageBar.vue", () => {
         const percentText = wrapper.find(".quota-percent-text");
         expect(wrapper.vm.quotaHasLimit).toBe(true);
         expect(percentText.exists()).toBe(true);
-        expect(percentText.text()).toContain(NON_DEFAULT_QUOTA_USAGE.quotaPercent.toString());
+        expect(percentText.text()).toContain(NON_DEFAULT_QUOTA_USAGE.quotaPercent?.toString());
     });
 
     it("should not show percentage when there is no quota limit", async () => {
