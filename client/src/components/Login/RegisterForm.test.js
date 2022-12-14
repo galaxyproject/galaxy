@@ -26,7 +26,7 @@ describe("RegisterForm", () => {
 
     it("basics", async () => {
         const cardHeader = wrapper.find(".card-header");
-        expect(cardHeader.text()).toBe("Create a Galaxy account");
+        expect(cardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
         const inputs = wrapper.findAll("input");
         expect(inputs.length).toBe(4);
         const usernameField = inputs.at(0);

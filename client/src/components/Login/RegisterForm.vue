@@ -52,9 +52,7 @@
                                         dashes ('.', '_', '-').
                                     </b-form-text>
                                 </b-form-group>
-                                <b-form-group
-                                    v-if="mailingJoinAddr && serverMailConfigured"
-                                    :label="labelSubscribe">
+                                <b-form-group v-if="mailingJoinAddr && serverMailConfigured" :label="labelSubscribe">
                                     <input v-model="subscribe" name="subscribe" type="checkbox" />
                                 </b-form-group>
                                 <b-button v-localize name="create" type="submit" :disabled="disableCreate"
@@ -64,7 +62,12 @@
                         </b-collapse>
                         <b-card-footer v-if="showLoginLink" v-localize>
                             Already have an account?
-                            <a id="login-toggle" v-localize href="javascript:void(0)" role="button" @click.prevent="toggleLogin">
+                            <a
+                                id="login-toggle"
+                                v-localize
+                                href="javascript:void(0)"
+                                role="button"
+                                @click.prevent="toggleLogin">
                                 Log in here.
                             </a>
                         </b-card-footer>

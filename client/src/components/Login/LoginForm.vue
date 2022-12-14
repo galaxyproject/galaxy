@@ -18,7 +18,11 @@
                                         <b-form-input v-model="password" name="password" type="password" />
                                         <b-form-text v-localize>
                                             Forgot password?
-                                            <a v-localize href="javascript:void(0)" role="button" @click.prevent="resetLogin">
+                                            <a
+                                                v-localize
+                                                href="javascript:void(0)"
+                                                role="button"
+                                                @click.prevent="resetLogin">
                                                 Click here to reset your password.
                                             </a>
                                         </b-form-text>
