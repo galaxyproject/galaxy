@@ -2,20 +2,21 @@
     <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
             <span v-localize class="footer-section-name">Citations</span>
+            <b-button
+                v-b-tooltip.hover
+                title="Copy all citations as BibTeX"
+                style="cursor: pointer"
+                variant="link"
+                size="sm"
+                @click="copyBibtex">
+                <font-awesome-icon icon="copy" />
+            </b-button>
             <Citation
                 v-for="(citation, index) in citations"
                 :key="index"
                 class="formatted-reference"
                 :citation="citation"
                 prefix="-" />
-            <b-button
-                v-b-tooltip.hover
-                title="Copy all citations as BibTeX"
-                style="cursor: pointer"
-                size="sm"
-                @click="copyBibtex">
-                copy <font-awesome-icon icon="copy" />
-            </b-button>
         </div>
         <div v-if="hasRequirements" class="mb-1">
             <span v-localize class="footer-section-name">Requirements</span>
