@@ -18,6 +18,12 @@ log = logging.getLogger(__name__)
 
 
 class ToolRecommendations:
+    max_seq_len = 25
+    ff_dim = 128
+    embed_dim = 128
+    num_heads = 4
+    dropout = 0.1
+
     def __init__(self):
         self.tool_recommendation_model_path = None
         self.admin_tool_recommendations_path = None
@@ -30,11 +36,6 @@ class ToolRecommendations:
         self.loaded_model = None
         self.compatible_tools = None
         self.standard_connections = None
-        self.max_seq_len = 25
-        self.ff_dim = 128
-        self.embed_dim = 128
-        self.num_heads = 4
-        self.dropout = 0.1
         self.model_ok = None
 
     def create_transformer_model(self, vocab_size):
@@ -96,15 +97,15 @@ class ToolRecommendations:
                     log.exception(e)
                     return None
 
-        inputs = Input(shape=(self.max_seq_len,))
-        embedding_layer = TokenAndPositionEmbedding(self.max_seq_len, vocab_size, self.embed_dim)
+        inputs = Input(shape=(ToolRecommendations.max_seq_len,))
+        embedding_layer = TokenAndPositionEmbedding(ToolRecommendations.max_seq_len, vocab_size, ToolRecommendations.embed_dim)
         x = embedding_layer(inputs)
-        transformer_block = TransformerBlock(self.embed_dim, self.num_heads, self.ff_dim)
+        transformer_block = TransformerBlock(ToolRecommendations.embed_dim, ToolRecommendations.num_heads, ToolRecommendations.ff_dim)
         x, weights = transformer_block(x)
         x = GlobalAveragePooling1D()(x)
-        x = Dropout(self.dropout)(x)
-        x = Dense(self.ff_dim, activation="relu")(x)
-        x = Dropout(self.dropout)(x)
+        x = Dropout(ToolRecommendations.dropout)(x)
+        x = Dense(ToolRecommendations.ff_dim, activation="relu")(x)
+        x = Dropout(ToolRecommendations.dropout)(x)
         outputs = Dense(vocab_size, activation="sigmoid")(x)
         return Model(inputs=inputs, outputs=[outputs, weights])
 
