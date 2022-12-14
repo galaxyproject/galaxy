@@ -38,20 +38,24 @@ class ToolRecommendations:
         self.model_ok = None
 
     def create_transformer_model(self, vocab_size):
-        from tensorflow.keras.layers import (
-            Dense,
-            Dropout,
-            Embedding,
-            GlobalAveragePooling1D,
-            Input,
-            Layer,
-            LayerNormalization,
-            MultiHeadAttention,
-        )
-        from tensorflow.keras.models import (
-            Model,
-            Sequential,
-        )
+        try:
+            from tensorflow.keras.layers import (
+                Dense,
+                Dropout,
+                Embedding,
+                GlobalAveragePooling1D,
+                Input,
+                Layer,
+                LayerNormalization,
+                MultiHeadAttention,
+            )
+            from tensorflow.keras.models import (
+                Model,
+                Sequential,
+            )
+        except Exception e:
+            log.exception(e)
+            return None
 
         class TransformerBlock(Layer):
             def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
@@ -80,13 +84,17 @@ class ToolRecommendations:
                 self.pos_emb = Embedding(input_dim=maxlen, output_dim=embed_dim, mask_zero=True)
 
             def call(self, x):
-                import tensorflow as tf
+                try:
+                    import tensorflow as tf
 
-                maxlen = tf.shape(x)[-1]
-                positions = tf.range(start=0, limit=maxlen, delta=1)
-                positions = self.pos_emb(positions)
-                x = self.token_emb(x)
-                return x + positions
+                    maxlen = tf.shape(x)[-1]
+                    positions = tf.range(start=0, limit=maxlen, delta=1)
+                    positions = self.pos_emb(positions)
+                    x = self.token_emb(x)
+                    return x + positions
+                except Exception e:
+                    log.exception(e)
+                    return None
 
         inputs = Input(shape=(self.max_seq_len,))
         embedding_layer = TokenAndPositionEmbedding(self.max_seq_len, vocab_size, self.embed_dim)
