@@ -22,6 +22,22 @@ export class CleanupResult {
         this._data = data;
     }
 
+    get totalItemCount(): number {
+        return this._data.totalItemCount;
+    }
+
+    get totalFreeBytes(): number {
+        return this._data.totalFreeBytes;
+    }
+
+    get errors(): ItemError[] {
+        return this._data.errors;
+    }
+
+    get errorMessage(): string | undefined {
+        return this._data.errorMessage;
+    }
+
     /**
      * Whether the cleanup operation yielded some errors.
      * It doesn't mean the operation completely failed.
