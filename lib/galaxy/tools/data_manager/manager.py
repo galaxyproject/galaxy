@@ -227,7 +227,7 @@ class DataManager:
         updated_data_tables = tool_data_tables.process_bundle(
             out_data,
             self.processor_description,
-            self._repo_info,
+            self.repo_info,
             options,
         )
         for data_table_name in updated_data_tables:
@@ -241,7 +241,7 @@ class DataManager:
         tool_data_tables.write_bundle(
             out_data,
             self.processor_description,
-            self._repo_info,
+            self.repo_info,
         )
 
     @property
@@ -254,5 +254,5 @@ class DataManager:
         )
 
     @property
-    def _repo_info(self) -> Optional[RepoInfo]:
+    def repo_info(self) -> Optional[RepoInfo]:
         return self.tool_shed_repository_info

@@ -22,12 +22,14 @@ from typing import (
     Any,
     BinaryIO,
     Callable,
+    cast,
     Dict,
     List,
     Optional,
     Set,
     Tuple,
     Type,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -59,6 +61,10 @@ from .bundles.models import (
     RepoInfo,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tools.data_manager.manager import DataManager
+
+
 log = logging.getLogger(__name__)
 
 BUNDLE_INDEX_FILE_NAME = "_gx_data_bundle_index.json"
@@ -68,6 +74,10 @@ TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 <tables>
 </tables>
 """
+
+# Internally just the first two - but tool shed code (data_manager_manual) will still
+# pass DataManager in.
+EntrySource = Optional[Union[dict, RepoInfo, "DataManager"]]
 
 
 class StoresConfigFilePaths(Protocol):
@@ -199,7 +209,7 @@ class ToolDataTable(Dictifiable):
         entry: Union[List[str], Dict[str, str]],
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source: Optional[Union[dict, RepoInfo]] = None,
+        entry_source: EntrySource = None,
         **kwd,
     ) -> None:
         raise NotImplementedError("Abstract method")
@@ -209,7 +219,7 @@ class ToolDataTable(Dictifiable):
         entry: Union[List[str], Dict[str, str]],
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source: Optional[Union[dict, RepoInfo]] = None,
+        entry_source: EntrySource = None,
         **kwd,
     ) -> int:
         self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
@@ -220,7 +230,7 @@ class ToolDataTable(Dictifiable):
         entries: List[List[str]],
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source: Optional[Union[dict, RepoInfo]] = None,
+        entry_source: EntrySource = None,
         **kwd,
     ) -> int:
         for entry in entries:
@@ -605,16 +615,22 @@ class TabularToolDataTable(ToolDataTable):
         return rval
 
     # This method is used in tools, so need to keep its API stable
-    def get_filename_for_source(
-        self, source: Optional[Union[Dict, RepoInfo]], default: Optional[str] = None
-    ) -> Optional[str]:
+    def get_filename_for_source(self, source: EntrySource, default: Optional[str] = None) -> Optional[str]:
         source_repo_info: Optional[dict] = None
         if source:
             # if dict, assume is compatible info dict, otherwise call method
+
             if isinstance(source, dict):
                 source_repo_info = source
             else:
-                source_repo_info = source.dict()
+                source_repo_info_model: Optional[RepoInfo]
+                if source is None or isinstance(source, RepoInfo):
+                    source_repo_info_model = source
+                else:
+                    # we have a data manager, use its repo_info method
+                    source_data_manager = cast("DataManager", source)
+                    source_repo_info_model = source_data_manager.repo_info
+                source_repo_info = source_repo_info_model.dict() if source_repo_info_model else None
         filename = default
         for name, value in self.filenames.items():
             repo_info = value.get("tool_shed_repository")
@@ -630,7 +646,7 @@ class TabularToolDataTable(ToolDataTable):
         entry: Union[List[str], Dict[str, str]],
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source: Optional[Union[dict, RepoInfo]] = None,
+        entry_source: EntrySource = None,
         **kwd,
     ) -> None:
         # accepts dict or list of columns
