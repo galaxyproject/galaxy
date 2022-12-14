@@ -115,6 +115,7 @@ zipstream-new = "*"
 [tool.poetry.group.dev.dependencies]
 ase = ">=3.18.1"
 black = "^22.1.0"
+codespell = "*"
 cwltest = "2.2.20210901154959"
 darker = "*"
 fluent-logger = "*"
