@@ -53,7 +53,7 @@ class ToolRecommendations:
                 Model,
                 Sequential,
             )
-        except Exception e:
+        except Exception as e:
             log.exception(e)
             return None
 
@@ -92,7 +92,7 @@ class ToolRecommendations:
                     positions = self.pos_emb(positions)
                     x = self.token_emb(x)
                     return x + positions
-                except Exception e:
+                except Exception as e:
                     log.exception(e)
                     return None
 
