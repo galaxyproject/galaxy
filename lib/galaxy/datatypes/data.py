@@ -35,6 +35,7 @@ from galaxy.datatypes._protocols import (
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
+    HasExt,
     HasFileNameProperty,
     HasInfo,
     HasMetadata,
@@ -761,9 +762,7 @@ class Data(metaclass=DataMeta):
             )
         return target_frame, []
 
-    def get_converter_types(
-        self, original_dataset: "DatasetInstance", datatypes_registry: "Registry"
-    ) -> Dict[str, Dict]:
+    def get_converter_types(self, original_dataset: HasExt, datatypes_registry: "Registry") -> Dict[str, Dict]:
         """Returns available converters by type for this dataset"""
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
