@@ -6,6 +6,8 @@ import logging
 from typing import (
     Any,
     Dict,
+    List
+
 )
 
 from fastapi import Query
@@ -24,16 +26,31 @@ ToolIDQueryParam: str = Query(
 )
 
 
+class ToolDict(Dict):
+    tool_name: str
+    tool_id: List[str]
+    ids: List[str]
+    allowed: bool
+    toolshed: bool
+
+
+class ToolListResponse(Dict):
+    blocked_toolshed: List[ToolDict]
+    allowed_toolshed: List[ToolDict]
+    blocked_local: List[ToolDict]
+    allowed_local: List[ToolDict]
+
+
 @router.cbv
 class FastAPISanitizeAllowController:
-    @router.get("/api/sanitize_allow", require_admin=True)
+    @router.get("/api/sanitize_allow", require_admin=True, response_model=ToolListResponse)
     def index(self, trans: ProvidesUserContext = DependsOnTrans):
         """
         Return an object showing the current state of the toolbox and allow list.
         """
         return self._generate_allowlist(trans)
 
-    @router.put("/api/sanitize_allow", require_admin=True)
+    @router.put("/api/sanitize_allow", require_admin=True, response_model=ToolListResponse)
     def create(self, tool_id: str = ToolIDQueryParam, trans: ProvidesUserContext = DependsOnTrans):
         """
         Add a new tool_id to the allowlist.
@@ -43,7 +60,7 @@ class FastAPISanitizeAllowController:
             self._save_allowlist(trans)
         return self._generate_allowlist(trans)
 
-    @router.delete("/api/sanitize_allow", require_admin=True)
+    @router.delete("/api/sanitize_allow", require_admin=True, response_model=ToolListResponse)
     def delete(self, tool_id: str = ToolIDQueryParam, trans: ProvidesUserContext = DependsOnTrans):
         """
         Remove tool_id from allowlist.
