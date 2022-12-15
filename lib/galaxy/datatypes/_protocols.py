@@ -110,8 +110,12 @@ class Dataset_t11(HasFileNameProperty, Protocol):
 
 
 class Dataset_t12(HasDataset, HasMetadata, Protocol):
-    state: str
+    state: Any  # TODO tighten (should be property)
     states: Any
 
     def has_data(self) -> bool:
         ...
+
+
+class Dataset_t13(Dataset_t12, HasFileNameProperty, HasId, HasMetadata, Protocol):
+    ...
