@@ -3,7 +3,10 @@ GIS classes
 """
 from typing import TYPE_CHECKING
 
-from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.binary import Binary
 
 if TYPE_CHECKING:
@@ -92,7 +95,7 @@ class Shapefile(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

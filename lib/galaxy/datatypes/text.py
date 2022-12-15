@@ -18,6 +18,7 @@ from typing import (
 import yaml
 
 from galaxy.datatypes._protocols import (
+    Dataset_t20,
     GeneratePrimaryFileDataset,
     HasCreatingJobProperty,
 )
@@ -131,7 +132,7 @@ class Json(Text):
                 return start.startswith("[") or start.startswith("{")
             return False
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         try:
             return dataset.peek
         except Exception:

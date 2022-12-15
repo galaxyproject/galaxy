@@ -2,6 +2,7 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
+from galaxy.datatypes._protocols import Dataset_t20
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
@@ -25,7 +26,7 @@ log = logging.getLogger(__name__)
 class Smat(Text):
     file_ext = "smat"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -97,7 +98,7 @@ class PlantTribesKsComponents(Tabular):
         no_value=0,
     )
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         try:
             return dataset.peek
         except Exception:

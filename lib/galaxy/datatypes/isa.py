@@ -27,6 +27,7 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
+    Dataset_t20,
     GeneratePrimaryFileDataset,
     HasExtraFilesPathProperty,
 )
@@ -191,7 +192,7 @@ class _Isa(Data):
     # Display peek {{{2
     ################################################################
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
 
         out = ['<table cellspacing="0" cellpadding="3">']

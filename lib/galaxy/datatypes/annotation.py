@@ -2,6 +2,7 @@ import logging
 import tarfile
 from typing import TYPE_CHECKING
 
+from galaxy.datatypes._protocols import Dataset_t20
 from galaxy.datatypes.binary import CompressedArchive
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -32,7 +33,7 @@ class SnapHmm(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -62,7 +63,7 @@ class Augustus(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         try:
             return dataset.peek
         except Exception:

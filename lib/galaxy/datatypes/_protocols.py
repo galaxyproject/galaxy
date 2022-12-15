@@ -153,3 +153,11 @@ class Dataset_t18(HasFileNameProperty, HasMetadata, Protocol):
 
 class Dataset_t19(Dataset_t18, HasDatatype, Protocol):
     ...
+
+
+class Dataset_t20(HasMetadata, HasFileNameProperty, HasName, HasId, HasPeekProperty, Protocol):
+    def set_peek(self) -> None:
+        ...
+
+    def get_size(self) -> str:
+        ...

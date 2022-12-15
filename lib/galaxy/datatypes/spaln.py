@@ -12,7 +12,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
@@ -110,7 +113,7 @@ class _SpalnDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

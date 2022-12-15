@@ -35,6 +35,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t16,
     Dataset_t17,
     Dataset_t19,
+    Dataset_t20,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -316,7 +317,7 @@ class Data(metaclass=DataMeta):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:

@@ -38,6 +38,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t12,
     Dataset_t17,
     Dataset_t19,
+    Dataset_t20,
     HasFileNameProperty,
     HasMetadata,
 )
@@ -348,7 +349,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek rows: {util.unicodify(exc)}")
         return "".join(out)
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Returns formatted html of peek"""
         return self.make_html_table(dataset)
 
@@ -644,7 +645,7 @@ class Taxonomy(Tabular):
             "Subspecies",
         ]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -735,7 +736,7 @@ class Sam(Tabular, _BamOrSam):
             "OPT",
         ]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -951,7 +952,7 @@ class Pileup(Tabular):
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(
             dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
@@ -1053,7 +1054,7 @@ class BaseVcf(Tabular):
         headers = get_headers(fname_or_file_prefix, "\n", count=1)
         return headers[0][0].startswith("##fileformat=VCF")
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 

@@ -28,6 +28,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     Dataset_t10,
     Dataset_t19,
+    Dataset_t20,
     HasMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -1068,7 +1069,7 @@ class Maf(Alignment):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 

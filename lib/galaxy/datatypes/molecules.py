@@ -9,6 +9,7 @@ from typing import (
 )
 
 from galaxy.datatypes import metadata
+from galaxy.datatypes._protocols import Dataset_t20
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -540,7 +541,7 @@ class OBFS(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

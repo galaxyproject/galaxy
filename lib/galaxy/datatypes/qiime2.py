@@ -12,7 +12,10 @@ from typing import (
 
 import yaml
 
-from galaxy.datatypes._protocols import HasMetadata
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    HasMetadata,
+)
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -50,7 +53,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         def make_row(item):
             return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
 

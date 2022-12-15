@@ -33,6 +33,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t10,
     Dataset_t14,
     Dataset_t19,
+    Dataset_t20,
     GeneratePrimaryFileDataset,
     HasMetadata,
 )
@@ -244,7 +245,7 @@ class rgTabList(Tabular):
         super().__init__(**kwd)
         self.column_names = []
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -917,7 +918,7 @@ class RexpBase(Html):
         except Exception as exc:
             return f"Can't create html table {unicodify(exc)}"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """
         Returns formatted html of peek
         """

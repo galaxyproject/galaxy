@@ -14,7 +14,10 @@ from typing import (
 
 from galaxy import util
 from galaxy.datatypes import data
-from galaxy.datatypes._protocols import HasMetadata
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    HasMetadata,
+)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -134,7 +137,7 @@ class Ply:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -468,7 +471,7 @@ class Vtk:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         try:
             return dataset.peek
         except Exception:

@@ -41,6 +41,7 @@ from typing import (
     TYPE_CHECKING,
 )
 
+from galaxy.datatypes._protocols import Dataset_t20
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -204,7 +205,7 @@ class _BlastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -381,7 +382,7 @@ class LastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: Dataset_t20) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
