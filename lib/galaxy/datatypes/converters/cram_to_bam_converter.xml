@@ -1,4 +1,4 @@
-<tool id="CONVERTER_cram_to_bam_0" name="Convert CRAM to BAM" version="1.0.0" hidden="true" profile="16.04">
+<tool id="CONVERTER_cram_to_bam_0" name="Convert CRAM to BAM" version="1.0.1" hidden="true" profile="16.04">
     <requirements>
         <requirement type="package" version="1.16.1">samtools</requirement>
     </requirements>
