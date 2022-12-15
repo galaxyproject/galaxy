@@ -29,6 +29,7 @@ from markupsafe import escape
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
+    Dataset_t2,
     Dataset_t10,
     GeneratePrimaryFileDataset,
     HasMetadata,
@@ -88,7 +89,7 @@ class GenomeGraphs(Tabular):
         t[0] = "string"
         dataset.metadata.column_types = t
 
-    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: Dataset_t2, **kwd) -> Union[FileObjType, str]:
         """
         Returns file
         """

@@ -272,7 +272,7 @@ class Interval(Tabular):
             log.exception("Exception caught attempting to generate viewport for dataset '%d'", dataset.id)
         return (None, None, None)
 
-    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: Dataset_t2, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data"""
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as fh:
             c, s, e, t, n = (
@@ -434,7 +434,7 @@ class BedGraph(Interval):
     track_type = "LineTrack"
     data_sources = {"data": "bigwig", "index": "bigwig"}
 
-    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: Dataset_t2, **kwd) -> Union[FileObjType, str]:
         """
         Returns file contents as is with no modifications.
         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
@@ -523,7 +523,7 @@ class Bed(Interval):
                         break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: Dataset_t2, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
             line = line.strip()

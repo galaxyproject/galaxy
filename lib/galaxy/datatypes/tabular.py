@@ -590,7 +590,7 @@ class Tabular(TabularData):
     def as_gbrowse_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
-    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: Dataset_t2, **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
 
