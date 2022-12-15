@@ -2,28 +2,27 @@
  * Central Vuex store
  */
 
+import localForage from "localforage";
 import Vue from "vue";
 import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
-import localForage from "localforage";
 
 import config from "config";
 
-import { gridSearchStore } from "./gridSearchStore";
-import { tagStore } from "./tagStore";
-import { jobMetricsStore } from "./jobMetricsStore";
-import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
-import { invocationStore } from "./invocationStore";
-import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
-import { userStore, userFlagsStore } from "./userStore";
-import { configStore } from "./configStore";
-import { toolStore } from "./toolStore";
-import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
-import { datasetExtFilesStore } from "./datasetExtFilesStore";
-import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
+import { configStore } from "./configStore";
+import { datasetExtFilesStore } from "./datasetExtFilesStore";
+import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
+import { gridSearchStore } from "./gridSearchStore";
+import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
+import { invocationStore } from "./invocationStore";
+import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
+import { jobMetricsStore } from "./jobMetricsStore";
 import { panelStore } from "./panelStore";
+import { tagStore } from "./tagStore";
+import { toolStore } from "./toolStore";
+import { userFlagsStore, userStore } from "./userStore";
 
 // Syncs vuex to Galaxy store until Galaxy vals to not exist
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
@@ -61,7 +60,6 @@ export function createStore() {
             dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
-            informationStore: jobStore,
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,
             gridSearch: gridSearchStore,
