@@ -26,6 +26,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t12,
     Dataset_t13,
+    Dataset_t14,
     HasId,
     HasMetadata,
 )
@@ -321,7 +322,7 @@ class Interval(Tabular):
             },
         )
 
-    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: Dataset_t14, type: str, app, base_url: str) -> List:
         """
         Generate links to UCSC genome browser sites based on the dbkey
         and content of dataset.
@@ -960,7 +961,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: Dataset_t14, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -1375,7 +1376,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: Dataset_t14, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1544,7 +1545,7 @@ class CustomTrack(Tabular):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: Dataset_t14, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:

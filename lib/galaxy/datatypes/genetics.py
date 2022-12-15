@@ -31,6 +31,7 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t10,
+    Dataset_t14,
     GeneratePrimaryFileDataset,
     HasMetadata,
 )
@@ -95,7 +96,7 @@ class GenomeGraphs(Tabular):
         """
         return open(dataset.file_name, "rb")
 
-    def ucsc_links(self, dataset: "DatasetInstance", type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: Dataset_t14, type: str, app, base_url: str) -> List:
         """
         from the ever-helpful angie hinrichs angie@soe.ucsc.edu
         a genome graphs call looks like this

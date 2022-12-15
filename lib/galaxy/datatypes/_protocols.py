@@ -119,3 +119,7 @@ class Dataset_t12(HasDataset, HasMetadata, Protocol):
 
 class Dataset_t13(Dataset_t12, HasFileNameProperty, HasId, HasMetadata, Protocol):
     ...
+
+
+class Dataset_t14(Dataset_t13, HasName, Protocol):
+    dbkey: str
