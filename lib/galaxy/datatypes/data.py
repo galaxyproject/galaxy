@@ -860,7 +860,7 @@ class Data(metaclass=DataMeta):
             files[key] = value
         return files
 
-    def get_writable_files_for_dataset(self, dataset: "DatasetInstance") -> Dict:
+    def get_writable_files_for_dataset(self, dataset: Optional[HasMetadata]) -> Dict:
         files = {}
         if self.composite_type != "auto_primary_file":
             files[self.primary_file_name] = self.__new_composite_file(self.primary_file_name)
@@ -868,7 +868,7 @@ class Data(metaclass=DataMeta):
             files[key] = value
         return files
 
-    def get_composite_files(self, dataset=None):
+    def get_composite_files(self, dataset: Optional[HasMetadata] = None):
         def substitute_composite_key(key, composite_file):
             if composite_file.substitute_name_with_metadata:
                 if dataset:
