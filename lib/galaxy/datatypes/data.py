@@ -32,6 +32,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t7,
     Dataset_t11,
     Dataset_t14,
+    Dataset_t16,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -767,8 +768,8 @@ class Data(metaclass=DataMeta):
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
     def find_conversion_destination(
-        self, dataset, accepted_formats: List[str], datatypes_registry, **kwd
-    ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
+        self, dataset: Dataset_t16, accepted_formats: List[str], datatypes_registry, **kwd
+    ) -> Tuple[bool, Optional[str], Any]:
         """Returns ( direct_match, converted_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(
             dataset, accepted_formats, **kwd

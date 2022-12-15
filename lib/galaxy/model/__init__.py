@@ -4237,7 +4237,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         self, accepted_formats: List[str], **kwd
     ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination(self, accepted_formats, _get_datatypes_registry(), **kwd)
+        return self.datatype.find_conversion_destination(self, accepted_formats, _get_datatypes_registry(), **kwd)  # type: ignore[arg-type]
 
     def add_validation_error(self, validation_error):
         self.validation_errors.append(validation_error)
