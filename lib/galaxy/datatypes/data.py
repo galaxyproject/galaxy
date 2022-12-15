@@ -723,7 +723,7 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "unknown"
 
-    def as_display_type(self, dataset: "DatasetInstance", type: str, **kwd) -> Union[FileObjType, str]:
+    def as_display_type(self, dataset: Dataset_t2, type: str, **kwd) -> Union[FileObjType, str]:
         """Returns modified file contents for a particular display type"""
         try:
             if type in self.get_display_types():
