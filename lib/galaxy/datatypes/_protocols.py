@@ -63,6 +63,10 @@ class HasExt(Protocol):
     ext: str  # TODO reconcile: ext vs. extension
 
 
+class HasDatatype(Protocol):
+    datatype: Any
+
+
 class GeneratePrimaryFileDataset(HasExtraFilesPathProperty, HasMetadata, Protocol):
     ...
 
@@ -71,8 +75,8 @@ class Dataset_t1(HasName, HasExtraFilesPathProperty, HasFileNameProperty, Protoc
     extension: str  # TODO reconcile: ext vs. extension
 
 
-class Dataset_t2(HasMetadata, HasFileNameProperty, HasExt, Protocol):
-    datatype: Any
+class Dataset_t2(HasMetadata, HasFileNameProperty, HasExt, HasDatatype, Protocol):
+    ...
 
 
 class Dataset_t3(HasExt, Protocol):
@@ -88,8 +92,7 @@ class Dataset_t5(HasFileNameProperty, Dataset_t4, Protocol):
     ...
 
 
-class Dataset_t6(HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, Protocol):
-    datatype: Any
+class Dataset_t6(HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, HasDatatype, Protocol):
     extension: str  # TODO reconcile: ext vs. extension
 
 
@@ -145,4 +148,8 @@ class Dataset_t17(Dataset_t7, Dataset_t10, Protocol):
 
 
 class Dataset_t18(HasFileNameProperty, HasMetadata, Protocol):
+    ...
+
+
+class Dataset_t19(Dataset_t18, HasDatatype, Protocol):
     ...

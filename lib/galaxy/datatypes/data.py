@@ -34,6 +34,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t14,
     Dataset_t16,
     Dataset_t17,
+    Dataset_t19,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -125,7 +126,7 @@ class DatatypeValidation:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
 
 
-def validate(dataset_instance: "DatasetInstance") -> DatatypeValidation:
+def validate(dataset_instance: Dataset_t19) -> DatatypeValidation:
     try:
         datatype_validation = dataset_instance.datatype.validate(dataset_instance)
     except Exception as e:
@@ -929,7 +930,7 @@ class Data(metaclass=DataMeta):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise p_dataproviders.exceptions.NoProviderAvailable(self, data_format)
 
-    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Dataset_t19, **kwd) -> DatatypeValidation:
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")

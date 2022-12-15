@@ -37,6 +37,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t10,
     Dataset_t12,
     Dataset_t17,
+    Dataset_t19,
     HasFileNameProperty,
     HasMetadata,
 )
@@ -1082,7 +1083,7 @@ class BaseVcf(Tabular):
         if exit_code != 0:
             raise Exception(f"Error merging VCF files: {stderr!r}")
 
-    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Dataset_t19, **kwd) -> DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
                 raise Exception("Not enough columns in row %s" % row.join("\t"))

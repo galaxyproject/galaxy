@@ -27,6 +27,7 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     Dataset_t10,
+    Dataset_t19,
     HasMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -878,7 +879,7 @@ class BaseFastq(Sequence):
                     return True
         return False
 
-    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Dataset_t19, **kwd) -> DatatypeValidation:
         headers = iter_headers(dataset.file_name, sep="\n", count=-1)
         # check to see if the base qualities match
         if not self.quality_check(headers):

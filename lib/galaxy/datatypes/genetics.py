@@ -32,6 +32,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t10,
     Dataset_t14,
+    Dataset_t19,
     GeneratePrimaryFileDataset,
     HasMetadata,
 )
@@ -179,7 +180,7 @@ class GenomeGraphs(Tabular):
         except Exception as exc:
             return f"Can't create peek {exc}"
 
-    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Dataset_t19, **kwd) -> DatatypeValidation:
         """
         Validate a gg file - all numeric after header row
         """
