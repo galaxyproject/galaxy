@@ -35,6 +35,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t8,
     Dataset_t9,
     Dataset_t10,
+    Dataset_t12,
     HasFileNameProperty,
     HasMetadata,
 )
@@ -139,7 +140,7 @@ class TabularData(Text):
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
-    def displayable(self, dataset: "DatasetInstance"):
+    def displayable(self, dataset: Dataset_t12) -> bool:
         try:
             return (
                 not dataset.dataset.purged

@@ -24,6 +24,7 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     Dataset_t2,
+    Dataset_t12,
     HasId,
     HasMetadata,
 )
@@ -193,7 +194,7 @@ class Interval(Tabular):
                     else:
                         empty_line_count += 1
 
-    def displayable(self, dataset: "DatasetInstance"):
+    def displayable(self, dataset: Dataset_t12) -> bool:
         try:
             return (
                 not dataset.dataset.purged
@@ -218,7 +219,7 @@ class Interval(Tabular):
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
         max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
-        if not self.displayable(dataset):
+        if not self.displayable(dataset):  # type: ignore [arg-type]  # TODO FIX BEFORE MERGE
             return (None, None, None)
         try:
             # If column indexes were not passwed, determine from metadata
@@ -890,7 +891,7 @@ class Gff(Tabular, _RemoteCallMixin):
         """
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
         max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
-        if self.displayable(dataset):
+        if self.displayable(dataset):  # type: ignore [arg-type]  # TODO FIX BEFORE MERGE
             try:
                 seqid = None
                 start = sys.maxsize
@@ -1299,7 +1300,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
         max_line_count = max(viewport_feature_count, 500)  # maximum number of lines to check; includes comment lines
-        if self.displayable(dataset):
+        if self.displayable(dataset):  # type: ignore [arg-type]  # TODO FIX BEFORE MERGE
             try:
                 chrom = None
                 start = sys.maxsize
@@ -1492,7 +1493,7 @@ class CustomTrack(Tabular):
         variable_step_wig = False
         chrom = None
         span = 1
-        if self.displayable(dataset):
+        if self.displayable(dataset):  # type: ignore [arg-type]  # TODO FIX BEFORE MERGE
             try:
                 with open(dataset.file_name) as fh:
                     for line in util.iter_start_of_line(fh, VIEWPORT_READLINE_BUFFER_SIZE):
