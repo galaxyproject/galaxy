@@ -30,7 +30,7 @@ UserIDParam: DecodedDatabaseIdField = Path(..., title="UserID", description="The
 def group_user_to_model(trans, group_id, user):
     encoded_group_id = DecodedDatabaseIdField.encode(group_id)
     encoded_user_id = DecodedDatabaseIdField.encode(user.id)
-    url = trans.url_builder("group_user", group_id=encoded_group_id, id=encoded_user_id)
+    url = trans.url_builder("group_user", group_id=encoded_group_id, user_id=encoded_user_id)
     return GroupUserModel.construct(id=encoded_user_id, email=user.email, url=url)
 
 
