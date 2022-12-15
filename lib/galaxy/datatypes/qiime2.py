@@ -14,6 +14,7 @@ import yaml
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
+    Dataset_t23,
     HasMetadata,
 )
 from galaxy.datatypes.binary import CompressedZipArchive
@@ -45,7 +46,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:

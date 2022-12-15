@@ -2,18 +2,15 @@
 Neo4j Composite Dataset
 """
 import logging
-from typing import TYPE_CHECKING
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
+    Dataset_t23,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
@@ -49,7 +46,7 @@ class Neo4j(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Neo4j database (multiple files)"

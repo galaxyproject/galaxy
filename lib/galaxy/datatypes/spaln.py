@@ -15,6 +15,7 @@ from typing import (
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t22,
+    Dataset_t23,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.data import Data
@@ -105,7 +106,7 @@ class _SpalnDb(Data):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "spaln database (multiple files)"

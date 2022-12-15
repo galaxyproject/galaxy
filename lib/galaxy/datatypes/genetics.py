@@ -35,6 +35,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t19,
     Dataset_t20,
     Dataset_t22,
+    Dataset_t23,
     GeneratePrimaryFileDataset,
     HasMetadata,
 )
@@ -390,7 +391,7 @@ class SNPMatrix(Rgenetics):
 
     file_ext = "snpmatrix"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary RGenetics file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -773,7 +774,7 @@ class RexpBase(Html):
             p = []
         return "\n".join(p)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """
         expects a .pheno file in the extra_files_dir - ugh
         note that R is weird and does not include the row.name in

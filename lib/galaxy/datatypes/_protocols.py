@@ -165,3 +165,12 @@ class Dataset_t20(HasMetadata, HasFileNameProperty, HasName, HasId, HasPeekPrope
 
 class Dataset_t22(HasFileNameProperty, HasMetadata, HasExtraFilesPathProperty, HasInfo, HasName, Protocol):
     ...
+
+
+class Dataset_t23(HasDataset, HasFileNameProperty, HasMetadata, HasInfo, HasExtraFilesPathProperty, Protocol):
+    peek: Any  # TODO
+    blurb: str
+    extension: str  # TODO reconcile: ext vs. extension
+
+    def get_size(self) -> str:
+        ...

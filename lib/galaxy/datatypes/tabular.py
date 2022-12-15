@@ -39,6 +39,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t17,
     Dataset_t19,
     Dataset_t20,
+    Dataset_t23,
     HasFileNameProperty,
     HasMetadata,
 )
@@ -137,7 +138,7 @@ class TabularData(Text):
     def set_meta(self, dataset: "DatasetInstance", *, overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         kwd.setdefault("line_wrap", False)
         super().set_peek(dataset, **kwd)
         if dataset.metadata.comment_lines:

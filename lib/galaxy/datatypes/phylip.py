@@ -10,6 +10,7 @@ Phylip datatype sniffer
 from typing import TYPE_CHECKING
 
 from galaxy import util
+from galaxy.datatypes._protocols import Dataset_t23
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
@@ -49,7 +50,7 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:

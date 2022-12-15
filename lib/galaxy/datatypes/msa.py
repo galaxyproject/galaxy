@@ -9,7 +9,10 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from galaxy.datatypes._protocols import Dataset_t20
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    Dataset_t23,
+)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -58,7 +61,7 @@ class InfernalCM(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_of_models == 1:
@@ -98,7 +101,7 @@ class Hmmer(Text):
     edam_data = "data_1364"
     edam_format = "format_1370"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "HMMER Database"
@@ -141,7 +144,7 @@ class HmmerPress(Binary):
     file_ext = "hmmpress"
     composite_type = "basic"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "HMMER Binary database"
@@ -185,7 +188,7 @@ class Stockholm_1_0(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"
@@ -276,7 +279,7 @@ class MauveXmfa(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"

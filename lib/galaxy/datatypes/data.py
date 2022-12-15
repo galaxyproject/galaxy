@@ -36,6 +36,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t17,
     Dataset_t19,
     Dataset_t20,
+    Dataset_t23,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -306,7 +307,7 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -1028,7 +1029,7 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """
         Set the peek.  This method is used by various subclasses of Text.
         """

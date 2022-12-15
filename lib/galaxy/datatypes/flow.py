@@ -3,18 +3,17 @@ Flow analysis datatypes.
 """
 
 import logging
-from typing import TYPE_CHECKING
 
-from galaxy.datatypes._protocols import Dataset_t20
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    Dataset_t23,
+)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
 from . import data
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +24,7 @@ class FCS(Binary):
 
     file_ext = "fcs"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary FCS file"
             dataset.blurb = data.nice_size(dataset.get_size())

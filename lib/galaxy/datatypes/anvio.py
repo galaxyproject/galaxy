@@ -12,6 +12,7 @@ from typing import (
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
+    Dataset_t23,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.metadata import MetadataElement
@@ -71,7 +72,7 @@ class AnvioComposite(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Anvio database (multiple files)"

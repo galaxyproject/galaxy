@@ -1,8 +1,10 @@
 import logging
 import tarfile
-from typing import TYPE_CHECKING
 
-from galaxy.datatypes._protocols import Dataset_t20
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    Dataset_t23,
+)
 from galaxy.datatypes.binary import CompressedArchive
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -14,9 +16,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import nice_size
 
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
-
 log = logging.getLogger(__name__)
 
 
@@ -25,7 +24,7 @@ class SnapHmm(Text):
     file_ext = "snaphmm"
     edam_data = "data_1364"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "SNAP HMM model"
@@ -55,7 +54,7 @@ class Augustus(CompressedArchive):
     edam_data = "data_0950"
     compressed = True
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Augustus model"
             dataset.blurb = nice_size(dataset.get_size())

@@ -28,6 +28,7 @@ from markupsafe import escape
 from galaxy import util
 from galaxy.datatypes._protocols import (
     Dataset_t20,
+    Dataset_t23,
     GeneratePrimaryFileDataset,
     HasExtraFilesPathProperty,
 )
@@ -38,10 +39,7 @@ from galaxy.util.sanitize_html import sanitize_html
 if TYPE_CHECKING:
     from isatools.model import Investigation
 
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
+    from galaxy.model import HistoryDatasetAssociation
 
 # CONSTANTS {{{1
 ################################################################
@@ -166,7 +164,7 @@ class _Isa(Data):
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)

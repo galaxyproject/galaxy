@@ -3,18 +3,15 @@ NGS indexes
 """
 import logging
 import os
-from typing import TYPE_CHECKING
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t22,
+    Dataset_t23,
     GeneratePrimaryFileDataset,
 )
 from .metadata import MetadataElement
 from .text import Html
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +63,7 @@ class BowtieIndex(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Bowtie index file ({dataset.metadata.sequence_space})"
             dataset.blurb = f"{dataset.metadata.sequence_space} space"

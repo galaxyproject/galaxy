@@ -2,7 +2,10 @@ import logging
 import re
 from typing import TYPE_CHECKING
 
-from galaxy.datatypes._protocols import Dataset_t20
+from galaxy.datatypes._protocols import (
+    Dataset_t20,
+    Dataset_t23,
+)
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
@@ -32,7 +35,7 @@ class Smat(Text):
         except Exception:
             return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "ESTScan scores matrices"
@@ -126,7 +129,7 @@ class PlantTribesKsComponents(Tabular):
         if len(significant_components) > 0:
             dataset.metadata.number_comp = max(significant_components)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_comp == 1:
