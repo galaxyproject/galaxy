@@ -1,5 +1,6 @@
 <script setup>
 import TrsTool from "./TrsTool";
+import TrsUrlImport from "./TrsUrlImport";
 import { Toast } from "composables/toast";
 import { Services } from "../services";
 import { getGalaxyInstance } from "app";
@@ -20,6 +21,10 @@ const props = defineProps({
         default: null,
     },
     queryTrsVersionId: {
+        type: String,
+        default: null,
+    },
+    queryTrsUrl: {
         type: String,
         default: null,
     },
@@ -115,6 +120,22 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
             importing.value = false;
         });
 };
+
+const importVersionFromUrl = (url, isRunFormRedirect = false) => {
+    importing.value = true;
+    errorMessage.value = null;
+    services
+        .importTrsToolFromUrl(url)
+        .then((response) => {
+            redirectOnImport(safePath("/"), response, isRunFormRedirect);
+        })
+        .catch((e) => {
+            errorMessage.value = e || "Import failed for an unknown reason.";
+        })
+        .finally(() => {
+            importing.value = false;
+        });
+};
 </script>
 
 <template>
@@ -152,6 +173,10 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
                     v-if="trsTool"
                     :trs-tool="trsTool"
                     @onImport="importVersion(trsSelection.id, trsTool.id, $event)" />
+            </div>
+            <hr />
+            <div>
+                <TrsUrlImport :query-trs-url="props.queryTrsUrl" @onImport="importVersionFromUrl($event)" />
             </div>
         </b-card>
         <b-alert v-else class="text-center my-2" show variant="danger">

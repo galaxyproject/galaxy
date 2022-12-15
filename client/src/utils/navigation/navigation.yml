@@ -547,6 +547,8 @@ trs_import:
     select_server:
       type: xpath
       selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
+    url_input: "#trs-import-url-input"
+    url_import_button: "#trs-url-import-button"
 
 workflow_run:
   selectors:
