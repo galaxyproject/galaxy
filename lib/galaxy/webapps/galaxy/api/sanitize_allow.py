@@ -3,7 +3,11 @@ API operations allowing clients to retrieve and modify the HTML sanitization all
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import (
+    Any,
+    Dict,
+    List,
+)
 
 from fastapi import Query
 
