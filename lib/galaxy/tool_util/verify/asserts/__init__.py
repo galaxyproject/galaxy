@@ -36,12 +36,11 @@ def verify_assertions(data: bytes, assertion_description_list, decompress=None):
     """This function takes a list of assertions and a string to check
     these assertions against."""
     if decompress:
-        with NamedTemporaryFile(delete=False) as tmpfh:
+        with NamedTemporaryFile() as tmpfh:
             tmpfh.write(data)
-        tmpfh.close()
-        with get_fileobj(tmpfh.name, compressed_formats=None) as fh:
-            data = fh.read()
-
+            tmpfh.flush()
+            with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
+                data = fh.read()
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
 
