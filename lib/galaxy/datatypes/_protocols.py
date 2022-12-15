@@ -142,3 +142,7 @@ class Dataset_t16(HasExt, Protocol):
 
 class Dataset_t17(Dataset_t7, Dataset_t10, Protocol):
     ...
+
+
+class Dataset_t18(HasFileNameProperty, HasMetadata, Protocol):
+    ...
