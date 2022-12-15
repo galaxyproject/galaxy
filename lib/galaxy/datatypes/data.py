@@ -33,6 +33,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t11,
     Dataset_t14,
     Dataset_t16,
+    Dataset_t17,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -555,7 +556,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: "DatasetInstance") -> str:
+    def display_as_markdown(self, dataset_instance: Dataset_t17) -> str:
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented

@@ -138,3 +138,7 @@ class Dataset_t15(Dataset_t13, HasDbKey, Protocol):
 class Dataset_t16(HasExt, Protocol):
     def get_converted_files_by_type(self, file_type):
         ...
+
+
+class Dataset_t17(Dataset_t7, Dataset_t10, Protocol):
+    ...

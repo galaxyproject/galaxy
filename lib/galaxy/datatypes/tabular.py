@@ -36,6 +36,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t9,
     Dataset_t10,
     Dataset_t12,
+    Dataset_t17,
     HasFileNameProperty,
     HasMetadata,
 )
@@ -234,7 +235,7 @@ class TabularData(Text):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: "DatasetInstance") -> str:
+    def display_as_markdown(self, dataset_instance: Dataset_t17) -> str:
         with open(dataset_instance.file_name) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
