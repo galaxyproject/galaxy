@@ -55,6 +55,10 @@ class HasClearAssociatedFiles(Protocol):
         ...
 
 
+class HasDbKey(Protocol):
+    dbkey: str
+
+
 class GeneratePrimaryFileDataset(HasExtraFilesPathProperty, HasMetadata, Protocol):
     ...
 
@@ -121,5 +125,9 @@ class Dataset_t13(Dataset_t12, HasFileNameProperty, HasId, HasMetadata, Protocol
     ...
 
 
-class Dataset_t14(Dataset_t13, HasName, Protocol):
-    dbkey: str
+class Dataset_t14(Dataset_t13, HasName, HasDbKey, Protocol):
+    ...
+
+
+class Dataset_t15(Dataset_t13, HasDbKey, Protocol):
+    ...
