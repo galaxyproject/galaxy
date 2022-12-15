@@ -68,12 +68,19 @@ class Registry:
         Following more what galaxy.demo_sequencer.controllers.common does might be more appropriate at
         some stage...
         """
+        shed_name = self._shed_name_for_url(url)
+        if shed_name is not None:
+            return self.tool_sheds_auth[shed_name]
+        else:
+            log.debug(f"Invalid url '{str(url)}' received by tool shed registry's url_auth method.")
+            return None
+
+    def _shed_name_for_url(self, url: str) -> Optional[str]:
         url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(url)
         for shed_name, shed_url in self.tool_sheds.items():
             shed_url_sans_protocol = common_util.remove_protocol_from_tool_shed_url(shed_url)
             if url_sans_protocol.startswith(shed_url_sans_protocol):
-                return self.tool_sheds_auth[shed_name]
-        log.debug(f"Invalid url '{str(url)}' received by tool shed registry's url_auth method.")
+                return shed_name
         return None
 
     def get_tool_shed_url(self, tool_shed: str) -> Optional[str]:
