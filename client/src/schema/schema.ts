@@ -1057,20 +1057,17 @@ export interface paths {
     "/api/sanitize_allow": {
         /**
          * Index
-         * @description GET /api/sanitize_allow
-         * Return an object showing the current state of the toolbox and allow list.
+         * @description Return an object showing the current state of the toolbox and allow list.
          */
         get: operations["index_api_sanitize_allow_get"];
         /**
          * Create
-         * @description PUT /api/sanitize_allow
-         * Add a new tool_id to the allowlist.
+         * @description Add a new tool_id to the allowlist.
          */
         put: operations["create_api_sanitize_allow_put"];
         /**
          * Delete
-         * @description DELETE /api/sanitize_allow
-         * Remove tool_id from allowlist.
+         * @description Remove tool_id from allowlist.
          */
         delete: operations["delete_api_sanitize_allow_delete"];
     };
@@ -13347,8 +13344,7 @@ export interface operations {
     index_api_sanitize_allow_get: {
         /**
          * Index
-         * @description GET /api/sanitize_allow
-         * Return an object showing the current state of the toolbox and allow list.
+         * @description Return an object showing the current state of the toolbox and allow list.
          */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -13374,12 +13370,12 @@ export interface operations {
     create_api_sanitize_allow_put: {
         /**
          * Create
-         * @description PUT /api/sanitize_allow
-         * Add a new tool_id to the allowlist.
+         * @description Add a new tool_id to the allowlist.
          */
         parameters: {
+            /** @description ID string of tool to add or delete */
             query: {
-                tool_id: Record<string, never>;
+                tool_id: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13404,12 +13400,12 @@ export interface operations {
     delete_api_sanitize_allow_delete: {
         /**
          * Delete
-         * @description DELETE /api/sanitize_allow
-         * Remove tool_id from allowlist.
+         * @description Remove tool_id from allowlist.
          */
         parameters: {
+            /** @description ID string of tool to add or delete */
             query: {
-                tool_id: Record<string, never>;
+                tool_id: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
