@@ -983,7 +983,7 @@ class CRAM(Binary):
             log.warning("%s, get_cram_version Exception: %s", self, exc)
             return -1, -1
 
-    def set_index_file(self, dataset: "DatasetInstance", index_file) -> bool:
+    def set_index_file(self, dataset: HasFileNameProperty, index_file) -> bool:
         try:
             pysam.index(dataset.file_name, index_file.file_name)  # type: ignore [attr-defined]
             return True
