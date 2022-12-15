@@ -14,6 +14,7 @@ from typing import (
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
+    Dataset_t22,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.data import Data
@@ -85,7 +86,7 @@ class _SpalnDb(Data):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
+    def regenerate_primary_file(self, dataset: Dataset_t22) -> None:
         """
         cannot do this until we are setting metadata
         """

@@ -34,6 +34,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t14,
     Dataset_t19,
     Dataset_t20,
+    Dataset_t22,
     GeneratePrimaryFileDataset,
     HasMetadata,
 )
@@ -327,7 +328,7 @@ class Rgenetics(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
+    def regenerate_primary_file(self, dataset: Dataset_t22) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -608,7 +609,7 @@ class IdeasPre(Html):
         rval.append("</ul></body></html>\n")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
+    def regenerate_primary_file(self, dataset: Dataset_t22) -> None:
         # Cannot do this until we are setting metadata.
         rval = ["<html><head></head><body>"]
         rval.append("<h3>Files prepared for IDEAS</h3>")
@@ -821,7 +822,7 @@ class RexpBase(Html):
         except Exception:
             return "## rexpression get_file_peek: no file found"
 
-    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
+    def regenerate_primary_file(self, dataset: Dataset_t22) -> None:
         """
         cannot do this until we are setting metadata
         """

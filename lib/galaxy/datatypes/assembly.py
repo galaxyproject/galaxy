@@ -13,7 +13,10 @@ from galaxy.datatypes import (
     data,
     sequence,
 )
-from galaxy.datatypes._protocols import GeneratePrimaryFileDataset
+from galaxy.datatypes._protocols import (
+    Dataset_t22,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -192,7 +195,7 @@ class Velvet(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
+    def regenerate_primary_file(self, dataset: Dataset_t22) -> None:
         """
         cannot do this until we are setting metadata
         """
