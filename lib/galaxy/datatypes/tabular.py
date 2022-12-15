@@ -587,7 +587,7 @@ class Tabular(TabularData):
         if column_names is not None:
             dataset.metadata.column_names = column_names
 
-    def as_gbrowse_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_gbrowse_display_file(self, dataset: HasFileNameProperty, **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
     def as_ucsc_display_file(self, dataset: Dataset_t2, **kwd) -> Union[FileObjType, str]:
