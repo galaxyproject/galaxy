@@ -31,6 +31,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t6,
     Dataset_t7,
     Dataset_t11,
+    Dataset_t14,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -738,7 +739,7 @@ class Data(metaclass=DataMeta):
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(
-        self, dataset: "DatasetInstance", type: str, app, base_url: str, target_frame: str = "_blank", **kwd
+        self, dataset: Dataset_t14, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
     ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
