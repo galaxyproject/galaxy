@@ -1571,7 +1571,7 @@ class BaseWorkflowPopulator(BasePopulator):
         r.raise_for_status()
         return r.json()
 
-    def download_invocation_to_store(self, invocation_id, include_files, extension="tgz"):
+    def download_invocation_to_store(self, invocation_id, include_files=False, extension="tgz"):
         url = f"invocations/{invocation_id}/prepare_store_download"
         download_response = self._post(url, dict(include_files=include_files, model_store_format=extension), json=True)
         storage_request_id = self.dataset_populator.assert_download_request_ok(download_response)

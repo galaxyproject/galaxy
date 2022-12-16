@@ -2380,9 +2380,9 @@ input collection 2:
             # TODO: make more assertions about collections and parameters
             collections = [_ for _ in crate.contextual_entities if "Collection" in _.type]
             assert len(collections) == 3
-            assert collections[0]["additionalType"] == 'list'
+            assert collections[0]["additionalType"] == "list"
             coll_dataset = collections[0]["hasPart"][0].id
-            assert coll_dataset in [_.id for _ in collections[2]['hasPart']]
+            assert coll_dataset in [_.id for _ in collections[2]["hasPart"]]
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):

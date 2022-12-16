@@ -391,7 +391,7 @@ def validate_history_crate_directory(crate_directory):
 def validate_main_entity(ro_crate: ROCrate):
     workflow = ro_crate.mainEntity
     assert workflow
-    assert workflow.id.endswith('.gxwf.yml')
+    assert workflow.id.endswith(".gxwf.yml")
     assert workflow["name"]
     assert workflow["name"] == "Test Workflow"
     assert "SoftwareSourceCode" in workflow.type
@@ -415,8 +415,8 @@ def validate_create_action(ro_crate: ROCrate):
         if entity.id.endswith(".txt"):
             assert "File" in entity.type
             wf_output_file = entity
-            wf_output_file["encodingFormat"] == "text/plain"
-            wf_output_file["exampleOfWork"] is workflow["output"][0]         
+            assert wf_output_file["encodingFormat"] == "text/plain"
+            assert wf_output_file["exampleOfWork"] is workflow["output"][0]
 
 
 def validate_other_entities(ro_crate: ROCrate):

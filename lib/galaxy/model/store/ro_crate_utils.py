@@ -19,8 +19,8 @@ from galaxy.model import (
     JobToOutputDatasetAssociation,
     Workflow,
     WorkflowInvocation,
-    WorkflowRequestInputStepParameter,
     WorkflowInvocationStep,
+    WorkflowRequestInputStepParameter,
     WorkflowStep,
 )
 
@@ -65,21 +65,21 @@ class WorkflowRunCrateProfileBuilder:
             "__workflow_invocation_uuid__",
             "chromInfo",
             "dbkey",
-            "__input_ext"
+            "__input_ext",
         ]
-        self.pv_entities = {}
+        self.pv_entities: Dict[str, Any] = {}
 
     def build_crate(self):
         crate = ROCrate()
         file_entities = self._add_files(crate)
-        collection_entities = self._add_collections(crate, file_entities)
+        self._add_collections(crate, file_entities)
         self._add_workflows(crate)
         self._add_engine_run(crate)
         self._add_actions(crate, file_entities)
         return crate
 
     def _add_files(self, crate: ROCrate) -> Dict[int, Any]:
-        file_entities = {}
+        file_entities: Dict[int, Any] = {}
         for dataset, _ in self.model_store.included_datasets.values():
             if dataset.dataset.id in self.model_store.dataset_id_to_path:
                 filename, _ = self.model_store.dataset_id_to_path[dataset.dataset.id]
@@ -109,7 +109,8 @@ class WorkflowRunCrateProfileBuilder:
             for dataset in collection.dataset_instances:
                 if dataset.dataset:
                     dataset_id = file_entities.get(dataset.dataset.id)
-                    dataset_ids.append({"@id": dataset_id.id})
+                    if dataset_id:
+                        dataset_ids.append({"@id": dataset_id.id})
 
             properties = {
                 "name": name,
@@ -228,9 +229,9 @@ class WorkflowRunCrateProfileBuilder:
             param_id = step.output_connections[0].input_name
             param_type = None
             if step.annotations:
-                param_type = step.annotations[0].workflow_step.tool_inputs.get('parameter_type')
+                param_type = step.annotations[0].workflow_step.tool_inputs.get("parameter_type")
 
-            param_type = param_type or step.tool_inputs.get('parameter_type')
+            param_type = param_type or step.tool_inputs.get("parameter_type")
         else:
             param_id = tool_input
             param_type = None
