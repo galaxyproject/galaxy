@@ -205,3 +205,7 @@ class Dataset_t25(
 
     def get_mime(self) -> str:
         ...
+
+
+class Dataset_t26(HasName, Protocol):
+    hid: str

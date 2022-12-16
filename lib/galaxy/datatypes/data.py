@@ -39,6 +39,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t23,
     Dataset_t24,
     Dataset_t25,
+    Dataset_t26,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -80,10 +81,7 @@ from . import (
 if TYPE_CHECKING:
     from galaxy.datatypes.display_applications.application import DisplayApplication
     from galaxy.datatypes.registry import Registry
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetCollectionAssociation,
-    )
+    from galaxy.model import DatasetInstance
 
 XSS_VULNERABLE_MIME_TYPES = [
     "image/svg+xml",  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
@@ -611,7 +609,7 @@ class Data(metaclass=DataMeta):
         self,
         dataset: Dataset_t4,
         to_ext: Optional[str] = None,
-        hdca: Optional["HistoryDatasetCollectionAssociation"] = None,
+        hdca: Optional[Dataset_t26] = None,
         element_identifier: Optional[str] = None,
         filename_pattern: Optional[str] = None,
     ) -> str:
