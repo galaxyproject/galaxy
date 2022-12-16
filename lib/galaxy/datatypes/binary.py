@@ -39,6 +39,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t19,
     Dataset_t20,
     Dataset_t23,
+    Dataset_t24,
     GeneratePrimaryFileDataset,
     HasFileNameProperty,
     HasMetadata,
@@ -90,10 +91,7 @@ from . import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
+    from galaxy.model import HistoryDatasetAssociation
     from galaxy.util.compression_utils import FileObjType
 
 log = logging.getLogger(__name__)
@@ -216,7 +214,7 @@ class Cel(Binary):
             found_cel_3 = True
         return found_cel_3 or found_cel_4 or found_cel_agcc
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Cel file.
         """
@@ -419,7 +417,7 @@ class _BamOrSam:
     Helper class to set the metadata common to sam and bam files
     """
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         try:
             bam_file = pysam.AlignmentFile(dataset.file_name, mode="rb")
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
@@ -524,7 +522,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         no_value={},
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
@@ -778,7 +776,7 @@ class Bam(BamNative):
         return needs_sorting
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         # These metadata values are not accessible by users, always overwrite
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
@@ -964,7 +962,7 @@ class CRAM(Binary):
     )
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         major_version, minor_version = self.get_cram_version(dataset.file_name)
         if major_version != -1:
@@ -1047,7 +1045,7 @@ class Bcf(BaseBcf):
             return False
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         """Creates the index for the BCF file."""
         # These metadata values are not accessible by users, always overwrite
@@ -1251,7 +1249,7 @@ class Loom(H5):
         except Exception:
             return f"Binary Loom file ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as loom_file:
@@ -1396,7 +1394,7 @@ class Anndata(H5):
                 return False
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.file_name, "r") as anndata_file:
             dataset.metadata.title = anndata_file.attrs.get("title")
@@ -1589,7 +1587,7 @@ class Grib(Binary):
         except Exception:
             return f"Binary GRIB file ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set the GRIB edition.
         """
@@ -1756,7 +1754,7 @@ class Biom2(H5):
                 return required_fields.issubset(f.attrs.keys())
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as f:
@@ -1942,7 +1940,7 @@ class H5MLM(H5):
     )
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         try:
             spec_key = "hyper_params"
@@ -2134,7 +2132,7 @@ class HexrdMaterials(H5):
                         return True
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as mat_file:
@@ -2327,7 +2325,7 @@ class SQlite(Binary):
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         try:
             tables = []
             columns = dict()
@@ -2438,7 +2436,7 @@ class GeminiSQLite(SQlite):
     edam_format = "format_3622"
     edam_data = "data_3498"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2487,7 +2485,7 @@ class ChiraSQLite(SQlite):
 
     file_ext = "chira.sqlite"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2518,7 +2516,7 @@ class CuffDiffSQlite(SQlite):
     # TODO: Update this when/if there is a specific EDAM format for CuffDiff SQLite data.
     edam_format = "format_3621"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             genes = []
@@ -2574,7 +2572,7 @@ class MzSQlite(SQlite):
 
     file_ext = "mz.sqlite"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2611,7 +2609,7 @@ class PQP(SQlite):
 
     file_ext = "pqp"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2653,7 +2651,7 @@ class OSW(SQlite):
 
     file_ext = "osw"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2696,7 +2694,7 @@ class SQmass(SQlite):
 
     file_ext = "sqmass"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2720,7 +2718,7 @@ class BlibSQlite(SQlite):
     )
     file_ext = "blib"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2773,7 +2771,7 @@ class DlibSQlite(SQlite):
     )
     file_ext = "dlib"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2817,7 +2815,7 @@ class ElibSQlite(SQlite):
     )
     file_ext = "elib"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2868,7 +2866,7 @@ class IdpDB(SQlite):
 
     file_ext = "idpdb"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2913,7 +2911,7 @@ class GAFASQLite(SQlite):
     )
     file_ext = "gafa.sqlite"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2959,7 +2957,7 @@ class NcbiTaxonomySQlite(SQlite):
 
     file_ext = "ncbitaxonomy.sqlite"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -3106,7 +3104,7 @@ class RData(CompressedArchive):
         optional=False,
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
@@ -3189,7 +3187,7 @@ class RDS(CompressedArchive):
         optional=False,
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
@@ -3436,7 +3434,7 @@ class PostgresqlArchive(CompressedArchive):
     )
     file_ext = "postgresql"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
@@ -3484,7 +3482,7 @@ class Fast5Archive(CompressedArchive):
     )
     file_ext = "fast5.tar"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
@@ -3592,7 +3590,7 @@ class SearchGuiArchive(CompressedArchive):
     )
     file_ext = "searchgui_archive"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and zipfile.is_zipfile(dataset.file_name):
@@ -4122,7 +4120,7 @@ class Npz(CompressedArchive):
             return False
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         try:
             with np.load(dataset.file_name) as npz:
                 dataset.metadata.nfiles = len(npz.files)
@@ -4190,7 +4188,7 @@ class HexrdImagesNpz(Npz):
                 return False
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with np.load(dataset.file_name) as npz:
@@ -4256,7 +4254,7 @@ class HexrdEtaOmeNpz(Npz):
                 return False
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with np.load(dataset.file_name) as npz:

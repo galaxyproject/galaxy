@@ -40,6 +40,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t19,
     Dataset_t20,
     Dataset_t23,
+    Dataset_t24,
     HasFileNameProperty,
     HasMetadata,
 )
@@ -85,10 +86,7 @@ from galaxy.util.markdown import (
 from . import dataproviders
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
+    from galaxy.model import HistoryDatasetAssociation
 
 log = logging.getLogger(__name__)
 
@@ -135,7 +133,7 @@ class TabularData(Text):
     )
 
     @abc.abstractmethod
-    def set_meta(self, dataset: "DatasetInstance", *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, *, overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
     def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
@@ -423,7 +421,7 @@ class Tabular(TabularData):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: Dataset_t24,
         *,
         overwrite: bool = True,
         skip: Optional[int] = None,
@@ -605,7 +603,7 @@ class SraManifest(Tabular):
     file_ext = "sra_manifest.tabular"
     data_line_offset = 1
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.comment_lines = 1
 
@@ -795,7 +793,7 @@ class Sam(Tabular, _BamOrSam):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: Dataset_t24,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 5,
@@ -1059,7 +1057,7 @@ class BaseVcf(Tabular):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         line = None
         with compression_utils.get_fileobj(dataset.file_name) as fh:
@@ -1140,7 +1138,7 @@ class VcfGz(BaseVcf, binary.Binary):
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         # Creates the index for the VCF file.
@@ -1304,7 +1302,7 @@ class Eland(Tabular):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: Dataset_t24,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 5,
@@ -1466,7 +1464,7 @@ class BaseCSV(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         column_types = []
         header_row = []
         data_row = []
@@ -1548,7 +1546,7 @@ class ConnectivityTable(Tabular):
         self.column_names = ["base_index", "base", "neighbor_left", "neighbor_right", "partner", "natural_numbering"]
         self.column_types = ["int", "str", "int", "int", "int", "int"]
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
 
         with open(dataset.file_name) as fh:
@@ -1683,7 +1681,7 @@ class MatrixMarket(TabularData):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: Dataset_t24,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 5,
@@ -1811,7 +1809,7 @@ class CMAP(TabularData):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: Dataset_t24,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 7,

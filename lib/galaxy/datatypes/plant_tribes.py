@@ -1,10 +1,10 @@
 import logging
 import re
-from typing import TYPE_CHECKING
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
+    Dataset_t24,
 )
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -18,9 +18,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import nice_size
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +104,7 @@ class PlantTribesKsComponents(Tabular):
         except Exception:
             return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.

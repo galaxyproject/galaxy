@@ -4,10 +4,7 @@ Image classes
 import base64
 import json
 import logging
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import Optional
 
 import mrcfile
 import numpy as np
@@ -16,6 +13,7 @@ import tifffile
 from galaxy.datatypes._protocols import (
     Dataset_t7,
     Dataset_t23,
+    Dataset_t24,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.binary import Binary
@@ -32,9 +30,6 @@ from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
 from . import data
 from .xml import GenericXml
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -112,7 +107,7 @@ class OMETiff(Tiff):
     )
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets

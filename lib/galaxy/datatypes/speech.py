@@ -1,14 +1,10 @@
-from typing import TYPE_CHECKING
-
+from galaxy.datatypes._protocols import Dataset_t24
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import (
     ListParameter,
     MetadataElement,
 )
 from galaxy.datatypes.sniff import get_headers
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 
 class TextGrid(Text):
@@ -102,7 +98,7 @@ class BPF(Text):
         "SAO",
     ]
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents"""
         types = set()
         with open(dataset.dataset.file_name) as fd:

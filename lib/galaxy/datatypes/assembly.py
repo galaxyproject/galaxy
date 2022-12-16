@@ -7,7 +7,6 @@ for velvet assembler tool in galaxy
 import logging
 import os
 import re
-from typing import TYPE_CHECKING
 
 from galaxy.datatypes import (
     data,
@@ -15,6 +14,7 @@ from galaxy.datatypes import (
 )
 from galaxy.datatypes._protocols import (
     Dataset_t22,
+    Dataset_t24,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.metadata import MetadataElement
@@ -23,9 +23,6 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.text import Html
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -246,6 +243,6 @@ class Velvet(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         Html.set_meta(self, dataset, overwrite=overwrite, **kwd)
         self.regenerate_primary_file(dataset)

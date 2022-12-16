@@ -3,15 +3,13 @@ XML format classes
 """
 import logging
 import re
-from typing import (
-    List,
-    TYPE_CHECKING,
-)
+from typing import List
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
     Dataset_t2,
     Dataset_t23,
+    Dataset_t24,
 )
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
@@ -25,9 +23,6 @@ from . import (
     data,
     dataproviders,
 )
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -156,7 +151,7 @@ class Dzi(GenericXml):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         tree = util.parse_xml(dataset.file_name)
         root = tree.getroot()
         dataset.metadata.format = root.get("Format")

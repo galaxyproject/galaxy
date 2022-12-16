@@ -6,12 +6,12 @@ from typing import (
     Callable,
     Dict,
     List,
-    TYPE_CHECKING,
 )
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
+    Dataset_t24,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -28,9 +28,6 @@ from galaxy.util import (
     nice_size,
     unicodify,
 )
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -85,7 +82,7 @@ class InfernalCM(Text):
         """
         return file_prefix.startswith("INFERNAL")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of models and the version of CM file in dataset.
         """
@@ -202,7 +199,7 @@ class Stockholm_1_0(Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.search(STOCKHOLM_SEARCH_PATTERN)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
 
         Set the number of models in dataset.
@@ -293,7 +290,7 @@ class MauveXmfa(Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("#FormatVersion Mauve1")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         dataset.metadata.number_of_models = generic_util.count_special_lines(
             "^#Sequence([[:digit:]]+)Entry", dataset.file_name
         )

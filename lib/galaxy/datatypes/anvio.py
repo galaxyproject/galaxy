@@ -5,21 +5,16 @@ https://github.com/merenlab/anvio
 import glob
 import logging
 import os
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import Optional
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
+    Dataset_t24,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -101,7 +96,7 @@ class AnvioDB(AnvioComposite):
         if self._anvio_basename is not None:
             self.add_composite_file(self._anvio_basename, is_binary=True, optional=False)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """

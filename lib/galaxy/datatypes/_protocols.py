@@ -174,3 +174,16 @@ class Dataset_t23(HasDataset, HasFileNameProperty, HasMetadata, HasInfo, HasExtr
 
     def get_size(self) -> str:
         ...
+
+
+class Dataset_t24(
+    HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, HasInfo, HasName, HasId, HasDataset, Protocol
+):
+    peek: Any  # TODO
+    blurb: str
+
+    def has_data(self) -> bool:
+        ...
+
+    def get_size(self) -> str:
+        ...

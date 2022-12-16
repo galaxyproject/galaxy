@@ -10,7 +10,10 @@ Phylip datatype sniffer
 from typing import TYPE_CHECKING
 
 from galaxy import util
-from galaxy.datatypes._protocols import Dataset_t23
+from galaxy.datatypes._protocols import (
+    Dataset_t23,
+    Dataset_t24,
+)
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
@@ -25,8 +28,6 @@ from .metadata import MetadataElement
 if TYPE_CHECKING:
     from io import StringIO
 
-    from galaxy.model import DatasetInstance
-
 
 @build_sniff_from_prefix
 class Phylip(Text):
@@ -40,7 +41,7 @@ class Phylip(Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """

@@ -17,6 +17,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
+    Dataset_t24,
     HasMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -33,8 +34,6 @@ from galaxy.datatypes.tabular import Tabular
 
 if TYPE_CHECKING:
     from io import TextIOBase
-
-    from galaxy.model import DatasetInstance
 
 MAX_HEADER_LINES = 500
 MAX_LINE_LEN = 2000
@@ -107,7 +106,7 @@ class Ply:
                 break
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for line in fh:
@@ -287,7 +286,7 @@ class Vtk:
             return check_data_kind(line)
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             dataset.metadata.field_names = []
             dataset.metadata.field_components = {}
@@ -376,7 +375,7 @@ class Vtk:
             if len(field_components) > 0:
                 dataset.metadata.field_components = field_components
 
-    def set_initial_metadata(self, i: int, line: str, dataset: "DatasetInstance") -> "DatasetInstance":
+    def set_initial_metadata(self, i: int, line: str, dataset: Dataset_t24) -> Dataset_t24:
         if i == 0:
             # The first part of legacy VTK files is the file version and
             # identifier. This part contains the single line:
@@ -395,8 +394,8 @@ class Vtk:
         return dataset
 
     def set_structure_metadata(
-        self, line: str, dataset: "DatasetInstance", dataset_type: Optional[str]
-    ) -> Tuple["DatasetInstance", Optional[str]]:
+        self, line: str, dataset: Dataset_t24, dataset_type: Optional[str]
+    ) -> Tuple[Dataset_t24, Optional[str]]:
         """
         The fourth part of legacy VTK files is the dataset structure. The
         geometry part describes the geometry and topology of the dataset.
@@ -557,7 +556,7 @@ class NeperTess(data.Text):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tess")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):
@@ -628,7 +627,7 @@ class NeperTesr(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tesr")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 field = ""
@@ -681,7 +680,7 @@ class NeperPoints(data.Text):
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         data.Text.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
@@ -723,7 +722,7 @@ class NeperPointsTabular(NeperPoints, Tabular):
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
@@ -769,7 +768,7 @@ class GmshMsh(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline().startswith("$MeshFormat")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):

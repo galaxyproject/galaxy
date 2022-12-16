@@ -16,6 +16,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t22,
     Dataset_t23,
+    Dataset_t24,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.data import Data
@@ -23,10 +24,7 @@ from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
 
 if TYPE_CHECKING:
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
+    from galaxy.model import HistoryDatasetAssociation
 
 log = logging.getLogger(__name__)
 verbose = True
@@ -186,7 +184,7 @@ class _SpalnDb(Data):
             return None
         raise NotImplementedError("Can't split spaln database")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         efp = dataset.extra_files_path
         for filename in os.listdir(efp):

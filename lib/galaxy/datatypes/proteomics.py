@@ -7,13 +7,13 @@ from typing import (
     IO,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
 from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
+    Dataset_t24,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.binary import Binary
@@ -29,9 +29,6 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -396,7 +393,7 @@ class Dta(TabularData):
     file_ext = "dta"
     comment_lines = 0
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         column_types = []
         data_row: List = []
         data_lines = 0
@@ -469,7 +466,7 @@ class Dta2d(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         if dataset.has_data():
@@ -605,7 +602,7 @@ class Edta(TabularData):
                 line[idx] += str(idx // 4)
         return line
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         tpe = None

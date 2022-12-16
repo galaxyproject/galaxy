@@ -1,8 +1,10 @@
 import logging
-from typing import TYPE_CHECKING
 
 from galaxy.datatypes import data
-from galaxy.datatypes._protocols import Dataset_t23
+from galaxy.datatypes._protocols import (
+    Dataset_t23,
+    Dataset_t24,
+)
 from galaxy.datatypes.binary import Cel  # noqa: F401
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
@@ -11,9 +13,6 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
     get_headers,
 )
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -121,7 +120,7 @@ class Gal(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix ArrayList" in headers[2][0]
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Gal file.
         """
@@ -163,7 +162,7 @@ class Gpr(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix Results" in headers[2][0]
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Gpr file.
         """
