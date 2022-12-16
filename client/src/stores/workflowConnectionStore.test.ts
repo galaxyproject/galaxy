@@ -39,7 +39,7 @@ const connection: Connection = {
 describe("Connection Store", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
-        let workflowStepStore = useWorkflowStepStore();
+        const workflowStepStore = useWorkflowStepStore();
         workflowStepStore.addStep(workflowStepZero);
         workflowStepStore.addStep(workflowStepOne);
     });

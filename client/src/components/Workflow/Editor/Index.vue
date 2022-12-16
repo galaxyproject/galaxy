@@ -202,7 +202,7 @@ import WorkflowAttributes from "./Attributes";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import WorkflowText from "./WorkflowText";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
-import { useConnectionStore } from "stores/workflowConnectionStore";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
 import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
