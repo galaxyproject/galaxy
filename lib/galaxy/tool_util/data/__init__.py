@@ -32,6 +32,10 @@ from typing import (
 )
 
 import requests
+from typing_extensions import (
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.exceptions import MessageException
@@ -49,7 +53,6 @@ from ._schema import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.config import GalaxyAppConfiguration
     from galaxy.tools.data_manager.manager import DataManager
 
 log = logging.getLogger(__name__)
@@ -60,6 +63,11 @@ TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 <tables>
 </tables>
 """
+
+
+class StoresConfigFilePaths(Protocol):
+    def get(self, key: Any, default: Optional[Any]) -> Optional[Any]:
+        ...
 
 
 class ToolDataPathFiles:
@@ -102,9 +110,30 @@ class ToolDataPathFiles:
             return os.path.exists(path)
 
 
+ErrorListT = List[str]
+FileNameInfoT = TypedDict(
+    "FileNameInfoT",
+    {
+        "found": bool,
+        "filename": str,
+        "from_shed_config": bool,
+        "tool_data_path": Optional[StrPath],
+        "config_element": Optional[Element],
+        "tool_shed_repository": Optional[Dict[str, Any]],
+        "errors": ErrorListT,
+    },
+)
+LoadInfoT = Tuple[Tuple[Element, Optional[StrPath]], Dict[str, Any]]
+
+
 class ToolDataTable(Dictifiable):
     type_key: str
     data: List[List[str]]
+    empty_field_value: str
+    empty_field_values: Dict[Optional[str], str]
+    filenames: Dict[str, FileNameInfoT]
+    _load_info: LoadInfoT
+    _merged_load_info: List[Tuple[Type["ToolDataTable"], LoadInfoT]]
 
     @classmethod
     def from_dict(cls, d):
@@ -123,7 +152,7 @@ class ToolDataTable(Dictifiable):
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
         filename: Optional[StrPath] = None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         self.name = config_element.get("name")
         self.comment_char = config_element.get("comment_char")
@@ -131,7 +160,7 @@ class ToolDataTable(Dictifiable):
         self.empty_field_values: Dict[str, str] = {}
         self.allow_duplicate_entries = util.asbool(config_element.get("allow_duplicate_entries", True))
         self.here = os.path.dirname(filename) if filename else None
-        self.filenames: Dict[str, Dict[str, Any]] = {}
+        self.filenames: Dict[str, FileNameInfoT] = {}
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
@@ -157,7 +186,7 @@ class ToolDataTable(Dictifiable):
             self._loaded_content_version += 1
         return self._loaded_content_version
 
-    def get_empty_field_by_name(self, name):
+    def get_empty_field_by_name(self, name: Optional[str]) -> str:
         return self.empty_field_values.get(name, self.empty_field_value)
 
     def _add_entry(
@@ -251,7 +280,7 @@ class TabularToolDataTable(ToolDataTable):
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
         filename: Optional[StrPath] = None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         super().__init__(
             config_element,
@@ -355,7 +384,7 @@ class TabularToolDataTable(ToolDataTable):
                         filename = f"{corrected_filename}.sample"
                         found = True
 
-            errors: List[str] = []
+            errors: ErrorListT = []
             if found:
                 self.extend_data_with(filename, errors=errors)
                 self._update_version()
@@ -478,14 +507,14 @@ class TabularToolDataTable(ToolDataTable):
         if "name" not in self.columns:
             self.columns["name"] = self.columns["value"]
 
-    def extend_data_with(self, filename: str, errors: Optional[List[str]] = None) -> None:
+    def extend_data_with(self, filename: str, errors: Optional[ErrorListT] = None) -> None:
         here = os.path.dirname(os.path.abspath(filename))
         self.data.extend(self.parse_file_fields(filename, errors=errors, here=here))
         if not self.allow_duplicate_entries:
             self._deduplicate_data()
 
     def parse_file_fields(
-        self, filename: str, errors: Optional[List[str]] = None, here: str = "__HERE__"
+        self, filename: str, errors: Optional[ErrorListT] = None, here: str = "__HERE__"
     ) -> List[List[str]]:
         """
         Parse separated lines from file and return a list of tuples.
@@ -813,7 +842,7 @@ class ToolDataTableManager(Dictifiable):
         tool_data_path: str,
         config_filename: Optional[Union[StrPath, List[StrPath]]] = None,
         tool_data_table_config_path_set=None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
@@ -911,7 +940,7 @@ class ToolDataTableManager(Dictifiable):
         from_shed_config: bool,
         filename: StrPath,
         tool_data_path_files: ToolDataPathFiles,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> ToolDataTable:
         table_type = table_elem.get("type", "tabular")
         assert table_type in self.tool_data_table_types, f"Unknown data table type '{table_type}'"

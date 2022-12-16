@@ -3,16 +3,20 @@
     "compilerOptions": {
         "target": "es2016",
         "module": "es6",
-        "baseUrl": "./src",
+
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["src/*"],
+            "@tests/*": ["tests/*"]
+        },
+        "outDir": "./dist/build",
 
         "allowJs": true,
         "checkJs": false,
-
-        "outDir": "./dist/build",
         "allowSyntheticDefaultImports": true
     },
     "vueCompilerOptions": {
         "target": 2.7
     },
-    "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"],
+    "include": ["./types/*.d.ts", "./src/**/*.ts", "./src/**/*.tsx", "./src/**/*.vue", "./tests/**/*.ts"]
 }

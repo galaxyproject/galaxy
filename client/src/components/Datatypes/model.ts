@@ -1,4 +1,4 @@
-import type { components } from "schema";
+import type { components } from "@/schema";
 
 export type DatatypesCombinedMap = components["schemas"]["DatatypesCombinedMap"];
 

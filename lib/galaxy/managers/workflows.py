@@ -732,6 +732,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     source_metadata["trs_tool_id"] = workflow_state_resolution_options.trs_tool_id
                     source_metadata["trs_version_id"] = workflow_state_resolution_options.trs_version_id
                     source_metadata["trs_server"] = workflow_state_resolution_options.trs_server
+                    source_metadata["trs_url"] = workflow_state_resolution_options.trs_url
                 elif not workflow_state_resolution_options.archive_source.startswith("file://"):  # URL import
                     source_metadata["url"] = workflow_state_resolution_options.archive_source
                 workflow_state_resolution_options.archive_source = None  # so trs_id is not set for subworkflows
@@ -1900,6 +1901,7 @@ class WorkflowCreateOptions(WorkflowStateResolutionOptions):
     trs_tool_id: str = ""
     trs_version_id: str = ""
     trs_server: str = ""
+    trs_url: str = ""
 
     @property
     def is_importable(self):

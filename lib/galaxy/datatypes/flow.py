@@ -3,6 +3,7 @@ Flow analysis datatypes.
 """
 
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.sniff import (
@@ -10,6 +11,9 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from . import data
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -20,7 +24,7 @@ class FCS(Binary):
 
     file_ext = "fcs"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary FCS file"
             dataset.blurb = data.nice_size(dataset.get_size())
@@ -28,13 +32,13 @@ class FCS(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
             return "Binary FCS file"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checking if the file is in FCS format. Should read FCS2.0, FCS3.0
         and FCS3.1
