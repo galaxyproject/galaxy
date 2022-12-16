@@ -14,7 +14,6 @@ from typing import (
     List,
     Optional,
     Tuple,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -39,9 +38,6 @@ from . import (
     xml,
 )
 from .display_applications.application import DisplayApplication
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 
 class ConfigurationError(Exception):
@@ -836,7 +832,7 @@ class Registry:
 
     def find_conversion_destination_for_dataset_by_extensions(
         self, dataset_or_ext: Union[str, Dataset_t16], accepted_formats: List[str], converter_safe: bool = True
-    ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
+    ) -> Tuple[bool, Optional[str], Optional[Dataset_t16]]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format
