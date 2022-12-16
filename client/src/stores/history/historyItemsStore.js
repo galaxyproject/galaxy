@@ -9,7 +9,7 @@ import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
 import { mergeArray } from "store/historyStore/model/utilities";
-import { getFilters, getQueryString, testFilters } from "utils/filterConversion";
+import { HistoryFilters } from "components/History/HistoryFilters";
 
 const limit = 100;
 const queue = new LastQueue();
@@ -27,12 +27,12 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         getHistoryItems: (state) => {
             return (historyId, filterText) => {
                 const itemArray = state.items[historyId] || [];
-                const filters = getFilters(filterText);
+                const filters = HistoryFilters.getFilters(filterText);
                 const filtered = itemArray.filter((item) => {
                     if (!item) {
                         return false;
                     }
-                    if (!testFilters(filters, item)) {
+                    if (!HistoryFilters.testFilters(filters, item)) {
                         return false;
                     }
                     return true;
@@ -55,7 +55,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
     },
     actions: {
         async fetchHistoryItems(historyId, filterText, offset) {
-            const queryString = getQueryString(filterText);
+            const queryString = HistoryFilters.getQueryString(filterText);
             const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
             const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
             const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
