@@ -478,6 +478,7 @@ export function getRouter(Galaxy) {
                             queryTrsServer: route.query.trs_server,
                             queryTrsId: route.query.trs_id,
                             queryTrsVersionId: route.query.trs_version,
+                            queryTrsUrl: route.query.trs_url,
                             isRun: route.query.run_form == "true",
                         }),
                     },

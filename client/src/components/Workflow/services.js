@@ -110,4 +110,18 @@ export class Services {
             rethrowSimple(e);
         }
     }
+
+    async importTrsToolFromUrl(trsUrl) {
+        const data = {
+            archive_source: "trs_tool",
+            trs_url: trsUrl,
+        };
+        const url = safePath("/api/workflows");
+        try {
+            const response = await axios.post(url, data);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
 }

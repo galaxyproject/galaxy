@@ -319,25 +319,20 @@ export interface paths {
         /** Displays a collection (list) of groups. */
         get: operations["index_api_groups__group_id__roles_get"];
     };
-    "/api/groups/{group_id}/roles/{id}": {
-        /** Displays information about a group role. */
-        get: operations["group_role_api_groups__group_id__roles__id__get"];
-    };
     "/api/groups/{group_id}/roles/{role_id}": {
+        /** Displays information about a group role. */
+        get: operations["group_role_api_groups__group_id__roles__role_id__get"];
         /** Adds a role to a group */
         put: operations["update_api_groups__group_id__roles__role_id__put"];
         /** Removes a role from a group */
         delete: operations["delete_api_groups__group_id__roles__role_id__delete"];
     };
-    "/api/groups/{group_id}/user/{id}": {
+    "/api/groups/{group_id}/user/{user_id}": {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
-        get: operations["group_user_api_groups__group_id__user__id__get"];
-    };
-    "/api/groups/{group_id}/user/{user_id}": {
+        get: operations["group_user_api_groups__group_id__user__user_id__get"];
         /**
          * Adds a user to a group
          * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
@@ -359,15 +354,12 @@ export interface paths {
          */
         get: operations["index_api_groups__group_id__users_get"];
     };
-    "/api/groups/{group_id}/users/{id}": {
+    "/api/groups/{group_id}/users/{user_id}": {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
-        get: operations["group_user_api_groups__group_id__users__id__get"];
-    };
-    "/api/groups/{group_id}/users/{user_id}": {
+        get: operations["group_user_api_groups__group_id__users__user_id__get"];
         /**
          * Adds a user to a group
          * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
@@ -490,15 +482,6 @@ export interface paths {
          * while maintaining approximate collection structure.
          */
         get: operations["download_dataset_collection_api_histories__history_id__contents_dataset_collections__id__download_get"];
-    };
-    "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download": {
-        /**
-         * Prepare an short term storage object that the collection will be downloaded to.
-         * @description The history dataset collection will be written as a `zip` archive to the
-         * returned short term storage object. Progress tracking this file's creation
-         * can be tracked with the short_term_storage API.
-         */
-        post: operations["prepare_collection_download_api_histories__history_id__contents_dataset_collections__id__prepare_download_post"];
     };
     "/api/histories/{history_id}/contents/datasets/{id}/materialize": {
         /** Materialize a deferred dataset into real, usable dataset. */
@@ -1724,7 +1707,7 @@ export interface components {
             id?: string;
             /**
              * Name
-             * @description A name declared by the bundle author that must be used when materialising this object, overriding any name directly associated with the object itself. The name must be unique with the containing bundle. This string is made up of uppercase and lowercase letters, decimal digits, hypen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
+             * @description A name declared by the bundle author that must be used when materialising this object, overriding any name directly associated with the object itself. The name must be unique with the containing bundle. This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
              */
             name: string;
         };
@@ -4565,7 +4548,7 @@ export interface components {
         InstalledRepositoryToolShedStatus: {
             /**
              * Latest installed revision
-             * @description Most recent version avialable on the tool shed
+             * @description Most recent version available on the tool shed
              */
             latest_installable_revision: string;
             /**
@@ -5573,7 +5556,7 @@ export interface components {
             /**
              * Name
              * @description A string that can be used to name a `DrsObject`.
-             * This string is made up of uppercase and lowercase letters, decimal digits, hypen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
+             * This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
              */
             name?: string;
             /**
@@ -7831,15 +7814,13 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The ID of the History. */
             /** @description The ID of the `HDCA` contained in the history. */
             path: {
-                history_id: string;
                 id: string;
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description Short term storage reference for async monitoring of this download. */
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
@@ -7851,6 +7832,8 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Required asynchronous tasks required for this operation not available. */
+            501: never;
         };
     };
     suitable_converters_api_dataset_collections__id__suitable_converters_get: {
@@ -7887,7 +7870,7 @@ export interface operations {
     index_api_datasets_get: {
         /** Search datasets or collections using a query system. */
         parameters?: {
-            /** @description Optional identifier of a History. Use it to restrict the search whithin a particular History. */
+            /** @description Optional identifier of a History. Use it to restrict the search within a particular History. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /**
@@ -9086,7 +9069,7 @@ export interface operations {
             };
         };
     };
-    group_role_api_groups__group_id__roles__id__get: {
+    group_role_api_groups__group_id__roles__role_id__get: {
         /** Displays information about a group role. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -9097,7 +9080,7 @@ export interface operations {
             /** @description The ID of the role */
             path: {
                 group_id: string;
-                id: string;
+                role_id: string;
             };
         };
         responses: {
@@ -9173,11 +9156,10 @@ export interface operations {
             };
         };
     };
-    group_user_api_groups__group_id__user__id__get: {
+    group_user_api_groups__group_id__user__user_id__get: {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -9188,7 +9170,7 @@ export interface operations {
             /** @description The ID of the user */
             path: {
                 group_id: string;
-                id: string;
+                user_id: string;
             };
         };
         responses: {
@@ -9303,11 +9285,10 @@ export interface operations {
             };
         };
     };
-    group_user_api_groups__group_id__users__id__get: {
+    group_user_api_groups__group_id__users__user_id__get: {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -9318,7 +9299,7 @@ export interface operations {
             /** @description The ID of the user */
             path: {
                 group_id: string;
-                id: string;
+                user_id: string;
             };
         };
         responses: {
@@ -10327,42 +10308,6 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-        };
-    };
-    prepare_collection_download_api_histories__history_id__contents_dataset_collections__id__prepare_download_post: {
-        /**
-         * Prepare an short term storage object that the collection will be downloaded to.
-         * @description The history dataset collection will be written as a `zip` archive to the
-         * returned short term storage object. Progress tracking this file's creation
-         * can be tracked with the short_term_storage API.
-         */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the History. */
-            /** @description The ID of the `HDCA` contained in the history. */
-            path: {
-                history_id: string;
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Short term storage reference for async monitoring of this download. */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["AsyncFile"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Required asynchronous tasks required for this operation not available. */
-            501: never;
         };
     };
     materialize_dataset_api_histories__history_id__contents_datasets__id__materialize_post: {
@@ -12008,7 +11953,7 @@ export interface operations {
              * generally a partial match will be used to filter the query (i.e. in terms of the implementation
              * this means the database operation `ILIKE` will typically be used).
              *
-             * Once the tagged filters are extracted from the search query, the remaing text is just
+             * Once the tagged filters are extracted from the search query, the remaining text is just
              * used to search various documented attributes of the object.
              *
              * ## GitHub-style Tags Available
@@ -14158,7 +14103,7 @@ export interface operations {
              * generally a partial match will be used to filter the query (i.e. in terms of the implementation
              * this means the database operation `ILIKE` will typically be used).
              *
-             * Once the tagged filters are extracted from the search query, the remaing text is just
+             * Once the tagged filters are extracted from the search query, the remaining text is just
              * used to search various documented attributes of the object.
              *
              * ## GitHub-style Tags Available

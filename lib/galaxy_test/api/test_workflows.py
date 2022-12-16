@@ -1070,6 +1070,71 @@ steps:
         assert "Test Workflow" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == trs_payload["trs_tool_id"]
         assert original_workflow.get("source_metadata").get("trs_version_id") == trs_payload["trs_version_id"]
+        assert original_workflow.get("source_metadata").get("trs_server") == "dockstore"
+
+        # refactor workflow and check that the trs id is removed
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactored_workflow = self._download_workflow(workflow_id)
+        assert refactored_workflow.get("source_metadata") is None
+
+        # reupload original_workflow and check that the trs id is removed
+        reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
+        reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
+        assert reuploaded_workflow.get("source_metadata") is None
+
+    def test_trs_import_from_dockstore_trs_url(self):
+        trs_payload = {
+            "archive_source": "trs_tool",
+            "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+            "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
+            "versions/master",
+        }
+        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        original_workflow = self._download_workflow(workflow_id)
+        assert "Test Workflow" in original_workflow["name"]
+        assert (
+            original_workflow.get("source_metadata").get("trs_tool_id")
+            == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        )
+        assert original_workflow.get("source_metadata").get("trs_version_id") == "master"
+        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert original_workflow.get("source_metadata").get("trs_url") == (
+            "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+            "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
+            "versions/master"
+        )
+
+        # refactor workflow and check that the trs id is removed
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactored_workflow = self._download_workflow(workflow_id)
+        assert refactored_workflow.get("source_metadata") is None
+
+        # reupload original_workflow and check that the trs id is removed
+        reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
+        reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
+        assert reuploaded_workflow.get("source_metadata") is None
+
+    def test_trs_import_from_workflowhub_trs_url(self):
+        trs_payload = {
+            "archive_source": "trs_tool",
+            "trs_url": "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5",
+        }
+        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        original_workflow = self._download_workflow(workflow_id)
+        assert "COVID-19: variation analysis reporting" in original_workflow["name"]
+        assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
+        assert original_workflow.get("source_metadata").get("trs_version_id") == "5"
+        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert (
+            original_workflow.get("source_metadata").get("trs_url")
+            == "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5"
+        )
 
         # refactor workflow and check that the trs id is removed
         actions = [

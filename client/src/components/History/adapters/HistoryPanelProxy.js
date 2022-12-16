@@ -4,6 +4,7 @@
  */
 import Backbone from "backbone";
 import store from "store";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { buildCollectionModal } from "./buildCollectionModal";
 import { createDatasetCollection } from "components/History/model/queries";
 import { watchHistory } from "store/historyStore/model/watchHistory";
@@ -12,29 +13,13 @@ import { watchHistory } from "store/historyStore/model/watchHistory";
 export class HistoryPanelProxy {
     constructor() {
         const model = (this.model = new Backbone.Model({}));
+        const historyItemsStore = useHistoryItemsStore();
         this.collection = {
             each(callback, filterText = "") {
-                const historyItems = store.getters.getHistoryItems({ historyId: model.id, filterText: filterText });
+                const historyItems = historyItemsStore.getHistoryItems(model.id, filterText);
                 historyItems.forEach((model) => {
                     callback(new Backbone.Model(model));
                 });
-            },
-            on(name, callback) {
-                this.off();
-                this.unwatch = store.watch(
-                    (state, getters) => getters.getLatestCreateTime(),
-                    () => {
-                        callback();
-                        console.debug("History change watcher detected a change.", name);
-                    }
-                );
-                console.debug("History change watcher enabled.", name);
-            },
-            off(name) {
-                if (this.unwatch) {
-                    this.unwatch();
-                    console.debug("History change watcher disabled.", name);
-                }
             },
         };
 

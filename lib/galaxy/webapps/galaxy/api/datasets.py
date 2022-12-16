@@ -88,7 +88,7 @@ class FastAPIDatasets:
         trans=DependsOnTrans,
         history_id: Optional[DecodedDatabaseIdField] = Query(
             default=None,
-            description="Optional identifier of a History. Use it to restrict the search whithin a particular History.",
+            description="Optional identifier of a History. Use it to restrict the search within a particular History.",
         ),
         serialization_params: SerializationParams = Depends(query_serialization_params),
         filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
