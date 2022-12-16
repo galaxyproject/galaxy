@@ -1,3 +1,4 @@
+import gzip
 import os
 import shutil
 import tempfile
@@ -479,6 +480,13 @@ SIZE_HAS_SIZE_ASSERTION_DELTA = """
     </assert_contents>
 """
 
+# create gz test data for use with has_size tests
+with tempfile.NamedTemporaryFile(mode="w", delete=False) as txttmp:
+    txttmp.write("A" * 100)
+    txttmp.flush()
+    A100 = open(txttmp.name, "rb").read()
+    GZA100 = gzip.compress(A100)
+
 
 def test_has_size_success():
     """test has_size"""
@@ -510,6 +518,21 @@ def test_has_size_with_bytes_suffix_failure():
     a = run_assertions(SIZE_HAS_SIZE_ASSERTION_DELTA.format(value="1Mi", delta="10k"), TEXT_DATA_HAS_TEXT * 100)
     assert "Expected file size of 1Mi+-10k found 1000" in a
     assert len(a) == 1
+
+
+def test_has_size_decompress_gz():
+    """test has_size with gzipped data using decompress=True (which in real life is set int he parent output tag)"""
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(value="100"), GZA100, decompress=True)
+    assert len(a) == 0
+
+
+def test_has_size_decompress_txt():
+    """
+    test has_size with NON-gzipped data using decompress=True
+    -> decompress should be ignored - in particular there should be no error
+    """
+    a = run_assertions(SIZE_HAS_SIZE_ASSERTION.format(value="100"), A100, decompress=True)
+    assert len(a) == 0
 
 
 VALID_XML = """<root>
@@ -901,6 +924,13 @@ ARCHIVE_HAS_ARCHIVE_MEMBER_MINMAX = """
 """
 
 
+def test_has_archive_member_1filegzip():
+    """test has_archive_member with a single file gz which should fail (has no members anyway)"""
+    a = run_assertions(ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?xyz", content_assert="", all="false"), GZA100)
+    assert "Expected path '(\\./)?xyz' to be an archive" in a
+    assert len(a) == 1
+
+
 def test_has_archive_member_zip():
     """test has_archive_member with zip"""
     a = run_assertions(
@@ -1284,11 +1314,11 @@ if h5py is not None:
         assert len(a) == 1
 
 
-def run_assertions(assertion_xml, data):
+def run_assertions(assertion_xml, data, decompress=None):
     assertion = etree.fromstring(assertion_xml)
     assertion_description = __parse_assert_list_from_elem(assertion)
     try:
-        asserts.verify_assertions(data, assertion_description)
+        asserts.verify_assertions(data, assertion_description, decompress=decompress)
     except AssertionError as e:
         assert_list = e.args
     else:
