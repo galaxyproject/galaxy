@@ -23,6 +23,10 @@ const allSourcesUnlimited = computed(() => {
     const allUnlimited = props.quotaUsages.every((usage) => usage.isUnlimited);
     return allUnlimited;
 });
+
+defineExpose({
+    totalQuotaInBytes,
+});
 </script>
 
 <template>

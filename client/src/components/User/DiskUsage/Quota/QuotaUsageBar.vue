@@ -32,6 +32,11 @@ const progressVariant = computed(() => {
     }
     return "danger";
 });
+
+defineExpose({
+    isDefaultQuota,
+    quotaHasLimit,
+});
 </script>
 
 <template>
