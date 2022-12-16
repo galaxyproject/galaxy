@@ -6,6 +6,7 @@ import LibraryFolderPermissions from "@/components/Libraries/LibraryFolder/Libra
 import LibraryDataset from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue";
 import LibraryPermissions from "@/components/Libraries/LibraryPermissions/LibraryPermissions.vue";
 import type { Route } from "vue-router";
+import type { strict } from "assert";
 
 export default [
     {
@@ -25,9 +26,9 @@ export default [
                 name: "LibraryFolder",
                 component: LibraryFolder,
                 props(route: Route) {
-                    const props = { ...route.params };
+                    let props: Record<string, string | number> = {};
+                    props = { ...route.params };
                     if (props.page) {
-                        // TODO: fix cast
                         props.page = +props.page;
                     }
                     return props;
