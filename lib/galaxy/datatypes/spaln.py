@@ -9,7 +9,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
 from galaxy.datatypes._protocols import (
@@ -17,14 +16,12 @@ from galaxy.datatypes._protocols import (
     Dataset_t22,
     Dataset_t23,
     Dataset_t24,
+    Dataset_t25,
     GeneratePrimaryFileDataset,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
-
-if TYPE_CHECKING:
-    from galaxy.model import HistoryDatasetAssociation
 
 log = logging.getLogger(__name__)
 verbose = True
@@ -123,7 +120,7 @@ class _SpalnDb(Data):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

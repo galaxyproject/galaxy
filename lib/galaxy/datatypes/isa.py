@@ -29,6 +29,7 @@ from galaxy import util
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
+    Dataset_t25,
     GeneratePrimaryFileDataset,
     HasExtraFilesPathProperty,
 )
@@ -38,8 +39,6 @@ from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
     from isatools.model import Investigation
-
-    from galaxy.model import HistoryDatasetAssociation
 
 # CONSTANTS {{{1
 ################################################################
@@ -270,7 +269,7 @@ class _Isa(Data):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

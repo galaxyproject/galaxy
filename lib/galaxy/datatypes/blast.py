@@ -38,12 +38,12 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
 from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
+    Dataset_t25,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -56,9 +56,6 @@ from .data import (
     Text,
 )
 from .xml import GenericXml
-
-if TYPE_CHECKING:
-    from galaxy.model import HistoryDatasetAssociation
 
 log = logging.getLogger(__name__)
 
@@ -215,7 +212,7 @@ class _BlastDb(Data):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

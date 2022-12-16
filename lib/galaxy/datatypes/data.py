@@ -38,6 +38,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
     Dataset_t24,
+    Dataset_t25,
     GeneratePrimaryFileDataset,
     HasClearAssociatedFiles,
     HasCreatingJobProperty,
@@ -81,7 +82,6 @@ if TYPE_CHECKING:
     from galaxy.datatypes.registry import Registry
     from galaxy.model import (
         DatasetInstance,
-        HistoryDatasetAssociation,
         HistoryDatasetCollectionAssociation,
     )
 
@@ -405,9 +405,7 @@ class Data(metaclass=DataMeta):
                 rpath = os.path.relpath(fpath, extra_files_path)
                 yield fpath, rpath
 
-    def _serve_raw(
-        self, dataset: "HistoryDatasetAssociation", to_ext: Optional[str], headers: Headers, **kwd
-    ) -> Tuple[IO, Headers]:
+    def _serve_raw(self, dataset: Dataset_t25, to_ext: Optional[str], headers: Headers, **kwd) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
         headers[
             "content-type"
@@ -447,7 +445,7 @@ class Data(metaclass=DataMeta):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

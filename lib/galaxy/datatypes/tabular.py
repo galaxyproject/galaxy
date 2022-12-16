@@ -17,7 +17,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -41,6 +40,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
     Dataset_t24,
+    Dataset_t25,
     HasFileNameProperty,
     HasMetadata,
 )
@@ -84,9 +84,6 @@ from galaxy.util.markdown import (
     pre_formatted_contents,
 )
 from . import dataproviders
-
-if TYPE_CHECKING:
-    from galaxy.model import HistoryDatasetAssociation
 
 log = logging.getLogger(__name__)
 
@@ -179,7 +176,7 @@ class TabularData(Text):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

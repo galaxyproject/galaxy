@@ -187,3 +187,21 @@ class Dataset_t24(
 
     def get_size(self) -> str:
         ...
+
+
+class Dataset_t25(
+    HasFileNameProperty,
+    HasDataset,
+    HasId,
+    HasMetadata,
+    HasCreatingJobProperty,
+    HasName,
+    HasExtraFilesPathProperty,
+    Protocol,
+):
+    datatype: Any
+    extension: str  # TODO reconcile: ext vs. extension
+    hid: str
+
+    def get_mime(self) -> str:
+        ...

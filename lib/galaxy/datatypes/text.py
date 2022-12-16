@@ -12,7 +12,6 @@ from typing import (
     IO,
     Optional,
     Tuple,
-    TYPE_CHECKING,
 )
 
 import yaml
@@ -22,6 +21,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t22,
     Dataset_t23,
     Dataset_t24,
+    Dataset_t25,
     GeneratePrimaryFileDataset,
     HasCreatingJobProperty,
 )
@@ -45,9 +45,6 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-
-if TYPE_CHECKING:
-    from galaxy.model import HistoryDatasetAssociation
 
 log = logging.getLogger(__name__)
 
@@ -201,7 +198,7 @@ class Ipynb(Json):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -222,7 +219,7 @@ class Ipynb(Json):
     def _display_data_trusted(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

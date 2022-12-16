@@ -17,7 +17,6 @@ from typing import (
     Iterable,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
 import bx.align.maf
@@ -31,6 +30,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
     Dataset_t24,
+    Dataset_t25,
     HasMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -52,9 +52,6 @@ from galaxy.util import (
 from galaxy.util.checkers import is_gzip
 from galaxy.util.image_util import check_image_type
 from . import data
-
-if TYPE_CHECKING:
-    from galaxy.model import HistoryDatasetAssociation
 
 log = logging.getLogger(__name__)
 
@@ -776,7 +773,7 @@ class BaseFastq(Sequence):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

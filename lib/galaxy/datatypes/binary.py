@@ -40,6 +40,7 @@ from galaxy.datatypes._protocols import (
     Dataset_t20,
     Dataset_t23,
     Dataset_t24,
+    Dataset_t25,
     GeneratePrimaryFileDataset,
     HasFileNameProperty,
     HasMetadata,
@@ -91,7 +92,6 @@ from . import (
 )
 
 if TYPE_CHECKING:
-    from galaxy.model import HistoryDatasetAssociation
     from galaxy.util.compression_utils import FileObjType
 
 log = logging.getLogger(__name__)
@@ -650,7 +650,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -2021,7 +2021,7 @@ class H5MLM(H5):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: Dataset_t25,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
