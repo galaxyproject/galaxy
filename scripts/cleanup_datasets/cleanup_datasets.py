@@ -140,12 +140,12 @@ def delete_userless_histories(app, cutoff_time, info_only=False, force_retry=Fal
     start = time.time()
     if force_retry:
         histories = app.sa_session.query(app.model.History) \
-                                  .filter(and_(app.model.History.table.c.user_id == null(),
+                                  .filter(and_(app.model.History.__table__.c.user_id == null(),
                                                app.model.History.update_time < cutoff_time))
     else:
         histories = app.sa_session.query(app.model.History) \
-                                  .filter(and_(app.model.History.table.c.user_id == null(),
-                                               app.model.History.table.c.deleted == false(),
+                                  .filter(and_(app.model.History.__table__.c.user_id == null(),
+                                               app.model.History.__table__.c.deleted == false(),
                                                app.model.History.update_time < cutoff_time))
     for history in histories:
         if not info_only:
@@ -170,13 +170,13 @@ def purge_histories(app, cutoff_time, remove_from_disk, info_only=False, force_r
     start = time.time()
     if force_retry:
         histories = app.sa_session.query(app.model.History) \
-                                  .filter(and_(app.model.History.table.c.deleted == true(),
+                                  .filter(and_(app.model.History.__table__.c.deleted == true(),
                                                app.model.History.update_time < cutoff_time)) \
                                   .options(eagerload('datasets'))
     else:
         histories = app.sa_session.query(app.model.History) \
-                                  .filter(and_(app.model.History.table.c.deleted == true(),
-                                               app.model.History.table.c.purged == false(),
+                                  .filter(and_(app.model.History.__table__.c.deleted == true(),
+                                               app.model.History.__table__.c.purged == false(),
                                                app.model.History.update_time < cutoff_time)) \
                                   .options(eagerload('datasets'))
     for history in histories:
@@ -212,13 +212,13 @@ def purge_libraries(app, cutoff_time, remove_from_disk, info_only=False, force_r
     start = time.time()
     if force_retry:
         libraries = app.sa_session.query(app.model.Library) \
-                                  .filter(and_(app.model.Library.table.c.deleted == true(),
-                                               app.model.Library.table.c.update_time < cutoff_time))
+                                  .filter(and_(app.model.Library.__table__.c.deleted == true(),
+                                               app.model.Library.__table__.c.update_time < cutoff_time))
     else:
         libraries = app.sa_session.query(app.model.Library) \
-                                  .filter(and_(app.model.Library.table.c.deleted == true(),
-                                               app.model.Library.table.c.purged == false(),
-                                               app.model.Library.table.c.update_time < cutoff_time))
+                                  .filter(and_(app.model.Library.__table__.c.deleted == true(),
+                                               app.model.Library.__table__.c.purged == false(),
+                                               app.model.Library.__table__.c.update_time < cutoff_time))
     for library in libraries:
         _purge_folder(library.root_folder, app, remove_from_disk, info_only=info_only)
         if not info_only:
@@ -243,13 +243,13 @@ def purge_folders(app, cutoff_time, remove_from_disk, info_only=False, force_ret
     start = time.time()
     if force_retry:
         folders = app.sa_session.query(app.model.LibraryFolder) \
-                                .filter(and_(app.model.LibraryFolder.table.c.deleted == true(),
-                                             app.model.LibraryFolder.table.c.update_time < cutoff_time))
+                                .filter(and_(app.model.LibraryFolder.__table__.c.deleted == true(),
+                                             app.model.LibraryFolder.__table__.c.update_time < cutoff_time))
     else:
         folders = app.sa_session.query(app.model.LibraryFolder) \
-                                .filter(and_(app.model.LibraryFolder.table.c.deleted == true(),
-                                             app.model.LibraryFolder.table.c.purged == false(),
-                                             app.model.LibraryFolder.table.c.update_time < cutoff_time))
+                                .filter(and_(app.model.LibraryFolder.__table__.c.deleted == true(),
+                                             app.model.LibraryFolder.__table__.c.purged == false(),
+                                             app.model.LibraryFolder.__table__.c.update_time < cutoff_time))
     for folder in folders:
         _purge_folder(folder, app, remove_from_disk, info_only=info_only)
         folder_count += 1
@@ -263,30 +263,30 @@ def delete_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_r
     # Marks datasets as deleted if associated items are all deleted.
     start = time.time()
     if force_retry:
-        history_dataset_ids_query = sa.select((app.model.Dataset.table.c.id,
-                                               app.model.Dataset.table.c.state),
-                                              whereclause=app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
-                                              from_obj=[sa.outerjoin(app.model.Dataset.table,
-                                                                     app.model.HistoryDatasetAssociation.table)])
-        library_dataset_ids_query = sa.select((app.model.LibraryDataset.table.c.id,
-                                               app.model.LibraryDataset.table.c.deleted),
-                                              whereclause=app.model.LibraryDataset.table.c.update_time < cutoff_time,
-                                              from_obj=[app.model.LibraryDataset.table])
+        history_dataset_ids_query = sa.select((app.model.Dataset.__table__.c.id,
+                                               app.model.Dataset.__table__.c.state),
+                                              whereclause=app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+                                              from_obj=[sa.outerjoin(app.model.Dataset.__table__,
+                                                                     app.model.HistoryDatasetAssociation.__table__)])
+        library_dataset_ids_query = sa.select((app.model.LibraryDataset.__table__.c.id,
+                                               app.model.LibraryDataset.__table__.c.deleted),
+                                              whereclause=app.model.LibraryDataset.__table__.c.update_time < cutoff_time,
+                                              from_obj=[app.model.LibraryDataset.__table__])
     else:
         # We really only need the id column here, but sqlalchemy barfs when trying to select only 1 column
-        history_dataset_ids_query = sa.select((app.model.Dataset.table.c.id,
-                                               app.model.Dataset.table.c.state),
-                                              whereclause=and_(app.model.Dataset.table.c.deleted == false(),
-                                                               app.model.HistoryDatasetAssociation.table.c.update_time < cutoff_time,
-                                                               app.model.HistoryDatasetAssociation.table.c.deleted == true()),
-                                              from_obj=[sa.outerjoin(app.model.Dataset.table,
-                                                                     app.model.HistoryDatasetAssociation.table)])
-        library_dataset_ids_query = sa.select((app.model.LibraryDataset.table.c.id,
-                                               app.model.LibraryDataset.table.c.deleted),
-                                              whereclause=and_(app.model.LibraryDataset.table.c.deleted == true(),
-                                                               app.model.LibraryDataset.table.c.purged == false(),
-                                                               app.model.LibraryDataset.table.c.update_time < cutoff_time),
-                                              from_obj=[app.model.LibraryDataset.table])
+        history_dataset_ids_query = sa.select((app.model.Dataset.__table__.c.id,
+                                               app.model.Dataset.__table__.c.state),
+                                              whereclause=and_(app.model.Dataset.__table__.c.deleted == false(),
+                                                               app.model.HistoryDatasetAssociation.__table__.c.update_time < cutoff_time,
+                                                               app.model.HistoryDatasetAssociation.__table__.c.deleted == true()),
+                                              from_obj=[sa.outerjoin(app.model.Dataset.__table__,
+                                                                     app.model.HistoryDatasetAssociation.__table__)])
+        library_dataset_ids_query = sa.select((app.model.LibraryDataset.__table__.c.id,
+                                               app.model.LibraryDataset.__table__.c.deleted),
+                                              whereclause=and_(app.model.LibraryDataset.__table__.c.deleted == true(),
+                                                               app.model.LibraryDataset.__table__.c.purged == false(),
+                                                               app.model.LibraryDataset.__table__.c.update_time < cutoff_time),
+                                              from_obj=[app.model.LibraryDataset.__table__])
     deleted_dataset_count = 0
     deleted_instance_count = 0
     skip = []
@@ -353,15 +353,15 @@ def purge_datasets(app, cutoff_time, remove_from_disk, info_only=False, force_re
     start = time.time()
     if force_retry:
         datasets = app.sa_session.query(app.model.Dataset) \
-                                 .filter(and_(app.model.Dataset.table.c.deleted == true(),
-                                              app.model.Dataset.table.c.purgable == true(),
-                                              app.model.Dataset.table.c.update_time < cutoff_time))
+                                 .filter(and_(app.model.Dataset.__table__.c.deleted == true(),
+                                              app.model.Dataset.__table__.c.purgable == true(),
+                                              app.model.Dataset.__table__.c.update_time < cutoff_time))
     else:
         datasets = app.sa_session.query(app.model.Dataset) \
-                                 .filter(and_(app.model.Dataset.table.c.deleted == true(),
-                                              app.model.Dataset.table.c.purgable == true(),
-                                              app.model.Dataset.table.c.purged == false(),
-                                              app.model.Dataset.table.c.update_time < cutoff_time))
+                                 .filter(and_(app.model.Dataset.__table__.c.deleted == true(),
+                                              app.model.Dataset.__table__.c.purgable == true(),
+                                              app.model.Dataset.__table__.c.purged == false(),
+                                              app.model.Dataset.__table__.c.update_time < cutoff_time))
     for dataset in datasets:
         file_size = dataset.file_size
         _purge_dataset(app, dataset, remove_from_disk, info_only=info_only)
@@ -418,11 +418,11 @@ def _delete_dataset(dataset, app, remove_from_disk, info_only=False, is_deletabl
         # lets create a list of metadata files, then perform actions on them
         for hda in dataset.history_associations:
             for metadata_file in app.sa_session.query(app.model.MetadataFile) \
-                                               .filter(app.model.MetadataFile.table.c.hda_id == hda.id):
+                                               .filter(app.model.MetadataFile.__table__.c.hda_id == hda.id):
                 metadata_files.append(metadata_file)
         for ldda in dataset.library_associations:
             for metadata_file in app.sa_session.query(app.model.MetadataFile) \
-                                               .filter(app.model.MetadataFile.table.c.lda_id == ldda.id):
+                                               .filter(app.model.MetadataFile.__table__.c.lda_id == ldda.id):
                 metadata_files.append(metadata_file)
         for metadata_file in metadata_files:
             op_description = "marked as deleted"
