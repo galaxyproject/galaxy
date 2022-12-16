@@ -31,7 +31,7 @@ describe("HistoryFilters", () => {
         });
         expect(wrapper.find("[description='advanced filters']").exists()).toBe(false);
         await wrapper.setProps({ showAdvanced: true });
-        console.log(wrapper)
+        expect(wrapper.find("[description='advanced filters']").exists()).toBe(true);
         expect(wrapper.find("[description='advanced filters']").exists()).toBe(true);
         const filterInputs = {
             "[placeholder='any name']": "name-filter",
