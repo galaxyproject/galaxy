@@ -82,7 +82,6 @@ export default {
             return this.currentHistoryId;
         },
         historyContent() {
-            console.log('got the history content ', this.items[this.historyId])
             return this.items[this.historyId];
         },
     },
