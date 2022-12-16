@@ -1,6 +1,6 @@
 <template>
     <CurrentUser v-slot="{ user }">
-        <Invocations
+        <InvocationsList
             v-if="user.id && historyName"
             :user-id="user.id"
             :history-id="historyId"
@@ -8,11 +8,15 @@
     </CurrentUser>
 </template>
 <script>
-import Invocations from "components/Workflow/Invocations";
+import InvocationsList from "components/Workflow/Invocations";
 import CurrentUser from "components/providers/CurrentUser";
 import { mapGetters } from "vuex";
 
 export default {
+    components: {
+        CurrentUser,
+        InvocationsList,
+    },
     props: {
         historyId: {
             type: String,
@@ -24,10 +28,6 @@ export default {
         historyName() {
             return this.getHistoryNameById(this.historyId);
         },
-    },
-    components: {
-        CurrentUser,
-        Invocations,
     },
 };
 </script>
