@@ -1,5 +1,5 @@
 {
-  "name": "galaxy-client",
+  "name": "@galaxyproject/galaxy-client",
   "version": "0.1.0",
   "description": "Galaxy client application build system",
   "keywords": [
@@ -9,7 +9,10 @@
     "type": "git",
     "url": "https://github.com/galaxyproject/galaxy.git"
   },
-  "license": "AFL-3.0",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
   "browserslist": [
     "defaults",
     "not ie <= 11",
@@ -110,14 +113,12 @@
     "xml-beautifier": "^0.5.0"
   },
   "scripts": {
-    "watch": "gulp && yarn run save-build-hash && yarn run webpack-watch",
-    "serve": "NODE_OPTIONS=--max-old-space-size=4096 && NODE_ENV=development gulp && webpack serve",
+    "develop": "NODE_OPTIONS=--max-old-space-size=4096 NODE_ENV=development gulp && webpack-dev-server",
     "build": "NODE_ENV=development gulp && webpack && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run save-build-hash",
     "build-stats": "NODE_ENV=production webpack --profile --json=webpack-stats.json",
     "view-stats": "webpack-bundle-analyzer webpack-stats.json ../static/dist/",
-    "webpack-watch": "webpack --watch",
     "webpack-production": "NODE_ENV=production webpack",
     "webpack-production-maps": "GXY_BUILD_SOURCEMAPS=1 NODE_ENV=production webpack",
     "gulp": "gulp",
