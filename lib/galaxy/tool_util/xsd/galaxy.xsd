@@ -1730,7 +1730,10 @@ but ``sim_size``.
 This flag is useful for testing compressed outputs that are non-deterministic
 despite having deterministic decompressed contents. By default, only files compressed
 with bz2, gzip and zip will be automatically decompressed.
-This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550).
+Note, for specifying assertions for compressed as well as decompressed output
+the corresponding output tag can be specified multiple times.
+This is available in Galaxy since release 17.05 and was introduced in [pull request #3550](https://github.com/galaxyproject/galaxy/pull/3550)
+the application to content assertions has been introduced in 23.0 [pull request #15085](https://github.com/galaxyproject/galaxy/pull/15085).
 ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
