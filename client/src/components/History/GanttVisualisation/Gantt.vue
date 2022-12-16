@@ -35,10 +35,11 @@
 
 <script>
 import Gantt from "../../../../node_modules/frappe-gantt";
-import store from "../../../store";
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 import { keyedColorScheme } from "utils/color";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { mapState, mapActions } from "pinia";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import LoadingSpan from "components/LoadingSpan";
@@ -74,11 +75,15 @@ export default {
     },
     computed: {
         ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
+        ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
+        ...mapState(useHistoryItemsStore, ["items"]),
+        ...mapState(useHistoryItemsStore, { storeGetHistoryItems: 'getHistoryItems' }),
         history() {
             return this.currentHistoryId;
         },
         historyContent() {
-            return this.$store.state.historyItems.items[this.historyId];
+            console.log('got the history content ', this.items[this.historyId])
+            return this.items[this.historyId];
         },
     },
     watch: {
@@ -125,10 +130,10 @@ export default {
         this.createKeyedColorForButtons();
     },
     methods: {
-        ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchHistoryItems"]),
+        ...mapCacheActions(["fetchJobMetricsForDatasetId"]),
         getHistoryItems: async function () {
             if (this.historyId) {
-                await this.fetchHistoryItems({ historyId: this.historyId, filterText: "", offset: 0 });
+                await this.fetchHistoryItems( this.historyId, "", 0 );
             }
         },
         changeDate: function (value, status) {
@@ -215,7 +220,7 @@ export default {
             this.currentlyProcessing = true;
             this.historyId = this.history;
             this.accountingArray = [];
-            this.historyItems = store.getters.getHistoryItems({ historyId: this.historyId, filterText: "" });
+            this.historyItems = this.storeGetHistoryItems( this.historyId, "" );
             if (this.historyItems.length == 0) {
                 this.currentlyProcessing = false;
                 this.getHistoryItems();
