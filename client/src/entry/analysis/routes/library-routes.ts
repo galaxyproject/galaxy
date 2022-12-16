@@ -1,3 +1,4 @@
+import type { Route } from "vue-router";
 import BaseModule from "entry/analysis/modules/BaseModule.vue";
 import LibrariesList from "@/components/Libraries/LibrariesList.vue";
 import LibraryFolder from "@/components/Libraries/LibraryFolder/LibraryFolder.vue";
@@ -5,8 +6,6 @@ import LibraryFolderDatasetPermissions from "@/components/Libraries/LibraryFolde
 import LibraryFolderPermissions from "@/components/Libraries/LibraryFolder/LibraryFolderPermissions/LibraryFolderPermissions.vue";
 import LibraryDataset from "@/components/Libraries/LibraryFolder/LibraryFolderDataset/LibraryDataset.vue";
 import LibraryPermissions from "@/components/Libraries/LibraryPermissions/LibraryPermissions.vue";
-import type { Route } from "vue-router";
-import type { strict } from "assert";
 
 export default [
     {
