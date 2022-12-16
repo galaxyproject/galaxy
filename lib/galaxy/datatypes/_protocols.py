@@ -209,3 +209,7 @@ class Dataset_t25(
 
 class Dataset_t26(HasName, Protocol):
     hid: str
+
+
+class Dataset_t0(Protocol):
+    ...
