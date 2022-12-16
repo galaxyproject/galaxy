@@ -1,4 +1,5 @@
 import _l from "@/utils/localization";
+import { ref } from "vue";
 import {
     cleanupDiscardedDatasets,
     fetchDiscardedDatasets,
@@ -9,35 +10,39 @@ import {
 } from "../services";
 import type { CleanupCategory } from "./model";
 
-export const cleanupCategories: CleanupCategory[] = [
-    {
-        id: "discarded_items",
-        name: _l("Discarded Items"),
-        operations: [
-            {
-                id: "deleted_datasets",
-                name: _l("Deleted datasets"),
-                description: _l(
-                    "When you delete a dataset it's not immediately removed from the disk (so you can recover it later)." +
-                        " But this means it's still taking space until you permanently delete it." +
-                        " Here you can quickly find and remove those datasets to free up some space"
-                ),
-                fetchSummary: fetchDiscardedDatasetsSummary,
-                fetchItems: fetchDiscardedDatasets,
-                cleanupItems: cleanupDiscardedDatasets,
-            },
-            {
-                id: "deleted_histories",
-                name: _l("Deleted histories"),
-                description: _l(
-                    "When you delete a history it's not immediately removed from the disk (so you can recover it later)." +
-                        " But this means it's still taking space until you permanently delete it." +
-                        " Here you can quickly find and remove those histories to free up some space"
-                ),
-                fetchSummary: fetchDiscardedHistoriesSummary,
-                fetchItems: fetchDiscardedHistories,
-                cleanupItems: cleanupDiscardedHistories,
-            },
-        ],
-    },
-];
+export function useCleanupCategories() {
+    const cleanupCategories = ref<CleanupCategory[]>([
+        {
+            id: "discarded_items",
+            name: _l("Discarded Items"),
+            operations: [
+                {
+                    id: "deleted_datasets",
+                    name: _l("Deleted datasets"),
+                    description: _l(
+                        "When you delete a dataset it's not immediately removed from the disk (so you can recover it later)." +
+                            " But this means it's still taking space until you permanently delete it." +
+                            " Here you can quickly find and remove those datasets to free up some space"
+                    ),
+                    fetchSummary: fetchDiscardedDatasetsSummary,
+                    fetchItems: fetchDiscardedDatasets,
+                    cleanupItems: cleanupDiscardedDatasets,
+                },
+                {
+                    id: "deleted_histories",
+                    name: _l("Deleted histories"),
+                    description: _l(
+                        "When you delete a history it's not immediately removed from the disk (so you can recover it later)." +
+                            " But this means it's still taking space until you permanently delete it." +
+                            " Here you can quickly find and remove those histories to free up some space"
+                    ),
+                    fetchSummary: fetchDiscardedHistoriesSummary,
+                    fetchItems: fetchDiscardedHistories,
+                    cleanupItems: cleanupDiscardedHistories,
+                },
+            ],
+        },
+    ]);
+
+    return { cleanupCategories };
+}
