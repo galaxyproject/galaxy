@@ -35,9 +35,26 @@ class WorkflowRunCrateProfileBuilder:
         # TODO: add more param types
         self.param_type_mapping = {
             "integer": "Integer",
+            "text": "Text",
+            "float": "Float",
+            "boolean": "Boolean",
+            "genomebuild": "File",
+            "select": "DataType",
+            "color": "Color",
+            "group_tag": "DataType",
+            "data_column": "Text",
+            "hidden": "DataType",
+            "hidden_data": "DataType",
+            "baseurl": "URL",
+            "file": "File",
+            "ftpfile": "File",
+            "data": "File",
+            "data_collection": "Collection",
+            "library_data": "File",
+            "rules": "Text",
+            "directory_uri": "URI",
+            "drill_down": "Text",
             None: "None",
-            # "dataset": "File",
-            # "dataset_collection": "collection#TODO",
         }
 
         self.ignored_parameter_type = [
@@ -55,6 +72,7 @@ class WorkflowRunCrateProfileBuilder:
     def build_crate(self):
         crate = ROCrate()
         file_entities = self._add_files(crate)
+        collection_entities = self._add_collections(crate, file_entities)
         self._add_workflows(crate)
         self._add_engine_run(crate)
         self._add_actions(crate, file_entities)
@@ -81,6 +99,33 @@ class WorkflowRunCrateProfileBuilder:
                 )
                 file_entities[dataset.dataset.id] = file_entity
         return file_entities
+
+    def _add_collections(self, crate: ROCrate, file_entities: Dict[int, Any]) -> Dict[int, Any]:
+        collection_entities = {}
+        for collection in self.model_store.included_collections:
+            name = collection.name
+            # dataset_ids = [{"@id": file_entities.get(dataset.id).id} for dataset in collection.dataset_instances if dataset]
+            dataset_ids = []
+            for dataset in collection.dataset_instances:
+                if dataset.dataset:
+                    dataset_id = file_entities.get(dataset.dataset.id)
+                    dataset_ids.append({"@id": dataset_id.id})
+
+            properties = {
+                "name": name,
+                "@type": "Collection",
+                "additionalType": collection.collection.collection_type,
+                "hasPart": dataset_ids,
+            }
+            collection_entity = crate.add(
+                ContextEntity(
+                    crate,
+                    collection.type_id,
+                    properties=properties,
+                )
+            )
+            collection_entities[collection.collection.id] = collection_entity
+        return collection_entities
 
     def _add_workflows(self, crate: ROCrate):
         workflows_directory = self.model_store.workflows_directory
