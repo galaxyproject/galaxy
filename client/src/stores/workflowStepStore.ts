@@ -1,11 +1,13 @@
-import Vue from "vue";
+import Vue, { type Data } from "vue";
 import { defineStore } from "pinia";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { Connection } from "@/stores/workflowConnectionStore";
+import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 
 interface State {
     steps: { [index: string]: Step };
     stepIndex: number;
+    stepMapOver: { [index: number]: CollectionTypeDescriptor };
 }
 
 interface StepPosition {
@@ -32,23 +34,38 @@ interface PostJobActions {
         };
     };
 }
+
+interface DataOutput {
+    extensions: string[];
+    name: string;
+    optional: boolean;
+    type?: string;
+    activeOutput?: boolean;
+    input_type?: string;
+}
+
+interface CollectionOutput extends DataOutput {
+    collection: boolean;
+    collection_type: string;
+}
+
 export interface NewStep {
     annotation?: string;
     config_form?: object;
-    content_id?: string;
+    content_id?: string | null;
     id?: number;
     input_connections: StepInputConnection;
-    inputs: [];
+    inputs: any;
     label?: string;
     name: string;
-    outputs: [];
+    outputs: Array<DataOutput | CollectionOutput>;
     position?: StepPosition;
     post_job_actions: PostJobActions;
     tool_state: Record<string, unknown>;
     tooltip?: string;
     type: string;
     uuid?: string;
-    workflow_outputs: [];
+    workflow_outputs: Array<any>;
 }
 
 export interface Step extends NewStep {
@@ -67,6 +84,7 @@ interface ConnectionOutputLink {
 export const useWorkflowStepStore = defineStore("workflowStepStore", {
     state: (): State => ({
         steps: {} as { [index: string]: Step },
+        stepMapOver: {} as { [index: number]: CollectionTypeDescriptor },
         stepIndex: -1,
     }),
     getters: {
@@ -92,6 +110,9 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         updateStep(this: State, step: Step) {
             this.steps[step.id.toString()] = step;
+        },
+        changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {
+            this.stepMapOver[stepId] = mapOver;
         },
         addConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);

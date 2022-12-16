@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
-interface State {
+export interface State {
     connections: Connection[];
 }
 
@@ -37,8 +37,12 @@ export interface OutputTerminal extends BaseTerminal {
     connectorType: "output";
 }
 
-interface TerminalToTerminal {
-    [index: string]: BaseTerminal[];
+interface TerminalToOutputTerminals {
+    [index: string]: OutputTerminal[];
+}
+
+interface TerminalToInputTerminals {
+    [index: string]: InputTerminal[];
 }
 
 export const useConnectionStore = defineStore("workflowConnectionStore", {
@@ -47,7 +51,7 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
     }),
     getters: {
         getOutputTerminalsForInputTerminal(state: State) {
-            const inputTerminalToOutputTerminals: TerminalToTerminal = {};
+            const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
             state.connections.map((connection) => {
                 const terminals = getTerminals(connection);
                 const inputTerminalId = getTerminalId(terminals.input);
@@ -55,8 +59,43 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
                     ? inputTerminalToOutputTerminals[inputTerminalId].push(terminals.output)
                     : (inputTerminalToOutputTerminals[inputTerminalId] = [terminals.output]);
             });
-            return (terminalId: string): BaseTerminal[] => {
+            return (terminalId: string): OutputTerminal[] => {
                 return inputTerminalToOutputTerminals[terminalId] || [];
+            };
+        },
+        getInputTerminalsForOutputTerminal(state: State) {
+            const outputTerminalToInputTerminals: TerminalToInputTerminals = {};
+            state.connections.map((connection) => {
+                const terminals = getTerminals(connection);
+                const outputTerminalId = getTerminalId(terminals.output);
+                outputTerminalId in outputTerminalToInputTerminals
+                    ? outputTerminalToInputTerminals[outputTerminalId].push(terminals.input)
+                    : (outputTerminalToInputTerminals[outputTerminalId] = [terminals.input]);
+            });
+            return (terminalId: string): BaseTerminal[] => {
+                return outputTerminalToInputTerminals[terminalId] || [];
+            };
+        },
+        getConnectionsForTerminal(state: State) {
+            const terminalToConnection: { [index: string]: Connection[] } = {};
+            state.connections.map((connection) => {
+                const terminals = getTerminals(connection);
+                const outputTerminalId = getTerminalId(terminals.output);
+                if (outputTerminalId in terminalToConnection) {
+                    terminalToConnection[outputTerminalId].push(connection);
+                } else {
+                    terminalToConnection[outputTerminalId] = [connection];
+                }
+                const inputTerminalId = getTerminalId(terminals.input);
+                if (inputTerminalId in terminalToConnection) {
+                    terminalToConnection[inputTerminalId].push(connection);
+                } else {
+                    terminalToConnection[inputTerminalId] = [connection];
+                }
+            });
+            return (terminalId: string): Connection[] => {
+                console.log(terminalToConnection);
+                return terminalToConnection[terminalId] || [];
             };
         },
         getConnectionsForStep(state: State) {
@@ -78,10 +117,17 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
             const stepStore = useWorkflowStepStore();
             stepStore.addConnection(connection);
         },
-        removeConnection(this: State, terminal: InputTerminal | OutputTerminal) {
+        removeConnection(this: State, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
             const stepStore = useWorkflowStepStore();
             this.connections = this.connections.filter((connection) => {
-                if (terminal.connectorType === "input") {
+                if (typeof terminal === "string") {
+                    if (connection.id == terminal) {
+                        stepStore.removeConnection(connection);
+                        return false;
+                    } else {
+                        return true;
+                    }
+                } else if (terminal.connectorType === "input") {
                     if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
                         stepStore.removeConnection(connection);
                         return false;
@@ -105,7 +151,7 @@ export function getTerminalId(item: BaseTerminal): string {
     return `node-${item.stepId}-${item.connectorType}-${item.name}`;
 }
 
-export function getTerminals(item: Connection): { input: BaseTerminal; output: BaseTerminal } {
+export function getTerminals(item: Connection): { input: InputTerminal; output: OutputTerminal } {
     return {
         input: { stepId: item.input.stepId, name: item.input.name, connectorType: "input" },
         output: { stepId: item.output.stepId, name: item.output.name, connectorType: "output" },

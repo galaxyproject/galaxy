@@ -18,7 +18,7 @@ import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useConnectionStore } from "stores/workflowConnectionStore";
 import { computed } from "@vue/reactivity";
 import { inject, ref, watchEffect } from "vue";
-import Terminals from "components/Workflow/Editor/modules/terminals";
+import { producesAcceptableDatatype } from "@/components/Workflow/Editor/modules/terminals";
 
 export default {
     props: {
@@ -83,7 +83,7 @@ export default {
         },
         canAccept() {
             // TODO: put producesAcceptableDatatype ... in datatypesMapper ?
-            return Terminals.producesAcceptableDatatype(
+            return producesAcceptableDatatype(
                 this.datatypesMapper,
                 this.input.extensions,
                 this.draggingConnection.datatypes

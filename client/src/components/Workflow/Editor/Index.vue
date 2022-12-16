@@ -386,6 +386,7 @@ export default {
         },
         onUpdateStep(step) {
             this.stepStore.updateStep(step);
+            this.hasChanges = true;
         },
         onUpdateStepPosition(stepId, position) {
             const step = { ...this.steps[stepId], position };
@@ -451,8 +452,14 @@ export default {
             }).then((response) => {
                 // TODO: state, inputs and outputs should go to store and data should flow from there,
                 // but complicated by mixing state and presentation details
-                this.onUpdateStep({ ...this.steps[node.id], tool_state: response.tool_state });
-                const newData = Object.assign({}, response, node.step);
+                this.onUpdateStep({
+                    ...this.steps[node.id],
+                    tool_state: response.tool_state,
+                    inputs: response.inputs,
+                    outputs: response.outputs,
+                    config_form: response.config_form,
+                });
+                const newData = { ...this.steps[node.id] };
                 newData.workflow_outputs = newData.outputs.map((o) => {
                     return {
                         output_name: o.name,
@@ -578,7 +585,12 @@ export default {
             this.lastQueue.enqueue(getModule, newData).then((data) => {
                 // TODO: change data in store, don't change node ...
                 // also check that PJAs and other modification survive, or limit to input/output ?
-                const step = { ...this.steps[nodeId], ...data };
+                const step = {
+                    ...this.steps[nodeId],
+                    inputs: data.inputs,
+                    outputs: data.outputs,
+                    config_form: data.config_form,
+                };
                 this.onUpdateStep(step);
                 node.setData(data);
             });
