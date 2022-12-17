@@ -910,7 +910,7 @@ class RepositoriesController(BaseAPIController):
             category_ids=category_ids,
         )
 
-        repo, message = repository_util.update_repository(app=self.app, trans=trans, id=id, **update_kwds)
+        repo, message = repository_util.update_repository(trans, id, **update_kwds)
         if repo is None:
             if "You are not the owner" in message:
                 raise InsufficientPermissionsException(message)

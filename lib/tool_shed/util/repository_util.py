@@ -3,6 +3,7 @@ import logging
 import os
 import re
 from typing import (
+    Optional,
     Tuple,
     TYPE_CHECKING,
 )
@@ -442,8 +443,9 @@ def change_repository_name_in_hgrc_file(hgrc_file, new_name):
         config.write(fh)
 
 
-def update_repository(app, trans, id, **kwds):
+def update_repository(trans, id: str, **kwds) -> Tuple[Optional["Repository"], Optional[str]]:
     """Update an existing ToolShed repository"""
+    app = trans.app
     message = None
     flush_needed = False
     sa_session = app.model.session
