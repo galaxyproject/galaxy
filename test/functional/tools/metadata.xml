@@ -5,7 +5,9 @@ cp '$input.extra_files_path'/* '$output_copy_of_input.extra_files_path' &&
 echo '$input.metadata.base_name' > '$output_of_input_metadata'
     ]]></command>
     <inputs>
-        <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth."/>
+        <param name="input" type="data" format="velvet" label="Velvet Dataset" help="Prepared by velveth.">
+            <validator type="expression" message="Wrong metadata">value.metadata.base_name == 'Example Metadata'</validator>
+        </param>
     </inputs>
     <outputs>
         <data name="output_of_input_metadata" format="txt" />

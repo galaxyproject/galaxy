@@ -65,6 +65,7 @@
   <tool file="unicode_stream.xml" />
   <tool file="vcf_bgzip.xml" />
   <tool file="metadata.xml" />
+  <tool file="metadata2.xml" />
   <tool file="metadata_bam.xml" />
   <tool file="discover_metadata_files.xml" />
   <tool file="metadata_bcf.xml" />

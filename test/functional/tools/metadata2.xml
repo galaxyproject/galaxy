@@ -1,0 +1,30 @@
+<tool id="metadata2" name="metadata2" version="1.0.0">
+    <command><![CDATA[
+echo 'columns $input.metadata.columns' > '$output_of_input_metadata' &&
+echo 'column_types $input.metadata.column_types' >> '$output_of_input_metadata' &&
+echo 'column_names $input.metadata.column_names' >> '$output_of_input_metadata'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="tabular" label="Tabular Dataset"/>
+    </inputs>
+    <outputs>
+        <data name="output_of_input_metadata" format="txt" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="1.tabular" ftype="tabular" >
+                <metadata name="columns" value="2" />
+                <metadata name="column_names" value="1,2,3" />
+                <metadata name="column_types" value="str,int,str" />
+            </param>
+            <!-- This ouptut tests setting input metadata above -->
+            <output name="output_of_input_metadata" ftype="txt">
+                <assert_contents>
+                    <has_line line="columns: 2" />
+                    <has_line line="column_names: 1,2,3" />
+                    <has_line line="column_types: str,int,str" />
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
