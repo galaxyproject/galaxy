@@ -58,7 +58,7 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
-                        :title="l('Export Citations for all Tools used in this History')"
+                        :title="l('Visualiye the jobs in your history using a Gantt chart')"
                         @click="$router.push(`/visualizations/gantt`)">
                         <Icon fixed-width icon="stream" class="mr-1" />
                         <span v-localize>Gantt Visualization</span>
@@ -177,6 +177,7 @@
 
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import { FontAwesomeIcon } from "@fortawesome/free-solid-svg-icons";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 import { mapGetters } from "vuex";
@@ -185,6 +186,7 @@ export default {
     components: {
         CopyModal,
         SelectorModal,
+        FontAwesomeIcon
     },
     mixins: [legacyNavigationMixin],
     props: {
