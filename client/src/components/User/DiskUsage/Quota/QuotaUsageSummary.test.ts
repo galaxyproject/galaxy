@@ -43,7 +43,7 @@ describe("QuotaUsageSummary.vue", () => {
         const wrapper = mountQuotaUsageSummaryWith(FAKE_QUOTA_USAGES_LIST);
         const expectedNumberOfBars = FAKE_QUOTA_USAGES_LIST.length;
 
-        expect(wrapper.findAll("quotausagebar-stub").length).toBe(expectedNumberOfBars);
+        expect(wrapper.findAll(".quota-usage-bar").length).toBe(expectedNumberOfBars);
     });
 
     it("should display `unlimited` quota when all sources are unlimited", async () => {

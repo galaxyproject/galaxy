@@ -48,7 +48,7 @@ defineExpose({
         </div>
 
         <div v-for="quotaUsage in props.quotaUsages" :key="quotaUsage.sourceLabel">
-            <QuotaUsageBar :quota-usage="quotaUsage" />
+            <QuotaUsageBar :quota-usage="quotaUsage" class="quota-usage-bar" />
         </div>
     </div>
 </template>
