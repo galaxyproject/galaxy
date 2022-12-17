@@ -82,6 +82,7 @@
   <tool file="checksum.xml" />
   <tool file="sim_size_delta.xml" />
   <tool file="composite_shapefile.xml" />
+  <tool file="infinity.xml"/>
   <tool file="is_valid_xml.xml" />
   <tool file="expression_tools/parse_values_from_file.xml"/>
   <tool file="expression_tools/pick_value.xml" />
