@@ -200,7 +200,6 @@ export default {
             offset: 0,
             showAdvanced: false,
             showDropZone: false,
-            totalItemsInQuery: 0,
             operationRunning: null,
             operationError: null,
             querySelectionBreak: false,
@@ -211,6 +210,10 @@ export default {
         /** @returns {String} */
         historyId() {
             return this.history.id;
+        },
+        /** @returns {Date} */
+        historyUpdateTime() {
+            return this.history.update_time;
         },
         /** @returns {String} */
         queryKey() {
@@ -237,6 +240,11 @@ export default {
             const { getLastCheckedTime } = storeToRefs(useHistoryItemsStore());
             return getLastCheckedTime.value;
         },
+        /** @returns {Number} */
+        totalItemsInQuery() {
+            const { getTotalMatchesCount } = storeToRefs(useHistoryItemsStore());
+            return getTotalMatchesCount.value;
+        },
         /** @returns {Boolean} */
         isWatching() {
             const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
@@ -254,11 +262,16 @@ export default {
             if (newVal !== oldVal) {
                 this.operationRunning = null;
                 this.resetHighlights();
-                this.loadHistoryItems();
             }
         },
         filter(newVal) {
             this.filterText = newVal;
+        },
+        offset() {
+            this.loadHistoryItems();
+        },
+        historyUpdateTime() {
+            this.loadHistoryItems();
         },
     },
     async mounted() {
@@ -283,8 +296,6 @@ export default {
             this.loading = true;
             try {
                 await this.fetchHistoryItems(this.historyId, this.filterText, this.offset);
-                const { getTotalMatchesCount } = storeToRefs(useHistoryItemsStore());
-                this.totalItemsInQuery = getTotalMatchesCount.value;
                 this.error = null;
                 this.loading = false;
             } catch (error) {
