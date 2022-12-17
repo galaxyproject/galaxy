@@ -10,6 +10,10 @@
     </command>
     <inputs>
         <param name="input" type="data" format="shp" label="Shapefile" help="Used in GIS applications"/>
+        <param name="select_in" type="select" multiple="true" optional="true" label="Some select" help="">
+            <option value="A">A</option>
+            <option value="B">B</option>
+        </param>
     </inputs>
     <outputs>
         <data name="output" format="txt" label="${tool.name} on ${on_string}: Shapefile test" />
@@ -17,12 +21,13 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" value="" ftype="shp" >
-                <composite_data value="shapefile/shapefile.shp"/>
-                <composite_data value="shapefile/shapefile.shx"/>
-                <composite_data value="shapefile/shapefile.dbf"/>
-                <composite_data value="shapefile/shapefile.prj"/>
+            <param name="input" ftype="shp" >
+                <composite_data name="shapefile.shp" value="shapefile/shapefile.shp"/>
+                <composite_data name="shapefile.shx" value="shapefile/shapefile.shx"/>
+                <composite_data name="shapefile.dbf" value="shapefile/shapefile.dbf"/>
+                <composite_data name="shapefile.prj" value="shapefile/shapefile.prj"/>
             </param>
+            <param name="select_in" value=""/>
             <output name="output">
                 <assert_contents>
                     <has_text text="{'properties': OrderedDict([('FIPS', 'str:2'), ('ISO2', 'str:2'), ('ISO3', 'str:3'), ('UN', 'int:3')," />

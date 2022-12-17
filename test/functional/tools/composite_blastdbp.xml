@@ -1,0 +1,37 @@
+<tool id="blastdbp_composite" name="composite basic tool" version="1.0.0">
+    <command><![CDATA[
+        mkdir '$output.extra_files_path' &&
+        cp '$input.extra_files_path'/* '$output.extra_files_path' &&
+        cp '$input' '$output' &&
+        echo "select_in: $select_in"
+    ]]>
+    </command>
+    <inputs>
+        <param name="input" type="data" format="blastdbp" label="blastdb"/>
+        <param name="select_in" type="select" multiple="true" optional="true" label="Some select" help="">
+            <option value="A">A</option>
+            <option value="B">B</option>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="blastdbp"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="blastdbp/blastdbp.db" ftype="blastdbp" >
+                <composite_data name="blastdb.phr" value="blastdbp/prefix_blastdb.phr"/>
+                <composite_data name="blastdb.pin" value="blastdbp/prefix_blastdb.pin"/>
+                <composite_data name="blastdb.psq" value="blastdbp/prefix_blastdb.psq"/>
+            </param>
+            <param name="select_in" value="B" />
+            <output name="output" value="blastdbp/blastdbp.db" ftype="blastdbp">
+                <extra_files type="file" name="blastdb.psq" value="blastdbp/prefix_blastdb.psq"/>
+                <extra_files type="file" name="blastdb.phr" value="blastdbp/prefix_blastdb.phr"/>
+                <extra_files type="file" name="blastdb.pin" value="blastdbp/prefix_blastdb.pin"/>
+            </output>
+            <assert_stdout>
+                <has_text text="select_in: B"/>
+            </assert_stdout>
+        </test>
+    </tests>
+</tool>

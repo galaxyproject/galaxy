@@ -534,9 +534,14 @@ class GalaxyInteractorApi:
             tool_input[f"files_metadata|{name}"] = value
 
         composite_data = test_data["composite_data"]
+        file_start = 0
+        files = {}
+        if fname:
+            # A regular test input, or the primary file of a 'basic' composite datatype
+            file_start = 1
         if composite_data:
             files = {}
-            for i, file_name in enumerate(composite_data):
+            for i, file_name in enumerate(composite_data, start=file_start):
                 if force_path_paste:
                     file_path = self.test_data_path(tool_id, file_name, tool_version=tool_version)
                     tool_input.update({f"files_{i}|url_paste": f"file://{file_path}"})
@@ -559,7 +564,6 @@ class GalaxyInteractorApi:
                     "files_0|type": "upload_dataset",
                 }
             )
-            files = {}
             if force_path_paste:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 tool_input.update({"files_0|url_paste": f"file://{file_name}"})
@@ -577,7 +581,9 @@ class GalaxyInteractorApi:
         assert len(outputs) > 0, f"Invalid response from server [{submit_response}], expecting an output dataset."
         dataset = outputs[0]
         hid = dataset["id"]
-        self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name] = {"src": "hda", "id": hid}
+        self.uploads[name] = {"src": "hda", "id": hid}
+        if fname:
+            self.uploads[os.path.basename(fname)] = self.uploads[fname] = self.uploads[name]
         assert (
             "jobs" in submit_response
         ), f"Invalid response from server [{submit_response}], expecting jobs in response."
