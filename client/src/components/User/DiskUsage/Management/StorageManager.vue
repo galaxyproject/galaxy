@@ -33,12 +33,12 @@ function onReviewItems(operation: CleanupOperation, totalItems: number) {
     reviewModal.value?.openModal();
 }
 
-async function onConfirmCleanupSelected(items: CleanableItem[]) {
+async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
     cleanupResult.value = undefined;
     resultModal.value?.openModal();
     await delay(1000);
     if (currentOperation.value) {
-        cleanupResult.value = await currentOperation.value.cleanupItems(items);
+        cleanupResult.value = await currentOperation.value.cleanupItems(selectedItems);
         if (cleanupResult.value.success) {
             refreshOperationId.value = currentOperation.value.id.toString();
         }
@@ -87,11 +87,12 @@ async function onConfirmCleanupSelected(items: CleanableItem[]) {
         </div>
 
         <ReviewCleanupDialog
+            ref="reviewModal"
             :operation="currentOperation"
             :total-items="currentTotalItems"
             @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
 
-        <CleanupResultDialog :result="cleanupResult" />
+        <CleanupResultDialog ref="resultModal" :result="cleanupResult" />
     </b-container>
 </template>
 
