@@ -270,7 +270,7 @@ class XmlToolSource(ToolSource):
             elem = self.root
         return string_as_bool(elem.get(attribute, default))
 
-    def parse_required_files(self) -> Optional[RequiredFiles]:
+    def parse_required_files(self, tool_path_allowlist: Optional[List[str]] = None) -> Optional[RequiredFiles]:
         required_files = self.root.find("required_files")
         if required_files is None:
             return None
@@ -290,6 +290,7 @@ class XmlToolSource(ToolSource):
         )
         as_dict["includes"] = parse_include_exclude_list("include")
         as_dict["excludes"] = parse_include_exclude_list("exclude")
+        as_dict["tool_path_allowlist"] = tool_path_allowlist
         return RequiredFiles.from_dict(as_dict)
 
     def parse_requirements_and_containers(self):
