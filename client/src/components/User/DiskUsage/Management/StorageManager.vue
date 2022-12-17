@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { localize } from "@/utils/localization";
 import { delay } from "@/utils/utils";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
@@ -47,21 +48,21 @@ async function onConfirmCleanupSelected(items: CleanableItem[]) {
 
 <template>
     <b-container fluid>
-        <b-link to="StorageDashboard">{{ "Back to Dashboard" }}</b-link>
+        <b-link to="StorageDashboard">{{ localize("Back to Dashboard") }}</b-link>
         <h2 class="text-center my-3">
-            <b>{{ "Manage your account storage" }}</b> <sup class="text-beta">(Beta)</sup>
+            <b>{{ localize("Manage your account storage") }}</b> <sup class="text-beta">(Beta)</sup>
         </h2>
 
         <b-row class="justify-content-md-center">
             <b-alert show dismissible variant="warning">
-                {{ "This feature is currently in Beta, if you find any issues please report them" }}
+                {{ localize("This feature is currently in Beta, if you find any issues please report them") }}
                 <b-link :href="issuesUrl" target="_blank">here</b-link>.
             </b-alert>
         </b-row>
         <b-row class="justify-content-md-center mb-5">
             <b-alert v-if="config.enable_quotas" show>
-                {{ "The storage manager only shows elements that count towards your disk quota." }}
-                <b-link :href="config.quota_url" target="_blank">{{ "Learn more" }}</b-link>
+                {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
+                <b-link :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</b-link>
             </b-alert>
         </b-row>
 
