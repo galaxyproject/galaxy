@@ -8,10 +8,10 @@ import os
 from typing import Optional
 
 from galaxy.datatypes._protocols import (
-    Dataset_t20,
-    Dataset_t23,
-    Dataset_t24,
-    GeneratePrimaryFileDataset,
+    DatasetProtocol6,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol25,
 )
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
@@ -28,7 +28,7 @@ class AnvioComposite(Html):
     file_ext = "anvio_composite"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -67,7 +67,7 @@ class AnvioComposite(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Anvio database (multiple files)"
@@ -76,7 +76,7 @@ class AnvioComposite(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -96,7 +96,7 @@ class AnvioDB(AnvioComposite):
         if self._anvio_basename is not None:
             self.add_composite_file(self._anvio_basename, is_binary=True, optional=False)
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """

@@ -2,8 +2,8 @@ import logging
 
 from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
-    Dataset_t23,
-    Dataset_t24,
+    DatasetProtocol23,
+    DatasetProtocol25,
 )
 from galaxy.datatypes.binary import Cel  # noqa: F401
 from galaxy.datatypes.data import get_file_peek
@@ -80,7 +80,7 @@ class GenericMicroarrayFile(data.Text):
         name="block_type", default=0, desc="Type of block", readonly=True, visible=True, optional=True, no_value=0
     )
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.block_count == 1:
                 dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
@@ -120,7 +120,7 @@ class Gal(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix ArrayList" in headers[2][0]
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Gal file.
         """
@@ -162,7 +162,7 @@ class Gpr(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix Results" in headers[2][0]
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Gpr file.
         """

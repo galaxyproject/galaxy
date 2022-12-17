@@ -2,9 +2,9 @@ import logging
 import re
 
 from galaxy.datatypes._protocols import (
-    Dataset_t20,
-    Dataset_t23,
-    Dataset_t24,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol25,
 )
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -26,13 +26,13 @@ log = logging.getLogger(__name__)
 class Smat(Text):
     file_ext = "smat"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "ESTScan scores matrices"
@@ -98,13 +98,13 @@ class PlantTribesKsComponents(Tabular):
         no_value=0,
     )
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.
@@ -126,7 +126,7 @@ class PlantTribesKsComponents(Tabular):
         if len(significant_components) > 0:
             dataset.metadata.number_comp = max(significant_components)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_comp == 1:

@@ -25,12 +25,12 @@ from markupsafe import escape
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
-    Dataset_t10,
-    Dataset_t19,
-    Dataset_t20,
-    Dataset_t23,
-    Dataset_t24,
-    Dataset_t25,
+    DatasetProtocol9,
+    DatasetProtocol18,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol25,
+    DatasetProtocol26,
     HasMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -73,7 +73,7 @@ class SequenceSplitLocations(data.Text):
 
     file_ext = "fqtoc"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             try:
                 parsed_data = json.load(open(dataset.file_name))
@@ -110,7 +110,7 @@ class Sequence(data.Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """
@@ -130,7 +130,7 @@ class Sequence(data.Text):
             dataset.metadata.data_lines = data_lines
             dataset.metadata.sequences = sequences
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
@@ -566,7 +566,7 @@ class csFasta(Sequence):
                     return False
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
@@ -643,7 +643,7 @@ class Fastg(Sequence):
                     break  # we found a non-empty line, but it's not a header
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         with open(dataset.file_name) as fh:
             for i, line in enumerate(fh):
                 if not line:
@@ -668,7 +668,7 @@ class Fastg(Sequence):
             return
         return Sequence.set_meta(self, dataset, overwrite=overwrite, **kwd)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
@@ -692,7 +692,7 @@ class BaseFastq(Sequence):
     file_ext = "fastq"
     bases_regexp = re.compile(r"^[NGTAC 0123\.]*$", re.IGNORECASE)
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -773,7 +773,7 @@ class BaseFastq(Sequence):
     def display_data(
         self,
         trans,
-        dataset: Dataset_t25,
+        dataset: DatasetProtocol26,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -876,7 +876,7 @@ class BaseFastq(Sequence):
                     return True
         return False
 
-    def validate(self, dataset: Dataset_t19, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
         headers = iter_headers(dataset.file_name, sep="\n", count=-1)
         # check to see if the base qualities match
         if not self.quality_check(headers):
@@ -1017,7 +1017,7 @@ class Maf(Alignment):
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
-        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         """
         Parses and sets species, chromosomes, index from MAF file.
@@ -1051,7 +1051,7 @@ class Maf(Alignment):
         indexes.write(open(index_file.file_name, "wb"))
         dataset.metadata.maf_index = index_file
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             # The file must exist on disk for the get_file_peek() method
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -1065,11 +1065,11 @@ class Maf(Alignment):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset)
 
-    def make_html_table(self, dataset: Dataset_t10, skipchars: Optional[List] = None) -> str:
+    def make_html_table(self, dataset: DatasetProtocol18, skipchars: Optional[List] = None) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:
@@ -1144,7 +1144,7 @@ class MafCustomTrack(data.Text):
         name="vp_end", default="100", desc="Viewport End", readonly=True, optional=True, visible=False, no_value=""
     )
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Parses and sets viewport metadata from MAF file.
         """
@@ -1277,7 +1277,7 @@ class RNADotPlotMatrix(data.Data):
     edam_format = "format_3466"
     file_ext = "rna_eps"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "RNA Dot Plot format (Postscript derivative)"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1315,7 +1315,7 @@ class DotBracket(Sequence):
     sequence_regexp = re.compile(r"^[ACGTURYKMSWBDHVN]+$", re.I)
     structure_regexp = re.compile(r"^[\(\)\.\[\]{}]+$")
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines
         in dataset.

@@ -4,9 +4,9 @@ Neo4j Composite Dataset
 import logging
 
 from galaxy.datatypes._protocols import (
-    Dataset_t20,
-    Dataset_t23,
-    GeneratePrimaryFileDataset,
+    DatasetProtocol6,
+    DatasetProtocol21,
+    DatasetProtocol23,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
@@ -23,7 +23,7 @@ class Neo4j(Html):
     stored in extra files path
     """
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -46,7 +46,7 @@ class Neo4j(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Neo4j database (multiple files)"
@@ -55,7 +55,7 @@ class Neo4j(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

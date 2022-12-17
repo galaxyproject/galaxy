@@ -11,10 +11,10 @@ import numpy as np
 import tifffile
 
 from galaxy.datatypes._protocols import (
-    Dataset_t7,
-    Dataset_t23,
-    Dataset_t24,
-    GeneratePrimaryFileDataset,
+    DatasetProtocol1,
+    DatasetProtocol6,
+    DatasetProtocol23,
+    DatasetProtocol25,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -55,7 +55,7 @@ class Image(data.Data):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Image in {dataset.extension} format"
             dataset.blurb = nice_size(dataset.get_size())
@@ -67,7 +67,7 @@ class Image(data.Data):
         """Determine if the file is in this format"""
         return check_image_type(filename, self.image_formats)
 
-    def handle_dataset_as_image(self, hda: Dataset_t7) -> str:
+    def handle_dataset_as_image(self, hda: DatasetProtocol1) -> str:
         dataset = hda.dataset
         name = hda.name or ""
         with open(dataset.file_name, "rb") as f:
@@ -107,7 +107,7 @@ class OMETiff(Tiff):
     )
 
     def set_meta(
-        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets
@@ -382,7 +382,7 @@ class Analyze75(Binary):
 
         self.add_composite_file("t2m", description="The Analyze75 t2m file.", optional=True, is_binary=True)
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
         rval = ["<html><head><title>Analyze75 Composite Dataset.</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -492,7 +492,7 @@ class Star(data.Text):
 
     file_ext = "star"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

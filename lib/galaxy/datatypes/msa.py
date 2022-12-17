@@ -9,9 +9,9 @@ from typing import (
 )
 
 from galaxy.datatypes._protocols import (
-    Dataset_t20,
-    Dataset_t23,
-    Dataset_t24,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol25,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -58,7 +58,7 @@ class InfernalCM(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_of_models == 1:
@@ -82,7 +82,7 @@ class InfernalCM(Text):
         """
         return file_prefix.startswith("INFERNAL")
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of models and the version of CM file in dataset.
         """
@@ -98,7 +98,7 @@ class Hmmer(Text):
     edam_data = "data_1364"
     edam_format = "format_1370"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "HMMER Database"
@@ -106,7 +106,7 @@ class Hmmer(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -141,7 +141,7 @@ class HmmerPress(Binary):
     file_ext = "hmmpress"
     composite_type = "basic"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "HMMER Binary database"
@@ -150,7 +150,7 @@ class HmmerPress(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -185,7 +185,7 @@ class Stockholm_1_0(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"
@@ -199,7 +199,7 @@ class Stockholm_1_0(Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.search(STOCKHOLM_SEARCH_PATTERN)
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
 
         Set the number of models in dataset.
@@ -276,7 +276,7 @@ class MauveXmfa(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"
@@ -290,7 +290,7 @@ class MauveXmfa(Text):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith("#FormatVersion Mauve1")
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         dataset.metadata.number_of_models = generic_util.count_special_lines(
             "^#Sequence([[:digit:]]+)Entry", dataset.file_name
         )

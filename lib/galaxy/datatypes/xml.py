@@ -7,9 +7,9 @@ from typing import List
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
-    Dataset_t2,
-    Dataset_t23,
-    Dataset_t24,
+    DatasetProtocol11,
+    DatasetProtocol23,
+    DatasetProtocol25,
 )
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
@@ -38,7 +38,7 @@ class GenericXml(data.Text):
     edam_format = "format_2332"
     file_ext = "xml"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -80,7 +80,7 @@ class GenericXml(data.Text):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("xml", XMLDataProvider.settings)
-    def xml_dataprovider(self, dataset: Dataset_t2, **settings) -> XMLDataProvider:
+    def xml_dataprovider(self, dataset: DatasetProtocol11, **settings) -> XMLDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return XMLDataProvider(dataset_source, **settings)
 
@@ -91,7 +91,7 @@ class MEMEXml(GenericXml):
 
     file_ext = "memexml"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -107,7 +107,7 @@ class CisML(GenericXml):
 
     file_ext = "cisml"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -151,7 +151,7 @@ class Dzi(GenericXml):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         tree = util.parse_xml(dataset.file_name)
         root = tree.getroot()
         dataset.metadata.format = root.get("Format")
@@ -168,7 +168,7 @@ class Dzi(GenericXml):
                 dataset.metadata.width = elem.get("Width")
                 dataset.metadata.height = elem.get("Height")
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Deep Zoom Image"
@@ -201,7 +201,7 @@ class Phyloxml(GenericXml):
     edam_format = "format_3159"
     file_ext = "phyloxml"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -236,7 +236,7 @@ class Owl(GenericXml):
     edam_format = "format_3262"
     file_ext = "owl"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Web Ontology Language OWL"
@@ -261,7 +261,7 @@ class Sbml(GenericXml):
     edam_data = "data_2024"
     edam_format = "format_2585"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "System Biology Markup Language SBML"

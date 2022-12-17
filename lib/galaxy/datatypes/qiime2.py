@@ -12,9 +12,9 @@ from typing import (
 import yaml
 
 from galaxy.datatypes._protocols import (
-    Dataset_t20,
-    Dataset_t23,
-    Dataset_t24,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol25,
     HasMetadata,
 )
 from galaxy.datatypes.binary import CompressedZipArchive
@@ -35,7 +35,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
     MetadataElement(name="format", optional=True, no_value="", readonly=True)
     MetadataElement(name="version", readonly=True)
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         metadata = _get_metadata_from_archive(dataset.file_name)
         for key, value in metadata.items():
             if value:
@@ -43,7 +43,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:
@@ -51,7 +51,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         def make_row(item):
             return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
 
@@ -117,7 +117,7 @@ class QIIME2Metadata(Tabular):
     def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.

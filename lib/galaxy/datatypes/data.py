@@ -24,28 +24,28 @@ from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
-    Dataset_t0,
-    Dataset_t1,
-    Dataset_t2,
-    Dataset_t3,
-    Dataset_t4,
-    Dataset_t6,
-    Dataset_t7,
-    Dataset_t11,
-    Dataset_t14,
-    Dataset_t16,
-    Dataset_t17,
-    Dataset_t19,
-    Dataset_t20,
-    Dataset_t23,
-    Dataset_t24,
-    Dataset_t25,
-    Dataset_t26,
-    GeneratePrimaryFileDataset,
+    DatasetProtocol0,
+    DatasetProtocol1,
+    DatasetProtocol2,
+    DatasetProtocol3,
+    DatasetProtocol5,
+    DatasetProtocol6,
+    DatasetProtocol8,
+    DatasetProtocol9,
+    DatasetProtocol10,
+    DatasetProtocol11,
+    DatasetProtocol12,
+    DatasetProtocol16,
+    DatasetProtocol20,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol24,
+    DatasetProtocol25,
+    DatasetProtocol26,
     HasClearAssociatedFiles,
-    HasCreatingJobProperty,
+    HasCreatingJob,
     HasExt,
-    HasFileNameProperty,
+    HasFileName,
     HasInfo,
     HasMetadata,
     HasName,
@@ -127,7 +127,7 @@ class DatatypeValidation:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
 
 
-def validate(dataset_instance: Dataset_t19) -> DatatypeValidation:
+def validate(dataset_instance: DatasetProtocol9) -> DatatypeValidation:
     try:
         datatype_validation = dataset_instance.datatype.validate(dataset_instance)
     except Exception as e:
@@ -261,7 +261,7 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: Dataset_t24, *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, *, overwrite: bool = True, **kwd) -> None:
         """Unimplemented method, allows guessing of metadata from contents of file"""
 
     def missing_meta(self, dataset: HasMetadata, check: Optional[List] = None, skip: Optional[List] = None) -> bool:
@@ -306,7 +306,7 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -317,7 +317,7 @@ class Data(metaclass=DataMeta):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
@@ -358,7 +358,7 @@ class Data(metaclass=DataMeta):
         return error, msg, messagetype
 
     def _archive_composite_dataset(
-        self, trans, data: Dataset_t1, headers: Headers, do_action: str = "zip"
+        self, trans, data: DatasetProtocol12, headers: Headers, do_action: str = "zip"
     ) -> Tuple[Union[ZipstreamWrapper, str], Headers]:
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
@@ -403,7 +403,9 @@ class Data(metaclass=DataMeta):
                 rpath = os.path.relpath(fpath, extra_files_path)
                 yield fpath, rpath
 
-    def _serve_raw(self, dataset: Dataset_t25, to_ext: Optional[str], headers: Headers, **kwd) -> Tuple[IO, Headers]:
+    def _serve_raw(
+        self, dataset: DatasetProtocol26, to_ext: Optional[str], headers: Headers, **kwd
+    ) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
         headers[
             "content-type"
@@ -418,7 +420,7 @@ class Data(metaclass=DataMeta):
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return open(dataset.file_name, mode="rb"), headers
 
-    def to_archive(self, dataset: Dataset_t6, name: str = "") -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol16, name: str = "") -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
@@ -443,7 +445,7 @@ class Data(metaclass=DataMeta):
     def display_data(
         self,
         trans,
-        dataset: Dataset_t25,
+        dataset: DatasetProtocol26,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -556,7 +558,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: Dataset_t17) -> str:
+    def display_as_markdown(self, dataset_instance: DatasetProtocol20) -> str:
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented
@@ -584,9 +586,7 @@ class Data(metaclass=DataMeta):
                 result += indicate_data_truncated()
         return result
 
-    def _yield_user_file_content(
-        self, trans, from_dataset: HasCreatingJobProperty, filename: str, headers: Headers
-    ) -> IO:
+    def _yield_user_file_content(self, trans, from_dataset: HasCreatingJob, filename: str, headers: Headers) -> IO:
         """This method is responsible for sanitizing the HTML if needed."""
         if trans.app.config.sanitize_all_html and headers.get("content-type", None) == "text/html":
             # Sanitize anytime we respond with plain text/html content.
@@ -607,9 +607,9 @@ class Data(metaclass=DataMeta):
 
     def _download_filename(
         self,
-        dataset: Dataset_t4,
+        dataset: DatasetProtocol10,
         to_ext: Optional[str] = None,
-        hdca: Optional[Dataset_t26] = None,
+        hdca: Optional[DatasetProtocol8] = None,
         element_identifier: Optional[str] = None,
         filename_pattern: Optional[str] = None,
     ) -> str:
@@ -708,7 +708,7 @@ class Data(metaclass=DataMeta):
     def get_display_application(self, key: str, default: Optional["DisplayApplication"] = None) -> "DisplayApplication":
         return self.display_applications.get(key, default)
 
-    def get_display_applications_by_dataset(self, dataset: Dataset_t0, trans) -> Dict[str, "DisplayApplication"]:
+    def get_display_applications_by_dataset(self, dataset: DatasetProtocol0, trans) -> Dict[str, "DisplayApplication"]:
         rval = {}
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
@@ -727,7 +727,7 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "unknown"
 
-    def as_display_type(self, dataset: Dataset_t2, type: str, **kwd) -> Union[FileObjType, str]:
+    def as_display_type(self, dataset: DatasetProtocol11, type: str, **kwd) -> Union[FileObjType, str]:
         """Returns modified file contents for a particular display type"""
         try:
             if type in self.get_display_types():
@@ -742,7 +742,7 @@ class Data(metaclass=DataMeta):
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(
-        self, dataset: Dataset_t14, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
+        self, dataset: DatasetProtocol24, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
     ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
@@ -769,7 +769,7 @@ class Data(metaclass=DataMeta):
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
     def find_conversion_destination(
-        self, dataset: Dataset_t16, accepted_formats: List[str], datatypes_registry, **kwd
+        self, dataset: DatasetProtocol5, accepted_formats: List[str], datatypes_registry, **kwd
     ) -> Tuple[bool, Optional[str], Any]:
         """Returns ( direct_match, converted_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(
@@ -779,7 +779,7 @@ class Data(metaclass=DataMeta):
     def convert_dataset(
         self,
         trans,
-        original_dataset: Dataset_t3,
+        original_dataset: DatasetProtocol2,
         target_type: str,
         return_output: bool = False,
         visible: bool = True,
@@ -883,7 +883,7 @@ class Data(metaclass=DataMeta):
             files[substitute_composite_key(key, value)] = value
         return files
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
         raise Exception("generate_primary_file is not implemented for this datatype.")
 
     @property
@@ -920,7 +920,7 @@ class Data(metaclass=DataMeta):
         """
         return data_format in self.dataproviders
 
-    def dataprovider(self, dataset: Dataset_t2, data_format: str, **settings):
+    def dataprovider(self, dataset: DatasetProtocol11, data_format: str, **settings):
         """
         Base dataprovider factory for all datatypes that returns the proper provider
         for the given `data_format` or raises a `NoProviderAvailable`.
@@ -929,21 +929,23 @@ class Data(metaclass=DataMeta):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise p_dataproviders.exceptions.NoProviderAvailable(self, data_format)
 
-    def validate(self, dataset: Dataset_t19, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")
-    def base_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.base.DataProvider:
+    def base_dataprovider(self, dataset: DatasetProtocol11, **settings) -> p_dataproviders.base.DataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.base.DataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk", p_dataproviders.chunk.ChunkDataProvider.settings)
-    def chunk_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.chunk.ChunkDataProvider:
+    def chunk_dataprovider(self, dataset: DatasetProtocol11, **settings) -> p_dataproviders.chunk.ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.ChunkDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk64", p_dataproviders.chunk.Base64ChunkDataProvider.settings)
-    def chunk64_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.chunk.Base64ChunkDataProvider:
+    def chunk64_dataprovider(
+        self, dataset: DatasetProtocol11, **settings
+    ) -> p_dataproviders.chunk.Base64ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
 
@@ -953,7 +955,7 @@ class Data(metaclass=DataMeta):
                 mime = DEFAULT_MIME_TYPE
         headers["content-type"] = mime
 
-    def handle_dataset_as_image(self, hda: Dataset_t7) -> str:
+    def handle_dataset_as_image(self, hda: DatasetProtocol1) -> str:
         raise Exception("Unimplemented Method")
 
     def __getstate__(self) -> Dict[str, Any]:
@@ -985,13 +987,13 @@ class Text(Data):
         """Returns the mime type of the datatype"""
         return "text/plain"
 
-    def set_meta(self, dataset: Dataset_t24, *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, *, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
 
-    def estimate_file_lines(self, dataset: Dataset_t11) -> Optional[int]:
+    def estimate_file_lines(self, dataset: DatasetProtocol3) -> Optional[int]:
         """
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
@@ -1005,7 +1007,7 @@ class Text(Data):
             log.error(f"Unable to estimate lines in file {dataset.file_name}")
             return None
 
-    def count_data_lines(self, dataset: HasFileNameProperty) -> Optional[int]:
+    def count_data_lines(self, dataset: HasFileName) -> Optional[int]:
         """
         Count the number of lines of data in dataset,
         skipping all blank lines and comments.
@@ -1026,7 +1028,7 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -1139,7 +1141,9 @@ class Text(Data):
 
     # ------------- Dataproviders
     @p_dataproviders.decorators.dataprovider_factory("line", p_dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.line.FilteredLineDataProvider:
+    def line_dataprovider(
+        self, dataset: DatasetProtocol11, **settings
+    ) -> p_dataproviders.line.FilteredLineDataProvider:
         """
         Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.
@@ -1148,7 +1152,9 @@ class Text(Data):
         return p_dataproviders.line.FilteredLineDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("regex-line", p_dataproviders.line.RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset: Dataset_t2, **settings) -> p_dataproviders.line.RegexLineDataProvider:
+    def regex_line_dataprovider(
+        self, dataset: DatasetProtocol11, **settings
+    ) -> p_dataproviders.line.RegexLineDataProvider:
         """
         Returns an iterator over the dataset's lines
         optionally including/excluding lines that match one or more regex filters.

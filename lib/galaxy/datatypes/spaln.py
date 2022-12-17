@@ -12,12 +12,12 @@ from typing import (
 )
 
 from galaxy.datatypes._protocols import (
-    Dataset_t20,
-    Dataset_t22,
-    Dataset_t23,
-    Dataset_t24,
-    Dataset_t25,
-    GeneratePrimaryFileDataset,
+    DatasetProtocol6,
+    DatasetProtocol17,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol25,
+    DatasetProtocol26,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
@@ -66,7 +66,7 @@ class _SpalnDb(Data):
             substitute_name_with_metadata="spalndb_name",
         )
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
         rval = ["<html><head><title>Spaln Database</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -82,7 +82,7 @@ class _SpalnDb(Data):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: Dataset_t22) -> None:
+    def regenerate_primary_file(self, dataset: DatasetProtocol17) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -101,7 +101,7 @@ class _SpalnDb(Data):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "spaln database (multiple files)"
@@ -110,7 +110,7 @@ class _SpalnDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -120,7 +120,7 @@ class _SpalnDb(Data):
     def display_data(
         self,
         trans,
-        dataset: Dataset_t25,
+        dataset: DatasetProtocol26,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -181,7 +181,7 @@ class _SpalnDb(Data):
             return None
         raise NotImplementedError("Can't split spaln database")
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         efp = dataset.extra_files_path
         for filename in os.listdir(efp):

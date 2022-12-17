@@ -6,48 +6,8 @@ from typing import Any
 from typing_extensions import Protocol
 
 
-class HasExtraFilesPathProperty(Protocol):
-    @property
-    def extra_files_path(self):
-        ...
-
-
-class HasFileNameProperty(Protocol):
-    @property
-    def file_name(self):
-        ...
-
-
-class HasPeekProperty(Protocol):
-    @property
-    def peek(self):
-        ...
-
-
-class HasId(Protocol):
-    id: int
-
-
-class HasMetadata(Protocol):
-    metadata: Any
-
-
-class HasInfo(Protocol):
-    info: str
-
-
-class HasName(Protocol):
-    name: str
-
-
-class HasDataset(Protocol):
-    dataset: Any  # TODO tighten
-
-
-class HasCreatingJobProperty(Protocol):
-    @property
-    def creating_job(self):
-        ...
+class HasBlurb(Protocol):
+    blurb: str
 
 
 class HasClearAssociatedFiles(Protocol):
@@ -55,161 +15,243 @@ class HasClearAssociatedFiles(Protocol):
         ...
 
 
-class HasDbKey(Protocol):
-    dbkey: str
+class HasCreatingJob(Protocol):
+    @property
+    def creating_job(self):
+        ...
 
 
-class HasExt(Protocol):
-    ext: str  # TODO reconcile: ext vs. extension
+class HasDataset(Protocol):
+    dataset: Any
 
 
 class HasDatatype(Protocol):
     datatype: Any
 
 
-class GeneratePrimaryFileDataset(HasExtraFilesPathProperty, HasMetadata, Protocol):
-    ...
+class HasDbKey(Protocol):
+    dbkey: str
 
 
-class Dataset_t1(HasName, HasExtraFilesPathProperty, HasFileNameProperty, Protocol):
-    extension: str  # TODO reconcile: ext vs. extension
+class HasExt(Protocol):
+    ext: str
 
 
-class Dataset_t2(HasMetadata, HasFileNameProperty, HasExt, HasDatatype, Protocol):
-    ...
+class HasExtension(Protocol):
+    extension: str
 
 
-class Dataset_t3(HasExt, Protocol):
-    hid: str
-
-
-class Dataset_t4(HasName, Protocol):
-    hid: str
-    extension: str  # TODO reconcile: ext vs. extension
-
-
-class Dataset_t5(HasFileNameProperty, Dataset_t4, Protocol):
-    ...
-
-
-class Dataset_t6(HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, HasDatatype, Protocol):
-    extension: str  # TODO reconcile: ext vs. extension
-
-
-class Dataset_t7(HasDataset, HasName, Protocol):
-    ...
-
-
-class Dataset_t8(HasMetadata, HasId, HasPeekProperty, Protocol):
-    def set_peek(self) -> None:
+class HasExtraFilesPath(Protocol):
+    @property
+    def extra_files_path(self):
         ...
 
 
-class Dataset_t9(HasMetadata, HasId, Protocol):
-    ...
+class HasFileName(Protocol):
+    file_name: Any
 
 
-class Dataset_t10(Dataset_t8, HasFileNameProperty, HasName, Protocol):
-    ...
-
-
-class Dataset_t11(HasFileNameProperty, Protocol):
-    def get_size(self) -> str:
-        ...
-
-
-class Dataset_t12(HasDataset, HasMetadata, Protocol):
-    state: Any  # TODO tighten (should be property)
-    states: Any
-
-    def has_data(self) -> bool:
-        ...
-
-
-class Dataset_t13(Dataset_t12, HasFileNameProperty, HasId, HasMetadata, Protocol):
-    ...
-
-
-class Dataset_t14(Dataset_t13, HasName, HasDbKey, Protocol):
-    ...
-
-
-class Dataset_t15(Dataset_t13, HasDbKey, Protocol):
-    ...
-
-
-class Dataset_t16(HasExt, Protocol):
+class HasGetConvertedFilesByType(Protocol):
     def get_converted_files_by_type(self, file_type):
         ...
 
 
-class Dataset_t17(Dataset_t7, Dataset_t10, Protocol):
-    ...
-
-
-class Dataset_t18(HasFileNameProperty, HasMetadata, Protocol):
-    ...
-
-
-class Dataset_t19(Dataset_t18, HasDatatype, Protocol):
-    ...
-
-
-class Dataset_t20(HasMetadata, HasFileNameProperty, HasName, HasId, HasPeekProperty, Protocol):
-    def set_peek(self) -> None:
-        ...
-
-    def get_size(self) -> str:
-        ...
-
-
-class Dataset_t22(HasFileNameProperty, HasMetadata, HasExtraFilesPathProperty, HasInfo, HasName, Protocol):
-    ...
-
-
-class Dataset_t23(HasDataset, HasFileNameProperty, HasMetadata, HasInfo, HasExtraFilesPathProperty, Protocol):
-    peek: Any  # TODO
-    blurb: str
-    extension: str  # TODO reconcile: ext vs. extension
-
-    def get_size(self) -> str:
-        ...
-
-
-class Dataset_t24(
-    HasMetadata, HasFileNameProperty, HasExtraFilesPathProperty, HasInfo, HasName, HasId, HasDataset, Protocol
-):
-    peek: Any  # TODO
-    blurb: str
-
-    def has_data(self) -> bool:
-        ...
-
-    def get_size(self) -> str:
-        ...
-
-
-class Dataset_t25(
-    HasFileNameProperty,
-    HasDataset,
-    HasId,
-    HasMetadata,
-    HasCreatingJobProperty,
-    HasName,
-    HasExtraFilesPathProperty,
-    Protocol,
-):
-    datatype: Any
-    extension: str  # TODO reconcile: ext vs. extension
-    hid: str
-
+class HasGetMime(Protocol):
     def get_mime(self) -> str:
         ...
 
 
-class Dataset_t26(HasName, Protocol):
+class HasGetSize(Protocol):
+    def get_size(self) -> str:
+        ...
+
+
+class HasHasData(Protocol):
+    def has_data(self) -> bool:
+        ...
+
+
+class HasHid(Protocol):
     hid: str
 
 
-class Dataset_t0(Protocol):
+class HasId(Protocol):
+    id: int
+
+
+class HasInfo(Protocol):
+    info: str
+
+
+class HasMetadata(Protocol):
+    metadata: Any
+
+
+class HasName(Protocol):
+    name: str
+
+
+class HasPeek(Protocol):
+    peek: Any
+
+
+class HasSetPeek(Protocol):
+    def set_peek(self) -> None:
+        ...
+
+
+class HasState(Protocol):
+    state: Any
+
+
+class HasStates(Protocol):
+    states: Any
+
+
+class DatasetProtocol0(Protocol):
+    ...
+
+
+class DatasetProtocol1(HasDataset, HasName, Protocol):
+    ...
+
+
+class DatasetProtocol2(HasExt, HasHid, Protocol):
+    ...
+
+
+class DatasetProtocol3(HasFileName, HasGetSize, Protocol):
+    ...
+
+
+class DatasetProtocol4(HasFileName, HasMetadata, Protocol):
+    ...
+
+
+class DatasetProtocol5(HasExt, HasGetConvertedFilesByType, Protocol):
+    ...
+
+
+class DatasetProtocol6(HasExtraFilesPath, HasMetadata, Protocol):
+    ...
+
+
+class DatasetProtocol7(HasId, HasMetadata, Protocol):
+    ...
+
+
+class DatasetProtocol8(HasHid, HasName, Protocol):
+    ...
+
+
+class DatasetProtocol9(HasDatatype, HasFileName, HasMetadata, Protocol):
+    ...
+
+
+class DatasetProtocol10(HasExtension, HasHid, HasName, Protocol):
+    ...
+
+
+class DatasetProtocol11(HasDatatype, HasExt, HasFileName, HasMetadata, Protocol):
+    ...
+
+
+class DatasetProtocol12(HasExtension, HasExtraFilesPath, HasFileName, HasName, Protocol):
+    ...
+
+
+class DatasetProtocol13(HasExtension, HasFileName, HasHid, HasName, Protocol):
+    ...
+
+
+class DatasetProtocol14(HasId, HasMetadata, HasSetPeek, HasPeek, Protocol):
+    ...
+
+
+class DatasetProtocol15(HasDataset, HasHasData, HasMetadata, HasState, HasStates, Protocol):
+    ...
+
+
+class DatasetProtocol16(HasDatatype, HasExtension, HasExtraFilesPath, HasFileName, HasMetadata, Protocol):
+    ...
+
+
+class DatasetProtocol17(HasExtraFilesPath, HasFileName, HasInfo, HasMetadata, HasName, Protocol):
+    ...
+
+
+class DatasetProtocol18(HasFileName, HasId, HasMetadata, HasName, HasPeek, HasSetPeek, Protocol):
+    ...
+
+
+class DatasetProtocol19(HasDataset, HasFileName, HasHasData, HasId, HasMetadata, HasState, HasStates, Protocol):
+    ...
+
+
+class DatasetProtocol20(HasDataset, HasFileName, HasMetadata, HasId, HasName, HasPeek, HasSetPeek, Protocol):
+    ...
+
+
+class DatasetProtocol21(HasFileName, HasGetSize, HasId, HasMetadata, HasName, HasPeek, HasSetPeek, Protocol):
+    ...
+
+
+class DatasetProtocol22(
+    HasDataset, HasDbKey, HasFileName, HasHasData, HasId, HasMetadata, HasState, HasStates, Protocol
+):
+    ...
+
+
+class DatasetProtocol23(
+    HasBlurb,
+    HasDataset,
+    HasExtension,
+    HasExtraFilesPath,
+    HasFileName,
+    HasGetSize,
+    HasInfo,
+    HasMetadata,
+    HasPeek,
+    Protocol,
+):
+    ...
+
+
+class DatasetProtocol24(
+    HasDataset, HasDbKey, HasFileName, HasHasData, HasId, HasMetadata, HasName, HasState, HasStates, Protocol
+):
+    ...
+
+
+class DatasetProtocol25(
+    HasBlurb,
+    HasDataset,
+    HasExtraFilesPath,
+    HasFileName,
+    HasGetSize,
+    HasHasData,
+    HasId,
+    HasInfo,
+    HasMetadata,
+    HasName,
+    HasPeek,
+    Protocol,
+):
+    ...
+
+
+class DatasetProtocol26(
+    HasCreatingJob,
+    HasDataset,
+    HasDatatype,
+    HasExtension,
+    HasExtraFilesPath,
+    HasFileName,
+    HasGetMime,
+    HasHid,
+    HasId,
+    HasMetadata,
+    HasName,
+    Protocol,
+):
     ...

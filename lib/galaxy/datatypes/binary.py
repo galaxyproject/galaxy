@@ -34,15 +34,15 @@ from bx.seq.twobit import (
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
-    Dataset_t2,
-    Dataset_t6,
-    Dataset_t19,
-    Dataset_t20,
-    Dataset_t23,
-    Dataset_t24,
-    Dataset_t25,
-    GeneratePrimaryFileDataset,
-    HasFileNameProperty,
+    DatasetProtocol6,
+    DatasetProtocol9,
+    DatasetProtocol11,
+    DatasetProtocol16,
+    DatasetProtocol21,
+    DatasetProtocol23,
+    DatasetProtocol25,
+    DatasetProtocol26,
+    HasFileName,
     HasMetadata,
 )
 from galaxy.datatypes.data import (
@@ -116,7 +116,7 @@ class Binary(data.Data):
     def register_unsniffable_binary_ext(ext):
         """Deprecated method."""
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "binary data"
@@ -137,7 +137,7 @@ class Ab1(Binary):
     edam_format = "format_3000"
     edam_data = "data_0924"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary ab1 sequence file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -145,7 +145,7 @@ class Ab1(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -214,7 +214,7 @@ class Cel(Binary):
             found_cel_3 = True
         return found_cel_3 or found_cel_4 or found_cel_agcc
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Cel file.
         """
@@ -227,7 +227,7 @@ class Cel(Binary):
         elif header_bytes.decode("utf8", errors="ignore").startswith("[CEL]"):
             dataset.metadata.version = "3"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.blurb = f"Cel version: {dataset.metadata.version}"
             dataset.peek = get_file_peek(dataset.file_name)
@@ -261,7 +261,7 @@ class CompressedArchive(Binary):
     compressed = True
     is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Compressed binary file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -269,7 +269,7 @@ class CompressedArchive(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -318,7 +318,7 @@ class Bref3(Binary):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.startswith_bytes(self._magic)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary bref3 file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -326,7 +326,7 @@ class Bref3(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -378,7 +378,7 @@ class CompressedZipArchive(CompressedArchive):
 
     file_ext = "zip"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Compressed zip file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -386,7 +386,7 @@ class CompressedZipArchive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -417,7 +417,7 @@ class _BamOrSam:
     Helper class to set the metadata common to sam and bam files
     """
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         try:
             bam_file = pysam.AlignmentFile(dataset.file_name, mode="rb")
             # TODO: Reference names, lengths, read_groups and headers can become very large, truncate when necessary
@@ -522,7 +522,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         no_value={},
     )
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         _BamOrSam().set_meta(dataset, overwrite=overwrite, **kwd)
 
     @staticmethod
@@ -553,7 +553,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary bam alignments file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -561,13 +561,13 @@ class BamNative(CompressedArchive, _BamOrSam):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
-    def to_archive(self, dataset: Dataset_t6, name: str = "") -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol16, name: str = "") -> Iterable:
         rel_paths = []
         file_paths = []
         rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")
@@ -610,7 +610,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         # Remove temp file and empty temporary directory
         os.rmdir(tmp_dir)
 
-    def get_chunk(self, trans, dataset: HasFileNameProperty, offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
@@ -650,7 +650,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     def display_data(
         self,
         trans,
-        dataset: Dataset_t25,
+        dataset: DatasetProtocol26,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -686,7 +686,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                 headers,
             )
 
-    def validate(self, dataset: Dataset_t19, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
         if not BamNative.is_bam(dataset.file_name):
             return DatatypeValidation.invalid("This dataset does not appear to a BAM file.")
         elif self.dataset_content_needs_grooming(dataset.file_name):
@@ -776,7 +776,7 @@ class Bam(BamNative):
         return needs_sorting
 
     def set_meta(
-        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         # These metadata values are not accessible by users, always overwrite
         super().set_meta(dataset=dataset, overwrite=overwrite, **kwd)
@@ -808,25 +808,25 @@ class Bam(BamNative):
     # TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
     # TODO: incorporate samtools options to control output: regions first, then flags, etc.
     @dataproviders.decorators.dataprovider_factory("line", FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset: Dataset_t2, **settings) -> FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: DatasetProtocol11, **settings) -> FilteredLineDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return FilteredLineDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("regex-line", RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset: Dataset_t2, **settings) -> RegexLineDataProvider:
+    def regex_line_dataprovider(self, dataset: DatasetProtocol11, **settings) -> RegexLineDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return RegexLineDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset: Dataset_t2, **settings) -> ColumnarDataProvider:
+    def column_dataprovider(self, dataset: DatasetProtocol11, **settings) -> ColumnarDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return ColumnarDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
-    def dict_dataprovider(self, dataset: Dataset_t2, **settings) -> DictDataProvider:
+    def dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return DictDataProvider(samtools_source, **settings)
@@ -844,20 +844,20 @@ class Bam(BamNative):
     #    return super().dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("header", RegexLineDataProvider.settings)
-    def header_dataprovider(self, dataset: Dataset_t2, **settings) -> RegexLineDataProvider:
+    def header_dataprovider(self, dataset: DatasetProtocol11, **settings) -> RegexLineDataProvider:
         # in this case we can use an option of samtools view to provide just what we need (w/o regex)
         samtools_source = SamtoolsDataProvider(dataset, "-H")
         return RegexLineDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("id-seq-qual", DictDataProvider.settings)
-    def id_seq_qual_dataprovider(self, dataset: Dataset_t2, **settings) -> DictDataProvider:
+    def id_seq_qual_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
         settings["indeces"] = [0, 9, 10]
         settings["column_types"] = ["str", "str", "str"]
         settings["column_names"] = ["id", "seq", "qual"]
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region", ColumnarDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: Dataset_t2, **settings) -> ColumnarDataProvider:
+    def genomic_region_dataprovider(self, dataset: DatasetProtocol11, **settings) -> ColumnarDataProvider:
         # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
         # TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
         #   or remove altogether...
@@ -871,14 +871,14 @@ class Bam(BamNative):
         return self.column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", DictDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: Dataset_t2, **settings) -> DictDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
         settings["indeces"] = [2, 3, 3]
         settings["column_types"] = ["str", "int", "int"]
         settings["column_names"] = ["chrom", "start", "end"]
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("samtools")
-    def samtools_dataprovider(self, dataset: Dataset_t2, **settings) -> SamtoolsDataProvider:
+    def samtools_dataprovider(self, dataset: DatasetProtocol11, **settings) -> SamtoolsDataProvider:
         """Generic samtools interface - all options available through settings."""
         dataset_source = DatasetDataProvider(dataset)
         return SamtoolsDataProvider(dataset_source, **settings)
@@ -962,7 +962,7 @@ class CRAM(Binary):
     )
 
     def set_meta(
-        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         major_version, minor_version = self.get_cram_version(dataset.file_name)
         if major_version != -1:
@@ -984,7 +984,7 @@ class CRAM(Binary):
             log.warning("%s, get_cram_version Exception: %s", self, exc)
             return -1, -1
 
-    def set_index_file(self, dataset: HasFileNameProperty, index_file) -> bool:
+    def set_index_file(self, dataset: HasFileName, index_file) -> bool:
         try:
             pysam.index(dataset.file_name, index_file.file_name)  # type: ignore [attr-defined]
             return True
@@ -992,7 +992,7 @@ class CRAM(Binary):
             log.warning("%s, set_index_file Exception: %s", self, exc)
             return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "CRAM binary alignment file"
             dataset.blurb = "binary data"
@@ -1045,7 +1045,7 @@ class Bcf(BaseBcf):
             return False
 
     def set_meta(
-        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         """Creates the index for the BCF file."""
         # These metadata values are not accessible by users, always overwrite
@@ -1129,7 +1129,7 @@ class H5(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary HDF5 file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1137,7 +1137,7 @@ class H5(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1235,7 +1235,7 @@ class Loom(H5):
                     return True
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary Loom file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1243,13 +1243,13 @@ class Loom(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"Binary Loom file ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as loom_file:
@@ -1394,7 +1394,7 @@ class Anndata(H5):
                 return False
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         with h5py.File(dataset.file_name, "r") as anndata_file:
             dataset.metadata.title = anndata_file.attrs.get("title")
@@ -1500,7 +1500,7 @@ class Anndata(H5):
             if dataset.metadata.shape is None:
                 dataset.metadata.shape = (int(dataset.metadata.obs_size), int(dataset.metadata.var_size))
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             tmp = dataset.metadata
 
@@ -1528,7 +1528,7 @@ class Anndata(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1573,7 +1573,7 @@ class Grib(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary GRIB file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1581,13 +1581,13 @@ class Grib(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"Binary GRIB file ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         """
         Set the GRIB edition.
         """
@@ -1616,7 +1616,7 @@ class GmxBinary(Binary):
         # The first 4 bytes of any GROMACS binary file containing the magic number
         return file_prefix.magic_header(">1i") == self.magic_number
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Binary GROMACS {self.file_ext} file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -1624,7 +1624,7 @@ class GmxBinary(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1754,7 +1754,7 @@ class Biom2(H5):
                 return required_fields.issubset(f.attrs.keys())
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as f:
@@ -1776,7 +1776,7 @@ class Biom2(H5):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, util.unicodify(e))
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = ["Biom2 (HDF5) file"]
             try:
@@ -1791,7 +1791,7 @@ class Biom2(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1836,7 +1836,7 @@ class Cool(H5):
                     return True
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Cool (HDF5) file for storing genomic interaction data."
             dataset.blurb = nice_size(dataset.get_size())
@@ -1844,7 +1844,7 @@ class Cool(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1896,7 +1896,7 @@ class MCool(H5):
                     return True
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Multi-resolution Cool (HDF5) file for storing genomic interaction data."
             dataset.blurb = nice_size(dataset.get_size())
@@ -1904,7 +1904,7 @@ class MCool(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1940,7 +1940,7 @@ class H5MLM(H5):
     )
 
     def set_meta(
-        self, dataset: Dataset_t24, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         try:
             spec_key = "hyper_params"
@@ -2003,7 +2003,7 @@ class H5MLM(H5):
             log.warning("%s, get model configuration Except: %s", self, e)
             return ""
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             repr = self.get_repr(dataset.file_name)
             dataset.peek = repr[: self.max_peek_size]
@@ -2012,7 +2012,7 @@ class H5MLM(H5):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2021,7 +2021,7 @@ class H5MLM(H5):
     def display_data(
         self,
         trans,
-        dataset: Dataset_t25,
+        dataset: DatasetProtocol26,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -2073,7 +2073,7 @@ class LudwigModel(Html):
             "training_progress.json", description="Training progress", is_binary=False, optional=True
         )
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
         rval = ["<html><head><title>Ludwig Model Composite Dataset.</title></head><p/>"]
         rval.append("<div>This model dataset is composed of the following items:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -2132,7 +2132,7 @@ class HexrdMaterials(H5):
                         return True
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with h5py.File(dataset.file_name, "r") as mat_file:
@@ -2149,7 +2149,7 @@ class HexrdMaterials(H5):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = ["Material SpaceGroup Lattice"]
             if dataset.metadata.materials:
@@ -2174,7 +2174,7 @@ class Scf(Binary):
     edam_data = "data_0924"
     file_ext = "scf"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary scf sequence file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2182,7 +2182,7 @@ class Scf(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2202,7 +2202,7 @@ class Sff(Binary):
         # about the format, see http://www.ncbi.nlm.nih.gov/Traces/trace.cgi?cmd=show&f=formats&m=doc&s=format
         return file_prefix.startswith_bytes(b".sff")
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary sff file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2210,7 +2210,7 @@ class Sff(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2239,7 +2239,7 @@ class BigWig(Binary):
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         return file_prefix.magic_header("I") == self._magic
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Binary UCSC {self._name} file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2247,7 +2247,7 @@ class BigWig(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2280,14 +2280,14 @@ class TwoBit(Binary):
         magic = file_prefix.magic_header(">L")
         return magic == TWOBIT_MAGIC_NUMBER or magic == TWOBIT_MAGIC_NUMBER_SWAP
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary TwoBit format nucleotide file"
             dataset.blurb = nice_size(dataset.get_size())
         else:
             return super().set_peek(dataset)
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2325,7 +2325,7 @@ class SQlite(Binary):
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         Binary.init_meta(self, dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         try:
             tables = []
             columns = dict()
@@ -2382,7 +2382,7 @@ class SQlite(Binary):
             log.warning("%s, sniff Exception: %s", self, e)
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "SQLite Database"
             lines = ["SQLite Database"]
@@ -2398,24 +2398,24 @@ class SQlite(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"SQLite Database ({nice_size(dataset.get_size())})"
 
     @dataproviders.decorators.dataprovider_factory("sqlite", SQliteDataProvider.settings)
-    def sqlite_dataprovider(self, dataset: Dataset_t2, **settings) -> SQliteDataProvider:
+    def sqlite_dataprovider(self, dataset: DatasetProtocol11, **settings) -> SQliteDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return SQliteDataProvider(dataset_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("sqlite-table", SQliteDataTableProvider.settings)
-    def sqlite_datatableprovider(self, dataset: Dataset_t2, **settings) -> SQliteDataTableProvider:
+    def sqlite_datatableprovider(self, dataset: DatasetProtocol11, **settings) -> SQliteDataTableProvider:
         dataset_source = DatasetDataProvider(dataset)
         return SQliteDataTableProvider(dataset_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("sqlite-dict", SQliteDataDictProvider.settings)
-    def sqlite_datadictprovider(self, dataset: Dataset_t2, **settings) -> SQliteDataDictProvider:
+    def sqlite_datadictprovider(self, dataset: DatasetProtocol11, **settings) -> SQliteDataDictProvider:
         dataset_source = DatasetDataProvider(dataset)
         return SQliteDataDictProvider(dataset_source, **settings)
 
@@ -2436,7 +2436,7 @@ class GeminiSQLite(SQlite):
     edam_format = "format_3622"
     edam_data = "data_3498"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2465,7 +2465,7 @@ class GeminiSQLite(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
@@ -2473,7 +2473,7 @@ class GeminiSQLite(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2485,7 +2485,7 @@ class ChiraSQLite(SQlite):
 
     file_ext = "chira.sqlite"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2516,7 +2516,7 @@ class CuffDiffSQlite(SQlite):
     # TODO: Update this when/if there is a specific EDAM format for CuffDiff SQLite data.
     edam_format = "format_3621"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             genes = []
@@ -2552,7 +2552,7 @@ class CuffDiffSQlite(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
@@ -2560,7 +2560,7 @@ class CuffDiffSQlite(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2572,7 +2572,7 @@ class MzSQlite(SQlite):
 
     file_ext = "mz.sqlite"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2609,7 +2609,7 @@ class PQP(SQlite):
 
     file_ext = "pqp"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2651,7 +2651,7 @@ class OSW(SQlite):
 
     file_ext = "osw"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2694,7 +2694,7 @@ class SQmass(SQlite):
 
     file_ext = "sqmass"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2718,7 +2718,7 @@ class BlibSQlite(SQlite):
     )
     file_ext = "blib"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2771,7 +2771,7 @@ class DlibSQlite(SQlite):
     )
     file_ext = "dlib"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2815,7 +2815,7 @@ class ElibSQlite(SQlite):
     )
     file_ext = "elib"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2866,7 +2866,7 @@ class IdpDB(SQlite):
 
     file_ext = "idpdb"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
     def sniff(self, filename: str) -> bool:
@@ -2882,7 +2882,7 @@ class IdpDB(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "IDPickerDB SQLite file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -2890,7 +2890,7 @@ class IdpDB(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -2911,7 +2911,7 @@ class GAFASQLite(SQlite):
     )
     file_ext = "gafa.sqlite"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2957,7 +2957,7 @@ class NcbiTaxonomySQlite(SQlite):
 
     file_ext = "ncbitaxonomy.sqlite"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             conn = sqlite.connect(dataset.file_name)
@@ -2981,7 +2981,7 @@ class NcbiTaxonomySQlite(SQlite):
             return self.sniff_table_names(filename, table_names)
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
                 getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
@@ -2992,7 +2992,7 @@ class NcbiTaxonomySQlite(SQlite):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3028,7 +3028,7 @@ class ExcelXls(Binary):
         """Returns the mime type of the datatype"""
         return "application/vnd.ms-excel"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Microsoft Excel XLS file"
             dataset.blurb = data.nice_size(dataset.get_size())
@@ -3036,7 +3036,7 @@ class ExcelXls(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3055,7 +3055,7 @@ class Sra(Binary):
         """
         return file_prefix.startswith_bytes(b"NCBI.sra")
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary sra file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3063,7 +3063,7 @@ class Sra(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3104,7 +3104,7 @@ class RData(CompressedArchive):
         optional=False,
     )
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
@@ -3187,7 +3187,7 @@ class RDS(CompressedArchive):
         optional=False,
     )
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         _, fh = compression_utils.get_fileobj_raw(dataset.file_name, "rb")
         try:
@@ -3434,7 +3434,7 @@ class PostgresqlArchive(CompressedArchive):
     )
     file_ext = "postgresql"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
@@ -3452,7 +3452,7 @@ class PostgresqlArchive(CompressedArchive):
                 return "postgresql/db/PG_VERSION" in temptar.getnames()
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
             dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or "unknown")
@@ -3460,7 +3460,7 @@ class PostgresqlArchive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3482,7 +3482,7 @@ class Fast5Archive(CompressedArchive):
     )
     file_ext = "fast5.tar"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and tarfile.is_tarfile(dataset.file_name):
@@ -3506,7 +3506,7 @@ class Fast5Archive(CompressedArchive):
             log.warning("%s, sniff Exception: %s", self, e)
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"FAST5 Archive ({nice_size(dataset.get_size())})"
             dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or "unknown")
@@ -3514,7 +3514,7 @@ class Fast5Archive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3590,7 +3590,7 @@ class SearchGuiArchive(CompressedArchive):
     )
     file_ext = "searchgui_archive"
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             if dataset and zipfile.is_zipfile(dataset.file_name):
@@ -3615,7 +3615,7 @@ class SearchGuiArchive(CompressedArchive):
             log.warning("%s, sniff Exception: %s", self, e)
         return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
             dataset.blurb = nice_size(dataset.get_size())
@@ -3623,7 +3623,7 @@ class SearchGuiArchive(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3638,7 +3638,7 @@ class NetCDF(Binary):
     edam_format = "format_3650"
     edam_data = "data_0943"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary netCDF file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3646,7 +3646,7 @@ class NetCDF(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3694,7 +3694,7 @@ class Dcd(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary CHARMM/NAMD dcd file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3702,7 +3702,7 @@ class Dcd(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3746,7 +3746,7 @@ class Vel(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary CHARMM velocity file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3754,7 +3754,7 @@ class Vel(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -3843,7 +3843,7 @@ class ICM(Binary):
     file_ext = "icm"
     edam_data = "data_0950"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary ICM (interpolated context model) file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -3918,7 +3918,7 @@ class BafTar(CompressedArchive):
     def get_type(self) -> str:
         return "Bruker BAF directory archive"
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = self.get_type()
             dataset.blurb = nice_size(dataset.get_size())
@@ -3926,7 +3926,7 @@ class BafTar(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4028,7 +4028,7 @@ class Pretext(Binary):
         # file contains binary data.
         return file_prefix.startswith_bytes(b"pstm")
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary pretext file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -4036,7 +4036,7 @@ class Pretext(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4072,7 +4072,7 @@ class JP2(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary JPEG 2000 file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -4080,7 +4080,7 @@ class JP2(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4120,7 +4120,7 @@ class Npz(CompressedArchive):
             return False
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         try:
             with np.load(dataset.file_name) as npz:
                 dataset.metadata.nfiles = len(npz.files)
@@ -4128,7 +4128,7 @@ class Npz(CompressedArchive):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Binary Numpy npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})"
             dataset.blurb = nice_size(dataset.get_size())
@@ -4136,7 +4136,7 @@ class Npz(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4188,7 +4188,7 @@ class HexrdImagesNpz(Npz):
                 return False
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with np.load(dataset.file_name) as npz:
@@ -4201,7 +4201,7 @@ class HexrdImagesNpz(Npz):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = [
                 f"Binary Hexrd Image npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",
@@ -4213,7 +4213,7 @@ class HexrdImagesNpz(Npz):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -4254,7 +4254,7 @@ class HexrdEtaOmeNpz(Npz):
                 return False
         return False
 
-    def set_meta(self, dataset: Dataset_t24, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         try:
             with np.load(dataset.file_name) as npz:
@@ -4263,7 +4263,7 @@ class HexrdEtaOmeNpz(Npz):
         except Exception as e:
             log.warning("%s, set_meta Exception: %s", self, e)
 
-    def set_peek(self, dataset: Dataset_t23, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = [
                 f"Binary Hexrd Eta-Ome npz {dataset.metadata.nfiles} files ({nice_size(dataset.get_size())})",
@@ -4275,7 +4275,7 @@ class HexrdEtaOmeNpz(Npz):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Dataset_t20) -> str:
+    def display_peek(self, dataset: DatasetProtocol21) -> str:
         try:
             return dataset.peek
         except Exception:
