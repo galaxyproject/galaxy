@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import _l from "@/utils/localization";
+import { localize } from "@/utils/localization";
 import { computed, ref } from "vue";
 import type { CleanupResult } from "./model";
 
@@ -18,20 +18,20 @@ const isLoading = computed<boolean>(() => {
 });
 
 const title = computed<string>(() => {
-    let message = _l("Something went wrong...");
+    let message = localize("Something went wrong...");
     if (isLoading.value) {
-        message = _l("Freeing up some space...");
+        message = localize("Freeing up some space...");
     } else if (props.result.isPartialSuccess) {
-        message = _l("Sorry, some items couldn't be cleared");
+        message = localize("Sorry, some items couldn't be cleared");
     } else if (props.result.success) {
-        message = _l("Congratulations!");
+        message = localize("Congratulations!");
     }
     return message;
 });
 
 const errorFields = [
-    { key: "name", label: _l("Name") },
-    { key: "reason", label: _l("Reason") },
+    { key: "name", label: localize("Name") },
+    { key: "reason", label: localize("Reason") },
 ];
 
 function openModal() {

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import _l from "@/utils/localization";
+import { localize } from "@/utils/localization";
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 import IconCard from "@/components/IconCard.vue";
 import { reactive } from "vue";
@@ -8,13 +8,15 @@ import { useRouter } from "vue-router/composables";
 const router = useRouter();
 
 const texts = reactive({
-    title: _l("Storage Dashboard"),
-    subtitle: _l("Here you can see an overview of your disk usage status."),
+    title: localize("Storage Dashboard"),
+    subtitle: localize("Here you can see an overview of your disk usage status."),
     freeSpace: {
-        title: _l("Is your usage more than expected?"),
-        description: _l("Find out what is eating up your space and learn how to easily and safely free up some of it."),
+        title: localize("Is your usage more than expected?"),
+        description: localize(
+            "Find out what is eating up your space and learn how to easily and safely free up some of it."
+        ),
         icon: "fas fa-broom fa-6x",
-        buttonText: _l("Free up disk usage"),
+        buttonText: localize("Free up disk usage"),
     },
 });
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import _l from "@/utils/localization";
+import { localize } from "@/utils/localization";
 import { delay } from "@/utils/utils";
 import { computed, ref, onMounted, watchEffect } from "vue";
 import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
@@ -84,10 +84,10 @@ function onReviewItems() {
                     class="card-link"
                     data-test-id="review-link"
                     @click="onReviewItems">
-                    <b>{{ _l("Review and clear") }} {{ summary.niceTotalSize }}</b>
+                    <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
                 </b-link>
                 <b v-else class="text-secondary" data-test-id="no-items-indicator">
-                    {{ _l("No items to clear") }}
+                    {{ localize("No items to clear") }}
                 </b>
             </div>
         </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
-import _l from "@/utils/localization";
+import { localize } from "@/utils/localization";
 import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
 
 interface QuotaUsageBarProps {
@@ -9,8 +9,8 @@ interface QuotaUsageBarProps {
 
 const props = defineProps<QuotaUsageBarProps>();
 
-const storageSourceText = ref(_l("storage source"));
-const percentOfDiskQuotaUsedText = ref(_l("% of disk quota used"));
+const storageSourceText = ref(localize("storage source"));
+const percentOfDiskQuotaUsedText = ref(localize("% of disk quota used"));
 
 const isDefaultQuota = computed(() => {
     return props.quotaUsage.sourceLabel === DEFAULT_QUOTA_SOURCE_LABEL;

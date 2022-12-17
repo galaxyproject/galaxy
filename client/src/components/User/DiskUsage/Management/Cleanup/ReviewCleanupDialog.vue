@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import _l from "@/utils/localization";
+import { localize } from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 import { BModal, BTable, BFormCheckbox, BLink, BPagination, BButton } from "bootstrap-vue";
 import UtcDate from "@/components/UtcDate.vue";
@@ -21,9 +21,9 @@ const emit = defineEmits<{
     (event: "onConfirmCleanupSelectedItems", items: CleanableItem[]): void;
 }>();
 
-const permanentlyDeleteText = _l("Permanently delete");
-const captionText = _l("To free up account space, review and select items to be permanently deleted or");
-const agreementText = _l("I understand that once I delete the items, they cannot be recovered.");
+const permanentlyDeleteText = localize("Permanently delete");
+const captionText = localize("To free up account space, review and select items to be permanently deleted or");
+const agreementText = localize("I understand that once I delete the items, they cannot be recovered.");
 const fields = [
     {
         key: "selected",
@@ -99,7 +99,7 @@ const rowLimitReached = computed(() => {
 });
 
 const rowLimitReachedText = computed(() => {
-    return _l(
+    return localize(
         `Displaying a maximum of ${itemLimit.value} items here. If there are more, you can rerun this operation after deleting some.`
     );
 });
