@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import _l from "@/utils/localization";
 import { delay } from "@/utils/utils";
-import { computed, ref, onMounted, watch } from "vue";
+import { computed, ref, onMounted, watchEffect } from "vue";
 import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import type { CleanableSummary, CleanupOperation } from "./model";
@@ -17,7 +17,6 @@ const props = withDefaults(defineProps<CleanupOperationSummaryProps>(), {
     refreshDelay: 500,
 });
 
-const refreshOperationId = ref(props.refreshOperationId);
 const summary = ref<CleanableSummary>();
 const loading = ref(true);
 const errorMessage = ref<string>();
@@ -34,8 +33,8 @@ onMounted(async () => {
     await refresh();
 });
 
-watch(refreshOperationId, async (operationId: string) => {
-    if (props.operation.id === operationId) {
+watchEffect(async () => {
+    if (props.operation.id === props.refreshOperationId) {
         await refresh();
     }
 });

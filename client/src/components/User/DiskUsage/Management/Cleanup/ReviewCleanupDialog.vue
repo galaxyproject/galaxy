@@ -17,10 +17,8 @@ const props = withDefaults(defineProps<ReviewCleanupDialogProps>(), {
     totalItems: 0,
 });
 
-const operation = ref(props.operation);
-
 const emit = defineEmits<{
-    (e: "onConfirmCleanupSelectedItems", selectedItems: CleanableItem[]): void;
+    (event: "onConfirmCleanupSelectedItems", items: CleanableItem[]): void;
 }>();
 
 const permanentlyDeleteText = _l("Permanently delete");
@@ -77,7 +75,7 @@ const hasPages = computed(() => {
 });
 
 const title = computed(() => {
-    return operation.value?.name ?? "";
+    return props.operation?.name ?? "";
 });
 
 const confirmationTitle = computed(() => {
@@ -106,13 +104,10 @@ const rowLimitReachedText = computed(() => {
     );
 });
 
-watch(operation, () => {
+watch(props, (newVal) => {
     currentPage.value = 1;
+    totalRows.value = newVal.totalItems;
 });
-
-// watch(props.totalItems, (newVal) => {
-//     totalRows.value = newVal;
-// });
 
 watch(selectedItems, (newVal) => {
     if (newVal.length === 0) {
@@ -175,7 +170,7 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,
         };
-        const result = await operation.value.fetchItems(options);
+        const result = await props.operation.fetchItems(options);
         return result;
     } catch (error) {
         return [];
@@ -184,7 +179,7 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
 
 async function onSelectAllItems() {
     isBusy.value = true;
-    const allItems = await operation.value.fetchItems({
+    const allItems = await props.operation.fetchItems({
         offset: 0,
         limit: totalRows.value,
         sortBy: sortBy.value,
@@ -201,7 +196,7 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal ref="reviewModal" v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
+    <b-modal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
             <span class="text-primary h3">{{ totalItems }}<span v-if="rowLimitReached">+</span> items</span>
@@ -234,7 +229,7 @@ defineExpose({
                     @change="toggleSelectAll" />
             </template>
             <template v-slot:cell(selected)="data">
-                <b-form-checkbox :key="data.index" v-model="selectedItems" :checked="allSelected" />
+                <b-form-checkbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
