@@ -91,9 +91,8 @@ export default {
                 // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
                 this.currentlyProcessing = false;
                 this.historyId = newHistoryId;
-                if (this.historyId !== undefined) {
-                    this.getHistoryItems();
-                }
+                this.clearGantt()
+                this.ganttView = "Day"
                 this.createKeyedColorForButtons();
             }
         },
@@ -109,13 +108,7 @@ export default {
         },
         emptyHistory(newEmpty, oldEmpty) {
             if (newEmpty === true) {
-                var container = document.getElementsByClassName("gantt");
-                if (container) {
-                    // We will make .gantt empty so that old data from the visualization is removed
-                    this.accountingArray = [];
-                    this.accountingArrayMinutes = [];
-                    container[0].innerHTML = "";
-                }
+              this.clearGantt()    
             }
         },
         ganttView(newval, oldval) {
@@ -130,10 +123,14 @@ export default {
     },
     methods: {
         ...mapCacheActions(["fetchJobMetricsForDatasetId"]),
-        getHistoryItems: async function () {
-            if (this.historyId) {
-                await this.fetchHistoryItems( this.historyId, "", 0 );
-            }
+        getHistoryItems: async function () { 
+            if (this.historyId && this.fetchHistoryItems) {
+              try {
+                await this.fetchHistoryItems(this.historyId, "", 0);
+            } catch (error) {
+                console.debug("Gantt error.", error);
+            } 
+          }
         },
         changeDate: function (value, status) {
             this.dateTimeVal = value;
@@ -214,11 +211,21 @@ export default {
                 });
             }
         },
+        clearGantt: function () {
+          var container = document.getElementsByClassName("gantt");
+          if (container && container.length > 0) {
+              // We will make .gantt empty so that old data from the visualization is removed and transition to the new one looks more smooth 
+              this.accountingArray = [];
+              this.accountingArrayMinutes = [];
+              container[0].innerHTML = "";
+          }
+        },
         getData: async function () {
             this.isLoading = true;
             this.currentlyProcessing = true;
             this.historyId = this.history;
             this.accountingArray = [];
+            this.accountingArrayMinutes = []
             this.historyItems = this.storeGetHistoryItems( this.historyId, "" );
             if (this.historyItems.length == 0) {
                 this.currentlyProcessing = false;
