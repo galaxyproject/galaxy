@@ -20,6 +20,9 @@ config = context.config
 target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
 log = logging.getLogger(__name__)
 
+# should we reuse ModelId for the key here?
+UrlMap = Dict[str, str]
+
 
 def run_migrations_offline() -> None:
     """Run migrations in offline mode; database url required."""
@@ -72,7 +75,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
     run_migrations(url)
 
 
-def _process_cmd_current(urls: Dict[str, str]) -> bool:
+def _process_cmd_current(urls: UrlMap) -> bool:
     if config.cmd_opts.cmd[0].__name__ == "current":  # type: ignore[union-attr]
         # Run command for each url only if urls are different; otherwise run once.
         are_urls_equal = len(set(urls.values())) == 1
@@ -127,12 +130,12 @@ def _get_url_from_config() -> str:
     return cast(str, url)
 
 
-def _load_urls() -> Dict[str, str]:
-    gxy_url = context.get_x_argument(as_dictionary=True).get(f"{GXY}_url")
-    tsi_url = context.get_x_argument(as_dictionary=True).get(f"{TSI}_url")
+def _load_urls() -> UrlMap:
+    gxy_url = cast(str, context.get_x_argument(as_dictionary=True).get(f"{GXY}_url"))
+    tsi_url = cast(str, context.get_x_argument(as_dictionary=True).get(f"{TSI}_url"))
     return {
-        GXY: gxy_url,
-        TSI: tsi_url,
+        str(GXY): gxy_url,
+        str(TSI): tsi_url,
     }
 
 
