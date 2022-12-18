@@ -70,7 +70,7 @@
         </param>
       </when>
       <when value="history">
-        <param name="ownFile" type="data" format="fasta" metadata_name="dbkey" label="Select a reference from history" />
+        <param name="ownFile" type="data" format="fasta" label="Select a reference from history" />
         <repeat name="custom_index" title="Custom indice" min="1" >
             <param name="mask" type="text" value="" label="Specify the mask">
               <!-- <validator type="no_options" message="No indexes are available for the selected input dataset"/> need is int validator here or regex all 01s-->
