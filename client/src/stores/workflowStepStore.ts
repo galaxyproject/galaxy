@@ -39,14 +39,42 @@ interface DataOutput {
     extensions: string[];
     name: string;
     optional: boolean;
-    type?: string;
+    type?: "data";
     activeOutput?: boolean;
-    input_type?: string;
 }
 
-interface CollectionOutput extends DataOutput {
+interface CollectionOutput extends Omit<DataOutput, "type"> {
+    type: "collection";
     collection: boolean;
     collection_type: string;
+    collection_type_source: string | null;
+}
+
+interface ParameterOutput extends Omit<DataOutput, "type"> {
+    type: "text" | "integer" | "float" | "boolean" | "color";
+    parameter: true;
+}
+
+interface BaseStepInput {
+    name: string;
+    label: string;
+    multiple: boolean;
+    extensions: string[];
+    optional: boolean;
+    input_type: string;
+}
+
+export interface DataStepInput extends BaseStepInput {
+    input_type: "dataset";
+}
+
+interface DataCollectionStepInput extends BaseStepInput {
+    input_type: "dataset_collection";
+    collection_types: string[];
+}
+
+interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
+    input_type: "parameter";
 }
 
 export interface NewStep {
@@ -55,10 +83,10 @@ export interface NewStep {
     content_id?: string | null;
     id?: number;
     input_connections: StepInputConnection;
-    inputs: any;
+    inputs: Array<DataStepInput | DataCollectionStepInput | ParameterStepInput>;
     label?: string;
     name: string;
-    outputs: Array<DataOutput | CollectionOutput>;
+    outputs: Array<DataOutput | CollectionOutput | ParameterOutput>;
     position?: StepPosition;
     post_job_actions: PostJobActions;
     tool_state: Record<string, unknown>;

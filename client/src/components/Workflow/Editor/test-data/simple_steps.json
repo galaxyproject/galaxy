@@ -2,7 +2,7 @@
   "0": {
     "id": 0,
     "type": "data_input",
-    "label": "",
+    "label": "data input",
     "content_id": null,
     "name": "Input dataset",
     "tool_state": {
@@ -66,8 +66,7 @@
           "tabular"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",

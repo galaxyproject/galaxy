@@ -667,8 +667,9 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
     // }
 }
 
-interface OutputParameterTerminalArgs extends BaseOutputTerminalArgs {
-    type: "output";
+interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "type"> {
+    // TODO: type is parameter type (text, integer etc)
+    type: string;
 }
 
 export class OutputParameterTerminal extends Terminal {
