@@ -1,4 +1,4 @@
-import Vue, { type Data } from "vue";
+import Vue from "vue";
 import { defineStore } from "pinia";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { Connection } from "@/stores/workflowConnectionStore";
@@ -35,22 +35,20 @@ interface PostJobActions {
     };
 }
 
-interface DataOutput {
+export interface DataOutput {
     extensions: string[];
     name: string;
     optional: boolean;
-    type?: "data";
     activeOutput?: boolean;
 }
 
-interface CollectionOutput extends Omit<DataOutput, "type"> {
-    type: "collection";
+export interface CollectionOutput extends Omit<DataOutput, "type"> {
     collection: boolean;
     collection_type: string;
     collection_type_source: string | null;
 }
 
-interface ParameterOutput extends Omit<DataOutput, "type"> {
+export interface ParameterOutput extends Omit<DataOutput, "type" | "extensions"> {
     type: "text" | "integer" | "float" | "boolean" | "color";
     parameter: true;
 }
@@ -68,12 +66,12 @@ export interface DataStepInput extends BaseStepInput {
     input_type: "dataset";
 }
 
-interface DataCollectionStepInput extends BaseStepInput {
+export interface DataCollectionStepInput extends BaseStepInput {
     input_type: "dataset_collection";
     collection_types: string[];
 }
 
-interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
+export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
     input_type: "parameter";
 }
 
@@ -130,7 +128,6 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             const stepId = newStep.id ? newStep.id : this.getStepIndex + 1;
             newStep.id = stepId;
             const step = newStep as Step;
-            console.log("adding step", step.id);
             Vue.set(this.steps, stepId.toString(), step);
             const connectionStore = useConnectionStore();
             stepToConnections(step).map((connection) => connectionStore.addConnection(connection));

@@ -8,6 +8,14 @@ import {
     type CollectionTypeDescriptor,
 } from "./collectionTypeDescription";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import type {
+    DataStepInput,
+    DataOutput,
+    CollectionOutput,
+    ParameterOutput,
+    DataCollectionStepInput,
+    ParameterStepInput,
+} from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 
 class ConnectionAcceptable {
@@ -22,7 +30,8 @@ class ConnectionAcceptable {
 interface BaseTerminalArgs {
     name: string;
     stepId: number;
-    type: "input" | "output";
+    // type: "input" | "output";
+    type: string;
 }
 
 interface InputTerminalInputs {
@@ -34,6 +43,7 @@ interface InputTerminalInputs {
 interface InputTerminalArgs extends BaseTerminalArgs {
     datatypesMapper: DatatypesMapperModel;
     input: InputTerminalInputs;
+    type: "input";
 }
 
 class Terminal extends EventEmitter {
@@ -44,7 +54,7 @@ class Terminal extends EventEmitter {
     attributes: any;
     multiple: boolean;
     stepId: number;
-    type: "input" | "output";
+    type: string;
 
     constructor(attr: BaseTerminalArgs) {
         super();
@@ -141,6 +151,7 @@ class BaseInputTerminal extends Terminal {
     datatypesMapper: DatatypesMapperModel;
     datatypes: InputTerminalInputs["datatypes"];
     optional: InputTerminalInputs["optional"];
+    type: "input";
 
     constructor(attr: InputTerminalArgs) {
         super(attr);
@@ -149,6 +160,7 @@ class BaseInputTerminal extends Terminal {
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
+        this.type = "input";
     }
     update(inputData: InputTerminalInputs) {
         this.datatypes = inputData.datatypes;
@@ -244,7 +256,7 @@ class BaseInputTerminal extends Terminal {
         if (
             ("collection" in firstOutput && firstOutput.collection) ||
             this.stepStore.stepMapOver[firstOutputTerminal.stepId]?.isCollection ||
-            firstOutput.extensions.indexOf("input") > 0
+            ("extensions" in firstOutput && firstOutput.extensions.indexOf("input") > 0)
         ) {
             return true;
         } else {
@@ -421,13 +433,13 @@ export class InputParameterTerminal extends BaseInputTerminal {
     }
     attachable(other: OutputTerminal) {
         const effectiveThisType = this.effectiveType(this.type);
-        const effectiveOtherType = this.effectiveType(other.attributes.type);
+        const effectiveOtherType = this.effectiveType(other.type);
         return new ConnectionAcceptable(effectiveThisType == effectiveOtherType, "");
     }
 }
 
 interface InputCollectionTerminalArgs extends InputTerminalArgs {
-    collection_types: string[];
+    collection_types: string[] | null;
 }
 
 export class InputCollectionTerminal extends BaseInputTerminal {
@@ -438,9 +450,9 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         super(attr);
         this.multiple = false;
         this.collection = true;
-        this.collectionTypes = attr.collection_types.map(
-            (collectionType) => new CollectionTypeDescription(collectionType)
-        );
+        this.collectionTypes = attr.collection_types
+            ? attr.collection_types.map((collectionType) => new CollectionTypeDescription(collectionType))
+            : [];
         if (!this.collectionTypes.length) {
             this.collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
         }
@@ -579,11 +591,13 @@ class BaseOutputTerminal extends Terminal {
     optional: BaseOutputTerminalArgs["optional"];
     isCollection?: boolean;
     collectionType?: CollectionTypeDescriptor;
+    type: "output";
 
     constructor(attr: BaseOutputTerminalArgs) {
         super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
+        this.type = "output";
     }
     // update(output) {
     //     this.extensions = output.datatypes || output.extensions;
@@ -626,7 +640,7 @@ export class OutputTerminal extends BaseOutputTerminal {
 
 interface OutputCollectionTerminalArgs extends BaseOutputTerminalArgs {
     collection_type: string;
-    collection_type_source?: string;
+    collection_type_source: string | null;
 }
 
 export class OutputCollectionTerminal extends BaseOutputTerminal {
@@ -669,7 +683,7 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
 
 interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "type"> {
     // TODO: type is parameter type (text, integer etc)
-    type: string;
+    type: ParameterOutput["type"];
 }
 
 export class OutputParameterTerminal extends Terminal {
@@ -715,4 +729,95 @@ export function producesAcceptableDatatype(
             ", "
         )}] do not appear to match input type(s) [${inputDatatypes.join(", ")}].`
     );
+}
+
+type TerminalOf<T> = T extends DataStepInput
+    ? InputTerminal
+    : T extends DataCollectionStepInput
+    ? InputCollectionTerminal
+    : T extends ParameterStepInput
+    ? InputParameterTerminal
+    : T extends DataOutput
+    ? OutputTerminal
+    : T extends CollectionOutput
+    ? OutputCollectionTerminal
+    : T extends ParameterOutput
+    ? OutputParameterTerminal
+    : never;
+
+export function terminalFactory(
+    stepId: number,
+    terminalSource:
+        | DataStepInput
+        | DataCollectionStepInput
+        | ParameterStepInput
+        | DataOutput
+        | CollectionOutput
+        | ParameterOutput,
+    datatypesMapper: DatatypesMapperModel
+): TerminalOf<typeof terminalSource> {
+    if ("input_type" in terminalSource) {
+        const terminalArgs = {
+            datatypesMapper: datatypesMapper,
+            name: terminalSource.name,
+            stepId: stepId,
+        };
+        const inputArgs = {
+            datatypes: terminalSource.extensions,
+            multiple: terminalSource.multiple,
+            optional: terminalSource.optional,
+        };
+        if (terminalSource.input_type === "dataset") {
+            return new InputTerminal({
+                ...terminalArgs,
+                // kind of silly, class is input after all ?
+                type: "input",
+                input: inputArgs,
+            });
+        } else if (terminalSource.input_type === "dataset_collection") {
+            return new InputCollectionTerminal({
+                ...terminalArgs,
+                type: "input",
+                collection_types: terminalSource.collection_types,
+                input: {
+                    ...inputArgs,
+                },
+            });
+        } else if (terminalSource.input_type === "parameter") {
+            return new InputParameterTerminal({
+                ...terminalArgs,
+                type: "input",
+                input: {
+                    ...inputArgs,
+                },
+            });
+        }
+    } else {
+        const outputArgs = {
+            name: terminalSource.name,
+            optional: terminalSource.optional,
+            stepId: stepId,
+        };
+        if ("parameter" in terminalSource) {
+            return new OutputParameterTerminal({
+                ...outputArgs,
+                type: terminalSource.type,
+            });
+        } else if ("collection" in terminalSource && terminalSource.collection) {
+            return new OutputCollectionTerminal({
+                ...outputArgs,
+                datatypes: terminalSource.extensions,
+                type: "collection",
+                collection_type: terminalSource.collection_type,
+                collection_type_source: terminalSource.collection_type_source,
+            });
+        } else {
+            return new OutputTerminal({
+                ...outputArgs,
+                datatypes: terminalSource.extensions,
+                type: "data",
+            });
+        }
+    }
+    throw `Could not build terminal for ${terminalSource}`;
 }

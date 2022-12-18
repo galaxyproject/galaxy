@@ -94,7 +94,6 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
                 }
             });
             return (terminalId: string): Connection[] => {
-                console.log(terminalToConnection);
                 return terminalToConnection[terminalId] || [];
             };
         },
