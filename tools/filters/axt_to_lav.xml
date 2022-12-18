@@ -11,8 +11,8 @@
   </inputs>
   <outputs>
     <data name="lav_file" format="lav"/>
-    <data name="seq_file1" format="fasta" parent="lav_file"/>
-    <data name="seq_file2" format="fasta" parent="lav_file"/>
+    <data name="seq_file1" format="fasta"/>
+    <data name="seq_file2" format="fasta"/>
   </outputs>
   <help>
 

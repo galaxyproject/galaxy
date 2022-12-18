@@ -13,7 +13,7 @@
     </command>
     <inputs>
         <param format="data" name="input1" type="data" label="Text file"/>
-        <param name="algorithms" type="select" optional="false" multiple="true" display="checkboxes" label="Choose the algorithms">
+        <param name="algorithms" type="select" optional="false" multiple="true" label="Choose the algorithms">
           <option value="md5"/>
           <option value="sha1"/>
           <option value="sha224"/>
