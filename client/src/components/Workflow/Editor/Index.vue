@@ -683,7 +683,7 @@ export default {
             }
             this.stepStore.addStep({
                 inputs: [],
-                input_connections: [],
+                input_connections: {},
                 name: name,
                 content_id: contentId,
                 type: type,
