@@ -2027,19 +2027,19 @@ class H5MLM(H5):
             to_ext = to_ext or dataset.extension
             return self._serve_raw(dataset, to_ext, headers, **kwd)
 
-        out: Dict = {}
+        out_dict: Dict = {}
         try:
             with h5py.File(dataset.file_name, "r") as handle:
-                out["Attributes"] = {}
+                out_dict["Attributes"] = {}
                 attributes = handle.attrs
                 for k in set(attributes.keys()) - {self.HTTP_REPR, self.REPR, self.URL}:
-                    out["Attributes"][k] = util.unicodify(attributes.get(k))
+                    out_dict["Attributes"][k] = util.unicodify(attributes.get(k))
         except Exception as e:
             log.warning(e)
 
         config = self.get_config_string(dataset.file_name)
-        out["Config"] = json.loads(config) if config else ""
-        out = json.dumps(out, sort_keys=True, indent=2)
+        out_dict["Config"] = json.loads(config) if config else ""
+        out = json.dumps(out_dict, sort_keys=True, indent=2)
         out = out[: self.max_preview_size]
 
         repr = self.get_repr(dataset.file_name)
