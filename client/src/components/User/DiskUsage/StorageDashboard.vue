@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { localize } from "@/utils/localization";
+import localize from "@/utils/localization";
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 import IconCard from "@/components/IconCard.vue";
 import { reactive } from "vue";

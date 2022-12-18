@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { localize } from "@/utils/localization";
+import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 import { BModal, BTable, BFormCheckbox, BLink, BPagination, BButton } from "bootstrap-vue";
 import UtcDate from "@/components/UtcDate.vue";

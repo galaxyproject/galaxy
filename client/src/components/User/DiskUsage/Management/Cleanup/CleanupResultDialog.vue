@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { localize } from "@/utils/localization";
+import localize from "@/utils/localization";
 import { computed, ref } from "vue";
 import type { CleanupResult } from "./model";
 

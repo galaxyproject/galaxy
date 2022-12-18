@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { localize } from "@/utils/localization";
+import localize from "@/utils/localization";
 import { delay } from "@/utils/utils";
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";

@@ -1,4 +1,4 @@
-import { localize } from "@/utils/localization";
+import localize from "@/utils/localization";
 import { ref } from "vue";
 import {
     cleanupDiscardedDatasets,

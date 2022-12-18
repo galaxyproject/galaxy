@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { localize } from "@/utils/localization";
+import localize from "@/utils/localization";
 import { delay } from "@/utils/utils";
 import { computed, ref, onMounted, watchEffect } from "vue";
 import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
