@@ -51,16 +51,21 @@ jobs:
         run: pip install planemo
       - name: Determine tools and converters to check
         run: |
-          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -v -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
+          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -v "macros" | grep -v -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
           echo "Skipping checks for the following converters:"
-          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip
+          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -v "macros" | grep -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip
           echo "Checking only the following converters:"
           cat tool_list.txt
       - name: Lint converters
         run: |
-          mapfile -t TOOL_ARRAY < tool_list.txt
+          grep 'lib/galaxy/datatypes/converters/' tool_list.txt > converters.txt
+          mapfile -t TOOL_ARRAY < converters.txt
           planemo lint --skip citations,stdio,help --report_level warn "${TOOL_ARRAY[@]}"
+          grep -v 'lib/galaxy/datatypes/converters/' tool_list.txt > tools.txt
+          mapfile -t TOOL_ARRAY < tools.txt
+          planemo lint --skip citations,stdio,help --report_level warn --error_level error "${TOOL_ARRAY[@]}"
       - name: Run tests
+        if: always()
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
           planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
