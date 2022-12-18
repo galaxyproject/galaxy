@@ -14,7 +14,7 @@ export interface CollectionTypeDescriptor {
     append(other: CollectionTypeDescriptor): CollectionTypeDescriptor;
     equal(other: CollectionTypeDescriptor | null): boolean;
     toString(): string;
-    effectiveMapOver(other: CollectionTypeDescriptor): CollectionTypeDescription | null;
+    effectiveMapOver(other: CollectionTypeDescriptor): CollectionTypeDescriptor;
 }
 
 export const NULL_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
@@ -36,8 +36,8 @@ export const NULL_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     equal: function (other) {
         return other === this;
     },
-    effectiveMapOver: function (other: CollectionTypeDescriptor): null {
-        return null;
+    effectiveMapOver: function (other: CollectionTypeDescriptor) {
+        return NULL_COLLECTION_TYPE_DESCRIPTION;
     },
 };
 
@@ -60,8 +60,8 @@ export const ANY_COLLECTION_TYPE_DESCRIPTION: CollectionTypeDescriptor = {
     equal: function (other) {
         return other === this;
     },
-    effectiveMapOver: function (other: CollectionTypeDescriptor): null {
-        return null;
+    effectiveMapOver: function (other: CollectionTypeDescriptor) {
+        return NULL_COLLECTION_TYPE_DESCRIPTION;
     },
 };
 
@@ -104,7 +104,7 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
         const requiredSuffix = other.collectionType;
         return this._endsWith(this.collectionType, requiredSuffix);
     }
-    effectiveMapOver(other: CollectionTypeDescriptor): CollectionTypeDescription | null {
+    effectiveMapOver(other: CollectionTypeDescriptor): CollectionTypeDescriptor {
         if (other.collectionType && this.canMapOver(other)) {
             const otherCollectionType = other.collectionType;
             const effectiveCollectionType = this.collectionType.substring(
@@ -113,7 +113,7 @@ export class CollectionTypeDescription implements CollectionTypeDescriptor {
             );
             return new CollectionTypeDescription(effectiveCollectionType);
         }
-        return null;
+        return NULL_COLLECTION_TYPE_DESCRIPTION;
     }
     equal(other: CollectionTypeDescriptor | null) {
         if (!other) {

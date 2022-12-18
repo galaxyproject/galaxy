@@ -1,7 +1,7 @@
 import Vue from "vue";
 import { defineStore } from "pinia";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { Connection } from "@/stores/workflowConnectionStore";
+import { Connection } from "@/stores/workflowConnectionStore";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
 
 interface State {
@@ -30,7 +30,7 @@ interface PostJobActions {
         action_type: string;
         output_name: string;
         action_arguments: {
-            newtype: string;
+            [index: string]: string;
         };
     };
 }
@@ -48,8 +48,9 @@ export interface CollectionOutput extends Omit<DataOutput, "type"> {
     collection_type_source: string | null;
 }
 
+export declare const ParameterTypes: "text" | "integer" | "float" | "boolean" | "color";
 export interface ParameterOutput extends Omit<DataOutput, "type" | "extensions"> {
-    type: "text" | "integer" | "float" | "boolean" | "color";
+    type: typeof ParameterTypes;
     parameter: true;
 }
 
@@ -73,6 +74,7 @@ export interface DataCollectionStepInput extends BaseStepInput {
 
 export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
     input_type: "parameter";
+    type: typeof ParameterTypes;
 }
 
 export interface NewStep {
@@ -86,12 +88,12 @@ export interface NewStep {
     name: string;
     outputs: Array<DataOutput | CollectionOutput | ParameterOutput>;
     position?: StepPosition;
-    post_job_actions: PostJobActions;
+    post_job_actions?: PostJobActions;
     tool_state: Record<string, unknown>;
     tooltip?: string;
     type: string;
     uuid?: string;
-    workflow_outputs: Array<any>;
+    workflow_outputs?: Array<any>;
 }
 
 export interface Step extends NewStep {
@@ -173,19 +175,18 @@ export function stepToConnections(step: Step): Connection[] {
                 outputArray = [outputArray];
             }
             outputArray.forEach((output) => {
-                const connection: Connection = {
-                    id: `${step.id}-${input_name}-${output.id}-${output.output_name}`,
-                    input: {
+                const connection = new Connection(
+                    {
                         stepId: step.id,
                         name: input_name,
                         connectorType: "input",
                     },
-                    output: {
+                    {
                         stepId: output.id,
                         name: output.output_name,
                         connectorType: "output",
-                    },
-                };
+                    }
+                );
                 connections.push(connection);
             });
         });

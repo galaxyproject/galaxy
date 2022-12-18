@@ -1,5 +1,5 @@
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { Connection } from "@/stores/workflowConnectionStore";
+import { Connection } from "@/stores/workflowConnectionStore";
 import EventEmitter from "events";
 import {
     NULL_COLLECTION_TYPE_DESCRIPTION,
@@ -30,8 +30,6 @@ class ConnectionAcceptable {
 interface BaseTerminalArgs {
     name: string;
     stepId: number;
-    // type: "input" | "output";
-    type: string;
 }
 
 interface InputTerminalInputs {
@@ -43,7 +41,6 @@ interface InputTerminalInputs {
 interface InputTerminalArgs extends BaseTerminalArgs {
     datatypesMapper: DatatypesMapperModel;
     input: InputTerminalInputs;
-    type: "input";
 }
 
 class Terminal extends EventEmitter {
@@ -54,42 +51,41 @@ class Terminal extends EventEmitter {
     attributes: any;
     multiple: boolean;
     stepId: number;
-    type: string;
+    terminalType: "input" | "output";
 
     constructor(attr: BaseTerminalArgs) {
         super();
         this.connectionStore = useConnectionStore();
         this.stepStore = useWorkflowStepStore();
         this.stepId = attr.stepId;
-        this.type = attr.type;
         this.name = attr.name;
         this.attributes = attr;
         this.multiple = false;
+        this.terminalType = "input";
     }
     public get id() {
-        return `node-${this.stepId}-${this.type}-${this.name}`;
+        return `node-${this.stepId}-${this.terminalType}-${this.name}`;
     }
     public get connections(): Connection[] {
         return this.connectionStore.getConnectionsForTerminal(this.id);
     }
-    public get mapOver(): CollectionTypeDescriptor | null {
-        // Make getter ?
-        return this.stepStore.stepMapOver[this.stepId] || null;
+    public get mapOver(): CollectionTypeDescriptor {
+        return this.stepStore.stepMapOver[this.stepId] || NULL_COLLECTION_TYPE_DESCRIPTION;
     }
-    connect(connection: Connection) {
+    connect(other: Terminal) {
+        const connection = new Connection(
+            { stepId: this.stepId, name: this.name, connectorType: "input" },
+            { stepId: other.stepId, name: other.name, connectorType: "output" }
+        );
         this.connectionStore.addConnection(connection);
     }
-    disconnect(connection: Connection) {
+    disconnect(other: Terminal) {
+        const connection = new Connection(
+            { stepId: this.stepId, name: this.name, connectorType: "input" },
+            { stepId: other.stepId, name: other.name, connectorType: "output" }
+        );
         this.connectionStore.removeConnection(connection.id);
         this.resetMappingIfNeeded();
-    }
-    destroyInvalidConnections() {
-        // this.connectors.forEach((connector) => {
-        //     if (connector) {
-        //         connector.destroyIfInvalid();
-        //     }
-        // });
-        // this.emit("change");
     }
     setMapOver(val: CollectionTypeDescriptor) {
         let outputVal = val;
@@ -102,11 +98,15 @@ class Terminal extends EventEmitter {
             }
             outputVal = val.effectiveMapOver(description) || val;
         }
-        if (!this.mapOver?.equal(outputVal)) {
-            this.stepStore.changeStepMapOver(this.stepId, outputVal);
+        const effectiveMapOver = this._effectiveMapOver(outputVal);
+        if (!this.mapOver.equal(effectiveMapOver)) {
+            this.stepStore.changeStepMapOver(this.stepId, effectiveMapOver);
             // TODO: do we even need to listen for this?
             this.emit("changeMapOver", outputVal);
         }
+    }
+    _effectiveMapOver(otherCollectionType: CollectionTypeDescriptor) {
+        return otherCollectionType;
     }
     isMappedOver(): boolean {
         return Boolean(this.mapOver?.isCollection);
@@ -115,17 +115,6 @@ class Terminal extends EventEmitter {
         this.stepStore.changeStepMapOver(this.stepId, NULL_COLLECTION_TYPE_DESCRIPTION);
         // necessary ?
         this.emit("changeMapOver", this.mapOver);
-    }
-    resetCollectionTypeSource() {
-        // used to be called on disconnect
-        // const node = this.node;
-        // Object.values(node.outputTerminals).forEach((output_terminal) => {
-        //     const type_source = output_terminal.attributes.collection_type_source;
-        //     if (type_source && output_terminal.attributes.collection_type) {
-        //         output_terminal.attributes.collection_type = null;
-        //         output_terminal.update(output_terminal.attributes);
-        //     }
-        // });
     }
     hasConnectedMappedInputTerminals() {
         // check if step has connected and mapped input terminals ... should maybe be on step/node ?
@@ -151,32 +140,25 @@ class BaseInputTerminal extends Terminal {
     datatypesMapper: DatatypesMapperModel;
     datatypes: InputTerminalInputs["datatypes"];
     optional: InputTerminalInputs["optional"];
-    type: "input";
 
     constructor(attr: InputTerminalArgs) {
         super(attr);
         this.datatypesMapper = attr.datatypesMapper;
-        this.update(attr.input); // subclasses should implement this...
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
-        this.type = "input";
     }
-    update(inputData: InputTerminalInputs) {
-        this.datatypes = inputData.datatypes;
-        this.multiple = inputData.multiple;
-        this.optional = inputData.optional;
+    connect(other: BaseOutputTerminal): void {
+        super.connect(other);
+        this.setDefaultMapOver(other);
     }
     // TODO: Do I still need this?
-    // setDefaultMapOver(connector) {
-    //     var other_output = connector.outputHandle;
-    //     if (other_output) {
-    //         var otherCollectionType = this._otherCollectionType(other_output);
-    //         if (otherCollectionType.isCollection) {
-    //             this.setMapOver(otherCollectionType);
-    //         }
-    //     }
-    // }
+    setDefaultMapOver(other: BaseOutputTerminal) {
+        const otherCollectionType = this._otherCollectionType(other);
+        if (otherCollectionType.isCollection) {
+            this.setMapOver(otherCollectionType);
+        }
+    }
     canAccept(outputTerminal: BaseOutputTerminal) {
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
@@ -333,16 +315,6 @@ export class InputTerminal extends BaseInputTerminal {
         this.collection = false;
     }
 
-    update(input: InputTerminalInputs) {
-        this.datatypes = input.datatypes;
-        this.multiple = input.multiple;
-        this.optional = input.optional;
-        this.collection = false;
-    }
-    connect(connection: Connection) {
-        super.connect(connection);
-        // this.setDefaultMapOver(connector);
-    }
     attachable(other: BaseOutputTerminal) {
         const otherCollectionType = this._otherCollectionType(other);
         const mapOver = this.mapOver;
@@ -405,36 +377,28 @@ export class InputTerminal extends BaseInputTerminal {
 }
 
 interface InputParameterTerminalArgs extends InputTerminalArgs {
-    type: "input";
-}
-
-interface ParameterTerminalInputs extends InputTerminalInputs {
-    type: "input";
+    type: ParameterStepInput["type"];
 }
 
 export class InputParameterTerminal extends BaseInputTerminal {
-    type: "input";
+    type: ParameterStepInput["type"];
 
     constructor(attr: InputParameterTerminalArgs) {
         super(attr);
         this.type = attr.type;
     }
 
-    update(input: ParameterTerminalInputs) {
-        this.type = input.type;
-        this.optional = input.optional;
-    }
-    connect(connection: Connection) {
-        super.connect(connection);
-        // this.setDefaultMapOver(connector);
-    }
     effectiveType(parameterType: string) {
         return parameterType == "select" ? "text" : parameterType;
     }
-    attachable(other: OutputTerminal) {
+    attachable(other: BaseOutputTerminal) {
         const effectiveThisType = this.effectiveType(this.type);
-        const effectiveOtherType = this.effectiveType(other.type);
-        return new ConnectionAcceptable(effectiveThisType == effectiveOtherType, "");
+        const otherType = ("type" in other && other.type) || "data";
+        const effectiveOtherType = this.effectiveType(otherType);
+        return new ConnectionAcceptable(
+            effectiveThisType == effectiveOtherType,
+            `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
+        );
     }
 }
 
@@ -458,54 +422,37 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         }
     }
 
-    // idk, we shouldn't need this I think?
-    // update(input) {
-    //     this.multiple = false;
-    //     this.collection = true;
-    //     this.datatypes = input.datatypes;
-    //     this.optional = input.optional;
-    //     var collectionTypes = [];
-    //     if (input.collection_types) {
-    //         input.collection_types.forEach((collectionType) => {
-    //             );
-    //         });
-    //     } else {
-    //
-    //     }
-    //     this.collectionTypes = collectionTypes;
-    // }
     // TODO: port or drop this, not sure what exactly this is doing, may be covered by mapOver getter?
-    connect(connection: Connection) {
-        super.connect(connection);
-        // var other = connector.outputHandle;
-        // if (other) {
-        //     const node = this.node;
-        //     Object.values(node.outputTerminals).forEach((output_terminal) => {
-        //         if (output_terminal.attributes.collection_type_source && !connector.dragging) {
-        //             if (other.isMappedOver()) {
-        //                 if (other.isCollection) {
-        //                     output_terminal.attributes.collection_type = other.mapOver.append(
-        //                         other.collectionType
-        //                     ).collectionType;
-        //                 } else {
-        //                     output_terminal.attributes.collection_type = other.mapOver.collectionType;
-        //                 }
-        //             } else {
-        //                 output_terminal.attributes.collection_type = other.attributes.collection_type;
-        //             }
-        //             output_terminal.update(output_terminal.attributes);
-        //         }
-        //     });
-        // }
+    // connect(other) {
+    //     super.connect(other);
+    //     // var other = connector.outputHandle;
+    //     // if (other) {
+    //     //     const node = this.node;
+    //     //     Object.values(node.outputTerminals).forEach((output_terminal) => {
+    //     //         if (output_terminal.attributes.collection_type_source && !connector.dragging) {
+    //     //             if (other.isMappedOver()) {
+    //     //                 if (other.isCollection) {
+    //     //                     output_terminal.attributes.collection_type = other.mapOver.append(
+    //     //                         other.collectionType
+    //     //                     ).collectionType;
+    //     //                 } else {
+    //     //                     output_terminal.attributes.collection_type = other.mapOver.collectionType;
+    //     //                 }
+    //     //             } else {
+    //     //                 output_terminal.attributes.collection_type = other.attributes.collection_type;
+    //     //             }
+    //     //             output_terminal.update(output_terminal.attributes);
+    //     //         }
+    //     //     });
+    //     // }
 
-        // const effectiveMapOver = this._effectiveMapOver(other);
-        // if (effectiveMapOver) {
-        //     this.setMapOver(effectiveMapOver);
-        // }
-    }
-    _effectiveMapOver(other: BaseOutputTerminal) {
+    //     // const effectiveMapOver = this._effectiveMapOver(other);
+    //     // if (effectiveMapOver) {
+    //     //     this.setMapOver(effectiveMapOver);
+    //     // }
+    // }
+    _effectiveMapOver(otherCollectionType: CollectionTypeDescriptor) {
         const collectionTypes = this.collectionTypes;
-        const otherCollectionType = this._otherCollectionType(other);
         const canMatch = collectionTypes.some((collectionType) => collectionType.canMatch(otherCollectionType));
         if (!canMatch) {
             for (const collectionTypeIndex in collectionTypes) {
@@ -551,7 +498,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
                 }
             } else if (this.collectionTypes.some((collectionType) => otherCollectionType.canMapOver(collectionType))) {
                 // we're not mapped over - but hey maybe we could be... lets check.
-                const effectiveMapOver = this._effectiveMapOver(other);
+                const effectiveMapOver = this._effectiveMapOver(otherCollectionType);
                 if (!effectiveMapOver?.isCollection) {
                     return new ConnectionAcceptable(false, "Incompatible collection type(s) for attachment.");
                 }
@@ -591,52 +538,17 @@ class BaseOutputTerminal extends Terminal {
     optional: BaseOutputTerminalArgs["optional"];
     isCollection?: boolean;
     collectionType?: CollectionTypeDescriptor;
-    type: "output";
+    type?: string;
 
     constructor(attr: BaseOutputTerminalArgs) {
         super(attr);
         this.datatypes = attr.datatypes;
         this.optional = attr.optional;
-        this.type = "output";
+        this.terminalType = "output";
     }
-    // update(output) {
-    //     this.extensions = output.datatypes || output.extensions;
-    //     this.optional = output.optional;
-    // }
 }
 
-export class OutputTerminal extends BaseOutputTerminal {
-    resetMappingIfNeeded() {
-        // TODO: redo this if really needed
-        // // If inputs were only mapped over to preserve
-        // // an output just disconnected reset these...
-        // if (!this.hasConnectedOutputTerminals() && !this.hasConnectedMappedInputTerminals()) {
-        //     const node = this.node;
-        //     Object.values(node.inputTerminals).forEach((t) => {
-        //         if (t.mapOver.isCollection) {
-        //             t.resetMappingIfNeeded();
-        //         }
-        //     });
-        // }
-        // var noMappedInputs = !this.hasMappedOverInputTerminals();
-        // if (noMappedInputs) {
-        //     this.resetMapping();
-        // }
-    }
-    resetMapping() {
-        super.resetMapping();
-        // this.connectors.forEach((connector) => {
-        //     var connectedInput = connector.inputHandle;
-        //     if (connectedInput) {
-        //         // Not exactly right because this is still connected.
-        //         // Either rewrite resetMappingIfNeeded or disconnect
-        //         // and reconnect if valid.
-        //         connectedInput.resetMappingIfNeeded();
-        //         connector.destroyIfInvalid();
-        //     }
-        // });
-    }
-}
+export class OutputTerminal extends BaseOutputTerminal {}
 
 interface OutputCollectionTerminalArgs extends BaseOutputTerminalArgs {
     collection_type: string;
@@ -657,38 +569,16 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
         }
         this.isCollection = true;
     }
-    // update(output) {
-    //     super.update(output);
-    //     var newCollectionType;
-    //     if (output.collection_type) {
-    //         newCollectionType = new CollectionTypeDescription(output.collection_type);
-    //     } else {
-    //         var collectionTypeSource = output.collection_type_source;
-    //         if (!collectionTypeSource) {
-    //             console.log("Warning: No collection type or collection type source defined.");
-    //         }
-    //         newCollectionType = ANY_COLLECTION_TYPE_DESCRIPTION;
-    //     }
-    //     const oldCollectionType = this.collectionType;
-    //     this.collectionType = newCollectionType;
-    //     // we need to iterate over a copy, as we slice this.connectors in the process of destroying connections
-    //     var connectors = this.connectors.slice(0);
-    //     if (newCollectionType.collectionType != oldCollectionType.collectionType) {
-    //         connectors.forEach((connector) => {
-    //             connector.destroyIfInvalid(true);
-    //         });
-    //     }
-    // }
 }
 
-interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "type"> {
+interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "datatypes"> {
     // TODO: type is parameter type (text, integer etc)
     type: ParameterOutput["type"];
 }
 
 export class OutputParameterTerminal extends Terminal {
-    update(output: OutputParameterTerminalArgs) {
-        this.attributes.type = output.type;
+    constructor(attr: OutputParameterTerminalArgs) {
+        super(attr);
     }
 }
 
@@ -770,14 +660,11 @@ export function terminalFactory(
         if (terminalSource.input_type === "dataset") {
             return new InputTerminal({
                 ...terminalArgs,
-                // kind of silly, class is input after all ?
-                type: "input",
                 input: inputArgs,
             });
         } else if (terminalSource.input_type === "dataset_collection") {
             return new InputCollectionTerminal({
                 ...terminalArgs,
-                type: "input",
                 collection_types: terminalSource.collection_types,
                 input: {
                     ...inputArgs,
@@ -786,7 +673,7 @@ export function terminalFactory(
         } else if (terminalSource.input_type === "parameter") {
             return new InputParameterTerminal({
                 ...terminalArgs,
-                type: "input",
+                type: terminalSource.type,
                 input: {
                     ...inputArgs,
                 },
@@ -807,7 +694,6 @@ export function terminalFactory(
             return new OutputCollectionTerminal({
                 ...outputArgs,
                 datatypes: terminalSource.extensions,
-                type: "collection",
                 collection_type: terminalSource.collection_type,
                 collection_type_source: terminalSource.collection_type_source,
             });
@@ -815,7 +701,6 @@ export function terminalFactory(
             return new OutputTerminal({
                 ...outputArgs,
                 datatypes: terminalSource.extensions,
-                type: "data",
             });
         }
     }

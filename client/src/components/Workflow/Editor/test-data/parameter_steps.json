@@ -1,0 +1,620 @@
+{
+  "0": {
+    "id": 0,
+    "type": "data_input",
+    "label": "data input",
+    "content_id": null,
+    "name": "Input dataset",
+    "tool_state": {
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "bdfb1f7e-a7b7-4c95-85cb-901abdc6b276",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 0,
+      "top": 0
+    }
+  },
+  "1": {
+    "id": 1,
+    "type": "tool",
+    "label": "simple data",
+    "content_id": "Cut1",
+    "name": "Cut",
+    "tool_state": {
+      "columnList": "\"c1,c2\"",
+      "delimiter": "\"T\"",
+      "input": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input",
+        "label": "From",
+        "multiple": false,
+        "extensions": [
+          "txt"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "tabular"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {
+      "HideDatasetActionout_file1": {
+        "action_type": "HideDatasetAction",
+        "output_name": "out_file1",
+        "action_arguments": {}
+      }
+    },
+    "uuid": "16626ff6-6484-4db2-bffc-71b69ff05b80",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 231.74591064453125,
+      "top": 122.94705200195312
+    }
+  },
+  "2": {
+    "id": 2,
+    "type": "data_collection_input",
+    "label": "list input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"list\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "list",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "62031885-cc80-424b-8ee9-8ba100f04b6d",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 0.040008544921875,
+      "top": 270.03812408447266
+    }
+  },
+  "3": {
+    "id": 3,
+    "type": "data_collection_input",
+    "label": "list:list input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"list:list\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "list:list",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "cecee25d-5c31-445d-8c7a-8f6da48ffc5b",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 7.492462158203125,
+      "top": 394.32193756103516
+    }
+  },
+  "4": {
+    "id": 4,
+    "type": "tool",
+    "label": "multi data",
+    "content_id": "multi_data_param",
+    "name": "multi_data_param",
+    "tool_state": {
+      "advanced": "{\"__current_case__\": 0, \"advanced_threshold\": {\"__class__\": \"ConnectedValue\"}, \"full\": \"yes\"}",
+      "f1": "{\"__class__\": \"RuntimeValue\"}",
+      "f2": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "f1",
+        "label": "Data 1",
+        "multiple": true,
+        "extensions": [
+          "txt"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      },
+      {
+        "name": "f2",
+        "label": "Data 2",
+        "multiple": true,
+        "extensions": [
+          "txt"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      },
+      {
+        "name": "advanced|advanced_threshold",
+        "label": "advanced_threshold",
+        "multiple": false,
+        "input_type": "parameter",
+        "optional": false,
+        "type": "integer"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out1",
+        "extensions": [
+          "txt"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      },
+      {
+        "name": "out2",
+        "extensions": [
+          "txt"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {
+      "HideDatasetActionout2": {
+        "action_type": "HideDatasetAction",
+        "output_name": "out2",
+        "action_arguments": {}
+      },
+      "HideDatasetActionout1": {
+        "action_type": "HideDatasetAction",
+        "output_name": "out1",
+        "action_arguments": {}
+      }
+    },
+    "uuid": "86ff43c1-5c03-46ea-a47f-afa4e61f2029",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 406.0653381347656,
+      "top": 267.70352935791016
+    }
+  },
+  "5": {
+    "id": 5,
+    "type": "data_collection_input",
+    "label": "paired input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"paired\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "paired",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "f695dc34-68c8-4df9-a3d4-ef7e17502a53",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.912933349609375,
+      "top": 509.75333404541016
+    }
+  },
+  "6": {
+    "id": 6,
+    "type": "parameter_input",
+    "label": "integer parameter input",
+    "content_id": null,
+    "name": "Input parameter",
+    "tool_state": {
+      "parameter_definition": "{\"__current_case__\": 0, \"optional\": {\"__current_case__\": 1, \"optional\": \"false\"}, \"parameter_type\": \"text\", \"restrictions\": {\"__current_case__\": 0, \"how\": \"none\"}}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "label": "integer parameter input",
+        "type": "text",
+        "optional": false,
+        "parameter": true,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "634f06f1-b279-4160-9390-a004018e92ce",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 138.76971435546875,
+      "top": 618.4762954711914
+    }
+  },
+  "7": {
+    "id": 7,
+    "type": "tool",
+    "label": "simple data 2",
+    "content_id": "Cut1",
+    "name": "Cut",
+    "tool_state": {
+      "columnList": "\"c1,c2\"",
+      "delimiter": "\"T\"",
+      "input": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input",
+        "label": "From",
+        "multiple": false,
+        "extensions": [
+          "txt"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "tabular"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {
+      "HideDatasetActionout_file1": {
+        "action_type": "HideDatasetAction",
+        "output_name": "out_file1",
+        "action_arguments": {}
+      }
+    },
+    "uuid": "e7457670-84dc-442c-85cf-563ffbcd03bc",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 680.9877014160156,
+      "top": 148.06140899658203
+    }
+  },
+  "8": {
+    "id": 8,
+    "type": "tool",
+    "label": "any collection",
+    "content_id": "__APPLY_RULES__",
+    "name": "Apply rules",
+    "tool_state": {
+      "input": "{\"__class__\": \"RuntimeValue\"}",
+      "rules": null,
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input",
+        "label": "Input Collection",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": null,
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "type": "collection",
+        "optional": false,
+        "collection": true,
+        "collection_type": null,
+        "collection_type_source": null,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {
+      "HideDatasetActionoutput": {
+        "action_type": "HideDatasetAction",
+        "output_name": "output",
+        "action_arguments": {}
+      }
+    },
+    "uuid": "96250d39-9dcc-4e5c-a8bc-4e02ee6c7a2d",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 413.1534664300125,
+      "top": 622.9720189581046
+    }
+  },
+  "9": {
+    "id": 9,
+    "type": "tool",
+    "label": "list or paired",
+    "content_id": "__EXTRACT_DATASET__",
+    "name": "Extract dataset",
+    "tool_state": {
+      "input": "{\"__class__\": \"RuntimeValue\"}",
+      "which": "{\"__current_case__\": 0, \"which_dataset\": \"first\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input",
+        "label": "Input List",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "list",
+          "paired"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "data"
+        ],
+        "type": "data",
+        "optional": false,
+        "label": "input dataset(s) (extracted element)",
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {
+      "HideDatasetActionoutput": {
+        "action_type": "HideDatasetAction",
+        "output_name": "output",
+        "action_arguments": {}
+      }
+    },
+    "uuid": "478c0499-d1c7-45d6-b1b5-76030f64c6ad",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 611.3189392089844,
+      "top": 465.74063873291016
+    }
+  },
+  "10": {
+    "id": 10,
+    "type": "data_input",
+    "label": "optional data input",
+    "content_id": null,
+    "name": "Input dataset",
+    "tool_state": {
+      "optional": "\"true\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "optional": true,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "491c1548-f6db-493c-a12a-25d88bb72c4d",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 62.385040283203125,
+      "top": 775.6084976196289
+    }
+  },
+  "11": {
+    "id": 11,
+    "type": "tool",
+    "label": "list collection input",
+    "content_id": "count_list",
+    "name": "count_list",
+    "tool_state": {
+      "input1": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input1",
+        "label": "Concatenate Dataset",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "list"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "txt"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {
+      "HideDatasetActionout_file1": {
+        "action_type": "HideDatasetAction",
+        "output_name": "out_file1",
+        "action_arguments": {}
+      }
+    },
+    "uuid": "b7cc7fff-d167-4333-a0cd-f7a23c3420f4",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 867.0713195800781,
+      "top": 398.6623306274414
+    }
+  },
+  "12": {
+    "id": 12,
+    "type": "tool",
+    "label": "list collection input 2",
+    "content_id": "count_list",
+    "name": "count_list",
+    "tool_state": {
+      "input1": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input1",
+        "label": "Concatenate Dataset",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "list"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "txt"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "f5c65e31-97d2-4278-a7bc-b167a4da8453",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 877.2584533691406,
+      "top": 566.6462173461914
+    }
+  }
+}

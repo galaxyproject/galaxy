@@ -17,10 +17,18 @@ interface StepInputConnection {
     };
 }
 
-export interface Connection {
-    id: string;
+export class Connection {
     input: InputTerminal;
     output: OutputTerminal;
+
+    constructor(input: InputTerminal, output: OutputTerminal) {
+        this.input = input;
+        this.output = output;
+    }
+
+    get id(): string {
+        return `${this.input.stepId}-${this.input.name}-${this.output.stepId}-${this.output.name}`;
+    }
 }
 
 export interface BaseTerminal {
