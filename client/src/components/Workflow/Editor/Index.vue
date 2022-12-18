@@ -590,6 +590,7 @@ export default {
                     inputs: data.inputs,
                     outputs: data.outputs,
                     config_form: data.config_form,
+                    tool_state: data.tool_state,
                 };
                 this.onUpdateStep(step);
                 node.setData(data);
