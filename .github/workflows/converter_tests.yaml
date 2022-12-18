@@ -1,4 +1,4 @@
-name: Converter tests
+name: Converter and tool tests
 on:
   push:
     paths-ignore:
@@ -49,11 +49,11 @@ jobs:
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo
         run: pip install planemo
-      - name: Determine converters to check
+      - name: Determine tools and converters to check
         run: |
-          ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -v -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
+          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -v -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
           echo "Skipping checks for the following converters:"
-          ls 'galaxy root'/lib/galaxy/datatypes/converters/*xml | grep -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip
+          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip
           echo "Checking only the following converters:"
           cat tool_list.txt
       - name: Lint converters
