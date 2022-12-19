@@ -232,7 +232,9 @@ def create_repository(
     return repository, message
 
 
-def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None):
+def generate_sharable_link_for_repository_in_tool_shed(
+    repository: "Repository", changeset_revision: Optional[str] = None
+) -> str:
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = web.url_for("/", qualified=True).rstrip("/")
     sharable_url = f"{base_url}/view/{repository.user.username}/{repository.name}"
@@ -436,7 +438,7 @@ def handle_role_associations(app: "ToolShedApp", role, repository, **kwd):
     return associations_dict
 
 
-def change_repository_name_in_hgrc_file(hgrc_file, new_name):
+def change_repository_name_in_hgrc_file(hgrc_file: str, new_name: str) -> None:
     config = configparser.ConfigParser()
     config.read(hgrc_file)
     config.set("web", "name", new_name)
