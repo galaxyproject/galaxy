@@ -2,6 +2,10 @@ import configparser
 import logging
 import os
 import re
+from typing import (
+    Tuple,
+    TYPE_CHECKING,
+)
 
 from markupsafe import escape
 from sqlalchemy import false
@@ -54,13 +58,18 @@ from tool_shed.util.metadata_util import (
     get_repository_metadata_by_changeset_revision,
 )
 
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.webapp.model import Repository
+
+
 log = logging.getLogger(__name__)
 
 VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
 
 
 def create_repo_info_dict(
-    app,
+    app: "ToolShedApp",
     repository_clone_url,
     changeset_revision,
     ctx_rev,
@@ -139,7 +148,7 @@ def create_repo_info_dict(
     return repo_info_dict
 
 
-def create_repository_admin_role(app, repository):
+def create_repository_admin_role(app: "ToolShedApp", repository: "Repository"):
     """
     Create a new role with name-spaced name based on the repository name and its owner's public user
     name.  This will ensure that the tole name is unique.
@@ -160,16 +169,16 @@ def create_repository_admin_role(app, repository):
 
 
 def create_repository(
-    app,
-    name,
-    type,
+    app: "ToolShedApp",
+    name: str,
+    type: str,
     description,
     long_description,
     user_id,
     category_ids=None,
     remote_repository_url=None,
     homepage_url=None,
-):
+) -> Tuple["Repository", str]:
     """Create a new ToolShed repository"""
     category_ids = category_ids or []
     sa_session = app.model.session

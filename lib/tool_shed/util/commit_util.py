@@ -6,6 +6,13 @@ import os
 import shutil
 import tempfile
 from collections import namedtuple
+from typing import (
+    List,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+    Union,
+)
 
 from sqlalchemy.sql.expression import null
 
@@ -19,13 +26,17 @@ from tool_shed.util import (
     shed_util_common as suc,
 )
 
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.webapp.model import Repository
+
 log = logging.getLogger(__name__)
 
 UNDESIRABLE_DIRS = [".hg", ".svn", ".git", ".cvs", ".idea"]
 UNDESIRABLE_FILES = [".hg_archival.txt", "hgrc", ".DS_Store", "tool_test_output.html", "tool_test_output.json"]
 
 
-def check_archive(repository, archive):
+def check_archive(repository: "Repository", archive):
     valid = []
     invalid = []
     errors = []
@@ -81,7 +92,7 @@ def check_archive(repository, archive):
     return ArchiveCheckResults(valid, invalid, undesirable_files, undesirable_dirs, errors)
 
 
-def check_file_contents_for_email_alerts(app):
+def check_file_contents_for_email_alerts(app: "ToolShedApp"):
     """
     See if any admin users have chosen to receive email alerts when a repository is updated.
     If so, the file contents of the update must be checked for inappropriate content.
@@ -126,7 +137,7 @@ def get_change_lines_in_file_for_tag(tag, change_dict):
     return cleaned_lines
 
 
-def get_upload_point(repository, **kwd):
+def get_upload_point(repository: "Repository", **kwd) -> Optional[str]:
     upload_point = kwd.get("upload_point", None)
     if upload_point is not None:
         # The value of upload_point will be something like: database/community_files/000/repo_12/1.bed
@@ -148,7 +159,7 @@ def get_upload_point(repository, **kwd):
     return upload_point
 
 
-def handle_bz2(repository, uploaded_file_name):
+def handle_bz2(repository: "Repository", uploaded_file_name):
     with tempfile.NamedTemporaryFile(
         mode="wb",
         prefix=f"repo_{repository.id}_upload_bunzip2_",
@@ -168,19 +179,22 @@ def handle_bz2(repository, uploaded_file_name):
     shutil.move(uncompressed.name, uploaded_file_name)
 
 
+ChangeResponseT = Tuple[Union[bool, str], str, List[str], str, int, int]
+
+
 def handle_directory_changes(
     app,
-    host,
-    username,
-    repository,
-    full_path,
+    host: str,
+    username: str,
+    repository: "Repository",
+    full_path: str,
     filenames_in_archive,
     remove_repo_files_not_in_tar,
     new_repo_alert,
-    commit_message,
-    undesirable_dirs_removed,
-    undesirable_files_removed,
-):
+    commit_message: str,
+    undesirable_dirs_removed: int,
+    undesirable_files_removed: int,
+) -> ChangeResponseT:
     repo_path = repository.repo_path(app)
     content_alert_str = ""
     files_to_remove = []
