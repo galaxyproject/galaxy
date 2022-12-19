@@ -69,9 +69,10 @@ jobs:
         run: |
           mkdir -p json_output
           while read -r TOOL; do
+            echo TESTING $TOOL
             json=$(mktemp -u -p json_output --suff .json)
             planemo test  --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' --test_timeout 900 "$TOOL"
-          do < tool_list.txt
+          done < tool_list.txt
           planemo merge_test_reports json_output/*.json tool_test_output.json
           planemo test_reports tool_test_output.json --test_output tool_test_output.html
       - uses: actions/upload-artifact@v3
