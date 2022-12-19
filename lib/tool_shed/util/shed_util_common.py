@@ -3,6 +3,7 @@ import logging
 import os
 import socket
 import string
+from typing import TYPE_CHECKING
 
 import sqlalchemy.orm.exc
 from sqlalchemy import (
@@ -34,6 +35,9 @@ from tool_shed.util import (
     hg_util,
     repository_util,
 )
+
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
 
 log = logging.getLogger(__name__)
 
@@ -98,7 +102,7 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 """
 
 
-def count_repositories_in_category(app, category_id):
+def count_repositories_in_category(app: "ToolShedApp", category_id: str) -> int:
     sa_session = app.model.session
     return (
         sa_session.query(app.model.RepositoryCategoryAssociation)
@@ -107,7 +111,7 @@ def count_repositories_in_category(app, category_id):
     )
 
 
-def get_categories(app):
+def get_categories(app: "ToolShedApp"):
     """Get all categories from the database."""
     sa_session = app.model.session
     return (
@@ -118,13 +122,13 @@ def get_categories(app):
     )
 
 
-def get_category(app, id):
+def get_category(app: "ToolShedApp", id: str):
     """Get a category from the database."""
     sa_session = app.model.session
     return sa_session.query(app.model.Category).get(app.security.decode_id(id))
 
 
-def get_category_by_name(app, name):
+def get_category_by_name(app: "ToolShedApp", name: str):
     """Get a category from the database via name."""
     sa_session = app.model.session
     try:
