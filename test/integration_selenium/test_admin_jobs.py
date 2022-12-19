@@ -15,7 +15,7 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 JOB_CONFIG = os.path.join(SCRIPT_DIRECTORY, "test_admin_jobs_job_conf.yml")
 
 
-class AdminDependencyContainersTestCase(SeleniumIntegrationTestCase):
+class TestAdminDependencyContainers(SeleniumIntegrationTestCase):
     requires_admin = True
 
     @classmethod

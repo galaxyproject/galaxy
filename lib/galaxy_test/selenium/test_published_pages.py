@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class PublishedPagesGridTestCase(SharedStateSeleniumTestCase):
+class TestPublishedPagesGrid(SharedStateSeleniumTestCase):
     @selenium_test
     def test_index(self):
         self.navigate_to_published_pages()

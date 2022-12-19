@@ -9,7 +9,7 @@ from .framework import (
 )
 
 
-class PublishedWorkflowsGridTestCase(SharedStateSeleniumTestCase):
+class TestPublishedWorkflowsGrid(SharedStateSeleniumTestCase):
     @selenium_test
     def test_index(self):
         self.navigate_to_published_workflows()
