@@ -672,7 +672,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         repository_dependencies_required = self.new_repository_dependency_metadata_required(repository_metadata)
         tools_required = self.new_tool_metadata_required(repository_metadata)
         tool_dependencies_required = self.new_tool_dependency_metadata_required(repository_metadata)
-        if repository_dependencies_required or tools_required or tool_dependencies_required:
+        data_managers_required = self.new_data_manager_required(repository_metadata)
+        if repository_dependencies_required or tools_required or tool_dependencies_required or data_managers_required:
             return True
         return False
 
@@ -726,6 +727,16 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 # self.metadata_dict includes no metadata for repository dependencies, so a new repository_metadata
                 # record is not needed.
                 return False
+
+    def new_data_manager_required(self, repository_metadata):
+        if self.metadata_dict and repository_metadata and repository_metadata.metadata:
+            return self.compare_data_manager(self.metadata_dict, repository_metadata.metadata) != self.EQUAL
+        else:
+            return bool(
+                repository_metadata
+                and repository_metadata.metadata
+                and repository_metadata.metadata.get("data_managers")
+            )
 
     def new_tool_metadata_required(self, repository_metadata):
         """
