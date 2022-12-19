@@ -196,10 +196,10 @@ def get_repository_categories(app, id):
 def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
     """Return the display-safe contents of a repository file for display in a browser."""
     safe_str = ""
-    if not is_path_browsable(app, file_path, repository_id, is_admin):
+    if not _is_path_browsable(app, file_path, repository_id, is_admin):
         log.warning("Request tries to access a file outside of the repository location. File path: %s", file_path)
         return "Invalid file path"
-    # Symlink targets are checked by is_path_browsable
+    # Symlink targets are checked by _is_path_browsable
     if os.path.islink(file_path):
         safe_str = f"link to: {basic_util.to_html_string(os.readlink(file_path))}"
         return safe_str
@@ -421,7 +421,7 @@ def handle_email_alerts(app, host, repository, content_alert_str="", new_repo_al
                 log.exception("An error occurred sending a tool shed repository update alert by email.")
 
 
-def is_path_browsable(app, path, repository_id, is_admin=False):
+def _is_path_browsable(app, path, repository_id, is_admin=False):
     """
     Detects whether the given path is browsable i.e. is within the
     allowed repository folders. Admins can additionaly browse folders
@@ -461,7 +461,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.
     """
-    if not is_path_browsable(app, folder_path, repository_id, is_admin):
+    if not _is_path_browsable(app, folder_path, repository_id, is_admin):
         log.warning("Request tries to access a folder outside of the allowed locations. Folder path: %s", folder_path)
         return []
     try:
@@ -475,7 +475,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
         is_folder = False
         full_path = os.path.join(folder_path, filename)
         is_link = os.path.islink(full_path)
-        path_is_browsable = is_path_browsable(app, full_path, repository_id)
+        path_is_browsable = _is_path_browsable(app, full_path, repository_id)
         if is_link and not path_is_browsable:
             log.warning(
                 f"Valid folder contains a symlink outside of the repository location. Link found in: {str(full_path)}"
@@ -519,7 +519,6 @@ __all__ = (
     "get_user",
     "handle_email_alerts",
     "have_shed_tool_conf_for_install",
-    "is_path_browsable",
     "is_path_within_dependency_dir",
     "is_path_within_repo",
     "open_repository_files_folder",
