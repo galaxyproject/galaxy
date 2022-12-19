@@ -30,18 +30,15 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol3,
     DatasetProtocol5,
     DatasetProtocol6,
-    DatasetProtocol8,
     DatasetProtocol9,
-    DatasetProtocol10,
     DatasetProtocol11,
-    DatasetProtocol12,
     DatasetProtocol16,
     DatasetProtocol20,
     DatasetProtocol21,
     DatasetProtocol23,
     DatasetProtocol24,
     DatasetProtocol25,
-    DatasetProtocol26,
+    Displayable,
     HasClearAssociatedFiles,
     HasCreatingJob,
     HasExt,
@@ -358,7 +355,7 @@ class Data(metaclass=DataMeta):
         return error, msg, messagetype
 
     def _archive_composite_dataset(
-        self, trans, data: DatasetProtocol12, headers: Headers, do_action: str = "zip"
+        self, trans, data: Displayable, headers: Headers, do_action: str = "zip"
     ) -> Tuple[Union[ZipstreamWrapper, str], Headers]:
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
@@ -403,9 +400,7 @@ class Data(metaclass=DataMeta):
                 rpath = os.path.relpath(fpath, extra_files_path)
                 yield fpath, rpath
 
-    def _serve_raw(
-        self, dataset: DatasetProtocol26, to_ext: Optional[str], headers: Headers, **kwd
-    ) -> Tuple[IO, Headers]:
+    def _serve_raw(self, dataset: Displayable, to_ext: Optional[str], headers: Headers, **kwd) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
         headers[
             "content-type"
@@ -445,7 +440,7 @@ class Data(metaclass=DataMeta):
     def display_data(
         self,
         trans,
-        dataset: DatasetProtocol26,
+        dataset: Displayable,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -607,9 +602,9 @@ class Data(metaclass=DataMeta):
 
     def _download_filename(
         self,
-        dataset: DatasetProtocol10,
+        dataset: Displayable,
         to_ext: Optional[str] = None,
-        hdca: Optional[DatasetProtocol8] = None,
+        hdca: Optional[Displayable] = None,
         element_identifier: Optional[str] = None,
         filename_pattern: Optional[str] = None,
     ) -> str:

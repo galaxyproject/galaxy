@@ -140,27 +140,11 @@ class DatasetProtocol7(HasId, HasMetadata, Protocol):
     ...
 
 
-class DatasetProtocol8(HasHid, HasName, Protocol):
-    ...
-
-
 class DatasetProtocol9(HasDatatype, HasFileName, HasMetadata, Protocol):
     ...
 
 
-class DatasetProtocol10(HasExtension, HasHid, HasName, Protocol):
-    ...
-
-
 class DatasetProtocol11(HasDatatype, HasExt, HasFileName, HasMetadata, Protocol):
-    ...
-
-
-class DatasetProtocol12(HasExtension, HasExtraFilesPath, HasFileName, HasName, Protocol):
-    ...
-
-
-class DatasetProtocol13(HasExtension, HasFileName, HasHid, HasName, Protocol):
     ...
 
 
@@ -240,7 +224,7 @@ class DatasetProtocol25(
     ...
 
 
-class DatasetProtocol26(
+class Displayable(
     HasCreatingJob,
     HasDataset,
     HasDatatype,

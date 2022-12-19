@@ -43,7 +43,7 @@ from typing import (
 from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol26,
+    Displayable,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -212,7 +212,7 @@ class _BlastDb(Data):
     def display_data(
         self,
         trans,
-        dataset: DatasetProtocol26,
+        dataset: Displayable,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

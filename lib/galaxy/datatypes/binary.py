@@ -41,7 +41,7 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol23,
     DatasetProtocol25,
-    DatasetProtocol26,
+    Displayable,
     HasFileName,
     HasMetadata,
 )
@@ -650,7 +650,7 @@ class BamNative(CompressedArchive, _BamOrSam):
     def display_data(
         self,
         trans,
-        dataset: DatasetProtocol26,
+        dataset: Displayable,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -2021,7 +2021,7 @@ class H5MLM(H5):
     def display_data(
         self,
         trans,
-        dataset: DatasetProtocol26,
+        dataset: Displayable,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

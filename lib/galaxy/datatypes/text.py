@@ -22,7 +22,7 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol23,
     DatasetProtocol25,
-    DatasetProtocol26,
+    Displayable,
     HasCreatingJob,
 )
 from galaxy.datatypes.data import (
@@ -198,7 +198,7 @@ class Ipynb(Json):
     def display_data(
         self,
         trans,
-        dataset: DatasetProtocol26,
+        dataset: Displayable,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -219,7 +219,7 @@ class Ipynb(Json):
     def _display_data_trusted(
         self,
         trans,
-        dataset: DatasetProtocol26,
+        dataset: Displayable,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
