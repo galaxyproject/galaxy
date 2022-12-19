@@ -36,7 +36,7 @@
                     </b-form-group>
                 </b-form>
                 <b-form-group description="Use strings or regular expressions to search jobs.">
-                    <index-filter id="job-search" :placeholder="titleSearchJobs" :help-html="helpHtml" v-model="filter">
+                    <index-filter id="job-search" v-model="filter" :placeholder="titleSearchJobs" :help-html="helpHtml">
                     </index-filter>
                 </b-form-group>
             </b-col>
@@ -86,11 +86,11 @@
                 :items="finishedJobs"
                 :no-items-message="finishedNoJobsMessage"
                 :loading="loading"
+                :busy="busy"
                 @tool-clicked="(toolId) => appendTagFilter('tool', toolId)"
                 @runner-clicked="(runner) => appendTagFilter('runner', runner)"
                 @handler-clicked="(handler) => appendTagFilter('handler', handler)"
-                @user-clicked="(user) => appendTagFilter('user', user)"
-                :busy="busy">
+                @user-clicked="(user) => appendTagFilter('user', user)">
             </jobs-table>
         </template>
     </div>
@@ -141,7 +141,7 @@ returned. So <code>tool_id:'cat1'</code> would show only jobs from the <code>cat
 `;
 
 export default {
-    components: { JobLock, JobsTable, Heading, IndexFilter},
+    components: { JobLock, JobsTable, Heading, IndexFilter },
     mixins: [filtersMixin],
     data() {
         return {

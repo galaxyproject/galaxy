@@ -36,8 +36,12 @@
                     @toggleDetails="row.toggleDetails" />
             </template>
             <template v-slot:cell(tags)="row">
-                <Tags :index="row.index" :tags="row.item.tags" :disabled="row.item.deleted || published" />
-                @input="onTags" @tag-click="onTagClick"
+                <Tags
+                    :index="row.index"
+                    :tags="row.item.tags"
+                    :disabled="row.item.deleted || published"
+                    @input="onTags"
+                    @tag-click="onTagClick" />
             </template>
             <template v-slot:cell(published)="row">
                 <SharingIndicators
