@@ -62,6 +62,7 @@ import { APIKey } from "components/User/APIKey";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
+import HistoryExportTasks from "components/History/Export/HistoryExport";
 import { StorageDashboardRouter } from "components/User/DiskUsage";
 
 Vue.use(VueRouter);
@@ -235,7 +236,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/:historyId/export",
-                        component: HistoryExport,
+                        get component() {
+                            return Galaxy.config.enable_celery_tasks ? HistoryExportTasks : HistoryExport;
+                        },
                         props: true,
                     },
                     {
@@ -469,6 +472,7 @@ export function getRouter(Galaxy) {
                             queryTrsServer: route.query.trs_server,
                             queryTrsId: route.query.trs_id,
                             queryTrsVersionId: route.query.trs_version,
+                            queryTrsUrl: route.query.trs_url,
                             isRun: route.query.run_form == "true",
                         }),
                     },

@@ -216,7 +216,6 @@ class SharedHistoryListGrid(grids.Grid):
 
 class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesItemRatings):
     history_manager: histories.HistoryManager = depends(histories.HistoryManager)
-    history_export_view: histories.HistoryExportView = depends(histories.HistoryExportView)
     history_serializer: histories.HistorySerializer = depends(histories.HistorySerializer)
     slug_builder: SlugBuilder = depends(SlugBuilder)
 

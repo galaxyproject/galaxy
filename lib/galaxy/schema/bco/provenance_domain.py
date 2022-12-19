@@ -56,14 +56,14 @@ class Contributor(BaseModel):
     class Config:
         extra = Extra.forbid
 
-    name: str = Field(..., description="Name of contributor", examples=["Charles Darwin"])
+    name: str = Field(..., description="Name of contributor", example=["Charles Darwin"])
     affiliation: Optional[str] = Field(
-        None, description="Organization the particular contributor is affiliated with", examples=["HMS Beagle"]
+        None, description="Organization the particular contributor is affiliated with", example=["HMS Beagle"]
     )
     email: Optional[EmailStr] = Field(
         None,
         description="electronic means for identification and communication purposes",
-        examples=["name@example.edu"],
+        example=["name@example.edu"],
     )
     contribution: List[ContributionEnum] = Field(
         ..., description="type of contribution determined according to PAV ontology"
@@ -71,7 +71,7 @@ class Contributor(BaseModel):
     orcid: Optional[AnyUrl] = Field(
         None,
         description="Field to record author information. ORCID identifiers allow for the author to curate their information after submission. ORCID identifiers must be valid and must have the prefix ‘https://orcid.org/’",
-        examples=["http://orcid.org/0000-0002-1825-0097"],
+        example=["http://orcid.org/0000-0002-1825-0097"],
     )
 
 
@@ -105,7 +105,7 @@ class ReviewItem(BaseModel):
     reviewer_comment: Optional[str] = Field(
         None,
         description="Optional free text comment by reviewer",
-        examples=["Approved by research institution staff. Waiting for approval from regulator"],
+        example=["Approved by research institution staff. Waiting for approval from regulator"],
     )
     status: Status = Field(..., description="Current verification status of the IEEE-2791 Object")
 
@@ -117,12 +117,12 @@ class ProvenanceDomain(BaseModel):
     name: str = Field(
         ...,
         description="Public searchable name for IEEE-2791 Object. This public field should take free text value using common biological research terminology supporting the terminology used in the usability_domain, external references (xref), and keywords sections.",
-        examples=["HCV1a ledipasvir resistance SNP detection"],
+        example=["HCV1a ledipasvir resistance SNP detection"],
     )
     version: str = Field(
         ...,
         description="Records the versioning of this IEEE-2791 Object instance. IEEE-2791 Object Version should adhere to semantic versioning as recommended by Semantic Versioning 2.0.0.",
-        examples=["2.9"],
+        example=["2.9"],
     )
     review: Optional[List[ReviewItem]] = Field(
         None,
@@ -149,5 +149,5 @@ class ProvenanceDomain(BaseModel):
     license: str = Field(
         ...,
         description="Creative Commons license or other license information (text) space. The default or recommended license can be Attribution 4.0 International as shown in example",
-        examples=["https://spdx.org/licenses/CC-BY-4.0.html"],
+        example=["https://spdx.org/licenses/CC-BY-4.0.html"],
     )

@@ -90,7 +90,10 @@ class RootController(controller.JSAppLauncher, UsesAnnotations):
 
     @web.expose
     def display_as(self, trans: GalaxyWebTransaction, id=None, display_app=None, **kwd):
-        """Returns a file in a format that can successfully be displayed in display_app."""
+        """
+        Returns a file in a format that can successfully be displayed in display_app;
+        if the file could not be returned, returns a message as a string.
+        """
         # TODO: unencoded id
         data = trans.sa_session.query(self.app.model.HistoryDatasetAssociation).get(id)
         authz_method = "rbac"

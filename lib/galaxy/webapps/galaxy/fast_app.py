@@ -152,6 +152,7 @@ def get_fastapi_instance() -> FastAPI:
         title="Galaxy API",
         docs_url="/api/docs",
         openapi_tags=api_tags_metadata,
+        license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
     )
 
 
@@ -164,9 +165,10 @@ def get_openapi_schema() -> Dict[str, Any]:
     return get_openapi(
         title=app.title,
         version=app.version,
-        openapi_version=app.openapi_version,
+        openapi_version="3.1.0",
         description=app.description,
         routes=app.routes,
+        license_info=app.license_info,
     )
 
 

@@ -1,7 +1,7 @@
 <script setup>
 import UploadModalContent from "./UploadModalContent";
 
-import { ref } from "vue";
+import { ref, watch } from "vue";
 import { getAppRoot } from "onload";
 
 import { useCurrentUser } from "composables/user";
@@ -71,6 +71,19 @@ async function open(overrideOptions) {
 
     if (options.value.immediateUpload) {
         content.value.immediateUpload(options.value.immediateFiles);
+    }
+}
+
+watch(
+    () => showModal.value,
+    (modalShown) => setIframeEvents(modalShown)
+);
+
+function setIframeEvents(disableEvents) {
+    const element = document.getElementById("galaxy_main");
+
+    if (element) {
+        element.style["pointer-events"] = disableEvents ? "none" : "auto";
     }
 }
 

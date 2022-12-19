@@ -17,8 +17,6 @@ export function patchRouterPush(VueRouter) {
         if (force) {
             location = addSearchParams(location, { __vkey__: Date.now() });
         }
-        // log upcoming location
-        console.debug("VueRouter - push: ", location);
         // verify if confirmation is required
         if (this.confirmation) {
             if (confirm("There are unsaved changes which will be lost.")) {

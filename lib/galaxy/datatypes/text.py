@@ -8,10 +8,17 @@ import os
 import re
 import subprocess
 import tempfile
+from typing import (
+    IO,
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 import yaml
 
 from galaxy.datatypes.data import (
+    GeneratePrimaryFileDataset,
     get_file_peek,
     Headers,
     Text,
@@ -32,6 +39,12 @@ from galaxy.util import (
     unicodify,
 )
 
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
+
 log = logging.getLogger(__name__)
 
 
@@ -42,7 +55,7 @@ class Html(Text):
     edam_format = "format_2331"
     file_ext = "html"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -50,11 +63,11 @@ class Html(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in html format
 
@@ -78,7 +91,7 @@ class Json(Text):
     edam_format = "format_3464"
     file_ext = "json"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
@@ -86,17 +99,17 @@ class Json(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/json"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to load the string with the json module. If successful it's a json file.
         """
         return self._looks_like_json(file_prefix)
 
-    def _looks_like_json(self, file_prefix):
+    def _looks_like_json(self, file_prefix: FilePrefix) -> bool:
         # Pattern used by SequenceSplitLocations
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.
@@ -115,7 +128,7 @@ class Json(Text):
                 return start.startswith("[") or start.startswith("{")
             return False
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
@@ -130,7 +143,7 @@ class ExpressionJson(Json):
         name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True
     )
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """ """
         if dataset.has_data():
             json_type = "null"
@@ -157,7 +170,7 @@ class ExpressionJson(Json):
 class Ipynb(Json):
     file_ext = "ipynb"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
@@ -165,7 +178,7 @@ class Ipynb(Json):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to load the string with the json module. If successful it's a json file.
         """
@@ -179,8 +192,17 @@ class Ipynb(Json):
                     return False
             except Exception:
                 return False
+        return False
 
-    def display_data(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ):
         headers = kwd.get("headers", {})
         config = trans.app.config
         trust = getattr(config, "trust_jupyter_notebook_conversion", False)
@@ -193,7 +215,15 @@ class Ipynb(Json):
                 trans, dataset, preview=preview, filename=filename, to_ext=to_ext, headers=headers, **kwd
             )
 
-    def _display_data_trusted(self, trans, dataset, preview=False, filename=None, to_ext=None, **kwd):
+    def _display_data_trusted(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        **kwd,
+    ) -> Tuple[IO, Headers]:
         headers = kwd.get("headers", {})
         preview = string_as_bool(preview)
         if to_ext or not preview:
@@ -223,7 +253,7 @@ class Ipynb(Json):
                 )
             return open(ofilename, mode="rb"), headers
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Set the number of models in dataset.
         """
@@ -359,18 +389,18 @@ class Biom1(Json):
         no_value=[],
     )
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         is_biom = False
         if self._looks_like_json(file_prefix):
             is_biom = self._looks_like_biom(file_prefix)
         return is_biom
 
-    def _looks_like_biom(self, file_prefix: FilePrefix, load_size=50000):
+    def _looks_like_biom(self, file_prefix: FilePrefix, load_size: int = 50000) -> bool:
         """
         @param filepath: [str] The path to the evaluated file.
         @param load_size: [int] The size of the file block load in RAM (in
@@ -396,7 +426,7 @@ class Biom1(Json):
             pass
         return is_biom
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Store metadata information from the BIOM file.
         """
@@ -458,12 +488,12 @@ class ImgtJson(Json):
 
     MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "IMGT Library"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in json format with imgt elements
 
@@ -480,7 +510,7 @@ class ImgtJson(Json):
             is_imgt = self._looks_like_imgt(file_prefix)
         return is_imgt
 
-    def _looks_like_imgt(self, file_prefix: FilePrefix, load_size=5000):
+    def _looks_like_imgt(self, file_prefix: FilePrefix, load_size: int = 5000) -> bool:
         """
         @param filepath: [str] The path to the evaluated file.
         @param load_size: [int] The size of the file block load in RAM (in
@@ -497,7 +527,7 @@ class ImgtJson(Json):
             pass
         return is_imgt
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Store metadata information from the imgt file.
         """
@@ -524,12 +554,12 @@ class GeoJson(Json):
 
     file_ext = "geojson"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "GeoJSON"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in json format with imgt elements
 
@@ -546,7 +576,7 @@ class GeoJson(Json):
             is_geojson = self._looks_like_geojson(file_prefix)
         return is_geojson
 
-    def _looks_like_geojson(self, file_prefix: FilePrefix, load_size=5000):
+    def _looks_like_geojson(self, file_prefix: FilePrefix, load_size: int = 5000) -> bool:
         """
         One of "Point", "MultiPoint", "LineString", "MultiLineString", "Polygon", "MultiPolygon", and "GeometryCollection" needs to be present.
         All of "type", "geometry", and "coordinates" needs to be present.
@@ -585,7 +615,7 @@ class Obo(Text):
     edam_format = "format_2549"
     file_ext = "obo"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
@@ -593,7 +623,7 @@ class Obo(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess the Obo filetype.
         It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
@@ -627,7 +657,7 @@ class Arff(Text):
     )
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
@@ -636,7 +666,7 @@ class Arff(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess the Arff filetype.
         It usually starts with a "format-version:" string and has several stanzas which starts with "id:".
@@ -663,7 +693,7 @@ class Arff(Text):
                     return True
         return False
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Trying to count the comment lines and the number of columns included.
         A typical ARFF data block looks like this:
@@ -735,7 +765,7 @@ class SnpEffDb(Text):
         super().__init__(**kwd)
 
     # The SnpEff version line was added in SnpEff version 4.1
-    def getSnpeffVersionFromFile(self, path):
+    def getSnpeffVersionFromFile(self, path: str) -> Optional[str]:
         snpeff_version = None
         try:
             with gzip.open(path, "rt") as fh:
@@ -748,8 +778,8 @@ class SnpEffDb(Text):
             pass
         return snpeff_version
 
-    def set_meta(self, dataset, **kwd):
-        super().set_meta(dataset, **kwd)
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         data_dir = dataset.extra_files_path
         # search data_dir/genome_version for files
         regulation_pattern = "regulation_(.+).bin"
@@ -834,14 +864,14 @@ class SnpSiftDbNSFP(Text):
             "%s.gz.tbi", description="Tabix Index File", substitute_name_with_metadata="reference_name", is_binary=True
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
         return "<html><head><title>SnpSiftDbNSFP Composite Dataset</title></head></html>"
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -853,7 +883,7 @@ class SnpSiftDbNSFP(Text):
                 f.write("\n")
             f.write(annotations)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         try:
             efp = dataset.extra_files_path
             if os.path.exists(efp):
@@ -879,7 +909,7 @@ class SnpSiftDbNSFP(Text):
                 unicodify(e),
             )
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
             dataset.blurb = f"{dataset.metadata.reference_name}"
@@ -894,7 +924,7 @@ class IQTree(Text):
 
     file_ext = "iqtree"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Detect the IQTree file
 
@@ -927,7 +957,7 @@ class Paf(Text):
 
     file_ext = "paf"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('A-3105.paf')
@@ -962,7 +992,7 @@ class Gfa1(Text):
 
     file_ext = "gfa1"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('big.gfa1')
@@ -1012,7 +1042,7 @@ class Gfa2(Text):
 
     file_ext = "gfa2"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('sample.gfa2')
@@ -1054,24 +1084,24 @@ class Yaml(Text):
 
     file_ext = "yaml"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to load the string with the yaml module. If successful it's a yaml file.
         """
         return self._looks_like_yaml(file_prefix)
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/yaml"
 
-    def _yield_user_file_content(self, trans, from_dataset, filename, headers: Headers):
+    def _yield_user_file_content(self, trans, from_dataset: "DatasetInstance", filename: str, headers: Headers) -> IO:
         # Override non-standard application/yaml mediatype with
         # text/plain, so preview is shown in preview iframe,
         # instead of downloading the file.
         headers["content-type"] = "text/plain"
         return super()._yield_user_file_content(trans, from_dataset, filename, headers)
 
-    def _looks_like_yaml(self, file_prefix: FilePrefix):
+    def _looks_like_yaml(self, file_prefix: FilePrefix) -> bool:
         # Pattern used by SequenceSplitLocations
         if file_prefix.file_size < 50000 and not file_prefix.truncated:
             # If the file is small enough - don't guess just check.
@@ -1099,7 +1129,7 @@ class BCSLmodel(Text):
 
     file_ext = "bcsl.model"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .bcsl.model format
         """
@@ -1113,7 +1143,7 @@ class BCSLts(Json):
 
     file_ext = "bcsl.ts"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .bcsl.ts format
         """
@@ -1122,7 +1152,7 @@ class BCSLts(Json):
             is_bcsl_ts = self._looks_like_bcsl_ts(file_prefix)
         return is_bcsl_ts
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
             ts = json.load(open(dataset.file_name, "r"))
@@ -1132,7 +1162,7 @@ class BCSLts(Json):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def _looks_like_bcsl_ts(self, file_prefix: FilePrefix):
+    def _looks_like_bcsl_ts(self, file_prefix: FilePrefix) -> bool:
         content = open(file_prefix.filename, "r").read()
         keywords = ['"edges":', '"nodes":', '"ordering":', '"initial":']
         if all(keyword in content for keyword in keywords):
@@ -1149,14 +1179,14 @@ class StormSample(Text):
 
     file_ext = "storm.sample"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .storm.sample format
         """
         keywords = ["Storm-pars", "Result (initial states)"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Storm-pars sample results."
             dataset.blurb = nice_size(dataset.get_size())
@@ -1174,14 +1204,14 @@ class StormCheck(Text):
 
     file_ext = "storm.check"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .storm.check format
         """
         keywords = ["Storm ", "Result (for initial states)"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             with open(dataset.file_name, "r") as result:
                 answer = ""
@@ -1202,14 +1232,14 @@ class CTLresult(Text):
 
     file_ext = "ctl.result"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .ctl.result format
         """
         keywords = ["Result:", "Number of satisfying states:"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             with open(dataset.file_name, "r") as result:
                 answer = ""
@@ -1229,7 +1259,7 @@ class PithyaProperty(Text):
 
     file_ext = "pithya.property"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .pithya.property format
         """
@@ -1242,7 +1272,7 @@ class PithyaModel(Text):
 
     file_ext = "pithya.model"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .pithya.model format
         """
@@ -1256,7 +1286,7 @@ class PithyaResult(Json):
 
     file_ext = "pithya.result"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is in .pithya.result format
         """
@@ -1265,7 +1295,7 @@ class PithyaResult(Json):
             is_pithya_result = self._looks_like_pithya_result(file_prefix)
         return is_pithya_result
 
-    def _looks_like_pithya_result(self, file_prefix: FilePrefix):
+    def _looks_like_pithya_result(self, file_prefix: FilePrefix) -> bool:
         content = open(file_prefix.filename, "r").read()
         keywords = ['"variables":', '"states":', '"parameter_values":', '"results":']
         if all(keyword in content for keyword in keywords):
@@ -1279,7 +1309,7 @@ class Castep(Text):
 
     file_ext = "castep"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a CASTEP log
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -1314,7 +1344,7 @@ class Param(Yaml):
 
     file_ext = "param"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Modified version of the normal Yaml sniff that also checks
         for a valid CASTEP task key-value pair, which is not case
@@ -1361,7 +1391,7 @@ class FormattedDensity(Text):
 
     file_ext = "den_fmt"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file contains electron densities in the CASTEP den_fmt format
 
         >>> from galaxy.datatypes.sniff import get_test_fname

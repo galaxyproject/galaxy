@@ -2049,7 +2049,7 @@ module.
   </xs:complexType>
   <xs:group name="TestAssertionsGeneral">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[General asserions]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[General assertions]]></xs:documentation>
     </xs:annotation>
     <xs:choice>
       <xs:element name="has_size" type="AssertHasSize"/>

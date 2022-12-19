@@ -24,6 +24,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.exceptions.error_codes import error_codes_by_int_code
+from galaxy.schema.schema import OptionalNumberT
 from galaxy.util import (
     directory_hash_id,
     is_uuid,
@@ -33,9 +34,6 @@ from galaxy.web.framework.decorators import api_error_message
 
 now = datetime.utcnow
 DEFAULT_STORAGE_DURATION = 24 * 60 * 60  # store for a day by default
-
-
-OptionalNumberT = Optional[Union[int, float]]
 
 
 @dataclass
@@ -68,6 +66,7 @@ class ShortTermStorageTargetSecurity:
 class ShortTermStorageTarget:
     request_id: UUID
     raw_path: str
+    duration: OptionalNumberT = None
 
     @property
     def path(self):
@@ -167,12 +166,14 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
             security = ShortTermStorageTargetSecurity()
         request_id = uuid4()
         target_directory = self._directory(request_id)
-        target = ShortTermStorageTarget(request_id=request_id, raw_path=str(target_directory / "target"))
-        safe_makedirs(target_directory)
         duration = duration or self._config.default_storage_duration or DEFAULT_STORAGE_DURATION
         maximum_storage_duration = self._config.maximum_storage_duration
         if duration and maximum_storage_duration and duration > maximum_storage_duration:
             duration = maximum_storage_duration
+        target = ShortTermStorageTarget(
+            request_id=request_id, raw_path=str(target_directory / "target"), duration=duration
+        )
+        safe_makedirs(target_directory)
         # optimize by placing the deletion time outside JSON as new file...
         request_info = {
             "filename": filename,
