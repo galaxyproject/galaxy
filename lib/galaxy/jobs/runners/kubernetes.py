@@ -95,7 +95,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 map=str, valid=lambda s: s == "$gid" or isinstance(s, int) or not s or s.isdigit(), default=None
             ),
             k8s_cleanup_job=dict(map=str, valid=lambda s: s in {"onsuccess", "always", "never"}, default="always"),
-            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=3),
+            k8s_pod_retries=dict(map=int, valid=lambda x: int(x) >= 0, default=1), # note that if the backOffLimit is lower, this paramer will have not effect.
+            k8s_job_spec_back_off_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=0), # this means that it will stop retrying after 1 failure.
             k8s_walltime_limit=dict(map=int, valid=lambda x: int(x) >= 0, default=172800),
             k8s_unschedulable_walltime_limit=dict(map=int, valid=lambda x: not x or int(x) >= 0, default=None),
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
@@ -323,6 +324,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         job_ttl = self.runner_params["k8s_job_ttl_secs_after_finished"]
         if self.runner_params["k8s_cleanup_job"] != "never" and job_ttl is not None:
             k8s_job_spec["ttlSecondsAfterFinished"] = job_ttl
+        k8s_job_spec["backoffLimit"] = self.runner_params["k8s_job_spec_back_off_limit"]
         return k8s_job_spec
 
     def __force_label_conformity(self, value):
@@ -526,7 +528,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             # command line execution, separated by ;, which is what Galaxy does
             # to assemble the command.
             "command": [ajs.job_wrapper.shell],
-            "args": ["-c", ajs.job_file],
+            "args": ["-c", f"{ajs.job_file}; exit $(cat {ajs.exit_code_file})"],
             "workingDir": ajs.job_wrapper.working_directory,
             "volumeMounts": deduplicate_entries(mounts),
         }
@@ -715,6 +717,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             else:
                 max_pod_retries = 1
 
+            # make sure that we don't have any conditions by which the runner
+            # would wait forever for a pod that never gets sent.
+            max_pod_retries = min(max_pod_retries, self.runner_params["k8s_job_spec_back_off_limit"])
+
             # Check if job.obj['status'] is empty,
             # return job_state unchanged if this is the case
             # as probably this means that the k8s API server hasn't
@@ -736,7 +742,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 job_state.running = False
                 self.mark_as_finished(job_state)
                 return None
-            elif active > 0 and failed <= max_pod_retries:
+            elif active > 0 and failed < max_pod_retries + 1:
                 if not job_state.running:
                     if self.__job_pending_due_to_unschedulable_pod(job_state):
                         if self.runner_params.get("k8s_unschedulable_walltime_limit"):
@@ -760,7 +766,10 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                     job_state.job_wrapper.cleanup()
                 return None
             else:
-                return self._handle_job_failure(job, job_state)
+                self._handle_job_failure(job, job_state)
+                # changes for resubmission (removed self.mark_as_failed from handle_job_failure)
+                self.work_queue.put((self.mark_as_failed, job_state))
+                return None
 
         elif len(jobs.response["items"]) == 0:
             if job_state.job_wrapper.get_job().state == model.Job.states.DELETED:
@@ -798,6 +807,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def _handle_job_failure(self, job, job_state):
         # Figure out why job has failed
         with open(job_state.error_file, "a") as error_file:
+            # TODO we need to remove probably these error_file.writes, as they remove the stderr / stdout capture
+            # from failed Galaxy k8s jobs.
             if self.__job_failed_due_to_low_memory(job_state):
                 error_file.write("Job killed after running out of memory. Try with more memory.\n")
                 job_state.fail_message = "Tool failed due to insufficient memory. Try with more memory."
@@ -809,8 +820,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             else:
                 error_file.write("Exceeded max number of Kubernetes pod retries allowed for job\n")
                 job_state.fail_message = "More pods failed than allowed. See stdout for pods details."
-        job_state.running = False
-        self.mark_as_failed(job_state)
+        # changes for resubmission, to mimick what happens in the LSF-cli runner
+        # job_state.running = False
+        # self.mark_as_failed(job_state)
         try:
             if self.__has_guest_ports(job_state.job_wrapper):
                 self.__cleanup_k8s_guest_ports(job_state.job_wrapper, job)
@@ -855,11 +867,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         if not pods.response["items"]:
             return False
 
-        pod = self._get_pod_for_job(job_state)
+        # pod = self._get_pod_for_job(job_state) # this was always None
+        pod = pods.response["items"][0]
         if (
             pod
-            and pod.obj["status"]["phase"] == "Failed"
-            and pod.obj["status"]["containerStatuses"][0]["state"]["terminated"]["reason"] == "OOMKilled"
+            and "terminated" in pod["status"]["containerStatuses"][0]["state"]
+            and pod["status"]["containerStatuses"][0]["state"]["terminated"]["reason"] == "OOMKilled"
         ):
             return True
 
