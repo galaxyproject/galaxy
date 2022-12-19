@@ -5865,6 +5865,12 @@ export interface components {
              */
             content_format?: components["schemas"]["PageContentFormat"];
             /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
+            /**
              * Deleted
              * @description Whether this Page has been deleted.
              */
@@ -5929,6 +5935,12 @@ export interface components {
              */
             title: string;
             /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
+            /**
              * Username
              * @description The name of the user owning this Page.
              */
@@ -5945,6 +5957,12 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         PageSummary: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
             /**
              * Deleted
              * @description Whether this Page has been deleted.
@@ -5999,6 +6017,12 @@ export interface components {
              * @description The name of the page
              */
             title: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
             /**
              * Username
              * @description The name of the user owning this Page.
@@ -12733,6 +12757,42 @@ export interface operations {
             /** @description Whether to include deleted pages in the result. */
             /** @description Sort page index by this specified attribute on the page model */
             /** @description Sort in descending order? */
+            /**
+             * @description A mix of free text and GitHub-style tags used to filter the index operation.
+             *
+             * ## Query Structure
+             *
+             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+             * being indexed (i.e. a column in the database).
+             *
+             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+             * this means the database operation `ILIKE` will typically be used).
+             *
+             * Once the tagged filters are extracted from the search query, the remaining text is just
+             * used to search various documented attributes of the object.
+             *
+             * ## GitHub-style Tags Available
+             *
+             * `title`
+             * : The pages's title.
+             *
+             * `slug`
+             * : The pages's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `tag`
+             * : The pages's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `user`
+             * : The pages's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * ## Free Text
+             *
+             * Free text search terms will be searched against the following attributes of the
+             * Pages: `title`, `slug`, `tag`, `user`.
+             */
             query?: {
                 deleted?: boolean;
                 user_id?: string;
@@ -12742,6 +12802,7 @@ export interface operations {
                 sort_desc?: boolean;
                 limit?: number;
                 offset?: number;
+                search?: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
