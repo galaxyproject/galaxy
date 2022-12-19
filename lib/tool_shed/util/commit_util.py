@@ -161,7 +161,7 @@ ChangeResponseT = Tuple[Union[bool, str], str, List[str], str, int, int]
 
 
 def handle_directory_changes(
-    app,
+    app: "ToolShedApp",
     host: str,
     username: str,
     repository: "Repository",
