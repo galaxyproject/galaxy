@@ -60,6 +60,7 @@ from tool_shed.util.metadata_util import (
 )
 
 if TYPE_CHECKING:
+    from tool_shed.context import ProvidesUserContext
     from tool_shed.structured_app import ToolShedApp
     from tool_shed.webapp.model import Repository
 
@@ -248,7 +249,7 @@ def get_repository_in_tool_shed(app, id, eagerload_columns=None):
     return q.get(app.security.decode_id(id))
 
 
-def get_repo_info_dict(app, user, repository_id, changeset_revision):
+def get_repo_info_dict(app: "ToolShedApp", user, repository_id, changeset_revision):
     repository = get_repository_in_tool_shed(app, repository_id)
     repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
     repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
@@ -315,7 +316,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
 
 
 def get_repositories_by_category(
-    app, category_id, installable=False, sort_order="asc", sort_key="name", page=None, per_page=25
+    app: "ToolShedApp", category_id, installable=False, sort_order="asc", sort_key="name", page=None, per_page=25
 ):
     sa_session = app.model.session
     query = (
@@ -371,7 +372,7 @@ def get_repositories_by_category(
     return repositories
 
 
-def handle_role_associations(app, role, repository, **kwd):
+def handle_role_associations(app: "ToolShedApp", role, repository, **kwd):
     sa_session = app.model.session
     message = escape(kwd.get("message", ""))
     status = kwd.get("status", "done")
@@ -443,7 +444,7 @@ def change_repository_name_in_hgrc_file(hgrc_file, new_name):
         config.write(fh)
 
 
-def update_repository(trans, id: str, **kwds) -> Tuple[Optional["Repository"], Optional[str]]:
+def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Optional["Repository"], Optional[str]]:
     """Update an existing ToolShed repository"""
     app = trans.app
     message = None
@@ -518,7 +519,7 @@ def update_repository(trans, id: str, **kwds) -> Tuple[Optional["Repository"], O
     return repository, message
 
 
-def validate_repository_name(app, name, user):
+def validate_repository_name(app: "ToolShedApp", name, user):
     """
     Validate whether the given name qualifies as a new TS repo name.
     Repository names must be unique for each user, must be at least two characters
