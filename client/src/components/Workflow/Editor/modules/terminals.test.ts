@@ -9,6 +9,7 @@ import {
     OutputCollectionTerminal,
     OutputTerminal,
     OutputParameterTerminal,
+    producesAcceptableDatatype,
 } from "./terminals";
 import * as _simpleSteps from "../test-data/simple_steps.json";
 import * as _advancedSteps from "../test-data/parameter_steps.json";
@@ -47,7 +48,11 @@ describe("terminalFactory", () => {
         expect(terminals["data input"]["output"]).toBeInstanceOf(OutputTerminal);
         expect(terminals["simple data"]["input"]).toBeInstanceOf(InputTerminal);
         expect(terminals["simple data"]["out_file1"]).toBeInstanceOf(OutputTerminal);
+        expect(terminals["simple data 2"]["input"]).toBeInstanceOf(InputTerminal);
         expect(terminals["simple data 2"]["out_file1"]).toBeInstanceOf(OutputTerminal);
+        expect(terminals["multiple simple data"]["input1"]).toBeInstanceOf(InputTerminal);
+        expect(terminals["multiple simple data"]["queries_0|input2"]).toBeInstanceOf(InputTerminal);
+        expect(terminals["multiple simple data"]["out_file1"]).toBeInstanceOf(OutputTerminal);
         expect(terminals["optional data input"]["output"]).toBeInstanceOf(OutputTerminal);
         expect(terminals["list input"]["output"]).toBeInstanceOf(OutputCollectionTerminal);
         expect(terminals["list:list input"]["output"]).toBeInstanceOf(OutputCollectionTerminal);
@@ -62,12 +67,15 @@ describe("terminalFactory", () => {
         expect(terminals["multi data"]["advanced|advanced_threshold"]).toBeInstanceOf(InputParameterTerminal);
         expect(terminals["list collection input"]["input1"]).toBeInstanceOf(InputCollectionTerminal);
     });
+    it("throws error on invalid terminalSource", () => {
+        const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper);
+        expect(invalidFactory).toThrow();
+    });
 });
 
 describe("canAccept", () => {
     let terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
     let stepStore: ReturnType<typeof useWorkflowStepStore>;
-    let connectionStore: ReturnType<typeof useConnectionStore>;
     beforeEach(() => {
         setActivePinia(createPinia());
         terminals = setupAdvanced();
@@ -97,6 +105,13 @@ describe("canAccept", () => {
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("accepts mapped over data output on mapped over data input", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["multiple simple data"]["input1"] as InputTerminal;
+        const dataInTwo = terminals["multiple simple data"]["queries_0|input2"] as InputTerminal;
+        dataIn.connect(collectionOut);
+        expect(dataInTwo.canAccept(collectionOut).canAccept).toBe(true);
     });
     it("accepts list:list data -> data connection", () => {
         const collectionOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
@@ -179,6 +194,109 @@ describe("canAccept", () => {
         expect(integerInputParam.canAccept(dataOut).canAccept).toBe(false);
         expect(integerInputParam.canAccept(dataOut).reason).toBe("Cannot attach a data parameter to a integer input");
     });
+    it("rejects increasing map over if output connected to data input", () => {
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const constrainingDataIn = terminals["simple data 2"]["input"] as InputTerminal;
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        // connect simple data to simple data 2
+        constrainingDataIn.connect(dataOut);
+        // now we can't connect a collection out to the data input of simple data
+        expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Can't map over this input with output collection type - an output of this tool is not mapped over constraining this input. Disconnect output(s) and retry."
+        );
+    });
+    it("rejects increasing map over to list:list if data is mapped over a list input", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const listListOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
+        dataIn.connect(collectionOut);
+        dataInTwo.connect(dataOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        //
+        dataIn.disconnect(collectionOut);
+        // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
+        // TODO: avoid this if possible ...
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(listListOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(listListOut).reason).toBe(
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+        );
+    });
+    it("rejects attaching non-collection outputs to mapper over inputs", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const simpleDataOut = terminals["data input"]["output"] as OutputTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
+        dataIn.connect(collectionOut);
+        dataInTwo.connect(dataOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        //
+        dataIn.disconnect(collectionOut);
+        // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
+        // TODO: avoid this if possible ...
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.canAccept(simpleDataOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(simpleDataOut).reason).toBe(
+            "Cannot attach non-collection outputs to mapped over inputs, consider disconnecting inputs and outputs to reset this input's mapping."
+        );
+    });
+    // TODO: test mapOver reset when constraint removed
+    it("resets mapOver when constraint is lifted", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const simpleDataOut = terminals["data input"]["output"] as OutputTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
+        dataIn.connect(collectionOut);
+        dataInTwo.connect(dataOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        //
+        dataIn.disconnect(collectionOut);
+        // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
+        // TODO: avoid this if possible ...
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        dataInTwo.disconnect(dataOut);
+        console.log("after disconnect", stepStore.stepMapOver);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("rejects connecting incompatible connection types", () => {
+        const pairedOut = terminals["paired input"]["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["list collection input"]["input1"] as InputCollectionTerminal;
+        expect(collectionIn.canAccept(pairedOut).canAccept).toBe(false);
+        expect(collectionIn.canAccept(pairedOut).reason).toBe("Incompatible collection type(s) for attachment.");
+    });
+    it("rejects mapping over collection input if other inputs have an incompatible map over collection type", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const listListOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        const listOneIn = terminals["two list inputs"]["kind|f1"] as InputCollectionTerminal;
+        const listTwoIn = terminals["two list inputs"]["kind|f2"] as InputCollectionTerminal;
+        listOneIn.connect(listListOut);
+        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+        );
+    });
+    it("rejects mapping over collection input if outputs constrain input to incompatible collection type", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const listListOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        const listOneIn = terminals["two list inputs"]["kind|f1"] as InputCollectionTerminal;
+        const listTwoIn = terminals["two list inputs"]["kind|f2"] as InputCollectionTerminal;
+        const mapOverOut = terminals["two list inputs"]["out1"] as OutputTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        listOneIn.connect(listListOut);
+        dataIn.connect(mapOverOut);
+        listOneIn.disconnect(listListOut);
+        // TODO: this should be possible eventually IMHO
+        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+        );
+    });
     it("tracks transitive map over", () => {
         const collectionOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
         const dataIn = terminals["simple data"]["input"] as InputTerminal;
@@ -206,6 +324,39 @@ describe("canAccept", () => {
         expect(otherListIn.canAccept(intermediateOut).canAccept).toBe(true);
         otherListIn.connect(intermediateOut);
         expect(otherListIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
+    it("rejects connections to input collection constrained by output connection", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const collectionIn = terminals["list collection input"]["input1"] as InputCollectionTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const mappedOverListOut = terminals["list collection input"]["out_file1"] as OutputCollectionTerminal;
+        const listListOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        // This constrains collectionIn to list because it's output is mapped over
+        dataIn.connect(mappedOverListOut);
+        collectionIn.connect(collectionOut);
+        // Constraint survives disconnect
+        collectionIn.disconnect(collectionOut);
+        // Can't connect list:list because output acts like "list""
+        expect(collectionIn.canAccept(listListOut).canAccept).toBe(false);
+        expect(collectionIn.canAccept(listListOut).reason).toBe(
+            "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
+        );
+    });
+    it("rejects connections to input collection constrained by other input", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const listOneIn = terminals["two list inputs"]["kind|f1"] as InputCollectionTerminal;
+        const listTwoIn = terminals["two list inputs"]["kind|f2"] as InputCollectionTerminal;
+        const mapOverOut = terminals["two list inputs"]["out1"] as OutputTerminal;
+        const listListOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        // This constrains "two list inputs" to list:list because it's output is mapped over
+        listOneIn.connect(listListOut);
+        dataIn.connect(mapOverOut);
+        // Can't connect list as output acts like "list:list"
+        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+        );
     });
 });
 
@@ -264,5 +415,25 @@ describe("Input terminal", () => {
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(true);
         connectionStore.addConnection(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);
+    });
+});
+
+describe("producesAcceptableDatatype", () => {
+    it("accepts everything if datatypes includes input", () => {
+        expect(producesAcceptableDatatype(testDatatypesMapper, ["input"], ["whatever"]).canAccept).toBe(true);
+    });
+    it("rejects connections for unknown output datatypes", () => {
+        expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["i am not an extension"]).canAccept).toBe(
+            false
+        );
+        expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["i am not an extension"]).reason).toBe(
+            "Effective output data type(s) [i am not an extension] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator."
+        );
+    });
+    it("rejects incompatible datatypes", () => {
+        expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["ab1"]).canAccept).toBe(false);
+        expect(producesAcceptableDatatype(testDatatypesMapper, ["txt"], ["ab1"]).reason).toBe(
+            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt]."
+        );
     });
 });

@@ -416,12 +416,12 @@
         "action_arguments": {}
       }
     },
-    "uuid": "96250d39-9dcc-4e5c-a8bc-4e02ee6c7a2d",
+    "uuid": "8e4a88dd-b7ad-49b5-907d-debeb75e88c0",
     "workflow_outputs": [],
     "input_connections": {},
     "position": {
-      "left": 413.1534664300125,
-      "top": 622.9720189581046
+      "left": 458.4488830566406,
+      "top": 605.1050186157227
     }
   },
   "9": {
@@ -572,6 +572,73 @@
   "12": {
     "id": 12,
     "type": "tool",
+    "label": "two list inputs",
+    "content_id": "collection_two_paired",
+    "name": "collection_two_paired",
+    "tool_state": {
+      "kind": "{\"__current_case__\": 1, \"collection_type\": \"list\", \"f1\": {\"__class__\": \"RuntimeValue\"}, \"f2\": {\"__class__\": \"RuntimeValue\"}}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "kind|f1",
+        "label": "F1",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "list"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      },
+      {
+        "name": "kind|f2",
+        "label": "F2",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "list"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out1",
+        "extensions": [
+          "txt"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {
+      "HideDatasetActionout1": {
+        "action_type": "HideDatasetAction",
+        "output_name": "out1",
+        "action_arguments": {}
+      }
+    },
+    "uuid": "69d24038-b2d1-4ee6-a27a-2a65b085b72c",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 956.6060619946536,
+      "top": 128.91953793457992
+    }
+  },
+  "13": {
+    "id": 13,
+    "type": "tool",
     "label": "list collection input 2",
     "content_id": "count_list",
     "name": "count_list",
@@ -608,13 +675,75 @@
       }
     ],
     "annotation": "",
-    "post_job_actions": {},
+    "post_job_actions": {
+      "HideDatasetActionout_file1": {
+        "action_type": "HideDatasetAction",
+        "output_name": "out_file1",
+        "action_arguments": {}
+      }
+    },
     "uuid": "f5c65e31-97d2-4278-a7bc-b167a4da8453",
     "workflow_outputs": [],
     "input_connections": {},
     "position": {
       "left": 877.2584533691406,
       "top": 566.6462173461914
+    }
+  },
+  "14": {
+    "id": 14,
+    "type": "tool",
+    "label": "multiple simple data",
+    "content_id": "cat1",
+    "name": "Concatenate datasets",
+    "tool_state": {
+      "input1": "{\"__class__\": \"RuntimeValue\"}",
+      "queries": "[{\"__index__\": 0, \"input2\": {\"__class__\": \"RuntimeValue\"}}]",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input1",
+        "label": "Concatenate Dataset",
+        "multiple": false,
+        "extensions": [
+          "data"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      },
+      {
+        "name": "queries_0|input2",
+        "label": "Dataset 1 > Select",
+        "multiple": false,
+        "extensions": [
+          "data"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "input"
+        ],
+        "type": "data",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "cb3fd87f-8632-4302-a647-a37831d36632",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 895.1765396322244,
+      "top": 754.329538279789
     }
   }
 }

@@ -77,16 +77,20 @@ export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
     type: typeof ParameterTypes;
 }
 
+type InputTerminalSource = DataStepInput | DataCollectionStepInput | ParameterStepInput;
+type OutputTerminalSource = DataOutput | CollectionOutput | ParameterOutput;
+export type TerminalSource = InputTerminalSource | OutputTerminalSource;
+
 export interface NewStep {
     annotation?: string;
     config_form?: object;
     content_id?: string | null;
     id?: number;
     input_connections: StepInputConnection;
-    inputs: Array<DataStepInput | DataCollectionStepInput | ParameterStepInput>;
+    inputs: Array<InputTerminalSource>;
     label?: string;
     name: string;
-    outputs: Array<DataOutput | CollectionOutput | ParameterOutput>;
+    outputs: Array<OutputTerminalSource>;
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_state: Record<string, unknown>;
