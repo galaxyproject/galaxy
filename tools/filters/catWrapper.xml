@@ -10,6 +10,8 @@ catWrapper.py
 #for $q in $queries
     '${q.input2}'
 #end for
+&& >&2 echo "hey error"
+&& exit 1
     ]]></command>
     <inputs>
         <param name="input1" type="data" label="Concatenate Dataset"/>
