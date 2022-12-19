@@ -35,6 +35,8 @@
 
 <script>
 import Gantt from "../../../../node_modules/frappe-gantt";
+import { ref, watch, onMounted, computed } from 'vue'
+import store from "@/store"
 import { mapCacheActions } from "vuex-cache";
 import { mapGetters } from "vuex";
 import { keyedColorScheme } from "utils/color";
@@ -56,104 +58,85 @@ export default {
         UserHistories,
         DateTimeModal,
     },
-    data() {
-        return {
-            tasks: [],
-            historyId: null,
-            accountingArray: [],
-            accountingArrayMinutes: [],
-            ganttView: "Hour",
-            historyItems: [],
-            currentlyProcessing: false,
-            isLoading: true,
-            openModal: false,
-            emptyHistory: false,
-            dateTimeVal: new Date().toLocaleString("en-GB"),
-            start_time: null,
-            end_time: null,
-        };
-    },
-    computed: {
-        ...mapGetters({ currentHistoryId: "history/currentHistoryId" }),
-        ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
-        ...mapState(useHistoryItemsStore, ["items"]),
-        ...mapState(useHistoryItemsStore, { storeGetHistoryItems: 'getHistoryItems' }),
-        history() {
-            return this.currentHistoryId;
-        },
-        historyContent() {
-            return this.items[this.historyId];
-        },
-    },
-    watch: {
-        currentHistoryId(newHistoryId, oldHistoryId) {
+    setup() {
+        
+        // Store
+        const piniaStore = useHistoryItemsStore() 
+
+        // Refs
+        const historyId = ref(store.getters['history/currentHistoryId'])
+        const accountingArray = ref([])
+        const accountingArrayMinutes = ref([])
+        const historyItems = ref(piniaStore.items[historyId.value])
+        const gantt = ref() 
+        const ganttView = ref('Hour')
+        const currentlyProcessing = ref(false)
+        const isLoading = ref(true)
+        const openModal = ref(false)
+        const emptyHistory = ref(false)
+        const dateTimeVal = ref(new Date().toLocaleString("en-GB"))
+        const start_time = ref(null)
+        const end_time = ref(null)
+
+        
+        // Computed properties
+        // const history = computed(() => {
+        //     return store.getters['history/currentHistoryId'];
+        // }) 
+
+        const historyContent = computed( async () => {
+            return await piniaStore.items[historyId.value];
+        })
+
+        // Hooks
+        onMounted(() => {
+            getData()
+            createKeyedColorForButtons()
+        })
+
+        // Watchers
+        watch(() => store.getters['history/currentHistoryId'], (newHistoryId, oldHistoryId) => {
             if (newHistoryId !== oldHistoryId) {
                 // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
-                this.currentlyProcessing = false;
-                this.historyId = newHistoryId;
-                this.clearGantt()
-                this.ganttView = "Day"
-                this.createKeyedColorForButtons();
+                currentlyProcessing.value = false;
+                historyId.value = newHistoryId;
+                clearGantt()
+                ganttView.value = "Day"
+                createKeyedColorForButtons();
             }
-        },
-        historyContent(newContent, oldContent) {
-            if (newContent && newContent.length > 0 && !this.currentlyProcessing) {
-                this.emptyHistory = false;
-                this.historyItems = newContent;
-                this.getData();
-            } else if (newContent && newContent.length == 0) {
-                this.emptyHistory = true;
-            }
-            this.createKeyedColorForButtons();
-        },
-        emptyHistory(newEmpty, oldEmpty) {
-            if (newEmpty === true) {
-              this.clearGantt()    
-            }
-        },
-        ganttView(newval, oldval) {
-            if (oldval == "Minute") {
-                this.makeGantt();
-            }
-        },
-    },
-    mounted() {
-        this.getData();
-        this.createKeyedColorForButtons();
-    },
-    methods: {
-        ...mapCacheActions(["fetchJobMetricsForDatasetId"]),
-        getHistoryItems: async function () { 
-            if (this.historyId && this.fetchHistoryItems) {
-              try {
-                await this.fetchHistoryItems(this.historyId, "", 0);
-            } catch (error) {
-                console.debug("Gantt error.", error);
-            } 
-          }
-        },
-        changeDate: function (value, status) {
-            this.dateTimeVal = value;
-            if (status == "confirmed") {
-                this.start_time = moment(value).format("YYYY-MM-DD HH:mm:ss");
-                this.end_time = moment(value).add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
-                if (this.start_time && this.end_time) {
-                    this.isLoading = true;
-                    this.accountingArrayMinutes = this.accountingArray.filter((entry) => {
-                        if (moment(this.end_time).isBefore(moment(entry.endTime))) {
-                            this.end_time = moment(entry.endTime).format("YYYY-MM-DD HH:mm:ss");
-                        }
-                        return moment(entry.startTime).isBetween(moment(this.start_time), moment(this.end_time));
-                    });
-                    this.makeGantt();
-                    this.gantt.change_view_mode("Minute");
+        })
+
+        watch(historyContent, (newContent, oldContent) => {
+            newContent.then((res) => {
+                if (res && res.length > 0 && !currentlyProcessing.value) {
+                emptyHistory.value = false;
+                historyItems.value = res;
+                getData();
+                } else if (res && res.length == 0 && currentlyProcessing.value) {
+                    isLoading.value = false
+                    emptyHistory.value = true;
                 }
+                createKeyedColorForButtons();
+            })
+        })
+
+        watch(emptyHistory, (newEmpty, oldEmpty) => {
+            if (newEmpty === true) {
+              clearGantt()    
             }
-        },
-        makeGantt: function () {
+        })
+        
+        watch(ganttView, (newval, oldval) => {
+            if (oldval == "Minute") {
+                makeGantt();
+            }
+        })
+
+        // Methods/Functions
+        function makeGantt() {
             var entries = [];
-            if (this.ganttView == "Minute") {
-                this.accountingArrayMinutes.map((row, idx) => {
+            if (ganttView.value == "Minute") {
+                accountingArrayMinutes.value.map((row, idx) => {
                     createClassWithCSS(
                         `.class-${row["id"]} .bar-progress`,
                         `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
@@ -169,7 +152,7 @@ export default {
                     });
                 });
             } else {
-                this.accountingArray.map((row, idx) => {
+                accountingArray.value.map((row, idx) => {
                     createClassWithCSS(
                         `.class-${row["id"]} .bar-progress`,
                         `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
@@ -185,58 +168,60 @@ export default {
                     });
                 });
             }
-            this.isLoading = false;
+            isLoading.value = false;
             if (entries.length > 0) {
-                this.gantt = new Gantt("#gantt", entries, {
+                gantt.value = new Gantt("#gantt", entries, {
                     view_mode: "Day",
                     view_modes: ["Quarter Day", "Half Day", "Day", "Week", "Month", "Hour", "Minute"],
                     arrow_curve: 14,
                     date_format: "DD-MM-YYYY",
                     popup_trigger: "mouseover",
-                    start_time: this.start_time,
-                    end_time: this.end_time,
+                    start_time: start_time.value,
+                    end_time: end_time.value,
                     custom_popup_html: function (task) {
                         return `
-                      <div class="popover-container">
-                          <div class="popover-header">
-                              ${task.job_id}: ${task.name}  
-                          </div>
-                          <div class="popover-body">
-                              Started At: ${task.start}
-                              <br>
-                              Finished At: ${task.end}
-                          </div>  
-                      </div>`;
+                        <div class="popover-container">
+                            <div class="popover-header">
+                                ${task.job_id}: ${task.name}  
+                            </div>
+                            <div class="popover-body">
+                                Started At: ${task.start}
+                                <br>
+                                Finished At: ${task.end}
+                            </div>  
+                        </div>`;
                     },
                 });
             }
-        },
-        clearGantt: function () {
+        }
+
+        function clearGantt() {
           var container = document.getElementsByClassName("gantt");
           if (container && container.length > 0) {
               // We will make .gantt empty so that old data from the visualization is removed and transition to the new one looks more smooth 
-              this.accountingArray = [];
-              this.accountingArrayMinutes = [];
+              accountingArray.value = [];
+              accountingArrayMinutes.value = [];
               container[0].innerHTML = "";
           }
-        },
-        getData: async function () {
-            this.isLoading = true;
-            this.currentlyProcessing = true;
-            this.historyId = this.history;
-            this.accountingArray = [];
-            this.accountingArrayMinutes = []
-            this.historyItems = this.storeGetHistoryItems( this.historyId, "" );
-            if (this.historyItems.length == 0) {
-                this.currentlyProcessing = false;
-                this.getHistoryItems();
+        }
+
+        async function getData() {
+            isLoading.value = true;
+            currentlyProcessing.value = true;
+            historyId.value = store.getters['history/currentHistoryId'];
+            accountingArray.value = [];
+            accountingArrayMinutes.value = []
+            historyItems.value = piniaStore.getHistoryItems( historyId.value, "" );
+            if (historyItems.value.length == 0) {
+                currentlyProcessing.value = false;
+                getHistoryItems();
             }
-            if (this.historyItems && this.historyItems.length > 0) {
-                for await (const job of this.historyItems) {
+            if (historyItems.value && historyItems.value.length > 0) {
+                for await (const job of historyItems.value) {
                     var Accounting = {};
                     if (job.id) {
-                        await this.fetchJobMetricsForDatasetId({ datasetId: job.id, datasetType: "hda" });
-                        const metrics = await this.$store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
+                        await store.dispatch('fetchJobMetricsForDatasetId', { datasetId: job.id, datasetType: "hda" });
+                        const metrics = await store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
                         if (metrics && metrics[1] && metrics[2]) {
                             Accounting = {
                                 label: job.name,
@@ -245,48 +230,86 @@ export default {
                                 startTime: metrics[1].value,
                                 endTime: metrics[2].value,
                             };
-                            this.accountingArray.push(Accounting);
+                            accountingArray.value.push(Accounting);
                         }
                     }
                 }
-                if (this.accountingArray.length > 0) {
-                    this.currentlyProcessing = false;
-                    this.makeGantt();
+                if (accountingArray.value.length > 0) {
+                    currentlyProcessing.value = false;
+                    makeGantt();
                 }
             }
-        },
-        closeModal() {
-            this.openModal = false;
-        },
-        changeQDayView: function () {
-            this.ganttView = "Quarter Day";
-            this.gantt.change_view_mode("Quarter Day");
-        },
-        changeHDayView: function () {
-            this.ganttView = "Half Day";
-            this.gantt.change_view_mode("Half Day");
-        },
-        changeDayView: function () {
-            this.ganttView = "Day";
-            this.gantt.change_view_mode("Day");
-        },
-        changeWeekView: function () {
-            this.ganttView = "Week";
-            this.gantt.change_view_mode("Week");
-        },
-        changeMonthView: function () {
-            this.ganttView = "Month";
-            this.gantt.change_view_mode("Month");
-        },
-        changeHourView: function () {
-            this.ganttView = "Hour";
-            this.gantt.change_view_mode("Hour");
-        },
-        changeMinuteView: function () {
-            this.ganttView = "Minute";
-            this.openModal = true;
-        },
-        createKeyedColorForButtons: function () {
+        }
+
+        async function getHistoryItems() { 
+            if (historyId.value && piniaStore.fetchHistoryItems) {
+              try {
+                await piniaStore.fetchHistoryItems(historyId.value, "", 0);
+            } catch (error) {
+                console.debug("Gantt error.", error);
+            } 
+          }
+        }
+
+        function changeDate(value, status) {
+            dateTimeVal.value = value;
+            if (status == "confirmed") {
+                start_time.value = moment(value).format("YYYY-MM-DD HH:mm:ss");
+                end_time.value = moment(value).add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
+                if (start_time.value && end_time.value) {
+                    isLoading.value = true;
+                    accountingArrayMinutes.value = accountingArray.value.filter((entry) => {
+                        if (moment(end_time.value).isBefore(moment(entry.endTime))) {
+                            end_time.value = moment(entry.endTime).format("YYYY-MM-DD HH:mm:ss");
+                        }
+                        return moment(entry.startTime).isBetween(moment(start_time.value), moment(end_time.value));
+                    });
+                    makeGantt();
+                    gantt.value.change_view_mode("Minute");
+                }
+            }
+        }
+
+        function closeModal() {
+            openModal.value = false;
+        }
+
+        function changeQDayView() {
+            ganttView.value = "Quarter Day";
+            gantt.value.change_view_mode("Quarter Day");
+        }
+
+        function changeHDayView() {
+            ganttView.value = "Half Day";
+            gantt.value.change_view_mode("Half Day");
+        }
+
+        function changeDayView() {
+            ganttView.value = "Day";
+            gantt.value.change_view_mode("Day");
+        }
+
+        function changeWeekView() {
+            ganttView.value = "Week";
+            gantt.value.change_view_mode("Week");
+        }
+
+        function changeMonthView() {
+            ganttView.value = "Month";
+            gantt.value.change_view_mode("Month");
+        }
+
+        function changeHourView() {
+            ganttView.value = "Hour";
+            gantt.value.change_view_mode("Hour");
+        }
+
+        function changeMinuteView() {
+            ganttView.value = "Minute";
+            openModal.value = true;
+        }
+
+        function createKeyedColorForButtons() {
             createClassWithCSS(
                 ".QDayView",
                 `background : ${keyedColorScheme("QDayView")["primary"]}; border-color : ${
@@ -336,8 +359,26 @@ export default {
                 } ; color :"black"`
             );
             document.getElementById("minuteView").className = "minuteView";
-        },
+        }
+
+        // return to use in template
+        return {
+            isLoading,
+            emptyHistory,
+            changeMonthView,
+            changeWeekView,
+            changeQDayView,
+            changeHDayView,
+            changeDayView,
+            changeHourView,
+            changeMinuteView,
+            openModal,
+            dateTimeVal,
+            closeModal,
+            changeDate
+        }
     },
+    
 };
 
 function createClassWithCSS(selector, style) {
