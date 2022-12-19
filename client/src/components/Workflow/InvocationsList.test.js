@@ -108,7 +108,7 @@ describe("InvocationsList.vue", () => {
                 historyName: "My History",
                 historyId: "abcde145678",
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 localVue,
             });
@@ -216,7 +216,7 @@ describe("InvocationsList.vue", () => {
                 loading: false,
                 defaultPerPage: 1,
             };
-            wrapper = mount(Invocations, {
+            wrapper = mount(InvocationsList, {
                 propsData,
                 computed: {
                     getWorkflowNameByInstanceId: (state) => (id) => "workflow name",

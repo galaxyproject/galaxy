@@ -8,7 +8,7 @@
     </CurrentUser>
 </template>
 <script>
-import InvocationsList from "components/Workflow/Invocations";
+import InvocationsList from "components/Workflow/InvocationsList";
 import CurrentUser from "components/providers/CurrentUser";
 import { mapGetters } from "vuex";
 
