@@ -9,7 +9,7 @@
                 <PageIndexActions :root="root" class="float-right" />
             </b-col>
         </b-row>
-        <b-table :fields="fields" v-model="itemsModel" v-bind="indexTableAttrs">
+        <b-table v-model="itemsModel" :fields="fields" v-bind="indexTableAttrs">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading pages" />
                 <b-alert v-else id="no-pages" variant="info" show>
@@ -34,9 +34,9 @@
                 <Tags
                     :index="row.index"
                     :tags="row.item.tags"
+                    :disabled="published"
                     @input="onTags"
-                    @tag-click="onTagClick"
-                    :disabled="published" />
+                    @tag-click="onTagClick" />
             </template>
             <template v-slot:cell(published)="row">
                 <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(filter)" />
@@ -53,8 +53,8 @@
             </template>
         </b-table>
         <b-pagination
-            v-model="currentPage"
             v-if="rows >= perPage"
+            v-model="currentPage"
             class="gx-pages-grid-pager"
             v-bind="paginationAttrs"></b-pagination>
     </div>
@@ -119,6 +119,7 @@ export default {
         PageDropdown,
         PageUrl,
     },
+    mixins: [paginationMixin, filtersMixin],
     props: {
         published: {
             // Render the published workflows version of this grid.
@@ -126,7 +127,6 @@ export default {
             default: true,
         },
     },
-    mixins: [paginationMixin, filtersMixin],
     data() {
         const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
         const implicitFilter = this.published ? "is:published" : null;
@@ -142,15 +142,6 @@ export default {
             implicitFilter: implicitFilter,
         };
     },
-    created() {
-        this.root = getAppRoot();
-        // this.services = new Services({ root: this.root });
-    },
-    watch: {
-        filter(val) {
-            this.refresh();
-        },
-    },
     computed: {
         dataProviderParameters() {
             const extraParams = { search: this.effectiveFilter };
@@ -160,6 +151,15 @@ export default {
             }
             return extraParams;
         },
+    },
+    watch: {
+        filter(val) {
+            this.refresh();
+        },
+    },
+    created() {
+        this.root = getAppRoot();
+        // this.services = new Services({ root: this.root });
     },
     methods: {
         onTags: function (tags, index) {

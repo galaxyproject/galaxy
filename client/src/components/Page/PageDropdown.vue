@@ -15,19 +15,19 @@
                 <span class="fa fa-eye fa-fw mr-1" />
                 <span>View</span>
             </a>
-            <a class="dropdown-item dropdown-item-edit" v-if="!readOnly" :href="urlEdit">
+            <a v-if="!readOnly" class="dropdown-item dropdown-item-edit" :href="urlEdit">
                 <span class="fa fa-edit fa-fw mr-1" />
                 <span>Edit Content</span>
             </a>
-            <a class="dropdown-item dropdown-item-edit-attributes" v-if="!readOnly" :href="urlEditAttributes">
+            <a v-if="!readOnly" class="dropdown-item dropdown-item-edit-attributes" :href="urlEditAttributes">
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span>Edit Attributes</span>
             </a>
-            <a class="dropdown-item dropdown-item-share" v-if="!readOnly" :href="urlShare">
+            <a v-if="!readOnly" class="dropdown-item dropdown-item-share" :href="urlShare">
                 <span class="fa fa-share-alt fa-fw mr-1" />
                 <span>Share</span>
             </a>
-            <a class="dropdown-item" href="#" v-if="!readOnly" @click.prevent="onDelete">
+            <a v-if="!readOnly" class="dropdown-item" href="#" @click.prevent="onDelete">
                 <span class="fa fa-trash fa-fw mr-1" />
                 <span>Delete</span>
             </a>
