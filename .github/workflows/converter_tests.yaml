@@ -49,6 +49,9 @@ jobs:
         run: rsync -av --remove-source-files --exclude .git galaxy-test-data/ 'galaxy root/test-data/'
       - name: Install planemo
         run: pip install planemo
+      - name: Install jq
+        run: sudo apt-get install jq
+        shell: bash
       - name: Determine tools and converters to check
         run: |
           find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -v "macros" | grep -v -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
@@ -71,12 +74,16 @@ jobs:
           while read -r TOOL; do
             echo TESTING $TOOL
             json=$(mktemp -u -p json_output --suff .json)
-            planemo test  --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' --test_timeout 900 "$TOOL"
+            planemo test  --test_output_json "$json" --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' --test_timeout 900 "$TOOL" || true
           done < tool_list.txt
           planemo merge_test_reports json_output/*.json tool_test_output.json
           planemo test_reports tool_test_output.json --test_output tool_test_output.html
+          if jq '.["tests"][]["data"]["status"]' tool_test_output.json | grep -v "success"; then
+            echo "Unsuccessful tests found, inspect the 'Converter and built in tools test results' artifact for details."
+            exit 1
+          fi
       - uses: actions/upload-artifact@v3
         if: failure()
         with:
-          name: Converter test results (${{ matrix.python-version }})
+          name: Converter and built in tools test results (${{ matrix.python-version }})
           path: tool_test_output.html
