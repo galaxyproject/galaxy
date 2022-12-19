@@ -56,7 +56,7 @@ For users who manage their own DNS, you can set the appropriate A records to red
 
 The following configuration is only recommended for local testing, as users will directly connect to the InteractiveTool Proxy.
 In a production setup an upstream proxy should route requests to the proxy via the ``*.interactivetool.yourdomain`` subdomain,
-or use path-based proxying for interactive tools that supports that (``requires_domain=False``, see below for more details).
+or use path-based proxying for interactive tools that support it (``requires_domain=False``, see below for more details).
 
 Set these values in `galaxy.yml`:
 
