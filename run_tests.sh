@@ -4,9 +4,6 @@ cd "$(dirname "$0")"
 
 show_help() {
 cat <<EOF
-'${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
-'${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
-'${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
                                     can be pytest selector
 '${0##*/} -cwl (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api/cwl directory, test_path
@@ -14,7 +11,6 @@ cat <<EOF
 '${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
-'${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
@@ -297,7 +293,6 @@ if [ -n "$BUILD_NUMBER" ]; then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
 
-run_default_functional_tests="1"
 # Loop through and consume the main arguments.
 # Some loops will consume more than one argument (there are extra "shift"s in some cases).
 while :
@@ -307,25 +302,12 @@ do
           show_help
           exit 0
           ;;
-      -l|-list|--list)
-          show_list
-          exit 0
-          ;;
       -id|--id)
           if [ $# -gt 1 ]; then
               test_id=$2;
               shift 2
           else
               echo "--id requires an argument" 1>&2
-              exit 1
-          fi
-          ;;
-      -s|-sid|--sid)
-          if [ $# -gt 1 ]; then
-              section_id=$2
-              shift 2
-          else
-              echo "--sid requires an argument" 1>&2
               exit 1
           fi
           ;;
@@ -409,32 +391,18 @@ do
           framework_test=1;
           shift 1
           ;;
-      -main|-main_tools|--main_tools)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample"
-          marker="tool"
-          report_file="run_framework_tests.html"
-          framework_test=1;
-          shift 1
-          ;;
       -d|-data_managers|--data_managers)
           marker="data_manager"
           report_file="run_data_managers_tests.html"
           data_managers_test=1;
           shift 1
           ;;
-      -m|-migrated|--migrated)
-          GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
+      -main|-main_tools|--main_tools)
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample"
           marker="tool"
-          report_file="run_migrated_tests.html"
-          migrated_test=1;
-          shift
-          ;;
-      -installed|--installed)
-          GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
-          marker="tool"
-          report_file="run_installed_tests.html"
-          installed_test=1;
-          shift
+          report_file="run_framework_tests.html"
+          framework_test=1;
+          shift 1
           ;;
       -r|--report_file)
           if [ $# -gt 1 ]; then
@@ -555,7 +523,6 @@ do
       --)
           # Do not default to running the functional tests in this case, caller
           # is opting to run specific tests so don't interfere with that by default.
-          unset run_default_functional_tests;
           shift
           break
           ;;
@@ -589,7 +556,7 @@ fi
 
 setup_python
 
-if [ -n "$framework_test" ] || [ -n "$installed_test" ] || [ -n "$migrated_test" ] || [ -n "$data_managers_test" ] ; then
+if [ -n "$framework_test" ] || [ -n "$data_managers_test" ] ; then
     if [ -n "$test_id" ]; then
         selector="-k $test_id"
     else
@@ -602,16 +569,12 @@ elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
-elif [ -n "$section_id" ]; then
-    extra_args=$(python tool_list.py "$section_id")
 elif [ -n "$unit_extra" ]; then
     extra_args="$unit_extra"
 elif [ -n "$integration_extra" ]; then
     extra_args="$integration_extra"
 elif [ -n "$test_target" ] ; then
     extra_args="$test_target"
-elif [ -n "$run_default_functional_tests" ] ; then
-    extra_args='--exclude="^get" functional'
 else
     extra_args=""
 fi
