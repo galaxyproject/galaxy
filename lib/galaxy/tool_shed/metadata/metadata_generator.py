@@ -85,10 +85,10 @@ class BaseMetadataGenerator:
     persist: bool
 
     def initial_metadata_dict(self) -> Dict[str, Any]:
-        ...
+        raise NotImplementedError()
 
     def handle_repository_elem(self, repository_elem, only_if_compiling_contained_td=False) -> HandleResultT:
-        ...
+        raise NotImplementedError()
 
     def _generate_data_manager_metadata(
         self, repo_dir, data_manager_config_filename, metadata_dict: Dict[str, Any], shed_config_dict=None
@@ -855,6 +855,7 @@ class BaseMetadataGenerator:
 class GalaxyMetadataGenerator(BaseMetadataGenerator):
     """A MetadataGenerator building on Galaxy's app and repository constructs."""
 
+    app: InstallationTarget
     repository: Optional[ToolShedRepository]
 
     def __init__(
