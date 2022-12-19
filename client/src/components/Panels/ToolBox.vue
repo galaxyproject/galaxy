@@ -70,7 +70,8 @@
 <script>
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { UploadButton, openGlobalUploadModal } from "components/Upload";
+import { UploadButton } from "components/Upload";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import { filterToolSections, filterTools, hasResults } from "./utilities";
@@ -105,6 +106,10 @@ export default {
             type: String,
             default: _l("Workflows"),
         },
+    },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
     },
     data() {
         return {
@@ -171,7 +176,7 @@ export default {
         onOpen(tool, evt) {
             if (tool.id === "upload1") {
                 evt.preventDefault();
-                openGlobalUploadModal();
+                this.openGlobalUploadModal();
             } else if (tool.form_style === "regular") {
                 evt.preventDefault();
                 // encode spaces in tool.id
