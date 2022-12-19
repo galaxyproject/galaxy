@@ -36,12 +36,8 @@
                     @toggleDetails="row.toggleDetails" />
             </template>
             <template v-slot:cell(tags)="row">
-                <Tags
-                    :index="row.index"
-                    :tags="row.item.tags"
-                    :disabled="row.item.deleted || published" />
-                    @input="onTags"
-                    @tag-click="onTagClick"
+                <Tags :index="row.index" :tags="row.item.tags" :disabled="row.item.deleted || published" />
+                @input="onTags" @tag-click="onTagClick"
             </template>
             <template v-slot:cell(published)="row">
                 <SharingIndicators
@@ -197,11 +193,6 @@ export default {
             implicitFilter: implicitFilter,
         };
     },
-    watch: {
-        filter(val) {
-            this.refresh();
-        },
-    },
     computed: {
         dataProviderParameters() {
             const extraParams = { search: this.effectiveFilter, skip_step_counts: true };
@@ -210,6 +201,11 @@ export default {
                 extraParams.show_shared = false;
             }
             return extraParams;
+        },
+    },
+    watch: {
+        filter(val) {
+            this.refresh();
         },
     },
     created() {
