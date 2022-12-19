@@ -280,9 +280,9 @@ steps:
     def test_index_search_sharing_tags(self):
         user_id = self.dataset_populator.user_id()
         with self._different_user():
-            response_published = self._create_valid_page_with_slug("indexshowsharedpublished")["id"]
+            response_published = self._create_valid_page_with_slug("indexshowsharedpublishedtags")["id"]
             self._make_public(response_published)
-            response_shared = self._create_valid_page_with_slug("indexshowsharedshared")["id"]
+            response_shared = self._create_valid_page_with_slug("indexshowsharedsharedtags")["id"]
             self._share_with_user(response_shared, user_id)
 
         assert response_published in self._index_ids(dict(show_published=True, show_shared=True))
