@@ -10,7 +10,7 @@
   1. [add testing steps and prerequisites here if you didn't write automated tests covering all your changes]
 
 ## Accessibility (for UI Components)
-- [ ] This Pull Request complies with Accessibility best practices defined [here](https://github.com/galaxyproject/galaxy/blob/dev/client/docs/headings.md)
+- [ ] This Pull Request complies with [the Galaxy Accessibility best practices](https://github.com/galaxyproject/galaxy/blob/dev/client/docs/headings.md)
 
 ## License
 - [x] I agree to license these and all my past contributions to the core galaxy codebase under the [MIT license](https://opensource.org/licenses/MIT).
