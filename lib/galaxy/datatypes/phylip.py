@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 from galaxy import util
 from galaxy.datatypes._protocols import (
     DatasetProtocol23,
-    DatasetProtocol25,
+    SetsMetadata,
 )
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -41,7 +41,7 @@ class Phylip(Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """

@@ -124,10 +124,6 @@ class DatasetProtocol3(HasFileName, HasGetSize, Protocol):
     ...
 
 
-class DatasetProtocol4(HasFileName, HasMetadata, Protocol):
-    ...
-
-
 class DatasetProtocol5(HasExt, HasGetConvertedFilesByType, Protocol):
     ...
 
@@ -157,10 +153,6 @@ class DatasetProtocol15(HasDataset, HasHasData, HasMetadata, HasState, HasStates
 
 
 class DatasetProtocol16(HasDatatype, HasExtension, HasExtraFilesPath, HasFileName, HasMetadata, Protocol):
-    ...
-
-
-class DatasetProtocol17(HasExtraFilesPath, HasFileName, HasInfo, HasMetadata, HasName, Protocol):
     ...
 
 
@@ -207,23 +199,6 @@ class DatasetProtocol24(
     ...
 
 
-class DatasetProtocol25(
-    HasBlurb,
-    HasDataset,
-    HasExtraFilesPath,
-    HasFileName,
-    HasGetSize,
-    HasHasData,
-    HasId,
-    HasInfo,
-    HasMetadata,
-    HasName,
-    HasPeek,
-    Protocol,
-):
-    ...
-
-
 class Displayable(
     HasCreatingJob,
     HasDataset,
@@ -236,6 +211,23 @@ class Displayable(
     HasId,
     HasMetadata,
     HasName,
+    Protocol,
+):
+    ...
+
+
+class SetsMetadata(
+    HasBlurb,
+    HasDataset,
+    HasExtraFilesPath,
+    HasFileName,
+    HasGetSize,
+    HasHasData,
+    HasId,
+    HasInfo,
+    HasMetadata,
+    HasName,
+    HasPeek,
     Protocol,
 ):
     ...

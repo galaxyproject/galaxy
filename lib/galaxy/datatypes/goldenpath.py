@@ -6,7 +6,7 @@ from typing import (
     Union,
 )
 
-from galaxy.datatypes._protocols import DatasetProtocol25
+from galaxy.datatypes._protocols import SetsMetadata
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -24,7 +24,7 @@ class GoldenPath(Tabular):
     edam_format = "format_3693"
     file_ext = "agp"
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         # AGPFile reads and validates entire file.
         AGPFile(dataset.file_name)
         super().set_meta(dataset, overwrite=overwrite, **kwd)

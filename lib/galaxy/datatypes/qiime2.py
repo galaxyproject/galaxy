@@ -14,8 +14,8 @@ import yaml
 from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol25,
     HasMetadata,
+    SetsMetadata,
 )
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
@@ -35,7 +35,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
     MetadataElement(name="format", optional=True, no_value="", readonly=True)
     MetadataElement(name="version", readonly=True)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         metadata = _get_metadata_from_archive(dataset.file_name)
         for key, value in metadata.items():
             if value:
@@ -117,7 +117,7 @@ class QIIME2Metadata(Tabular):
     def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.

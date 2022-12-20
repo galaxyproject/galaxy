@@ -10,8 +10,8 @@ from typing import (
 
 from galaxy.datatypes._protocols import (
     DatasetProtocol18,
-    DatasetProtocol25,
     HasMetadata,
+    SetsMetadata,
 )
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
@@ -37,7 +37,7 @@ class Otu(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Otu files.
 
@@ -174,7 +174,7 @@ class GroupAbund(Otu):
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, skip: Optional[int] = 1, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, skip: Optional[int] = 1, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         # See if file starts with header line
@@ -298,7 +298,7 @@ class AlignCheck(Tabular):
         self.column_types = ["str", "int", "int", "int", "int", "int", "int", "int"]
         self.comment_lines = 1
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         dataset.metadata.column_names = self.column_names
@@ -355,7 +355,7 @@ class DistanceMatrix(Text):
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, skip: Optional[int] = 0, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, skip: Optional[int] = 0, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
         headers = iter_headers(dataset.file_name, sep="\t")
@@ -508,7 +508,7 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         self.column_names = ["Sequence", "Sequence", "Distance"]
         self.column_types = ["str", "str", "float"]
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, skip: Optional[int] = None, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, skip: Optional[int] = None, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
     def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
@@ -598,7 +598,7 @@ class Group(Tabular):
 
     def set_meta(
         self,
-        dataset: DatasetProtocol25,
+        dataset: SetsMetadata,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = None,
@@ -846,7 +846,7 @@ class CountTable(Tabular):
 
     def set_meta(
         self,
-        dataset: DatasetProtocol25,
+        dataset: SetsMetadata,
         overwrite: bool = True,
         skip: Optional[int] = 1,
         max_data_lines: Optional[int] = None,
@@ -1058,7 +1058,7 @@ class SffFlow(Tabular):
 
     def set_meta(
         self,
-        dataset: DatasetProtocol25,
+        dataset: SetsMetadata,
         overwrite: bool = True,
         skip: Optional[int] = 1,
         max_data_lines: Optional[int] = None,

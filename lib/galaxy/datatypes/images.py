@@ -14,7 +14,7 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol1,
     DatasetProtocol6,
     DatasetProtocol23,
-    DatasetProtocol25,
+    SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
@@ -107,7 +107,7 @@ class OMETiff(Tiff):
     )
 
     def set_meta(
-        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: SetsMetadata, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets

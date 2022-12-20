@@ -37,7 +37,6 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol23,
     DatasetProtocol24,
-    DatasetProtocol25,
     Displayable,
     HasClearAssociatedFiles,
     HasCreatingJob,
@@ -46,6 +45,7 @@ from galaxy.datatypes._protocols import (
     HasInfo,
     HasMetadata,
     HasName,
+    SetsMetadata,
 )
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
@@ -258,7 +258,7 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: DatasetProtocol25, *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, *, overwrite: bool = True, **kwd) -> None:
         """Unimplemented method, allows guessing of metadata from contents of file"""
 
     def missing_meta(self, dataset: HasMetadata, check: Optional[List] = None, skip: Optional[List] = None) -> bool:
@@ -982,7 +982,7 @@ class Text(Data):
         """Returns the mime type of the datatype"""
         return "text/plain"
 
-    def set_meta(self, dataset: DatasetProtocol25, *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, *, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """

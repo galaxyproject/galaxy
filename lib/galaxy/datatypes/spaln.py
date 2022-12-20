@@ -13,11 +13,10 @@ from typing import (
 
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol17,
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol25,
     Displayable,
+    SetsMetadata,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
@@ -82,7 +81,7 @@ class _SpalnDb(Data):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: DatasetProtocol17) -> None:
+    def regenerate_primary_file(self, dataset: SetsMetadata) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -181,7 +180,7 @@ class _SpalnDb(Data):
             return None
         raise NotImplementedError("Can't split spaln database")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         efp = dataset.extra_files_path
         for filename in os.listdir(efp):

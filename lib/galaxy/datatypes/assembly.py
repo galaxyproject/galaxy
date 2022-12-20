@@ -14,8 +14,7 @@ from galaxy.datatypes import (
 )
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol17,
-    DatasetProtocol25,
+    SetsMetadata,
 )
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -192,7 +191,7 @@ class Velvet(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: DatasetProtocol17) -> None:
+    def regenerate_primary_file(self, dataset: SetsMetadata) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -243,6 +242,6 @@ class Velvet(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         Html.set_meta(self, dataset, overwrite=overwrite, **kwd)
         self.regenerate_primary_file(dataset)

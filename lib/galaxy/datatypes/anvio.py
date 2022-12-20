@@ -11,7 +11,7 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol6,
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol25,
+    SetsMetadata,
 )
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
@@ -96,7 +96,7 @@ class AnvioDB(AnvioComposite):
         if self._anvio_basename is not None:
             self.add_composite_file(self._anvio_basename, is_binary=True, optional=False)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """

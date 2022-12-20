@@ -17,8 +17,8 @@ from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol25,
     HasMetadata,
+    SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -106,7 +106,7 @@ class Ply:
                 break
         return False
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for line in fh:
@@ -286,7 +286,7 @@ class Vtk:
             return check_data_kind(line)
         return False
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             dataset.metadata.field_names = []
             dataset.metadata.field_components = {}
@@ -375,7 +375,7 @@ class Vtk:
             if len(field_components) > 0:
                 dataset.metadata.field_components = field_components
 
-    def set_initial_metadata(self, i: int, line: str, dataset: DatasetProtocol25) -> DatasetProtocol25:
+    def set_initial_metadata(self, i: int, line: str, dataset: SetsMetadata) -> SetsMetadata:
         if i == 0:
             # The first part of legacy VTK files is the file version and
             # identifier. This part contains the single line:
@@ -394,8 +394,8 @@ class Vtk:
         return dataset
 
     def set_structure_metadata(
-        self, line: str, dataset: DatasetProtocol25, dataset_type: Optional[str]
-    ) -> Tuple[DatasetProtocol25, Optional[str]]:
+        self, line: str, dataset: SetsMetadata, dataset_type: Optional[str]
+    ) -> Tuple[SetsMetadata, Optional[str]]:
         """
         The fourth part of legacy VTK files is the dataset structure. The
         geometry part describes the geometry and topology of the dataset.
@@ -556,7 +556,7 @@ class NeperTess(data.Text):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tess")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):
@@ -627,7 +627,7 @@ class NeperTesr(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tesr")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 field = ""
@@ -680,7 +680,7 @@ class NeperPoints(data.Text):
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         data.Text.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
@@ -722,7 +722,7 @@ class NeperPointsTabular(NeperPoints, Tabular):
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
@@ -768,7 +768,7 @@ class GmshMsh(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline().startswith("$MeshFormat")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):

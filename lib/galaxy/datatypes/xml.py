@@ -9,7 +9,7 @@ from galaxy import util
 from galaxy.datatypes._protocols import (
     DatasetProtocol11,
     DatasetProtocol23,
-    DatasetProtocol25,
+    SetsMetadata,
 )
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
@@ -151,7 +151,7 @@ class Dzi(GenericXml):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         tree = util.parse_xml(dataset.file_name)
         root = tree.getroot()
         dataset.metadata.format = root.get("Format")

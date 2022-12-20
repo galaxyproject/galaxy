@@ -31,13 +31,12 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol6,
     DatasetProtocol9,
     DatasetProtocol11,
-    DatasetProtocol17,
     DatasetProtocol18,
     DatasetProtocol21,
     DatasetProtocol23,
     DatasetProtocol24,
-    DatasetProtocol25,
     HasMetadata,
+    SetsMetadata,
 )
 from galaxy.datatypes.data import (
     DatatypeValidation,
@@ -82,7 +81,7 @@ class GenomeGraphs(Tabular):
         super().__init__(**kwd)
         self.add_display_app("ucsc", "Genome Graph", "as_ucsc_display_file", "ucsc_links")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.markerCol = 1
         header = open(dataset.file_name).readlines()[0].strip().split("\t")
@@ -326,7 +325,7 @@ class Rgenetics(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: DatasetProtocol17) -> None:
+    def regenerate_primary_file(self, dataset: SetsMetadata) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -348,7 +347,7 @@ class Rgenetics(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         for lped/pbed eg
 
@@ -584,7 +583,7 @@ class IdeasPre(Html):
         self.add_composite_file("IDEAS_input_config.txt", description="IDEAS input config", is_binary=False)
         self.add_composite_file("tmp.tar.gz", description="Compressed archive of compressed bed files", is_binary=True)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         for fname in os.listdir(dataset.extra_files_path):
             if fname.startswith("chromosomes"):
@@ -607,7 +606,7 @@ class IdeasPre(Html):
         rval.append("</ul></body></html>\n")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: DatasetProtocol17) -> None:
+    def regenerate_primary_file(self, dataset: SetsMetadata) -> None:
         # Cannot do this until we are setting metadata.
         rval = ["<html><head></head><body>"]
         rval.append("<h3>Files prepared for IDEAS</h3>")
@@ -820,7 +819,7 @@ class RexpBase(Html):
         except Exception:
             return "## rexpression get_file_peek: no file found"
 
-    def regenerate_primary_file(self, dataset: DatasetProtocol17) -> None:
+    def regenerate_primary_file(self, dataset: SetsMetadata) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -841,7 +840,7 @@ class RexpBase(Html):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         NOTE we apply the tabular machinary to the phenodata extracted
         from a BioC eSet or affybatch.

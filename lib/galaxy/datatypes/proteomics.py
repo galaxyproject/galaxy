@@ -14,7 +14,7 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol6,
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol25,
+    SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
@@ -393,7 +393,7 @@ class Dta(TabularData):
     file_ext = "dta"
     comment_lines = 0
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         column_types = []
         data_row: List = []
         data_lines = 0
@@ -466,7 +466,7 @@ class Dta2d(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         if dataset.has_data():
@@ -602,7 +602,7 @@ class Edta(TabularData):
                 line[idx] += str(idx // 4)
         return line
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         tpe = None

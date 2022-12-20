@@ -29,9 +29,9 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol18,
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol25,
     Displayable,
     HasMetadata,
+    SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import DatatypeValidation
@@ -110,7 +110,7 @@ class Sequence(data.Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """
@@ -566,7 +566,7 @@ class csFasta(Sequence):
                     return False
         return False
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             dataset.metadata.sequences = None
@@ -643,7 +643,7 @@ class Fastg(Sequence):
                     break  # we found a non-empty line, but it's not a header
         return False
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         with open(dataset.file_name) as fh:
             for i, line in enumerate(fh):
                 if not line:
@@ -692,7 +692,7 @@ class BaseFastq(Sequence):
     file_ext = "fastq"
     bases_regexp = re.compile(r"^[NGTAC 0123\.]*$", re.IGNORECASE)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines
         in dataset.
@@ -1017,7 +1017,7 @@ class Maf(Alignment):
         Alignment.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
-        self, dataset: DatasetProtocol25, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: SetsMetadata, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         """
         Parses and sets species, chromosomes, index from MAF file.
@@ -1144,7 +1144,7 @@ class MafCustomTrack(data.Text):
         name="vp_end", default="100", desc="Viewport End", readonly=True, optional=True, visible=False, no_value=""
     )
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Parses and sets viewport metadata from MAF file.
         """
@@ -1315,7 +1315,7 @@ class DotBracket(Sequence):
     sequence_regexp = re.compile(r"^[ACGTURYKMSWBDHVN]+$", re.I)
     structure_regexp = re.compile(r"^[\(\)\.\[\]{}]+$")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines
         in dataset.

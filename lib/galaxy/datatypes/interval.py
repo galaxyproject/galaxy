@@ -22,7 +22,6 @@ from bx.intervals.io import (
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
-    DatasetProtocol4,
     DatasetProtocol9,
     DatasetProtocol11,
     DatasetProtocol15,
@@ -30,9 +29,9 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol22,
     DatasetProtocol24,
-    DatasetProtocol25,
     HasId,
     HasMetadata,
+    SetsMetadata,
 )
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.dataproviders.dataset import (
@@ -136,7 +135,7 @@ class Interval(Tabular):
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
-        self, dataset: DatasetProtocol25, *, overwrite: bool = True, first_line_is_header: bool = False, **kwd
+        self, dataset: SetsMetadata, *, overwrite: bool = True, first_line_is_header: bool = False, **kwd
     ) -> None:
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=0)
@@ -506,7 +505,7 @@ class Bed(Interval):
     )
     # do we need to repeat these? they are the same as should be inherited from interval type
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """Sets the metadata information for datasets previously determined to be in bed format."""
         if dataset.has_data():
             i = 0
@@ -739,7 +738,7 @@ class BedStrict(Bed):
         Tabular.__init__(self, **kwd)
         self.clear_display_apps()  # only new style display applications for this datatype
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)  # need column count first
         if dataset.metadata.columns >= 4:
             dataset.metadata.nameCol = 4
@@ -823,7 +822,7 @@ class Gff(Tabular, _RemoteCallMixin):
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
         self.add_display_app("gbrowse", "display in Gbrowse", "as_gbrowse_display_file", "gbrowse_links")
 
-    def set_attribute_metadata(self, dataset: DatasetProtocol4) -> None:
+    def set_attribute_metadata(self, dataset: SetsMetadata) -> None:
         """
         Sets metadata elements for dataset's attributes.
         """
@@ -863,7 +862,7 @@ class Gff(Tabular, _RemoteCallMixin):
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len(attribute_types)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         self.set_attribute_metadata(dataset)
 
         i = 0
@@ -1082,7 +1081,7 @@ class Gff3(Gff):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         self.set_attribute_metadata(dataset)
         i = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_fh:
@@ -1394,7 +1393,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=["track", "#"])
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         max_data_lines = None
         i = 0
         for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
@@ -1475,7 +1474,7 @@ class CustomTrack(Tabular):
         Tabular.__init__(self, **kwd)
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=1)
 
     def display_peek(self, dataset: DatasetProtocol21) -> str:
@@ -1791,7 +1790,7 @@ class IntervalTabix(Interval):
     # Ideally the tabix_index would be regenerated when the metadataElements are updated
     def set_meta(
         self,
-        dataset: DatasetProtocol25,
+        dataset: SetsMetadata,
         overwrite: bool = True,
         first_line_is_header: bool = False,
         metadata_tmp_files_dir: Optional[str] = None,

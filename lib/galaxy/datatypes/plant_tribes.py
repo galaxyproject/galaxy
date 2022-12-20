@@ -4,7 +4,7 @@ import re
 from galaxy.datatypes._protocols import (
     DatasetProtocol21,
     DatasetProtocol23,
-    DatasetProtocol25,
+    SetsMetadata,
 )
 from galaxy.datatypes.data import (
     get_file_peek,
@@ -104,7 +104,7 @@ class PlantTribesKsComponents(Tabular):
         except Exception:
             return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: DatasetProtocol25, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.
