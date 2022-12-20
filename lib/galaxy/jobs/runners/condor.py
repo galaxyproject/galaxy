@@ -143,7 +143,8 @@ class CondorJobRunner(AsynchronousJobRunner):
             job_wrapper.fail("condor_submit failed", exception=True)
             return
 
-        os.unlink(submit_file)
+        if cleanup_job == "always":
+            os.unlink(submit_file)
 
         log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
 
