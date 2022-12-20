@@ -327,7 +327,7 @@ export function getRouter(Galaxy) {
                         path: "pages/:actionId",
                         component: PageList,
                         props: (route) => ({
-                            published: route.props.actionId == "list_published" ? "shared" : "user",
+                            published: route.query.actionId == "list_published" ? true : false,
                         }),
                     },
                     {
