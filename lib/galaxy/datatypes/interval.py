@@ -26,11 +26,11 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol11,
     DatasetProtocol15,
     DatasetProtocol19,
-    DatasetProtocol21,
     DatasetProtocol22,
     DatasetProtocol24,
     HasId,
     HasMetadata,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.data import DatatypeValidation
@@ -309,7 +309,7 @@ class Interval(Tabular):
                     fh.write("%s\n" % "\t".join(tmp))
             return compression_utils.get_fileobj(fh.name, mode="rb")
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(
             dataset,
@@ -880,7 +880,7 @@ class Gff(Tabular, _RemoteCallMixin):
                             pass
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -1389,7 +1389,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=["track", "#"])
 
@@ -1477,7 +1477,7 @@ class CustomTrack(Tabular):
     def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=1)
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=["track", "#"])
 

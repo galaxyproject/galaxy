@@ -31,11 +31,9 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol6,
     DatasetProtocol9,
     DatasetProtocol11,
-    DatasetProtocol18,
-    DatasetProtocol21,
-    DatasetProtocol23,
     DatasetProtocol24,
     HasMetadata,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.data import (
@@ -148,7 +146,7 @@ class GenomeGraphs(Tabular):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def make_html_table(self, dataset: DatasetProtocol18, **kwargs) -> str:
+    def make_html_table(self, dataset: Peekable, **kwargs) -> str:
         """
         Create HTML table, used for displaying peek
         """
@@ -243,7 +241,7 @@ class rgTabList(Tabular):
         super().__init__(**kwd)
         self.column_names = []
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -387,7 +385,7 @@ class SNPMatrix(Rgenetics):
 
     file_ext = "snpmatrix"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Binary RGenetics file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -770,7 +768,7 @@ class RexpBase(Html):
             p = []
         return "\n".join(p)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """
         expects a .pheno file in the extra_files_dir - ugh
         note that R is weird and does not include the row.name in
@@ -916,7 +914,7 @@ class RexpBase(Html):
         except Exception as exc:
             return f"Can't create html table {unicodify(exc)}"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """
         Returns formatted html of peek
         """

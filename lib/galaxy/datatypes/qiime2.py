@@ -12,9 +12,8 @@ from typing import (
 import yaml
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol21,
-    DatasetProtocol23,
     HasMetadata,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import CompressedZipArchive
@@ -43,7 +42,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:
@@ -51,7 +50,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         def make_row(item):
             return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
 

@@ -6,7 +6,7 @@ from typing import List
 
 from galaxy.datatypes._protocols import (
     DatasetProtocol11,
-    DatasetProtocol23,
+    Peekable,
 )
 from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -31,7 +31,7 @@ class Xgmml(xml.GenericXml):
 
     file_ext = "xgmml"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -79,7 +79,7 @@ class Sif(tabular.Tabular):
 
     file_ext = "sif"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """
         Set the peek and blurb text
         """

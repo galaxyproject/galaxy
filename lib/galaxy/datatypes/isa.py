@@ -28,10 +28,9 @@ from markupsafe import escape
 from galaxy import util
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol21,
-    DatasetProtocol23,
     Displayable,
     HasExtraFilesPath,
+    Peekable,
 )
 from galaxy.datatypes.data import Data
 from galaxy.util.compression_utils import CompressedFile
@@ -163,7 +162,7 @@ class _Isa(Data):
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)
@@ -189,7 +188,7 @@ class _Isa(Data):
     # Display peek {{{2
     ################################################################
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
 
         out = ['<table cellspacing="0" cellpadding="3">']

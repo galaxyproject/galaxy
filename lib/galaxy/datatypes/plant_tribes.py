@@ -2,8 +2,7 @@ import logging
 import re
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.data import (
@@ -26,13 +25,13 @@ log = logging.getLogger(__name__)
 class Smat(Text):
     file_ext = "smat"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "ESTScan scores matrices"
@@ -98,7 +97,7 @@ class PlantTribesKsComponents(Tabular):
         no_value=0,
     )
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -126,7 +125,7 @@ class PlantTribesKsComponents(Tabular):
         if len(significant_components) > 0:
             dataset.metadata.number_comp = max(significant_components)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_comp == 1:

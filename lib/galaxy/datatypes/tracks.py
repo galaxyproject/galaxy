@@ -5,8 +5,7 @@ import logging
 
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
 )
 from galaxy.datatypes.text import Html
 from . import binary
@@ -48,14 +47,14 @@ class UCSCTrackHub(Html):
         rval.append("</ul></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Track Hub structure: Visualization in UCSC Track Hub"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:

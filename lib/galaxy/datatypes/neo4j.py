@@ -5,8 +5,7 @@ import logging
 
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
@@ -46,7 +45,7 @@ class Neo4j(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Neo4j database (multiple files)"
@@ -55,7 +54,7 @@ class Neo4j(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

@@ -3,8 +3,7 @@ GIS classes
 """
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
 )
 from galaxy.datatypes.binary import Binary
 
@@ -82,7 +81,7 @@ class Shapefile(Binary):
         rval.append("</ul></div></html>\n")
         return "\n".join(rval)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "Shapefile data"
@@ -91,7 +90,7 @@ class Shapefile(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

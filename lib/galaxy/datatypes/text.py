@@ -18,10 +18,9 @@ import yaml
 
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol21,
-    DatasetProtocol23,
     Displayable,
     HasCreatingJob,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.data import (
@@ -55,7 +54,7 @@ class Html(Text):
     edam_format = "format_2331"
     file_ext = "html"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -91,7 +90,7 @@ class Json(Text):
     edam_format = "format_3464"
     file_ext = "json"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
@@ -128,7 +127,7 @@ class Json(Text):
                 return start.startswith("[") or start.startswith("{")
             return False
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -170,7 +169,7 @@ class ExpressionJson(Json):
 class Ipynb(Json):
     file_ext = "ipynb"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
@@ -389,7 +388,7 @@ class Biom1(Json):
         no_value=[],
     )
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
@@ -488,7 +487,7 @@ class ImgtJson(Json):
 
     MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "IMGT Library"
@@ -554,7 +553,7 @@ class GeoJson(Json):
 
     file_ext = "geojson"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "GeoJSON"
@@ -615,7 +614,7 @@ class Obo(Text):
     edam_format = "format_2549"
     file_ext = "obo"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
@@ -657,7 +656,7 @@ class Arff(Text):
     )
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
@@ -909,7 +908,7 @@ class SnpSiftDbNSFP(Text):
                 unicodify(e),
             )
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
             dataset.blurb = f"{dataset.metadata.reference_name}"
@@ -1152,7 +1151,7 @@ class BCSLts(Json):
             is_bcsl_ts = self._looks_like_bcsl_ts(file_prefix)
         return is_bcsl_ts
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
             ts = json.load(open(dataset.file_name, "r"))
@@ -1186,7 +1185,7 @@ class StormSample(Text):
         keywords = ["Storm-pars", "Result (initial states)"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Storm-pars sample results."
             dataset.blurb = nice_size(dataset.get_size())
@@ -1211,7 +1210,7 @@ class StormCheck(Text):
         keywords = ["Storm ", "Result (for initial states)"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             with open(dataset.file_name, "r") as result:
                 answer = ""
@@ -1239,7 +1238,7 @@ class CTLresult(Text):
         keywords = ["Result:", "Number of satisfying states:"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             with open(dataset.file_name, "r") as result:
                 answer = ""

@@ -6,8 +6,7 @@ import os
 
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from .metadata import MetadataElement
@@ -63,7 +62,7 @@ class BowtieIndex(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Bowtie index file ({dataset.metadata.sequence_space})"
             dataset.blurb = f"{dataset.metadata.sequence_space} space"
@@ -71,7 +70,7 @@ class BowtieIndex(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:

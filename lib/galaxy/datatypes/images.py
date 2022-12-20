@@ -13,7 +13,7 @@ import tifffile
 from galaxy.datatypes._protocols import (
     DatasetProtocol1,
     DatasetProtocol6,
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -55,7 +55,7 @@ class Image(data.Data):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Image in {dataset.extension} format"
             dataset.blurb = nice_size(dataset.get_size())
@@ -492,7 +492,7 @@ class Star(data.Text):
 
     file_ext = "star"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

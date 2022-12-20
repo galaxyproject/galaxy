@@ -9,8 +9,7 @@ from typing import (
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -73,7 +72,7 @@ class GenericMolFile(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
@@ -532,7 +531,7 @@ class OBFS(Binary):
         self.add_composite_file("molecule.mol2", optional=True, is_binary=False, description="Molecule File")
         self.add_composite_file("molecule.cml", optional=True, is_binary=False, description="Molecule File")
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "OpenBabel Fastsearch Index"
@@ -541,7 +540,7 @@ class OBFS(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -582,7 +581,7 @@ class PHAR(GenericMolFile):
 
     file_ext = "phar"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "pharmacophore"
@@ -651,7 +650,7 @@ class PDB(GenericMolFile):
             log.error("Error finding chain_ids: %s", unicodify(e))
             raise
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             atom_numbers = count_special_lines("^ATOM", dataset.file_name)
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
@@ -704,7 +703,7 @@ class PDBQT(GenericMolFile):
         else:
             return False
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             root_numbers = count_special_lines("^ROOT", dataset.file_name)
             branch_numbers = count_special_lines("^BRANCH", dataset.file_name)
@@ -808,7 +807,7 @@ class PQR(GenericMolFile):
             log.error("Error finding chain_ids: %s", unicodify(e))
             raise
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             atom_numbers = count_special_lines("^ATOM", dataset.file_name)
             hetatm_numbers = count_special_lines("^HETATM", dataset.file_name)
@@ -926,7 +925,7 @@ class Cell(GenericMolFile):
                 dataset.metadata.is_periodic = bool(pbc.any())
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
@@ -1093,7 +1092,7 @@ class CIF(GenericMolFile):
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
@@ -1291,7 +1290,7 @@ class XYZ(GenericMolFile):
             dataset.metadata.is_periodic = is_periodic
             dataset.metadata.lattice_parameters = list(lattice_parameters)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = self.get_dataset_info(dataset.metadata)
@@ -1446,7 +1445,7 @@ class ExtendedXYZ(XYZ):
             blocks.append({"number_of_atoms": n_atoms, "comment": comment, "atom_data": atoms})
         return blocks
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         super().set_peek(dataset)
         dataset.blurb = "Extended " + dataset.blurb
 
@@ -1454,7 +1453,7 @@ class ExtendedXYZ(XYZ):
 class grd(Text):
     file_ext = "grd"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "grids for docking"
@@ -1466,7 +1465,7 @@ class grd(Text):
 class grdtgz(Binary):
     file_ext = "grd.tgz"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "binary data"
             dataset.blurb = "compressed grids for docking"
@@ -1504,7 +1503,7 @@ class InChI(Tabular):
         """
         dataset.metadata.number_of_molecules = self.count_data_lines(dataset)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
@@ -1569,7 +1568,7 @@ class SMILES(Tabular):
         """
         dataset.metadata.number_of_molecules = self.count_data_lines(dataset)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
@@ -1605,7 +1604,7 @@ class CML(GenericXml):
         """
         dataset.metadata.number_of_molecules = count_special_lines(r"^\s*<molecule", dataset.file_name)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_molecules == 1:
                 dataset.blurb = "1 molecule"
@@ -1763,7 +1762,7 @@ class GRO(GenericMolFile):
                 return False
         return True
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             atom_number = int(dataset.peek.split("\n")[1])

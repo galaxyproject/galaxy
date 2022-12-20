@@ -9,8 +9,7 @@ from typing import (
 )
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -58,7 +57,7 @@ class InfernalCM(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_of_models == 1:
@@ -98,7 +97,7 @@ class Hmmer(Text):
     edam_data = "data_1364"
     edam_format = "format_1370"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "HMMER Database"
@@ -106,7 +105,7 @@ class Hmmer(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -141,7 +140,7 @@ class HmmerPress(Binary):
     file_ext = "hmmpress"
     composite_type = "basic"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "HMMER Binary database"
@@ -150,7 +149,7 @@ class HmmerPress(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -185,7 +184,7 @@ class Stockholm_1_0(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"
@@ -276,7 +275,7 @@ class MauveXmfa(Text):
         no_value=0,
     )
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.number_of_models == 1:
                 dataset.blurb = "1 alignment"

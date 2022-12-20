@@ -8,7 +8,7 @@ from typing import List
 from galaxy import util
 from galaxy.datatypes._protocols import (
     DatasetProtocol11,
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -38,7 +38,7 @@ class GenericXml(data.Text):
     edam_format = "format_2332"
     file_ext = "xml"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -91,7 +91,7 @@ class MEMEXml(GenericXml):
 
     file_ext = "memexml"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -107,7 +107,7 @@ class CisML(GenericXml):
 
     file_ext = "cisml"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -168,7 +168,7 @@ class Dzi(GenericXml):
                 dataset.metadata.width = elem.get("Width")
                 dataset.metadata.height = elem.get("Height")
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Deep Zoom Image"
@@ -201,7 +201,7 @@ class Phyloxml(GenericXml):
     edam_format = "format_3159"
     file_ext = "phyloxml"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -236,7 +236,7 @@ class Owl(GenericXml):
     edam_format = "format_3262"
     file_ext = "owl"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Web Ontology Language OWL"
@@ -261,7 +261,7 @@ class Sbml(GenericXml):
     edam_data = "data_2024"
     edam_format = "format_2585"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "System Biology Markup Language SBML"

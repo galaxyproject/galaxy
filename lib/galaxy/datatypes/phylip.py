@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.data import (
@@ -51,7 +51,7 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:

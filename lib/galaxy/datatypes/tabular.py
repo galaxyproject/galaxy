@@ -30,18 +30,13 @@ from galaxy.datatypes import (
     metadata,
 )
 from galaxy.datatypes._protocols import (
-    DatasetProtocol7,
     DatasetProtocol9,
     DatasetProtocol11,
-    DatasetProtocol14,
     DatasetProtocol15,
-    DatasetProtocol18,
-    DatasetProtocol20,
-    DatasetProtocol21,
-    DatasetProtocol23,
     Displayable,
     HasFileName,
     HasMetadata,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import _BamOrSam
@@ -133,7 +128,7 @@ class TabularData(Text):
     def set_meta(self, dataset: SetsMetadata, *, overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         kwd.setdefault("line_wrap", False)
         super().set_peek(dataset, **kwd)
         if dataset.metadata.comment_lines:
@@ -233,7 +228,7 @@ class TabularData(Text):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: DatasetProtocol20) -> str:
+    def display_as_markdown(self, dataset_instance: Peekable) -> str:
         with open(dataset_instance.file_name) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
@@ -241,7 +236,7 @@ class TabularData(Text):
             markdown += indicate_data_truncated()
         return pre_formatted_contents(markdown)
 
-    def make_html_table(self, dataset: DatasetProtocol18, **kwargs) -> str:
+    def make_html_table(self, dataset: Peekable, **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
         try:
             out = ['<table cellspacing="0" cellpadding="3">']
@@ -254,7 +249,7 @@ class TabularData(Text):
 
     def make_html_peek_header(
         self,
-        dataset: DatasetProtocol7,
+        dataset: Peekable,
         skipchars: Optional[List] = None,
         column_names: Optional[List] = None,
         column_number_format: str = "%s",
@@ -308,7 +303,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset: DatasetProtocol14, skipchars: Optional[List] = None, **kwargs) -> str:
+    def make_html_peek_rows(self, dataset: Peekable, skipchars: Optional[List] = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []
@@ -345,7 +340,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek rows: {util.unicodify(exc)}")
         return "".join(out)
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formatted html of peek"""
         return self.make_html_table(dataset)
 
@@ -641,7 +636,7 @@ class Taxonomy(Tabular):
             "Subspecies",
         ]
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -732,7 +727,7 @@ class Sam(Tabular, _BamOrSam):
             "OPT",
         ]
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -948,7 +943,7 @@ class Pileup(Tabular):
     def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(
             dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
@@ -1050,7 +1045,7 @@ class BaseVcf(Tabular):
         headers = get_headers(fname_or_file_prefix, "\n", count=1)
         return headers[0][0].startswith("##fileformat=VCF")
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -1238,7 +1233,7 @@ class Eland(Tabular):
         ]
 
     def make_html_table(
-        self, dataset: DatasetProtocol18, skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
+        self, dataset: Peekable, skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
     ) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []

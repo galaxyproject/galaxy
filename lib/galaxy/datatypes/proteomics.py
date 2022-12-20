@@ -12,8 +12,7 @@ from typing import (
 from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol21,
-    DatasetProtocol23,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -105,7 +104,7 @@ class MzTab(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -156,7 +155,7 @@ class MzTab2(MzTab):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -201,7 +200,7 @@ class Kroenik(Tabular):
             "Modifications",
         ]
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -240,7 +239,7 @@ class PepList(Tabular):
         super().__init__(**kwd)
         self.column_names = ["m/z", "rt(min)", "snr", "charge", "intensity"]
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -277,7 +276,7 @@ class PSMS(Tabular):
         super().__init__(**kwd)
         self.column_names = ["PSMId", "score", "q-value", "posterior_error_prob", "peptide", "proteinIds"]
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -337,7 +336,7 @@ class PepXmlReport(Tabular):
             "Interprophet Probability",
         ]
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -378,7 +377,7 @@ class ProtXmlReport(Tabular):
             "Is Evidence?",
         ]
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -676,7 +675,7 @@ class ProteomicsXml(GenericXml):
         pattern = r"<(\w*:)?%s" % self.root
         return re.search(pattern, line) is not None
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -845,7 +844,7 @@ class Mgf(Text):
     edam_format = "format_3651"
     file_ext = "mgf"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -875,7 +874,7 @@ class MascotDat(Text):
     edam_format = "format_3713"
     file_ext = "mascotdat"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -919,7 +918,7 @@ class ThermoRAW(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Thermo Finnigan RAW file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -927,7 +926,7 @@ class ThermoRAW(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -961,7 +960,7 @@ class SPLibNoIndex(Text):
 
     file_ext = "splib_noindex"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -1003,7 +1002,7 @@ class SPLib(Msp):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

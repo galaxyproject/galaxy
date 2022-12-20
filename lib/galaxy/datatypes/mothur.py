@@ -9,8 +9,8 @@ from typing import (
 )
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol18,
     HasMetadata,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.data import Text
@@ -1073,7 +1073,7 @@ class SffFlow(Tabular):
         except Exception as e:
             log.warning(f"SffFlow set_meta {e}")
 
-    def make_html_table(self, dataset: DatasetProtocol18, skipchars: Optional[List] = None, **kwargs) -> str:
+    def make_html_table(self, dataset: Peekable, skipchars: Optional[List] = None, **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
         try:

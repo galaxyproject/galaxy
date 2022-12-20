@@ -27,15 +27,11 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol0,
     DatasetProtocol1,
     DatasetProtocol2,
-    DatasetProtocol3,
     DatasetProtocol5,
     DatasetProtocol6,
     DatasetProtocol9,
     DatasetProtocol11,
     DatasetProtocol16,
-    DatasetProtocol20,
-    DatasetProtocol21,
-    DatasetProtocol23,
     DatasetProtocol24,
     Displayable,
     HasClearAssociatedFiles,
@@ -45,6 +41,7 @@ from galaxy.datatypes._protocols import (
     HasInfo,
     HasMetadata,
     HasName,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.metadata import (
@@ -303,7 +300,7 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -314,7 +311,7 @@ class Data(metaclass=DataMeta):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
@@ -553,7 +550,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: DatasetProtocol20) -> str:
+    def display_as_markdown(self, dataset_instance: Peekable) -> str:
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented
@@ -988,7 +985,7 @@ class Text(Data):
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
 
-    def estimate_file_lines(self, dataset: DatasetProtocol3) -> Optional[int]:
+    def estimate_file_lines(self, dataset: Peekable) -> Optional[int]:
         """
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
@@ -1023,7 +1020,7 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """
         Set the peek.  This method is used by various subclasses of Text.
         """

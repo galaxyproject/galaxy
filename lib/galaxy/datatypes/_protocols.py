@@ -120,19 +120,11 @@ class DatasetProtocol2(HasExt, HasHid, Protocol):
     ...
 
 
-class DatasetProtocol3(HasFileName, HasGetSize, Protocol):
-    ...
-
-
 class DatasetProtocol5(HasExt, HasGetConvertedFilesByType, Protocol):
     ...
 
 
 class DatasetProtocol6(HasExtraFilesPath, HasMetadata, Protocol):
-    ...
-
-
-class DatasetProtocol7(HasId, HasMetadata, Protocol):
     ...
 
 
@@ -144,10 +136,6 @@ class DatasetProtocol11(HasDatatype, HasExt, HasFileName, HasMetadata, Protocol)
     ...
 
 
-class DatasetProtocol14(HasId, HasMetadata, HasSetPeek, HasPeek, Protocol):
-    ...
-
-
 class DatasetProtocol15(HasDataset, HasHasData, HasMetadata, HasState, HasStates, Protocol):
     ...
 
@@ -156,39 +144,12 @@ class DatasetProtocol16(HasDatatype, HasExtension, HasExtraFilesPath, HasFileNam
     ...
 
 
-class DatasetProtocol18(HasFileName, HasId, HasMetadata, HasName, HasPeek, HasSetPeek, Protocol):
-    ...
-
-
 class DatasetProtocol19(HasDataset, HasFileName, HasHasData, HasId, HasMetadata, HasState, HasStates, Protocol):
-    ...
-
-
-class DatasetProtocol20(HasDataset, HasFileName, HasMetadata, HasId, HasName, HasPeek, HasSetPeek, Protocol):
-    ...
-
-
-class DatasetProtocol21(HasFileName, HasGetSize, HasId, HasMetadata, HasName, HasPeek, HasSetPeek, Protocol):
     ...
 
 
 class DatasetProtocol22(
     HasDataset, HasDbKey, HasFileName, HasHasData, HasId, HasMetadata, HasState, HasStates, Protocol
-):
-    ...
-
-
-class DatasetProtocol23(
-    HasBlurb,
-    HasDataset,
-    HasExtension,
-    HasExtraFilesPath,
-    HasFileName,
-    HasGetSize,
-    HasInfo,
-    HasMetadata,
-    HasPeek,
-    Protocol,
 ):
     ...
 
@@ -228,6 +189,24 @@ class SetsMetadata(
     HasMetadata,
     HasName,
     HasPeek,
+    Protocol,
+):
+    ...
+
+
+class Peekable(
+    HasBlurb,
+    HasDataset,
+    HasExtension,
+    HasExtraFilesPath,
+    HasFileName,
+    HasGetSize,
+    HasId,
+    HasInfo,
+    HasMetadata,
+    HasName,
+    HasPeek,
+    HasSetPeek,
     Protocol,
 ):
     ...

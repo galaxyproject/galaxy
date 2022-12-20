@@ -41,9 +41,8 @@ from typing import (
 )
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol21,
-    DatasetProtocol23,
     Displayable,
+    Peekable,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -68,7 +67,7 @@ class BlastXml(GenericXml):
     edam_format = "format_3331"
     edam_data = "data_0857"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
@@ -193,7 +192,7 @@ class BlastXml(GenericXml):
 class _BlastDb(Data):
     """Base class for BLAST database datatype."""
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "BLAST database (multiple files)"
@@ -202,7 +201,7 @@ class _BlastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -370,7 +369,7 @@ class LastDb(Data):
     file_ext = "lastdb"
     composite_type = "basic"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "LAST database (multiple files)"
@@ -379,7 +378,7 @@ class LastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

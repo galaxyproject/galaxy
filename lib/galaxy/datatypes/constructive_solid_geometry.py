@@ -15,9 +15,8 @@ from typing import (
 from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
-    DatasetProtocol21,
-    DatasetProtocol23,
     HasMetadata,
+    Peekable,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
@@ -129,7 +128,7 @@ class Ply:
                             element_tuple = (items[1], int(items[2]))
                             dataset.metadata.other_elements.append(element_tuple)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
@@ -137,7 +136,7 @@ class Ply:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -463,7 +462,7 @@ class Vtk:
             blurb += str(dataset.metadata.dataset_type)
         return blurb or "VTK data"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)
@@ -471,7 +470,7 @@ class Vtk:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset: DatasetProtocol21) -> str:
+    def display_peek(self, dataset: Peekable) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -572,7 +571,7 @@ class NeperTess(data.Text):
                     if i == 6:
                         dataset.metadata.cells = int(line)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, line_count=7)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
@@ -659,7 +658,7 @@ class NeperTesr(Binary):
                         dataset.metadata.cells = int(line)
                         break
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, line_count=9)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
@@ -705,7 +704,7 @@ class NeperPoints(data.Text):
             return None
         return dim
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         data.Text.set_peek(self, dataset)
         if not dataset.dataset.purged:
             dataset.blurb += f" dim: {str(dataset.metadata.dimension)}"
@@ -728,7 +727,7 @@ class NeperPointsTabular(NeperPoints, Tabular):
             with open(dataset.file_name, errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         Tabular.set_peek(self, dataset)
         if not dataset.dataset.purged:
             dataset.blurb += f" dim: {str(dataset.metadata.dimension)}"
@@ -784,7 +783,7 @@ class GmshMsh(Binary):
                         if len(fields) > 1:
                             dataset.metadata.format = "ASCII" if fields[1] == "0" else "binary"
 
-    def set_peek(self, dataset: DatasetProtocol23, **kwd) -> None:
+    def set_peek(self, dataset: Peekable, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, line_count=3)
             dataset.blurb = f"Gmsh verion: {str(dataset.metadata.version)} {str(dataset.metadata.format)}"
