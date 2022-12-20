@@ -538,16 +538,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         ]
 
         # identify item tags
-        item_tags = [tag for tag in stored.tags if tag.user == trans.user]
-        item_tag_names = []
-        for ta in item_tags:
-            item_tag_names.append(escape(ta.tag.name))
+        item_tags = stored.make_tag_string_list()
 
         # build workflow editor model
         editor_config = {
             "id": trans.security.encode_id(stored.id),
             "name": stored.name,
-            "tags": item_tag_names,
+            "tags": item_tags,
             "initialVersion": version,
             "annotation": self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             "moduleSections": module_sections,
