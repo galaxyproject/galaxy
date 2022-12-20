@@ -144,7 +144,6 @@ import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import LoadingSpan from "components/LoadingSpan";
 import ContentItem from "components/History/Content/ContentItem";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
-import { getHighlights } from "components/History/Content/model/highlights";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
 import ListingLayout from "components/History/Layout/ListingLayout";
@@ -193,7 +192,6 @@ export default {
         return {
             error: null,
             filterText: "",
-            highlights: {},
             highlightsKey: null,
             invisible: {},
             loading: false,
@@ -255,13 +253,11 @@ export default {
         queryKey() {
             this.invisible = {};
             this.offset = 0;
-            this.resetHighlights();
             this.loadHistoryItems();
         },
         historyId(newVal, oldVal) {
             if (newVal !== oldVal) {
                 this.operationRunning = null;
-                this.resetHighlights();
             }
         },
         filter(newVal) {
@@ -281,7 +277,19 @@ export default {
         ...vuexMapActions("history", ["loadHistoryById"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
-            return this.highlights[this.getItemKey(item)];
+            if (this.filterText.includes("related:" + item.hid)) {
+                this.highlightsKey = item.hid;
+                return "currItem";
+            } else if (this.filterText.includes("related:") && this.highlightsKey) {
+                if (item.hid > this.highlightsKey) {
+                    return "output";
+                } else {
+                    return "input";
+                }
+            } else {
+                this.highlightsKey = null;
+                return null;
+            }
         },
         getItemKey(item) {
             return `${item.id}-${item.history_content_type}`;
@@ -344,18 +352,12 @@ export default {
             console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
         },
-        async toggleHighlights(item) {
-            const key = this.getItemKey(item);
-            if (this.highlightsKey != key) {
-                this.highlightsKey = key;
-                this.highlights = await getHighlights(item, key);
+        toggleHighlights(item) {
+            if (this.filterText == "related:" + item.hid) {
+                this.filterText = "";
             } else {
-                this.resetHighlights();
+                this.filterText = "related:" + item.hid;
             }
-        },
-        resetHighlights() {
-            this.highlights = {};
-            this.highlightsKey = null;
         },
         onDragEnter(e) {
             this.dragTarget = e.target;

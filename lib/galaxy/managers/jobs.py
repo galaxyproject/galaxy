@@ -15,6 +15,7 @@ from sqlalchemy import (
     and_,
     false,
     func,
+    literal,
     or_,
 )
 from sqlalchemy.orm import aliased
@@ -31,6 +32,7 @@ from galaxy.job_metrics import (
     RawMetric,
     Safety,
 )
+from galaxy.managers.base import get_object
 from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
@@ -1014,3 +1016,127 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
                 }
             )
     return outputs
+
+
+class JobConnectionsManager:
+    def __init__(self, sa_session: galaxy_scoped_session):
+        self.sa_session = sa_session
+
+    def get_related_hids(self, trans, item_data, item_hid):
+        item_id = item_data[0]
+        item_type = item_data[1]
+        results = [item_hid]
+
+        # Get select queries
+        if item_type == 'HDA':
+            output_selects = self.outputs_derived_from_input_hda(item_id)
+            input_selects = self.inputs_for_hda(item_id)
+        elif item_type == 'HDCA':
+            output_selects = self.outputs_derived_from_input_hdca(item_id)
+            input_selects = self.inputs_for_hdca(item_id)
+        else:
+            raise Exception(f"Invalid item type {item_type}")
+
+        # Add found related items' hids to results list
+        for select_query in (output_selects + input_selects):
+            query_res = self.sa_session.execute(select_query).all()
+            for res in query_res:
+                res_item = get_object(trans, res.id, res.src)
+                results.append(res_item.hid)
+        return results
+
+    def outputs_derived_from_input_hda(self, input_hda_id):
+        hda_select = (
+            select([literal("HistoryDatasetAssociation").label("src"), model.JobToOutputDatasetAssociation.dataset_id.label("id")])
+            .join(
+                model.JobToInputDatasetAssociation,
+                model.JobToInputDatasetAssociation.job_id == model.JobToOutputDatasetAssociation.job_id,
+            )
+            .where(model.JobToInputDatasetAssociation.dataset_id == input_hda_id)
+        )
+        hdca_select = (
+            select(
+                [
+                    literal("HistoryDatasetCollectionAssociation").label("src"),
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("id"),
+                ]
+            )
+            .join(
+                model.JobToInputDatasetAssociation,
+                model.JobToInputDatasetAssociation.job_id == model.JobToOutputDatasetCollectionAssociation.job_id,
+            )
+            .where(model.JobToInputDatasetAssociation.dataset_id == input_hda_id)
+        )
+        return hda_select, hdca_select
+
+    def outputs_derived_from_input_hdca(self, input_hdca_id):
+        hda_select = (
+            select([literal("HistoryDatasetAssociation").label("src"), model.JobToOutputDatasetAssociation.dataset_id.label("id")])
+            .join(
+                model.JobToInputDatasetCollectionAssociation,
+                model.JobToInputDatasetCollectionAssociation.job_id == model.JobToOutputDatasetAssociation.job_id,
+            )
+            .where(model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+        )
+        hdca_select = (
+            select(
+                [
+                    literal("HistoryDatasetCollectionAssociation").label("src"),
+                    model.JobToOutputDatasetCollectionAssociation.dataset_collection_id.label("id"),
+                ]
+            )
+            .join(
+                model.JobToInputDatasetCollectionAssociation,
+                model.JobToInputDatasetCollectionAssociation.job_id == model.JobToOutputDatasetCollectionAssociation.job_id,
+            )
+            .where(model.JobToInputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+        )
+        return hda_select, hdca_select
+
+    def inputs_for_hda(self, input_hda_id):
+        input_hdas = (
+            select([literal("HistoryDatasetAssociation").label("src"), model.JobToInputDatasetAssociation.dataset_id.label("id")])
+            .join(
+                model.JobToOutputDatasetAssociation,
+                model.JobToOutputDatasetAssociation.job_id == model.JobToInputDatasetAssociation.job_id,
+            )
+            .where(model.JobToOutputDatasetAssociation.dataset_id == input_hda_id)
+        )
+        input_hdcas = (
+            select(
+                [
+                    literal("HistoryDatasetCollectionAssociation").label("src"),
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id.label("id"),
+                ]
+            )
+            .join(
+                model.JobToOutputDatasetAssociation,
+                model.JobToOutputDatasetAssociation.job_id == model.JobToInputDatasetCollectionAssociation.job_id,
+            )
+            .where(model.JobToOutputDatasetAssociation.dataset_id == input_hda_id)
+        )
+        return input_hdas, input_hdcas
+
+    def inputs_for_hdca(self, input_hdca_id):
+        input_hdas = (
+            select([literal("HistoryDatasetAssociation").label("src"), model.JobToInputDatasetAssociation.dataset_id.label("id")])
+            .join(
+                model.JobToOutputDatasetCollectionAssociation,
+                model.JobToOutputDatasetCollectionAssociation.job_id == model.JobToInputDatasetAssociation.job_id,
+            )
+            .where(model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+        )
+        input_hdcas = (
+            select(
+                [
+                    literal("HistoryDatasetCollectionAssociation").label("src"),
+                    model.JobToInputDatasetCollectionAssociation.dataset_collection_id.label("id"),
+                ]
+            )
+            .join(
+                model.JobToOutputDatasetCollectionAssociation,
+                model.JobToOutputDatasetCollectionAssociation.job_id == model.JobToInputDatasetCollectionAssociation.job_id,
+            )
+            .where(model.JobToOutputDatasetCollectionAssociation.dataset_collection_id == input_hdca_id)
+        )
+        return input_hdas, input_hdcas

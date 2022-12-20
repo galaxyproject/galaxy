@@ -538,6 +538,9 @@ class HistoryContentsFilters(
                     return sql.column("history_content_type") == val
                 raise_filter_err(attr, op, val, "bad op in filter")
 
+            if attr == "related" and op == "eq":
+                return sql.column("hid").in_(val)
+
             if attr == "type_id":
                 if op == "eq":
                     return sql.column("type_id") == val
@@ -595,6 +598,7 @@ class HistoryContentsFilters(
         self.orm_filter_parsers.update(
             {
                 "history_content_type": {"op": ("eq")},
+                "related": {"op": ("eq")},
                 "type_id": {"op": ("eq", "in"), "val": self.parse_type_id_list},
                 "hid": {"op": ("eq", "ge", "le", "gt", "lt"), "val": int},
                 # TODO: needs a different val parser - but no way to add to the above

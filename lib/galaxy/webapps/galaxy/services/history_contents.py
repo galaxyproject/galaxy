@@ -12,6 +12,10 @@ from typing import (
     Union,
 )
 
+from sqlalchemy.sql import (
+    select,
+    expression,
+)
 from celery import group
 from pydantic import (
     Extra,
@@ -51,6 +55,7 @@ from galaxy.managers.history_contents import (
 from galaxy.managers.jobs import (
     fetch_job_states,
     summarize_jobs_to_dict,
+    JobConnectionsManager,
 )
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.model import (
@@ -939,6 +944,18 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         Allows additional filtering of contents and custom serialization.
         """
         history = self._get_history(trans, history_id)
+
+        # Related filter is included, get list of related item hids from jobs manager
+        if 'related-eq' in filter_query_params.q:
+            related_qv_index = filter_query_params.q.index('related-eq')
+            related_hid = filter_query_params.qv[related_qv_index]
+            found_item_data = trans.sa_session.execute(select(HistoryDatasetAssociation.id, expression.literal("HDA")).filter_by(history_id=history.id, hid=related_hid).union(select(HistoryDatasetCollectionAssociation.id, expression.literal("HDCA")).filter_by(history_id=history.id, hid=related_hid))).all()
+            job_connections_manager = JobConnectionsManager(trans.sa_session)
+            related = []
+            for item_data in found_item_data:
+                related = job_connections_manager.get_related_hids(trans, item_data, related_hid)
+            filter_query_params.qv[related_qv_index] = related
+
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
 
         stats_requested = accept == HistoryContentsWithStatsResult.__accept_type__

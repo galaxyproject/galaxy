@@ -9,6 +9,7 @@ export const validFilters = {
     hid_gt: compare("hid", "gt"),
     hid_le: compare("hid", "le"),
     hid_lt: compare("hid", "lt"),
+    related: equals("related"),
     tag: contains("tags", "tag", expandNameTag),
     visible: equals("visible", "visible", toBool),
     deleted: equals("deleted", "deleted", toBool),

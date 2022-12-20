@@ -4,7 +4,7 @@
  */
 
 import { defineStore } from "pinia";
-
+import Vue from "vue";
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
@@ -21,18 +21,22 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         latestCreateTime: new Date(),
         totalMatchesCount: undefined,
         lastCheckedTime: new Date(),
+        matchedHids: {},
         isWatching: false,
     }),
     getters: {
         getHistoryItems: (state) => {
             return (historyId, filterText) => {
                 const itemArray = state.items[historyId] || [];
-                const filters = HistoryFilters.getFilters(filterText);
+                const filters = HistoryFilters.getFilters(filterText).filter((filter) => !filter.includes("related"));
                 const filtered = itemArray.filter((item) => {
                     if (!item) {
                         return false;
                     }
                     if (!HistoryFilters.testFilters(filters, item)) {
+                        return false;
+                    }
+                    if (!state.matchedHids[historyId].includes(item.hid)) {
                         return false;
                     }
                     return true;
@@ -71,6 +75,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             this.$patch((state) => {
                 // merges incoming payload into existing state
                 mergeArray(historyId, payload, state.items, state.itemKey);
+                const payloadHids = [];
                 // keep track of latest create time for items
                 payload.forEach((item) => {
                     if (item.state == "ok") {
@@ -79,7 +84,9 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                             state.latestCreateTime = itemCreateTime;
                         }
                     }
+                    payloadHids.push(item.hid);
                 });
+                Vue.set(state.matchedHids, historyId, payloadHids);
             });
         },
         setLastCheckedTime(checkForUpdate) {

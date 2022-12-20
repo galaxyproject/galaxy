@@ -18,22 +18,21 @@
                         <font-awesome-icon class="text-info" icon="arrow-circle-up" />
                     </span>
                     <span
-                        v-else-if="highlight == 'noInputs'"
+                        v-else-if="highlight == 'currItem'"
                         v-b-tooltip.hover
-                        title="No Inputs for this item"
-                        tabindex="0"
-                        @click.stop="toggleHighlights"
-                        @keypress="toggleHighlights">
-                        <font-awesome-icon icon="minus-circle" />
-                    </span>
-                    <span
-                        v-else-if="highlight == 'output'"
-                        v-b-tooltip.hover
-                        title="Inputs highlighted for this item"
+                        title="Inputs/Outputs highlighted for this item"
                         tabindex="0"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <font-awesome-icon icon="check-circle" />
+                    </span>
+                    <span
+                        v-else-if="highlight == 'output'"
+                        v-b-tooltip.hover
+                        title="Output"
+                        tabindex="0"
+                        @click.stop="toggleHighlights">
+                        <font-awesome-icon class="text-info" icon="arrow-circle-down" />
                     </span>
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
@@ -86,7 +85,7 @@
                 v-if="expandDataset"
                 :dataset="item"
                 :writable="writable"
-                :show-highlight="isHistoryItem"
+                :show-highlight="isHistoryItem && filterable"
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
@@ -104,11 +103,10 @@ import { updateContentFields } from "components/History/model/queries";
 import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { useEntryPointStore } from "stores/entryPointStore";
 
-library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
-
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
     components: {
         CollectionDescription,
