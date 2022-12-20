@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import FormBoolean from "./Elements/FormBoolean";
-import FormHidden from "./Elements/FormHidden";
-import FormInput from "./Elements/FormInput";
-import FormParameter from "./Elements/FormParameter";
-import FormSelection from "./Elements/FormSelection";
-import FormColor from "./Elements/FormColor";
-import FormDirectory from "./Elements/FormDirectory";
-import FormNumber from "./Elements/FormNumber";
-import FormText from "./Elements/FormText";
-import FormOptionalText from "./Elements/FormOptionalText";
-import FormRulesEdit from "./Elements/FormRulesEdit";
+import FormBoolean from "./Elements/FormBoolean.vue";
+import FormHidden from "./Elements/FormHidden.vue";
+import FormInput from "./Elements/FormInput.vue";
+import FormParameter from "./Elements/FormParameter.vue";
+import FormSelection from "./Elements/FormSelection.vue";
+import FormColor from "./Elements/FormColor.vue";
+import FormDirectory from "./Elements/FormDirectory.vue";
+import FormNumber from "./Elements/FormNumber.vue";
+import FormText from "./Elements/FormText.vue";
+import FormOptionalText from "./Elements/FormOptionalText.vue";
+import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
