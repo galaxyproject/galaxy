@@ -51,17 +51,6 @@ def generate_clone_url_for_installed_repository(app: HasToolShedRegistry, reposi
     return util.build_url(tool_shed_url, pathspec=["repos", str(repository.owner), str(repository.name)])
 
 
-def generate_clone_url_for_repository_in_tool_shed(user, repository) -> str:
-    """Generate the URL for cloning a repository that is in the tool shed."""
-    base_url = url_for("/", qualified=True).rstrip("/")
-    if user:
-        protocol, base = base_url.split("://")
-        username = f"{user.username}@"
-        return f"{protocol}://{username}{base}/repos/{repository.user.username}/{repository.name}"
-    else:
-        return f"{base_url}/repos/{repository.user.username}/{repository.name}"
-
-
 def generate_clone_url_from_repo_info_tup(app: HasToolShedRegistry, repo_info_tup) -> str:
     """Generate the URL for cloning a repository given a tuple of toolshed, name, owner, changeset_revision."""
     # Example tuple: ['http://localhost:9009', 'blast_datatypes', 'test', '461a4216e8ab', False]
@@ -286,7 +275,6 @@ __all__ = (
     "accumulate_tool_dependencies",
     "check_tool_tag_set",
     "generate_clone_url_for_installed_repository",
-    "generate_clone_url_for_repository_in_tool_shed",
     "generate_clone_url_from_repo_info_tup",
     "get_repository_dependencies",
     "get_protocol_from_tool_shed_url",
