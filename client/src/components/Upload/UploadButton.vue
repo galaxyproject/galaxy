@@ -1,25 +1,23 @@
 <template>
-    <b-button
+    <b-nav-item
         id="tool-panel-upload-button"
-        v-b-tooltip.hover.bottom
+        v-b-tooltip.hover.right
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
-        size="sm"
         @click="showUploadDialog">
-        <div class="progress">
+        <div class="progress px-1">
             <div
-                class="progress-bar progress-bar-notransition"
+                class="progress-bar progress-bar-notransition rounded"
                 :class="`progress-bar-${status}`"
                 :style="{
                     width: `${percentage}%`,
                 }" />
         </div>
         <span class="position-relative">
-            <font-awesome-icon icon="upload" class="mr-1" />
-            <b v-localize>Upload Data</b>
+            <font-awesome-icon icon="upload" />
         </span>
-    </b-button>
+    </b-nav-item>
 </template>
 
 <script>

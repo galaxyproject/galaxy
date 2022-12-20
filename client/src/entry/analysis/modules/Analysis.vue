@@ -1,77 +1,101 @@
+<script setup>
+import { getGalaxyInstance } from "app";
+import CenterFrame from "./CenterFrame";
+import HistoryIndex from "components/History/Index";
+import ToolBox from "components/Panels/ProviderAwareToolBox";
+import { UploadButton } from "components/Upload";
+import { useRoute, useRouter } from "vue-router/composables";
+import { computed, ref, onMounted, onUnmounted } from "vue";
+import DragAndDropModal from "components/Upload/DragAndDropModal";
+
+const route = useRoute();
+const router = useRouter();
+const showCenter = ref(false);
+const searchToggle = ref(false);
+
+// computed
+const showPanels = computed(() => {
+    const panels = route.query.hide_panels;
+    if (panels !== undefined) {
+        return panels.toLowerCase() != "true";
+    }
+    return true;
+});
+const toolBoxProperties = computed(() => {
+    const Galaxy = getGalaxyInstance();
+    return {
+        storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
+    };
+});
+
+// methods
+function hideCenter() {
+    showCenter.value = false;
+}
+function onLoad() {
+    showCenter.value = true;
+}
+function onSearchToggle() {
+    searchToggle.value = !searchToggle.value;
+}
+
+// life cycle
+onMounted(() => {
+    // Using a custom event here which, in contrast to watching $route,
+    // always fires when a route is pushed instead of validating it first.
+    router.app.$on("router-push", hideCenter);
+});
+onUnmounted(() => {
+    router.app.$off("router-push", hideCenter);
+});
+</script>
 <template>
-    <div id="columns">
-        <SidePanel
-            v-if="showPanels"
-            side="left"
-            :current-panel="getToolBox()"
-            :current-panel-properties="toolBoxProperties" />
-        <div id="center">
-            <div class="center-container">
-                <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
-                <div v-show="!showCenter" class="center-panel" style="display: block">
-                    <router-view :key="$route.fullPath" class="h-100" />
-                </div>
-            </div>
+    <div id="columns" class="d-flex">
+        <b-nav v-if="showPanels" vertical class="side-bar pt-1">
+            <b-nav-item
+                id="tool-search"
+                v-b-tooltip.hover.right
+                class="my-1"
+                :title="'Search Tools and Workflows' | l"
+                @click="onSearchToggle">
+                <template>
+                    <span class="fa fa-search" />
+                </template>
+            </b-nav-item>
+            <upload-button />
+        </b-nav>
+        <div v-if="showPanels" v-show="searchToggle">
+            <ToolBox v-bind="toolBoxProperties" class="left-column" />
         </div>
-        <SidePanel v-if="showPanels" side="right" :current-panel="getHistoryIndex()" :current-panel-properties="{}" />
+        <div class="center-column overflow-auto p-3 w-100">
+            <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
+            <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
+        </div>
+        <HistoryIndex v-if="showPanels" class="right-column" />
         <DragAndDropModal />
     </div>
 </template>
-<script>
-import { getGalaxyInstance } from "app";
-import HistoryIndex from "components/History/Index";
-import ToolBox from "components/Panels/ProviderAwareToolBox";
-import SidePanel from "components/Panels/SidePanel";
-import CenterFrame from "./CenterFrame";
-import DragAndDropModal from "components/Upload/DragAndDropModal";
-
-export default {
-    components: {
-        CenterFrame,
-        SidePanel,
-        DragAndDropModal,
-    },
-    data() {
-        return {
-            showCenter: false,
-        };
-    },
-    computed: {
-        showPanels() {
-            const panels = this.$route.query.hide_panels;
-            if (panels !== undefined) {
-                return panels.toLowerCase() != "true";
-            }
-            return true;
-        },
-        toolBoxProperties() {
-            const Galaxy = getGalaxyInstance();
-            return {
-                storedWorkflowMenuEntries: Galaxy.config.stored_workflow_menu_entries,
-            };
-        },
-    },
-    mounted() {
-        // Using a custom event here which, in contrast to watching $route,
-        // always fires when a route is pushed instead of validating it first.
-        this.$router.app.$on("router-push", this.hideCenter);
-    },
-    beforeDestroy() {
-        this.$router.app.$off("router-push", this.hideCenter);
-    },
-    methods: {
-        getHistoryIndex() {
-            return HistoryIndex;
-        },
-        getToolBox() {
-            return ToolBox;
-        },
-        hideCenter() {
-            this.showCenter = false;
-        },
-        onLoad() {
-            this.showCenter = true;
-        },
-    },
-};
-</script>
+<style scoped>
+@import "theme/blue.scss";
+.nav-item {
+    cursor: pointer;
+    text-decoration: none;
+    list-style-type: none;
+}
+.left-column {
+    min-width: 15.2rem;
+    max-width: 15.2rem;
+    width: 15.2rem;
+}
+.right-column {
+    min-width: 18rem;
+    max-width: 18rem;
+    width: 18rem;
+}
+.side-bar {
+    width: 2.8rem;
+    min-width: 2.8rem;
+    max-width: 2.8rem;
+    background: $panel-bg-color;
+}
+</style>

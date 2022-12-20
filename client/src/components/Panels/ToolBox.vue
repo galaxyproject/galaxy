@@ -30,7 +30,6 @@
                 @onQuery="onQuery"
                 @onResults="onResults" />
             <section v-if="!showAdvanced">
-                <upload-button />
                 <div v-if="hasResults" class="pb-2">
                     <b-button size="sm" class="w-100" @click="onToggle">
                         <span :class="buttonIcon" />
@@ -71,7 +70,7 @@
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
 import { UploadButton } from "components/Upload";
-import { useGlobalUploadModal } from "composables/globalUploadModal";
+import { openGlobalUploadModal } from "components/Upload";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import { filterToolSections, filterTools, hasResults, hideToolsSection } from "./utilities";
@@ -81,7 +80,6 @@ import _l from "utils/localization";
 
 export default {
     components: {
-        UploadButton,
         FavoritesButton,
         PanelViewButton,
         ToolSection,
