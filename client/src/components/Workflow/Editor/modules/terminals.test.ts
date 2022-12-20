@@ -188,6 +188,19 @@ describe("canAccept", () => {
         expect(dataIn.canAccept(integerParam).canAccept).toBe(false);
         expect(dataIn.canAccept(integerParam).reason).toBe("Cannot connect workflow parameter to data input.");
     });
+    it("accepts integer parameter to integer parameter connection", () => {
+        const integerInputParam = terminals["multi data"]["advanced|advanced_threshold"] as InputParameterTerminal;
+        const integerOutputParam = terminals["integer parameter input"]["output"] as OutputParameterTerminal;
+        expect(integerInputParam.canAccept(integerOutputParam).canAccept).toBe(true);
+    });
+    it("rejects text to integer parameter connection", () => {
+        const integerInputParam = terminals["multi data"]["advanced|advanced_threshold"] as InputParameterTerminal;
+        const textOutputParam = terminals["text parameter input"]["output"] as OutputParameterTerminal;
+        expect(integerInputParam.canAccept(textOutputParam).canAccept).toBe(false);
+        expect(integerInputParam.canAccept(textOutputParam).reason).toBe(
+            "Cannot attach a text parameter to a integer input"
+        );
+    });
     it("rejects data to parameter connection", () => {
         const dataOut = terminals["data input"]["output"] as OutputTerminal;
         const integerInputParam = terminals["multi data"]["advanced|advanced_threshold"] as InputParameterTerminal;
@@ -204,7 +217,7 @@ describe("canAccept", () => {
         // now we can't connect a collection out to the data input of simple data
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(dataIn.canAccept(collectionOut).reason).toBe(
-            "Can't map over this input with output collection type - an output of this tool is not mapped over constraining this input. Disconnect output(s) and retry."
+            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry."
         );
     });
     it("rejects increasing map over to list:list if data is mapped over a list input", () => {

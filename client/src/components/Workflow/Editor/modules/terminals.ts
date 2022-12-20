@@ -515,9 +515,10 @@ interface OutputParameterTerminalArgs extends Omit<BaseOutputTerminalArgs, "data
     type: ParameterOutput["type"];
 }
 
-export class OutputParameterTerminal extends Terminal {
+export class OutputParameterTerminal extends BaseOutputTerminal {
     constructor(attr: OutputParameterTerminalArgs) {
-        super(attr);
+        super({ ...attr, datatypes: [] });
+        this.type = attr.type;
     }
 }
 
