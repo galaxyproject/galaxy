@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import { getGalaxyInstance } from "app/singleton";
-import MountTarget from "./Login";
+import MountTarget from "./LoginModule";
 
 // mock Galaxy object
 jest.mock("app/singleton");
