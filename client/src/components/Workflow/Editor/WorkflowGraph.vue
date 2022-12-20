@@ -89,7 +89,7 @@ function onPan(pan) {
 function onZoom(zoomLevel, panTo = null) {
     zoom.value.setZoom(zoomLevel);
     if (panTo) {
-        onPan({ x: panTo.x - this.transform.x, y: panTo.y - this.transform.y });
+        onPan({ x: panTo.x - transform.x, y: panTo.y - transform.y });
     }
     setScale(zoomLevel);
 }
