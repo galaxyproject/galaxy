@@ -36,6 +36,7 @@ export default {
     },
     data() {
         return {
+            previousStart: undefined,
             throttlePeriod: 20,
             deltaMax: 20,
         };
@@ -75,7 +76,10 @@ export default {
         },
         onScroll() {
             const rangeStart = this.$refs.listing.range.start;
-            this.$emit("scroll", rangeStart);
+            if (this.previousStart !== rangeStart) {
+                this.previousStart = rangeStart;
+                this.$emit("scroll", rangeStart);
+            }
         },
         getOffset() {
             return this.$refs.listing?.getOffset() || 0;
