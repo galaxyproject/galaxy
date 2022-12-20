@@ -12,10 +12,6 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.sql import (
-    select,
-    expression,
-)
 from celery import group
 from pydantic import (
     Extra,
@@ -949,11 +945,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         if 'related-eq' in filter_query_params.q:
             related_qv_index = filter_query_params.q.index('related-eq')
             related_hid = filter_query_params.qv[related_qv_index]
-            found_item_data = trans.sa_session.execute(select(HistoryDatasetAssociation.id, expression.literal("HDA")).filter_by(history_id=history.id, hid=related_hid).union(select(HistoryDatasetCollectionAssociation.id, expression.literal("HDCA")).filter_by(history_id=history.id, hid=related_hid))).all()
             job_connections_manager = JobConnectionsManager(trans.sa_session)
-            related = []
-            for item_data in found_item_data:
-                related = job_connections_manager.get_related_hids(trans, item_data, related_hid)
+            related = job_connections_manager.get_related_hids(trans, history_id, related_hid)
             filter_query_params.qv[related_qv_index] = related
 
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)

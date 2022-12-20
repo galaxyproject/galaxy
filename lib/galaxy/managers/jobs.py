@@ -16,10 +16,14 @@ from sqlalchemy import (
     false,
     func,
     literal,
+    union,
     or_,
 )
 from sqlalchemy.orm import aliased
-from sqlalchemy.sql import select
+from sqlalchemy.sql import (
+    select,
+    expression,
+)
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -1019,31 +1023,52 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
 
 
 class JobConnectionsManager:
+    """Get connections graph of inputs and outputs for given item"""
+
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
 
-    def get_related_hids(self, trans, item_data, item_hid):
-        item_id = item_data[0]
-        item_type = item_data[1]
-        results = [item_hid]
-
-        # Get select queries
-        if item_type == 'HDA':
-            output_selects = self.outputs_derived_from_input_hda(item_id)
-            input_selects = self.inputs_for_hda(item_id)
-        elif item_type == 'HDCA':
-            output_selects = self.outputs_derived_from_input_hdca(item_id)
-            input_selects = self.inputs_for_hdca(item_id)
+    def get_connections_graph(self, id, src):
+        """Get connections graph of inputs and outputs for given item id"""
+        if src == 'HistoryDatasetAssociation':
+            output_selects = self.outputs_derived_from_input_hda(id)
+            input_selects = self.inputs_for_hda(id)
+        elif src == 'HistoryDatasetCollectionAssociation':
+            output_selects = self.outputs_derived_from_input_hdca(id)
+            input_selects = self.inputs_for_hdca(id)
         else:
-            raise Exception(f"Invalid item type {item_type}")
+            raise Exception(f"Invalid item type {src}")
+        # Execute selects and return graph of inputs and outputs
+        result = {}
+        result["outputs"] = self._get_union_results(*output_selects)
+        result["inputs"] = self._get_union_results(*input_selects)
+        return result
 
-        # Add found related items' hids to results list
-        for select_query in (output_selects + input_selects):
-            query_res = self.sa_session.execute(select_query).all()
-            for res in query_res:
-                res_item = get_object(trans, res.id, res.src)
-                results.append(res_item.hid)
-        return results
+    def get_related_hids(self, trans, history_id, hid):
+        """Get connections graph of inputs and outputs for given item hid from the given history_id"""
+        # Get id(s) and src(s) for the given hid
+        items_by_hid = trans.sa_session.execute(
+            select(model.HistoryDatasetAssociation.id, expression.literal("HistoryDatasetAssociation"))
+            .filter_by(history_id=history_id, hid=hid)
+            .union(
+                select(model.HistoryDatasetCollectionAssociation.id, expression.literal("HistoryDatasetCollectionAssociation"))
+                .filter_by(history_id=history_id, hid=hid)
+            )
+        ).all()
+        result = [hid]
+        for item_data in items_by_hid:
+            graph = self.get_connections_graph(id=item_data[0], src=item_data[1])
+            # Add found related items' hids to result list
+            for val in (graph["outputs"] + graph["inputs"]):
+                item = get_object(trans, val["id"], val["src"])
+                result.append(item.hid)
+        return result
+
+    def _get_union_results(self, *selects):
+        result = []
+        for row in self.sa_session.execute(union(*selects)).all():
+            result.append({"src": row.src, "id": row.id})
+        return result
 
     def outputs_derived_from_input_hda(self, input_hda_id):
         hda_select = (
