@@ -2051,7 +2051,7 @@
 
 :Description:
     The brand image source.
-:Default: ``/static/favicon.png``
+:Default: ``/static/favicon.svg``
 :Type: str
 
 
@@ -5060,6 +5060,3 @@
     Display built-in converters in the tool panel.
 :Default: ``true``
 :Type: bool
-
-
-
