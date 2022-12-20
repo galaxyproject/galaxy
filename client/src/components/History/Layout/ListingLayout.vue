@@ -20,7 +20,6 @@
 </template>
 <script>
 import VirtualList from "vue-virtual-scroll-list";
-import { throttle } from "lodash";
 import LoadingSpan from "components/LoadingSpan";
 
 export default {
