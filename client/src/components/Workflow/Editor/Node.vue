@@ -32,13 +32,15 @@
                 aria-label="tool recommendations">
                 <i class="fa fa-arrow-right" />
             </b-button>
-            <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <Recommendations
-                    :get-node="getNode"
-                    :get-manager="getManager"
-                    :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate" />
-            </b-popover>
+            <!-- somehow incredibly slow
+                <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
+                    <Recommendations
+                        :get-node="getNode"
+                        :get-manager="getManager"
+                        :datatypes-mapper="datatypesMapper"
+                        @onCreate="onCreate" />
+                </b-popover>
+            -->
             <b-button
                 v-if="canClone"
                 v-b-tooltip.hover
