@@ -2,7 +2,7 @@
 import RawConnector from "./Connector";
 import TerminalConnector from "./TerminalConnector";
 import { computed } from "vue";
-import { useConnectionStore } from "stores/workflowConnectionStore";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { storeToRefs } from "pinia";
 
 const props = defineProps({

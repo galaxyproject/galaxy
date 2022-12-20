@@ -23,7 +23,7 @@
             @start="isDragging = true"
             @stop="onStopDragging"
             @move="onMove">
-            <div ref="terminal" class="icon prevent-zoom"></div>
+            <div class="icon prevent-zoom"></div>
         </draggable-wrapper>
     </div>
 </template>
@@ -31,7 +31,9 @@
 <script>
 import DraggableWrapper from "./DraggablePan";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
+import { useTerminal } from "./composables/useTerminal";
 import { ref } from "vue";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
 
 export default {
     components: {
@@ -42,8 +44,12 @@ export default {
             type: Object,
             required: true,
         },
-        getNode: {
-            type: Function,
+        stepType: {
+            type: String,
+            required: true,
+        },
+        stepId: {
+            type: Number,
             required: true,
         },
         postJobActions: {
@@ -60,11 +66,16 @@ export default {
         parentOffset: {
             type: Object,
         },
+        datatypesMapper: {
+            type: DatatypesMapperModel,
+            required: true,
+        },
     },
     setup(props) {
         const el = ref(null);
         const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
-        return { el, position };
+        const terminal = useTerminal(ref(props.stepId), ref(props.output), ref(props.DatatypesMapperModel));
+        return { el, position, terminal };
     },
     data() {
         return {
@@ -99,8 +110,7 @@ export default {
             };
         },
         id() {
-            const node = this.getNode();
-            return `node-${node.id}-output-${this.output.name}`;
+            return `node-${this.stepId}-output-${this.output.name}`;
         },
         label() {
             const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
@@ -110,8 +120,7 @@ export default {
             return this.output.activeOutput && "mark-terminal-active";
         },
         showCallout() {
-            const node = this.getNode();
-            return node.type == "tool";
+            return this.stepType == "tool";
         },
         terminalClass() {
             const cls = "terminal output-terminal";
@@ -140,7 +149,7 @@ export default {
     watch: {
         terminalPosition(position) {
             this.$store.commit("workflowState/setOutputTerminalPosition", {
-                stepId: this.getNode().id,
+                stepId: this.stepId,
                 outputName: this.output.name,
                 position,
             });
@@ -149,9 +158,7 @@ export default {
             if (this.isDragging) {
                 const dragConnection = {
                     ...this.dragPosition,
-                    datatypes: this.extensions,
-                    id: this.getNode().id,
-                    name: this.output.name,
+                    terminal: this.terminal,
                 };
                 this.$emit("onDragConnector", dragConnection);
             }
@@ -165,7 +172,7 @@ export default {
     },
     beforeDestroy() {
         this.$store.commit("workflowState/deleteOutputTerminalPosition", {
-            stepId: this.getNode().id,
+            stepId: this.stepId,
             outputName: this.output.name,
         });
     },

@@ -342,7 +342,7 @@ export class InputTerminal extends BaseInputTerminal {
                     } else {
                         return new ConnectionAcceptable(
                             false,
-                            "Can't map over this input with output collection type - an output of this tool is not mapped over constraining this input. Disconnect output(s) and retry."
+                            "Can't map over this input with output collection type - an output of this tool is mapped over constraining this input. Disconnect output(s) and retry."
                         );
                     }
                 }
