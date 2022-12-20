@@ -77,11 +77,16 @@ class Terminal extends EventEmitter {
         );
         this.connectionStore.addConnection(connection);
     }
-    disconnect(other: Terminal) {
-        const connection = new Connection(
-            { stepId: this.stepId, name: this.name, connectorType: "input" },
-            { stepId: other.stepId, name: other.name, connectorType: "output" }
-        );
+    disconnect(other: Terminal | Connection) {
+        let connection: Connection;
+        if (other instanceof Terminal) {
+            connection = new Connection(
+                { stepId: this.stepId, name: this.name, connectorType: "input" },
+                { stepId: other.stepId, name: other.name, connectorType: "output" }
+            );
+        } else {
+            connection = other;
+        }
         this.connectionStore.removeConnection(connection.id);
         this.resetMappingIfNeeded(connection);
     }

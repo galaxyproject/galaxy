@@ -23,7 +23,7 @@
 
 <script>
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
-import { useConnectionStore } from "stores/workflowConnectionStore";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { computed } from "@vue/reactivity";
 import { inject, ref, watchEffect } from "vue";
 import { useTerminal } from "./composables/useTerminal";
@@ -158,7 +158,8 @@ export default {
             this.$emit("onChange");
         },
         onRemove() {
-            this.connectionStore.removeConnection(this.terminalArgs);
+            const connections = this.connectionStore.getConnectionsForTerminal(this.id);
+            connections.forEach((connection) => this.terminal.disconnect(connection));
             this.showRemove = false;
         },
         enter() {
@@ -175,6 +176,7 @@ export default {
             if (this.canAccept.canAccept) {
                 this.terminal.connect(this.draggingConnection.terminal);
                 this.showRemove = true;
+                this.$root.$emit("bv::hide::tooltip", this.iconId);
             }
         },
     },
