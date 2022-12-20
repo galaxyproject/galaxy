@@ -13,7 +13,7 @@
                 @dragenter="dragEnter"
                 @dragleave="dragLeave"
                 @drop="onDrop"
-                v-b-tooltip
+                v-b-tooltip.manual
                 :title="reason" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" @keyup.delete="onRemove" />
