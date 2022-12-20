@@ -17,6 +17,7 @@ from galaxy.util.resources import (
 from galaxy_test.base import api_asserts
 from galaxy_test.base.api_util import random_name
 from tool_shed_client.schema import (
+    BuildSearchIndexResponse,
     Category,
     CreateCategoryRequest,
     CreateRepositoryRequest,
@@ -214,9 +215,10 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(response)
         return Repository(**response.json())
 
-    def reindex(self):
+    def reindex(self) -> BuildSearchIndexResponse:
         index_response = self._admin_api_interactor.put("tools/build_search_index")
         index_response.raise_for_status()
+        return BuildSearchIndexResponse(**index_response.json())
 
     def new_category(
         self, name: Optional[str] = None, description: Optional[str] = None, prefix=DEFAULT_PREFIX

@@ -433,3 +433,8 @@ def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> Ins
         metadata_info=metadata_info,
         repo_info=repo_info,
     )
+
+
+class BuildSearchIndexResponse(BaseModel):
+    repositories_indexed: int
+    tools_indexed: int
