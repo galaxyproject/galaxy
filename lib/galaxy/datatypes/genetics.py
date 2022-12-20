@@ -30,10 +30,10 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
     DatasetProtocol9,
-    DatasetProtocol11,
     DatasetProtocol24,
     HasMetadata,
     Peekable,
+    ProvidesDataSource,
     SetsMetadata,
 )
 from galaxy.datatypes.data import (
@@ -88,7 +88,7 @@ class GenomeGraphs(Tabular):
         t[0] = "string"
         dataset.metadata.column_types = t
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol11, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
         """
         Returns file
         """

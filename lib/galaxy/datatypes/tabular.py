@@ -31,12 +31,12 @@ from galaxy.datatypes import (
 )
 from galaxy.datatypes._protocols import (
     DatasetProtocol9,
-    DatasetProtocol11,
     DatasetProtocol15,
     Displayable,
     HasFileName,
     HasMetadata,
     Peekable,
+    ProvidesDataSource,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import _BamOrSam
@@ -376,27 +376,27 @@ class TabularData(Text):
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset: DatasetProtocol11, **settings) -> ColumnarDataProvider:
+    def column_dataprovider(self, dataset: ProvidesDataSource, **settings) -> ColumnarDataProvider:
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
         return ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
-    def dataset_column_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DatasetColumnarDataProvider:
+    def dataset_column_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DatasetColumnarDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
         return DatasetColumnarDataProvider(dataset, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
-    def dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
+    def dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DictDataProvider:
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
         return DictDataProvider(dataset_source, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
-    def dataset_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DatasetDictDataProvider:
+    def dataset_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DatasetDictDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
         return DatasetDictDataProvider(dataset, deliminator=delimiter, **settings)
@@ -585,7 +585,7 @@ class Tabular(TabularData):
     def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol11, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
 
@@ -867,55 +867,55 @@ class Sam(Tabular, _BamOrSam):
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     # TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
     @dataproviders.decorators.dataprovider_factory("line", FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset: DatasetProtocol11, **settings) -> FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: ProvidesDataSource, **settings) -> FilteredLineDataProvider:
         settings["comment_char"] = "@"
         return super().line_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("regex-line", RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset: DatasetProtocol11, **settings) -> RegexLineDataProvider:
+    def regex_line_dataprovider(self, dataset: ProvidesDataSource, **settings) -> RegexLineDataProvider:
         settings["comment_char"] = "@"
         return super().regex_line_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset: DatasetProtocol11, **settings) -> ColumnarDataProvider:
+    def column_dataprovider(self, dataset: ProvidesDataSource, **settings) -> ColumnarDataProvider:
         settings["comment_char"] = "@"
         return super().column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
-    def dataset_column_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DatasetColumnarDataProvider:
+    def dataset_column_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DatasetColumnarDataProvider:
         settings["comment_char"] = "@"
         return super().dataset_column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
-    def dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
+    def dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DictDataProvider:
         settings["comment_char"] = "@"
         return super().dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
-    def dataset_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DatasetDictDataProvider:
+    def dataset_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DatasetDictDataProvider:
         settings["comment_char"] = "@"
         return super().dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("header", RegexLineDataProvider.settings)
-    def header_dataprovider(self, dataset: DatasetProtocol11, **settings) -> RegexLineDataProvider:
+    def header_dataprovider(self, dataset: ProvidesDataSource, **settings) -> RegexLineDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         headers_source = RegexLineDataProvider(dataset_source, regex_list=["^@"])
         return RegexLineDataProvider(headers_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("id-seq-qual", dict_dataprovider.settings)
-    def id_seq_qual_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
+    def id_seq_qual_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DictDataProvider:
         # provided as an example of a specified column dict (w/o metadata)
         settings["indeces"] = [0, 9, 10]
         settings["column_names"] = ["id", "seq", "qual"]
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         settings["comment_char"] = "@"
         return GenomicRegionDataProvider(dataset, 2, 3, 3, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         settings["comment_char"] = "@"
         return GenomicRegionDataProvider(dataset, 2, 3, 3, True, **settings)
 
@@ -996,11 +996,11 @@ class Pileup(Tabular):
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
@@ -1085,11 +1085,11 @@ class BaseVcf(Tabular):
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, 0, 1, 1, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 

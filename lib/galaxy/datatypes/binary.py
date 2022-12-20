@@ -36,12 +36,12 @@ from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
     DatasetProtocol9,
-    DatasetProtocol11,
     DatasetProtocol16,
     Displayable,
     HasFileName,
     HasMetadata,
     Peekable,
+    ProvidesDataSource,
     SetsMetadata,
 )
 from galaxy.datatypes.data import (
@@ -807,25 +807,25 @@ class Bam(BamNative):
     # TODO:?? seems like there should be an easier way to do/inherit this - metadata.comment_char?
     # TODO: incorporate samtools options to control output: regions first, then flags, etc.
     @dataproviders.decorators.dataprovider_factory("line", FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset: DatasetProtocol11, **settings) -> FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: ProvidesDataSource, **settings) -> FilteredLineDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return FilteredLineDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("regex-line", RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset: DatasetProtocol11, **settings) -> RegexLineDataProvider:
+    def regex_line_dataprovider(self, dataset: ProvidesDataSource, **settings) -> RegexLineDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return RegexLineDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset: DatasetProtocol11, **settings) -> ColumnarDataProvider:
+    def column_dataprovider(self, dataset: ProvidesDataSource, **settings) -> ColumnarDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return ColumnarDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
-    def dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
+    def dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DictDataProvider:
         samtools_source = SamtoolsDataProvider(dataset)
         settings["comment_char"] = "@"
         return DictDataProvider(samtools_source, **settings)
@@ -843,20 +843,20 @@ class Bam(BamNative):
     #    return super().dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("header", RegexLineDataProvider.settings)
-    def header_dataprovider(self, dataset: DatasetProtocol11, **settings) -> RegexLineDataProvider:
+    def header_dataprovider(self, dataset: ProvidesDataSource, **settings) -> RegexLineDataProvider:
         # in this case we can use an option of samtools view to provide just what we need (w/o regex)
         samtools_source = SamtoolsDataProvider(dataset, "-H")
         return RegexLineDataProvider(samtools_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("id-seq-qual", DictDataProvider.settings)
-    def id_seq_qual_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
+    def id_seq_qual_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DictDataProvider:
         settings["indeces"] = [0, 9, 10]
         settings["column_types"] = ["str", "str", "str"]
         settings["column_names"] = ["id", "seq", "qual"]
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region", ColumnarDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: DatasetProtocol11, **settings) -> ColumnarDataProvider:
+    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> ColumnarDataProvider:
         # GenomicRegionDataProvider currently requires a dataset as source - may not be necc.
         # TODO:?? consider (at least) the possible use of a kwarg: metadata_source (def. to source.dataset),
         #   or remove altogether...
@@ -870,14 +870,14 @@ class Bam(BamNative):
         return self.column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", DictDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> DictDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> DictDataProvider:
         settings["indeces"] = [2, 3, 3]
         settings["column_types"] = ["str", "int", "int"]
         settings["column_names"] = ["chrom", "start", "end"]
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("samtools")
-    def samtools_dataprovider(self, dataset: DatasetProtocol11, **settings) -> SamtoolsDataProvider:
+    def samtools_dataprovider(self, dataset: ProvidesDataSource, **settings) -> SamtoolsDataProvider:
         """Generic samtools interface - all options available through settings."""
         dataset_source = DatasetDataProvider(dataset)
         return SamtoolsDataProvider(dataset_source, **settings)
@@ -2404,17 +2404,17 @@ class SQlite(Binary):
             return f"SQLite Database ({nice_size(dataset.get_size())})"
 
     @dataproviders.decorators.dataprovider_factory("sqlite", SQliteDataProvider.settings)
-    def sqlite_dataprovider(self, dataset: DatasetProtocol11, **settings) -> SQliteDataProvider:
+    def sqlite_dataprovider(self, dataset: ProvidesDataSource, **settings) -> SQliteDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return SQliteDataProvider(dataset_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("sqlite-table", SQliteDataTableProvider.settings)
-    def sqlite_datatableprovider(self, dataset: DatasetProtocol11, **settings) -> SQliteDataTableProvider:
+    def sqlite_datatableprovider(self, dataset: ProvidesDataSource, **settings) -> SQliteDataTableProvider:
         dataset_source = DatasetDataProvider(dataset)
         return SQliteDataTableProvider(dataset_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("sqlite-dict", SQliteDataDictProvider.settings)
-    def sqlite_datadictprovider(self, dataset: DatasetProtocol11, **settings) -> SQliteDataDictProvider:
+    def sqlite_datadictprovider(self, dataset: ProvidesDataSource, **settings) -> SQliteDataDictProvider:
         dataset_source = DatasetDataProvider(dataset)
         return SQliteDataDictProvider(dataset_source, **settings)
 

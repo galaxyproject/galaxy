@@ -132,10 +132,6 @@ class DatasetProtocol9(HasDatatype, HasFileName, HasMetadata, Protocol):
     ...
 
 
-class DatasetProtocol11(HasDatatype, HasExt, HasFileName, HasMetadata, Protocol):
-    ...
-
-
 class DatasetProtocol15(HasDataset, HasHasData, HasMetadata, HasState, HasStates, Protocol):
     ...
 
@@ -209,4 +205,9 @@ class Peekable(
     HasSetPeek,
     Protocol,
 ):
+    ...
+
+
+class ProvidesDataSource(HasDatatype, HasExt, HasFileName, HasMetadata, Protocol):
+    # passed to the DatasetDataProvider constructor
     ...

@@ -5,8 +5,8 @@ import logging
 from typing import List
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol11,
     Peekable,
+    ProvidesDataSource,
 )
 from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -61,7 +61,7 @@ class Xgmml(xml.GenericXml):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", XMLDataProvider.settings)
-    def node_edge_dataprovider(self, dataset: DatasetProtocol11, **settings) -> "XGMMLGraphDataProvider":
+    def node_edge_dataprovider(self, dataset: ProvidesDataSource, **settings) -> "XGMMLGraphDataProvider":
         dataset_source = DatasetDataProvider(dataset)
         return XGMMLGraphDataProvider(dataset_source, **settings)
 
@@ -101,7 +101,7 @@ class Sif(tabular.Tabular):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", ColumnarDataProvider.settings)
-    def node_edge_dataprovider(self, dataset: DatasetProtocol11, **settings) -> "SIFGraphDataProvider":
+    def node_edge_dataprovider(self, dataset: ProvidesDataSource, **settings) -> "SIFGraphDataProvider":
         dataset_source = DatasetDataProvider(dataset)
         return SIFGraphDataProvider(dataset_source, **settings)
 

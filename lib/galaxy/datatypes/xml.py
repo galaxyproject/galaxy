@@ -7,8 +7,8 @@ from typing import List
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
-    DatasetProtocol11,
     Peekable,
+    ProvidesDataSource,
     SetsMetadata,
 )
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
@@ -80,7 +80,7 @@ class GenericXml(data.Text):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("xml", XMLDataProvider.settings)
-    def xml_dataprovider(self, dataset: DatasetProtocol11, **settings) -> XMLDataProvider:
+    def xml_dataprovider(self, dataset: ProvidesDataSource, **settings) -> XMLDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return XMLDataProvider(dataset_source, **settings)
 

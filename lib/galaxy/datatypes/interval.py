@@ -23,7 +23,6 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     DatasetProtocol9,
-    DatasetProtocol11,
     DatasetProtocol15,
     DatasetProtocol19,
     DatasetProtocol22,
@@ -31,6 +30,7 @@ from galaxy.datatypes._protocols import (
     HasId,
     HasMetadata,
     Peekable,
+    ProvidesDataSource,
     SetsMetadata,
 )
 from galaxy.datatypes.data import DatatypeValidation
@@ -275,7 +275,7 @@ class Interval(Tabular):
             log.exception("Exception caught attempting to generate viewport for dataset '%d'", dataset.id)
         return (None, None, None)
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol11, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data"""
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as fh:
             c, s, e, t, n = (
@@ -411,20 +411,20 @@ class Interval(Tabular):
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval", IntervalDataProvider.settings)
-    def interval_dataprovider(self, dataset: DatasetProtocol11, **settings) -> IntervalDataProvider:
+    def interval_dataprovider(self, dataset: ProvidesDataSource, **settings) -> IntervalDataProvider:
         return IntervalDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval-dict", IntervalDataProvider.settings)
-    def interval_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> IntervalDataProvider:
+    def interval_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> IntervalDataProvider:
         settings["named_columns"] = True
         return self.interval_dataprovider(dataset, **settings)
 
@@ -437,7 +437,7 @@ class BedGraph(Interval):
     track_type = "LineTrack"
     data_sources = {"data": "bigwig", "index": "bigwig"}
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol11, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
         """
         Returns file contents as is with no modifications.
         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
@@ -526,7 +526,7 @@ class Bed(Interval):
                         break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def as_ucsc_display_file(self, dataset: DatasetProtocol11, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
             line = line.strip()
@@ -1040,20 +1040,20 @@ class Gff(Tabular, _RemoteCallMixin):
     # ------------- Dataproviders
     # redefine bc super is Tabular
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, 0, 3, 4, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval", IntervalDataProvider.settings)
-    def interval_dataprovider(self, dataset: DatasetProtocol11, **settings):
+    def interval_dataprovider(self, dataset: ProvidesDataSource, **settings):
         return IntervalDataProvider(dataset, 0, 3, 4, 6, 2, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval-dict", IntervalDataProvider.settings)
-    def interval_dict_dataprovider(self, dataset: DatasetProtocol11, **settings):
+    def interval_dict_dataprovider(self, dataset: ProvidesDataSource, **settings):
         settings["named_columns"] = True
         return self.interval_dataprovider(dataset, **settings)
 
@@ -1451,12 +1451,12 @@ class Wiggle(Tabular, _RemoteCallMixin):
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("wiggle", WiggleDataProvider.settings)
-    def wiggle_dataprovider(self, dataset: DatasetProtocol11, **settings) -> WiggleDataProvider:
+    def wiggle_dataprovider(self, dataset: ProvidesDataSource, **settings) -> WiggleDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return WiggleDataProvider(dataset_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("wiggle-dict", WiggleDataProvider.settings)
-    def wiggle_dict_dataprovider(self, dataset: DatasetProtocol11, **settings) -> WiggleDataProvider:
+    def wiggle_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> WiggleDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         settings["named_columns"] = True
         return WiggleDataProvider(dataset_source, **settings)
