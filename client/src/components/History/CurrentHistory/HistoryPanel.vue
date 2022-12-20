@@ -279,7 +279,7 @@ export default {
         getHighlight(item) {
             if (this.filterText.includes("related:" + item.hid)) {
                 this.highlightsKey = item.hid;
-                return "currItem";
+                return "active";
             } else if (this.filterText.includes("related:") && this.highlightsKey) {
                 if (item.hid > this.highlightsKey) {
                     return "output";

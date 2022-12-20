@@ -18,7 +18,7 @@
                         <font-awesome-icon class="text-info" icon="arrow-circle-up" />
                     </span>
                     <span
-                        v-else-if="highlight == 'currItem'"
+                        v-else-if="highlight == 'active'"
                         v-b-tooltip.hover
                         title="Inputs/Outputs highlighted for this item"
                         tabindex="0"

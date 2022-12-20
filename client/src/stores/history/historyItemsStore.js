@@ -21,7 +21,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         latestCreateTime: new Date(),
         totalMatchesCount: undefined,
         lastCheckedTime: new Date(),
-        matchedHids: {},
+        relatedItems: {},
         isWatching: false,
     }),
     getters: {
@@ -29,6 +29,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             return (historyId, filterText) => {
                 const itemArray = state.items[historyId] || [];
                 const filters = HistoryFilters.getFilters(filterText).filter((filter) => !filter.includes("related"));
+                const relatedHid = HistoryFilters.getQueryDict(filterText)["related-eq"] || null;
                 const filtered = itemArray.filter((item) => {
                     if (!item) {
                         return false;
@@ -36,7 +37,8 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                     if (!HistoryFilters.testFilters(filters, item)) {
                         return false;
                     }
-                    if (!state.matchedHids[historyId].includes(item.hid)) {
+                    const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
+                    if (relatedHid && !state.relatedItems[relationKey]) {
                         return false;
                     }
                     return true;
@@ -60,6 +62,8 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
     actions: {
         async fetchHistoryItems(historyId, filterText, offset) {
             const queryString = HistoryFilters.getQueryString(filterText);
+            const filters = HistoryFilters.getQueryDict(filterText);
+            const relatedHid = filters["related-eq"] || null;
             const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
             const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
             const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
@@ -67,15 +71,14 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 const stats = data.stats;
                 this.totalMatchesCount = stats.total_matches;
                 const payload = data.contents;
-                this.saveHistoryItems(historyId, payload);
+                this.saveHistoryItems(historyId, payload, relatedHid);
             });
         },
         // Setters
-        saveHistoryItems(historyId, payload) {
+        saveHistoryItems(historyId, payload, relatedHid = null) {
             this.$patch((state) => {
                 // merges incoming payload into existing state
                 mergeArray(historyId, payload, state.items, state.itemKey);
-                const payloadHids = [];
                 // keep track of latest create time for items
                 payload.forEach((item) => {
                     if (item.state == "ok") {
@@ -84,9 +87,11 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                             state.latestCreateTime = itemCreateTime;
                         }
                     }
-                    payloadHids.push(item.hid);
+                    if (relatedHid) {
+                        const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
+                        Vue.set(state.relatedItems, relationKey, true);
+                    }
                 });
-                Vue.set(state.matchedHids, historyId, payloadHids);
             });
         },
         setLastCheckedTime(checkForUpdate) {
