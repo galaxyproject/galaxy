@@ -589,9 +589,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # Compare from most recent to oldest.
         changeset_revisions.reverse()
         for changeset_revision in changeset_revisions:
-            repository_metadata = repository_metadata_by_changeset_revision(
-                self.app.model, id, changeset_revision
-            )
+            repository_metadata = repository_metadata_by_changeset_revision(self.app.model, id, changeset_revision)
             assert repository_metadata
             metadata = repository_metadata.metadata
             tools_dicts = metadata.get("tools", [])
@@ -921,18 +919,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
     def _reset_all_tool_versions(self, repo):
         """Reset tool version lineage for those changeset revisions that include valid tools."""
         assert self.repository
-        changeset_revisions_that_contain_tools = []
-        for changeset in repo.changelog:
-            changeset_revision = str(repo[changeset])
-            repository_metadata = repository_metadata_by_changeset_revision(
-                self.app.model, self.repository.id, changeset_revision
-            )
-            log.info(f"changeset_is {changeset_revision} with rm {repository_metadata}")
-            if repository_metadata:
-                metadata = repository_metadata.metadata
-                if metadata:
-                    if metadata.get("tools", None):
-                        changeset_revisions_that_contain_tools.append(changeset_revision)
+        changeset_revisions_that_contain_tools = _get_changeset_revisions_that_contain_tools(
+            self.app, repo, self.repository
+        )
         # The list of changeset_revisions_that_contain_tools is now filtered to contain only those that
         # are downloadable and contain tools.  If a repository includes tools, build a dictionary of
         # { 'tool id' : 'parent tool id' } pairs for each tool in each changeset revision.
@@ -1091,9 +1080,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 changeset_revisions = []
                 for changeset in repo.changelog:
                     changeset_revision = str(repo[changeset])
-                    if repository_metadata_by_changeset_revision(
-                        self.app.model, repository_id, changeset_revision
-                    ):
+                    if repository_metadata_by_changeset_revision(self.app.model, repository_id, changeset_revision):
                         changeset_revisions.append(changeset_revision)
                 self._add_tool_versions(repository_id, repository_metadata, changeset_revisions)
         elif len(repo) == 1 and not self.invalid_file_tups:
@@ -1113,3 +1100,16 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         """Set metadata on the tip of self.repository in the tool shed."""
         error_message, status = self.set_repository_metadata(host, content_alert_str=content_alert_str, **kwd)
         return status, error_message
+
+
+def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, repository) -> List[str]:
+    changeset_revisions_that_contain_tools = []
+    for changeset in repo.changelog:
+        changeset_revision = str(repo[changeset])
+        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
+        if repository_metadata:
+            metadata = repository_metadata.metadata
+            if metadata:
+                if metadata.get("tools", None):
+                    changeset_revisions_that_contain_tools.append(changeset_revision)
+    return changeset_revisions_that_contain_tools
