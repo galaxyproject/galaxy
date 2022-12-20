@@ -269,13 +269,13 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         self.SUBSET = "subset"
         self.SUBSET_VALUES = [self.EQUAL, self.SUBSET]
 
-    def add_tool_versions(self, id, repository_metadata, changeset_revisions):
+    def _add_tool_versions(self, id, repository_metadata, changeset_revisions):
         # Build a dictionary of { 'tool id' : 'parent tool id' } pairs for each tool in repository_metadata.
         metadata = repository_metadata.metadata
         tool_versions_dict = {}
         for tool_dict in metadata.get("tools", []):
             # We have at least 2 changeset revisions to compare tool guids and tool ids.
-            parent_id = self.get_parent_id(
+            parent_id = self._get_parent_id(
                 id, tool_dict["id"], tool_dict["version"], tool_dict["guid"], changeset_revisions
             )
             tool_versions_dict[tool_dict["guid"]] = parent_id
@@ -582,7 +582,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                 return isinstance(repository_type_class, TipOnly)
         return False
 
-    def get_parent_id(self, id, old_id, version, guid, changeset_revisions):
+    def _get_parent_id(self, id, old_id, version, guid, changeset_revisions):
         parent_id = None
         # Compare from most recent to oldest.
         changeset_revisions.reverse()
@@ -914,9 +914,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         self._clean_repository_metadata(changeset_revisions)
         # Set tool version information for all downloadable changeset revisions.  Get the list of changeset
         # revisions from the changelog.
-        self.reset_all_tool_versions(repo)
+        self._reset_all_tool_versions(repo)
 
-    def reset_all_tool_versions(self, repo):
+    def _reset_all_tool_versions(self, repo):
         """Reset tool version lineage for those changeset revisions that include valid tools."""
         assert self.repository
         encoded_repository_id = self.app.security.encode_id(self.repository.id)
@@ -953,7 +953,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             else:
                 log.info(f"reset_all... tool_dicts is {tool_dicts}")
                 for tool_dict in tool_dicts:
-                    parent_id = self.get_parent_id(
+                    parent_id = self._get_parent_id(
                         encoded_repository_id,
                         tool_dict["id"],
                         tool_dict["version"],
@@ -1099,7 +1099,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         self.app, encoded_id, changeset_revision
                     ):
                         changeset_revisions.append(changeset_revision)
-                self.add_tool_versions(encoded_id, repository_metadata, changeset_revisions)
+                self._add_tool_versions(encoded_id, repository_metadata, changeset_revisions)
         elif len(repo) == 1 and not self.invalid_file_tups:
             message = "Revision <b>%s</b> includes no Galaxy utilities for which metadata can " % str(
                 self.repository.tip()
