@@ -202,3 +202,5 @@ relative-imports-order = "closest-to-furthest"
 # Don't check some pyupgrade rules on generated files
 "lib/galaxy/schema/bco/*" = ["UP006", "UP007"]
 "lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs.py" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]
