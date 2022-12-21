@@ -31,12 +31,12 @@ from galaxy.datatypes import (
 )
 from galaxy.datatypes._protocols import (
     DatasetProtocol9,
-    DatasetProtocol15,
     Displayable,
     HasFileName,
     HasMetadata,
     Peekable,
     ProvidesDataSource,
+    ProvidesDisplayLinks,
     SetsMetadata,
 )
 from galaxy.datatypes.binary import _BamOrSam
@@ -134,7 +134,7 @@ class TabularData(Text):
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
-    def displayable(self, dataset: DatasetProtocol15) -> bool:
+    def displayable(self, dataset: ProvidesDisplayLinks) -> bool:
         try:
             return (
                 not dataset.dataset.purged

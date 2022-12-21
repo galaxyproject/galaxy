@@ -23,14 +23,11 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     DatasetProtocol9,
-    DatasetProtocol15,
-    DatasetProtocol19,
-    DatasetProtocol22,
-    DatasetProtocol24,
     HasId,
     HasMetadata,
     Peekable,
     ProvidesDataSource,
+    ProvidesDisplayLinks,
     SetsMetadata,
 )
 from galaxy.datatypes.data import DatatypeValidation
@@ -196,7 +193,7 @@ class Interval(Tabular):
                     else:
                         empty_line_count += 1
 
-    def displayable(self, dataset: DatasetProtocol15) -> bool:
+    def displayable(self, dataset: ProvidesDisplayLinks) -> bool:
         try:
             return (
                 not dataset.dataset.purged
@@ -213,7 +210,7 @@ class Interval(Tabular):
 
     def get_estimated_display_viewport(
         self,
-        dataset: DatasetProtocol19,
+        dataset: ProvidesDisplayLinks,
         chrom_col: Optional[int] = None,
         start_col: Optional[int] = None,
         end_col: Optional[int] = None,
@@ -322,7 +319,7 @@ class Interval(Tabular):
             },
         )
 
-    def ucsc_links(self, dataset: DatasetProtocol24, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
         """
         Generate links to UCSC genome browser sites based on the dbkey
         and content of dataset.
@@ -446,7 +443,7 @@ class BedGraph(Interval):
 
     def get_estimated_display_viewport(
         self,
-        dataset: DatasetProtocol19,
+        dataset: ProvidesDisplayLinks,
         chrom_col: Optional[int] = 0,
         start_col: Optional[int] = 1,
         end_col: Optional[int] = 2,
@@ -885,7 +882,7 @@ class Gff(Tabular, _RemoteCallMixin):
         return self.make_html_table(dataset, column_names=self.column_names)
 
     def get_estimated_display_viewport(
-        self, dataset: DatasetProtocol19
+        self, dataset: ProvidesDisplayLinks
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
@@ -961,7 +958,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: DatasetProtocol24, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -974,7 +971,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def gbrowse_links(self, dataset: DatasetProtocol22, type: str, app, base_url: str) -> List:
+    def gbrowse_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -1297,7 +1294,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         self.add_display_app("gbrowse", "display in Gbrowse", "as_gbrowse_display_file", "gbrowse_links")
 
     def get_estimated_display_viewport(
-        self, dataset: DatasetProtocol19
+        self, dataset: ProvidesDisplayLinks
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
@@ -1363,7 +1360,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def gbrowse_links(self, dataset: DatasetProtocol22, type: str, app, base_url: str) -> List:
+    def gbrowse_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1376,7 +1373,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def ucsc_links(self, dataset: DatasetProtocol24, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1483,7 +1480,7 @@ class CustomTrack(Tabular):
 
     def get_estimated_display_viewport(
         self,
-        dataset: DatasetProtocol19,
+        dataset: ProvidesDisplayLinks,
         chrom_col: Optional[int] = None,
         start_col: Optional[int] = None,
         end_col: Optional[int] = None,
@@ -1545,7 +1542,7 @@ class CustomTrack(Tabular):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: DatasetProtocol24, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
