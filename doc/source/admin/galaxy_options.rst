@@ -4958,7 +4958,7 @@
 :Description:
     Set remote path of the trained model (HDF5 file) for tool
     recommendation.
-:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5``
+:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5``
 :Type: str
 
 
@@ -4969,7 +4969,7 @@
 :Description:
     Set the number of predictions/recommendations to be made by the
     model
-:Default: ``10``
+:Default: ``20``
 :Type: int
 
 
