@@ -4,10 +4,7 @@ Graph content classes.
 import logging
 from typing import List
 
-from galaxy.datatypes._protocols import (
-    Peekable,
-    ProvidesDataSource,
-)
+from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
@@ -31,7 +28,7 @@ class Xgmml(xml.GenericXml):
 
     file_ext = "xgmml"
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -61,7 +58,7 @@ class Xgmml(xml.GenericXml):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", XMLDataProvider.settings)
-    def node_edge_dataprovider(self, dataset: ProvidesDataSource, **settings) -> "XGMMLGraphDataProvider":
+    def node_edge_dataprovider(self, dataset: DatasetProtocol, **settings) -> "XGMMLGraphDataProvider":
         dataset_source = DatasetDataProvider(dataset)
         return XGMMLGraphDataProvider(dataset_source, **settings)
 
@@ -79,7 +76,7 @@ class Sif(tabular.Tabular):
 
     file_ext = "sif"
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -101,7 +98,7 @@ class Sif(tabular.Tabular):
         data.Text.merge(split_files, output_file)
 
     @dataproviders.decorators.dataprovider_factory("node-edge", ColumnarDataProvider.settings)
-    def node_edge_dataprovider(self, dataset: ProvidesDataSource, **settings) -> "SIFGraphDataProvider":
+    def node_edge_dataprovider(self, dataset: DatasetProtocol, **settings) -> "SIFGraphDataProvider":
         dataset_source = DatasetDataProvider(dataset)
         return SIFGraphDataProvider(dataset_source, **settings)
 

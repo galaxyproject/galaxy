@@ -22,13 +22,9 @@ from bx.intervals.io import (
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
+    DatasetProtocol,
     HasId,
     HasMetadata,
-    Peekable,
-    ProvidesDataSource,
-    ProvidesDisplayLinks,
-    SetsMetadata,
-    Validatable,
 )
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.dataproviders.dataset import (
@@ -132,7 +128,7 @@ class Interval(Tabular):
         Tabular.init_meta(self, dataset, copy_from=copy_from)
 
     def set_meta(
-        self, dataset: SetsMetadata, *, overwrite: bool = True, first_line_is_header: bool = False, **kwd
+        self, dataset: DatasetProtocol, *, overwrite: bool = True, first_line_is_header: bool = False, **kwd
     ) -> None:
         """Tries to guess from the line the location number of the column for the chromosome, region start-end and strand"""
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=0)
@@ -193,7 +189,7 @@ class Interval(Tabular):
                     else:
                         empty_line_count += 1
 
-    def displayable(self, dataset: ProvidesDisplayLinks) -> bool:
+    def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
                 not dataset.dataset.purged
@@ -210,7 +206,7 @@ class Interval(Tabular):
 
     def get_estimated_display_viewport(
         self,
-        dataset: ProvidesDisplayLinks,
+        dataset: DatasetProtocol,
         chrom_col: Optional[int] = None,
         start_col: Optional[int] = None,
         end_col: Optional[int] = None,
@@ -272,7 +268,7 @@ class Interval(Tabular):
             log.exception("Exception caught attempting to generate viewport for dataset '%d'", dataset.id)
         return (None, None, None)
 
-    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data"""
         with tempfile.NamedTemporaryFile(delete=False, mode="w") as fh:
             c, s, e, t, n = (
@@ -306,7 +302,7 @@ class Interval(Tabular):
                     fh.write("%s\n" % "\t".join(tmp))
             return compression_utils.get_fileobj(fh.name, mode="rb")
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(
             dataset,
@@ -319,7 +315,7 @@ class Interval(Tabular):
             },
         )
 
-    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         """
         Generate links to UCSC genome browser sites based on the dbkey
         and content of dataset.
@@ -353,7 +349,7 @@ class Interval(Tabular):
             ret_val.append((site_name, link))
         return ret_val
 
-    def validate(self, dataset: Validatable, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
         """Validate an interval file using the bx GenomicIntervalReader"""
         c, s, e, t = (
             dataset.metadata.chromCol,
@@ -408,20 +404,20 @@ class Interval(Tabular):
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval", IntervalDataProvider.settings)
-    def interval_dataprovider(self, dataset: ProvidesDataSource, **settings) -> IntervalDataProvider:
+    def interval_dataprovider(self, dataset: DatasetProtocol, **settings) -> IntervalDataProvider:
         return IntervalDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval-dict", IntervalDataProvider.settings)
-    def interval_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> IntervalDataProvider:
+    def interval_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> IntervalDataProvider:
         settings["named_columns"] = True
         return self.interval_dataprovider(dataset, **settings)
 
@@ -434,7 +430,7 @@ class BedGraph(Interval):
     track_type = "LineTrack"
     data_sources = {"data": "bigwig", "index": "bigwig"}
 
-    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         """
         Returns file contents as is with no modifications.
         TODO: this is a functional stub and will need to be enhanced moving forward to provide additional support for bedgraph.
@@ -443,7 +439,7 @@ class BedGraph(Interval):
 
     def get_estimated_display_viewport(
         self,
-        dataset: ProvidesDisplayLinks,
+        dataset: DatasetProtocol,
         chrom_col: Optional[int] = 0,
         start_col: Optional[int] = 1,
         end_col: Optional[int] = 2,
@@ -502,7 +498,7 @@ class Bed(Interval):
     )
     # do we need to repeat these? they are the same as should be inherited from interval type
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Sets the metadata information for datasets previously determined to be in bed format."""
         if dataset.has_data():
             i = 0
@@ -523,7 +519,7 @@ class Bed(Interval):
                         break
             Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def as_ucsc_display_file(self, dataset: ProvidesDataSource, **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         """Returns file contents with only the bed data. If bed 6+, treat as interval."""
         for line in open(dataset.file_name):
             line = line.strip()
@@ -735,7 +731,7 @@ class BedStrict(Bed):
         Tabular.__init__(self, **kwd)
         self.clear_display_apps()  # only new style display applications for this datatype
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)  # need column count first
         if dataset.metadata.columns >= 4:
             dataset.metadata.nameCol = 4
@@ -819,7 +815,7 @@ class Gff(Tabular, _RemoteCallMixin):
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
         self.add_display_app("gbrowse", "display in Gbrowse", "as_gbrowse_display_file", "gbrowse_links")
 
-    def set_attribute_metadata(self, dataset: SetsMetadata) -> None:
+    def set_attribute_metadata(self, dataset: DatasetProtocol) -> None:
         """
         Sets metadata elements for dataset's attributes.
         """
@@ -859,7 +855,7 @@ class Gff(Tabular, _RemoteCallMixin):
         dataset.metadata.attribute_types = attribute_types
         dataset.metadata.attributes = len(attribute_types)
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         self.set_attribute_metadata(dataset)
 
         i = 0
@@ -877,12 +873,12 @@ class Gff(Tabular, _RemoteCallMixin):
                             pass
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=i)
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
     def get_estimated_display_viewport(
-        self, dataset: ProvidesDisplayLinks
+        self, dataset: DatasetProtocol
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """
         Return a chrom, start, stop tuple for viewing a file.  There are slight differences between gff 2 and gff 3
@@ -958,7 +954,7 @@ class Gff(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -971,7 +967,7 @@ class Gff(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def gbrowse_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
+    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         seqid, start, stop = self.get_estimated_display_viewport(dataset)
         if seqid is not None:
@@ -1037,20 +1033,20 @@ class Gff(Tabular, _RemoteCallMixin):
     # ------------- Dataproviders
     # redefine bc super is Tabular
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, 0, 3, 4, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval", IntervalDataProvider.settings)
-    def interval_dataprovider(self, dataset: ProvidesDataSource, **settings):
+    def interval_dataprovider(self, dataset: DatasetProtocol, **settings):
         return IntervalDataProvider(dataset, 0, 3, 4, 6, 2, **settings)
 
     @dataproviders.decorators.dataprovider_factory("interval-dict", IntervalDataProvider.settings)
-    def interval_dict_dataprovider(self, dataset: ProvidesDataSource, **settings):
+    def interval_dict_dataprovider(self, dataset: DatasetProtocol, **settings):
         settings["named_columns"] = True
         return self.interval_dataprovider(dataset, **settings)
 
@@ -1078,7 +1074,7 @@ class Gff3(Gff):
         """Initialize datatype, by adding GBrowse display app"""
         Gff.__init__(self, **kwd)
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         self.set_attribute_metadata(dataset)
         i = 0
         with compression_utils.get_fileobj(dataset.file_name) as in_fh:
@@ -1294,7 +1290,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
         self.add_display_app("gbrowse", "display in Gbrowse", "as_gbrowse_display_file", "gbrowse_links")
 
     def get_estimated_display_viewport(
-        self, dataset: ProvidesDisplayLinks
+        self, dataset: DatasetProtocol
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Return a chrom, start, stop tuple for viewing a file."""
         viewport_feature_count = 100  # viewport should check at least 100 features; excludes comment lines
@@ -1360,7 +1356,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def gbrowse_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
+    def gbrowse_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1373,7 +1369,7 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1386,11 +1382,11 @@ class Wiggle(Tabular, _RemoteCallMixin):
                     ret_val.append((site_name, link))
         return ret_val
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=["track", "#"])
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         max_data_lines = None
         i = 0
         for i, line in enumerate(open(dataset.file_name)):  # noqa: B007
@@ -1448,12 +1444,12 @@ class Wiggle(Tabular, _RemoteCallMixin):
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("wiggle", WiggleDataProvider.settings)
-    def wiggle_dataprovider(self, dataset: ProvidesDataSource, **settings) -> WiggleDataProvider:
+    def wiggle_dataprovider(self, dataset: DatasetProtocol, **settings) -> WiggleDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         return WiggleDataProvider(dataset_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("wiggle-dict", WiggleDataProvider.settings)
-    def wiggle_dict_dataprovider(self, dataset: ProvidesDataSource, **settings) -> WiggleDataProvider:
+    def wiggle_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> WiggleDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         settings["named_columns"] = True
         return WiggleDataProvider(dataset_source, **settings)
@@ -1471,16 +1467,16 @@ class CustomTrack(Tabular):
         Tabular.__init__(self, **kwd)
         self.add_display_app("ucsc", "display at UCSC", "as_ucsc_display_file", "ucsc_links")
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, skip=1)
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, skipchars=["track", "#"])
 
     def get_estimated_display_viewport(
         self,
-        dataset: ProvidesDisplayLinks,
+        dataset: DatasetProtocol,
         chrom_col: Optional[int] = None,
         start_col: Optional[int] = None,
         end_col: Optional[int] = None,
@@ -1542,7 +1538,7 @@ class CustomTrack(Tabular):
                 log.exception("Unexpected error")
         return (None, None, None)  # could not determine viewport
 
-    def ucsc_links(self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str) -> List:
+    def ucsc_links(self, dataset: DatasetProtocol, type: str, app, base_url: str) -> List:
         ret_val = []
         chrom, start, stop = self.get_estimated_display_viewport(dataset)
         if chrom is not None:
@@ -1787,7 +1783,7 @@ class IntervalTabix(Interval):
     # Ideally the tabix_index would be regenerated when the metadataElements are updated
     def set_meta(
         self,
-        dataset: SetsMetadata,
+        dataset: DatasetProtocol,
         overwrite: bool = True,
         first_line_is_header: bool = False,
         metadata_tmp_files_dir: Optional[str] = None,

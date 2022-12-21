@@ -1,4 +1,4 @@
-from galaxy.datatypes._protocols import SetsMetadata
+from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import (
     ListParameter,
@@ -98,7 +98,7 @@ class BPF(Text):
         "SAO",
     ]
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents"""
         types = set()
         with open(dataset.dataset.file_name) as fd:

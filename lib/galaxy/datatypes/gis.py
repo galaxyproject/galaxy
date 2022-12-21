@@ -2,8 +2,8 @@
 GIS classes
 """
 from galaxy.datatypes._protocols import (
-    GeneratesPrimaryFile,
-    Peekable,
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
 )
 from galaxy.datatypes.binary import Binary
 
@@ -64,7 +64,7 @@ class Shapefile(Binary):
             "shapefile.shp.xml", description="Geospatial metadata in XML format (xml)", is_binary=False, optional=True
         )
 
-    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>Shapefile Galaxy Composite Dataset</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -81,7 +81,7 @@ class Shapefile(Binary):
         rval.append("</ul></div></html>\n")
         return "\n".join(rval)
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "Shapefile data"
@@ -90,7 +90,7 @@ class Shapefile(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

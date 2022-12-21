@@ -20,7 +20,7 @@ from typing import (
 import yaml
 
 import galaxy.util
-from galaxy.datatypes._protocols import DatasetProtocol5
+from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.tool_util.edam_util import load_edam_tree
 from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
@@ -831,8 +831,8 @@ class Registry:
         return None
 
     def find_conversion_destination_for_dataset_by_extensions(
-        self, dataset_or_ext: Union[str, DatasetProtocol5], accepted_formats: List[str], converter_safe: bool = True
-    ) -> Tuple[bool, Optional[str], Optional[DatasetProtocol5]]:
+        self, dataset_or_ext: Union[str, DatasetProtocol], accepted_formats: List[str], converter_safe: bool = True
+    ) -> Tuple[bool, Optional[str], Optional[DatasetProtocol]]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format
@@ -840,7 +840,7 @@ class Registry:
         """
         if hasattr(dataset_or_ext, "ext"):
             ext = dataset_or_ext.ext
-            dataset = cast(DatasetProtocol5, dataset_or_ext)
+            dataset = cast(DatasetProtocol, dataset_or_ext)
         else:
             ext = dataset_or_ext
             dataset = None

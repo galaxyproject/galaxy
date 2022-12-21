@@ -27,10 +27,10 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
-    Displayable,
-    GeneratesPrimaryFile,
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
     HasExtraFilesPath,
-    Peekable,
 )
 from galaxy.datatypes.data import Data
 from galaxy.util.compression_utils import CompressedFile
@@ -162,7 +162,7 @@ class _Isa(Data):
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)
@@ -188,7 +188,7 @@ class _Isa(Data):
     # Display peek {{{2
     ################################################################
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
 
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -209,7 +209,7 @@ class _Isa(Data):
     # Generate primary file {{{2
     ################################################################
 
-    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """Generate the primary file. It is an HTML file containing description of the composite dataset
         as well as a list of the composite files that it contains."""
 
@@ -268,7 +268,7 @@ class _Isa(Data):
     def display_data(
         self,
         trans,
-        dataset: Displayable,
+        dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

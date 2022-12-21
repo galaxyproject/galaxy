@@ -5,7 +5,7 @@ This datatype was created for use with the iSEE interactive tool.
 from typing import Optional
 
 from galaxy.datatypes._protocols import (
-    GeneratesPrimaryFile,
+    HasExtraFilesAndMetadata,
     HasMetadata,
 )
 from galaxy.datatypes.data import Data
@@ -55,7 +55,7 @@ class HDF5SummarizedExperiment(Data):
         """Override parent init metadata."""
         Data.init_meta(self, dataset, copy_from=copy_from)
 
-    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """Generate primary file to represent dataset."""
         return f"""
               <html>

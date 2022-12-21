@@ -13,8 +13,8 @@ from galaxy.datatypes import (
     sequence,
 )
 from galaxy.datatypes._protocols import (
-    GeneratesPrimaryFile,
-    SetsMetadata,
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
 )
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -172,7 +172,7 @@ class Velvet(Html):
             is_binary=False,
         )
 
-    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         log.debug(f"Velvet log info  JJ generate_primary_file {dataset}")
         rval = ["<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
@@ -191,7 +191,7 @@ class Velvet(Html):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset: SetsMetadata) -> None:
+    def regenerate_primary_file(self, dataset: DatasetProtocol) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -242,6 +242,6 @@ class Velvet(Html):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         Html.set_meta(self, dataset, overwrite=overwrite, **kwd)
         self.regenerate_primary_file(dataset)

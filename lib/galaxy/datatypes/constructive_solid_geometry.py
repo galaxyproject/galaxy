@@ -15,9 +15,8 @@ from typing import (
 from galaxy import util
 from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
+    DatasetProtocol,
     HasMetadata,
-    Peekable,
-    SetsMetadata,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
@@ -105,7 +104,7 @@ class Ply:
                 break
         return False
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for line in fh:
@@ -128,7 +127,7 @@ class Ply:
                             element_tuple = (items[1], int(items[2]))
                             dataset.metadata.other_elements.append(element_tuple)
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = f"Faces: {str(dataset.metadata.face)}, Vertices: {str(dataset.metadata.vertex)}"
@@ -136,7 +135,7 @@ class Ply:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -285,7 +284,7 @@ class Vtk:
             return check_data_kind(line)
         return False
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             dataset.metadata.field_names = []
             dataset.metadata.field_components = {}
@@ -374,7 +373,7 @@ class Vtk:
             if len(field_components) > 0:
                 dataset.metadata.field_components = field_components
 
-    def set_initial_metadata(self, i: int, line: str, dataset: SetsMetadata) -> SetsMetadata:
+    def set_initial_metadata(self, i: int, line: str, dataset: DatasetProtocol) -> DatasetProtocol:
         if i == 0:
             # The first part of legacy VTK files is the file version and
             # identifier. This part contains the single line:
@@ -393,8 +392,8 @@ class Vtk:
         return dataset
 
     def set_structure_metadata(
-        self, line: str, dataset: SetsMetadata, dataset_type: Optional[str]
-    ) -> Tuple[SetsMetadata, Optional[str]]:
+        self, line: str, dataset: DatasetProtocol, dataset_type: Optional[str]
+    ) -> Tuple[DatasetProtocol, Optional[str]]:
         """
         The fourth part of legacy VTK files is the dataset structure. The
         geometry part describes the geometry and topology of the dataset.
@@ -462,7 +461,7 @@ class Vtk:
             blurb += str(dataset.metadata.dataset_type)
         return blurb or "VTK data"
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = self.get_blurb(dataset)
@@ -470,7 +469,7 @@ class Vtk:
             dataset.peek = "File does not exist"
             dataset.blurb = "File purged from disc"
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -555,7 +554,7 @@ class NeperTess(data.Text):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tess")
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):
@@ -571,7 +570,7 @@ class NeperTess(data.Text):
                     if i == 6:
                         dataset.metadata.cells = int(line)
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, line_count=7)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
@@ -626,7 +625,7 @@ class NeperTesr(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline(10).startswith("***tesr")
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 field = ""
@@ -658,7 +657,7 @@ class NeperTesr(Binary):
                         dataset.metadata.cells = int(line)
                         break
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, line_count=9)
             dataset.blurb = f"format: {str(dataset.metadata.format)} dim: {str(dataset.metadata.dimension)} cells: {str(dataset.metadata.cells)}"
@@ -679,7 +678,7 @@ class NeperPoints(data.Text):
     def __init__(self, **kwd):
         data.Text.__init__(self, **kwd)
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data.Text.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
@@ -704,7 +703,7 @@ class NeperPoints(data.Text):
             return None
         return dim
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         data.Text.set_peek(self, dataset)
         if not dataset.dataset.purged:
             dataset.blurb += f" dim: {str(dataset.metadata.dimension)}"
@@ -721,13 +720,13 @@ class NeperPointsTabular(NeperPoints, Tabular):
     def __init__(self, **kwd):
         Tabular.__init__(self, **kwd)
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         Tabular.set_meta(self, dataset, overwrite=overwrite, **kwd)
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 dataset.metadata.dimension = self._get_dimension(fh)
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         Tabular.set_peek(self, dataset)
         if not dataset.dataset.purged:
             dataset.blurb += f" dim: {str(dataset.metadata.dimension)}"
@@ -767,7 +766,7 @@ class GmshMsh(Binary):
         """
         return file_prefix.text_io(errors="ignore").readline().startswith("$MeshFormat")
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if dataset.has_data():
             with open(dataset.file_name, errors="ignore") as fh:
                 for i, line in enumerate(fh):
@@ -783,7 +782,7 @@ class GmshMsh(Binary):
                         if len(fields) > 1:
                             dataset.metadata.format = "ASCII" if fields[1] == "0" else "binary"
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name, line_count=3)
             dataset.blurb = f"Gmsh verion: {str(dataset.metadata.version)} {str(dataset.metadata.format)}"

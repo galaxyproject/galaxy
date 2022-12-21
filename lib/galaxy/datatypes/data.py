@@ -24,24 +24,16 @@ from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
-    Archivable,
-    Convertable,
-    DatasetProtocol0,
-    DatasetProtocol5,
-    Displayable,
-    GeneratesPrimaryFile,
+    DatasetHasHidProtocol,
+    DatasetProtocol,
     HasClearAssociatedFiles,
     HasCreatingJob,
     HasExt,
+    HasExtraFilesAndMetadata,
     HasFileName,
     HasInfo,
     HasMetadata,
     HasName,
-    Peekable,
-    ProvidesDataSource,
-    ProvidesDisplayLinks,
-    SetsMetadata,
-    Validatable,
 )
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
@@ -120,7 +112,7 @@ class DatatypeValidation:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
 
 
-def validate(dataset_instance: Validatable) -> DatatypeValidation:
+def validate(dataset_instance: DatasetProtocol) -> DatatypeValidation:
     try:
         datatype_validation = dataset_instance.datatype.validate(dataset_instance)
     except Exception as e:
@@ -254,7 +246,7 @@ class Data(metaclass=DataMeta):
         if copy_from:
             dataset.metadata = copy_from.metadata
 
-    def set_meta(self, dataset: SetsMetadata, *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, *, overwrite: bool = True, **kwd) -> None:
         """Unimplemented method, allows guessing of metadata from contents of file"""
 
     def missing_meta(self, dataset: HasMetadata, check: Optional[List] = None, skip: Optional[List] = None) -> bool:
@@ -299,7 +291,7 @@ class Data(metaclass=DataMeta):
 
     max_optional_metadata_filesize = property(get_max_optional_metadata_filesize, set_max_optional_metadata_filesize)
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -310,7 +302,7 @@ class Data(metaclass=DataMeta):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: Peekable) -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML table, used for displaying peek"""
         out = ['<table cellspacing="0" cellpadding="3">']
         try:
@@ -351,7 +343,7 @@ class Data(metaclass=DataMeta):
         return error, msg, messagetype
 
     def _archive_composite_dataset(
-        self, trans, data: Displayable, headers: Headers, do_action: str = "zip"
+        self, trans, data: DatasetHasHidProtocol, headers: Headers, do_action: str = "zip"
     ) -> Tuple[Union[ZipstreamWrapper, str], Headers]:
         # save a composite object into a compressed archive for downloading
         outfname = data.name[0:150]
@@ -396,7 +388,9 @@ class Data(metaclass=DataMeta):
                 rpath = os.path.relpath(fpath, extra_files_path)
                 yield fpath, rpath
 
-    def _serve_raw(self, dataset: Displayable, to_ext: Optional[str], headers: Headers, **kwd) -> Tuple[IO, Headers]:
+    def _serve_raw(
+        self, dataset: DatasetHasHidProtocol, to_ext: Optional[str], headers: Headers, **kwd
+    ) -> Tuple[IO, Headers]:
         headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
         headers[
             "content-type"
@@ -411,7 +405,7 @@ class Data(metaclass=DataMeta):
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return open(dataset.file_name, mode="rb"), headers
 
-    def to_archive(self, dataset: Archivable, name: str = "") -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
@@ -436,7 +430,7 @@ class Data(metaclass=DataMeta):
     def display_data(
         self,
         trans,
-        dataset: Displayable,
+        dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -549,7 +543,7 @@ class Data(metaclass=DataMeta):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: Peekable) -> str:
+    def display_as_markdown(self, dataset_instance: DatasetProtocol) -> str:
         """Prepare for embedding dataset into a basic Markdown document.
 
         This is a somewhat experimental interface and should not be implemented
@@ -598,9 +592,9 @@ class Data(metaclass=DataMeta):
 
     def _download_filename(
         self,
-        dataset: Displayable,
+        dataset: DatasetHasHidProtocol,
         to_ext: Optional[str] = None,
-        hdca: Optional[Displayable] = None,
+        hdca: Optional[DatasetHasHidProtocol] = None,
         element_identifier: Optional[str] = None,
         filename_pattern: Optional[str] = None,
     ) -> str:
@@ -699,7 +693,7 @@ class Data(metaclass=DataMeta):
     def get_display_application(self, key: str, default: Optional["DisplayApplication"] = None) -> "DisplayApplication":
         return self.display_applications.get(key, default)
 
-    def get_display_applications_by_dataset(self, dataset: DatasetProtocol0, trans) -> Dict[str, "DisplayApplication"]:
+    def get_display_applications_by_dataset(self, dataset: DatasetProtocol, trans) -> Dict[str, "DisplayApplication"]:
         rval = {}
         for key, value in self.display_applications.items():
             value = value.filter_by_dataset(dataset, trans)
@@ -718,7 +712,7 @@ class Data(metaclass=DataMeta):
         except Exception:
             return "unknown"
 
-    def as_display_type(self, dataset: ProvidesDataSource, type: str, **kwd) -> Union[FileObjType, str]:
+    def as_display_type(self, dataset: DatasetProtocol, type: str, **kwd) -> Union[FileObjType, str]:
         """Returns modified file contents for a particular display type"""
         try:
             if type in self.get_display_types():
@@ -733,7 +727,7 @@ class Data(metaclass=DataMeta):
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(
-        self, dataset: ProvidesDisplayLinks, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
+        self, dataset: DatasetProtocol, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
     ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
@@ -760,7 +754,7 @@ class Data(metaclass=DataMeta):
         return datatypes_registry.get_converters_by_datatype(original_dataset.ext)
 
     def find_conversion_destination(
-        self, dataset: DatasetProtocol5, accepted_formats: List[str], datatypes_registry, **kwd
+        self, dataset: DatasetProtocol, accepted_formats: List[str], datatypes_registry, **kwd
     ) -> Tuple[bool, Optional[str], Any]:
         """Returns ( direct_match, converted_ext, existing converted dataset )"""
         return datatypes_registry.find_conversion_destination_for_dataset_by_extensions(
@@ -770,7 +764,7 @@ class Data(metaclass=DataMeta):
     def convert_dataset(
         self,
         trans,
-        original_dataset: Convertable,
+        original_dataset: DatasetHasHidProtocol,
         target_type: str,
         return_output: bool = False,
         visible: bool = True,
@@ -874,7 +868,7 @@ class Data(metaclass=DataMeta):
             files[substitute_composite_key(key, value)] = value
         return files
 
-    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         raise Exception("generate_primary_file is not implemented for this datatype.")
 
     @property
@@ -911,7 +905,7 @@ class Data(metaclass=DataMeta):
         """
         return data_format in self.dataproviders
 
-    def dataprovider(self, dataset: ProvidesDataSource, data_format: str, **settings):
+    def dataprovider(self, dataset: DatasetProtocol, data_format: str, **settings):
         """
         Base dataprovider factory for all datatypes that returns the proper provider
         for the given `data_format` or raises a `NoProviderAvailable`.
@@ -920,22 +914,22 @@ class Data(metaclass=DataMeta):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise p_dataproviders.exceptions.NoProviderAvailable(self, data_format)
 
-    def validate(self, dataset: Validatable, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")
-    def base_dataprovider(self, dataset: ProvidesDataSource, **settings) -> p_dataproviders.base.DataProvider:
+    def base_dataprovider(self, dataset: DatasetProtocol, **settings) -> p_dataproviders.base.DataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.base.DataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk", p_dataproviders.chunk.ChunkDataProvider.settings)
-    def chunk_dataprovider(self, dataset: ProvidesDataSource, **settings) -> p_dataproviders.chunk.ChunkDataProvider:
+    def chunk_dataprovider(self, dataset: DatasetProtocol, **settings) -> p_dataproviders.chunk.ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.ChunkDataProvider(dataset_source, **settings)
 
     @p_dataproviders.decorators.dataprovider_factory("chunk64", p_dataproviders.chunk.Base64ChunkDataProvider.settings)
     def chunk64_dataprovider(
-        self, dataset: ProvidesDataSource, **settings
+        self, dataset: DatasetProtocol, **settings
     ) -> p_dataproviders.chunk.Base64ChunkDataProvider:
         dataset_source = p_dataproviders.dataset.DatasetDataProvider(dataset)
         return p_dataproviders.chunk.Base64ChunkDataProvider(dataset_source, **settings)
@@ -946,7 +940,7 @@ class Data(metaclass=DataMeta):
                 mime = DEFAULT_MIME_TYPE
         headers["content-type"] = mime
 
-    def handle_dataset_as_image(self, hda: Peekable) -> str:
+    def handle_dataset_as_image(self, hda: DatasetProtocol) -> str:
         raise Exception("Unimplemented Method")
 
     def __getstate__(self) -> Dict[str, Any]:
@@ -978,13 +972,13 @@ class Text(Data):
         """Returns the mime type of the datatype"""
         return "text/plain"
 
-    def set_meta(self, dataset: SetsMetadata, *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, *, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of lines of data in dataset.
         """
         dataset.metadata.data_lines = self.count_data_lines(dataset)
 
-    def estimate_file_lines(self, dataset: Peekable) -> Optional[int]:
+    def estimate_file_lines(self, dataset: DatasetProtocol) -> Optional[int]:
         """
         Perform a rough estimate by extrapolating number of lines from a small read.
         """
@@ -1019,7 +1013,7 @@ class Text(Data):
                 return None
         return data_lines
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """
         Set the peek.  This method is used by various subclasses of Text.
         """
@@ -1132,9 +1126,7 @@ class Text(Data):
 
     # ------------- Dataproviders
     @p_dataproviders.decorators.dataprovider_factory("line", p_dataproviders.line.FilteredLineDataProvider.settings)
-    def line_dataprovider(
-        self, dataset: ProvidesDataSource, **settings
-    ) -> p_dataproviders.line.FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: DatasetProtocol, **settings) -> p_dataproviders.line.FilteredLineDataProvider:
         """
         Returns an iterator over the dataset's lines (that have been stripped)
         optionally excluding blank lines and lines that start with a comment character.
@@ -1144,7 +1136,7 @@ class Text(Data):
 
     @p_dataproviders.decorators.dataprovider_factory("regex-line", p_dataproviders.line.RegexLineDataProvider.settings)
     def regex_line_dataprovider(
-        self, dataset: ProvidesDataSource, **settings
+        self, dataset: DatasetProtocol, **settings
     ) -> p_dataproviders.line.RegexLineDataProvider:
         """
         Returns an iterator over the dataset's lines

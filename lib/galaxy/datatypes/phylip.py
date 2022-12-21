@@ -10,10 +10,7 @@ Phylip datatype sniffer
 from typing import TYPE_CHECKING
 
 from galaxy import util
-from galaxy.datatypes._protocols import (
-    Peekable,
-    SetsMetadata,
-)
+from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
@@ -41,7 +38,7 @@ class Phylip(Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset: SetsMetadata, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """
@@ -51,7 +48,7 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset: Peekable, **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:
