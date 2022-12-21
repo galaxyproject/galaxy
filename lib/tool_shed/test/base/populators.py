@@ -8,6 +8,7 @@ from typing import (
 )
 
 import requests
+from typing_extensions import Protocol
 
 from galaxy.util.resources import (
     files,
@@ -70,6 +71,11 @@ def repo_tars(test_data_path: str) -> List[Path]:
             tar_path = str(path)
         tar_paths.append(Path(tar_path))
     return tar_paths
+
+
+class HostsTestToolShed(Protocol):
+    host: str
+    port: int
 
 
 class ToolShedPopulator:
@@ -316,6 +322,22 @@ class ToolShedPopulator:
         search_response = self._api_interactor.get("tools", params=search_request.dict())
         api_asserts.assert_status_code_is_ok(search_response)
         return ToolSearchResults(**search_response.json())
+
+    def tool_guid(
+        self, shed_host: HostsTestToolShed, repository: Repository, tool_id: str, tool_version: Optional[str] = None
+    ) -> str:
+        owner = repository.owner
+        name = repository.name
+        port = shed_host.port
+        if port in [None, 80, 443]:
+            host_and_port = shed_host.host
+        else:
+            host_and_port = f"{shed_host.host}:{shed_host.port}"
+        tool_id_base = f"{host_and_port}/repos/{owner}/{name}/{tool_id}"
+        if tool_version is None:
+            return tool_id_base
+        else:
+            return f"{tool_id_base}/{tool_version}"
 
     def repo_search_query(self, query: str) -> RepositorySearchResults:
         return self.repo_search(RepositorySearchRequest(q=query))
