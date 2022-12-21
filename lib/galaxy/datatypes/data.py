@@ -28,7 +28,6 @@ from galaxy.datatypes._protocols import (
     DatasetProtocol0,
     DatasetProtocol5,
     DatasetProtocol6,
-    DatasetProtocol9,
     DatasetProtocol16,
     Displayable,
     HasClearAssociatedFiles,
@@ -42,6 +41,7 @@ from galaxy.datatypes._protocols import (
     ProvidesDataSource,
     ProvidesDisplayLinks,
     SetsMetadata,
+    Validatable,
 )
 from galaxy.datatypes.metadata import (
     MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
@@ -120,7 +120,7 @@ class DatatypeValidation:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
 
 
-def validate(dataset_instance: DatasetProtocol9) -> DatatypeValidation:
+def validate(dataset_instance: Validatable) -> DatatypeValidation:
     try:
         datatype_validation = dataset_instance.datatype.validate(dataset_instance)
     except Exception as e:
@@ -920,7 +920,7 @@ class Data(metaclass=DataMeta):
             return self.dataproviders[data_format](self, dataset, **settings)
         raise p_dataproviders.exceptions.NoProviderAvailable(self, data_format)
 
-    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Validatable, **kwd) -> DatatypeValidation:
         return DatatypeValidation.unvalidated()
 
     @p_dataproviders.decorators.dataprovider_factory("base")

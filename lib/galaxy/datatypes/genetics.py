@@ -29,12 +29,12 @@ from markupsafe import escape
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol9,
     HasMetadata,
     Peekable,
     ProvidesDataSource,
     ProvidesDisplayLinks,
     SetsMetadata,
+    Validatable,
 )
 from galaxy.datatypes.data import (
     DatatypeValidation,
@@ -177,7 +177,7 @@ class GenomeGraphs(Tabular):
         except Exception as exc:
             return f"Can't create peek {exc}"
 
-    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Validatable, **kwd) -> DatatypeValidation:
         """
         Validate a gg file - all numeric after header row
         """

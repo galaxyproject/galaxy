@@ -120,10 +120,6 @@ class DatasetProtocol6(HasExtraFilesPath, HasMetadata, Protocol):
     ...
 
 
-class DatasetProtocol9(HasDatatype, HasFileName, HasMetadata, Protocol):
-    ...
-
-
 class DatasetProtocol16(HasDatatype, HasExtension, HasExtraFilesPath, HasFileName, HasMetadata, Protocol):
     ...
 
@@ -195,4 +191,8 @@ class Convertable(HasExt, HasHid, Protocol):
     # TODO: this is passed to convert_dataset, from where it is passed on to
     # tools.execute(); so this Protocol is only complete in the context of the
     # datatypes package.
+    ...
+
+
+class Validatable(HasDatatype, HasFileName, HasMetadata, Protocol):
     ...

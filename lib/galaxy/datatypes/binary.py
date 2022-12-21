@@ -35,7 +35,6 @@ from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
     DatasetProtocol6,
-    DatasetProtocol9,
     DatasetProtocol16,
     Displayable,
     HasFileName,
@@ -43,6 +42,7 @@ from galaxy.datatypes._protocols import (
     Peekable,
     ProvidesDataSource,
     SetsMetadata,
+    Validatable,
 )
 from galaxy.datatypes.data import (
     Data,
@@ -685,7 +685,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                 headers,
             )
 
-    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Validatable, **kwd) -> DatatypeValidation:
         if not BamNative.is_bam(dataset.file_name):
             return DatatypeValidation.invalid("This dataset does not appear to a BAM file.")
         elif self.dataset_content_needs_grooming(dataset.file_name):

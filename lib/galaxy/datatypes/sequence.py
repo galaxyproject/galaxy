@@ -25,11 +25,11 @@ from markupsafe import escape
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
-    DatasetProtocol9,
     Displayable,
     HasMetadata,
     Peekable,
     SetsMetadata,
+    Validatable,
 )
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import DatatypeValidation
@@ -874,7 +874,7 @@ class BaseFastq(Sequence):
                     return True
         return False
 
-    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Validatable, **kwd) -> DatatypeValidation:
         headers = iter_headers(dataset.file_name, sep="\n", count=-1)
         # check to see if the base qualities match
         if not self.quality_check(headers):

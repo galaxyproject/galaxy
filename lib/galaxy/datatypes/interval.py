@@ -22,13 +22,13 @@ from bx.intervals.io import (
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
-    DatasetProtocol9,
     HasId,
     HasMetadata,
     Peekable,
     ProvidesDataSource,
     ProvidesDisplayLinks,
     SetsMetadata,
+    Validatable,
 )
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.dataproviders.dataset import (
@@ -353,7 +353,7 @@ class Interval(Tabular):
             ret_val.append((site_name, link))
         return ret_val
 
-    def validate(self, dataset: DatasetProtocol9, **kwd) -> DatatypeValidation:
+    def validate(self, dataset: Validatable, **kwd) -> DatatypeValidation:
         """Validate an interval file using the bx GenomicIntervalReader"""
         c, s, e, t = (
             dataset.metadata.chromCol,
