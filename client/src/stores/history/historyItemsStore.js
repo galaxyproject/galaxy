@@ -29,7 +29,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             return (historyId, filterText) => {
                 const itemArray = state.items[historyId] || [];
                 const filters = HistoryFilters.getFilters(filterText).filter((filter) => !filter.includes("related"));
-                const relatedHid = HistoryFilters.getQueryDict(filterText)["related-eq"] || null;
+                const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
                 const filtered = itemArray.filter((item) => {
                     if (!item) {
                         return false;
@@ -62,8 +62,6 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
     actions: {
         async fetchHistoryItems(historyId, filterText, offset) {
             const queryString = HistoryFilters.getQueryString(filterText);
-            const filters = HistoryFilters.getQueryDict(filterText);
-            const relatedHid = filters["related-eq"] || null;
             const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
             const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
             const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
@@ -71,6 +69,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 const stats = data.stats;
                 this.totalMatchesCount = stats.total_matches;
                 const payload = data.contents;
+                const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
                 this.saveHistoryItems(historyId, payload, relatedHid);
             });
         },

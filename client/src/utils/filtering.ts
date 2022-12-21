@@ -61,6 +61,27 @@ export function expandNameTag(value: string | object): string {
     return toLower(value);
 }
 
+/** Converts string alias to string operator, e.g.: 'gt' to '>'
+ * @param {string} alias
+ * @returns {string} Arithmetic operator, e.g.: '>'
+ * */
+export function getOperatorForAlias(alias: string): string {
+    switch (alias) {
+        case "lt":
+            return "<";
+        case "le":
+            return "<=";
+        case "ge":
+            return ">=";
+        case "gt":
+            return ">";
+        case "eq":
+            return ":";
+        default:
+            return "";
+    }
+}
+
 type HandlerReturn<T> = {
     attribute: string;
     converter?: Converter<T>;
@@ -323,10 +344,37 @@ export default class Filtering<T> {
      * @returns {Boolean} True if the filter is set to the given value
      * */
     checkFilter<T>(filterText: string, filterName: string, filterValue: T): boolean {
-        const re = new RegExp(`${filterName}:(\\S+)`);
-        const reMatch = re.exec(filterText);
-        const testValue = reMatch ? reMatch[1] : this.defaultFilters[filterName];
+        const testValue = this.getFilterValue(filterText, filterName);
         return toLowerNoQuotes(testValue) === toLowerNoQuotes(filterValue);
+    }
+
+    /** Get the value of a particular filter from filterText.
+     * @param {String} filterText Raw filter text string
+     * @param {String} filterName Filter key to check
+     * @returns {String | Boolean} The filterValue for the filter
+     * */
+    getFilterValue(filterText: string, filterName: string, alias = "eq"): string | boolean {
+        const op = getOperatorForAlias(alias);
+        const reInQuotes = `'([^']*[^\\s']*)'`;
+        const reNoQuotes = `(\\S+)`;
+        // Array of re groups, note: order matters as in quote filterVals must be checked first
+        const reGroups = [
+            `${filterName}${op}${reInQuotes}`,
+            `${filterName}${op}${reNoQuotes}`,
+            `${filterName}-${alias}:${reInQuotes}`,
+            `${filterName}-${alias}:${reNoQuotes}`,
+            `${filterName}_${alias}:${reInQuotes}`,
+            `${filterName}_${alias}:${reNoQuotes}`,
+        ];
+        let reMatch = null;
+        for (const reString of reGroups) {
+            const re = new RegExp(reString);
+            reMatch = re.exec(filterText);
+            if (reMatch) {
+                break;
+            }
+        }
+        return reMatch ? reMatch[1] : this.defaultFilters[filterName];
     }
 
     /** Test if an item passes all filters.
