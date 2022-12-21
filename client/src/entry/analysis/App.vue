@@ -7,8 +7,8 @@
                 id="masthead"
                 :brand="config.brand"
                 :logo-url="config.logo_url"
-                :logo-src="config.logo_src"
-                :logo-src-secondary="config.logo_src_secondary"
+                :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
+                :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
                 :tabs="tabs"
                 :window-tab="windowTab"
                 @open-url="openUrl" />

@@ -80,8 +80,15 @@ onMounted(() => {
 <template>
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <b-navbar-nav>
-            <b-navbar-brand id="analysis" :href="safePath(logoUrl)" aria-label="homepage">
-                <b-button v-b-tooltip.hover variant="link" size="sm" title="Home">
+            <b-navbar-brand class="ml-2 mr-1">
+                <b-button
+                    id="analysis"
+                    v-b-tooltip.hover
+                    variant="link"
+                    size="sm"
+                    title="Home"
+                    aria-label="homepage"
+                    :href="safePath(logoUrl)">
                     <img alt="logo" :src="safePath(logoSrc)" />
                     <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
                 </b-button>
@@ -103,3 +110,97 @@ onMounted(() => {
         <quota-meter />
     </b-navbar>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+#masthead {
+    padding: 0;
+    margin-bottom: 0;
+    background: var(--masthead-color);
+    height: $masthead-height;
+
+    &:deep(.navbar-nav) {
+        height: $masthead-height;
+
+        & > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
+            background: var(--masthead-link-color);
+
+            &:hover() {
+                background: var(--masthead-link-hover);
+            }
+
+            &.show,
+            &.active {
+                background: var(--masthead-link-active);
+
+                .nav-link {
+                    color: var(--masthead-text-active);
+                }
+            }
+
+            .nav-link {
+                position: relative;
+                cursor: pointer;
+                text-decoration: none;
+                color: var(--masthead-text-color);
+
+                &:focus-visible {
+                    outline: 2px solid var(--masthead-text-hover);
+                }
+
+                &:hover {
+                    color: var(--masthead-text-hover);
+                }
+
+                &.nav-icon {
+                    font-size: 1.3em;
+
+                    .nav-note {
+                        position: absolute;
+                        left: 1.9rem;
+                        top: 1.9rem;
+                        font-size: 0.6rem;
+                        font-weight: bold;
+                    }
+                }
+
+                &.toggle {
+                    color: var(--masthead-text-hover);
+                }
+            }
+        }
+    }
+
+    &:deep(.navbar-brand) {
+        color: var(--masthead-text-active);
+
+        #analysis {
+            padding: 0;
+
+            &:focus-visible {
+                outline: 2px solid var(--masthead-text-hover);
+            }
+
+            img {
+                display: inline;
+                border: none;
+                height: 2.22rem;
+            }
+        }
+    }
+
+    &:deep(.navbar-brand-title) {
+        font-weight: bold;
+        font-family: Verdana, sans-serif;
+        font-size: calc($masthead-height / 3);
+        line-height: calc($masthead-height / 3);
+        color: var(--masthead-text-color);
+    }
+}
+</style>

@@ -1,0 +1,14 @@
+blue:
+  masthead:
+    bg: "#2c3143"
+    text:
+      color: "#f8f9fa"
+      hover: gold
+      active: white
+    link:
+      color: transparent
+      hover: transparent
+      active: "#181a24"
+    logo:
+      img: "/static/favicon.svg"
+      img-secondary: null
