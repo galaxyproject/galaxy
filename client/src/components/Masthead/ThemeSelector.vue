@@ -24,7 +24,7 @@ library.add(faPalette);
 
 <template>
     <b-nav-item-dropdown v-show="show" text="Theme">
-        <b-dropdown-item-button
+        <b-dropdown-item
             v-for="(theme, name) in config.themes"
             :key="name"
             :active="name === currentTheme"
@@ -33,6 +33,6 @@ library.add(faPalette);
             <icon v-else icon="fas fa-palette" />
 
             <span>{{ name }}</span>
-        </b-dropdown-item-button>
+        </b-dropdown-item>
     </b-nav-item-dropdown>
 </template>
