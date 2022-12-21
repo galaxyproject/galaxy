@@ -4,7 +4,7 @@ Datatype classes for tracks/track views within galaxy.
 import logging
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol6,
+    GeneratesPrimaryFile,
     Peekable,
 )
 from galaxy.datatypes.text import Html
@@ -29,7 +29,7 @@ class UCSCTrackHub(Html):
     file_ext = "trackhub"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

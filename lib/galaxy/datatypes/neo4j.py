@@ -4,7 +4,7 @@ Neo4j Composite Dataset
 import logging
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol6,
+    GeneratesPrimaryFile,
     Peekable,
 )
 from galaxy.datatypes.data import Data
@@ -22,7 +22,7 @@ class Neo4j(Html):
     stored in extra files path
     """
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately

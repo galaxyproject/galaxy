@@ -13,7 +13,7 @@ from galaxy.datatypes import (
     sequence,
 )
 from galaxy.datatypes._protocols import (
-    DatasetProtocol6,
+    GeneratesPrimaryFile,
     SetsMetadata,
 )
 from galaxy.datatypes.metadata import MetadataElement
@@ -172,7 +172,7 @@ class Velvet(Html):
             is_binary=False,
         )
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         log.debug(f"Velvet log info  JJ generate_primary_file {dataset}")
         rval = ["<html><head><title>Velvet Galaxy Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")

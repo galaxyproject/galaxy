@@ -11,7 +11,7 @@ from typing import (
 
 from galaxy.datatypes import data
 from galaxy.datatypes._protocols import (
-    DatasetProtocol6,
+    GeneratesPrimaryFile,
     Peekable,
     SetsMetadata,
 )
@@ -56,7 +56,7 @@ class Wiff(Binary):
             is_binary=True,
         )
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         rval = ["<html><head><title>Wiff Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -985,7 +985,7 @@ class SPLib(Msp):
         self.add_composite_file("library.spidx", description="Spectrum index", is_binary=False)
         self.add_composite_file("library.pepidx", description="Peptide index", is_binary=False)
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         rval = ["<html><head><title>Spectral Library Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -1074,7 +1074,7 @@ class ImzML(Binary):
 
         self.add_composite_file("ibd", description="The mass spectral data component.", is_binary=True)
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         rval = ["<html><head><title>imzML Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

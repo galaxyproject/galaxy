@@ -27,8 +27,8 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
-    DatasetProtocol6,
     Displayable,
+    GeneratesPrimaryFile,
     HasExtraFilesPath,
     Peekable,
 )
@@ -209,7 +209,7 @@ class _Isa(Data):
     # Generate primary file {{{2
     ################################################################
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         """Generate the primary file. It is an HTML file containing description of the composite dataset
         as well as a list of the composite files that it contains."""
 

@@ -116,7 +116,7 @@ class DatasetProtocol5(HasExt, HasGetConvertedFilesByType, Protocol):
     ...
 
 
-class DatasetProtocol6(HasExtraFilesPath, HasMetadata, Protocol):
+class GeneratesPrimaryFile(HasExtraFilesPath, HasMetadata, Protocol):
     ...
 
 

@@ -28,8 +28,8 @@ from galaxy.datatypes._protocols import (
     Convertable,
     DatasetProtocol0,
     DatasetProtocol5,
-    DatasetProtocol6,
     Displayable,
+    GeneratesPrimaryFile,
     HasClearAssociatedFiles,
     HasCreatingJob,
     HasExt,
@@ -874,7 +874,7 @@ class Data(metaclass=DataMeta):
             files[substitute_composite_key(key, value)] = value
         return files
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         raise Exception("generate_primary_file is not implemented for this datatype.")
 
     @property

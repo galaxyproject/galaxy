@@ -12,8 +12,8 @@ from typing import (
 )
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol6,
     Displayable,
+    GeneratesPrimaryFile,
     Peekable,
     SetsMetadata,
 )
@@ -64,7 +64,7 @@ class _SpalnDb(Data):
             substitute_name_with_metadata="spalndb_name",
         )
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         rval = ["<html><head><title>Spaln Database</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

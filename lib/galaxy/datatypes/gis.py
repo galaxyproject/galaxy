@@ -2,7 +2,7 @@
 GIS classes
 """
 from galaxy.datatypes._protocols import (
-    DatasetProtocol6,
+    GeneratesPrimaryFile,
     Peekable,
 )
 from galaxy.datatypes.binary import Binary
@@ -64,7 +64,7 @@ class Shapefile(Binary):
             "shapefile.shp.xml", description="Geospatial metadata in XML format (xml)", is_binary=False, optional=True
         )
 
-    def generate_primary_file(self, dataset: DatasetProtocol6) -> str:
+    def generate_primary_file(self, dataset: GeneratesPrimaryFile) -> str:
         rval = ["<html><head><title>Shapefile Galaxy Composite Dataset</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
