@@ -120,10 +120,6 @@ class DatasetProtocol6(HasExtraFilesPath, HasMetadata, Protocol):
     ...
 
 
-class DatasetProtocol16(HasDatatype, HasExtension, HasExtraFilesPath, HasFileName, HasMetadata, Protocol):
-    ...
-
-
 class Displayable(
     HasCreatingJob,
     HasDataset,
@@ -195,4 +191,8 @@ class Convertable(HasExt, HasHid, Protocol):
 
 
 class Validatable(HasDatatype, HasFileName, HasMetadata, Protocol):
+    ...
+
+
+class Archivable(HasDatatype, HasExtension, HasExtraFilesPath, HasFileName, HasMetadata, Protocol):
     ...

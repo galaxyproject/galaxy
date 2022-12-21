@@ -34,8 +34,8 @@ from bx.seq.twobit import (
 from galaxy import util
 from galaxy.datatypes import metadata
 from galaxy.datatypes._protocols import (
+    Archivable,
     DatasetProtocol6,
-    DatasetProtocol16,
     Displayable,
     HasFileName,
     HasMetadata,
@@ -566,7 +566,7 @@ class BamNative(CompressedArchive, _BamOrSam):
         except Exception:
             return f"Binary bam alignments file ({nice_size(dataset.get_size())})"
 
-    def to_archive(self, dataset: DatasetProtocol16, name: str = "") -> Iterable:
+    def to_archive(self, dataset: Archivable, name: str = "") -> Iterable:
         rel_paths = []
         file_paths = []
         rel_paths.append(f"{name or dataset.file_name}.{dataset.extension}")

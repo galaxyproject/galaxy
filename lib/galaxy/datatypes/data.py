@@ -24,11 +24,11 @@ from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
+    Archivable,
     Convertable,
     DatasetProtocol0,
     DatasetProtocol5,
     DatasetProtocol6,
-    DatasetProtocol16,
     Displayable,
     HasClearAssociatedFiles,
     HasCreatingJob,
@@ -411,7 +411,7 @@ class Data(metaclass=DataMeta):
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return open(dataset.file_name, mode="rb"), headers
 
-    def to_archive(self, dataset: DatasetProtocol16, name: str = "") -> Iterable:
+    def to_archive(self, dataset: Archivable, name: str = "") -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
