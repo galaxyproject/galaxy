@@ -18,6 +18,14 @@ const defaultValidAliases = [
     ["<", "_lt"],
 ];
 
+const operatorForAlias: Record<string, string> = {
+    lt: "<",
+    le: "<=",
+    ge: ">=",
+    gt: ">",
+    eq: ":",
+};
+
 /** Converts user input to backend compatible date
  * @param {string} value
  * @returns {Number} seconds since epoch
@@ -66,20 +74,7 @@ export function expandNameTag(value: string | object): string {
  * @returns {string} Arithmetic operator, e.g.: '>'
  * */
 export function getOperatorForAlias(alias: string): string {
-    switch (alias) {
-        case "lt":
-            return "<";
-        case "le":
-            return "<=";
-        case "ge":
-            return ">=";
-        case "gt":
-            return ">";
-        case "eq":
-            return ":";
-        default:
-            return "";
-    }
+    return operatorForAlias[alias];
 }
 
 type HandlerReturn<T> = {
@@ -357,7 +352,7 @@ export default class Filtering<T> {
         const op = getOperatorForAlias(alias);
         const reInQuotes = `'([^']*[^\\s']*)'`;
         const reNoQuotes = `(\\S+)`;
-        // Array of re groups, note: order matters as in quote filterVals must be checked first
+        // Array of re groups, note: order matters as in-quote filterVals must be checked first
         const reGroups = [
             `${filterName}${op}${reInQuotes}`,
             `${filterName}${op}${reNoQuotes}`,
@@ -366,15 +361,14 @@ export default class Filtering<T> {
             `${filterName}_${alias}:${reInQuotes}`,
             `${filterName}_${alias}:${reNoQuotes}`,
         ];
-        let reMatch = null;
-        for (const reString of reGroups) {
-            const re = new RegExp(reString);
-            reMatch = re.exec(filterText);
-            if (reMatch) {
-                break;
-            }
+        const reString = reGroups.join("|");
+        const re = new RegExp(reString);
+        const reMatch = re.exec(filterText);
+        let filterVal = null;
+        if (reMatch) {
+            filterVal = reMatch.slice(1, reGroups.length + 1).find((val) => val);
         }
-        return reMatch ? reMatch[1] : this.defaultFilters[filterName];
+        return filterVal || this.defaultFilters[filterName];
     }
 
     /** Test if an item passes all filters.
