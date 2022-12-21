@@ -135,8 +135,8 @@ onMounted(() => {
             align-items: center;
             background: var(--masthead-link-color);
 
-            &:hover() {
-                background: var(--masthead-link-hover);
+            &:hover {
+                background: var(--masthead-link-hover) !important;
             }
 
             &.show,
