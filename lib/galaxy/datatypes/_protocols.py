@@ -116,10 +116,6 @@ class DatasetProtocol1(HasDataset, HasName, Protocol):
     ...
 
 
-class DatasetProtocol2(HasExt, HasHid, Protocol):
-    ...
-
-
 class DatasetProtocol5(HasExt, HasGetConvertedFilesByType, Protocol):
     ...
 
@@ -196,4 +192,11 @@ class ProvidesDataSource(HasDatatype, HasExt, HasFileName, HasMetadata, Protocol
 class ProvidesDisplayLinks(
     HasDataset, HasDbKey, HasFileName, HasHasData, HasId, HasMetadata, HasName, HasState, HasStates, Protocol
 ):
+    ...
+
+
+class Convertable(HasExt, HasHid, Protocol):
+    # TODO: this is passed to convert_dataset, from where it is passed on to
+    # tools.execute(); so this Protocol is only complete in the context of the
+    # datatypes package.
     ...

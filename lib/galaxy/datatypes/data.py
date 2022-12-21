@@ -24,9 +24,9 @@ from typing_extensions import Literal
 
 from galaxy import util
 from galaxy.datatypes._protocols import (
+    Convertable,
     DatasetProtocol0,
     DatasetProtocol1,
-    DatasetProtocol2,
     DatasetProtocol5,
     DatasetProtocol6,
     DatasetProtocol9,
@@ -771,7 +771,7 @@ class Data(metaclass=DataMeta):
     def convert_dataset(
         self,
         trans,
-        original_dataset: DatasetProtocol2,
+        original_dataset: Convertable,
         target_type: str,
         return_output: bool = False,
         visible: bool = True,
