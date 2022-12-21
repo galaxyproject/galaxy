@@ -4,7 +4,7 @@ import InteractiveTools from "./InteractiveTools";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
-import { useEntryPointStore } from "../../stores/entryPointStore";
+import { useEntryPointStore } from "stores/entryPointStore";
 
 import flushPromises from "flush-promises";
 import MockAdapter from "axios-mock-adapter";

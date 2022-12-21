@@ -8,7 +8,7 @@ import { getActiveTab } from "./utilities";
 import { watch, computed, ref, reactive } from "vue";
 import { onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
-import { useEntryPointStore } from "../../stores/entryPointStore";
+import { useEntryPointStore } from "stores/entryPointStore";
 // basics
 const route = useRoute();
 const emit = defineEmits(["open-url"]);
@@ -51,7 +51,7 @@ const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
 let entryPointStore;
-const its_menu = reactive({
+const itsMenu = reactive({
     id: "interactive",
     url: "/interactivetool_entry_points/list",
     tooltip: "See Running Interactive Tools",
@@ -61,7 +61,7 @@ const its_menu = reactive({
 
 /* computed */
 const allTabs = computed(() => {
-    return [].concat(props.tabs, its_menu, extensionTabs.value);
+    return [].concat(props.tabs, itsMenu, extensionTabs.value);
 });
 
 /* methods */
@@ -73,7 +73,7 @@ function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
 }
 function updateVisibility(isActive) {
-    its_menu.hidden = !isActive;
+    itsMenu.hidden = !isActive;
 }
 
 /* watchers */

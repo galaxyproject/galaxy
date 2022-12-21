@@ -45,9 +45,6 @@ describe("ToolEntryPoints/ToolEntryPoints.vue", () => {
     let wrapper;
     let testPinia;
 
-    beforeEach(async () => {});
-
-    afterEach(() => {});
 
     it("should render list when result are ready but views are not active yet", async () => {
         testPinia = createTestingPinia({

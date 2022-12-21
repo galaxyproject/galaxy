@@ -123,7 +123,7 @@ import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faMinusCircle, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
-import { useEntryPointStore } from "../../../stores/entryPointStore";
+import { useEntryPointStore } from "stores/entryPointStore";
 
 library.add(faArrowCircleUp, faMinusCircle, faCheckCircle);
 

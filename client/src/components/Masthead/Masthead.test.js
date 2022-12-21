@@ -9,7 +9,7 @@ import { configStore } from "store/configStore";
 import { getActiveTab } from "./utilities";
 import { createTestingPinia } from "@pinia/testing";
 import { PiniaVuePlugin, setActivePinia } from "pinia";
-import { useEntryPointStore } from "../../stores/entryPointStore";
+import { useEntryPointStore } from "stores/entryPointStore";
 
 jest.mock("app");
 jest.mock("./_webhooks");
