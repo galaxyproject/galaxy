@@ -132,6 +132,13 @@ describe("canAccept", () => {
         multiDataIn.connect(collectionOut);
         expect(multiDataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
+    it("accepts separate list:list inputs on separate multi-data inputs of same tool", () => {
+        const collectionOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        const multiDataInOne = terminals["multi data"]["f1"] as InputTerminal;
+        const multiDataInTwo = terminals["multi data"]["f2"] as InputTerminal;
+        multiDataInOne.connect(collectionOut);
+        expect(multiDataInTwo.canAccept(collectionOut).canAccept).toBe(true);
+    });
     it("rejects paired input on multi-data input", () => {
         const multiDataIn = terminals["multi data"]["f1"] as InputTerminal;
         const pairedOut = terminals["paired input"]["output"] as OutputCollectionTerminal;
@@ -139,17 +146,17 @@ describe("canAccept", () => {
         expect(multiDataIn.canAccept(pairedOut).reason).toBe(
             "Cannot attach paired inputs to multiple data parameters, only lists may be treated this way."
         );
-    }),
-        it("rejects collections on multi data inputs if non-collection already connected", () => {
-            const multiDataIn = terminals["multi data"]["f1"] as InputTerminal;
-            const dataOut = terminals["data input"]["output"] as OutputTerminal;
-            const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
-            multiDataIn.connect(dataOut);
-            expect(multiDataIn.canAccept(collectionOut).canAccept).toBe(false);
-            expect(multiDataIn.canAccept(collectionOut).reason).toBe(
-                "Cannot attach collections to data parameters with individual data inputs already attached."
-            );
-        });
+    });
+    it("rejects collections on multi data inputs if non-collection already connected", () => {
+        const multiDataIn = terminals["multi data"]["f1"] as InputTerminal;
+        const dataOut = terminals["data input"]["output"] as OutputTerminal;
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        multiDataIn.connect(dataOut);
+        expect(multiDataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(multiDataIn.canAccept(collectionOut).reason).toBe(
+            "Cannot attach collections to data parameters with individual data inputs already attached."
+        );
+    });
     it("maps list:list over multi data input", () => {
         const collectionOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
         const multiDataIn = terminals["multi data"]["f1"] as InputTerminal;
@@ -312,6 +319,7 @@ describe("canAccept", () => {
     });
     it("tracks transitive map over", () => {
         const collectionOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        const listListListOut = terminals["list:list:list input"]["output"] as OutputCollectionTerminal;
         const dataIn = terminals["simple data"]["input"] as InputTerminal;
         const simpleDataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
         dataIn.connect(collectionOut);
@@ -321,8 +329,9 @@ describe("canAccept", () => {
         otherDataIn.connect(simpleDataOut);
         expect(otherDataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         const otherDataInTwo = terminals["multi data"]["f2"] as InputTerminal;
-        expect(otherDataInTwo.canAccept(collectionOut).canAccept).toBe(false);
-        expect(otherDataInTwo.canAccept(collectionOut).reason).toBe(
+        expect(otherDataInTwo.canAccept(collectionOut).canAccept).toBe(true);
+        expect(otherDataInTwo.canAccept(listListListOut).canAccept).toBe(false);
+        expect(otherDataInTwo.canAccept(listListListOut).reason).toBe(
             "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
         );
     });
@@ -424,7 +433,7 @@ describe("Input terminal", () => {
         const dataInputOutputTerminal = terminals[0]["output"] as OutputTerminal;
         const connection = firstInputTerminal.connections[0];
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);
-        connectionStore.removeConnection(connection.id);
+        firstInputTerminal.disconnect(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(true);
         connectionStore.addConnection(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);

@@ -99,7 +99,7 @@ class Terminal extends EventEmitter {
                 // No mapping over necessary
                 return;
             }
-            outputVal = val.effectiveMapOver(description) || val;
+            outputVal = val.effectiveMapOver(description);
         }
         const effectiveMapOver = this._effectiveMapOver(outputVal);
         if (!this.mapOver.equal(effectiveMapOver)) {
@@ -321,7 +321,10 @@ export class InputTerminal extends BaseInputTerminal {
             }
             if (mapOver.isCollection && mapOver.canMatch(otherCollectionType)) {
                 return this._producesAcceptableDatatypeAndOptionalness(other);
-            } else if (this.multiple && new CollectionTypeDescription("list").canMatch(otherCollectionType)) {
+            } else if (
+                this.multiple &&
+                new CollectionTypeDescription("list").append(this.mapOver).canMatch(otherCollectionType)
+            ) {
                 // This handles the special case of a list input being connected to a multiple="true" data input.
                 // Nested lists would be correctly mapped over by the above condition.
                 return this._producesAcceptableDatatypeAndOptionalness(other);

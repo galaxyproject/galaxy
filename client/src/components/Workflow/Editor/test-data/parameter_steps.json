@@ -794,5 +794,41 @@
       "left": 406.02532958984375,
       "top": 259.6603088378906
     }
+  },
+  "16": {
+    "id": 16,
+    "type": "data_collection_input",
+    "label": "list:list:list input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"list:list:list\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "list:list:list",
+        "optional": false,
+        "activeOutput": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 70.45245361328125,
+      "top": 316.3525695800781
+    }
   }
 }
