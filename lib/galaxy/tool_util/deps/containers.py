@@ -54,11 +54,11 @@ ResolvedContainerDescription = collections.namedtuple(
 
 
 class ContainerFinder:
-    def __init__(self, app_info, mulled_resolution_cache=None):
+    def __init__(self, app_info: "AppInfo", mulled_resolution_cache: Optional["Cache"] = None) -> None:
         self.app_info = app_info
         self.mulled_resolution_cache = mulled_resolution_cache
         self.default_container_registry = ContainerRegistry(app_info, mulled_resolution_cache=mulled_resolution_cache)
-        self.destination_container_registeries = {}
+        self.destination_container_registeries: Dict[str, "ContainerRegistry"] = {}
 
     def _enabled_container_types(self, destination_info):
         return [t for t in ALL_CONTAINER_TYPES if self.__container_type_enabled(t, destination_info)]

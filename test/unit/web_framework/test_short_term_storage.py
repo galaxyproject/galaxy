@@ -1,6 +1,11 @@
 import time
 
-from galaxy.exceptions import MessageException
+import pytest
+
+from galaxy.exceptions import (
+    MessageException,
+    ObjectNotFound,
+)
 from galaxy.web.short_term_storage import (
     ShortTermStorageConfiguration,
     ShortTermStorageManager,
@@ -121,3 +126,24 @@ def test_cleanup_no_op_if_duration_not_reached(tmpdir):
     time.sleep(TEST_SLEEP_DURATION)
     manager.cleanup()
     assert short_term_storage_target.path.exists()
+
+
+def test_serve_non_existent_raises_object_not_found(tmpdir):
+    config = ShortTermStorageConfiguration(
+        short_term_storage_directory=tmpdir,
+        maximum_storage_duration=TEST_SLEEP_DURATION / 10,
+    )
+    manager = ShortTermStorageManager(config=config)
+    short_term_storage_target = manager.new_target(
+        TEST_FILENAME,
+        TEST_MIME_TYPE,
+    )
+    short_term_storage_target.path.touch()
+    assert short_term_storage_target.path.exists()
+    serve_info = manager.get_serve_info(short_term_storage_target)
+    assert serve_info
+    time.sleep(TEST_SLEEP_DURATION)
+    manager.cleanup()
+    assert not short_term_storage_target.path.exists()
+    with pytest.raises(ObjectNotFound):
+        manager.get_serve_info(short_term_storage_target)

@@ -1,0 +1,47 @@
+Edit this template to customise the "account activation" text email your
+users will receive.
+
+If you are adding URLs into this, remember that only absolute URLS (with
+a domain name) make sense in email! They can be served from any stable
+location, including your Galaxy server or GitHub.
+
+The following variables are available for inserting into the html like
+{{ variable_name }}. They will be rendered into the text before the email is
+sent:
+
+- name                     The user's name
+- user_email               The user's email
+- date                     Date of registration
+- hostname                 Your galaxy's hostname
+- activation_url           The account activation URL
+- terms_url                Your T&Cs URL
+- contact_email            Your galaxy's contact email
+- instance_resource_url    Your galaxy's resource website URL
+- custom_message           Your Galaxy config custom_activation_email_message
+- expiry_days              Days until the activation link expires
+
+Template begins here>>>>>>
+Thanks for signing up to use Galaxy!
+
+Hello {{ name }},
+
+In order to complete the activation process for {{ user_email }} (begun on {{ date }} at {{ hostname }}), please click the following link to verify your account:
+{{ activation_url }}
+
+By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service{% if terms_url %}: {{ terms_url }}{% endif%}.
+
+This includes a data storage limit per user account. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.
+
+{% if contact_email %}
+If you need help with your account, please contact us at {{ contact_email }}.
+{% endif %}{% if instance_resource_url %}
+Browse available resources: {{ instance_resource_url }}.
+{% endif %}Find out more about the Galaxy Project at galaxyproject.org.
+
+{% if custom_message %}{{ custom_message }}{% endif %}
+
+Regards,
+Your Galaxy Team
+
+
+If this account was not created by you, please disregard this email and the account will be automatically terminated.

@@ -152,6 +152,10 @@ class ToolPanelViewSearch:
             "stub": KEYWORD(field_boost=float(config.tool_stub_boost)),
             # The section where the tool is listed in the tool panel
             "section": TEXT(field_boost=float(config.tool_section_boost)),
+            # The edam operations section where the tool is listed in the tool panel
+            "edam_operations": TEXT(field_boost=float(config.tool_section_boost)),
+            # The edam topics section where the tool is listed in the tool panel
+            "edam_topics": TEXT(field_boost=float(config.tool_section_boost)),
             # Short description defined in the tool XML
             "description": TEXT(
                 field_boost=config.tool_description_boost,
@@ -283,6 +287,8 @@ class ToolPanelViewSearch:
             "name": clean(tool.name),
             "description": to_unicode(tool.description),
             "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
+            "edam_operations": clean(tool.edam_operations),
+            "edam_topics": clean(tool.edam_topics),
             "help": to_unicode(""),
         }
         if tool.guid:
@@ -327,6 +333,8 @@ class ToolPanelViewSearch:
             "name_exact",
             "description",
             "section",
+            "edam_operations",
+            "edam_topics",
             "help",
             "labels",
             "stub",
@@ -334,15 +342,14 @@ class ToolPanelViewSearch:
         self.parser = MultifieldParser(
             fields,
             schema=self.schema,
-            group=OrGroup,  # We need OR grouping to match StopList phrases
+            group=OrGroup,
         )
-        cleaned_query = " ".join(token.text for token in self.rex(q.lower()))
-        parsed_query = self.parser.parse(cleaned_query)
+        parsed_query = self.parser.parse(q)
         hits = self.searcher.search(
             parsed_query,
-            limit=float(config.tool_search_limit),
+            limit=None,
             sortedby="",
             terms=True,
         )
 
-        return [hit["id"] for hit in hits[: config.tool_search_limit]]
+        return [hit["id"] for hit in hits]

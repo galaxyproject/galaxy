@@ -1,18 +1,18 @@
-<script setup>
+<script setup lang="ts">
 /* global __buildTimestamp__, __license__  */
 /* (injected by webpack) */
 
 import { computed } from "vue";
 
-import { getAppRoot } from "onload/loadConfig";
-import { useConfig } from "composables/useConfig";
-import UtcDate from "components/UtcDate";
-import License from "components/License/License";
-import ExternalLink from "components/ExternalLink";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useConfig } from "@/composables/config";
+import UtcDate from "@/components/UtcDate.vue";
+import License from "@/components/License/License.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 
 const { config, isLoaded } = useConfig();
 
-const clientBuildDate = __buildTimestamp__ || new Date();
+const clientBuildDate = __buildTimestamp__ || new Date().toISOString();
 const apiDocsLink = `${getAppRoot()}api/docs`;
 const galaxyLicense = __license__;
 

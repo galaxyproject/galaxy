@@ -11,7 +11,7 @@ The following individuals have contributed code to Galaxy:
 * Patrick Austin <patrick.austin@stfc.ac.uk>
 * Raj Ayyampalayam <raj76@uga.edu>
 * Abdulrahman Azab <eng.azab@gmail.com>
-* Finn Bacall <finn.bacall@cs.man.ac.uk>
+* Finn Bacall <finn.bacall@manchester.ac.uk>
 * Dannon Baker <dannon.baker@gmail.com>
 * balto <balto_59@hotmail.fr>
 * Christopher Bare <christopherbare@gmail.com>
@@ -142,7 +142,7 @@ The following individuals have contributed code to Galaxy:
 * Sourav Singh <ssouravsingh12@gmail.com>
 * Clare Sloggett <sloc@unimelb.edu.au>
 * Eteri Sokhoyan @Sokhoyan
-* Nicola Soranzo <nicola.soranzo@tgac.ac.uk> <nsoranzo@tiscali.it> <soranzo@crs4.it>
+* Nicola Soranzo <nicola.soranzo@earlham.ac.uk> <nicola.soranzo@tgac.ac.uk> <nsoranzo@tiscali.it> <soranzo@crs4.it>
 * Nick Stoler <nick@nstoler.com>
 * Roy Storey <kiwiroy@gmail.com>
 * Hanfei Sun <ad9075@gmail.com>

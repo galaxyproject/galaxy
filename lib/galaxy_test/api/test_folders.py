@@ -1,3 +1,4 @@
+from galaxy_test.base.decorators import requires_new_library
 from galaxy_test.base.populators import (
     DatasetPopulator,
     LibraryPopulator,
@@ -5,17 +6,21 @@ from galaxy_test.base.populators import (
 from ._framework import ApiTestCase
 
 
-class FoldersApiTestCase(ApiTestCase):
+class TestFoldersApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.library_populator = LibraryPopulator(self.galaxy_interactor)
         self.library = self.library_populator.new_library("FolderTestsLibrary")
 
+    @requires_new_library
     def test_create(self):
         folder = self._create_folder("Test Create Folder")
         self._assert_valid_folder(folder)
 
+    @requires_new_library
     def test_create_without_name_raises_400(self):
         root_folder_id = self.library["root_folder_id"]
         data = {
@@ -24,6 +29,7 @@ class FoldersApiTestCase(ApiTestCase):
         create_response = self._post(f"folders/{root_folder_id}", data=data, admin=True)
         self._assert_status_code_is(create_response, 400)
 
+    @requires_new_library
     def test_permissions(self):
         folder = self._create_folder("Test Permissions Folder")
         folder_id = folder["id"]
@@ -46,6 +52,7 @@ class FoldersApiTestCase(ApiTestCase):
         assert permissions == new_permissions
         self._assert_permissions_contains_role(permissions, role_id)
 
+    @requires_new_library
     def test_update(self):
         folder = self._create_folder("Test Update Folder")
         folder_id = folder["id"]
@@ -62,6 +69,7 @@ class FoldersApiTestCase(ApiTestCase):
         assert updated_folder["name"] == updated_name
         assert updated_folder["description"] == updated_desc
 
+    @requires_new_library
     def test_delete(self):
         folder = self._create_folder("Test Delete Folder")
         folder_id = folder["id"]
@@ -69,6 +77,7 @@ class FoldersApiTestCase(ApiTestCase):
         deleted_folder = self._delete_folder(folder_id)
         assert deleted_folder["deleted"] is True
 
+    @requires_new_library
     def test_undelete(self):
         folder = self._create_folder("Test Undelete Folder")
         folder_id = folder["id"]
@@ -82,6 +91,7 @@ class FoldersApiTestCase(ApiTestCase):
         undeleted_folder = undelete_response.json()
         assert undeleted_folder["deleted"] is False
 
+    @requires_new_library
     def test_import_folder_to_history(self):
         library, response = self.library_populator.fetch_single_url_to_folder()
         dataset = self.library_populator.get_library_contents_with_path(library["id"], "/4.bed")
@@ -93,6 +103,7 @@ class FoldersApiTestCase(ApiTestCase):
             assert len(datasets) == 1
             assert datasets[0]["name"] == "4.bed"
 
+    @requires_new_library
     def test_update_deleted_raise_403(self):
         folder = self._create_folder("Test Update Deleted Folder")
         folder_id = folder["id"]

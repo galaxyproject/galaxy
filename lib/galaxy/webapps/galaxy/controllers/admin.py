@@ -1,9 +1,11 @@
 import logging
+from typing import Set
 
 from sqlalchemy import (
     false,
     func,
 )
+from typing_extensions import TypedDict
 
 from galaxy import (
     model,
@@ -17,6 +19,7 @@ from galaxy.exceptions import (
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.security.validate_user_input import validate_password
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     nice_size,
     pretty_print_time_interval,
@@ -535,6 +538,10 @@ class ToolVersionListGrid(grids.Grid):
         return trans.install_model.context.query(self.model_class)
 
 
+# TODO: Convert admin UI to use the API and drop this.
+DatatypesEntryT = TypedDict("DatatypesEntryT", {"status": str, "keys": list, "data": list, "message": str})
+
+
 class AdminGalaxy(controller.JSAppLauncher):
 
     user_list_grid = UserListGrid()
@@ -564,7 +571,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         "Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False
     )
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.quota_manager: QuotaManager = QuotaManager(app)
 
@@ -594,9 +601,9 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.expose
     @web.json
     @web.require_admin
-    def data_types_list(self, trans, **kwd):
+    def data_types_list(self, trans, **kwd) -> DatatypesEntryT:
         datatypes = []
-        keys = set()
+        keys: Set[str] = set()
         message = kwd.get("message", "")
         status = kwd.get("status", "done")
         for dtype in sorted(trans.app.datatypes_registry.datatype_elems, key=lambda dt: dt.get("extension")):
@@ -848,7 +855,7 @@ class AdminGalaxy(controller.JSAppLauncher):
                 "inputs": [
                     {
                         "name": "default",
-                        "label": "Assign, increase by amount, or decrease by amount?",
+                        "label": "Is this quota a default for a class of users (if yes, what type)?",
                         "options": default_options,
                         "value": default_value,
                         "help": "Warning: Any users or groups associated with this quota will be disassociated.",
@@ -1583,46 +1590,6 @@ class AdminGalaxy(controller.JSAppLauncher):
             return {
                 "message": f"User '{user.email}' has been updated with {len(in_roles) - 1} associated roles and {len(in_groups)} associated groups (private roles are not displayed)."
             }
-
-    @web.expose
-    @web.require_admin
-    def manage_tool_dependencies(
-        self,
-        trans,
-        install_dependencies=False,
-        uninstall_dependencies=False,
-        remove_unused_dependencies=False,
-        selected_tool_ids=None,
-        selected_environments_to_uninstall=None,
-        viewkey="View tool-centric dependencies",
-    ):
-        if not selected_tool_ids:
-            selected_tool_ids = []
-        if not selected_environments_to_uninstall:
-            selected_environments_to_uninstall = []
-        tools_by_id = trans.app.toolbox.tools_by_id.copy()
-        view = next(iter(trans.app.toolbox.tools_by_id.values()))._view
-        if selected_tool_ids:
-            # install the dependencies for the tools in the selected_tool_ids list
-            if not isinstance(selected_tool_ids, list):
-                selected_tool_ids = [selected_tool_ids]
-            requirements = {tools_by_id[tid].tool_requirements for tid in selected_tool_ids}
-            if install_dependencies:
-                [view.install_dependencies(r) for r in requirements]
-            elif uninstall_dependencies:
-                [view.uninstall_dependencies(index=None, requirements=r) for r in requirements]
-        if selected_environments_to_uninstall and remove_unused_dependencies:
-            if not isinstance(selected_environments_to_uninstall, list):
-                selected_environments_to_uninstall = [selected_environments_to_uninstall]
-            view.remove_unused_dependency_paths(selected_environments_to_uninstall)
-        return trans.fill_template(
-            "/webapps/galaxy/admin/manage_dependencies.mako",
-            tools=tools_by_id,
-            requirements_status=view.toolbox_requirements_status,
-            tool_ids_by_requirements=view.tool_ids_by_requirements,
-            unused_environments=view.unused_dependency_paths,
-            viewkey=viewkey,
-        )
 
 
 # ---- Utility methods -------------------------------------------------------

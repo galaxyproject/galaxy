@@ -12,7 +12,7 @@
             :value="deleteActionValue"
             title="Output cleanup"
             type="boolean"
-            help="Upon completion of this step, delete non-starred outputs from completed workflow steps if they are no longer required as inputs."
+            help="Upon completion of this step, delete unchecked outputs from completed workflow steps if they are no longer required as inputs."
             @input="onInput" />
         <FormOutput
             v-for="(output, index) in outputs"
@@ -90,9 +90,6 @@ export default {
             return Boolean(this.formData[this.deleteActionKey]);
         },
     },
-    created() {
-        this.setFormData();
-    },
     watch: {
         formData() {
             // The formData shape is kind of unfortunate, but it is what we have now.
@@ -121,6 +118,9 @@ export default {
             this.$emit("onChange", postJobActions);
         },
     },
+    created() {
+        this.setFormData();
+    },
     methods: {
         setFormData() {
             const pjas = {};
@@ -138,7 +138,6 @@ export default {
             if (pjas[this.emailPayloadKey]) {
                 pjas[this.emailActionKey] = true;
             }
-            console.debug("FormSection - Setting new data.", this.postJobActions, pjas);
             this.formData = pjas;
         },
         setEmailAction(pjas) {

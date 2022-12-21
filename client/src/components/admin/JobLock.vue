@@ -1,45 +1,33 @@
+<script setup lang="ts">
+import { ref, watch, onMounted } from "vue";
+import { fetcher } from "@/schema";
+
+const jobLock = ref(false);
+const jobLockUpdating = ref(true);
+
+const jobLockStatus = fetcher.path("/api/job_lock").method("get").create();
+const jobLockUpdate = fetcher.path("/api/job_lock").method("put").create();
+
+watch(jobLock, async (newVal) => {
+    jobLockUpdating.value = true;
+    const { data } = await jobLockUpdate({ active: jobLock.value });
+    jobLock.value = data.active;
+    jobLockUpdating.value = false;
+});
+
+onMounted(async () => {
+    // TODO: see if we can upstream an optional arg when no params are required?
+    // i.e. jobLockStatus() instead of jobLockStatus({})
+    const response = await jobLockStatus({});
+    jobLock.value = response.data.active;
+    jobLockUpdating.value = false;
+});
+</script>
 <template>
-    <b-form-group label="Administrative Job Lock" label-for="prevent-job-dispatching">
-        <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" switch>
+    <b-form-group>
+        <b-form-checkbox id="prevent-job-dispatching" v-model="jobLock" :disabled="jobLockUpdating" switch size="lg">
             Job dispatching is currently
-            <strong>{{ jobLockDisplay ? "locked" : "unlocked" }}</strong>
+            <strong>{{ jobLock ? "locked" : "unlocked" }}</strong>
         </b-form-checkbox>
     </b-form-group>
 </template>
-
-<script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-
-export default {
-    data() {
-        return {
-            jobLock: false,
-            jobLockDisplay: false,
-        };
-    },
-    watch: {
-        jobLock(newVal) {
-            this.handleJobLock(axios.put(`${getAppRoot()}api/job_lock`, { active: this.jobLock }));
-        },
-    },
-    created() {
-        this.initJobLock();
-    },
-    methods: {
-        initJobLock() {
-            this.handleJobLock(axios.get(`${getAppRoot()}api/job_lock`));
-        },
-        handleJobLock(axiosPromise) {
-            axiosPromise
-                .then((response) => {
-                    this.jobLock = response.data.active;
-                    this.jobLockDisplay = response.data.active;
-                })
-                .catch((error) => {
-                    console.error(error);
-                });
-        },
-    },
-};
-</script>

@@ -569,11 +569,6 @@ div.popmenu-wrapper {
         float: none;
     }
 }
-.dropdown-menu {
-    .dropdown-item.disabled {
-        color: $text-light;
-    }
-}
 
 .popup-arrow {
     cursor: pointer;
@@ -703,20 +698,6 @@ div.permissionContainer {
     margin: 10px 0;
     padding-left: 5px;
 }
-
-// ============================================================================ History
-@import "ui/icon-btn.scss";
-@import "list-item.scss";
-@import "dataset.scss";
-@import "history.scss";
-@import "collection.scss";
-@import "job.scss";
-
-@import "ui/search-input.scss";
-@import "ui/dataset-choice.scss";
-@import "ui/peek-column-selector.scss";
-@import "ui/pagination.scss";
-@import "ui/error-modal.scss";
 
 // ==== Tool menu styles
 .toolMenuContainer {

@@ -3,6 +3,7 @@ from concurrent.futures import TimeoutError
 from functools import lru_cache
 from pathlib import Path
 from typing import (
+    Any,
     Callable,
     Optional,
 )
@@ -22,7 +23,10 @@ from galaxy.datatypes import sniff
 from galaxy.datatypes.registry import Registry as DatatypesRegistry
 from galaxy.jobs import MinimalJobWrapper
 from galaxy.managers.collections import DatasetCollectionManager
-from galaxy.managers.datasets import DatasetAssociationManager
+from galaxy.managers.datasets import (
+    DatasetAssociationManager,
+    DatasetManager,
+)
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
@@ -30,6 +34,7 @@ from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.tasks import (
+    ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
     GenerateHistoryDownload,
     GenerateInvocationDownload,
@@ -93,7 +98,7 @@ def set_job_metadata(
     extended_metadata_collection: bool,
     job_id: int,
     sa_session: galaxy_scoped_session,
-):
+) -> None:
     return abort_when_job_stops(
         set_metadata_portable,
         session=sa_session,
@@ -215,12 +220,13 @@ def is_aborted(session: galaxy_scoped_session, job_id: int):
     ).scalar()
 
 
-def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs):
+def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs) -> Any:
     if not is_aborted(session, job_id):
-        future = celery_app.fork_pool.schedule(
+        future = celery_app.fork_pool.submit(
             function,
+            timeout=None,
             *args,
-            kwargs=kwargs,
+            **kwargs,
         )
         while True:
             try:
@@ -256,7 +262,7 @@ def fetch_data(
     job_id: int,
     app: MinimalManagerApp,
     sa_session: galaxy_scoped_session,
-):
+) -> str:
     job = sa_session.query(model.Job).get(job_id)
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
@@ -342,6 +348,14 @@ def import_model_store(
     request: ImportModelStoreTaskRequest,
 ):
     model_store_manager.import_model_store(request)
+
+
+@galaxy_task(action="compute dataset hash and store in database")
+def compute_dataset_hash(
+    dataset_manager: DatasetManager,
+    request: ComputeDatasetHashTaskRequest,
+):
+    dataset_manager.compute_hash(request)
 
 
 @galaxy_task(action="pruning history audit table")

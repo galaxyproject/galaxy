@@ -51,15 +51,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_freebayes_repository(self):
         """Create and populate package_freebayes_0550."""
@@ -71,7 +63,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             description=repositories["freebayes"]["description"],
             long_description=repositories["freebayes"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert freebayes is not None, f"Error creating freebayes {repositories['freebayes']['name']}"
@@ -99,7 +91,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             description=repositories["samtools"]["description"],
             long_description=repositories["samtools"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert samtools is not None, f"Error creating samtools {repositories['samtools']['name']}"
@@ -123,7 +115,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             description=repositories["filtering"]["description"],
             long_description=repositories["filtering"]["long_description"],
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         assert repository is not None, f"Error creating repository {repositories['filtering']['name']}"
@@ -141,31 +133,19 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
 
     def test_0020_check_repository_dependency(self):
         """Make filtering depend on samtools and freebayes."""
-        freebayes = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["freebayes"]["name"], common.test_user_1_name
-        )
-        samtools = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["samtools"]["name"], common.test_user_1_name
-        )
-        filtering = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["filtering"]["name"], common.test_user_1_name
-        )
-        strings_displayed = [self.security.encode_id(freebayes.id), self.security.encode_id(samtools.id)]
+        freebayes = self._get_repository_by_name_and_owner(repositories["freebayes"]["name"], common.test_user_1_name)
+        samtools = self._get_repository_by_name_and_owner(repositories["samtools"]["name"], common.test_user_1_name)
+        filtering = self._get_repository_by_name_and_owner(repositories["filtering"]["name"], common.test_user_1_name)
+        strings_displayed = [freebayes.id, samtools.id]
         self.display_manage_repository_page(filtering, strings_displayed=strings_displayed)
 
     def test_0025_update_dependent_repositories(self):
         """
         Update freebayes and samtools, load the API endpoint again.
         """
-        freebayes = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["freebayes"]["name"], common.test_user_1_name
-        )
-        samtools = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["samtools"]["name"], common.test_user_1_name
-        )
-        filtering = self.test_db_util.get_repository_by_name_and_owner(
-            repositories["filtering"]["name"], common.test_user_1_name
-        )
+        freebayes = self._get_repository_by_name_and_owner(repositories["freebayes"]["name"], common.test_user_1_name)
+        samtools = self._get_repository_by_name_and_owner(repositories["samtools"]["name"], common.test_user_1_name)
+        filtering = self._get_repository_by_name_and_owner(repositories["filtering"]["name"], common.test_user_1_name)
         self.upload_file(
             freebayes,
             filename="0550_files/package_freebayes_2_0550.tgz",

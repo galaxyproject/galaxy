@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class RegistrationTestCase(SeleniumTestCase):
+class TestRegistration(SeleniumTestCase):
     @selenium_test
     def test_landing(self):
         # loading galaxy homepage

@@ -211,7 +211,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
     webapp.add_client_route("/login/confirm")
-    webapp.add_client_route("/tools/view")
+    webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
@@ -227,7 +227,12 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/pages/list_published")
     webapp.add_client_route("/pages/create")
     webapp.add_client_route("/pages/edit")
+    webapp.add_client_route("/pages/editor")
     webapp.add_client_route("/pages/sharing")
+    webapp.add_client_route("/published/history")
+    webapp.add_client_route("/published/page")
+    webapp.add_client_route("/published/visualization")
+    webapp.add_client_route("/published/workflow")
     webapp.add_client_route("/histories/citations")
     webapp.add_client_route("/histories/list")
     webapp.add_client_route("/histories/import")
@@ -238,17 +243,19 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/sharing")
     webapp.add_client_route("/histories/permissions")
     webapp.add_client_route("/histories/view")
-    webapp.add_client_route("/histories/show_structure")
+    webapp.add_client_route("/histories/view_multiple")
     webapp.add_client_route("/datasets/list")
-    webapp.add_client_route("/datasets/edit")
+    webapp.add_client_route("/datasets/{dataset_id}/edit")
     webapp.add_client_route("/datasets/{dataset_id}/error")
     webapp.add_client_route("/datasets/{dataset_id}/details")
+    webapp.add_client_route("/datasets/{dataset_id}/preview")
     webapp.add_client_route("/datasets/{dataset_id}/show_params")
-    webapp.add_client_route("/collection/edit/{collection_id}")
+    webapp.add_client_route("/collection/{collection_id}/edit")
     webapp.add_client_route("/jobs/{job_id}/view")
     webapp.add_client_route("/workflows/list")
     webapp.add_client_route("/workflows/list_published")
     webapp.add_client_route("/workflows/edit")
+    webapp.add_client_route("/workflows/export")
     webapp.add_client_route("/workflows/create")
     webapp.add_client_route("/workflows/run")
     webapp.add_client_route("/workflows/import")
@@ -579,9 +586,6 @@ def populate_api_routes(webapp, app):
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
     webapp.mapper.connect(
-        "/api/workflows/menu", action="get_workflow_menu", controller="workflows", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.connect(
@@ -624,13 +628,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{workflow_id}/download",
         controller="workflows",
         action="workflow_dict",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "show_versions",
-        "/api/workflows/{workflow_id}/versions",
-        controller="workflows",
-        action="show_versions",
         conditions=dict(method=["GET"]),
     )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
@@ -759,8 +756,6 @@ def populate_api_routes(webapp, app):
     connect_invocation_endpoint("show", "", action="show_invocation")
     connect_invocation_endpoint("show_report", "/report", action="show_invocation_report")
     connect_invocation_endpoint("show_report_pdf", "/report.pdf", action="show_invocation_report_pdf")
-    connect_invocation_endpoint("biocompute/download", "/biocompute/download", action="download_invocation_bco")
-    connect_invocation_endpoint("biocompute", "/biocompute", action="export_invocation_bco")
     connect_invocation_endpoint("jobs_summary", "/jobs_summary", action="invocation_jobs_summary")
     connect_invocation_endpoint("step_jobs_summary", "/step_jobs_summary", action="invocation_step_jobs_summary")
     connect_invocation_endpoint("cancel", "", action="cancel_invocation", conditions=dict(method=["DELETE"]))
@@ -804,34 +799,6 @@ def populate_api_routes(webapp, app):
     # ================================
     # ===== USERS API =====
     # ================================
-
-    webapp.mapper.connect(
-        "api_key", "/api/users/{id}/api_key", controller="users", action="api_key", conditions=dict(method=["POST"])
-    )
-
-    webapp.mapper.connect(
-        "api_key",
-        "/api/users/{id}/api_key",
-        controller="users",
-        action="get_or_create_api_key",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "get_api_key",
-        "/api/users/{id}/api_key/inputs",
-        controller="users",
-        action="get_api_key",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "set_api_key",
-        "/api/users/{id}/api_key/inputs",
-        controller="users",
-        action="set_api_key",
-        conditions=dict(method=["PUT"]),
-    )
 
     webapp.mapper.connect(
         "get_information",
@@ -1178,14 +1145,6 @@ def populate_api_routes(webapp, app):
     )
 
     webapp.mapper.connect(
-        "check_for_updates",
-        "/api/tool_shed_repositories/check_for_updates",
-        controller="tool_shed_repositories",
-        action="check_for_updates",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
         "tool_shed_repository",
         "/api/tool_shed_repositories",
         controller="tool_shed_repositories",
@@ -1298,7 +1257,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # Merge the global and local configurations
     conf = global_conf.copy()
     conf.update(local_conf)
-    debug = asbool(conf.get("debug", False))
     # First put into place httpexceptions, which must be most closely
     # wrapped around the application (it can interact poorly with
     # other middleware):
@@ -1356,20 +1314,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
         from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
 
         app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
-    # Various debug middleware that can only be turned on if the debug
-    # flag is set, either because they are insecure or greatly hurt
-    # performance
-    if debug:
-        # Middleware to check for WSGI compliance
-        if asbool(conf.get("use_lint", False)):
-            from paste import lint
-
-            app = wrap_if_allowed(app, stack, lint.make_middleware, name="paste.lint", args=(conf,))
-        # Middleware to run the python profiler on each request
-        if asbool(conf.get("use_profile", False)):
-            from paste.debug import profile
-
-            app = wrap_if_allowed(app, stack, profile.ProfileMiddleware, args=(conf,))
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)

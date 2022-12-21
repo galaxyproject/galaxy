@@ -10,7 +10,6 @@ import os
 import re
 import shutil
 import struct
-import sys
 import tempfile
 import zipfile
 from functools import partial
@@ -299,6 +298,12 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('megablast_xml_parser_test1.blastxml')
     >>> guess_ext(fname, sniff_order)
     'blastxml'
+    >>> fname = get_test_fname('1.psl')
+    >>> guess_ext(fname, sniff_order)
+    'psl'
+    >>> fname = get_test_fname('2.psl')
+    >>> guess_ext(fname, sniff_order)
+    'psl'
     >>> fname = get_test_fname('interval.interval')
     >>> guess_ext(fname, sniff_order)
     'interval'
@@ -942,9 +947,3 @@ DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gzip=gzip.GzipFile, bz2=bz
 
 class InappropriateDatasetContentError(Exception):
     pass
-
-
-if __name__ == "__main__":
-    import doctest
-
-    doctest.testmod(sys.modules[__name__])

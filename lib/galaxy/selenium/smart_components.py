@@ -1,4 +1,4 @@
-from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.select import Select
 
 from galaxy.navigation.components import (
     Component,

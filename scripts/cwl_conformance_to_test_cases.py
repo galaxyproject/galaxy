@@ -13,10 +13,10 @@ TEST_FILE_TEMPLATE = string.Template(
 
 import pytest
 
-from ..test_workflows_cwl import BaseCwlWorkflowTestCase
+from ..test_workflows_cwl import BaseCwlWorkflowsApiTestCase
 
 
-class CwlConformanceTestCase(BaseCwlWorkflowTestCase):
+class TestCwlConformance(BaseCwlWorkflowsApiTestCase):
     """Test case mapping to CWL conformance tests for version ${version}."""
 $tests'''
 )

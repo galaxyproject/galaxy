@@ -57,7 +57,6 @@
     </div>
 </template>
 <script>
-import $ from "jquery";
 import _l from "utils/localization";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
@@ -137,7 +136,8 @@ export default {
             if (plugin.target == "_top") {
                 window.location.href = href;
             } else {
-                $("#galaxy_main").attr("src", href);
+                const galaxyMainElement = document.getElementById("galaxy_main");
+                galaxyMainElement.setAttribute("src", href);
             }
         },
         match(plugin) {

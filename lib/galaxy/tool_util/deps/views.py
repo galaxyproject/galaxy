@@ -340,7 +340,7 @@ class ContainerResolutionView:
     def show(self, index):
         return self._container_resolver(index).to_dict()
 
-    def resolve(self, **kwds):
+    def resolve(self, index=None, **kwds):
         find_best_kwds = {
             "install": False,
             "enabled_container_types": ["docker", "singularity"],
@@ -348,8 +348,8 @@ class ContainerResolutionView:
             "session": kwds.get("session"),
         }
 
-        if "index" in kwds:
-            find_best_kwds["index"] = int(kwds["index"])
+        if index is not None:
+            find_best_kwds["index"] = int(index)
         if "container_type" in kwds:
             find_best_kwds["enabled_container_types"] = [kwds["container_type"]]
         if "resolver_type" in kwds:
@@ -403,7 +403,7 @@ class ContainerResolutionView:
 
     @property
     def _container_resolvers(self):
-        return self._app.container_finder.container_resolvers
+        return self._app.container_finder.default_container_registry.container_resolvers
 
     def _container_resolver(self, index):
         index = int(index)

@@ -1076,9 +1076,10 @@
                  internally by the runner. -->
             <param id="docker_enabled">true</param>
             <param id="container_monitor">true</param>
-            <!-- Flag for appending the container monitor command to jobs. This should be set to false
-                 when running Interactive Tools with the kubernetes runner, but is needed for running with the
-                 local docker runner.
+            <!-- Flag for appending the container monitor command to jobs. The monitor is responsible for determining
+                 the IP and port of the container and reporting it to Galaxy. This should be set to false when running
+                 Interactive Tools with the kubernetes runner, but is needed for running with local, DRM, and
+                 non-Kubernetes Pulsar docker runners.
             -->
         </destination>
         <destination id="kubernetes" runner="k8s">

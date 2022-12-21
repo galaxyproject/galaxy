@@ -14,6 +14,7 @@ class BaseShellExec(metaclass=ABCMeta):
         Constructor for shell executor instance.
         """
 
+    @abstractmethod
     def execute(self, cmd, persist=False, timeout=60):
         """
         Execute the specified command via defined shell.

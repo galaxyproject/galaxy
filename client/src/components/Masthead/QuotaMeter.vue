@@ -5,7 +5,9 @@
                 {{ usingString + " " + totalUsageString }}
             </b-link>
             <b-link v-else v-b-tooltip.hover.left class="quota-progress" to="/storage" :title="title">
-                <b-progress :value="usage" :max="100" :variant="variant" />
+                <b-progress :max="100">
+                    <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
+                </b-progress>
                 <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
             </b-link>
         </div>
@@ -78,7 +80,7 @@ export default {
 @import "theme/blue.scss";
 
 .quota-meter {
-    position: absolute;
+    position: relative;
     right: 0.8rem;
     width: 100px;
     height: 100%;

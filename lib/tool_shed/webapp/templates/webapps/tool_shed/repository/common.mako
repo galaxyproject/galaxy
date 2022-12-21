@@ -35,10 +35,6 @@
                     var selKeys = $.map(selNodes, function(node) {
                         return node.data.key;
                     });
-                    if (document.forms["select_files_to_delete"]) {
-                        // The following is used only ~/templates/webapps/tool_shed/repository/browse_repository.mako.
-                        document.select_files_to_delete.selected_files_to_delete.value = selKeys.join(",");
-                    }
                     // The following is used only in ~/templates/webapps/tool_shed/repository/upload.mako.
                     if (document.forms["upload_form"]) {
                         document.upload_form.upload_point.value = selKeys.slice(-1);
@@ -77,7 +73,7 @@
         config.addInitialization(function() {
             console.log("common.mako, container_javascripts");
 
-            var store = window.bundleEntries.store;
+            var store = window.bundleToolshed.store;
             var init_dependencies = function() {
                 var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
                 var restore_folder_state = function() {

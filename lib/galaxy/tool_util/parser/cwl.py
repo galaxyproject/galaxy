@@ -167,6 +167,9 @@ class CwlToolSource(ToolSource):
     def parse_profile(self):
         return "17.09"
 
+    def parse_xrefs(self):
+        return []
+
     def parse_license(self):
         return None
 

@@ -2,14 +2,14 @@ from galaxy_test.api.test_tools import TestsTools
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
-    uses_test_history,
 )
 from galaxy_test.driver import integration_util
 
 
-class ExtendedMetadataMappingIntegrationTestCase(integration_util.IntegrationTestCase, TestsTools):
+class TestExtendedMetadataMappingIntegration(integration_util.IntegrationTestCase, TestsTools):
     """Test mapping over tools with extended metadata enabled."""
 
+    dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
     @classmethod
@@ -23,7 +23,6 @@ class ExtendedMetadataMappingIntegrationTestCase(integration_util.IntegrationTes
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
-    @uses_test_history()
     def test_map_over_collection(self, history_id):
         hdca_id = self._build_pair(history_id, ["123", "456"])
         inputs = {

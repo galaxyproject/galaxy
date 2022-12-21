@@ -9,6 +9,9 @@ import "scss/base.scss";
 // effects fixing webpack globals.
 import "./publicPath";
 
+// Default Font
+import "@fontsource/atkinson-hyperlegible";
+
 // Module exports appear as objects on window.config in the browser
 export { standardInit } from "./standardInit";
 export { initializations$, addInitialization, prependInitialization, clearInitQueue } from "./initQueue";

@@ -10,7 +10,7 @@ TEST_FILTER_MODULES = "galaxy.selenium.toolbox"
 TEST_SECTION_FILTERS = "filters:restrict_test"
 
 
-class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
+class TestToolboxFiltersSeleniumIntegration(SeleniumIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -42,4 +42,5 @@ class ToolboxFiltersSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.home()
         # But now it should raise NoSuchElementException
-        self.assertRaises(NoSuchElementException, lambda: self.driver.find_element(By.LINK_TEXT, "Test Section"))
+        with self.assertRaises(NoSuchElementException):
+            self.driver.find_element(By.LINK_TEXT, "Test Section")

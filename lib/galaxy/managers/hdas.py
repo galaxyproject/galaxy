@@ -101,14 +101,14 @@ class HDAManager(
         #     return True
         return super().is_accessible(item, user, **kwargs)
 
-    def is_owner(self, item: model._HasTable, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
+    def is_owner(self, item: model.Base, user: Optional[model.User], current_history=None, **kwargs: Any) -> bool:
         """
         Use history to see if current user owns HDA.
         """
-        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
-            return True
         if not isinstance(item, model.HistoryDatasetAssociation):
             raise TypeError('"item" must be of type HistoryDatasetAssociation.')
+        if self.user_manager.is_admin(user, trans=kwargs.get("trans", None)):
+            return True
         history = item.history
         if history is None:
             raise HistoryDatasetAssociationNoHistoryException
@@ -387,6 +387,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "created_from_basename",
                 "hashes",
                 "sources",
+                "drs_id",
             ],
             include_keys_from="summary",
         )
@@ -461,6 +462,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "created_from_basename": lambda item, key, **context: item.created_from_basename,
             "hashes": lambda item, key, **context: [h.to_dict() for h in item.hashes],
             "sources": lambda item, key, **context: [s.to_dict() for s in item.sources],
+            "drs_id": lambda item, key, **context: f"hda-{self.app.security.encode_id(item.id, kind='drs')}",
         }
         self.serializers.update(serializers)
 

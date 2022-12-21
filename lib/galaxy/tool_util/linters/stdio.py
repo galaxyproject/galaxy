@@ -1,6 +1,7 @@
 """This module contains a linting functions for tool error detection."""
 import re
 
+from galaxy.util import etree
 from .command import get_command
 
 
@@ -37,6 +38,8 @@ def lint_stdio(tool_source, lint_ctx):
 
     stdio = stdios[0]
     for child in list(stdio):
+        if child.tag is etree.Comment:
+            continue
         if child.tag == "regex":
             _lint_regex(tool_xml, child, lint_ctx)
         elif child.tag == "exit_code":

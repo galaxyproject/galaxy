@@ -3,7 +3,7 @@ from galaxy_test.driver import integration_util
 from galaxy_test.driver.uses_shed import UsesShed
 
 
-class ToolShedToolTestIntegrationTestCase(integration_util.IntegrationTestCase, UsesShed):
+class TestToolShedToolTestIntegration(integration_util.IntegrationTestCase, UsesShed):
 
     """Test data manager installation and table reload through the API"""
 

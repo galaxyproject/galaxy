@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import FormBoolean from "./FormBoolean";
 
 const localVue = getLocalVue();
@@ -18,11 +18,16 @@ describe("FormBoolean", () => {
 
     it("check initial value and value change", async () => {
         const input = wrapper.find("input");
-        expect(wrapper.vm.currentValue).toBe(false);
+        const switchComponent = wrapper.findComponent(".custom-switch");
+
+        expect(switchComponent.props().value).toBe(false);
+
         await wrapper.setProps({ value: true });
-        expect(wrapper.vm.currentValue).toBe(true);
+        expect(switchComponent.props().value).toBe(true);
+
         await input.trigger("click");
         expect(input.element.checked).toBe(false);
+
         await input.trigger("click");
         expect(input.element.checked).toBe(true);
         expect(wrapper.emitted().input[0][0]).toBe(true);

@@ -5,6 +5,7 @@ Mixins for Taggable model managers and serializers.
 # from galaxy import exceptions as galaxy_exceptions
 
 import logging
+import re
 from typing import Type
 
 from sqlalchemy import (
@@ -36,7 +37,9 @@ def _tag_str_gen(item):
 def _tags_to_strings(item):
     if not hasattr(item, "tags"):
         return None
-    return sorted(list(_tag_str_gen(item)))
+    tag_list = list(_tag_str_gen(item))
+    # consider named tags while sorting
+    return sorted(tag_list, key=lambda str: re.sub("^name:", "#", str))
 
 
 def _tags_from_strings(item, tag_handler, new_tags_list, user=None):

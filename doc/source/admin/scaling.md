@@ -400,6 +400,21 @@ If you omit the `processes` argument this will default to a single process.
 You can further customize the handler names using the `name_template` section,
 for a complete example see [this gravity test case](https://github.com/galaxyproject/gravity/blob/a00df1c671fdc01e3fbc42f64a851a45a37a1870/tests/test_process_manager.py#L28).
 
+You can define arbitrary environment variables for dynamic handlers using the ``environnment`` key on a handler
+definition:
+
+```yaml
+gravity:
+  handlers:
+    handler:
+      processes: 3
+      pools:
+        - job-handlers
+      environment:
+        FOO: bar
+        BAZ: quux
+```
+
 If you are not using dynamic handlers please omit the `handlers` entry completely, as these will
 otherwise be idle and not handle jobs or workflows.
 
@@ -523,7 +538,7 @@ Restart=on-abort
 WorkingDirectory=/srv/galaxy/server
 TimeoutStartSec=10
 ExecStart=/srv/galaxy/venv/bin/galaxy --state-dir /srv/galaxy/database/gravity
-Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin
+Environment=VIRTUAL_ENV=/srv/galaxy/venv PATH=/srv/galaxy/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 [Install]
 WantedBy=multi-user.target
 ```

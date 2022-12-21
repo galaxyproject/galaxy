@@ -45,7 +45,6 @@ from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
 from galaxy.util.properties import (
-    find_config_file,
     read_properties_from_file,
     running_from_source,
 )
@@ -286,7 +285,7 @@ class BaseAppConfiguration(HasDynamicProperties):
 
     def _set_config_base(self, config_kwargs):
         def _set_global_conf():
-            self.config_file = find_config_file("galaxy")
+            self.config_file = config_kwargs.get("__file__", None)
             self.global_conf = config_kwargs.get("global_conf")
             self.global_conf_parser = configparser.ConfigParser()
             if not self.config_file and self.global_conf and "__file__" in self.global_conf:
@@ -683,6 +682,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     database_connection: str
     tool_path: str
     tool_data_path: str
+    new_file_path: str
+    drmaa_external_runjob_script: str
+    track_jobs_in_database: bool
+    monitor_thread_join_timeout: int
+    manage_dependency_relationships: bool
+    enable_tool_shed_check: bool
     builds_file_path: str
     len_file_path: str
     integrated_tool_panel_config: str
@@ -699,7 +704,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     galaxy_data_manager_data_path: str
     use_remote_user: bool
     preserve_python_environment: str
-    email_from: str
+    email_from: Optional[str]
     workflow_resource_params_mapper: str
     sanitize_allowlist_file: str
     allowed_origin_hostnames: List[str]
@@ -773,7 +778,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
 
         return val
 
-    def _process_config(self, kwargs):
+    def _process_config(self, kwargs: Dict[str, Any]) -> None:
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
@@ -793,8 +798,10 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         try:
             with open(json_file) as f:
                 extra_info = json.load(f)
-        except OSError:
-            log.info("Galaxy extra version JSON file %s not loaded.", json_file)
+        except FileNotFoundError:
+            log.debug("No extra version JSON file detected at %s", json_file)
+        except ValueError:
+            log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
         else:
             self.version_extra = extra_info
 
@@ -818,7 +825,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             self.tool_data_path = self._in_data_dir(self.schema.defaults["tool_data_path"])
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
-        self.oidc = {}
+        self.oidc: Dict[str, Dict] = {}
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get("integrated_tool_panel_tracking_directory")
         if integrated_tool_panel_tracking_directory:
@@ -886,8 +893,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get("output_size_limit", 0))
         # activation_email was used until release_15.03
-        activation_email = kwargs.get("activation_email")
-        self.email_from = self.email_from or activation_email
+        self.email_from = self.email_from or kwargs.get("activation_email")
 
         self.email_domain_blocklist_content = (
             self._load_list_from_file(self._in_config_dir(self.email_domain_blocklist_file))
@@ -973,10 +979,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # tool_dependency_dir can be "none" (in old configs). If so, set it to None
         if self.tool_dependency_dir and self.tool_dependency_dir.lower() == "none":
             self.tool_dependency_dir = None
-        if self.involucro_path is None:
-            target_dir = self.tool_dependency_dir or self.schema.defaults["tool_dependency_dir"]
-            self.involucro_path = self._in_data_dir(os.path.join(target_dir, "involucro"))
-        self.involucro_path = self._in_root_dir(self.involucro_path)
         if self.mulled_channels:
             self.mulled_channels = [c.strip() for c in self.mulled_channels.split(",")]  # type: ignore[attr-defined]
 
@@ -1031,7 +1033,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 self.server_name = arg.split("=", 1)[-1]
         # Allow explicit override of server name in config params
         if "server_name" in kwargs:
-            self.server_name = kwargs.get("server_name")
+            self.server_name = kwargs["server_name"]
         # The application stack code may manipulate the server name. It also needs to be accessible via the get() method
         # for galaxy.util.facts()
         self.config_dict["base_server_name"] = self.base_server_name = self.server_name

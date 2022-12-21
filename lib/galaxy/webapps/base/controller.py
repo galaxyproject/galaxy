@@ -24,7 +24,6 @@ from galaxy import (
 )
 from galaxy.datatypes.interval import ChromatinInteractions
 from galaxy.managers import (
-    api_keys,
     base as managers_base,
     configuration,
     users,
@@ -380,17 +379,6 @@ class Datatype:
 #
 # -- Mixins for working with Galaxy objects. --
 #
-
-
-class CreatesApiKeysMixin:
-    """
-    Mixing centralizing logic for creating API keys for user objects.
-
-    Deprecated - please use api_keys.ApiKeyManager for new development.
-    """
-
-    def create_api_key(self, trans, user):
-        return api_keys.ApiKeyManager(trans.app).create_api_key(user)
 
 
 class SharableItemSecurityMixin:
@@ -1224,12 +1212,14 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
 
         return workflow
 
-    def get_stored_workflow_steps(self, trans, stored_workflow):
+    def get_stored_workflow_steps(self, trans, stored_workflow: model.StoredWorkflow):
         """Restores states for a stored workflow's steps."""
         module_injector = WorkflowModuleInjector(trans)
-        for step in stored_workflow.latest_workflow.steps:
+        workflow = stored_workflow.latest_workflow
+        module_injector.inject_all(workflow, exact_tools=False, ignore_tool_missing_exception=True)
+        for step in workflow.steps:
             try:
-                module_injector.inject(step, exact_tools=False)
+                module_injector.compute_runtime_state(step)
             except exceptions.ToolMissingException:
                 pass
 
@@ -1385,12 +1375,6 @@ class SharableMixin:
     @web.require_login("get item name and link")
     def get_name_and_link_async(self, trans, id=None):
         """Returns item's name and link."""
-        raise NotImplementedError()
-
-    @web.expose
-    @web.require_login("get item content asynchronously")
-    def get_item_content_async(self, trans, id):
-        """Returns item content in HTML format."""
         raise NotImplementedError()
 
     def get_item(self, trans, id):

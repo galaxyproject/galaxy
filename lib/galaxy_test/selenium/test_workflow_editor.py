@@ -1,5 +1,6 @@
 import json
 
+import pytest
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
@@ -25,7 +26,7 @@ from .framework import (
 )
 
 
-class WorkflowEditorTestCase(SeleniumTestCase, RunsWorkflows):
+class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
 
     ensure_registered = True
 
@@ -241,6 +242,9 @@ steps:
     label: tool_exec
     in:
       inttest: input_int
+  cat1:
+    # regression test, ensures connecting works in the presence of data input terminals
+    tool_id: cat1
 """
         )
         self.screenshot("workflow_editor_parameter_connection_simple")
@@ -615,6 +619,30 @@ steps:
         self.workflow_editor_connect("nested_workflow#workflow_output", "metadata_bam#input_bam")
         self.assert_connected("nested_workflow#workflow_output", "metadata_bam#input_bam")
 
+    @pytest.mark.xfail
+    @selenium_test
+    def test_edit_subworkflow(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  nested_workflow:
+    run:
+        class: GalaxyWorkflow
+        inputs: []
+        steps:
+          - tool_id: create_2
+            label: create_2
+"""
+        )
+        editor = self.components.workflow_editor
+        node = editor.node._(label="nested_workflow")
+        node.wait_for_and_click()
+        editor.edit_subworkflow.wait_for_and_click()
+        node = editor.node._(label="create_2")
+        node.wait_for_and_click()
+
     @selenium_test
     def test_editor_duplicate_node(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
@@ -721,7 +749,7 @@ steps:
         def assert_workflow_bookmarked_status(target_status):
             name_matches = [c.text == new_workflow_name for c in self.components.tool_panel.workflow_names.all()]
             status = any(name_matches)
-            self.assertTrue(status == target_status)
+            assert status == target_status
 
         new_workflow_name = self.workflow_create_new(clear_placeholder=True)
 

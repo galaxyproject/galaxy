@@ -3,7 +3,7 @@
  * It allows to select individual items or perform a query selection.
  */
 
-import { getFilters, testFilters } from "store/historyStore/model/filtering";
+import { HistoryFilters } from "../HistoryFilters";
 
 export default {
     props: {
@@ -27,7 +27,7 @@ export default {
             return this.allSelected && this.totalItemsInQuery !== this.items.size;
         },
         currentFilters() {
-            return getFilters(this.filterText);
+            return HistoryFilters.getFilters(this.filterText);
         },
     },
     methods: {
@@ -40,7 +40,7 @@ export default {
         },
         isSelected(item) {
             if (this.isQuerySelection) {
-                return testFilters(this.currentFilters, item);
+                return HistoryFilters.testFilters(this.currentFilters, item);
             }
             const key = this.getItemKey(item);
             return this.items.has(key);

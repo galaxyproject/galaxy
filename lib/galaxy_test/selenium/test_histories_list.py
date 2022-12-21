@@ -5,7 +5,7 @@ from .framework import (
 )
 
 
-class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
+class TestSavedHistories(SharedStateSeleniumTestCase):
     @selenium_test
     def test_histories_list(self):
         self._login()
@@ -22,7 +22,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
 
         @retry_assertion_during_transitions
         def assert_history_name_switched():
-            self.assertEqual(self.history_panel_name(), self.history2_name)
+            assert self.history_panel_name() == self.history2_name
 
         assert_history_name_switched()
 
@@ -31,8 +31,8 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self._login()
         self.navigate_to_histories_page()
         self.click_grid_popup_option(self.history2_name, "View")
-        history_name = self.wait_for_selector(".name.editable-text")
-        self.assertEqual(history_name.text, self.history2_name)
+        history_name = self.wait_for_selector("[data-description='name display']")
+        assert history_name.text == self.history2_name
 
     @selenium_test
     def test_history_publish(self):
@@ -155,7 +155,7 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         # Filter out histories created by other tests
         actual_histories = [x for x in actual_histories if x in self.all_histories]
 
-        self.assertEqual(actual_histories, expected_histories)
+        assert actual_histories == expected_histories
 
     @selenium_test
     def test_standard_search(self):
@@ -238,16 +238,16 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         if not sort_matters:
             actual_histories = set(actual_histories)
             expected_histories = set(expected_histories)
-        self.assertEqual(actual_histories, expected_histories)
+        assert actual_histories == expected_histories
 
     @retry_assertion_during_transitions
     def assert_histories_in_grid(self, expected_histories, present=True):
         actual_histories = self.get_histories()
         intersection = set(actual_histories).intersection(expected_histories)
         if present:
-            self.assertEqual(intersection, set(expected_histories))
+            assert intersection == set(expected_histories)
         else:
-            self.assertEqual(intersection, set())
+            assert intersection == set()
 
     def get_histories(self):
         return self.histories_get_history_names()
@@ -264,15 +264,15 @@ class SavedHistoriesTestCase(SharedStateSeleniumTestCase):
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def setup_shared_state(self):
-        SavedHistoriesTestCase.user_email = self._get_random_email()
-        SavedHistoriesTestCase.history1_name = self._get_random_name()
-        SavedHistoriesTestCase.history2_name = self._get_random_name()
-        SavedHistoriesTestCase.history3_name = self._get_random_name()
-        SavedHistoriesTestCase.history4_name = self._get_random_name()
-        SavedHistoriesTestCase.history2_tags = [self._get_random_name(len=5)]
-        SavedHistoriesTestCase.history3_tags = [self._get_random_name(len=5)]
-        SavedHistoriesTestCase.history4_tags = [self._get_random_name(len=5)]
-        SavedHistoriesTestCase.all_histories = [self.history1_name, self.history2_name, self.history3_name]
+        TestSavedHistories.user_email = self._get_random_email()
+        TestSavedHistories.history1_name = self._get_random_name()
+        TestSavedHistories.history2_name = self._get_random_name()
+        TestSavedHistories.history3_name = self._get_random_name()
+        TestSavedHistories.history4_name = self._get_random_name()
+        TestSavedHistories.history2_tags = [self._get_random_name(len=5)]
+        TestSavedHistories.history3_tags = [self._get_random_name(len=5)]
+        TestSavedHistories.history4_tags = [self._get_random_name(len=5)]
+        TestSavedHistories.all_histories = [self.history1_name, self.history2_name, self.history3_name]
 
         self.register(self.user_email)
         self.create_history(self.history2_name)

@@ -21,27 +21,28 @@
             <div v-if="invocationAndJobTerminal">
                 <workflow-invocation-export-options :invocation-id="invocation.id" />
             </div>
-            <div v-else>
-                <p v-localize>Waiting for invocation to complete...</p>
-            </div>
+            <b-alert v-else variant="info" show>
+                <LoadingSpan message="Waiting to complete invocation" />
+            </b-alert>
         </b-tab>
     </b-tabs>
-    <div v-else>
-        <p v-localize>Loading invocation...</p>
-    </div>
+    <b-alert v-else variant="info" show>
+        <LoadingSpan message="Loading invocation" />
+    </b-alert>
 </template>
 <script>
+import LoadingSpan from "components/LoadingSpan";
 import { cancelWorkflowScheduling } from "./services";
 import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
-
-import JOB_STATES_MODEL from "mvc/history/job-states-model";
+import JOB_STATES_MODEL from "utils/job-states-model";
 import mixin from "components/JobStates/mixin";
 import { mapGetters, mapActions } from "vuex";
 
 export default {
     components: {
+        LoadingSpan,
         WorkflowInvocationSummary,
         WorkflowInvocationDetails,
         WorkflowInvocationExportOptions,

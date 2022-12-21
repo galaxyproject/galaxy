@@ -3,6 +3,7 @@
         <virtual-list
             ref="listing"
             class="listing"
+            role="list"
             data-key="id"
             :offset="offset"
             :data-sources="items"

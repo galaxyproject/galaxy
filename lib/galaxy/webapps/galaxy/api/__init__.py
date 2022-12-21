@@ -269,6 +269,7 @@ class BaseGalaxyAPIController(BaseAPIController):
 
 class RestVerb(str, Enum):
     get = "GET"
+    head = "HEAD"
     post = "POST"
     put = "PUT"
     patch = "PATCH"
@@ -350,6 +351,9 @@ class Router(InferringRouter):
 
     def options(self, *args, **kwd):
         return self.wrap_with_alias(RestVerb.options, *args, **kwd)
+
+    def head(self, *args, **kwd):
+        return self.wrap_with_alias(RestVerb.head, *args, **kwd)
 
     def _handle_galaxy_kwd(self, kwd):
         require_admin = kwd.pop("require_admin", False)
@@ -448,7 +452,7 @@ If the tag is quoted, the attribute will be filtered exactly. If the tag is unqu
 generally a partial match will be used to filter the query (i.e. in terms of the implementation
 this means the database operation `ILIKE` will typically be used).
 
-Once the tagged filters are extracted from the search query, the remaing text is just
+Once the tagged filters are extracted from the search query, the remaining text is just
 used to search various documented attributes of the object.
 
 ## GitHub-style Tags Available

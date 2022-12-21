@@ -1,15 +1,18 @@
 import json
 import logging
 from time import strftime
+from typing import (
+    List,
+    Optional,
+)
 
+from fastapi import (
+    Path,
+    Query,
+)
 from paste.httpexceptions import (
     HTTPBadRequest,
     HTTPForbidden,
-)
-from sqlalchemy import (
-    and_,
-    cast,
-    Integer,
 )
 
 from galaxy import (
@@ -17,14 +20,18 @@ from galaxy import (
     util,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model.tool_shed_install import ToolShedRepository
+from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import (
+    CheckForUpdatesResponse,
+    InstalledToolShedRepositories,
+    InstalledToolShedRepository,
+)
 from galaxy.tool_shed.galaxy_install.install_manager import InstallRepositoryManager
 from galaxy.tool_shed.galaxy_install.installed_repository_manager import InstalledRepositoryManager
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
 )
 from galaxy.tool_shed.util.repository_util import (
-    check_for_updates,
     get_installed_repository,
     get_installed_tool_shed_repository,
     get_tool_shed_repository_by_id,
@@ -34,11 +41,21 @@ from galaxy.tool_shed.util.tool_util import generate_message_for_invalid_tools
 from galaxy.web import (
     expose_api,
     require_admin,
-    url_for,
 )
-from . import BaseGalaxyAPIController
+from galaxy.webapps.galaxy.api import (
+    BaseGalaxyAPIController,
+    depends,
+    Router,
+)
+from galaxy.webapps.galaxy.services.tool_shed_repositories import (
+    InstalledToolShedRepositoryIndexRequest,
+    ToolShedRepositoriesService,
+)
 
 log = logging.getLogger(__name__)
+
+
+router = Router(tags=["tool_shed_repositories"])
 
 
 def get_message_for_no_shed_tool_config():
@@ -54,6 +71,8 @@ def get_message_for_no_shed_tool_config():
 class ToolShedRepositoriesController(BaseGalaxyAPIController):
     """RESTful controller for interactions with tool shed repositories."""
 
+    service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService)
+
     def __ensure_can_install_repos(self, trans):
         # Make sure this Galaxy instance is configured with a shed-related tool panel configuration file.
         if not have_shed_tool_conf_for_install(self.app):
@@ -65,49 +84,6 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             raise exceptions.AdminRequiredException(
                 "You are not authorized to request the latest installable revision for a repository in this Galaxy instance."
             )
-
-    def __get_value_mapper(self, trans, tool_shed_repository):
-        value_mapper = {
-            "id": trans.security.encode_id(tool_shed_repository.id),
-            "error_message": tool_shed_repository.error_message or "",
-        }
-        return value_mapper
-
-    @expose_api
-    def index(self, trans: ProvidesUserContext, **kwd):
-        """
-        GET /api/tool_shed_repositories
-        Display a list of dictionaries containing information about installed tool shed repositories.
-        """
-        # Example URL: http://localhost:8763/api/tool_shed_repositories
-        clause_list = []
-        if "name" in kwd:
-            clause_list.append(ToolShedRepository.table.c.name == kwd.get("name"))
-        if "owner" in kwd:
-            clause_list.append(ToolShedRepository.table.c.owner == kwd.get("owner"))
-        if "changeset" in kwd:
-            clause_list.append(ToolShedRepository.table.c.changeset_revision == kwd.get("changeset"))
-        if "deleted" in kwd:
-            clause_list.append(ToolShedRepository.table.c.deleted == util.asbool(kwd.get("deleted")))
-        if "uninstalled" in kwd:
-            clause_list.append(ToolShedRepository.table.c.uninstalled == util.asbool(kwd.get("uninstalled")))
-        tool_shed_repository_dicts = []
-        query = (
-            trans.install_model.context.query(ToolShedRepository)
-            .order_by(ToolShedRepository.table.c.name)
-            .order_by(cast(ToolShedRepository.ctx_rev, Integer).desc())
-        )
-        if len(clause_list) > 0:
-            query = query.filter(and_(*clause_list))
-        for tool_shed_repository in query.all():
-            tool_shed_repository_dict = tool_shed_repository.to_dict(
-                value_mapper=self.__get_value_mapper(trans, tool_shed_repository)
-            )
-            tool_shed_repository_dict["url"] = url_for(
-                controller="tool_shed_repositories", action="show", id=trans.security.encode_id(tool_shed_repository.id)
-            )
-            tool_shed_repository_dicts.append(tool_shed_repository_dict)
-        return tool_shed_repository_dicts
 
     @require_admin
     @expose_api
@@ -165,18 +141,10 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         self.__ensure_can_install_repos(trans)
         irm = InstallRepositoryManager(self.app)
         installed_tool_shed_repositories = irm.install(tool_shed_url, name, owner, changeset_revision, payload)
-
-        def to_dict(tool_shed_repository):
-            tool_shed_repository_dict = tool_shed_repository.as_dict(
-                value_mapper=self.__get_value_mapper(trans, tool_shed_repository)
-            )
-            tool_shed_repository_dict["url"] = url_for(
-                controller="tool_shed_repositories", action="show", id=trans.security.encode_id(tool_shed_repository.id)
-            )
-            return tool_shed_repository_dict
-
         if installed_tool_shed_repositories:
-            return list(map(to_dict, installed_tool_shed_repositories))
+            return InstalledToolShedRepositories(
+                __root__=list(map(self.service._show, installed_tool_shed_repositories))
+            )
         message = "No repositories were installed, possibly because the selected repository has already been installed."
         return dict(status="ok", message=message)
 
@@ -275,9 +243,9 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
             if isinstance(installed_tool_shed_repositories, dict):
                 # We encountered an error.
                 return installed_tool_shed_repositories
-            elif isinstance(installed_tool_shed_repositories, list):
-                all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories)
-        return all_installed_tool_shed_repositories
+            elif isinstance(installed_tool_shed_repositories, InstalledToolShedRepositories):
+                all_installed_tool_shed_repositories.extend(installed_tool_shed_repositories.__root__)
+        return InstalledToolShedRepositories(__root__=all_installed_tool_shed_repositories)
 
     @require_admin
     @expose_api
@@ -349,19 +317,6 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
 
     @require_admin
     @expose_api
-    def check_for_updates(self, trans, **kwd):
-        """
-        GET /api/tool_shed_repositories/check_for_updates
-        Check for updates to the specified repository, or all installed repositories.
-
-        :param id: the encoded repository id
-        """
-        repository_id = kwd.get("id", None)
-        message, status = check_for_updates(self.app, trans.install_model, repository_id)
-        return {"status": status, "message": message}
-
-    @require_admin
-    @expose_api
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
         repository_ids = util.listify(kwd.get("repository_ids"))
         if repository_ids:
@@ -429,48 +384,69 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
         results["stop_time"] = stop_time
         return json.dumps(results, sort_keys=True, indent=4)
 
-    @expose_api
-    def show(self, trans, id, **kwd):
-        """
-        GET /api/tool_shed_repositories/{encoded_tool_shed_repsository_id}
 
-        Display a dictionary containing information about a specified tool_shed_repository.
+InstalledToolShedRepositoryIDPathParam: DecodedDatabaseIdField = Path(
+    ...,
+    title="Installed Tool Shed Repository ID",
+    description="The encoded database identifier of the installed Tool Shed Repository.",
+)
 
-        .. code-block::
+NameQueryParam: Optional[str] = Query(default=None, title="Name", description="Filter by repository name.")
 
-            {
-                id: (string) Galaxy ID
-                status: (string) Installation status
-                name: (string) Repository name
-                deleted: (bool) Repository deleted
-                ctx_rev: (int) Changeset revision number (0, 1, 2...)
-                error_message: (string) Installation error message
-                installed_changeset_revision: (string) Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a repository is updated.
-                tool_shed: (string) Repository toolshed hostname
-                dist_to_shed: (bool)
-                url: (string) API url of repository
-                uninstalled: (bool) Tool has been uninstalled
-                owner: (string) Repository owner within toolshed
-                changeset_revision: (string) Changeset revision of repository
-                include_datatypes: (bool) Repository includes installed datatypes
-                tool_shed_status: (dict) See https://github.com/galaxyproject/galaxy/issues/10453
-                    latest_installable_revision: (string) Most recent version available on toolshed
-                    revision_update: (string)
-                    revision_upgrade: (string)
-                    repository_deprecated: (string) Repository has been depreciated
-            }
+OwnerQueryParam: Optional[str] = Query(default=None, title="Owner", description="Filter by repository owner.")
 
-        :param id: the encoded id of the ToolShedRepository object
-        """
-        # Example URL: http://localhost:8763/api/tool_shed_repositories/df7a1f0c02a5b08e
-        tool_shed_repository = get_tool_shed_repository_by_id(self.app, id)
-        if tool_shed_repository is None:
-            log.debug(f"Unable to locate tool_shed_repository record for id {id}.")
-            return {}
-        tool_shed_repository_dict = tool_shed_repository.as_dict(
-            value_mapper=self.__get_value_mapper(trans, tool_shed_repository)
+ChangesetQueryParam: Optional[str] = Query(default=None, title="Changeset", description="Filter by changeset revision.")
+
+DeletedQueryParam: Optional[bool] = Query(
+    default=None, title="Deleted?", description="Filter by whether the repository has been deleted."
+)
+
+UninstalledQueryParam: Optional[bool] = Query(
+    default=None, title="Uninstalled?", description="Filter by whether the repository has been uninstalled."
+)
+
+
+@router.cbv
+class FastAPIToolShedRepositories:
+    service: ToolShedRepositoriesService = depends(ToolShedRepositoriesService)
+
+    @router.get(
+        "/api/tool_shed_repositories",
+        summary="Lists installed tool shed repositories.",
+        response_description="A list of installed tool shed repository objects.",
+    )
+    def index(
+        self,
+        name: Optional[str] = NameQueryParam,
+        owner: Optional[str] = OwnerQueryParam,
+        changeset: Optional[str] = ChangesetQueryParam,
+        deleted: Optional[bool] = DeletedQueryParam,
+        uninstalled: Optional[bool] = UninstalledQueryParam,
+    ) -> List[InstalledToolShedRepository]:
+        request = InstalledToolShedRepositoryIndexRequest(
+            name=name,
+            owner=owner,
+            changeset=changeset,
+            deleted=deleted,
+            uninstalled=uninstalled,
         )
-        tool_shed_repository_dict["url"] = url_for(
-            controller="tool_shed_repositories", action="show", id=trans.security.encode_id(tool_shed_repository.id)
-        )
-        return tool_shed_repository_dict
+        return self.service.index(request)
+
+    @router.get(
+        "/api/tool_shed_repositories/check_for_updates",
+        summary="Check for updates to the specified repository, or all installed repositories.",
+        response_description="A description of the state and updates message.",
+        require_admin=True,
+    )
+    def check_for_updates(self, id: Optional[DecodedDatabaseIdField] = None) -> CheckForUpdatesResponse:
+        return self.service.check_for_updates(id and int(id))
+
+    @router.get(
+        "/api/tool_shed_repositories/{id}",
+        summary="Show installed tool shed repository.",
+    )
+    def show(
+        self,
+        id: DecodedDatabaseIdField = InstalledToolShedRepositoryIDPathParam,
+    ) -> InstalledToolShedRepository:
+        return self.service.show(id)

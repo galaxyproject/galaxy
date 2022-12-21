@@ -12,6 +12,7 @@ from galaxy.web.form_builder import SelectField
 from tool_shed.metadata import metadata_generator
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
+from tool_shed.structured_app import ToolShedApp
 from tool_shed.util import (
     basic_util,
     common_util,
@@ -28,7 +29,7 @@ log = logging.getLogger(__name__)
 class RepositoryMetadataManager(metadata_generator.MetadataGenerator):
     def __init__(
         self,
-        app,
+        app: ToolShedApp,
         user,
         repository=None,
         changeset_revision=None,

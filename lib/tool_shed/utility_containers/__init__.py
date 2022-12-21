@@ -2,12 +2,13 @@ import logging
 import threading
 
 from galaxy import util
-from tool_shed.util import (
-    common_util,
-    container_util,
-    readme_util,
+from galaxy.tool_shed.util import utility_container_manager
+from galaxy.tool_shed.util.container_util import (
+    generate_repository_dependencies_key_for_repository,
+    STRSEP,
 )
-from . import utility_container_manager
+from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
+from tool_shed.util.readme_util import build_readme_files_dict
 
 log = logging.getLogger(__name__)
 
@@ -166,8 +167,8 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                     prior_installation_required,
                     only_if_compiling_contained_td,
                     error,
-                ) = common_util.parse_repository_dependency_tuple(invalid_repository_dependency, contains_error=True)
-                key = container_util.generate_repository_dependencies_key_for_repository(
+                ) = parse_repository_dependency_tuple(invalid_repository_dependency, contains_error=True)
+                key = generate_repository_dependencies_key_for_repository(
                     toolshed,
                     name,
                     owner,
@@ -254,7 +255,6 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
             repository_dependencies=None,
             tool_dependencies=None,
             valid_tools=None,
-            workflows=None,
             valid_data_managers=None,
         )
         if repository_metadata:
@@ -263,12 +263,6 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
             lock.acquire(True)
             try:
                 folder_id = 0
-                # Datatypes container.
-                if metadata:
-                    if "datatypes" not in exclude and "datatypes" in metadata:
-                        datatypes = metadata["datatypes"]
-                        folder_id, datatypes_root_folder = self.build_datatypes_folder(folder_id, datatypes)
-                        containers_dict["datatypes"] = datatypes_root_folder
                 # Invalid repository dependencies container.
                 if metadata:
                     if (
@@ -307,9 +301,7 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                 # Readme files container.
                 if metadata:
                     if "readme_files" not in exclude and "readme_files" in metadata:
-                        readme_files_dict = readme_util.build_readme_files_dict(
-                            self.app, repository, changeset_revision, metadata
-                        )
+                        readme_files_dict = build_readme_files_dict(self.app, repository, changeset_revision, metadata)
                         folder_id, readme_files_root_folder = self.build_readme_files_folder(
                             folder_id, readme_files_dict
                         )
@@ -349,18 +341,6 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
                             folder_id, valid_tools, repository, changeset_revision, label="Valid tools"
                         )
                         containers_dict["valid_tools"] = valid_tools_root_folder
-                # Workflows container.
-                if metadata:
-                    if "workflows" not in exclude and "workflows" in metadata:
-                        workflows = metadata["workflows"]
-                        folder_id, workflows_root_folder = self.build_workflows_folder(
-                            folder_id=folder_id,
-                            workflows=workflows,
-                            repository_metadata_id=repository_metadata.id,
-                            repository_id=None,
-                            label="Workflows",
-                        )
-                        containers_dict["workflows"] = workflows_root_folder
                 # Valid Data Managers container
                 if metadata:
                     if "data_manager" not in exclude and "data_manager" in metadata:
@@ -382,4 +362,4 @@ class ToolShedUtilityContainerManager(utility_container_manager.UtilityContainer
         return containers_dict
 
     def generate_tool_dependencies_key(self, name, version, type):
-        return f"{str(name)}{container_util.STRSEP}{str(version)}{container_util.STRSEP}{str(type)}"
+        return f"{str(name)}{STRSEP}{str(version)}{STRSEP}{str(type)}"

@@ -12,10 +12,10 @@
                         v-for="(section, sectionIndex) in sections"
                         :key="sectionIndex"
                         class="toolSectionTitle pt-1 px-3">
-                        {{ section.title }}
+                        <h2 class="font-weight-bold h-text mb-0">{{ section.title }}</h2>
                         <div class="toolSectionBody">
                             <div v-for="(item, itemIndex) in section.items" :key="itemIndex" class="toolTitle">
-                                <router-link v-if="!item.disabled" class="title-link" :id="item.id" :to="item.route">
+                                <router-link v-if="!item.disabled" :id="item.id" class="title-link" :to="item.route">
                                     <small class="name">{{ item.title }}</small>
                                 </router-link>
                             </div>

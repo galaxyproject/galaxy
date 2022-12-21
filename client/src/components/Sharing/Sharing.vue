@@ -1,8 +1,8 @@
 <template>
     <div>
-        <h3>
+        <h1 class="h-lg">
             Share or Publish {{ modelClass }} <span v-if="ready">`{{ item.title }}`</span>
-        </h3>
+        </h1>
         <div v-for="error in errors" :key="error">
             <b-alert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
                 <ErrorMessage :message="error" :root="root()"> </ErrorMessage>
@@ -123,7 +123,7 @@
                                                 <span>{{ option.email }}</span>
                                                 <i
                                                     aria-hidden="true"
-                                                    tabindex="1"
+                                                    tabindex="0"
                                                     class="multiselect__tag-icon"
                                                     @click="remove(option)"></i>
                                             </span>

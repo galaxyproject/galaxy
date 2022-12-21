@@ -3,7 +3,10 @@ import logging
 import math
 import re
 import uuid
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 import packaging.version
 
@@ -13,12 +16,14 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
 )
 from galaxy.util import (
+    Element,
     ElementTree,
     string_as_bool,
     xml_text,
     xml_to_string,
 )
 from .interface import (
+    AssertionList,
     InputSource,
     PageSource,
     PagesSource,
@@ -26,6 +31,8 @@ from .interface import (
     TestCollectionDef,
     TestCollectionOutputDef,
     ToolSource,
+    ToolSourceTest,
+    ToolSourceTests,
 )
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
@@ -50,6 +57,7 @@ class XmlToolSource(ToolSource):
     """Responsible for parsing a tool from classic Galaxy representation."""
 
     language = "xml"
+    root: Element
 
     def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
@@ -537,10 +545,10 @@ class XmlToolSource(ToolSource):
     def source_path(self):
         return self._source_path
 
-    def parse_tests_to_dict(self):
+    def parse_tests_to_dict(self) -> ToolSourceTests:
         tests_elem = self.root.find("tests")
-        tests = []
-        rval = dict(tests=tests)
+        tests: List[ToolSourceTest] = []
+        rval: ToolSourceTests = dict(tests=tests)
 
         if tests_elem is not None:
             for i, test_elem in enumerate(tests_elem.findall("test")):
@@ -587,8 +595,8 @@ class XmlToolSource(ToolSource):
         return creators
 
 
-def _test_elem_to_dict(test_elem, i, profile=None):
-    rval = dict(
+def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
+    rval: ToolSourceTest = dict(
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem, profile=profile),
         inputs=__parse_input_elems(test_elem, i),
@@ -737,7 +745,7 @@ def __parse_assert_list(output_elem):
     return __parse_assert_list_from_elem(assert_elem)
 
 
-def __parse_assert_list_from_elem(assert_elem):
+def __parse_assert_list_from_elem(assert_elem) -> AssertionList:
     assert_list = None
 
     def convert_elem(elem):

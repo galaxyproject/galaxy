@@ -4,7 +4,6 @@ Coverage datatypes
 """
 
 import logging
-import math
 
 from galaxy.datatypes import metadata
 from galaxy.datatypes.metadata import MetadataElement
@@ -29,12 +28,3 @@ class LastzCoverage(Tabular):
         no_value=0,
     )
     MetadataElement(name="columns", default=3, desc="Number of columns", readonly=True, visible=False)
-
-    def get_track_resolution(self, dataset, start, end):
-        range = end - start
-        # Determine appropriate resolution to plot ~1000 points
-        resolution = math.ceil(10 ** math.ceil(math.log10(range / 1000)))
-        # Restrict to valid range
-        resolution = min(resolution, 10000)
-        resolution = max(resolution, 1)
-        return resolution

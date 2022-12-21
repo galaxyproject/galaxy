@@ -9,6 +9,8 @@ area/auth:
   - lib/galaxy/authnz/**/*
 area/client:
   - client/*
+area/database:
+  - lib/galaxy/model/**/*
 area/datatypes:
   - lib/galaxy/datatypes/**/*
   - lib/galaxy/config/sample/datatypes_conf.xml.sample

@@ -2,12 +2,12 @@
 """
 
 import json
-import unittest
 
 import sqlalchemy
 
 from galaxy.app_unittest_utils import galaxy_mock
 from galaxy.managers.users import UserManager
+from galaxy.util.unittest import TestCase
 
 # =============================================================================
 admin_email = "admin@admin.admin"
@@ -16,7 +16,7 @@ default_password = "123456"
 
 
 # =============================================================================
-class BaseTestCase(unittest.TestCase):
+class BaseTestCase(TestCase):
     @classmethod
     def setUpClass(cls):
         print("\n", "-" * 20, "begin class", cls)
@@ -54,65 +54,48 @@ class BaseTestCase(unittest.TestCase):
     TYPES_NEEDING_NO_SERIALIZERS = (str, bool, type(None), int, float)
 
     def assertKeys(self, obj, key_list):
-        self.assertEqual(sorted(obj.keys()), sorted(key_list))
+        assert sorted(obj.keys()) == sorted(key_list)
 
     def assertHasKeys(self, obj, key_list):
         for key in key_list:
-            if key not in obj:
-                self.fail("Missing key: " + key)
-        else:
-            self.assertTrue(True, "keys found in object")
+            assert key in obj
 
     def assertNullableBasestring(self, item):
-        if not isinstance(item, (str, type(None))):
-            self.fail("Non-nullable basestring: " + str(type(item)))
+        assert isinstance(item, (str, type(None)))
         # TODO: len mod 8 and hex re
-        self.assertTrue(True, "is nullable basestring: " + str(item))
 
     def assertEncodedId(self, item):
-        if not isinstance(item, str):
-            self.fail("Non-string: " + str(type(item)))
+        assert isinstance(item, str)
         # TODO: len mod 8 and hex re
-        self.assertTrue(True, "is id: " + item)
 
     def assertNullableEncodedId(self, item):
-        if item is None:
-            self.assertTrue(True, "nullable id is None")
-        else:
+        if item is not None:
             self.assertEncodedId(item)
 
     def assertDate(self, item):
-        if not isinstance(item, str):
-            self.fail("Non-string: " + str(type(item)))
+        assert isinstance(item, str)
         # TODO: no great way to parse this fully (w/o python-dateutil)
         # TODO: re?
-        self.assertTrue(True, "is date: " + item)
 
     def assertUUID(self, item):
-        if not isinstance(item, str):
-            self.fail("Non-string: " + str(type(item)))
+        assert isinstance(item, str)
         # TODO: re for d4d76d69-80d4-4ed7-80c7-211ebcc1a358
-        self.assertTrue(True, "is uuid: " + item)
 
-    def assertORMFilter(self, item, msg=None):
-        if not isinstance(
+    def assertORMFilter(self, item):
+        assert isinstance(
             item.filter, (sqlalchemy.sql.elements.BinaryExpression, sqlalchemy.sql.elements.BooleanClauseList)
-        ):
-            self.fail("Not an orm filter: " + str(type(item.filter)))
-        self.assertTrue(True, msg or ("is an orm filter: " + str(item.filter)))
+        ), "Not an orm filter"
 
-    def assertORMFunctionFilter(self, item, msg=None):
+    def assertORMFunctionFilter(self, item):
         assert item.filter_type == "orm_function"
         assert callable(item.filter)
 
-    def assertFnFilter(self, item, msg=None):
-        if not item.filter or not callable(item.filter):
-            self.fail("Not a fn filter: " + str(type(item.filter)))
-        self.assertTrue(True, msg or ("is a fn filter: " + str(item.filter)))
+    def assertFnFilter(self, item):
+        assert item.filter and callable(item.filter), "Not a fn filter"
 
     def assertIsJsonifyable(self, item):
         # TODO: use galaxy's override
-        self.assertIsInstance(json.dumps(item), str)
+        assert isinstance(json.dumps(item), str)
 
 
 class CreatesCollectionsMixin:
@@ -128,9 +111,3 @@ class CreatesCollectionsMixin:
             #    src = 'ldda'#?
             identifier_list.append(dict(src=src, name=element.name, id=element.id))
         return identifier_list
-
-
-# =============================================================================
-if __name__ == "__main__":
-    # or more generally, nosetests test_resourcemanagers.py -s -v
-    unittest.main()

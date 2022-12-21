@@ -1,6 +1,6 @@
 <template>
     <div id="columns">
-        <SidePanel side="left" :currentPanel="getAdminPanel()" :current-panel-properties="panelProperties" />
+        <SidePanel side="left" :current-panel="getAdminPanel()" :current-panel-properties="panelProperties" />
         <div id="center">
             <div class="center-container">
                 <div class="center-panel" style="display: block">

@@ -1,8 +1,6 @@
-import datetime
 import logging
 import os
 import re
-from enum import Enum
 from typing import (
     Any,
     cast,
@@ -82,8 +80,6 @@ from galaxy.schema.schema import (
     ChangeDatatypeOperationParams,
     ChangeDbkeyOperationParams,
     ColletionSourceType,
-    ContentsNearResult,
-    ContentsNearStats,
     CreateNewCollectionPayload,
     DatasetAssociationRoles,
     DeleteHistoryContentPayload,
@@ -116,7 +112,6 @@ from galaxy.schema.tasks import (
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.web.short_term_storage import ShortTermStorageAllocator
-from galaxy.webapps.galaxy.api.common import parse_serialization_params
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ConsumesModelStores,
@@ -129,18 +124,7 @@ from galaxy.webapps.galaxy.services.base import (
 log = logging.getLogger(__name__)
 
 DatasetDetailsType = Union[Set[DecodedDatabaseIdField], Literal["all"]]
-
 HistoryItemModel = Union[HistoryDatasetAssociation, HistoryDatasetCollectionAssociation]
-
-
-class DirectionOptions(str, Enum):
-    near = "near"
-    before = "before"
-    after = "after"
-
-
-HistoryContentFilter = List[Any]  # Lists with [attribute:str, operator:str, value:Any]
-HistoryContentsFilterList = List[HistoryContentFilter]
 
 
 class HistoryContentsIndexParams(Model):
@@ -480,13 +464,8 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         :param id: encoded HistoryDatasetCollectionAssociation (HDCA) id
         """
-        try:
-            dataset_collection_instance = self.__get_accessible_collection(trans, id)
-            return self.__stream_dataset_collection(trans, dataset_collection_instance)
-        except Exception:
-            error_message = "Error in API while creating dataset collection archive"
-            log.exception(error_message)
-            raise exceptions.InternalServerError(error_message)
+        dataset_collection_instance = self.__get_accessible_collection(trans, id)
+        return self.__stream_dataset_collection(trans, dataset_collection_instance)
 
     def prepare_collection_download(self, trans, id: DecodedDatabaseIdField) -> AsyncFile:
         ensure_celery_tasks_enabled(trans.app.config)
@@ -857,183 +836,6 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         for file_path, archive_path in paths_and_files:
             archive.write(file_path, archive_path)
         return archive
-
-    def contents_near(
-        self,
-        trans,
-        history_id: DecodedDatabaseIdField,
-        serialization_params: SerializationParams,
-        filter_params: HistoryContentsFilterList,
-        direction: DirectionOptions,
-        hid: int,
-        limit: int,
-        since: Optional[datetime.datetime] = None,
-    ) -> Optional[ContentsNearResult]:
-        """
-        Return {limit} history items "near" the {hid}. The {direction} determines what items
-        are selected:
-
-        - before: select items with hid < {hid}
-        - after:  select items with hid > {hid}
-        - near:   select items "around" {hid}, so that
-          n. items before <= limit // 2,
-          n. items after <= limit // 2 + 1
-
-        Additional counts provided in the HTTP headers.
-        """
-        history: History = self.history_manager.get_accessible(history_id, trans.user, current_history=trans.history)
-
-        # while polling, check to see if the history has changed
-        # if it hasn't then we can short-circuit the poll request
-        if since:
-            # sqlalchemy DateTime columns are not timezone aware, but `since` may be a timezone aware
-            # DateTime object if a timezone offset is provided (https://github.com/samuelcolvin/pydantic/blob/5ccbdcb5904f35834300b01432a665c75dc02296/pydantic/datetime_parse.py#L179).
-            # If a timezone is provided (since.tzinfo is not None) we convert to UTC and remove tzinfo so that comparison with history.update_time is correct.
-            since = since if since.tzinfo is None else since.astimezone(datetime.timezone.utc).replace(tzinfo=None)
-            if history.update_time <= since:
-                return None
-
-        order_by_dsc = self.build_order_by(self.history_contents_manager, "hid-dsc")
-        order_by_asc = self.build_order_by(self.history_contents_manager, "hid-asc")
-        min_hid, max_hid = self._get_filtered_extrema(history, filter_params, order_by_dsc, order_by_asc)
-        up_total_count, down_total_count = self._get_total_counts(history, filter_params, hid)
-
-        if direction == DirectionOptions.after:  # seek up: contents > hid (newer)
-            _hid_params = self._hid_greater_than(hid)
-            matches = self._get_matches(history, filter_params, _hid_params, order_by_asc, limit, serialization_params)
-            expanded = self._expand_contents(trans, matches, serialization_params)
-            expanded.reverse()
-            item_counts = self._set_item_counts(
-                matches_up=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count
-            )
-
-        elif direction == DirectionOptions.before:  # seek down: contents <= hid (older)
-            _hid_params = self._hid_less_than(hid)
-            matches = self._get_matches(history, filter_params, _hid_params, order_by_dsc, limit, serialization_params)
-            expanded = self._expand_contents(trans, matches, serialization_params)
-            item_counts = self._set_item_counts(
-                matches_down=len(matches), total_matches_up=up_total_count, total_matches_down=down_total_count
-            )
-
-        elif direction == DirectionOptions.near:  # seek up, down; then reverse up, and combine
-            up_limit, down_limit = self._get_limits(limit)
-
-            _hid_params = self._hid_greater_than(hid)
-            up_matches = self._get_matches(
-                history, filter_params, _hid_params, order_by_asc, up_limit, serialization_params
-            )
-            up_expanded = self._expand_contents(trans, up_matches, serialization_params)
-            up_expanded.reverse()
-
-            _hid_params = self._hid_less_or_equal_than(hid)  # note <=: we are including the item with hid == {hid}
-            down_matches = self._get_matches(
-                history, filter_params, _hid_params, order_by_dsc, down_limit, serialization_params
-            )
-            down_expanded = self._expand_contents(trans, down_matches, serialization_params)
-
-            expanded = up_expanded + down_expanded
-            item_counts = self._set_item_counts(
-                matches_up=len(up_matches),
-                matches_down=len(down_matches),
-                total_matches_up=up_total_count,
-                total_matches_down=down_total_count,
-            )
-
-        stats = ContentsNearStats(
-            max_hid=max_hid,
-            min_hid=min_hid,
-            history_size=history.disk_size,
-            history_empty=history.empty,
-            **item_counts,
-        )
-        return ContentsNearResult(contents=expanded, stats=stats)
-
-    def _get_limits(self, limit):
-        q, r = divmod(limit, 2)
-        return q, q + r
-
-    def _set_item_counts(self, *, matches_up=0, total_matches_up=0, matches_down=0, total_matches_down=0):
-        counts = {}
-        counts["matches"] = matches_up + matches_down
-        counts["matches_up"] = matches_up
-        counts["matches_down"] = matches_down
-        counts["total_matches"] = total_matches_up + total_matches_down + 1  # + 1 for hid == {hid}
-        counts["total_matches_up"] = total_matches_up
-        counts["total_matches_down"] = total_matches_down
-        return counts
-
-    def _hid_greater_than(self, hid: int) -> HistoryContentsFilterList:
-        return [["hid", "gt", hid]]
-
-    def _hid_less_than(self, hid: int) -> HistoryContentsFilterList:
-        return [["hid", "lt", hid]]
-
-    def _hid_less_or_equal_than(self, hid: int) -> HistoryContentsFilterList:
-        return [["hid", "le", hid]]
-
-    def _get_total_counts(self, history, filter_params, hid):
-        def get_count(params, hid_params):
-            params = params + hid_params
-            count_filters = self.history_contents_filters.parse_filters(params)
-            return self.history_contents_manager.contents_count(history, count_filters)
-
-        params = self._copy_excluding_update_time(filter_params)
-        total_up = get_count(params, self._hid_greater_than(hid))
-        total_down = get_count(params, self._hid_less_than(hid))
-        return total_up, total_down
-
-    def _get_matches(self, history, filter_params, hid_params, order_by, limit, serialization_params):
-        params = filter_params + hid_params
-        filters = self.history_contents_filters.parse_filters(params)
-        contents = self.history_contents_manager.contents(
-            history,
-            filters=filters,
-            limit=limit,
-            offset=0,
-            order_by=order_by,
-            serialization_params=serialization_params,
-        )
-        return contents
-
-    def _copy_excluding_update_time(self, filter_params):
-        return [f for f in filter_params if f[0] != "update_time"]
-
-    # Adds subquery details to initial contents results, perhaps better realized
-    # as a proc or view.
-    def _expand_contents(self, trans, contents, serialization_params: SerializationParams):
-        rval = []
-        for content in contents:
-            if isinstance(content, HistoryDatasetAssociation):
-                dataset = self.hda_serializer.serialize_to_view(
-                    content, user=trans.user, trans=trans, **serialization_params.dict()
-                )
-                rval.append(dataset)
-            elif isinstance(content, HistoryDatasetCollectionAssociation):
-                collection = self.hdca_serializer.serialize_to_view(
-                    content, user=trans.user, trans=trans, **serialization_params.dict()
-                )
-                rval.append(collection)
-        return rval
-
-    def _get_filtered_extrema(self, history, filter_params, order_by_dsc, order_by_asc):
-        extrema_params = parse_serialization_params(keys="hid", default_view="summary")
-        extrema_filter_params = self._copy_excluding_update_time(filter_params)
-        extrema_filters = self.history_contents_filters.parse_filters(extrema_filter_params)
-
-        max_row_result = self.history_contents_manager.contents(
-            history, limit=1, filters=extrema_filters, order_by=order_by_dsc, serialization_params=extrema_params
-        )
-        max_row = max_row_result.pop() if len(max_row_result) else None
-
-        min_row_result = self.history_contents_manager.contents(
-            history, limit=1, filters=extrema_filters, order_by=order_by_asc, serialization_params=extrema_params
-        )
-        min_row = min_row_result.pop() if len(min_row_result) else None
-
-        max_hid = max_row.hid if max_row else None
-        min_hid = min_row.hid if min_row else None
-
-        return min_hid, max_hid
 
     def __delete_dataset(
         self, trans, id: DecodedDatabaseIdField, purge: bool, stop_job: bool, serialization_params: SerializationParams

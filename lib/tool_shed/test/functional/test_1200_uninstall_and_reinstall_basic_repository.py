@@ -4,27 +4,14 @@ from ..base.twilltestcase import (
 )
 
 
-class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
+class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):
     """Test uninstalling and reinstalling a basic repository."""
 
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        galaxy_admin_user = self.test_db_util.get_galaxy_user(common.admin_email)
-        assert (
-            galaxy_admin_user is not None
-        ), f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_galaxy_private_role(galaxy_admin_user)
 
     def test_0005_ensure_repositories_and_categories_exist(self):
         """Create the 0000 category and upload the filtering repository to the tool shed, if necessary."""
@@ -40,7 +27,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             description="Galaxy's filtering tool for test 0000",
             long_description="Long description of Galaxy's filtering tool for test 0000",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             self.upload_file(
@@ -91,23 +78,13 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
     def test_0010_install_filtering_repository(self):
         """Install the filtering repository into the Galaxy instance."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository(
+        self._install_repository(
             "filtering_0000",
             common.test_user_1_name,
             "Test 0000 Basic Repository Features 1",
             new_tool_panel_section_label="test_1000",
         )
-        installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
-            "filtering_0000", common.test_user_1_name
-        )
-        strings_displayed = [
-            "filtering_0000",
-            "Galaxy's filtering tool for test 0000",
-            "user1",
-            self.url.replace("http://", ""),
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
+        self._assert_has_installed_repos_with_names("filtering_0000")
 
     def test_0015_uninstall_filtering_repository(self):
         """Uninstall the filtering repository."""
@@ -115,30 +92,17 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             "filtering_0000", common.test_user_1_name
         )
         self.uninstall_repository(installed_repository)
-        strings_not_displayed = [
-            "filtering_0000",
-            "Galaxy's filtering tool for test 0000",
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names("filtering_0000")
 
     def test_0020_reinstall_filtering_repository(self):
         """Reinstall the filtering repository."""
         installed_repository = self.test_db_util.get_installed_repository_by_name_owner(
             "filtering_0000", common.test_user_1_name
         )
-        self.reinstall_repository(installed_repository)
-        strings_displayed = [
-            "filtering_0000",
-            "Galaxy's filtering tool for test 0000",
-            "user1",
-            self.url.replace("http://", ""),
-            str(installed_repository.installed_changeset_revision),
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "Filter1"])
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
+        self.reinstall_repository_api(installed_repository)
+        self._assert_has_installed_repos_with_names("filtering_0000")
+        self._assert_has_valid_tool_with_name("Filter1")
+        self._assert_repo_has_tool_with_id(installed_repository, "Filter1")
 
     def test_0025_deactivate_filtering_repository(self):
         """Deactivate the filtering repository without removing it from disk."""
@@ -146,12 +110,7 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             "filtering_0000", common.test_user_1_name
         )
         self.deactivate_repository(installed_repository)
-        strings_not_displayed = [
-            "filtering_0000",
-            "Galaxy's filtering tool for test 0000",
-            installed_repository.installed_changeset_revision,
-        ]
-        self.display_galaxy_browse_repositories_page(strings_not_displayed=strings_not_displayed)
+        self._assert_has_no_installed_repos_with_names("filtering_0000")
 
     def test_0030_reactivate_filtering_repository(self):
         """Reactivate the filtering repository and verify that it now shows up in the list of installed repositories."""
@@ -159,14 +118,6 @@ class UninstallingAndReinstallingRepositories(ShedTwillTestCase):
             "filtering_0000", common.test_user_1_name
         )
         self.reactivate_repository(installed_repository)
-        strings_displayed = [
-            "filtering_0000",
-            "Galaxy's filtering tool for test 0000",
-            "user1",
-            self.url.replace("http://", ""),
-            str(installed_repository.installed_changeset_revision),
-        ]
-        self.display_galaxy_browse_repositories_page(strings_displayed=strings_displayed)
-        strings_displayed.extend(["Installed tool shed repository", "Valid tools", "Filter1"])
-        self.display_installed_repository_manage_page(installed_repository, strings_displayed=strings_displayed)
-        self.verify_tool_metadata_for_installed_repository(installed_repository)
+        self._assert_has_installed_repos_with_names("filtering_0000")
+        self._assert_has_valid_tool_with_name("Filter1")
+        self._assert_repo_has_tool_with_id(installed_repository, "Filter1")

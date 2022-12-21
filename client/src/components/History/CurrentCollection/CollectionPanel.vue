@@ -9,14 +9,14 @@
         :contents-url="contentsUrl"
         :offset="offset">
         <ExpandedItems v-slot="{ isExpanded, setExpanded }" :scope-key="dsc.id" :get-item-key="(item) => item.id">
-            <section class="dataset-collection-panel d-flex flex-column">
+            <section class="dataset-collection-panel w-100 d-flex flex-column">
                 <section>
                     <CollectionNavigation
-                        :history="history"
+                        :history-name="history.name"
                         :selected-collections="selectedCollections"
                         v-on="$listeners" />
                     <CollectionDetails :dsc="dsc" :writeable="isRoot" @update:dsc="updateDsc(dsc, $event)" />
-                    <CollectionOperations v-if="isRoot" :dsc="dsc" />
+                    <CollectionOperations v-if="isRoot && showControls" :dsc="dsc" />
                 </section>
                 <section class="position-relative flex-grow-1 scroller">
                     <div>
@@ -28,6 +28,7 @@
                                     :name="item.element_identifier"
                                     :expand-dataset="isExpanded(item)"
                                     :is-dataset="item.element_type == 'hda'"
+                                    :filterable="filterable"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @view-collection="onViewSubCollection" />
                             </template>
@@ -62,6 +63,8 @@ export default {
     props: {
         history: { type: Object, required: true },
         selectedCollections: { type: Array, required: true },
+        showControls: { type: Boolean, default: true },
+        filterable: { type: Boolean, default: false },
     },
     data() {
         return {

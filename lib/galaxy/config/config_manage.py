@@ -1,15 +1,21 @@
-import argparse
-import math
 import os
 import shutil
 import sys
 import tempfile
+from argparse import (
+    ArgumentParser,
+    Namespace,
+)
 from io import StringIO
 from textwrap import TextWrapper
 from typing import (
     Any,
+    Callable,
+    Dict,
     List,
     NamedTuple,
+    Optional,
+    Tuple,
 )
 
 import yaml
@@ -34,12 +40,12 @@ from galaxy.config import (
     REPORTS_CONFIG_SCHEMA_PATH,
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
-from galaxy.config.schema import (
-    AppSchema,
-    OPTION_DEFAULTS,
-)
+from galaxy.config.schema import AppSchema
 from galaxy.util import safe_makedirs
-from galaxy.util.properties import nice_config_parser
+from galaxy.util.properties import (
+    nice_config_parser,
+    NicerConfigParser,
+)
 from galaxy.util.yaml_util import (
     ordered_dump,
     ordered_load,
@@ -50,10 +56,7 @@ DESCRIPTION = "Convert configuration files."
 APP_DESCRIPTION = """Application to target for operation (i.e. galaxy, tool_shed, or reports))"""
 DRY_RUN_DESCRIPTION = """If this action modifies files, just print what would be the result and continue."""
 UNKNOWN_OPTION_MESSAGE = "Option [%s] not found in schema - either it is invalid or the Galaxy team hasn't documented it. If invalid, you should manually remove it. If the option is valid but undocumented, please file an issue with the Galaxy team."
-USING_SAMPLE_MESSAGE = "Path [%s] not a file, using sample."
-EXTRA_SERVER_MESSAGE = "Additional server section after [%s] encountered [%s], will be ignored."
-MISSING_FILTER_TYPE_MESSAGE = "Missing filter type for section [%s], it will be ignored."
-UNHANDLED_FILTER_TYPE_MESSAGE = "Unhandled filter type encountered [%s] for section [%s]."
+USING_SAMPLE_MESSAGE = "Config file not found, using sample."
 NO_APP_MAIN_MESSAGE = "No app:main section found, using application defaults throughout."
 YAML_COMMENT_WRAPPER = TextWrapper(
     initial_indent="# ", subsequent_indent="# ", break_long_words=False, break_on_hyphens=False
@@ -64,12 +67,32 @@ RST_DESCRIPTION_WRAPPER = TextWrapper(
 DROP_OPTION_VALUE = object()
 
 
-class _OptionAction:
-    def converted(self, args, app_desc, key, value):
-        pass
+class App(NamedTuple):
+    config_paths: List[str]
+    default_port: str
+    expected_app_factories: List[str]
+    destination: str
+    schema_path: str
 
-    def lint(self, args, app_desc, key, value):
-        pass
+    @property
+    def app_name(self) -> str:
+        return os.path.splitext(os.path.basename(self.destination))[0]
+
+    @property
+    def sample_destination(self) -> str:
+        return self.destination + ".sample"
+
+    @property
+    def schema(self) -> AppSchema:
+        return AppSchema(self.schema_path, self.app_name)
+
+
+class _OptionAction:
+    def converted(self, args: Namespace, app_desc: App, key: str, value: Any) -> Tuple[str, Any]:
+        raise NotImplementedError()
+
+    def lint(self, args: Namespace, app_desc: App, key: str, value: Any) -> None:
+        raise NotImplementedError()
 
 
 class _DeprecatedAction(_OptionAction):
@@ -80,7 +103,7 @@ class _DeprecatedAction(_OptionAction):
 class _DeprecatedAndDroppedAction(_OptionAction):
     def converted(self, args, app_desc, key, value):
         print(f"Option [{key}] has been deprecated and dropped. It is not included in converted configuration.")
-        return DROP_OPTION_VALUE
+        return key, DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
         print(f"Option [{key}] has been deprecated. Option should be dropped without replacement.")
@@ -90,7 +113,7 @@ class _PasteAppFactoryAction(_OptionAction):
     def converted(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
             raise Exception(f"Ending convert process - unknown paste factory encountered [{value}]")
-        return DROP_OPTION_VALUE
+        return key, DROP_OPTION_VALUE
 
     def lint(self, args, app_desc, key, value):
         if value not in app_desc.expected_app_factories:
@@ -98,43 +121,41 @@ class _PasteAppFactoryAction(_OptionAction):
 
 
 class _ProductionUnsafe(_OptionAction):
-    def __init__(self, unsafe_value):
+    def __init__(self, unsafe_value: Any) -> None:
         self.unsafe_value = unsafe_value
 
     def lint(self, args, app_desc, key, value):
         if str(value).lower() == str(self.unsafe_value).lower():
-            template = "Problem - option [%s] should not be set to [%s] in production environments - it is unsafe."
-            message = template % (key, value)
-            print(message)
+            print(f"Problem - option [{key}] should not be set to [{value}] in production environments - it is unsafe.")
 
 
 class _ProductionPerformance(_OptionAction):
     def lint(self, args, app_desc, key, value):
-        template = "Problem - option [%s] should not be set to [%s] in production environments - it may cause performance issues or instability."
-        message = template % (key, value)
-        print(message)
+        print(
+            f"Problem - option [{key}] should not be set to [{value}] in production environments - it may cause performance issues or instability."
+        )
 
 
 class _HandleFilterWithAction(_OptionAction):
     def converted(self, args, app_desc, key, value):
         print("filter-with converted to prefixed module load of uwsgi module, dropping from converted configuration")
-        return DROP_OPTION_VALUE
+        return key, DROP_OPTION_VALUE
 
 
 class _RenameAction(_OptionAction):
-    def __init__(self, new_name):
+    def __init__(self, new_name: str) -> None:
         self.new_name = new_name
 
     def converted(self, args, app_desc, key, value):
-        return (self.new_name, value)
+        return self.new_name, value
 
-    def lint(self, args, app_desc, key, value):
-        template = "Problem - option [%s] has been renamed (possibly with slightly different behavior) to [%s]."
-        message = template % (key, self.new_name)
-        print(message)
+    def lint(self, args, app_desc, key, value) -> None:
+        print(
+            f"Problem - option [{key}] has been renamed (possibly with slightly different behavior) to [{self.new_name}]."
+        )
 
 
-OPTION_ACTIONS = {
+OPTION_ACTIONS: Dict[str, _OptionAction] = {
     "use_beaker_session": _DeprecatedAndDroppedAction(),
     "use_interactive": _DeprecatedAndDroppedAction(),
     "session_type": _DeprecatedAndDroppedAction(),
@@ -143,9 +164,11 @@ OPTION_ACTIONS = {
     "session_secret": _DeprecatedAndDroppedAction(),
     "paste.app_factory": _PasteAppFactoryAction(),
     "filter-with": _HandleFilterWithAction(),
-    "debug": _ProductionUnsafe(True),
+    "debug": _DeprecatedAndDroppedAction(),
     "serve_xss_vulnerable_mimetypes": _ProductionUnsafe(True),
-    "use_printdebug": _ProductionUnsafe(True),
+    "use_printdebug": _DeprecatedAndDroppedAction(),
+    "use_lint": _DeprecatedAndDroppedAction(),
+    "use_profile": _DeprecatedAndDroppedAction(),
     "id_secret": _ProductionUnsafe("USING THE DEFAULT IS NOT SECURE!"),
     "master_api_key": _RenameAction("bootstrap_admin_api_key"),
     "bootstrap_admin_api_key": _ProductionUnsafe("changethis"),
@@ -183,30 +206,10 @@ OPTION_ACTIONS = {
 }
 
 
-class App(NamedTuple):
-    config_paths: List[str]
-    default_port: str
-    expected_app_factories: List[str]
-    destination: str
-    schema_path: str
-
-    @property
-    def app_name(self):
-        return os.path.splitext(os.path.basename(self.destination))[0]
-
-    @property
-    def sample_destination(self):
-        return self.destination + ".sample"
-
-    @property
-    def schema(self):
-        return AppSchema(self.schema_path, self.app_name)
-
-
 class OptionValue(NamedTuple):
     name: str
     value: Any
-    option: Any
+    option: Dict[str, Any]
 
 
 GALAXY_APP = App(
@@ -233,29 +236,25 @@ REPORTS_APP = App(
 APPS = {"galaxy": GALAXY_APP, "tool_shed": SHED_APP, "reports": REPORTS_APP}
 
 
-def main(argv=None):
+def main(argv: Optional[List[str]] = None) -> None:
     """Entry point for conversion process."""
     if argv is None:
         argv = sys.argv[1:]
-    args = _arg_parser().parse_args(argv)
-    app_name = args.app
-    app_desc = APPS.get(app_name)
-    action = args.action
-    action_func = ACTIONS[action]
-    action_func(args, app_desc)
-
-
-def _arg_parser():
-    parser = argparse.ArgumentParser(description=DESCRIPTION)
+    parser = ArgumentParser(description=DESCRIPTION)
     parser.add_argument("action", metavar="ACTION", type=str, choices=list(ACTIONS.keys()), help="action to perform")
     parser.add_argument("app", metavar="APP", type=str, nargs="?", help=APP_DESCRIPTION)
     parser.add_argument("--add-comments", default=False, action="store_true")
     parser.add_argument("--dry-run", default=False, action="store_true", help=DRY_RUN_DESCRIPTION)
     parser.add_argument("--galaxy_root", default=".", type=str)
-    return parser
+    args = parser.parse_args(argv)
+    app_name = args.app
+    app_desc = APPS[app_name]
+    action = args.action
+    action_func = ACTIONS[action]
+    action_func(args, app_desc)
 
 
-def _to_rst(args, app_desc, heading_level="~"):
+def _to_rst(args: Namespace, app_desc: App) -> None:
     rst = StringIO()
     schema = app_desc.schema
     for key, value in schema.app_schema.items():
@@ -266,11 +265,11 @@ def _to_rst(args, app_desc, heading_level="~"):
             default = "false"
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
-        _write_option_rst(args, rst, key, heading_level, option_value)
+        _write_option_rst(args, rst, key, "~", option_value)
     print(rst.getvalue())
 
 
-def _write_option_rst(args, rst, key, heading_level, option_value):
+def _write_option_rst(args: Namespace, rst: StringIO, key: str, heading_level: str, option_value: OptionValue) -> None:
     title = f"``{key}``"
     heading = heading_level * len(title)
     rst.write(f"{heading}\n{title}\n{heading}\n\n")
@@ -294,24 +293,24 @@ def _write_option_rst(args, rst, key, heading_level, option_value):
     rst.write("\n\n")
 
 
-def _find_config(args, app_desc):
+def _find_config(args: Namespace, app_desc: App) -> str:
     path = os.path.join(args.galaxy_root, app_desc.destination)
     if not os.path.exists(path):
-        path = None
+        path = ""
 
         for possible_ini_config_rel in app_desc.config_paths:
             possible_ini_config = os.path.join(args.galaxy_root, possible_ini_config_rel)
             if os.path.exists(possible_ini_config):
                 path = possible_ini_config
 
-    if path is None:
-        _warn(USING_SAMPLE_MESSAGE % path)
+    if not path:
+        _warn(USING_SAMPLE_MESSAGE)
         path = os.path.join(args.galaxy_root, app_desc.sample_destination)
 
     return path
 
 
-def _find_app_options(app_desc, path):
+def _find_app_options(app_desc: App, path: str) -> Dict[str, Any]:
     """Load app (as opposed to server) options from specified path.
 
     Supplied ``path`` may be either YAML or ini file.
@@ -321,11 +320,11 @@ def _find_app_options(app_desc, path):
         app_items = _find_app_options_from_config_parser(p)
     else:
         raw_config = _order_load_path(path)
-        app_items = raw_config.get(app_desc.app_name, None) or {}
+        app_items = raw_config.get(app_desc.app_name) or {}
     return app_items
 
 
-def _find_app_options_from_config_parser(p):
+def _find_app_options_from_config_parser(p: NicerConfigParser) -> Dict[str, Any]:
     if not p.has_section("app:main"):
         _warn(NO_APP_MAIN_MESSAGE)
         app_items = {}
@@ -335,7 +334,7 @@ def _find_app_options_from_config_parser(p):
     return app_items
 
 
-def _lint(args, app_desc):
+def _lint(args: Namespace, app_desc: App) -> None:
     path = _find_config(args, app_desc)
     if not os.path.exists(path):
         raise Exception(f"Expected configuration file [{path}] not found.")
@@ -346,7 +345,7 @@ def _lint(args, app_desc):
             option_action.lint(args, app_desc, key, value)
 
 
-def _validate(args, app_desc):
+def _validate(args: Namespace, app_desc: App) -> None:
     if Core is None:
         raise Exception("Cannot validate file, pykwalify is not installed.")
     path = _find_config(args, app_desc)
@@ -358,7 +357,7 @@ def _validate(args, app_desc):
     with tempfile.NamedTemporaryFile("w", delete=False, suffix=".yml") as config_p:
         ordered_dump(raw_config, config_p)
 
-    def _clean(p, k, v):
+    def _clean(p: Tuple[str, ...], k: str, v: Any) -> bool:
         return k not in ["reloadable", "path_resolves_to", "per_host", "deprecated_alias"]
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
@@ -373,18 +372,7 @@ def _validate(args, app_desc):
     c.validate()
 
 
-class PrefixFilter:
-    def __init__(self, name, prefix):
-        self.name = name
-        self.prefix = prefix
-
-
-class GzipFilter:
-    def __init__(self, name):
-        self.name = name
-
-
-def _run_conversion(args, app_desc):
+def _run_conversion(args: Namespace, app_desc: App) -> None:
     ini_config = _find_config(args, app_desc)
     if ini_config and not _is_ini(ini_config):
         _warn(f"Cannot convert YAML file {ini_config}, this option is only for ini config files.")
@@ -395,20 +383,15 @@ def _run_conversion(args, app_desc):
 
     p = nice_config_parser(ini_config)
     app_items = _find_app_options_from_config_parser(p)
-    app_dict = {}
+    app_dict: Dict[str, OptionValue] = {}
     schema = app_desc.schema
     for key, value in app_items.items():
         if key in ["__file__", "here"]:
             continue
 
-        if key in OPTION_ACTIONS:
-            option_action = OPTION_ACTIONS.get(key)
-            new_value = option_action.converted(args, app_desc, key, value)
-            if new_value:
-                if isinstance(new_value, tuple):
-                    key, value = new_value
-                else:
-                    value = new_value
+        option_action = OPTION_ACTIONS.get(key)
+        if option_action:
+            key, value = option_action.converted(args, app_desc, key, value)
 
         if value is DROP_OPTION_VALUE:
             continue
@@ -426,11 +409,11 @@ def _run_conversion(args, app_desc):
     _replace_file(args, f, app_desc, ini_config, destination)
 
 
-def _is_ini(path):
+def _is_ini(path: str) -> bool:
     return path.endswith(".ini") or path.endswith(".ini.sample")
 
 
-def _replace_file(args, f, app_desc, from_path, to_path):
+def _replace_file(args: Namespace, f: StringIO, app_desc: App, from_path: str, to_path: str) -> None:
     _write_to_file(args, f, to_path)
     backup_path = f"{from_path}.backup"
     print(f"Moving [{from_path}] to [{backup_path}]")
@@ -440,7 +423,7 @@ def _replace_file(args, f, app_desc, from_path, to_path):
         shutil.move(from_path, backup_path)
 
 
-def _build_sample_yaml(args, app_desc):
+def _build_sample_yaml(args: Namespace, app_desc: App) -> None:
     schema = app_desc.schema
     f = StringIO()
     description = getattr(schema, "description", None)
@@ -457,11 +440,8 @@ def _build_sample_yaml(args, app_desc):
     _write_to_file(args, f, destination)
 
 
-def _write_to_file(args, f, path):
-    if hasattr(f, "getvalue"):
-        contents = f.getvalue()
-    else:
-        contents = f
+def _write_to_file(args: Namespace, f: StringIO, path: str) -> None:
+    contents = f.getvalue()
     if args.dry_run:
         contents_indented = "\n".join(f" |{line}" for line in contents.splitlines())
         print(f"Overwriting {path} with the following contents:\n{contents_indented}")
@@ -473,7 +453,7 @@ def _write_to_file(args, f, path):
             to_f.write(contents)
 
 
-def _order_load_path(path):
+def _order_load_path(path: str) -> Dict[str, Any]:
     """Load (with ``_ordered_load``) on specified path (a YAML file)."""
     with open(path) as f:
         # Allow empty mapping (not allowed by pykwalify)
@@ -481,27 +461,27 @@ def _order_load_path(path):
         return raw_config
 
 
-def _write_sample_section(args, f, section_header, schema, as_comment=True):
+def _write_sample_section(args: Namespace, f: StringIO, section_header: str, schema: AppSchema) -> None:
     _write_header(f, section_header)
     for key, value in schema.app_schema.items():
         default = None if "default" not in value else value["default"]
         option = schema.get_app_option(key)
         option_value = OptionValue(key, default, option)
         key = option.get("key", key)
-        _write_option(args, f, key, option_value, as_comment=as_comment)
+        _write_option(args, f, key, option_value, as_comment=True)
 
 
-def _write_section(args, f, section_header, section_dict):
+def _write_section(args: Namespace, f: StringIO, section_header: str, section_dict: Dict[str, OptionValue]) -> None:
     _write_header(f, section_header)
     for key, option_value in section_dict.items():
         _write_option(args, f, key, option_value)
 
 
-def _write_header(f, section_header):
+def _write_header(f: StringIO, section_header: str) -> None:
     f.write(f"{section_header}:\n\n")
 
 
-def _write_option(args, f, key, option_value, as_comment=False):
+def _write_option(args: Namespace, f: StringIO, key: str, option_value: OptionValue, as_comment: bool = False) -> None:
     option, value = _parse_option_value(option_value)
     desc = _get_option_desc(option)
     comment = ""
@@ -509,35 +489,33 @@ def _write_option(args, f, key, option_value, as_comment=False):
         # Wrap and comment desc, replacing whitespaces with a space, except
         # for double newlines which are replaced with a single newline.
         comment += "\n".join("\n".join(YAML_COMMENT_WRAPPER.wrap(_)) for _ in desc.split("\n\n")) + "\n"
-    as_comment_str = "#" if as_comment else ""
-    key_val_str = yaml.dump({key: value}, width=math.inf).lstrip("{").rstrip("\n}")
-    lines = f"{comment}{as_comment_str}{key_val_str}"
-    lines_idented = "\n".join(f"  {line}" for line in lines.split("\n"))
-    f.write(f"{lines_idented}\n\n")
+    key_val_str = yaml.dump({key: value}, width=sys.maxsize).lstrip("{").rstrip("\n}")
+    if as_comment:
+        # key_val_str can span multiple lines, e.g. if value is a dict
+        key_val_str = "\n".join(f"#{row}" for row in key_val_str.split("\n"))
+    lines = f"{comment}{key_val_str}"
+    lines_indented = "\n".join(f"  {line}" for line in lines.split("\n"))
+    f.write(f"{lines_indented}\n\n")
 
 
-def _parse_option_value(option_value):
-    if isinstance(option_value, OptionValue):
-        option = option_value.option
-        value = option_value.value
-        # Hack to get nicer YAML values during conversion
-        if option.get("type", "str") == "bool":
-            value = str(value).lower() == "true"
-        elif option.get("type", "str") == "int":
-            if value is None:
-                raise Exception(f"Failed to parse value for {option}, expected int got None")
-            value = int(value)
-    else:
-        value = option_value
-        option = OPTION_DEFAULTS
+def _parse_option_value(option_value: OptionValue) -> Tuple[Dict[str, Any], Any]:
+    option = option_value.option
+    value = option_value.value
+    # Hack to get nicer YAML values during conversion
+    if option.get("type", "str") == "bool":
+        value = str(value).lower() == "true"
+    elif option.get("type", "str") == "int":
+        if value is None:
+            raise Exception(f"Failed to parse value for {option}, expected int got None")
+        value = int(value)
     return option, value
 
 
-def _warn(message):
+def _warn(message: str) -> None:
     print(f"WARNING: {message}")
 
 
-def _get_option_desc(option):
+def _get_option_desc(option: Dict[str, Any]) -> str:
     desc = option["desc"]
     parent_dir = option.get("path_resolves_to")
     if parent_dir:
@@ -546,7 +524,7 @@ def _get_option_desc(option):
     return desc
 
 
-ACTIONS = {
+ACTIONS: Dict[str, Callable] = {
     "convert": _run_conversion,
     "build_sample_yaml": _build_sample_yaml,
     "validate": _validate,

@@ -1,8 +1,11 @@
+import os
+
 import pytest
 
 from galaxy.exceptions import InvalidFileFormatError
 from galaxy.util import properties
 from galaxy.util.properties import (
+    get_from_env,
     nice_config_parser,
     read_properties_from_file,
 )
@@ -10,6 +13,28 @@ from galaxy.util.properties import (
 KEY1, KEY2, KEY3, KEY4, KEY5, KEY6 = "k1", "k2", "k3", "k4", "k5", "k6"
 VAL1, VAL2, VAL3, VAL4, VAL5, VAL6 = 1, 2, 3, 4, 5, 6
 OTHER_SECTION = "other"
+
+
+def test_get_from_env(monkeypatch):
+    prefixes = ["pre1_", "pre2_", "pre3_"]
+
+    monkeypatch.setenv("pre1_a", "a-is-set")
+    monkeypatch.setenv("pre2_b", "b-is-set")
+
+    assert get_from_env("a", prefixes, "a-default") == "a-is-set"  # selected from first prefix
+    assert get_from_env("b", prefixes, "b-default") == "b-is-set"  # selected from second prefix
+    assert get_from_env("c", prefixes, "c-default") == "c-default"  # default
+
+
+def test_get_from_env__no_default(monkeypatch):
+    assert get_from_env("a", ["some", "random", "prefixes"]) is None
+
+
+def test_get_from_env__empty_prefix_ignored(monkeypatch):
+    monkeypatch.setenv("a", "a-without-prefix-is-set")
+    assert os.getenv("a") == "a-without-prefix-is-set"
+
+    assert get_from_env("a", ["", None], "a-default") == "a-default"  # type: ignore[list-item]
 
 
 @pytest.fixture

@@ -6,9 +6,9 @@ from requests import (
     put,
 )
 
+from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
 from galaxy_test.base.populators import skip_without_tool
-from ._framework import ApiTestCase
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
 TEST_USER_EMAIL_DELETE = "user_for_delete_test@bx.psu.edu"
@@ -16,7 +16,7 @@ TEST_USER_EMAIL_PURGE = "user_for_purge_test@bx.psu.edu"
 TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 
 
-class UsersApiTestCase(ApiTestCase):
+class TestUsersApi(ApiTestCase):
     def test_index(self):
         self._setup_user(TEST_USER_EMAIL)
         all_users_response = self._get("users", admin=True)
@@ -52,7 +52,7 @@ class UsersApiTestCase(ApiTestCase):
             update_response = self.__update(user, username=new_name)
             self._assert_status_code_is(update_response, 200)
             update_json = update_response.json()
-            self.assertEqual(update_json["username"], new_name)
+            assert update_json["username"] == new_name
 
             # too short
             update_response = self.__update(user, username="")
@@ -75,7 +75,7 @@ class UsersApiTestCase(ApiTestCase):
         update_response = put(update_url, data=json.dumps(dict(username=new_name)))
         self._assert_status_code_is(update_response, 200)
         update_json = update_response.json()
-        self.assertEqual(update_json["username"], new_name)
+        assert update_json["username"] == new_name
 
     def test_delete_user(self):
         user = self._setup_user(TEST_USER_EMAIL_DELETE)
@@ -111,27 +111,65 @@ class UsersApiTestCase(ApiTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
         response = get(url).json()
-        self.assertEqual(response["username"], user["username"])
-        self.assertEqual(response["email"], TEST_USER_EMAIL)
+        assert response["username"] == user["username"]
+        assert response["email"] == TEST_USER_EMAIL
         put(url, data=json.dumps(dict(username="newname", email="new@email.email")))
         response = get(url).json()
-        self.assertEqual(response["username"], "newname")
-        self.assertEqual(response["email"], "new@email.email")
+        assert response["username"] == "newname"
+        assert response["email"] == "new@email.email"
         put(url, data=json.dumps(dict(username=user["username"], email=TEST_USER_EMAIL)))
         response = get(url).json()
-        self.assertEqual(response["username"], user["username"])
-        self.assertEqual(response["email"], TEST_USER_EMAIL)
+        assert response["username"] == user["username"]
+        assert response["email"] == TEST_USER_EMAIL
         put(url, data=json.dumps({"address_0|desc": "_desc"}))
         response = get(url).json()
-        self.assertEqual(len(response["addresses"]), 1)
-        self.assertEqual(response["addresses"][0]["desc"], "_desc")
+        assert len(response["addresses"]) == 1
+        assert response["addresses"][0]["desc"] == "_desc"
 
-    def test_create_api_key(self):
-        user = self._setup_user(TEST_USER_EMAIL)
-        user_id = user["id"]
-        response = self._put(f"users/{user_id}/api_key/inputs", admin=True)
+    def test_manage_api_key(self):
+        with self._different_user("manage-api-key-test@user.com"):
+            user_id = self._get_current_user_id()
+            # Initially we have an API key because it is bootstrapped for tests
+            response = self._get(f"users/{user_id}/api_key")
+            user_api_key = response.json()
+            assert user_api_key
+            # Test detailed endpoint
+            response = self._get(f"users/{user_id}/api_key/detailed")
+            api_key = response.json()
+            assert api_key["key"] == user_api_key
+            # Delete user API key
+            response = self._delete(f"users/{user_id}/api_key")
+            self._assert_status_code_is(response, 204)
+            # No API key anymore, so the detailed request returns no content 204
+            response = self._get(f"users/{user_id}/api_key/detailed")
+            self._assert_status_code_is(response, 204)
+            # create new as admin
+            response = self._post(f"users/{user_id}/api_key", admin=True)
+            self._assert_status_code_is_ok(response)
+            new_api_key = response.json()
+            assert new_api_key
+            assert new_api_key != user_api_key
+
+    def test_only_admin_can_manage_other_users_api_key(self):
+        with self._different_user():
+            other_user_id = self._get_current_user_id()
+        current_user_id = self._get_current_user_id()
+        # Users cannot access other users API keys
+        assert current_user_id != other_user_id
+        response = self._get(f"users/{other_user_id}/api_key")
+        self._assert_status_code_is(response, 403)
+        response = self._post(f"users/{other_user_id}/api_key")
+        self._assert_status_code_is(response, 403)
+        response = self._delete(f"users/{other_user_id}/api_key")
+        self._assert_status_code_is(response, 403)
+
+        # Admins can access other users API keys
+        response = self._get(f"users/{other_user_id}/api_key", admin=True)
         self._assert_status_code_is_ok(response)
-        self.assertEqual(response.json()["inputs"][0]["name"], "api-key")
+        response = self._post(f"users/{other_user_id}/api_key", admin=True)
+        self._assert_status_code_is_ok(response)
+        response = self._delete(f"users/{other_user_id}/api_key", admin=True)
+        self._assert_status_code_is_ok(response)
 
     @skip_without_tool("cat1")
     def test_favorites(self):
@@ -140,7 +178,7 @@ class UsersApiTestCase(ApiTestCase):
         url = self._api_url(f"users/{user['id']}/favorites/tools", params=dict(key=self.master_api_key))
         put_response = put(url, data=json.dumps({"object_id": "cat1"}))
         self._assert_status_code_is_ok(put_response)
-        self.assertEqual(put_response.json()["tools"][0], "cat1")
+        assert put_response.json()["tools"][0] == "cat1"
         # not implemented for workflows yet
         url = self._api_url(f"users/{user['id']}/favorites/workflows", params=dict(key=self.master_api_key))
         put_response = put(url, data=json.dumps({"object_id": "14ds68f4sda68gf46dsag4"}))
@@ -149,7 +187,7 @@ class UsersApiTestCase(ApiTestCase):
         url = self._api_url(f"users/{user['id']}/favorites/tools/cat1", params=dict(key=self.master_api_key))
         delete_response = delete(url)
         self._assert_status_code_is_ok(delete_response)
-        self.assertEqual(delete_response.json()["tools"], [])
+        assert delete_response.json()["tools"] == []
         # delete non-existing tool favorite
         url = self._api_url(
             f"users/{user['id']}/favorites/tools/madeuptoolthatdoes/not/exist/in/favs",
@@ -189,3 +227,9 @@ class UsersApiTestCase(ApiTestCase):
         self._assert_has_keys(userB, "id", "username", "total_disk_usage")
         assert userA["id"] == userB["id"]
         assert userA["username"] == userB["username"]
+
+    def _get_current_user_id(self):
+        users_response = self._get("users")
+        users = users_response.json()
+        assert len(users) == 1
+        return users[0]["id"]

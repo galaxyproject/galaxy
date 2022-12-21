@@ -151,8 +151,8 @@ that do not require a full Galaxy server. While these aren't really
 "unit" tests in a traditional sense, they are unit tests from a Galaxy
 perspective because they do not depend on a Galaxy server.
 
-These tests should be marked as requiring the environment variable
-``GALAXY_TEST_INCLUDE_SLOW`` to run.
+These tests should be marked with the `@external_dependency_management`
+decorator, and can then be tested with `tox -e mulled`.
 
 ### Continuous Integration
 

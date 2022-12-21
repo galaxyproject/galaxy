@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (flake8, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=22.09
+RELEASE_CURR:=23.0
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -27,7 +27,7 @@ docs: ## Generate HTML documentation.
 # Run following commands to setup the Python portion of the requirements:
 #   $ ./scripts/common_startup.sh
 #   $ . .venv/bin/activate
-#   $ pip install -r lib/galaxy/dependencies/dev-requirements.txt
+#   $ pip install -r requirements.txt -r lib/galaxy/dependencies/dev-requirements.txt
 	$(IN_VENV) $(MAKE) -C doc clean
 	$(IN_VENV) $(MAKE) -C doc html
 
@@ -46,9 +46,6 @@ format:  ## Format Python code base
 
 remove-unused-imports:  ## Remove unused imports in Python code base
 	$(IN_VENV) autoflake --in-place --remove-all-unused-imports --recursive --verbose lib/ test/
-
-list-dependency-updates: setup-venv
-	$(IN_VENV) pip list --outdated --format=columns
 
 docs-slides-ready:
 	test -f plantuml.jar ||  wget http://jaist.dl.sourceforge.net/project/plantuml/plantuml.jar
@@ -171,7 +168,22 @@ ifndef YARN
 else
 	cd client && yarn install $(YARN_INSTALL_OPTS)
 endif
-	
+
+
+build-api-schema:
+	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
+
+remove-api-schema:
+	rm _schema.yaml
+
+update-client-api-schema: node-deps build-api-schema
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(MAKE) remove-api-schema
+
+lint-api-schema: build-api-schema
+	$(IN_VENV) npx --yes @redocly/cli lint _schema.yaml
+	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
+	$(MAKE) remove-api-schema
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build

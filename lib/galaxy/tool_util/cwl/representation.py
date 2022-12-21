@@ -34,7 +34,7 @@ class INPUT_TYPE(str, Enum):
     SELECT = "select"
     FIELD = "field"
     CONDITIONAL = "conditional"
-    DATA_COLLECTON = "data_collection"
+    DATA_COLLECTION = "data_collection"
 
 
 # There are two approaches to mapping CWL tool state to Galaxy tool state
@@ -77,9 +77,9 @@ TYPE_REPRESENTATIONS = [
     TypeRepresentation("directory", INPUT_TYPE.DATA, "a directory", None),
     TypeRepresentation("boolean", INPUT_TYPE.BOOLEAN, "a boolean", None),
     TypeRepresentation("text", INPUT_TYPE.TEXT, "a simple text field", None),
-    TypeRepresentation("record", INPUT_TYPE.DATA_COLLECTON, "record as a dataset collection", "record"),
+    TypeRepresentation("record", INPUT_TYPE.DATA_COLLECTION, "record as a dataset collection", "record"),
     TypeRepresentation("json", INPUT_TYPE.TEXT, "arbitrary JSON structure", None),
-    TypeRepresentation("array", INPUT_TYPE.DATA_COLLECTON, "as a dataset list", "list"),
+    TypeRepresentation("array", INPUT_TYPE.DATA_COLLECTION, "as a dataset list", "list"),
     TypeRepresentation("enum", INPUT_TYPE.TEXT, "enum value", None),  # TODO: make this a select...
     TypeRepresentation("field", INPUT_TYPE.FIELD, "arbitrary JSON structure", None),
 ]

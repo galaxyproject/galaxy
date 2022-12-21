@@ -17,10 +17,7 @@ import random
 import string
 from collections import defaultdict
 from collections.abc import Callable
-from datetime import (
-    datetime,
-    timedelta,
-)
+from datetime import timedelta
 from enum import Enum
 from string import Template
 from typing import (
@@ -100,7 +97,6 @@ from sqlalchemy.orm import (
     relationship,
 )
 from sqlalchemy.orm.collections import attribute_mapped_collection
-from sqlalchemy.orm.decl_api import DeclarativeMeta
 from sqlalchemy.sql import exists
 from typing_extensions import Protocol
 
@@ -149,7 +145,10 @@ from galaxy.util.form_builder import (
     WorkflowField,
     WorkflowMappingField,
 )
-from galaxy.util.hash_util import new_secure_hash
+from galaxy.util.hash_util import (
+    md5_hash_str,
+    new_insecure_hash,
+)
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -176,13 +175,23 @@ YIELD_PER_ROWS = 100
 
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
+
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
+
     from galaxy.datatypes.data import Data
+    from galaxy.tools import DefaultToolState
+    from galaxy.workflow.modules import WorkflowModule
 
     class _HasTable:
         table: Table
         __table__: Table
 
 else:
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
+
     _HasTable = object
 
 
@@ -194,7 +203,7 @@ def get_uuid(uuid: Optional[Union[UUID, str]] = None) -> UUID:
     return UUID(str(uuid))
 
 
-class Base(metaclass=DeclarativeMeta):
+class Base(_HasTable, metaclass=DeclarativeMeta):
     __abstract__ = True
     registry = mapper_registry
     metadata = mapper_registry.metadata
@@ -205,7 +214,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class RepresentById(_HasTable):
+class RepresentById:
     id: int
 
     def __repr__(self):
@@ -288,11 +297,11 @@ class SerializeFilesHandler(Protocol):
 class SerializationOptions:
     def __init__(
         self,
-        for_edit,
-        serialize_dataset_objects=None,
+        for_edit: bool,
+        serialize_dataset_objects: Optional[bool] = None,
         serialize_files_handler: Optional[SerializeFilesHandler] = None,
-        strip_metadata_files=None,
-    ):
+        strip_metadata_files: Optional[bool] = None,
+    ) -> None:
         self.for_edit = for_edit
         if serialize_dataset_objects is None:
             serialize_dataset_objects = for_edit
@@ -382,7 +391,7 @@ class UsesCreateAndUpdateTime:
         self.update_time = now()
 
 
-class WorkerProcess(Base, UsesCreateAndUpdateTime, _HasTable):
+class WorkerProcess(Base, UsesCreateAndUpdateTime):
     __tablename__ = "worker_process"
     __table_args__ = (UniqueConstraint("server_name", "hostname"),)
 
@@ -641,8 +650,8 @@ class User(Base, Dictifiable, RepresentById):
         if User.use_pbkdf2:
             self.password = galaxy.security.passwords.hash_password(cleartext)
         else:
-            self.password = new_secure_hash(text_type=cleartext)
-        self.last_password_change = datetime.now()
+            self.password = new_insecure_hash(text_type=cleartext)
+        self.last_password_change = now()
 
     def set_random_password(self, length=16):
         """
@@ -858,7 +867,7 @@ class User(Base, Dictifiable, RepresentById):
         session.flush()
 
 
-class PasswordResetToken(Base, _HasTable):
+class PasswordResetToken(Base):
     __tablename__ = "password_reset_token"
 
     token = Column(String(32), primary_key=True, unique=True, index=True)
@@ -2299,6 +2308,18 @@ class JobImportHistoryArchive(Base, RepresentById):
     history = relationship("History")
 
 
+class StoreExportAssociation(Base, RepresentById):
+    __tablename__ = "store_export_association"
+    __table_args__ = (Index("ix_store_export_object", "object_id", "object_type"),)
+
+    id = Column(Integer, primary_key=True)
+    task_uuid = Column(UUIDType(), index=True, unique=True)
+    create_time = Column(DateTime, default=now)
+    object_type = Column(TrimmedString(32))
+    object_id = Column(Integer)
+    export_metadata = Column(JSONType)
+
+
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"
 
@@ -2595,6 +2616,10 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     @property
     def empty(self):
         return self.hid_counter is None or self.hid_counter == 1
+
+    @property
+    def count(self):
+        return self.hid_counter - 1
 
     def add_pending_items(self, set_output_hid=True):
         # These are assumed to be either copies of existing datasets or new, empty datasets,
@@ -3342,7 +3367,7 @@ class StorableObject:
             sa_session.flush()
 
 
-class Dataset(Base, StorableObject, Serializable, _HasTable):
+class Dataset(Base, StorableObject, Serializable):
     __tablename__ = "dataset"
 
     id = Column(Integer, primary_key=True)
@@ -3817,6 +3842,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     conversion_messages = Dataset.conversion_messages
     permitted_actions = Dataset.permitted_actions
     purged: bool
+    creating_job_associations: List[Union[JobToOutputDatasetCollectionAssociation, JobToOutputDatasetAssociation]]
 
     class validated_states(str, Enum):
         UNKNOWN = "unknown"
@@ -4062,10 +4088,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
     def hashes(self):
         return self.dataset.hashes
 
-    def get_raw_data(self):
-        """Returns the full data. To stream it open the file_name and read/write as needed"""
-        return self.datatype.get_raw_data(self)
-
     def get_mime(self):
         """Returns the mime type of the data"""
         try:
@@ -4309,9 +4331,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
 
     def get_display_applications(self, trans):
         return self.datatype.get_display_applications_by_dataset(self, trans)
-
-    def get_visualizations(self):
-        return self.datatype.get_visualizations(self)
 
     def get_datasources(self, trans):
         """
@@ -6607,7 +6626,7 @@ class GalaxySession(Base, RepresentById):
     def __init__(self, is_valid=False, **kwd):
         super().__init__(**kwd)
         self.is_valid = is_valid
-        self.last_action = self.last_action or datetime.now()
+        self.last_action = self.last_action or now()
 
     def add_history(self, history, association=None):
         if association is None:
@@ -6828,7 +6847,7 @@ class Workflow(Base, Dictifiable, RepresentById):
     source_metadata = Column(JSONType)
     uuid = Column(UUIDType, nullable=True)
 
-    steps = relationship(
+    steps: List["WorkflowStep"] = relationship(
         "WorkflowStep",
         back_populates="workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),  # type: ignore[has-type]
@@ -6879,7 +6898,7 @@ class Workflow(Base, Dictifiable, RepresentById):
             steps[step_id] = step
         return steps
 
-    def step_by_index(self, order_index):
+    def step_by_index(self, order_index: int):
         for step in self.steps:
             if order_index == step.order_index:
                 return step
@@ -6990,19 +7009,19 @@ class WorkflowStep(Base, RepresentById):
     workflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=False)
     subworkflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=True)
     dynamic_tool_id = Column(Integer, ForeignKey("dynamic_tool.id"), index=True, nullable=True)
-    type = Column(String(64))
+    type: str = Column(String(64))
     tool_id = Column(TEXT)
     tool_version = Column(TEXT)
     tool_inputs = Column(JSONType)
     tool_errors = Column(JSONType)
     position = Column(MutableJSONType)
     config = Column(JSONType)
-    order_index = Column(Integer)
+    order_index: int = Column(Integer)
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]
 
-    subworkflow = relationship(
+    subworkflow: Optional[Workflow] = relationship(
         "Workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
         back_populates="parent_workflow_steps",
@@ -7026,6 +7045,12 @@ class WorkflowStep(Base, RepresentById):
         "Workflow", primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id), back_populates="steps"
     )
 
+    # Injected attributes
+    # TODO: code using these should be refactored to not depend on these non-persistent fields
+    module: Optional["WorkflowModule"]
+    state: Optional["DefaultToolState"]
+    upgrade_messages: Optional[Dict]
+
     STEP_TYPE_TO_INPUT_TYPE = {
         "data_input": "dataset",
         "data_collection_input": "dataset_collection",
@@ -7035,6 +7060,10 @@ class WorkflowStep(Base, RepresentById):
 
     def __init__(self):
         self.uuid = uuid4()
+        self._input_connections_by_name = None
+
+    @reconstructor
+    def init_on_load(self):
         self._input_connections_by_name = None
 
     @property
@@ -7050,12 +7079,16 @@ class WorkflowStep(Base, RepresentById):
 
     @property
     def input_default_value(self):
-        tool_inputs = self.tool_inputs
-        tool_state = tool_inputs
+        tool_state = self.tool_inputs
         default_value = tool_state.get("default")
         if default_value:
             default_value = json.loads(default_value)["value"]
         return default_value
+
+    @property
+    def input_optional(self):
+        tool_state = self.tool_inputs
+        return tool_state.get("optional") or False
 
     def get_input(self, input_name):
         for step_input in self.inputs:
@@ -7199,7 +7232,9 @@ class WorkflowStep(Base, RepresentById):
         copied_step.workflow_outputs = copy_list(self.workflow_outputs, copied_step)
 
     def log_str(self):
-        return "WorkflowStep[index=%d,type=%s]" % (self.order_index, self.type)
+        return (
+            f"WorkflowStep[index={self.order_index},type={self.type},label={self.label},uuid={self.uuid},id={self.id}]"
+        )
 
     def clear_module_extras(self):
         # the module code adds random dynamic state to the step, this
@@ -7413,8 +7448,12 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         back_populates="parent_workflow_invocation",
         uselist=True,
     )
-    steps = relationship("WorkflowInvocationStep", back_populates="workflow_invocation")
-    workflow = relationship("Workflow")
+    steps = relationship(
+        "WorkflowInvocationStep",
+        back_populates="workflow_invocation",
+        order_by=lambda: WorkflowInvocationStep.order_index,
+    )
+    workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
         "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
     )
@@ -7890,6 +7929,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         ),
         back_populates="workflow_invocation_step",
         viewonly=True,
+    )
+    order_index = column_property(
+        select([WorkflowStep.order_index]).where(WorkflowStep.id == workflow_step_id).scalar_subquery()
     )
 
     subworkflow_invocation_id: column_property
@@ -8785,7 +8827,7 @@ class CustosAuthnzToken(Base, RepresentById):
     user = relationship("User", back_populates="custos_auth")
 
 
-class CloudAuthz(Base, _HasTable):
+class CloudAuthz(Base):
     __tablename__ = "cloudauthz"
 
     id = Column(Integer, primary_key=True)
@@ -8806,8 +8848,8 @@ class CloudAuthz(Base, _HasTable):
         self.provider = provider
         self.config = config
         self.authn_id = authn_id
-        self.last_update = datetime.now()
-        self.last_activity = datetime.now()
+        self.last_update = now()
+        self.last_activity = now()
         self.description = description
 
     def equals(self, user_id, provider, authn_id, config):
@@ -8821,7 +8863,7 @@ class CloudAuthz(Base, _HasTable):
         )
 
 
-class Page(Base, Dictifiable, RepresentById):
+class Page(Base, HasTags, Dictifiable, RepresentById):
     __tablename__ = "page"
     __table_args__ = (Index("ix_page_slug", "slug", mysql_length=200),)
 
@@ -8877,6 +8919,7 @@ class Page(Base, Dictifiable, RepresentById):
         "importable",
         "deleted",
         "username",
+        "email_hash",
     ]
 
     def to_dict(self, view="element"):
@@ -8891,6 +8934,11 @@ class Page(Base, Dictifiable, RepresentById):
     @property
     def username(self):
         return self.user.username
+
+    # email needed for hash generation
+    @property
+    def email_hash(self):
+        return md5_hash_str(self.user.email)
 
 
 class PageRevision(Base, Dictifiable, RepresentById):
@@ -8927,7 +8975,7 @@ class PageUserShareAssociation(Base, UserShareAssociation):
     page = relationship("Page", back_populates="users_shared_with")
 
 
-class Visualization(Base, RepresentById):
+class Visualization(Base, HasTags, RepresentById):
     __tablename__ = "visualization"
     __table_args__ = (
         Index("ix_visualization_dbkey", "dbkey", mysql_length=200),
@@ -9518,6 +9566,7 @@ class APIKeys(Base, RepresentById):
     user_id = Column(Integer, ForeignKey("galaxy_user.id"), index=True)
     key = Column(TrimmedString(32), index=True, unique=True)
     user = relationship("User", back_populates="api_keys")
+    deleted = Column(Boolean, index=True, default=False)
 
 
 def copy_list(lst, *args, **kwds):

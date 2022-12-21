@@ -720,7 +720,7 @@ class UploadDataset(Group):
 
 class Conditional(Group):
     type = "conditional"
-    value_from: Callable[["Conditional", ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
+    value_from: Callable[[ExpressionContext, "Conditional", "Tool"], Mapping[str, str]]
 
     def __init__(self):
         Group.__init__(self)

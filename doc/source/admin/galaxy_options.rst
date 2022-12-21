@@ -37,6 +37,22 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~
+``templates_dir``
+~~~~~~~~~~~~~~~~~
+
+:Description:
+    The directory containing custom templates for Galaxy, such as
+    HTML/text email templates. Defaults to 'templates'. Default
+    templates can be found in the Galaxy root under config/templates.
+    These can be copied to <templates_dir> if you wish to customize
+    them.
+    The value of this option will be resolved with respect to
+    <config_dir>.
+:Default: ``templates``
+:Type: str
+
+
 ~~~~~~~~~~~~~
 ``cache_dir``
 ~~~~~~~~~~~~~
@@ -57,10 +73,19 @@
 
 :Description:
     By default, Galaxy uses a SQLite database at
-    '<data_dir>/universe.sqlite'.  You may use a SQLAlchemy connection
+    '<data_dir>/universe.sqlite'. You may use a SQLAlchemy connection
     string to specify an external database instead.
     Sample default
     'sqlite:///<data_dir>/universe.sqlite?isolation_level=IMMEDIATE'
+    You may specify additional options that will be passed to the
+    SQLAlchemy database engine by using the prefix
+    "database_engine_option_". For some of these options, default
+    values are provided (e.g. see database_engine_option_pool_size,
+    etc.).
+    The same applies to `install_database_connection`, for which you
+    should use the "install_database_engine_option_" prefix.
+    For more options, please check SQLAlchemy's documentation at
+    https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
 :Default: ``None``
 :Type: str
 
@@ -590,22 +615,6 @@
     <config_dir>.
 :Default: ``tool_sheds_conf.xml``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``load_tool_shed_datatypes``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    This option controls whether legacy datatypes are loaded from
-    installed tool shed repositories. We're are in the process of
-    disabling Tool Shed datatypes. This option with a default of true
-    will be added in 22.01, we will disable the datatypes on the big
-    public servers during that release. This option will be switched
-    to False by default in 22.05 and this broken functionality will be
-    removed all together during some future release.
-:Default: ``true``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~
@@ -1893,7 +1902,8 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
-    Display the "Galaxy" text in the masthead.
+    This option has been deprecated, use the `logo_src` instead to
+    change the default logo including the galaxy brand title.
 :Default: ``true``
 :Type: bool
 
@@ -1992,8 +2002,7 @@
     file staging and Interactive Tool containers for communicating
     back with Galaxy via the API.
     If you plan to run Interactive Tools make sure the docker
-    container can reach this URL. For more details see
-    `job_conf.xml.interactivetools`.
+    container can reach this URL.
 :Default: ``http://localhost:8080``
 :Type: str
 
@@ -2042,7 +2051,7 @@
 
 :Description:
     The brand image source.
-:Default: ``/static/favicon.png``
+:Default: ``/static/favicon.svg``
 :Type: str
 
 
@@ -2735,7 +2744,7 @@
     edited or manipulated through the Admin control panel -- see
     "Manage Allowlist"
     The value of this option will be resolved with respect to
-    <mutable_config_dir>.
+    <managed_config_dir>.
 :Default: ``sanitize_allowlist.txt``
 :Type: str
 
@@ -3337,6 +3346,17 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~
+``post_user_logout_href``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    This is the default url to which users are redirected after they
+    log out.
+:Default: ``/root/login?is_logout_redirect=true``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``normalize_remote_user_email``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3798,9 +3818,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~
-``master_api_key``
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``bootstrap_admin_api_key``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     API key that allows performing some admin actions without actually
@@ -3808,6 +3828,73 @@
     if you need to bootstrap Galaxy, in particular to create a real
     admin user account via API. You should probably not set this on a
     production server.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_id``
+~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service ID for GA4GH services (exposed via the service-info
+    endpoint for the Galaxy DRS API). If unset, one will be generated
+    using the URL the target API requests are made against.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+    This value should likely reflect your service's URL. For instance
+    for usegalaxy.org this value should be org.usegalaxy. Particular
+    Galaxy implementations will treat this value as a prefix and
+    append the service type to this ID. For instance for the DRS
+    service "id" (available via the DRS API) for the above
+    configuration value would be org.usegalaxy.drs.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_organization_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service name for host organization (exposed via the service-info
+    endpoint for the Galaxy DRS API). If unset, one will be generated
+    using ga4gh_service_id.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_organization_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Organization URL for host organization (exposed via the
+    service-info endpoint for the Galaxy DRS API). If unset, one will
+    be generated using the URL the target API requests are made
+    against.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``ga4gh_service_environment``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Service environment (exposed via the service-info endpoint for the
+    Galaxy DRS API) for implemented GA4GH services.
+    Suggested values are prod, test, dev, staging.
+    For more information on GA4GH service definitions - check out
+    https://github.com/ga4gh-discovery/ga4gh-service-registry and
+    https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 :Default: ``None``
 :Type: str
 
@@ -4093,10 +4180,10 @@
     process and notifies itself of new jobs via in-memory queues.
     Jobs are run locally on the system on which Galaxy is started.
     Advanced job running capabilities can be configured through the
-    job configuration file.
+    job configuration file or the <job_config> option.
     The value of this option will be resolved with respect to
     <config_dir>.
-:Default: ``job_conf.xml``
+:Default: ``job_conf.yml``
 :Type: str
 
 
@@ -4150,15 +4237,15 @@
     When jobs fail due to job runner problems, Galaxy can be
     configured to retry these or reroute the jobs to new destinations.
     Very fine control of this is available with resubmit declarations
-    in job_conf.xml. For simple deployments of Galaxy though, the
+    in the job config. For simple deployments of Galaxy though, the
     following attribute can define resubmission conditions for all job
     destinations. If any job destination defines even one resubmission
-    condition explicitly in job_conf.xml - the condition described by
-    this option will not apply to that destination. For instance, the
-    condition: 'attempt < 3 and unknown_error and (time_running < 300
-    or time_since_queued < 300)' would retry up to two times jobs that
-    didn't fail due to detected memory or walltime limits but did fail
-    quickly (either while queueing or running). The commented out
+    condition explicitly in the job config - the condition described
+    by this option will not apply to that destination. For instance,
+    the condition: 'attempt < 3 and unknown_error and (time_running <
+    300 or time_since_queued < 300)' would retry up to two times jobs
+    that didn't fail due to detected memory or walltime limits but did
+    fail quickly (either while queueing or running). The commented out
     default below results in no default job resubmission condition,
     failing jobs are just failed outright.
 :Default: ``None``
@@ -4661,6 +4748,20 @@
 :Type: bool
 
 
+~~~~~~~~~~~~~~~~~~~~~
+``toolbox_auto_sort``
+~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    If true, the toolbox will be sorted by tool id when the toolbox is
+    loaded. This is useful for ensuring that tools are always
+    displayed in the same order in the UI.  If false, the order of
+    tools in the toolbox will be preserved as they are loaded from the
+    tool config files.
+:Default: ``true``
+:Type: bool
+
+
 ~~~~~~~~~~~~~~~~
 ``tool_filters``
 ~~~~~~~~~~~~~~~~
@@ -4766,6 +4867,24 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~
+``celery_conf``
+~~~~~~~~~~~~~~~
+
+:Description:
+    Configuration options passed to Celery.
+    To refer to a task by name, use the template `galaxy.foo` where
+    `foo` is the function name of the task defined in the
+    galaxy.celery.tasks module.
+    The `broker_url` option, if unset, defaults to the value of
+    `amqp_internal_connection`. The `result_backend` option must be
+    set if the `enable_celery_tasks` option is set.
+    For details, see Celery documentation at
+    https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+:Default: ``{'task_routes': {'galaxy.fetch_data': 'galaxy.external', 'galaxy.set_job_metadata': 'galaxy.external'}}``
+:Type: any
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``enable_celery_tasks``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -4776,26 +4895,6 @@
     see https://docs.galaxyproject.org/en/master/admin/production.html
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~
-``celery_broker``
-~~~~~~~~~~~~~~~~~
-
-:Description:
-    Celery broker (if unset falls back to amqp_internal_connection).
-:Default: ``None``
-:Type: str
-
-
-~~~~~~~~~~~~~~~~~~
-``celery_backend``
-~~~~~~~~~~~~~~~~~~
-
-:Description:
-    If set, it will be the results backend for Celery.
-:Default: ``None``
-:Type: str
 
 
 ~~~~~~~~~~~~~~
@@ -4859,7 +4958,7 @@
 :Description:
     Set remote path of the trained model (HDF5 file) for tool
     recommendation.
-:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5``
+:Default: ``https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5``
 :Type: str
 
 
@@ -4870,7 +4969,7 @@
 :Description:
     Set the number of predictions/recommendations to be made by the
     model
-:Default: ``10``
+:Default: ``20``
 :Type: int
 
 
@@ -4961,6 +5060,3 @@
     Display built-in converters in the tool panel.
 :Default: ``true``
 :Type: bool
-
-
-

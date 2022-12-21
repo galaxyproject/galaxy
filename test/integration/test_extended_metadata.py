@@ -28,6 +28,7 @@ TEST_TOOL_IDS = [
     "composite_output_tests",
     "metadata",
     "metadata_bam",
+    "discover_metadata_files",
     "output_format",
     "output_auto_format",
     "collection_paired_test",
@@ -42,7 +43,9 @@ TEST_TOOL_IDS = [
 ]
 
 
-class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestExtendedMetadataIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -91,7 +94,9 @@ class ExtendedMetadataIntegrationTestCase(integration_util.IntegrationTestCase):
         assert dataset["created_from_basename"] == "4.bed"
 
 
-class ExtendedMetadataDeferredIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -123,7 +128,6 @@ class ExtendedMetadataDeferredIntegrationTestCase(integration_util.IntegrationTe
 
 
 class ExtendedMetadataIntegrationInstance(integration_util.IntegrationInstance):
-    """Describe a Galaxy test instance with embedded pulsar configured."""
 
     framework_tool_and_types = True
 

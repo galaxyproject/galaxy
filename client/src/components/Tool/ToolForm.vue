@@ -33,7 +33,6 @@
                     <ToolCard
                         v-if="showForm"
                         :id="formConfig.id"
-                        :user="user"
                         :version="formConfig.version"
                         :title="formConfig.name"
                         :description="formConfig.description"
@@ -43,41 +42,58 @@
                         :disabled="disabled || showExecuting"
                         itemscope="itemscope"
                         itemtype="https://schema.org/CreativeWork"
-                        @onChangeVersion="onChangeVersion"
-                        @onUpdateFavorites="onUpdateFavorites">
+                        @onChangeVersion="onChangeVersion">
                         <template v-slot:body>
-                            <FormDisplay
-                                :id="toolId"
-                                :inputs="formConfig.inputs"
-                                :validation-scroll-to="validationScrollTo"
-                                @onChange="onChange"
-                                @onValidation="onValidation" />
-                            <FormElement
-                                v-if="emailAllowed(config, user)"
-                                id="send_email_notification"
-                                v-model="useEmail"
-                                title="Email notification"
-                                help="Send an email notification when the job completes."
-                                type="boolean" />
-                            <FormElement
-                                v-if="remapAllowed"
-                                id="rerun_remap_job_id"
-                                v-model="useJobRemapping"
-                                :title="remapTitle"
-                                :help="remapHelp"
-                                type="boolean" />
-                            <FormElement
-                                v-if="reuseAllowed(user)"
-                                id="use_cached_job"
-                                v-model="useCachedJobs"
-                                title="Attempt to re-use jobs with identical parameters?"
-                                help="This may skip executing jobs that you have already run."
-                                type="boolean" />
+                            <div class="mt-2 mb-4">
+                                <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                                <FormDisplay
+                                    :id="toolId"
+                                    :inputs="formConfig.inputs"
+                                    :validation-scroll-to="validationScrollTo"
+                                    @onChange="onChange"
+                                    @onValidation="onValidation" />
+                            </div>
+
+                            <div
+                                v-if="emailAllowed(config, user) || remapAllowed || reuseAllowed(user)"
+                                class="mt-2 mb-4">
+                                <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                                <FormElement
+                                    v-if="emailAllowed(config, user)"
+                                    id="send_email_notification"
+                                    v-model="useEmail"
+                                    title="Email notification"
+                                    help="Send an email notification when the job completes."
+                                    type="boolean" />
+                                <FormElement
+                                    v-if="remapAllowed"
+                                    id="rerun_remap_job_id"
+                                    v-model="useJobRemapping"
+                                    :title="remapTitle"
+                                    :help="remapHelp"
+                                    type="boolean" />
+                                <FormElement
+                                    v-if="reuseAllowed(user)"
+                                    id="use_cached_job"
+                                    v-model="useCachedJobs"
+                                    title="Attempt to re-use jobs with identical parameters?"
+                                    help="This may skip executing jobs that you have already run."
+                                    type="boolean" />
+                            </div>
+                        </template>
+                        <template v-slot:header-buttons>
+                            <ButtonSpinner
+                                title="Run Tool"
+                                class="btn-sm"
+                                :wait="showExecuting"
+                                :tooltip="tooltip"
+                                @onClick="onExecute(config, currentHistoryId)" />
                         </template>
                         <template v-slot:buttons>
                             <ButtonSpinner
                                 id="execute"
-                                title="Execute"
+                                title="Run Tool"
+                                class="mt-3 mb-3"
                                 :wait="showExecuting"
                                 :tooltip="tooltip"
                                 @onClick="onExecute(config, currentHistoryId)" />
@@ -91,6 +107,8 @@
 
 <script>
 import { getGalaxyInstance } from "app";
+import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { mapState } from "pinia";
 import { getToolFormData, updateToolFormData, submitJob } from "./services";
 import { allowCachedJobs } from "./utilities";
 import { refreshContentsWrapper } from "utils/data";
@@ -103,8 +121,10 @@ import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import ToolSuccess from "./ToolSuccess";
+import ToolRecommendation from "../ToolRecommendation";
 import UserHistories from "components/providers/UserHistories";
 import Webhook from "components/Common/Webhook";
+import Heading from "components/Common/Heading";
 
 export default {
     components: {
@@ -117,8 +137,10 @@ export default {
         FormElement,
         ToolEntryPoints,
         ToolSuccess,
+        ToolRecommendation,
         UserHistories,
         Webhook,
+        Heading,
     },
     props: {
         id: {
@@ -169,6 +191,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useHistoryItemsStore, ["getLatestCreateTime"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -179,7 +202,7 @@ export default {
             return id.endsWith(version) ? id : `${id}/${version}`;
         },
         tooltip() {
-            return `Execute: ${this.formConfig.name} (${this.formConfig.version})`;
+            return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
         },
         errorContentPretty() {
             return JSON.stringify(this.errorContent, null, 4);
@@ -199,21 +222,19 @@ export default {
             }
         },
     },
-    created() {
-        this.requestTool().then(() => {
+    watch: {
+        getLatestCreateTime() {
             const Galaxy = getGalaxyInstance();
             if (Galaxy && Galaxy.currHistoryPanel) {
-                console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
-                Galaxy.currHistoryPanel.collection.on("change", this.onHistoryChange, this);
+                console.debug("History change watcher detected a change.");
+                this.onHistoryChange();
             }
-        });
+        },
     },
-    beforeDestroy() {
-        const Galaxy = getGalaxyInstance();
-        if (Galaxy && Galaxy.currHistoryPanel) {
-            Galaxy.currHistoryPanel.collection.off("change", this.onHistoryChange, this);
-            console.debug(`ToolForm::beforeDestroy - Stopped listening to history changes. [${this.id}]`);
-        }
+    created() {
+        this.requestTool().then(() => {
+            console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
+        });
     },
     methods: {
         emailAllowed(config, user) {
@@ -248,9 +269,6 @@ export default {
         },
         onChangeVersion(newVersion) {
             this.requestTool(newVersion);
-        },
-        onUpdateFavorites(user, newFavorites) {
-            user.preferences["favorites"] = newFavorites;
         },
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;

@@ -2,12 +2,12 @@ import os
 import os.path
 import shutil
 import tempfile
-import unittest
 from math import isinf
 from typing import Optional
 
 from galaxy.tool_util.parser.factory import get_tool_source
 from galaxy.util import galaxy_directory
+from galaxy.util.unittest import TestCase
 
 TOOL_XML_1 = """
 <tool name="BWA Mapper" id="bwa" version="1.0.1" display_interface="true" require_login="true" hidden="true">
@@ -31,6 +31,11 @@ TOOL_XML_1 = """
         <container type="docker">mycool/bwa</container>
         <requirement type="package" version="1.0">bwa</requirement>
         <resource type="cores_min">1</resource>
+        <resource type="cuda_version_min">10.2</resource>
+        <resource type="cuda_compute_capability">6.1</resource>
+        <resource type="gpu_memory_min">4042</resource>
+        <resource type="cuda_device_count_min">1</resource>
+        <resource type="cuda_device_count_max">2</resource>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -125,6 +130,16 @@ requirements:
     version: 1.0.1
   - type: resource
     cores_min: 1
+  - type: resource
+    cuda_version_min: 10.2
+  - type: resource
+    cuda_compute_capability: 6.1
+  - type: resource
+    gpu_memory_min: 4042
+  - type: resource
+    cuda_device_count_min: 1
+  - type: resource
+    cuda_device_count_max: 2
 containers:
   - type: docker
     identifier: "awesome/bowtie"
@@ -216,7 +231,7 @@ def get_test_tool_source(source_file_name=None, source_contents=None, macro_cont
     return tool_source
 
 
-class BaseLoaderTestCase(unittest.TestCase):
+class BaseLoaderTestCase(TestCase):
     source_file_name: Optional[str] = None
     source_contents: Optional[str] = None
 
@@ -243,7 +258,7 @@ class BaseLoaderTestCase(unittest.TestCase):
         )
 
 
-class XmlExpressionLoaderTestCase(BaseLoaderTestCase):
+class TestXmlExpressionLoader(BaseLoaderTestCase):
     source_file_name = "expression.xml"
     source_contents = TOOL_EXPRESSION_XML_1
 
@@ -254,12 +269,7 @@ class XmlExpressionLoaderTestCase(BaseLoaderTestCase):
         assert self._tool_source.parse_tool_type() == "expression"
 
 
-class YamlExpressionLoaderTestCase(BaseLoaderTestCase):
-    source_file_name = "expression.yml"
-    source_contents = TOOL_EXPRESSION_XML_1
-
-
-class XmlLoaderTestCase(BaseLoaderTestCase):
+class TestXmlLoader(BaseLoaderTestCase):
     source_file_name = "bwa.xml"
     source_contents = TOOL_XML_1
 
@@ -316,6 +326,11 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
+        assert resource_requirements[1].resource_type == "cuda_version_min"
+        assert resource_requirements[2].resource_type == "cuda_compute_capability"
+        assert resource_requirements[3].resource_type == "gpu_memory_min"
+        assert resource_requirements[4].resource_type == "cuda_device_count_min"
+        assert resource_requirements[5].resource_type == "cuda_device_count_max"
         assert not resource_requirements[0].runtime_required
 
     def test_outputs(self):
@@ -430,7 +445,7 @@ class XmlLoaderTestCase(BaseLoaderTestCase):
         assert creator2["name"] == "Galaxy IUC"
 
 
-class YamlLoaderTestCase(BaseLoaderTestCase):
+class TestYamlLoader(BaseLoaderTestCase):
     source_file_name = "bwa.yml"
     source_contents = TOOL_YAML_1
 
@@ -491,8 +506,22 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
             "resolve_dependencies": False,
             "shell": "/bin/sh",
         }
-        assert len(resource_requirements) == 1
+        assert len(resource_requirements) == 6
         assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
+        assert resource_requirements[1].to_dict() == {"resource_type": "cuda_version_min", "value_or_expression": 10.2}
+        assert resource_requirements[2].to_dict() == {
+            "resource_type": "cuda_compute_capability",
+            "value_or_expression": 6.1,
+        }
+        assert resource_requirements[3].to_dict() == {"resource_type": "gpu_memory_min", "value_or_expression": 4042}
+        assert resource_requirements[4].to_dict() == {
+            "resource_type": "cuda_device_count_min",
+            "value_or_expression": 1,
+        }
+        assert resource_requirements[5].to_dict() == {
+            "resource_type": "cuda_device_count_max",
+            "value_or_expression": 2,
+        }
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())
@@ -560,7 +589,7 @@ class YamlLoaderTestCase(BaseLoaderTestCase):
         assert self._tool_source.parse_sanitize() is True
 
 
-class DataSourceLoaderTestCase(BaseLoaderTestCase):
+class TestDataSourceLoader(BaseLoaderTestCase):
     source_file_name = "ds.xml"
     source_contents = """<?xml version="1.0"?>
 <tool name="YeastMine" id="yeastmine" tool_type="data_source">
@@ -609,7 +638,7 @@ class DataSourceLoaderTestCase(BaseLoaderTestCase):
         assert not self._tool_source.parse_hidden()
 
 
-class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
+class TestApplyRulesToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/apply_rules.xml")
     source_contents = None
 
@@ -625,7 +654,7 @@ class ApplyRulesToolLoaderTestCase(BaseLoaderTestCase):
         assert len(output_collections) == 1
 
 
-class BuildListToolLoaderTestCase(BaseLoaderTestCase):
+class TestBuildListToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/build_list.xml")
     source_contents = None
 
@@ -635,7 +664,7 @@ class BuildListToolLoaderTestCase(BaseLoaderTestCase):
         assert tool_module[1] == "BuildListCollectionTool"
 
 
-class ExpressionTestToolLoaderTestCase(BaseLoaderTestCase):
+class TestExpressionTestToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_null_handling_boolean.xml")
     source_contents = None
 
@@ -664,7 +693,7 @@ class ExpressionTestToolLoaderTestCase(BaseLoaderTestCase):
         assert output0["attributes"]["object"] is None
 
 
-class ExpressionOutputDataToolLoaderTestCase(BaseLoaderTestCase):
+class TestExpressionOutputDataToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_pick_larger_file.xml")
     source_contents = None
 
@@ -676,7 +705,7 @@ class ExpressionOutputDataToolLoaderTestCase(BaseLoaderTestCase):
         assert tool_output.from_expression == "output"
 
 
-class SpecialToolLoaderTestCase(BaseLoaderTestCase):
+class TestSpecialToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "lib/galaxy/tools/imp_exp/exp_history_to_archive.xml")
     source_contents = None
 
@@ -698,7 +727,7 @@ class SpecialToolLoaderTestCase(BaseLoaderTestCase):
         assert action[1] == "ExportHistoryToolAction"
 
 
-class CollectionTestCase(BaseLoaderTestCase):
+class TestCollection(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_two_paired.xml")
     source_contents = None
 
@@ -712,7 +741,7 @@ class CollectionTestCase(BaseLoaderTestCase):
         assert len(output_collections) == 0
 
 
-class CollectionOutputXmlTestCase(BaseLoaderTestCase):
+class TestCollectionOutputXml(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair.xml")
     source_contents = None
 
@@ -721,7 +750,7 @@ class CollectionOutputXmlTestCase(BaseLoaderTestCase):
         assert len(output_collections) == 1
 
 
-class CollectionOutputYamlTestCase(BaseLoaderTestCase):
+class TestCollectionOutputYaml(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_creates_pair_y.yml")
     source_contents = None
 
@@ -730,7 +759,7 @@ class CollectionOutputYamlTestCase(BaseLoaderTestCase):
         assert len(output_collections) == 1
 
 
-class EnvironmentVariablesTestCase(BaseLoaderTestCase):
+class TestEnvironmentVariables(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/environment_variables.xml")
     source_contents = None
 
@@ -740,7 +769,7 @@ class EnvironmentVariablesTestCase(BaseLoaderTestCase):
         assert len(tests) == 1
 
 
-class ExpectationsTestCase(BaseLoaderTestCase):
+class TestExpectations(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/detect_errors.xml")
     source_contents = None
 
@@ -753,7 +782,7 @@ class ExpectationsTestCase(BaseLoaderTestCase):
         assert len(test_0["stdout"]) == 2
 
 
-class ExpectationsCommandVersionTestCase(BaseLoaderTestCase):
+class TestExpectationsCommandVersion(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/job_properties.xml")
     source_contents = None
 
@@ -765,7 +794,7 @@ class ExpectationsCommandVersionTestCase(BaseLoaderTestCase):
         assert len(test_0["command_version"]) == 1
 
 
-class QcStdioTestCase(BaseLoaderTestCase):
+class TestQcStdio(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/qc_stdout.xml")
     source_contents = None
 

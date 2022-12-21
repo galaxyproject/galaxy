@@ -31,7 +31,7 @@ class ToolShedRepoBaseTestCase(BaseToolBoxTestCase):
         return self._repo_install(changeset="1", config_filename=self.config_files[0])
 
 
-class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
+class TestInstallRepositoryManager(ToolShedRepoBaseTestCase):
     def setUp(self):
         super().setUp()
         self.irm = InstallRepositoryManager(self.app)
@@ -40,6 +40,7 @@ class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
 
     def test_tool_shed_repository_install(self):
         hg_util.clone_repository = MagicMock(return_value=(True, None))
+        repository_util.get_tool_shed_status_for = MagicMock(return_value={"revision_update": "true"})
         self._install_tool_shed_repository(start_status="New", end_status="Installed", changeset_revision="1")
         hg_util.clone_repository.assert_called_with(
             "github.com/repos/galaxyproject/example",
@@ -49,9 +50,7 @@ class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
 
     def test_tool_shed_repository_update(self):
         common_util.get_tool_shed_url_from_tool_shed_registry = MagicMock(return_value="https://github.com")
-        repository_util.get_tool_shed_status_for_installed_repository = MagicMock(
-            return_value={"revision_update": "false"}
-        )
+        repository_util.get_tool_shed_status_for = MagicMock(return_value={"revision_update": "false"})
         hg_util.pull_repository = MagicMock()
         hg_util.update_repository = MagicMock(return_value=(True, None))
         self._install_tool_shed_repository(start_status="Installed", end_status="Installed", changeset_revision="2")
@@ -89,7 +88,7 @@ class InstallRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
         assert repository.changeset_revision == changeset_revision
 
 
-class InstalledRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
+class TestInstalledRepositoryManager(ToolShedRepoBaseTestCase):
     def setUp(self):
         super().setUp()
         self.irm = InstalledRepositoryManager(self.app)
@@ -124,8 +123,7 @@ class InstalledRepositoryManagerTestCase(ToolShedRepoBaseTestCase):
             description=repository.description,
             installed_changeset_revision=repository.installed_changeset_revision,
             ctx_rev=repository.changeset_revision,
-            repository_clone_url="https://github.com/galaxyproject/example/test_tool/0.%s"
-            % repository.installed_changeset_revision,  # not needed if owner is given
+            repository_clone_url=f"https://github.com/galaxyproject/example/test_tool/0.{repository.installed_changeset_revision}",  # not needed if owner is given
             status=repository.status,
             metadata_dict=None,
             current_changeset_revision=str(int(repository.changeset_revision) + 1),

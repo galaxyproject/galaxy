@@ -2,12 +2,13 @@ import time
 
 from requests import put
 
+from galaxy_test.base.decorators import requires_admin
 from ._framework import ApiTestCase
 
 HIDDEN_DURING_UPLOAD_DATATYPE = "fli"
 
 
-class DatatypesApiTestCase(ApiTestCase):
+class TestDatatypesApi(ApiTestCase):
     def test_index(self):
         datatypes = self._index_datatypes()
         for common_type in ["tabular", "fasta"]:
@@ -70,6 +71,7 @@ class DatatypesApiTestCase(ApiTestCase):
 
         assert found_fasta_to_tabular
 
+    @requires_admin
     def test_converter_present_after_toolbox_reload(self):
         response = self._get("tools", data={"tool_id": "CONVERTER_fasta_to_tabular"})
         self._assert_status_code_is(response, 200)

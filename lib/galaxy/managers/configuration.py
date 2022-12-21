@@ -116,7 +116,6 @@ class ConfigSerializer(base.ModelSerializer):
             # TODO: this is available from user data, remove
             "is_admin_user": lambda *a, **c: False,
             "brand": _use_config,
-            "display_galaxy_brand": _use_config,
             "logo_url": _use_config,
             "logo_src": _use_config,
             "logo_src_secondary": _use_config,
@@ -145,6 +144,7 @@ class ConfigSerializer(base.ModelSerializer):
             "prefer_custos_login": _use_config,
             "enable_quotas": _use_config,
             "remote_user_logout_href": _use_config,
+            "post_user_logout_href": _use_config,
             "datatypes_disable_auto": _use_config,
             "allow_user_dataset_purge": _defaults_to(False),  # schema default is True
             "ga_code": _use_config,
@@ -188,6 +188,7 @@ class ConfigSerializer(base.ModelSerializer):
             "python": _defaults_to((sys.version_info.major, sys.version_info.minor)),
             "select_type_workflow_threshold": _use_config,
             "file_sources_configured": lambda item, key, **context: self.app.file_sources.custom_sources_configured,
+            "toolbox_auto_sort": _use_config,
             "panel_views": lambda item, key, **context: self.app.toolbox.panel_view_dicts(),
             "default_panel_view": _use_config,
             "upload_from_form_button": _use_config,

@@ -1,7 +1,8 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
 import HistoryFilters from "./HistoryFilters";
-import { getQueryDict } from "store/historyStore/model/filtering";
+import { getLocalVue } from "tests/jest/helpers";
+import { HistoryFilters as HistoryFiltering } from "components/History/HistoryFilters";
+
 const localVue = getLocalVue();
 
 describe("HistoryFilters", () => {
@@ -12,8 +13,8 @@ describe("HistoryFilters", () => {
         expect(wrapper.emitted()["update:show-advanced"][toggleEmit][0]).toEqual(showAdvanced);
         await wrapper.setProps({ showAdvanced: wrapper.emitted()["update:show-advanced"][toggleEmit][0] });
         const receivedText = wrapper.emitted()["update:filter-text"][filterEmit][0];
-        const receivedDict = getQueryDict(receivedText);
-        const parsedDict = getQueryDict(filterText);
+        const receivedDict = HistoryFiltering.getQueryDict(receivedText);
+        const parsedDict = HistoryFiltering.getQueryDict(filterText);
         expect(receivedDict).toEqual(parsedDict);
     }
 
@@ -30,6 +31,7 @@ describe("HistoryFilters", () => {
         });
         expect(wrapper.find("[description='advanced filters']").exists()).toBe(false);
         await wrapper.setProps({ showAdvanced: true });
+        expect(wrapper.find("[description='advanced filters']").exists()).toBe(true);
         expect(wrapper.find("[description='advanced filters']").exists()).toBe(true);
         const filterInputs = {
             "[placeholder='any name']": "name-filter",
@@ -53,7 +55,7 @@ describe("HistoryFilters", () => {
         await expectCorrectEmits(wrapper, false, "name:name-filter");
 
         // Test: clearing the filterText
-        const clearButton = wrapper.find("[data-description='show deleted filter toggle']");
+        const clearButton = wrapper.find("[data-description='clear filters']");
         await clearButton.trigger("click");
         await expectCorrectEmits(wrapper, false, "");
 

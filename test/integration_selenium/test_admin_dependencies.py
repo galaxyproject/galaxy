@@ -6,8 +6,8 @@ from .framework import (
 )
 
 
-class AdminDependencyContainersTestCase(SeleniumIntegrationTestCase):
-    requires_admin = True
+class TestAdminDependencyContainers(SeleniumIntegrationTestCase):
+    run_as_admin = True
 
     @selenium_test
     def test_admin_containers_display(self):

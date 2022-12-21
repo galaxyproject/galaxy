@@ -8,7 +8,10 @@ import os
 import re
 import time
 from queue import Empty
-from typing import Set
+from typing import (
+    Set,
+    TYPE_CHECKING,
+)
 
 from galaxy import model
 from galaxy.job_execution.output_collect import default_exit_code_file
@@ -21,6 +24,9 @@ from galaxy.util import (
     smart_str,
     unicodify,
 )
+
+if TYPE_CHECKING:
+    from galaxy.jobs import MinimalJobWrapper
 
 BOTO3_IMPORT_MSG = (
     "The Python 'boto3' package is required to use "
@@ -86,7 +92,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     for compute using the docker image specified by a Galaxy tool. As AWS EFS is designed to
     be able to mount at multiple places with read and write capabilities, Galaxy and Batch
     containers share the same EFS drive as a local device. Sample configurations can be found
-    in `config/job_conf.xml.sample_advanced`.
+    in `config/job_conf.sample.yml`.
     """
 
     runner_name = "AWSBatchRunner"
@@ -579,7 +585,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         parsed_params["platform"] = platform
         return parsed_params
 
-    def write_command(self, job_wrapper):
+    def write_command(self, job_wrapper: "MinimalJobWrapper") -> str:
         # Create command script instead passing it in the container
         # preventing wrong characters parsing.
         command_line = job_wrapper.runner_command_line

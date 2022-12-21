@@ -6,6 +6,7 @@
 
 // Bootstrap-related style overrides
 @import "overrides.scss";
+@import "mixins.scss";
 
 // Fontawesome configuration.
 //$fa-font-path: "../../../node_modules/font-awesome/fonts/";
@@ -39,6 +40,10 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
 @import "toolshed.scss";
 @import "workflow.scss";
 @import "multiselect.scss";
+@import "icon-btn.scss";
+@import "peek-columns.scss";
+@import "dataset.scss";
+@import "list-item.scss";
 
 // ==== Select2 ====
 /* fix for zero width select2 - remove when fixed there */
@@ -57,24 +62,7 @@ $fa-font-path: "../../../node_modules/@fortawesome/fontawesome-free/webfonts/";
     color: $text-color;
 }
 
-// ==== Mixins ====
-@mixin user-select($select) {
-    -webkit-touch-callout: #{$select};
-    @each $pre in -webkit-, -moz-, -ms-, -o-, -khtml- {
-        #{$pre + user-select}: #{$select};
-    }
-    #{user-select}: #{$select};
-}
-
-@mixin border-radius($radius) {
-    // from font-awesome 3.0
-    -webkit-border-radius: $radius;
-    -moz-border-radius: $radius;
-    border-radius: $radius;
-}
-
 // ==== Basic styles ====
-
 body {
     @extend .m-2;
 }
@@ -183,11 +171,6 @@ body {
             display: none;
             padding: $margin-h $margin-v;
             background: $white;
-        }
-        .center-frame {
-            @extend .position-absolute;
-            @extend .w-100;
-            @extend .h-100;
         }
     }
     // Replaces unnecessary if/then logic in base_panels.mako
@@ -383,23 +366,25 @@ body {
         }
     }
     .navbar-brand {
-        @extend .position-absolute;
-        @extend .font-weight-bold;
-        font-family: Verdana, sans-serif;
-        font-size: 1.25rem;
-        left: 0.8rem;
-        line-height: 0rem;
+        @extend .ml-2;
+        @extend .mr-1;
         color: var(--masthead-text-color-active);
-        text-decoration: none;
-        .navbar-brand-image {
-            display: inline;
-            margin-right: 0.3rem;
-            border: none;
-            max-height: 2rem;
+
+        button {
+            @extend .p-0;
+            img {
+                display: inline;
+                border: none;
+                height: 2.22rem;
+            }
         }
-        .navbar-brand-title {
-            color: var(--masthead-text-color);
-        }
+    }
+    .navbar-brand-title {
+        font-weight: bold;
+        font-family: Verdana, sans-serif;
+        font-size: calc($masthead-height / 3);
+        line-height: calc($masthead-height / 3);
+        color: var(--masthead-text-color);
     }
 }
 
@@ -415,6 +400,7 @@ $galaxy-state-border: (
     "error": $state-danger-border,
     "deleted": darken($state-default-border, 30%),
     "hidden": $state-default-border,
+    "setting_metadata": $state-warning-border,
 );
 
 $galaxy-state-bg: (
@@ -427,6 +413,7 @@ $galaxy-state-bg: (
     "error": $state-danger-bg,
     "deleted": darken($state-default-bg, 30%),
     "hidden": $state-default-bg,
+    "setting_metadata": $state-warning-bg,
 );
 
 @each $state in map-keys($galaxy-state-border) {
@@ -435,9 +422,18 @@ $galaxy-state-bg: (
         border-color: map-get($galaxy-state-border, $state);
         background-color: map-get($galaxy-state-bg, $state);
 
+        &:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: +10%);
+        }
+
         &:focus,
         &:focus-within {
             background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -10%);
+        }
+
+        &:focus:hover,
+        &:focus-within:hover {
+            background-color: scale-color(map-get($galaxy-state-bg, $state), $lightness: -7%);
         }
 
         &.selected {

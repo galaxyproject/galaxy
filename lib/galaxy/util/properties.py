@@ -8,7 +8,7 @@ import sys
 from configparser import (
     BasicInterpolation,
     ConfigParser,
-    Error,
+    InterpolationError,
 )
 from functools import partial
 from itertools import (
@@ -29,6 +29,22 @@ from galaxy.util.path import (
     has_ext,
     joinext,
 )
+
+
+def get_from_env(key: str, prefixes: Iterable[str], default: Optional[str] = None):
+    """
+    Return first available value for prefix+key set in the environment, or default.
+    An empty prefix is ignored.
+
+    Useful when we need to check against multiple prefixes sequentially,
+    returning the first available value.
+    """
+    for prefix in prefixes:
+        if prefix:
+            value = os.getenv(f"{prefix}{key}")
+            if value:
+                return value
+    return default
 
 
 def find_config_file(names, exts=None, dirs=None, include_samples=False):
@@ -143,18 +159,12 @@ def nice_config_parser(path):
     return parser
 
 
-class _InterpolateWrapper:
-    def __init__(self, original: Optional[BasicInterpolation] = None):
-        self._original = original or BasicInterpolation()
-
-    def __getattr__(self, name):
-        return getattr(self._original, name)
-
+class _InterpolateWrapper(BasicInterpolation):
     def before_get(self, parser, section, option, value, defaults):
         try:
-            return self._original.before_get(parser, section, option, value, defaults)
-        except Error:
-            e = cast(Error, sys.exc_info()[1])
+            return super().before_get(parser, section, option, value, defaults)
+        except InterpolationError:
+            e = cast(InterpolationError, sys.exc_info()[1])
             args = list(e.args)
             args[0] = f"Error in file {parser.filename}: {e}"
             e.args = tuple(args)

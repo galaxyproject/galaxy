@@ -5,6 +5,7 @@ from typing import (
 )
 
 from pydantic import Field
+from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -16,10 +17,10 @@ from galaxy.schema.schema import (
     UserModel,
 )
 
-QUOTA_MODEL_CLASS_NAME = "Quota"
-USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "UserQuotaAssociation"
-GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "GroupQuotaAssociation"
-DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME = "DefaultQuotaAssociation"
+QUOTA = Literal["Quota"]
+USER_QUOTA_ASSOCIATION = Literal["UserQuotaAssociation"]
+GROUP_QUOTA_ASSOCIATION = Literal["GroupQuotaAssociation"]
+DEFAULT_QUOTA_ASSOCIATION = Literal["DefaultQuotaAssociation"]
 
 
 class QuotaOperation(str, Enum):
@@ -66,7 +67,7 @@ QuotaOperationField = Field(
 
 
 class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: str = ModelClassField(DEFAULT_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: DEFAULT_QUOTA_ASSOCIATION = ModelClassField(DEFAULT_QUOTA_ASSOCIATION)
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -79,7 +80,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
 
 
 class UserQuota(Model):
-    model_class: str = ModelClassField(USER_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: USER_QUOTA_ASSOCIATION = ModelClassField(USER_QUOTA_ASSOCIATION)
     user: UserModel = Field(
         ...,
         title="User",
@@ -88,7 +89,7 @@ class UserQuota(Model):
 
 
 class GroupQuota(Model):
-    model_class: str = ModelClassField(GROUP_QUOTA_ASSOCIATION_MODEL_CLASS_NAME)
+    model_class: GROUP_QUOTA_ASSOCIATION = ModelClassField(GROUP_QUOTA_ASSOCIATION)
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -99,7 +100,7 @@ class GroupQuota(Model):
 class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
-    model_class: str = ModelClassField(QUOTA_MODEL_CLASS_NAME)
+    model_class: QUOTA = ModelClassField(QUOTA)
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",

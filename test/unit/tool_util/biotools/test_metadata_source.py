@@ -4,6 +4,7 @@ from galaxy.tool_util.biotools.source import (
     get_biotools_metadata_source,
     GitContentBiotoolsMetadataSource,
 )
+from galaxy.util.unittest_utils import skip_if_site_down
 from ._util import content_dir
 
 
@@ -17,6 +18,7 @@ def test_git_content():
     assert missing_entry is None
 
 
+@skip_if_site_down("https://bio.tools/")
 def test_api_content():
     metadata_source = ApiBiotoolsMetadataSource()
     bwa_entry = metadata_source.get_biotools_metadata("bwa")
@@ -27,6 +29,7 @@ def test_api_content():
     assert missing_entry is None
 
 
+@skip_if_site_down("https://bio.tools/")
 def test_cascade_content():
     config = BiotoolsMetadataSourceConfig()
     config.content_directory = content_dir

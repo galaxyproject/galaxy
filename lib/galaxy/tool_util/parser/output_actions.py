@@ -31,7 +31,7 @@ class ToolOutputActionGroup:
                 else:
                     log.debug(f"Unknown ToolOutputAction tag specified: {elem.tag}")
 
-    def apply_action(self, output_dataset, other_values):
+    def apply_action(self, output_dataset, other_values) -> None:
         for action in self.actions:
             action.apply_action(output_dataset, other_values)
 
@@ -62,26 +62,26 @@ class ToolOutputActionConditionalWhen(ToolOutputActionGroup):
         super().__init__(parent, config_elem)
         self.value = value
 
-    def is_case(self, output_dataset, other_values):
+    def is_case(self, other_values):
         raise TypeError("Not implemented")
 
-    def get_ref(self, output_dataset, other_values):
+    def get_ref(self, other_values):
         ref = other_values
         for ref_name in self.parent.name:
             assert ref_name in ref, f"Required dependency '{ref_name}' not found in incoming values"
             ref = ref.get(ref_name)
         return ref
 
-    def apply_action(self, output_dataset, other_values):
-        if self.is_case(output_dataset, other_values):
-            return super().apply_action(output_dataset, other_values)
+    def apply_action(self, output_dataset, other_values) -> None:
+        if self.is_case(other_values):
+            super().apply_action(output_dataset, other_values)
 
 
 class ValueToolOutputActionConditionalWhen(ToolOutputActionConditionalWhen):
     tag = "when value"
 
-    def is_case(self, output_dataset, other_values):
-        ref = self.get_ref(output_dataset, other_values)
+    def is_case(self, other_values) -> bool:
+        ref = self.get_ref(other_values)
         return ref == self.value
 
 
@@ -92,8 +92,8 @@ class DatatypeIsInstanceToolOutputActionConditionalWhen(ToolOutputActionConditio
         super().__init__(parent, config_elem, value)
         self.value = type(self.tool.app.datatypes_registry.get_datatype_by_extension(value))
 
-    def is_case(self, output_dataset, other_values):
-        ref = self.get_ref(output_dataset, other_values)
+    def is_case(self, other_values) -> bool:
+        ref = self.get_ref(other_values)
         return isinstance(ref.datatype, self.value)
 
 
@@ -109,7 +109,7 @@ class ToolOutputActionConditional:
         for when_elem in config_elem.findall("when"):
             self.cases.append(ToolOutputActionConditionalWhen.from_elem(self, when_elem))
 
-    def apply_action(self, output_dataset, other_values):
+    def apply_action(self, output_dataset, other_values) -> None:
         for case in self.cases:
             case.apply_action(output_dataset, other_values)
 
@@ -303,7 +303,7 @@ class MetadataToolOutputAction(ToolOutputAction):
         self.name = elem.get("name", None)
         assert self.name is not None, "Required 'name' attribute missing from MetadataToolOutputAction"
 
-    def apply_action(self, output_dataset, other_values):
+    def apply_action(self, output_dataset, other_values) -> None:
         value = self.option.get_value(other_values)
         # TODO: figure out correct type based on MetadataElementSpec,
         # but MetadataElementSpec doesn't actually define a type (but it should).
@@ -327,7 +327,7 @@ class FormatToolOutputAction(ToolOutputAction):
         super().__init__(parent, elem)
         self.default = elem.get("default", None)
 
-    def apply_action(self, output_dataset, other_values):
+    def apply_action(self, output_dataset, other_values) -> None:
         value = self.option.get_value(other_values)
         if value is None and self.default is not None:
             value = self.default

@@ -1,9 +1,6 @@
 <%!
     def inherit( context ):
-        if context.get('no_panels'):
-            return '/base.mako'
-        else:
-            return '/webapps/galaxy/base_panels.mako'
+        return '/base.mako'
 
     from galaxy.model import History, StoredWorkflow, Page
     from galaxy.web.framework.helpers import iff
@@ -13,7 +10,7 @@
 <%namespace file="/display_common.mako" import="*" />
 
 ##
-## Functions used by base.mako and base_panels.mako to display content.
+## Functions used by base.mako to display content.
 ##
 
 <%def name="title()">
@@ -93,12 +90,6 @@
     ${self.render_content()}
 </%def>
 
-## For base_panels.mako
-<%def name="center_panel()">
-    ${self.render_content()}
-</%def>
-
-
 ##
 ## Render page content. Pages that inherit this page should override render_item_links() and render_item()
 ##
@@ -147,80 +138,7 @@
                 <p>
                     <a href="${href_to_all_items}">All published ${item_plural.lower()}</a><br>
                     <a href="${href_to_user_items}">Published ${item_plural.lower()} by ${item.user.username | h}</a>
-                ## Rating.
-                <h4>Rating</h4>
-                <%
-                    label = "ratings"
-                    if num_ratings == 1:
-                        label = "rating"
-                %>
-                <div style="padding-bottom: 0.75em; float: left">
-                    Community<br>
-                    <span style="font-size:80%">
-                        (<span id="num_ratings">${num_ratings}</span> ${label},
-                         <span id="ave_rating">${"%.1f" % ave_item_rating}</span> average)
-                    <span>
-                </div>
-                <div style="float: right">
-                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="1"
-                    %if ave_item_rating > 0 and ave_item_rating <= 1.5:
-                        checked="checked"
-                    %endif
-                    />
-                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="2"
-                    %if ave_item_rating > 1.5 and ave_item_rating <= 2.5:
-                        checked="checked"
-                    %endif
-                    />
-                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="3"
-                    %if ave_item_rating > 2.5 and ave_item_rating <= 3.5:
-                        checked="checked"
-                    %endif
-                    />
-                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="4"
-                    %if ave_item_rating > 3.5 and ave_item_rating <= 4.5:
-                        checked="checked"
-                    %endif
-                    />
-                    <input name="star1" type="radio" class="community_rating_star star" disabled="disabled" value="5"
-                    %if ave_item_rating > 4.5:
-                        checked="checked"
-                    %endif
-                    />
-                </div>
-                <div style="clear: both;"></div>
-                %if trans.get_user():
-                    <div style="float: left">
-                        Yours<br><span id="rating_feedback" style="font-size:80%; display: none">(thanks!)</span>
-                    </div>
-                    <div style="float: right">
-                        <input name="star2" type="radio" class="user_rating_star" value="1"
-                        %if user_item_rating == 1:
-                            checked="checked"
-                        %endif
-                        />
-                        <input name="star2" type="radio" class="user_rating_star" value="2"
-                        %if user_item_rating == 2:
-                            checked="checked"
-                        %endif
-                        />
-                        <input name="star2" type="radio" class="user_rating_star" value="3"
-                        %if user_item_rating == 3:
-                            checked="checked"
-                        %endif
-                        />
-                        <input name="star2" type="radio" class="user_rating_star" value="4"
-                        %if user_item_rating == 4:
-                            checked="checked"
-                        %endif
-                        />
-                        <input name="star2" type="radio" class="user_rating_star" value="5"
-                        %if user_item_rating == 5:
-                            checked="checked"
-                        %endif
-                        />
-                    </div>
-                %endif
+                </p>
                 <div style="clear: both;"></div>
                 ## Tags.
                 <h4>Tags</h4>

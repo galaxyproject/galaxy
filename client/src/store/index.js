@@ -15,17 +15,14 @@ import { tagStore } from "./tagStore";
 import { jobMetricsStore } from "./jobMetricsStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { invocationStore } from "./invocationStore";
-import { collectionElementsStore, datasetStore, historyItemsStore, historyStore } from "./historyStore";
+import { collectionElementsStore, datasetStore, historyStore } from "./historyStore";
 import { userStore, userFlagsStore } from "./userStore";
 import { configStore } from "./configStore";
-import { workflowStore } from "./workflowStore";
 import { toolStore } from "./toolStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { jobStore } from "./jobStore";
 import { collectionAttributesStore } from "./collectionAttributesStore";
-import { dbKeyStore } from "./dbKeyStore";
-import { datatypeStore } from "./datatypeStore";
 import { panelStore } from "./panelStore";
 
 // Syncs vuex to Galaxy store until Galaxy vals to not exist
@@ -44,7 +41,13 @@ galaxyStorage.config({
 const panelsPersistence = new VuexPersistence({
     storage: galaxyStorage,
     asyncStorage: true,
-    modules: ["panels", "userFlags"],
+    reducer: (state) => {
+        const { panels, userFlags } = state;
+        return {
+            panels,
+            userFlags,
+        };
+    },
 });
 
 export function createStore() {
@@ -58,20 +61,16 @@ export function createStore() {
             dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
-            datatypeStore: datatypeStore,
             informationStore: jobStore,
             invocations: invocationStore,
             jobMetrics: jobMetricsStore,
-            dbkeyStore: dbKeyStore,
             gridSearch: gridSearchStore,
             history: historyStore,
-            historyItems: historyItemsStore,
             panels: panelStore,
             tags: tagStore,
             tools: toolStore,
             user: userStore,
             userFlags: userFlagsStore,
-            workflows: workflowStore,
         },
     };
 

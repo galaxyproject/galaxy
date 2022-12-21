@@ -1,3 +1,77 @@
+<script setup>
+import Vue from "vue";
+import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
+import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
+import { safePath } from "utils/redirect";
+import { ref, computed } from "vue";
+import { getCurrentInstance } from "vue";
+
+Vue.use(VBPopoverPlugin);
+Vue.use(VBTooltipPlugin);
+
+const instance = getCurrentInstance().proxy;
+const emit = defineEmits(["click", "open-url"]);
+const dropdown = ref(null);
+
+/* props */
+const props = defineProps({
+    tab: {
+        type: Object,
+        default: null,
+    },
+    toggle: {
+        type: Boolean,
+        default: false,
+    },
+    activeTab: {
+        type: String,
+        default: null,
+    },
+});
+
+/* computed */
+const menu = computed(() => props.tab.menu);
+const popoverNote = computed(
+    () => `Please <a href="${safePath("/login")}">log in or register</a> to use this feature.`
+);
+const classes = computed(() => {
+    const isActiveTab = props.tab.id == props.activeTab;
+    return Object.fromEntries([
+        ["active", isActiveTab],
+        [props.tab.cls, !!props.tab.cls],
+    ]);
+});
+const linkClasses = computed(() => ({
+    "nav-icon": props.tab.icon,
+    toggle: props.toggle,
+}));
+const iconClasses = computed(() =>
+    Object.fromEntries([
+        ["fa fa-fw", true],
+        [props.tab.icon, !!props.tab.icon],
+    ])
+);
+
+/* methods */
+function open(tab, event) {
+    if (tab.onclick) {
+        event.preventDefault();
+        tab.onclick();
+        emit("click");
+    } else if (tab.disabled) {
+        event.preventDefault();
+        instance.$root.$emit("bv::hide::tooltip");
+        instance.$root.$emit("bv::show::popover", tab.id);
+        setTimeout(() => {
+            instance.$root.$emit("bv::hide::popover", tab.id);
+        }, 3000);
+    } else if (!tab.menu) {
+        event.preventDefault();
+        emit("open-url", { ...tab });
+    }
+}
+</script>
+
 <template>
     <b-nav-item
         v-if="!menu"
@@ -5,14 +79,14 @@
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
-        :style="styles"
-        :href="formatUrl(tab.url)"
+        :href="safePath(tab.url)"
         :target="tab.target || '_parent'"
-        role="menuitem"
         :link-classes="linkClasses"
         :title="tab.tooltip"
         @click="open(tab, $event)">
         <template v-if="tab.icon">
+            <!-- If this is an icon-based tab, inject tooltip directly for screen readers -->
+            <span class="sr-only">{{ tab.tooltip || tab.id }}</span>
             <span :class="iconClasses" />
             <span v-if="toggle" class="nav-note fa fa-check" />
         </template>
@@ -27,138 +101,27 @@
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
-        :style="styles"
         :text="tab.title"
         href="#"
         :title="tab.tooltip"
         @show="open(tab, $event)">
+        <template v-if="tab.icon" v-slot:button-content>
+            <span class="sr-only">{{ tab.tooltip || tab.id }}</span>
+            <span :class="iconClasses" />
+        </template>
         <template v-for="(item, idx) in tab.menu">
             <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
-                :href="formatUrl(item.url)"
+                :href="safePath(item.url)"
                 :target="item.target || '_parent'"
                 role="menuitem"
-                :disabled="item.disabled === true"
+                :active="item.disabled"
+                :disabled="item.disabled"
                 @click="open(item, $event)">
                 {{ item.title }}
             </b-dropdown-item>
         </template>
     </b-nav-item-dropdown>
 </template>
-
-<script>
-import Vue from "vue";
-import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
-import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
-
-Vue.use(VBPopoverPlugin);
-Vue.use(VBTooltipPlugin);
-
-export default {
-    name: "MastheadItem",
-    components: {
-        BNavItem,
-        BNavItemDropdown,
-        BDropdownItem,
-    },
-    props: {
-        tab: {
-            type: Object,
-            default: null,
-        },
-        toggle: {
-            type: Boolean,
-            default: false,
-        },
-        activeTab: {
-            type: String,
-            default: null,
-        },
-    },
-    computed: {
-        menu() {
-            return this.tab.menu;
-        },
-        popoverNote() {
-            return `Please <a href="${getAppRoot()}login">log in or register</a> to use this feature.`;
-        },
-        classes() {
-            const isActiveTab = this.tab.id == this.activeTab;
-            return Object.fromEntries([
-                ["active", isActiveTab],
-                [this.tab.cls, true],
-            ]);
-        },
-        linkClasses() {
-            return {
-                "nav-icon": this.tab.icon,
-                toggle: this.toggle,
-            };
-        },
-        iconClasses() {
-            return Object.fromEntries([
-                ["fa fa-fw", true],
-                [this.tab.icon, this.tab.icon],
-            ]);
-        },
-        styles() {
-            return {
-                visibility: this.tab.visible ? "visible" : "hidden",
-            };
-        },
-        galaxyIframe() {
-            return document.getElementById("galaxy_main");
-        },
-    },
-    mounted() {
-        window.addEventListener("blur", this.hideDropdown);
-    },
-    destroyed() {
-        window.removeEventListener("blur", this.hideDropdown);
-    },
-    methods: {
-        hideDropdown() {
-            if (this.$refs.dropdown) {
-                this.$refs.dropdown.hide();
-            }
-        },
-        open(tab, event) {
-            if (tab.onclick) {
-                event.preventDefault();
-                tab.onclick();
-                this.$emit("click");
-            } else if (tab.disabled) {
-                event.preventDefault();
-                this.$root.$emit("bv::hide::tooltip");
-                this.$root.$emit("bv::show::popover", tab.id);
-                setTimeout(() => {
-                    this.$root.$emit("bv::hide::popover", tab.id);
-                }, 3000);
-            } else if (!tab.menu) {
-                event.preventDefault();
-                const Galaxy = getGalaxyInstance();
-                if (tab.target === "__use_router__" && this.$router) {
-                    this.$router.push(`/${tab.url}`);
-                } else {
-                    try {
-                        Galaxy.frame.add({ ...tab, url: this.formatUrl(tab.url) });
-                    } catch (err) {
-                        console.warn("Missing frame element on galaxy instance", err);
-                    }
-                }
-            }
-        },
-        formatUrl(url) {
-            if (typeof url === "string" && url.indexOf("//") === -1 && url.charAt(0) != "/") {
-                return getAppRoot() + url;
-            } else {
-                return url;
-            }
-        },
-    },
-};
-</script>

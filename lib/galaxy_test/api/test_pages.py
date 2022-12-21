@@ -21,7 +21,9 @@ from galaxy_test.base.populators import (
 )
 
 
-class BasePageApiTestCase(ApiTestCase):
+class BasePagesApiTestCase(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
@@ -41,7 +43,7 @@ class BasePageApiTestCase(ApiTestCase):
         return self.dataset_populator.new_page_payload(**kwds)
 
 
-class PageApiTestCase(BasePageApiTestCase, SharingApiTests):
+class TestPagesApi(BasePagesApiTestCase, SharingApiTests):
 
     api_name = "pages"
 
@@ -98,9 +100,9 @@ steps:
             self._assert_status_code_is(show_response, 200)
             show_json = show_response.json()
             self._assert_has_keys(show_json, "slug", "title", "id")
-            self.assertEqual(show_json["slug"], "invocation-report")
-            self.assertEqual(show_json["title"], "Invocation Report")
-            self.assertEqual(show_json["content_format"], "markdown")
+            assert show_json["slug"] == "invocation-report"
+            assert show_json["title"] == "Invocation Report"
+            assert show_json["content_format"] == "markdown"
             markdown_content = show_json["content"]
             assert "## Workflow Outputs" in markdown_content
             assert "## Workflow Inputs" in markdown_content
@@ -307,10 +309,10 @@ steps:
         self._assert_status_code_is(show_response, 200)
         show_json = show_response.json()
         self._assert_has_keys(show_json, "slug", "title", "id")
-        self.assertEqual(show_json["slug"], "pagetoshow")
-        self.assertEqual(show_json["title"], "MY PAGE")
-        self.assertEqual(show_json["content"], "<p>Page!</p>")
-        self.assertEqual(show_json["content_format"], "html")
+        assert show_json["slug"] == "pagetoshow"
+        assert show_json["title"] == "MY PAGE"
+        assert show_json["content"] == "<p>Page!</p>"
+        assert show_json["content_format"] == "html"
 
     def test_403_on_unowner_show(self):
         response_json = self._create_valid_page_as("others_page_show@bx.psu.edu", "otherspageshow")

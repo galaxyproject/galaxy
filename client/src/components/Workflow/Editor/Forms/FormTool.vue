@@ -27,21 +27,28 @@
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                     @input="onAnnotation" />
-                <FormDisplay
-                    :id="id"
-                    :inputs="inputs"
-                    :errors="errors"
-                    text-enable="Set in Advance"
-                    text-disable="Set at Runtime"
-                    @onChange="onChange" />
-                <FormSection
-                    :id="nodeId"
-                    :node-inputs="nodeInputs"
-                    :node-outputs="nodeOutputs"
-                    :node-active-outputs="nodeActiveOutputs"
-                    :datatypes="datatypes"
-                    :post-job-actions="postJobActions"
-                    @onChange="onChangePostJobActions" />
+                <div class="mt-2 mb-4">
+                    <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
+                    <FormDisplay
+                        :id="id"
+                        :inputs="inputs"
+                        :errors="errors"
+                        text-enable="Set in Advance"
+                        text-disable="Set at Runtime"
+                        :workflow-building-mode="true"
+                        @onChange="onChange" />
+                </div>
+                <div class="mt-2 mb-4">
+                    <Heading h2 separator bold size="sm"> Additional Options </Heading>
+                    <FormSection
+                        :id="nodeId"
+                        :node-inputs="nodeInputs"
+                        :node-outputs="nodeOutputs"
+                        :node-active-outputs="nodeActiveOutputs"
+                        :datatypes="datatypes"
+                        :post-job-actions="postJobActions"
+                        @onChange="onChangePostJobActions" />
+                </div>
             </template>
         </ToolCard>
     </CurrentUser>
@@ -55,6 +62,7 @@ import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
+import Heading from "components/Common/Heading";
 
 export default {
     components: {
@@ -63,6 +71,7 @@ export default {
         ToolCard,
         FormElement,
         FormSection,
+        Heading,
     },
     props: {
         nodeId: {
@@ -180,14 +189,12 @@ export default {
         },
         postChanges(newVersion) {
             const payload = Object.assign({}, this.mainValues);
-            console.debug("FormTool - Posting changes.", payload);
             const options = this.configForm;
             let toolId = options.id;
             let toolVersion = options.version;
             if (newVersion) {
                 toolId = toolId.replace(toolVersion, newVersion);
                 toolVersion = newVersion;
-                console.debug("FormTool - Tool version changed.", toolId, toolVersion);
             }
             this.$emit("onSetData", this.nodeId, {
                 tool_id: toolId,

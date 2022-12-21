@@ -47,15 +47,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_categories(self):
         """Create the categories for the repositories in this test script."""
@@ -83,7 +75,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's filtering tool",
             long_description="Long description of Galaxy's filtering tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
         )
         if self.repository_is_new(repository):
             running_standalone = True
@@ -118,7 +110,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's freebayes tool",
             long_description="Long description of Galaxy's freebayes tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -175,7 +167,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description=column_maker_repository_description,
             long_description=column_maker_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -195,7 +187,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description="Galaxy wrappers for Emboss version 5.0.0 tools",
                 long_description="Galaxy wrappers for Emboss version 5.0.0 tools",
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -219,7 +211,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description=column_repository_description,
             long_description=column_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(column_maker_repository):
@@ -239,7 +231,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -257,7 +249,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
@@ -270,7 +262,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -288,7 +280,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 column_maker_repository.name,
-                column_maker_repository.user.username,
+                column_maker_repository.owner,
                 self.get_repository_tip(column_maker_repository),
             )
             self.create_repository_dependency(
@@ -301,7 +293,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=emboss_repository_description,
                 long_description=emboss_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -319,7 +311,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_5_repository.name,
-                emboss_5_repository.user.username,
+                emboss_5_repository.owner,
                 self.get_repository_tip(emboss_5_repository),
             )
             self.create_repository_dependency(
@@ -330,7 +322,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_6_repository.name,
-                emboss_6_repository.user.username,
+                emboss_6_repository.owner,
                 self.get_repository_tip(emboss_6_repository),
             )
             self.create_repository_dependency(
@@ -347,7 +339,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's freebayes tool",
             long_description="Long description of Galaxy's freebayes tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
@@ -367,7 +359,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description=filtering_repository_description,
                 long_description=filtering_repository_long_description,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -381,15 +373,13 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 strings_displayed=[],
                 strings_not_displayed=[],
             )
-            repository = self.test_db_util.get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
-            filtering_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "filtering_0040", common.test_user_1_name
-            )
+            repository = self._get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
+            filtering_repository = self._get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
             repository_dependencies_path = self.generate_temp_path("test_1340", additional_paths=["filtering"])
             repository_tuple = (
                 self.url,
                 repository.name,
-                repository.user.username,
+                repository.owner,
                 self.get_repository_tip(repository),
             )
             self.create_repository_dependency(
@@ -397,15 +387,13 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 repository_tuples=[repository_tuple],
                 filepath=repository_dependencies_path,
             )
-            repository = self.test_db_util.get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
-            freebayes_repository = self.test_db_util.get_repository_by_name_and_owner(
-                "freebayes_0040", common.test_user_1_name
-            )
+            repository = self._get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
+            freebayes_repository = self._get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
             repository_dependencies_path = self.generate_temp_path("test_1340", additional_paths=["freebayes"])
             repository_tuple = (
                 self.url,
                 repository.name,
-                repository.user.username,
+                repository.owner,
                 self.get_repository_tip(repository),
             )
             self.create_repository_dependency(
@@ -422,7 +410,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             description="Galaxy's emboss tool",
             long_description="Long description of Galaxy's emboss tool",
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         if self.repository_is_new(emboss_repository):
@@ -431,7 +419,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description="Galaxy's filtering tool",
                 long_description="Long description of Galaxy's filtering tool",
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             freebayes_repository = self.get_or_create_repository(
@@ -439,7 +427,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 description="Galaxy's freebayes tool",
                 long_description="Long description of Galaxy's freebayes tool",
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
             self.upload_file(
@@ -480,7 +468,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 emboss_repository.name,
-                emboss_repository.user.username,
+                emboss_repository.owner,
                 self.get_repository_tip(emboss_repository),
             )
             self.create_repository_dependency(
@@ -492,7 +480,7 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
             dependency_tuple = (
                 self.url,
                 filtering_repository.name,
-                filtering_repository.user.username,
+                filtering_repository.owner,
                 self.get_repository_tip(filtering_repository),
             )
             self.create_repository_dependency(
@@ -504,19 +492,19 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
                 (
                     self.url,
                     emboss_repository.name,
-                    emboss_repository.user.username,
+                    emboss_repository.owner,
                     self.get_repository_tip(emboss_repository),
                 ),
                 (
                     self.url,
                     filtering_repository.name,
-                    filtering_repository.user.username,
+                    filtering_repository.owner,
                     self.get_repository_tip(filtering_repository),
                 ),
                 (
                     self.url,
                     freebayes_repository.name,
-                    freebayes_repository.user.username,
+                    freebayes_repository.owner,
                     self.get_repository_tip(freebayes_repository),
                 ),
             ]
@@ -529,11 +517,11 @@ class TestResetInstalledRepositoryMetadata(ShedTwillTestCase):
     def test_9900_install_all_missing_repositories(self):
         """Call the install_repository method to ensure that all required repositories are installed."""
         self.galaxy_login(email=common.admin_email, username=common.admin_username)
-        self.install_repository("filtering_0000", common.test_user_1_name, category_0000_name, strings_displayed=[])
-        self.install_repository("freebayes_0010", common.test_user_1_name, category_0010_name, strings_displayed=[])
-        self.install_repository("emboss_0020", common.test_user_1_name, category_0020_name, strings_displayed=[])
-        self.install_repository("emboss_5_0030", common.test_user_1_name, category_0030_name, strings_displayed=[])
-        self.install_repository("freebayes_0050", common.test_user_1_name, category_0050_name, strings_displayed=[])
+        self._install_repository("filtering_0000", common.test_user_1_name, category_0000_name)
+        self._install_repository("freebayes_0010", common.test_user_1_name, category_0010_name)
+        self._install_repository("emboss_0020", common.test_user_1_name, category_0020_name)
+        self._install_repository("emboss_5_0030", common.test_user_1_name, category_0030_name)
+        self._install_repository("freebayes_0050", common.test_user_1_name, category_0050_name)
 
     def test_9905_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""

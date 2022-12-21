@@ -5,7 +5,7 @@ import sys
 from galaxy.util import commands
 
 
-def get_ip():
+def get_ip() -> str:
     if sys.platform == "darwin":
         # If we're on OSX it is likely that the docker host is localhost.
         return socket.gethostbyname(socket.gethostname())

@@ -40,7 +40,7 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { userLogoutClient } from "layout/menu";
+import { userLogoutClient } from "utils/logout";
 
 Vue.use(BootstrapVue);
 

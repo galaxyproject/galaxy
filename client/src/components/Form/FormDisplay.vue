@@ -10,7 +10,8 @@
         :collapsed-disable-text="collapsedDisableText"
         :collapsed-disable-icon="collapsedDisableIcon"
         :on-change="onChange"
-        :on-change-form="onChangeForm" />
+        :on-change-form="onChangeForm"
+        :workflow-building-mode="workflowBuildingMode" />
 </template>
 
 <script>
@@ -56,11 +57,11 @@ export default {
         },
         collapsedEnableIcon: {
             type: String,
-            default: "fa fa-caret-square-o-down",
+            default: "far fa-caret-square-down",
         },
         collapsedDisableIcon: {
             type: String,
-            default: "fa fa-caret-square-o-up",
+            default: "far fa-caret-square-up",
         },
         validationScrollTo: {
             type: Array,
@@ -69,6 +70,10 @@ export default {
         replaceParams: {
             type: Object,
             default: null,
+        },
+        workflowBuildingMode: {
+            type: Boolean,
+            default: false,
         },
     },
     data() {

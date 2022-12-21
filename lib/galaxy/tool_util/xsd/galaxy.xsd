@@ -2049,7 +2049,7 @@ module.
   </xs:complexType>
   <xs:group name="TestAssertionsGeneral">
     <xs:annotation>
-      <xs:documentation xml:lang="en"><![CDATA[General asserions]]></xs:documentation>
+      <xs:documentation xml:lang="en"><![CDATA[General assertions]]></xs:documentation>
     </xs:annotation>
     <xs:choice>
       <xs:element name="has_size" type="AssertHasSize"/>
@@ -4226,7 +4226,7 @@ that has been selected as the value of the parameter named ``input1``.
 </options>
 ```
 
-The [interval2maf](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
+The [gff_filter_by_feature_count](tools/filters/gff/gff_filter_by_feature_count.xml)
 tool makes use of this tag with files from a history, and the
 [star_fusion](https://github.com/galaxyproject/tools-iuc/blob/master/tools/star_fusion/star_fusion.xml)
 tool makes use of this to reference a data table.
@@ -4416,7 +4416,7 @@ if ``type`` is ``dataset_metadata_in_file``. File should be present Galaxy's
         <xs:attribute name="metadata_name" type="xs:string">
           <xs:annotation>
             <xs:documentation xml:lang="en">Target metadata attribute name for
-``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table`` and ``dataset_metadata_in_file`` options.</xs:documentation>
+``dataset_metadata_in_data_table``, ``dataset_metadata_not_in_data_table``, ``dataset_metadata_in_file`` and ``dataset_metadata_in_range`` options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="metadata_column" type="xs:string">
@@ -6791,6 +6791,31 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:enumeration value="tmpdir_max">
         <xs:annotation>
           <xs:documentation xml:lang="en">Maximum reserved filesystem based storage for the designated temporary directory, in mebibytes (2**20 bytes), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+       <xs:enumeration value="cuda_version_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum CUDA (runtime link library) runtime version, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cuda_compute_capability">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum NVIDIA (hardware+driver) Compute capabilities (major, minor (can be a range or a list), if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="gpu_memory_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum Memory of the GPU in mebibytes, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cuda_device_count_min">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Minimum CUDA device count, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
+        </xs:annotation>
+      </xs:enumeration>
+      <xs:enumeration value="cuda_device_count_max">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Maximum CUDA device count, if runtime allows it (not yet implemented in Galaxy).</xs:documentation>
         </xs:annotation>
       </xs:enumeration>
     </xs:restriction>

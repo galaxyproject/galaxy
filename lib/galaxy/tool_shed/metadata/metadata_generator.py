@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import tempfile
@@ -120,7 +119,7 @@ class MetadataGenerator:
             suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME,
         ]
 
-    def generate_data_manager_metadata(
+    def _generate_data_manager_metadata(
         self, repo_dir, data_manager_config_filename, metadata_dict, shed_config_dict=None
     ):
         """
@@ -314,7 +313,7 @@ class MetadataGenerator:
             # can load tools that depend on them.
             data_table_conf_xml_sample_files = []
             for sample_file in sample_file_copy_paths:
-                tool_util.copy_sample_file(self.app, sample_file, dest_path=work_dir)
+                tool_util.copy_sample_file(self.app.config.tool_data_path, sample_file, dest_path=work_dir)
                 # If the list of sample files includes a tool_data_table_conf.xml.sample file, load
                 # its table elements into memory.
                 relative_path, filename = os.path.split(sample_file)
@@ -388,34 +387,9 @@ class MetadataGenerator:
                                     else:
                                         for tup in invalid_files_and_errors_tups:
                                             self.invalid_file_tups.append(tup)
-                        # Find all exported workflows.
-                        elif name.endswith(".ga"):
-                            relative_path = os.path.join(root, name)
-                            if os.path.getsize(os.path.abspath(relative_path)) > 0:
-                                fp = open(relative_path, "rb")
-                                workflow_text = fp.read()
-                                fp.close()
-                                if workflow_text:
-                                    valid_exported_galaxy_workflow = True
-                                    try:
-                                        exported_workflow_dict = json.loads(workflow_text)
-                                    except Exception:
-                                        log.exception(
-                                            "Skipping file %s since it does not seem to be a valid exported Galaxy workflow",
-                                            str(relative_path),
-                                        )
-                                        valid_exported_galaxy_workflow = False
-                                if (
-                                    valid_exported_galaxy_workflow
-                                    and "a_galaxy_workflow" in exported_workflow_dict
-                                    and exported_workflow_dict["a_galaxy_workflow"] == "true"
-                                ):
-                                    metadata_dict = self.generate_workflow_metadata(
-                                        relative_path, exported_workflow_dict, metadata_dict
-                                    )
         # Handle any data manager entries
         data_manager_config = get_config_from_disk(suc.REPOSITORY_DATA_MANAGER_CONFIG_FILENAME, files_dir)
-        metadata_dict = self.generate_data_manager_metadata(
+        metadata_dict = self._generate_data_manager_metadata(
             files_dir, data_manager_config, metadata_dict, shed_config_dict=self.shed_config_dict
         )
 
@@ -785,17 +759,6 @@ class MetadataGenerator:
                 description=description,
             )
         return metadata_dict, error_message
-
-    def generate_workflow_metadata(self, relative_path, exported_workflow_dict, metadata_dict):
-        """
-        Update the received metadata_dict with changes that have been applied to the
-        received exported_workflow_dict.
-        """
-        if "workflows" in metadata_dict:
-            metadata_dict["workflows"].append((relative_path, exported_workflow_dict))
-        else:
-            metadata_dict["workflows"] = [(relative_path, exported_workflow_dict)]
-        return metadata_dict
 
     def get_invalid_file_tups(self):
         return self.invalid_file_tups

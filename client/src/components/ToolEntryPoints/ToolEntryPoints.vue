@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { clearPolling, pollUntilActive } from "mvc/entrypoints/poll";
+import { clearPolling, pollUntilActive } from "./poll";
 import { getAppRoot } from "onload/loadConfig";
 
 export default {

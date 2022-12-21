@@ -4,7 +4,7 @@ from .framework import (
 )
 
 
-class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
+class TestPagesPdfExportSeleniumIntegration(SeleniumIntegrationTestCase):
     ensure_registered = True
 
     @classmethod
@@ -16,9 +16,7 @@ class PagesPdfExportSeleniumIntegrationTestCase(SeleniumIntegrationTestCase):
     def test_page_pdf_export(self):
         self.navigate_to_pages()
         self.screenshot("pages_grid")
-        name = self.create_page(
-            content_format="Markdown",
-        )
+        name = self.create_page()
         self.click_grid_popup_option(name, "Edit content")
         self.components.pages.editor.markdown_editor.wait_for_and_send_keys("moo\n\n\ncow\n\n")
         self.screenshot("pages_markdown_editor")

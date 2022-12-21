@@ -333,6 +333,11 @@ class BaseInputTerminal extends Terminal {
     }
     _producesAcceptableDatatype(other) {
         // other is a non-collection output...
+
+        if (other instanceof OutputParameterTerminal) {
+            return new ConnectionAcceptable(false, "Cannot connect workflow parameter to data input.");
+        }
+
         for (const t in this.datatypes) {
             const thisDatatype = this.datatypes[t];
             if (thisDatatype == "input") {
@@ -356,7 +361,7 @@ class BaseInputTerminal extends Terminal {
                 false,
                 `Effective output data type(s) [${invalidDatatypes.join(
                     ", "
-                )}] unknown. This tool cannot be executed on this Galaxy Server at this moment, please contact the Administrator.`
+                )}] unknown. This tool cannot be run on this Galaxy Server at this moment, please contact the Administrator.`
             );
         }
         return new ConnectionAcceptable(

@@ -27,6 +27,7 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalToolApp,
 )
+from galaxy.tool_util.data import TabularToolDataTable
 from galaxy.tools.parameters import (
     visit_input_values,
     wrapped_json,
@@ -463,7 +464,10 @@ class ToolEvaluator:
             Queries and returns an entry in a data table.
             """
             if table_name in self.app.tool_data_tables:
-                return self.app.tool_data_tables[table_name].get_entry(query_attr, query_val, return_attr)
+                table = self.app.tool_data_tables[table_name]
+                if not isinstance(table, TabularToolDataTable):
+                    raise Exception(f"Expected a TabularToolDataTable but got a {type(table)}: {table}.")
+                return table.get_entry(query_attr, query_val, return_attr)
 
         param_dict["__tool_directory__"] = self.compute_environment.tool_directory()
         param_dict["__get_data_table_entry__"] = get_data_table_entry

@@ -62,21 +62,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts and login as an admin user."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        test_user_1 = self.test_db_util.get_user(common.test_user_1_email)
-        assert (
-            test_user_1 is not None
-        ), f"Problem retrieving user with email {common.test_user_1_email} from the database"
-        self.test_db_util.get_private_role(test_user_1)
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        test_user_2 = self.test_db_util.get_user(common.test_user_2_email)
-        assert (
-            test_user_2 is not None
-        ), f"Problem retrieving user with email {common.test_user_2_email} from the database"
-        self.test_db_util.get_private_role(test_user_2)
         self.login(email=common.admin_email, username=common.admin_username)
-        admin_user = self.test_db_util.get_user(common.admin_email)
-        assert admin_user is not None, f"Problem retrieving user with email {common.admin_email} from the database"
-        self.test_db_util.get_private_role(admin_user)
 
     def test_0005_create_datatypes_repository(self):
         """Create and populate the emboss_datatypes_0460 repository
@@ -91,13 +78,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
 
         This is step 2 - Create and populate package_bwa_0_5_9_0460.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name=bwa_repository_name,
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -125,7 +112,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         - Upload via url, with the tool_dependencies.xml in the root of another repository.
         - Upload via url, with the tool_dependencies.xml in a subfolder within another repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository_base_name = "complex_dependency_test_%d_0460"
         repository_base_description = "Test #%d for complex repository dependency definitions."
         repository_base_long_description = "Test #%d for complex repository dependency definitions."
@@ -135,7 +122,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                 description=repository_base_description % number,
                 long_description=repository_base_long_description % number,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
 
@@ -145,12 +132,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 4 - Upload an uncompressed tool_dependencies.xml to complex_dependency_test_1_0460 that specifies
         a complex repository dependency on package_bwa_0_5_9_0460 without a specified changeset revision or tool shed url.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "complex_dependency_test_1_0460", common.test_user_1_name
-        )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "package_bwa_0_5_9_0460", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("complex_dependency_test_1_0460", common.test_user_1_name)
+        package_repository = self._get_repository_by_name_and_owner("package_bwa_0_5_9_0460", common.test_user_1_name)
         self.upload_file(
             repository,
             filename="0460_files/tool_dependencies.xml",
@@ -175,12 +158,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 5 - Upload an tarball with tool_dependencies.xml to complex_dependency_test_2_0460 that specifies
         a complex repository dependency on package_bwa_0_5_9_0460 without a specified changeset revision or tool shed url.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "complex_dependency_test_2_0460", common.test_user_1_name
-        )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "package_bwa_0_5_9_0460", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("complex_dependency_test_2_0460", common.test_user_1_name)
+        package_repository = self._get_repository_by_name_and_owner("package_bwa_0_5_9_0460", common.test_user_1_name)
         self.upload_file(
             repository,
             filename="0460_files/tool_dependencies_in_root.tar",
@@ -205,12 +184,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 6 - Upload an tarball with tool_dependencies.xml in a subfolder to complex_dependency_test_3_0460 that
         specifies a complex repository dependency on package_bwa_0_5_9_0460 without a specified changeset revision or tool shed url.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "complex_dependency_test_3_0460", common.test_user_1_name
-        )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "package_bwa_0_5_9_0460", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("complex_dependency_test_3_0460", common.test_user_1_name)
+        package_repository = self._get_repository_by_name_and_owner("package_bwa_0_5_9_0460", common.test_user_1_name)
         self.upload_file(
             repository,
             filename="0460_files/tool_dependencies_in_subfolder.tar",
@@ -234,13 +209,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
 
         This is step 7 - Create hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460 and populate with tool dependencies.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name="hg_tool_dependency_0460",
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -259,7 +234,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -280,12 +255,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 8 - Upload to complex_dependency_test_4_0460 using the url hg://<tool shed url>/repos/user1/hg_tool_dependency_0460.
         """
         url = f"hg://{self.host}:{self.port}/repos/user1/hg_tool_dependency_0460"
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "complex_dependency_test_4_0460", common.test_user_1_name
-        )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "package_bwa_0_5_9_0460", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("complex_dependency_test_4_0460", common.test_user_1_name)
+        package_repository = self._get_repository_by_name_and_owner("package_bwa_0_5_9_0460", common.test_user_1_name)
         self.upload_url(
             repository,
             url=url,
@@ -310,12 +281,8 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 9 - Upload to complex_dependency_test_5_0460 using the url hg://<tool shed url>/repos/user1/hg_subfolder_tool_dependency_0460.
         """
         url = f"hg://{self.host}:{self.port}/repos/user1/hg_subfolder_tool_dependency_0460"
-        repository = self.test_db_util.get_repository_by_name_and_owner(
-            "complex_dependency_test_5_0460", common.test_user_1_name
-        )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            "package_bwa_0_5_9_0460", common.test_user_1_name
-        )
+        repository = self._get_repository_by_name_and_owner("complex_dependency_test_5_0460", common.test_user_1_name)
+        package_repository = self._get_repository_by_name_and_owner("package_bwa_0_5_9_0460", common.test_user_1_name)
         self.upload_url(
             repository,
             url=url,
@@ -347,7 +314,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         - Upload via url, with the repository_dependencies.xml in the root of another repository.
         - Upload via url, with the repository_dependencies.xml in a subfolder within another repository.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository_base_name = "repository_dependency_test_%d_0460"
         repository_base_description = "Test #%d for repository dependency definitions."
         repository_base_long_description = "Test #%d for repository dependency definitions."
@@ -357,7 +324,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
                 description=repository_base_description % number,
                 long_description=repository_base_long_description % number,
                 owner=common.test_user_1_name,
-                category_id=self.security.encode_id(category.id),
+                category=category,
                 strings_displayed=[],
             )
 
@@ -367,12 +334,10 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 11 - Upload an uncompressed repository_dependencies.xml to repository_dependency_test_1_0460 that specifies a
         repository dependency on emboss_datatypes_0460 without a specified changeset revision or tool shed url.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(
             "repository_dependency_test_1_0460", common.test_user_1_name
         )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_repository_name, common.test_user_1_name
-        )
+        package_repository = self._get_repository_by_name_and_owner(bwa_repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="0460_files/repository_dependencies.xml",
@@ -396,12 +361,10 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
 
         This is step 12 - Upload a tarball to repository_dependency_test_2_0460 with a repository_dependencies.xml in the root of the tarball.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(
             "repository_dependency_test_2_0460", common.test_user_1_name
         )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_repository_name, common.test_user_1_name
-        )
+        package_repository = self._get_repository_by_name_and_owner(bwa_repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="0460_files/in_root/repository_dependencies_in_root.tar",
@@ -426,12 +389,10 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 13 - Upload a tarball to repository_dependency_test_3_0460 with a repository_dependencies.xml in a
         subfolder within the tarball.
         """
-        repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(
             "repository_dependency_test_3_0460", common.test_user_1_name
         )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_repository_name, common.test_user_1_name
-        )
+        package_repository = self._get_repository_by_name_and_owner(bwa_repository_name, common.test_user_1_name)
         self.upload_file(
             repository,
             filename="0460_files/in_subfolder/repository_dependencies_in_subfolder.tar",
@@ -459,13 +420,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         This is step 14 - Create hg_repository_dependency_0460 and hg_subfolder_repository_dependency_0460 and populate
         with repository dependencies.
         """
-        category = self.test_db_util.get_category_by_name(category_name)
+        category = self.populator.get_category_with_name(category_name)
         repository = self.get_or_create_repository(
             name="hg_repository_dependency_0460",
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -484,7 +445,7 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             description=bwa_repository_description,
             long_description=bwa_repository_long_description,
             owner=common.test_user_1_name,
-            category_id=self.security.encode_id(category.id),
+            category=category,
             strings_displayed=[],
         )
         self.upload_file(
@@ -506,12 +467,10 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         hg://<tool shed url>/repos/user1/hg_repository_dependency_0460.
         """
         url = f"hg://{self.host}:{self.port}/repos/user1/hg_repository_dependency_0460"
-        repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(
             "repository_dependency_test_4_0460", common.test_user_1_name
         )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_repository_name, common.test_user_1_name
-        )
+        package_repository = self._get_repository_by_name_and_owner(bwa_repository_name, common.test_user_1_name)
         self.upload_url(
             repository,
             url=url,
@@ -537,12 +496,10 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         hg://<tool shed url>/repos/user1/hg_subfolder_repository_dependency_0460.
         """
         url = f"hg://{self.host}:{self.port}/repos/user1/hg_subfolder_repository_dependency_0460"
-        repository = self.test_db_util.get_repository_by_name_and_owner(
+        repository = self._get_repository_by_name_and_owner(
             "repository_dependency_test_5_0460", common.test_user_1_name
         )
-        package_repository = self.test_db_util.get_repository_by_name_and_owner(
-            bwa_repository_name, common.test_user_1_name
-        )
+        package_repository = self._get_repository_by_name_and_owner(bwa_repository_name, common.test_user_1_name)
         self.upload_url(
             repository,
             url=url,

@@ -42,6 +42,7 @@
     <tool file="${model_tools_path}/build_list.xml" />
     <tool file="${model_tools_path}/build_list_1.2.0.xml" />
     <tool file="${model_tools_path}/extract_dataset.xml" />
+    <tool file="${model_tools_path}/duplicate_file_to_collection.xml" />
   </section>
   <section id="expression_tools" name="Expression Tools">
     <tool file="expression_tools/parse_values_from_file.xml"/>
@@ -95,7 +96,6 @@
   </section>
   <section id="fetchAlignSeq" name="Fetch Alignments/Sequences">
     <tool file="maf/interval2maf_pairwise.xml" />
-    <tool file="maf/interval2maf.xml" />
     <tool file="maf/maf_split_by_species.xml" />
     <tool file="maf/interval_maf_to_merged_fasta.xml" />
     <tool file="maf/genebed_maf_to_fasta.xml" />

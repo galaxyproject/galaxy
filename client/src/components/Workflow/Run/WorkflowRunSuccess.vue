@@ -26,8 +26,8 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { WorkflowInvocationState } from "components/WorkflowInvocationState";
-import Webhooks from "mvc/webhooks";
+import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
+import Webhooks from "utils/webhooks";
 import { getAppRoot } from "onload/loadConfig";
 import { refreshContentsWrapper } from "utils/data";
 
@@ -55,7 +55,7 @@ export default {
         },
         historyTarget() {
             if (this.multipleInvocations) {
-                return `${getAppRoot()}history/view_multiple`;
+                return `${getAppRoot()}histories/view_multiple`;
             } else {
                 return `${getAppRoot()}history/switch_to_history?hist_id=${this.invocations[0].history_id}`;
             }
