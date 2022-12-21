@@ -112,10 +112,6 @@ class DatasetProtocol0(Protocol):
     ...
 
 
-class DatasetProtocol1(HasDataset, HasName, Protocol):
-    ...
-
-
 class DatasetProtocol5(HasExt, HasGetConvertedFilesByType, Protocol):
     ...
 

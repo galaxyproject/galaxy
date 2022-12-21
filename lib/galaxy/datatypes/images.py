@@ -11,7 +11,6 @@ import numpy as np
 import tifffile
 
 from galaxy.datatypes._protocols import (
-    DatasetProtocol1,
     DatasetProtocol6,
     Peekable,
     SetsMetadata,
@@ -67,7 +66,7 @@ class Image(data.Data):
         """Determine if the file is in this format"""
         return check_image_type(filename, self.image_formats)
 
-    def handle_dataset_as_image(self, hda: DatasetProtocol1) -> str:
+    def handle_dataset_as_image(self, hda: Peekable) -> str:
         dataset = hda.dataset
         name = hda.name or ""
         with open(dataset.file_name, "rb") as f:
