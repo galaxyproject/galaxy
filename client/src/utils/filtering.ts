@@ -350,23 +350,12 @@ export default class Filtering<T> {
      * */
     getFilterValue(filterText: string, filterName: string, alias = "eq"): string | boolean {
         const op = getOperatorForAlias(alias);
-        const reInQuotes = `'([^']*[^\\s']*)'`;
-        const reNoQuotes = `(\\S+)`;
-        // Array of re groups, note: order matters as in-quote filterVals must be checked first
-        const reGroups = [
-            `${filterName}${op}${reInQuotes}`,
-            `${filterName}${op}${reNoQuotes}`,
-            `${filterName}-${alias}:${reInQuotes}`,
-            `${filterName}-${alias}:${reNoQuotes}`,
-            `${filterName}_${alias}:${reInQuotes}`,
-            `${filterName}_${alias}:${reNoQuotes}`,
-        ];
-        const reString = reGroups.join("|");
+        const reString = `${filterName}(?:${op}|[-|_]${alias}:)(?:'([^']*[^\\s']*)'|(\\S+))`;
         const re = new RegExp(reString);
         const reMatch = re.exec(filterText);
         let filterVal = null;
         if (reMatch) {
-            filterVal = reMatch.slice(1, reGroups.length + 1).find((val) => val);
+            filterVal = reMatch[1] || reMatch[2];
         }
         return filterVal || this.defaultFilters[filterName];
     }
