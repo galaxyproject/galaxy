@@ -55,6 +55,7 @@ import { ref } from "vue";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
+import { useCurrentTheme } from "@/composables/userFlags";
 
 export default {
     components: {
@@ -66,12 +67,16 @@ export default {
     setup() {
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
+
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
+
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        return { toastRef, confirmDialogRef, uploadModal };
+        const { currentTheme } = useCurrentTheme();
+
+        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
     },
     data() {
         return {
@@ -93,8 +98,7 @@ export default {
             return true;
         },
         theme() {
-            // proof of concept. todo: refactor to allow theme switching
-            return this.config.themes["blue"];
+            return this.config.themes[this.currentTheme];
         },
         windowTab() {
             return this.windowManager.getTab();

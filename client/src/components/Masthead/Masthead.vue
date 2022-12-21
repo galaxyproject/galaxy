@@ -5,15 +5,14 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
-import { watch, computed, ref } from "vue";
+import { watch, ref } from "vue";
 import { onMounted } from "vue";
 import { useRoute } from "vue-router/composables";
+import ThemeSelector from "./ThemeSelector.vue";
 
-// basics
 const route = useRoute();
 const emit = defineEmits(["open-url"]);
 
-/* props */
 const props = defineProps({
     tabs: {
         type: Array,
@@ -45,24 +44,19 @@ const props = defineProps({
     },
 });
 
-/* refs */
 const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
-/* computed */
-const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
-
-/* methods */
 function setActiveTab() {
     const currentRoute = route.path;
     activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
 }
+
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
 }
 
-/* watchers */
 watch(
     () => route.path,
     () => {
@@ -70,7 +64,6 @@ watch(
     }
 );
 
-/* lifecyle */
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
     setActiveTab();
@@ -99,12 +92,23 @@ onMounted(() => {
         </b-navbar-nav>
         <b-navbar-nav>
             <masthead-item
-                v-for="(tab, idx) in allTabs"
+                v-for="(tab, idx) in props.tabs"
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
+
+            <ThemeSelector />
+
+            <masthead-item
+                v-for="(tab, idx) in extensionTabs"
+                v-show="tab.hidden !== true"
+                :key="`extension-tab-${idx}`"
+                :tab="tab"
+                :active-tab="activeTab"
+                @open-url="emit('open-url', $event)" />
+
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
         <quota-meter />
