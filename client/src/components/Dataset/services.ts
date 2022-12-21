@@ -17,7 +17,7 @@ export async function getDatasets(options: GetDatasetsOptions = {}) {
     const params: GetDatasetsApiOptions = {};
     if (options.sortBy) {
         const sortPrefix = options.sortDesc ? "-dsc" : "-asc";
-        params.order = `${options.sortBy}${sortPrefix}&`;
+        params.order = `${options.sortBy}${sortPrefix}`;
     }
     if (options.limit) {
         params.limit = options.limit;
