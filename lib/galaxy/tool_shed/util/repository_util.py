@@ -229,6 +229,8 @@ def generate_tool_shed_repository_install_dir(repository_clone_url, changeset_re
     # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
     items = tmp_url.split("/repos/")
     tool_shed_url = items[0]
+    if len(items) == 1:
+        raise Exception(f"Processing an invalid tool shed clone URL {repository_clone_url} - tmp_url {tmp_url}")
     repo_path = items[1]
     tool_shed_url = common_util.remove_port_from_tool_shed_url(tool_shed_url)
     return "/".join((tool_shed_url, "repos", repo_path, changeset_revision))
