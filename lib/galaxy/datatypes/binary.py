@@ -4002,6 +4002,34 @@ class WiffTar(BafTar):
         return "Sciex WIFF/SCAN archive"
 
 
+class Wiff2Tar(BafTar):
+    """
+    A tar'd up .wiff2/.scan pair containing Sciex WIFF format data
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('some.wiff2.tar')
+    >>> Wiff2Tar().sniff(fname)
+    True
+    >>> fname = get_test_fname('brukerbaf.d.tar')
+    >>> Wiff2Tar().sniff(fname)
+    False
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Wiff2Tar().sniff(fname)
+    False
+    """
+
+    file_ext = "wiff2.tar"
+
+    def sniff(self, filename: str) -> bool:
+        if tarfile.is_tarfile(filename):
+            with tarfile.open(filename) as rawtar:
+                return ".wiff2" in [os.path.splitext(os.path.basename(f).lower())[1] for f in rawtar.getnames()]
+        return False
+
+    def get_type(self) -> str:
+        return "Sciex WIFF2/SCAN archive"
+
+
 @build_sniff_from_prefix
 class Pretext(Binary):
     """
