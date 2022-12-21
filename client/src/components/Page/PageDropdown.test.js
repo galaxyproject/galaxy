@@ -47,7 +47,7 @@ describe("PageDropdown.vue", () => {
             expect(titleWrapper.text()).toBe("My Page Title");
         });
 
-        it("should should decorate dropdown with page ID for automation", async () => {
+        it("should decorate dropdown with page ID for automation", async () => {
             const linkWrapper = await wrapper.find("[data-page-dropdown='page1235']");
             expect(linkWrapper.exists()).toBeTruthy();
         });
