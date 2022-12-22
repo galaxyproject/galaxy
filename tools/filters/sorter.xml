@@ -1,4 +1,4 @@
-<tool id="sort1" name="Sort" version="1.2.0">
+<tool id="sort1" name="Sort" version="1.2.1">
     <description>data in ascending or descending order</description>
     <requirements>
         <requirement type="package" version="3.8">python</requirement>
