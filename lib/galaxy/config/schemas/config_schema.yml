@@ -3684,9 +3684,9 @@ mapping:
         required: false
         desc: Display built-in converters in the tool panel.
 
-      themes_file:
+      themes_config_file:
         type: str
-        default: themes.yml
+        default: themes_conf.yml
         path_resolves_to: config_dir
         required: false
         desc: |
