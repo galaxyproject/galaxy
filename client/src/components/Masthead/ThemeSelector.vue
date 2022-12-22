@@ -16,6 +16,10 @@ watch(
     () => {
         const themes = Object.keys(config.value.themes);
         show.value = themes?.length > 1 ?? false;
+
+        if (!themes.includes(currentTheme.value)) {
+            setCurrentTheme(themes[0]);
+        }
     }
 );
 
