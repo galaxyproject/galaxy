@@ -141,7 +141,7 @@ export default {
         details() {
             return {
                 effectiveExtensions: this.effectiveExtensions,
-                listGenomes: this.listExtensions,
+                listGenomes: this.listGenomes,
                 currentFtp: this.currentFtp,
                 fileSourcesConfigured: this.fileSourcesConfigured,
                 defaultExtension: this.defaultExtension,
