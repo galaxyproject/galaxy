@@ -353,7 +353,8 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         encoded_repository_id = repository.id
         strings_displayed = ["Invalid+changeset+revision"]
-        self.visit_url(
+        view_repo_url = (
             f"/repository/view_repository?id={encoded_repository_id}&changeset_revision=nonsensical_changeset"
         )
+        self.visit_url(view_repo_url)
         self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=[])
