@@ -49,23 +49,23 @@ export default {
     props: ["page", "root"],
     computed: {
         urlEdit() {
-            return `${this.root}page/edit_content?id=${this.page.id}`;
+            return `${this.root}pages/editor?id=${this.page.id}`;
         },
         urlEditAttributes() {
-            return `${this.root}page/edit?id=${this.page.id}`;
+            return `${this.root}pages/edit?id=${this.page.id}`;
         },
         urlShare() {
             return `${this.root}pages/sharing?id=${this.page.id}`;
         },
         urlView() {
-            return `${this.root}page/display_by_id?id=${this.page.id}`;
+            return `${this.root}published/page?id=${this.page.id}`;
         },
         readOnly() {
             return !!this.page.shared;
         },
     },
     created() {
-        this.services = new Services({ root: this.root });
+        this.services = new Services();
     },
     methods: {
         onDelete() {
