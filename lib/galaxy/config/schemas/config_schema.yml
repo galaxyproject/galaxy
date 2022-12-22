@@ -3691,4 +3691,4 @@ mapping:
         required: false
         desc: |
           Optional file containing one or more themes for galaxy. If several themes
-          are defined, users can choose their preferd theme in the client.
+          are defined, users can choose their preferred theme in the client.
