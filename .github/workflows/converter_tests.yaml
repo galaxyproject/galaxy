@@ -23,6 +23,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.7']
+        path: [{'path': 'lib/galaxy/datatypes/converters/', 'error_level': 'warn'}, {'path': 'tools/', 'error_level': 'error'}]
     steps:
       - if: github.event_name == 'schedule'
         run: |
@@ -54,19 +55,20 @@ jobs:
         shell: bash
       - name: Determine tools and converters to check
         run: |
-          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -v "macros" | grep -v -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip > tool_list.txt
-          echo "Skipping checks for the following converters:"
-          find 'galaxy root'/lib/galaxy/datatypes/converters/ 'galaxy root'/tools/ -name "*xml" | grep -v "macros" | grep -f 'galaxy root'/tools/.tt_skip -f 'galaxy root'/lib/galaxy/datatypes/converters/.tt_skip
-          echo "Checking only the following converters:"
+          find 'galaxy root'/${{ matrix.path.path }} -name "*xml" | grep -v "macros" | grep -v -f 'galaxy root'/${{ matrix.path.path }}/.tt_skip > tool_list.txt
+          echo "Skipping checks for the following:"
+          find 'galaxy root'/${{ matrix.path.path }} -name "*xml" | grep -v "macros" | grep -f 'galaxy root'/${{ matrix.path.path }}/.tt_skip
+          echo "Checking only the following:"
           cat tool_list.txt
       - name: Lint converters
         run: |
-          grep 'lib/galaxy/datatypes/converters/' tool_list.txt > converters.txt
-          mapfile -t TOOL_ARRAY < converters.txt
-          planemo lint --skip citations,stdio,help --report_level warn "${TOOL_ARRAY[@]}"
-          grep -v 'lib/galaxy/datatypes/converters/' tool_list.txt > tools.txt
-          mapfile -t TOOL_ARRAY < tools.txt
-          planemo lint --skip citations,stdio,help --report_level warn --error_level error "${TOOL_ARRAY[@]}"
+          mapfile -t TOOL_ARRAY < tool_list.txt
+          planemo lint --skip citations,stdio,help --report_level warn --fail_level ${{ matrix.path.error_level }} "${TOOL_ARRAY[@]}"
+      - name: Mock some test data
+        if: always()
+        run: |
+          mkdir -p 'galaxy root'/tool-data/shared/ucsc/chrom/
+          curl ftp://hgdownload.soe.ucsc.edu/apache/htdocs/goldenPath/hg17/bigZips/hg17.chrom.sizes -o 'galaxy root'/tool-data/shared/ucsc/chrom/hg17.len
       - name: Run tests
         if: always()
         run: |
