@@ -82,9 +82,9 @@ onMounted(() => {
                 <img alt="logo" :src="safePath(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
             </b-navbar-brand>
-            <b-nav-item v-if="brand" class="navbar-brand-title" disabled>
+            <span v-if="brand" class="navbar-text">
                 {{ brand }}
-            </b-nav-item>
+            </span>
         </b-navbar-nav>
         <b-navbar-nav>
             <masthead-item
@@ -167,11 +167,11 @@ onMounted(() => {
             height: 2.3rem;
         }
     }
-    .navbar-brand-title {
+    .navbar-text {
         font-weight: bold;
         font-family: Verdana, sans-serif;
-        font-size: calc($masthead-height / 3);
-        line-height: calc($masthead-height / 3);
+        font-size: 1rem;
+        line-height: 2rem;
         color: var(--masthead-text-color);
     }
 }
