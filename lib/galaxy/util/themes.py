@@ -1,4 +1,7 @@
-from typing import Dict, Union
+from typing import (
+    Dict,
+    Union,
+)
 
 Theme = Dict[str, Union["Theme", str]]
 
