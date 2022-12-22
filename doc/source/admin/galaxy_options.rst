@@ -5062,15 +5062,15 @@
 :Type: bool
 
 
-~~~~~~~~~~~~~~~
-``themes_file``
-~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
+``themes_config_file``
+~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Optional file containing one or more themes for galaxy. If several
-    themes are defined, users can choose their preferd theme in the
+    themes are defined, users can choose their preferred theme in the
     client.
     The value of this option will be resolved with respect to
     <config_dir>.
-:Default: ``themes.yml``
+:Default: ``themes_conf.yml``
 :Type: str
