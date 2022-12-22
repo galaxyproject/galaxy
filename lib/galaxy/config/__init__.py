@@ -664,7 +664,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "file_path",
         "tool_data_table_config_path",
         "tool_config_file",
-        "themes_file",
+        "themes_config_file",
     }
 
     add_sample_file_to_defaults = {
@@ -1172,8 +1172,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         # Load and flatten themes into css variables
         self.themes = {}
 
-        if self._path_exists(self.themes_file):
-            with open(self.themes_file) as f:
+        if self._path_exists(self.themes_config_file):
+            with open(self.themes_config_file) as f:
                 themes = yaml.safe_load(f)
 
                 for key, val in themes.items():
