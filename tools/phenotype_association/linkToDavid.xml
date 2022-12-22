@@ -2,7 +2,7 @@
   <description>functional annotation for a list of genes</description>
 
   <command interpreter="perl">
-    linkToDavid.pl $input $numerical_column $type $out_file1
+    linkToDavid.pl '$input' $numerical_column $type '$out_file1'
   </command>
 
   <inputs>
@@ -59,7 +59,11 @@
       <param name="input" ftype="tabular" value="linkToDavid.tabular" />
       <param name="numerical_column" value="1" />
       <param name="type" value="ENTREZ_GENE_ID" />
-      <output name="out_file1" file="linkToDavid_1.out" />
+      <output name="out_file1">
+        <assert_contents>
+          <has_text text="&lt;A TARGET=_BLANK HREF=&quot;http://david.ncifcrf.gov/api.jsp?type=ENTREZ_GENE_ID&amp;ids=10188,10457,10628,1080,1116,11200,1452,1474,1499,1589&amp;tool=summary&quot;&gt;click here to send of identifiers to DAVID&lt;/A&gt;"/>
+        </assert_contents>
+      </output>
     </test>
   </tests>
 

@@ -26,7 +26,12 @@
       <param name="input" value="ldInput1.txt" />
       <param name="rsquare" value="0.64" />
       <param name="freq" value="0.00" />
-      <output name="output" file="ldOutput1.txt" />
+      <output name="output">
+        <assert_contents>
+          <has_n_lines n="9"/>
+          <has_line line="rs730075"/>
+        </assert_contents>
+      </output>
     </test>
   </tests>
 
