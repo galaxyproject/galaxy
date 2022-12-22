@@ -646,26 +646,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return self.valid_repository_grid(trans, **kwd)
 
     @web.expose
-    def contact_owner(self, trans, id, **kwd):
-        message = escape(kwd.get("message", ""))
-        status = kwd.get("status", "done")
-        repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(
-            trans.app, id, repository.tip(), metadata_only=True
-        )
-        if trans.user and trans.user.email:
-            return trans.fill_template(
-                "/webapps/tool_shed/repository/contact_owner.mako",
-                repository=repository,
-                metadata=metadata,
-                message=message,
-                status=status,
-            )
-        else:
-            # Do all we can to eliminate spam.
-            return trans.show_error_message("You must be logged in to contact the owner of a repository.")
-
-    @web.expose
     def create_galaxy_docker_image(self, trans, **kwd):
         message = escape(kwd.get("message", ""))
         status = kwd.get("status", "done")
@@ -2182,44 +2162,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             repositories_select_field=repositories_select_field,
             message=message,
             status=status,
-        )
-
-    @web.expose
-    def send_to_owner(self, trans, id, message=""):
-        repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        if not message:
-            message = "Enter a message"
-            status = "error"
-        elif trans.user and trans.user.email:
-            smtp_server = trans.app.config.smtp_server
-            from_address = trans.app.config.email_from
-            if smtp_server is None or from_address is None:
-                return trans.show_error_message("Mail is not configured for this Galaxy tool shed instance")
-            to_address = repository.user.email
-            # Get the name of the server hosting the tool shed instance.
-            host = trans.request.host
-            # Build the email message
-            body = string.Template(suc.contact_owner_template).safe_substitute(
-                username=trans.user.username,
-                repository_name=repository.name,
-                email=trans.user.email,
-                message=message,
-                host=host,
-            )
-            subject = f"Regarding your tool shed repository named {repository.name}"
-            # Send it
-            try:
-                util.send_mail(from_address, to_address, subject, body, trans.app.config)
-                message = "Your message has been sent"
-                status = "done"
-            except Exception as e:
-                message = f"An error occurred sending your message by email: {util.unicodify(e)}"
-                status = "error"
-        else:
-            # Do all we can to eliminate spam.
-            return trans.show_error_message("You must be logged in to contact the owner of a repository.")
-        return trans.response.send_redirect(
-            web.url_for(controller="repository", action="contact_owner", id=id, message=message, status=status)
         )
 
     @web.expose

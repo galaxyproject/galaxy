@@ -87,20 +87,6 @@ changes were made to the repository named "${repository_name}".
 -----------------------------------------------------------------------------
 """
 
-contact_owner_template = """
-GALAXY TOOL SHED REPOSITORY MESSAGE
-------------------------
-
-The user '${username}' sent you the following message regarding your tool shed
-repository named '${repository_name}'.  You can respond by sending a reply to
-the user's email address: ${email}.
------------------------------------------------------------------------------
-${message}
------------------------------------------------------------------------------
-This message was sent from the Galaxy Tool Shed instance hosted on the server
-'${host}'
-"""
-
 
 def count_repositories_in_category(app: "ToolShedApp", category_id: str) -> int:
     sa_session = app.model.session

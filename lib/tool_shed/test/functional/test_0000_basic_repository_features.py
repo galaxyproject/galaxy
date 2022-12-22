@@ -269,28 +269,9 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.check_for_strings(strings_displayed=[error_message])
 
     def test_0105_contact_repository_owner(self):
-        """Fill out and submit the form to contact the owner of a repository.
-
-        This test should not actually send the email, since functional tests are designed to function without
-        any external network connection. The embedded tool shed server these tests are running against has been configured
-        with an SMTP server address that will not and should not resolve correctly. However, since the successful sending of
-        the email is the last step in the process, this will verify functional correctness of all preceding steps.
-        """
-        self.login(email=common.test_user_2_email, username=common.test_user_2_name)
-        repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        message = "This is a test message."
-        strings_displayed = [
-            "Contact the owner of the repository named",
-            repository.name,
-            "streamline appropriate communication",
-        ]
-        post_submit_strings_displayed = ["An error occurred sending your message by email"]
-        self.send_message_to_repository_owner(
-            repository=repository,
-            message=message,
-            strings_displayed=strings_displayed,
-            post_submit_strings_displayed=post_submit_strings_displayed,
-        )
+        """"""
+        # We no longer implement this.
+        pass
 
     def test_0110_delete_filtering_repository(self):
         """Delete the filtering_0000 repository and verify that it no longer has any downloadable revisions."""

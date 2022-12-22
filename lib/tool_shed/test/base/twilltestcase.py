@@ -1760,22 +1760,6 @@ class ShedTwillTestCase(ShedApiTestCase):
             tc.submit()
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
-    def send_message_to_repository_owner(
-        self,
-        repository: Repository,
-        message: str,
-        strings_displayed=None,
-        strings_not_displayed=None,
-        post_submit_strings_displayed=None,
-        post_submit_strings_not_displayed=None,
-    ) -> None:
-        params = {"id": repository.id}
-        self.visit_url("/repository/contact_owner", params=params)
-        self.check_for_strings(strings_displayed, strings_not_displayed)
-        tc.fv(1, "message", message)
-        tc.submit()
-        self.check_for_strings(post_submit_strings_displayed, post_submit_strings_not_displayed)
-
     def set_form_value(self, form, kwd, field_name, field_value):
         """
         Set the form field field_name to field_value if it exists, and return the provided dict containing that value. If

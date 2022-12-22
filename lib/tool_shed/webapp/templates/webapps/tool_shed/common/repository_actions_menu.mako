@@ -33,11 +33,6 @@
 
         can_browse_contents = not is_new
 
-        if trans.user and trans.user != repository.user:
-            can_contact_owner = True
-        else:
-            can_contact_owner = False
-        
         if not is_new and trans.user and ( is_admin or repository.user == trans.user ) and not is_deprecated:
             can_deprecate = True
         else:
@@ -111,9 +106,6 @@
                 %endif
                 %if can_rate:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='rate_repository', id=trans.app.security.encode_id( repository.id ) )}">Rate repository</a>
-                %endif
-                %if can_contact_owner:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='contact_owner', id=trans.security.encode_id( repository.id ) )}">Contact repository owner</a>
                 %endif
                 %if can_reset_all_metadata:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='reset_all_metadata', id=trans.security.encode_id( repository.id ) )}">Reset all repository metadata</a>
