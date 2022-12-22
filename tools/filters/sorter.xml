@@ -72,7 +72,7 @@ python '$__tool_directory__/sorter.py'
     </outputs>
     <tests>
         <test>
-            <param name="input" value="1.bed"/>
+            <param name="input" value="sort_in1.bed"/>
             <param name="column" value="1"/>
             <param name="style" value="alpha"/>
             <param name="order" value="ASC"/>
@@ -84,13 +84,13 @@ python '$__tool_directory__/sorter.py'
             <output name="out_file1" file="sort_out1.bed"/>
         </test>
         <test>
-            <param name="input" value="1.bed"/>
-            <param name="column" value="3"/>
-            <param name="style" value="num"/>
-            <param name="order" value="DESC"/>
+            <param name="input" value="sort_in1.bed"/>
+            <param name="column" value="1"/>
+            <param name="style" value="alpha"/>
+            <param name="order" value="ASC"/>
             <repeat name="column_set">
-                <param name="other_column" value="1"/>
-                <param name="other_style" value="alpha"/>
+                <param name="other_column" value="3"/>
+                <param name="other_style" value="num"/>
                 <param name="other_order" value="ASC"/>
             </repeat>
             <output name="out_file1" file="sort_out2.bed"/>
