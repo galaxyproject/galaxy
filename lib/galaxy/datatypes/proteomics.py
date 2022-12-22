@@ -75,6 +75,7 @@ class Wiff(Binary):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
+
 class Wiff2(Binary):
     """Class for wiff2 files."""
 
