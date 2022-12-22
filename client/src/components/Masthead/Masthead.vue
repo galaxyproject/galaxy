@@ -73,18 +73,14 @@ onMounted(() => {
 <template>
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <b-navbar-nav>
-            <b-navbar-brand class="ml-2 mr-1">
-                <b-button
-                    id="analysis"
-                    v-b-tooltip.hover
-                    variant="link"
-                    size="sm"
-                    title="Home"
-                    aria-label="homepage"
-                    :href="safePath(logoUrl)">
-                    <img alt="logo" :src="safePath(logoSrc)" />
-                    <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
-                </b-button>
+            <b-navbar-brand
+                class="ml-2 mr-1"
+                v-b-tooltip.hover
+                title="Home"
+                aria-label="homepage"
+                :href="safePath(logoUrl)">
+                <img alt="logo" :src="safePath(logoSrc)" />
+                <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
             </b-navbar-brand>
             <b-nav-item v-if="brand" class="navbar-brand-title" disabled>
                 {{ brand }}
@@ -98,9 +94,7 @@ onMounted(() => {
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-
             <ThemeSelector />
-
             <masthead-item
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
@@ -108,7 +102,6 @@ onMounted(() => {
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-
             <masthead-item v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
         </b-navbar-nav>
         <quota-meter />
@@ -180,26 +173,15 @@ onMounted(() => {
             }
         }
     }
-
-    &:deep(.navbar-brand) {
-        color: var(--masthead-text-active);
-
-        #analysis {
-            padding: 0;
-
-            &:focus-visible {
-                outline: 2px solid var(--masthead-text-hover);
-            }
-
-            img {
-                display: inline;
-                border: none;
-                height: 2.22rem;
-            }
+    .navbar-brand {
+        cursor: pointer;
+        img {
+            display: inline;
+            border: none;
+            height: 2.3rem;
         }
     }
-
-    &:deep(.navbar-brand-title) {
+    .navbar-brand-title {
         font-weight: bold;
         font-family: Verdana, sans-serif;
         font-size: calc($masthead-height / 3);
