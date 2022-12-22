@@ -173,10 +173,10 @@ export default {
             this.showRemove = false;
         },
         onDrop(e) {
+            this.$root.$emit("bv::hide::tooltip", this.iconId);
             if (this.canAccept.canAccept) {
                 this.terminal.connect(this.draggingConnection.terminal);
                 this.showRemove = true;
-                this.$root.$emit("bv::hide::tooltip", this.iconId);
             }
         },
     },

@@ -15,6 +15,7 @@ import * as _simpleSteps from "../test-data/simple_steps.json";
 import * as _advancedSteps from "../test-data/parameter_steps.json";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import type { DataOutput } from "@/stores/workflowStepStore";
 import { NULL_COLLECTION_TYPE_DESCRIPTION } from "./collectionTypeDescription";
 
 const simpleSteps = _simpleSteps as { [index: string]: Step };
@@ -76,11 +77,13 @@ describe("terminalFactory", () => {
 describe("canAccept", () => {
     let terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
     let stepStore: ReturnType<typeof useWorkflowStepStore>;
+    let connectionStore: ReturnType<typeof useConnectionStore>;
     beforeEach(() => {
         setActivePinia(createPinia());
         terminals = setupAdvanced();
         stepStore = useWorkflowStepStore();
-        Object.entries(advancedSteps).map(([key, step]) => {
+        connectionStore = useConnectionStore();
+        Object.entries(JSON.parse(JSON.stringify(advancedSteps)) as { [index: string]: Step }).map(([key, step]) => {
             stepStore.addStep(step);
         });
     });
@@ -268,7 +271,6 @@ describe("canAccept", () => {
     // TODO: test mapOver reset when constraint removed
     it("resets mapOver when constraint is lifted", () => {
         const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
-        const simpleDataOut = terminals["data input"]["output"] as OutputTerminal;
         const dataIn = terminals["simple data"]["input"] as InputTerminal;
         const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
         const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
@@ -281,7 +283,6 @@ describe("canAccept", () => {
         // TODO: avoid this if possible ...
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         dataInTwo.disconnect(dataOut);
-        console.log("after disconnect", stepStore.stepMapOver);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
     it("rejects connecting incompatible connection types", () => {
@@ -378,6 +379,35 @@ describe("canAccept", () => {
         expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
         expect(listTwoIn.canAccept(collectionOut).reason).toBe(
             "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+        );
+    });
+    it("disconnects invalid input terminals", () => {
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataIn = terminals["simple data 2"]["input"] as InputTerminal;
+        dataIn.connect(dataOut);
+        const oldStep = stepStore.getStep(dataOut.stepId);
+        const stepOutput = oldStep.outputs[0] as DataOutput;
+        stepOutput["extensions"] = ["ab1"];
+        dataOut.datatypes = ["ab1"];
+        dataOut.destroyInvalidConnections();
+        expect(connectionStore.connections).toEqual([]);
+        // disconnects and connection will be invalid
+        expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(dataOut).reason).toBe(
+            "Effective output data type(s) [ab1] do not appear to match input type(s) [txt]."
+        );
+    });
+    it("disconnects invalid output terminals", () => {
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataIn = terminals["simple data 2"]["input"] as InputTerminal;
+        dataIn.connect(dataOut);
+        dataIn.datatypes = ["ab1"];
+        dataIn.destroyInvalidConnections();
+        expect(connectionStore.connections).toEqual([]);
+        // disconnects and connection will be invalid
+        expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(dataOut).reason).toBe(
+            "Effective output data type(s) [tabular] do not appear to match input type(s) [ab1]."
         );
     });
 });

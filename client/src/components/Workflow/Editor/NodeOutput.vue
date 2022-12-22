@@ -32,7 +32,7 @@
 import DraggableWrapper from "./DraggablePan";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useTerminal } from "./composables/useTerminal";
-import { ref } from "vue";
+import { ref, computed, watch, reactive } from "vue";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 
 export default {
@@ -74,8 +74,26 @@ export default {
     setup(props) {
         const el = ref(null);
         const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
-        const terminal = useTerminal(ref(props.stepId), ref(props.output), ref(props.DatatypesMapperModel));
-        return { el, position, terminal };
+        const extensions = computed(() => {
+            const changeDatatype =
+                props.postJobActions[`ChangeDatatypeAction${props.output.label}`] ||
+                props.postJobActions[`ChangeDatatypeAction${props.output.name}`];
+            let extensions =
+                changeDatatype?.action_arguments.newtype ||
+                props.output.extensions ||
+                props.output.type ||
+                "unspecified";
+            if (!Array.isArray(extensions)) {
+                extensions = [extensions];
+            }
+            return extensions;
+        });
+        const effectiveOutput = ref({ ...props.output, extensions: extensions.value });
+        watch(extensions, () => {
+            effectiveOutput.value = { ...props.output, extensions: extensions.value };
+        });
+        const terminal = useTerminal(ref(props.stepId), effectiveOutput, ref(props.datatypesMapper));
+        return { el, position, terminal, extensions };
     },
     data() {
         return {
@@ -128,22 +146,6 @@ export default {
                 return `${cls} multiple`;
             }
             return cls;
-        },
-        forcedExtension() {
-            const changeDatatype =
-                this.postJobActions[`ChangeDatatypeAction${this.output.label}`] ||
-                this.postJobActions[`ChangeDatatypeAction${this.output.name}`];
-            return changeDatatype?.action_arguments.newtype;
-        },
-        extensions() {
-            let extensions = this.forcedExtension || this.output.extensions || this.output.type || "unspecified";
-            if (!Array.isArray(extensions)) {
-                extensions = [extensions];
-            }
-            return extensions;
-        },
-        effectiveOutput() {
-            return { ...this.output, extensions: this.extensions };
         },
     },
     watch: {

@@ -31,6 +31,7 @@ class ConnectionAcceptable {
 interface BaseTerminalArgs {
     name: string;
     stepId: number;
+    datatypesMapper: DatatypesMapperModel;
 }
 
 interface InputTerminalInputs {
@@ -40,7 +41,6 @@ interface InputTerminalInputs {
 }
 
 interface InputTerminalArgs extends BaseTerminalArgs {
-    datatypesMapper: DatatypesMapperModel;
     input: InputTerminalInputs;
 }
 
@@ -51,6 +51,7 @@ class Terminal extends EventEmitter {
     multiple: boolean;
     stepId: number;
     terminalType: "input" | "output";
+    datatypesMapper: DatatypesMapperModel;
 
     constructor(attr: BaseTerminalArgs) {
         super();
@@ -60,6 +61,7 @@ class Terminal extends EventEmitter {
         this.name = attr.name;
         this.multiple = false;
         this.terminalType = "input";
+        this.datatypesMapper = attr.datatypesMapper;
     }
     public get id() {
         return `node-${this.stepId}-${this.terminalType}-${this.name}`;
@@ -77,7 +79,7 @@ class Terminal extends EventEmitter {
         );
         this.connectionStore.addConnection(connection);
     }
-    disconnect(other: Terminal | Connection) {
+    disconnect(other: BaseOutputTerminal | Connection) {
         let connection: Connection;
         if (other instanceof Terminal) {
             connection = new Connection(
@@ -155,13 +157,11 @@ class Terminal extends EventEmitter {
 }
 
 class BaseInputTerminal extends Terminal {
-    datatypesMapper: DatatypesMapperModel;
     datatypes: InputTerminalInputs["datatypes"];
     optional: InputTerminalInputs["optional"];
 
     constructor(attr: InputTerminalArgs) {
         super(attr);
-        this.datatypesMapper = attr.datatypesMapper;
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
@@ -270,7 +270,6 @@ class BaseInputTerminal extends Terminal {
         if (other instanceof OutputParameterTerminal) {
             return new ConnectionAcceptable(false, "Cannot connect workflow parameter to data input.");
         }
-
         return producesAcceptableDatatype(this.datatypesMapper, this.datatypes, other.datatypes);
     }
     _producesAcceptableDatatypeAndOptionalness(other: BaseOutputTerminal) {
@@ -289,6 +288,16 @@ class BaseInputTerminal extends Terminal {
             otherCollectionType = otherMapOver.append(otherCollectionType);
         }
         return otherCollectionType;
+    }
+    destroyInvalidConnections() {
+        this.connections.forEach((connection) => {
+            const outputStep = this.stepStore.getStep(connection.output.stepId);
+            const terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name)!;
+            const outputTerminal = terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
+            if (!this.attachable(outputTerminal).canAccept) {
+                this.disconnect(outputTerminal);
+            }
+        });
     }
 }
 
@@ -494,6 +503,16 @@ class BaseOutputTerminal extends Terminal {
         this.optional = attr.optional;
         this.terminalType = "output";
     }
+    destroyInvalidConnections() {
+        this.connections.forEach((connection) => {
+            const inputStep = this.stepStore.getStep(connection.input.stepId);
+            const terminalSource = inputStep.inputs.find((input) => input.name === connection.input.name)!;
+            const inputTerminal = terminalFactory(inputStep.id, terminalSource, this.datatypesMapper);
+            if (!inputTerminal.attachable(this).canAccept) {
+                inputTerminal.disconnect(this);
+            }
+        });
+    }
 }
 
 export class OutputTerminal extends BaseOutputTerminal {}
@@ -569,7 +588,7 @@ export function producesAcceptableDatatype(
     );
 }
 
-type TerminalOf<T> = T extends DataStepInput
+type TerminalOf<T extends TerminalSource> = T extends DataStepInput
     ? InputTerminal
     : T extends DataCollectionStepInput
     ? InputCollectionTerminal
@@ -583,11 +602,11 @@ type TerminalOf<T> = T extends DataStepInput
     ? OutputParameterTerminal
     : never;
 
-export function terminalFactory(
+export function terminalFactory<T extends TerminalSource>(
     stepId: number,
-    terminalSource: TerminalSource,
+    terminalSource: T,
     datatypesMapper: DatatypesMapperModel
-): TerminalOf<typeof terminalSource> {
+): TerminalOf<T> {
     if ("input_type" in terminalSource) {
         const terminalArgs = {
             datatypesMapper: datatypesMapper,
@@ -599,11 +618,12 @@ export function terminalFactory(
             multiple: terminalSource.multiple,
             optional: terminalSource.optional,
         };
-        if (terminalSource.input_type === "dataset") {
+        if (terminalSource.input_type == "dataset") {
+            // type cast appears to be necessary: https://github.com/Microsoft/TypeScript/issues/13995
             return new InputTerminal({
                 ...terminalArgs,
                 input: inputArgs,
-            });
+            }) as TerminalOf<T>;
         } else if (terminalSource.input_type === "dataset_collection") {
             return new InputCollectionTerminal({
                 ...terminalArgs,
@@ -611,7 +631,7 @@ export function terminalFactory(
                 input: {
                     ...inputArgs,
                 },
-            });
+            }) as TerminalOf<T>;
         } else if (terminalSource.input_type === "parameter") {
             return new InputParameterTerminal({
                 ...terminalArgs,
@@ -619,31 +639,32 @@ export function terminalFactory(
                 input: {
                     ...inputArgs,
                 },
-            });
+            }) as TerminalOf<T>;
         }
     } else if (terminalSource.name) {
         const outputArgs = {
             name: terminalSource.name,
             optional: terminalSource.optional,
             stepId: stepId,
+            datatypesMapper: datatypesMapper,
         };
         if ("parameter" in terminalSource) {
             return new OutputParameterTerminal({
                 ...outputArgs,
                 type: terminalSource.type,
-            });
+            }) as TerminalOf<T>;
         } else if ("collection" in terminalSource && terminalSource.collection) {
             return new OutputCollectionTerminal({
                 ...outputArgs,
                 datatypes: terminalSource.extensions,
                 collection_type: terminalSource.collection_type,
                 collection_type_source: terminalSource.collection_type_source,
-            });
+            }) as TerminalOf<T>;
         } else {
             return new OutputTerminal({
                 ...outputArgs,
                 datatypes: terminalSource.extensions,
-            });
+            }) as TerminalOf<T>;
         }
     }
     throw `Could not build terminal for ${terminalSource}`;
