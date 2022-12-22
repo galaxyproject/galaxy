@@ -16,7 +16,7 @@ $masthead-text-active: lighten($brand-light, 15%);
 $masthead-text-hover: $brand-toggle;
 $masthead-link-color: transparent;
 $masthead-link-hover: transparent;
-$masthead-link-background: darken($masthead-color, 10%);
+$masthead-link-active: darken($masthead-color, 10%);
 
 // Text colors
 $text-color: $brand-dark;

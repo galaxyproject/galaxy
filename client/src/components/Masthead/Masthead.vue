@@ -74,8 +74,8 @@ onMounted(() => {
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <b-navbar-nav>
             <b-navbar-brand
-                class="ml-2 mr-1"
                 v-b-tooltip.hover
+                class="ml-2 mr-1"
                 title="Home"
                 aria-label="homepage"
                 :href="safePath(logoUrl)">
@@ -116,10 +116,8 @@ onMounted(() => {
     margin-bottom: 0;
     background: var(--masthead-color);
     height: $masthead-height;
-
     &:deep(.navbar-nav) {
         height: $masthead-height;
-
         & > li {
             // This allows the background color to fill the full height of the
             // masthead, while still keeping the contents centered (using flex)
@@ -127,37 +125,26 @@ onMounted(() => {
             display: flex;
             align-items: center;
             background: var(--masthead-link-color);
-
             &:hover {
-                background: var(--masthead-link-hover) !important;
+                background: var(--masthead-link-hover);
             }
-
             &.show,
             &.active {
                 background: var(--masthead-link-active);
-
                 .nav-link {
                     color: var(--masthead-text-active);
                 }
             }
-
             .nav-link {
                 position: relative;
                 cursor: pointer;
                 text-decoration: none;
                 color: var(--masthead-text-color);
-
-                &:focus-visible {
-                    outline: 2px solid var(--masthead-text-hover);
-                }
-
                 &:hover {
                     color: var(--masthead-text-hover);
                 }
-
                 &.nav-icon {
                     font-size: 1.3em;
-
                     .nav-note {
                         position: absolute;
                         left: 1.9rem;
@@ -166,7 +153,6 @@ onMounted(() => {
                         font-weight: bold;
                     }
                 }
-
                 &.toggle {
                     color: var(--masthead-text-hover);
                 }
