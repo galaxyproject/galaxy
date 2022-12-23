@@ -13,14 +13,17 @@
 </template>
 
 <script>
-import { openGlobalUploadModal } from "components/Upload";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 export default {
     props: {
         message: { type: String, default: "This history is empty." },
     },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
+    },
     methods: {
-        openGlobalUploadModal,
         clickDataLink() {
             this.eventHub.$emit("openToolSection", "getext");
         },

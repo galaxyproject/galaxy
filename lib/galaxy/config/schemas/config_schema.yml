@@ -1479,7 +1479,7 @@ mapping:
 
       logo_src:
         type: str
-        default: /static/favicon.png
+        default: /static/favicon.svg
         required: false
         per_host: true
         desc: |
@@ -3614,14 +3614,14 @@ mapping:
 
       tool_recommendation_model_path:
         type: str
-        default: 'https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5'
+        default: 'https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5'
         required: false
         desc: |
           Set remote path of the trained model (HDF5 file) for tool recommendation.
 
       topk_recommendations:
         type: int
-        default: 10
+        default: 20
         required: false
         desc: |
           Set the number of predictions/recommendations to be made by the model

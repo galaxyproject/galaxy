@@ -36,6 +36,7 @@
         <div id="dd-helper" />
         <Toast ref="toastRef" />
         <ConfirmDialog ref="confirmDialogRef" />
+        <UploadModal ref="uploadModal" />
     </div>
 </template>
 <script>
@@ -49,23 +50,28 @@ import { WindowManager } from "layout/window-manager";
 import { safePath } from "utils/redirect";
 import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
+import UploadModal from "components/Upload/UploadModal.vue";
+import { ref } from "vue";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
-import { ref } from "vue";
+import { setGlobalUploadModal } from "composables/globalUploadModal";
 
 export default {
     components: {
         Masthead,
         Toast,
         ConfirmDialog,
+        UploadModal,
     },
     setup() {
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
+        const uploadModal = ref(null);
+        setGlobalUploadModal(uploadModal);
 
-        return { toastRef, confirmDialogRef };
+        return { toastRef, confirmDialogRef, uploadModal };
     },
     data() {
         return {

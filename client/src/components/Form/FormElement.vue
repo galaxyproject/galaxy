@@ -68,7 +68,7 @@ library.add(faExclamation, faTimes, faArrowsAltH, faCaretSquareDown, faCaretSqua
  It is present for compatibility with the legacy "FormParameter" component,
  but should be removed as soon as that component is removed.
  */
-const attrs = computed(() => props.attributes || useAttrs());
+const attrs: ComputedRef<FormParameterAttributes> = computed(() => props.attributes || useAttrs());
 const collapsibleValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["collapsible_value"]);
 const defaultValue: ComputedRef<FormParameterValue> = computed(() => attrs.value["default_value"]);
 const connectedValue: FormParameterValue = { __class__: "ConnectedValue" };
