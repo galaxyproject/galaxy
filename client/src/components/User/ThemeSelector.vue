@@ -39,7 +39,7 @@ library.add(faPalette);
         <b-form-radio-group v-model="currentValue">
             <b-form-radio v-for="(theme, name) in config.themes" :key="name" :value="name" class="mb-2">
                 <span class="font-weight-bold mb-1">{{ name }}</span>
-                <div class="rounded p-2" :style="{ background: theme['--masthead-color'] }">
+                <div class="rounded p-1" :style="{ background: theme['--masthead-color'] }">
                     <img :src="safePath(theme['--masthead-logo-img'])" alt="image" />
                     <span v-localize :style="getStyle(theme, 'color')" class="rounded p-1">Text</span>
                     <span v-localize :style="getStyle(theme, 'active')" class="rounded p-1">Active</span>
