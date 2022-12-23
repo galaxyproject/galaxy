@@ -16,6 +16,12 @@ const currentValue = computed({
         setCurrentTheme(theme);
     },
 });
+function getStyle(theme, variantKey) {
+    return {
+        background: theme[`--masthead-link-${variantKey}`],
+        color: theme[`--masthead-text-${variantKey}`],
+    };
+}
 watch(
     () => isLoaded.value,
     () => {
@@ -35,33 +41,9 @@ library.add(faPalette);
                 <span class="font-weight-bold mb-1">{{ name }}</span>
                 <div class="rounded p-2" :style="{ background: theme['--masthead-color'] }">
                     <img :src="safePath(theme['--masthead-logo-img'])" alt="image" />
-                    <span
-                        v-localize
-                        :style="{
-                            background: theme['--masthead-link-color'],
-                            color: theme['--masthead-text-color'],
-                        }"
-                        class="rounded p-1">
-                        Text
-                    </span>
-                    <span
-                        v-localize
-                        :style="{
-                            background: theme['--masthead-link-active'],
-                            color: theme['--masthead-text-active'],
-                        }"
-                        class="rounded p-1">
-                        Active
-                    </span>
-                    <span
-                        v-localize
-                        :style="{
-                            background: theme['--masthead-link-hover'],
-                            color: theme['--masthead-text-hover'],
-                        }"
-                        class="rounded p-1">
-                        Hover
-                    </span>
+                    <span v-localize :style="getStyle(theme, 'color')" class="rounded p-1">Text</span>
+                    <span v-localize :style="getStyle(theme, 'active')" class="rounded p-1">Active</span>
+                    <span v-localize :style="getStyle(theme, 'hover')" class="rounded p-1">Hover</span>
                 </div>
             </b-form-radio>
         </b-form-radio-group>
