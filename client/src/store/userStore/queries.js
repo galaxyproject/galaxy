@@ -30,3 +30,23 @@ export async function removeFavoriteTool(userId, toolId) {
         rethrowSimple(e);
     }
 }
+
+export async function setCurrentTheme(userId, themeId) {
+    const url = prependPath(`/api/users/${userId}/theme/${themeId}`);
+    try {
+        const { data } = await axios.put(url, { theme_id: themeId });
+        return data["theme_id"];
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}
+
+export async function getCurrentTheme(userId) {
+    const url = prependPath(`/api/users/${userId}/theme`);
+    try {
+        const { data } = await axios.get(url);
+        return data["tools"];
+    } catch (e) {
+        rethrowSimple(e);
+    }
+}

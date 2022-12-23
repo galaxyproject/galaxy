@@ -739,13 +739,34 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
         return favorites
 
-    def _validate_favorite_object_type(self, object_type):
-        if object_type in ["tools"]:
-            pass
-        else:
-            raise exceptions.ObjectAttributeInvalidException(
-                f"This type is not supported. Given object_type: {object_type}"
-            )
+    @expose_api
+    def get_theme(self, trans, id, payload=None, **kwd):
+        """Return the user's theme choice.
+        GET /api/users/{id}/theme
+
+        :param id: the encoded id of the user
+        :type  id: str
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+        theme_id = user.preferences["theme_id"] if "theme_id" in user.preferences else None
+        return theme_id
+
+    @expose_api
+    def set_theme(self, trans, id, theme_id, payload=None, **kwd):
+        """Sets the user's theme choice.
+        PUT /api/users/{id}/theme/{theme_id}
+
+        :param id: the encoded id of the user
+        :type  id: str
+        :param theme_id: the theme identifier/name that the user has selected as preference
+        :type  theme_id: str
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+        user.preferences["theme_id"] = theme_id
+        trans.sa_session.flush()
+        return theme_id
 
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):

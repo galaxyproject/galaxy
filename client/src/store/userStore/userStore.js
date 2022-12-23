@@ -3,6 +3,7 @@ import User from "./User";
 
 const state = {
     currentUser: null,
+    currentTheme: null,
 };
 
 const getters = {
@@ -14,11 +15,17 @@ const getters = {
         const user = new User(userProps);
         return Object.freeze(user);
     },
+    currentTheme(state) {
+        return state.currentTheme;
+    },
 };
 
 const mutations = {
     setCurrentUser(state, user) {
         state.currentUser = user;
+    },
+    setCurrentTheme(state, theme) {
+        state.currentTheme = theme;
     },
     setFavoriteTools(state, tools) {
         const favoritesJson = state.currentUser.preferences.favorites;
