@@ -3,7 +3,7 @@ import User from "./User";
 
 const state = {
     currentUser: null,
-    currentTheme: null,
+    currentPreferences: {},
 };
 
 const getters = {
@@ -16,22 +16,31 @@ const getters = {
         return Object.freeze(user);
     },
     currentTheme(state) {
-        return state.currentUser?.preferences?.theme_id;
+        return state.currentPreferences.theme_id;
+    },
+    currentFavorites(state) {
+        const preferences = state.currentPreferences;
+        if (preferences.favorites) {
+            return JSON.parse(preferences.favorites);
+        } else {
+            return { tools: [] };
+        }
     },
 };
 
 const mutations = {
     setCurrentUser(state, user) {
         state.currentUser = user;
+        state.currentPreferences = user.preferences;
     },
     setCurrentTheme(state, themeId) {
-        state.currentUser.preferences.theme_id = themeId;
+        state.currentPreferences.theme_id = themeId;
     },
     setFavoriteTools(state, tools) {
-        const favoritesJson = state.currentUser.preferences.favorites;
+        const favoritesJson = state.currentPreferences.favorites;
         const favorites = favoritesJson ? JSON.parse(favoritesJson) : { tools: [] };
         favorites.tools = tools;
-        state.currentUser.preferences.favorites = JSON.stringify(favorites);
+        state.currentPreferences.favorites = JSON.stringify(favorites);
     },
 };
 

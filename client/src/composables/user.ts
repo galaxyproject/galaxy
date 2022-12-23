@@ -12,6 +12,7 @@ export function useCurrentUser(noFetch: boolean | Ref<boolean> = false) {
     // TODO: add store typing
     const store = inject("store") as Store<unknown>;
     const currentUser = computed(() => store.getters["user/currentUser"]);
+    const currentFavorites = computed(() => store.getters["user/currentFavorites"]);
     onMounted(() => {
         if (!unref(noFetch)) {
             store.dispatch("user/loadUser");
@@ -23,7 +24,7 @@ export function useCurrentUser(noFetch: boolean | Ref<boolean> = false) {
     const removeFavoriteTool = async (toolId: string) => {
         await store.dispatch("user/removeFavoriteTool", toolId);
     };
-    return { currentUser, addFavoriteTool, removeFavoriteTool };
+    return { currentUser, currentFavorites, addFavoriteTool, removeFavoriteTool };
 }
 
 export function useCurrentTheme() {

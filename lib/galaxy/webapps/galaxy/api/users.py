@@ -739,6 +739,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
         return favorites
 
+    def _validate_favorite_object_type(self, object_type):
+        if object_type in ["tools"]:
+            pass
+        else:
+            raise exceptions.ObjectAttributeInvalidException(
+                f"This type is not supported. Given object_type: {object_type}"
+            )
+
     @expose_api
     def set_theme(self, trans, id, theme_id, payload=None, **kwd):
         """Sets the user's theme choice.
