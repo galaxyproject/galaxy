@@ -49,7 +49,7 @@ local conda_bin = VAR.CONDA_BIN
 
 local singularity_image = VAR.SINGULARITY_IMAGE
 if singularity_image == '' then
-    singularity_image = 'quay.io/biocontainers/singularity:2.4.6--0'
+    singularity_image = 'quay.io/singularity/singularity:v3.10.4'
 end
 
 local singularity_image_dir = VAR.SINGULARITY_IMAGE_DIR
