@@ -55,7 +55,7 @@ def setup_connected_dataset_collection(sa_session: galaxy_scoped_session):
     output_hdca = HistoryDatasetCollectionAssociation()
     input_job = Job()
     output_job = Job()
-    input_job.add_input_dataset_collection("output_hdca", center_hdca)
+    input_job.add_output_dataset_collection("output_hdca", center_hdca)
     input_job.add_input_dataset("input_hda", input_hda1)
     input_job.add_input_dataset("input_hda", input_hda2)
     input_job.add_input_dataset_collection("input_hdca", input_hdca)
@@ -94,7 +94,7 @@ def test_graph_manager_inputs_for_hdca(job_connections_manager: JobConnectionsMa
     sa_session = job_connections_manager.sa_session
     center_hdca, expected_graph = setup_connected_dataset_collection(sa_session)
     s = job_connections_manager.inputs_for_hdca(center_hdca.id)
-    assert len(sa_session.execute(union(*s)).all()) == 2
+    assert len(sa_session.execute(union(*s)).all()) == 3
 
 
 def test_graph_manager_outputs_for_hdca(job_connections_manager: JobConnectionsManager):

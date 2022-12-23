@@ -941,8 +941,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         """
         history = self._get_history(trans, history_id)
 
+        # TODO: Would be better if the JobConnections Manager could be used in
+        # history_contents manager instead, can't now because of circular import there
+
         # Related filter is included, get list of related item hids from jobs manager
-        if 'related-eq' in filter_query_params.q:
+        if filter_query_params.q and filter_query_params.qv and 'related-eq' in filter_query_params.q:
             related_qv_index = filter_query_params.q.index('related-eq')
             related_hid = filter_query_params.qv[related_qv_index]
             job_connections_manager = JobConnectionsManager(trans.sa_session)

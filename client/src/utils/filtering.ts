@@ -346,6 +346,7 @@ export default class Filtering<T> {
     /** Get the value of a particular filter from filterText.
      * @param {String} filterText Raw filter text string
      * @param {String} filterName Filter key to check
+     * @param {String} [alias="eq"] String alias for filter operator, e.g.:"lt"
      * @returns {String | Boolean} The filterValue for the filter
      * */
     getFilterValue(filterText: string, filterName: string, alias = "eq"): string | boolean {
