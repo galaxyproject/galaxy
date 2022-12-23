@@ -17,6 +17,11 @@
             cp '$file' '/opt/shiny-server/samples/sample-apps/audio/www/tmp/${cleaned_name}' &&
         #end for
 
+
+        #if $mode.mode_select == 'curation':
+            cp '$mode.inputlabel' '/opt/shiny-server/samples/sample-apps/audio/labels/labels_tmp.csv
+        #end if
+
         chown shiny.shiny /var/log/shiny-server &&
 
         exec shiny-server >> /var/log/shiny-server.log 2>&1
@@ -25,7 +30,17 @@
     </command>
     <inputs>
         <param name="input" type="data" multiple="true" format="wav" label="Input sound data file(s) in wav format"/>
-        <param name="inputlabel" type="data" multiple="false" format="csv" label="Input sound data label file in csv format"/>
+        
+        <conditional name="mode">
+            <param name="mode_select" type="select" label="Do you already have a labels file?" help="This need to conform to formatting as described in help section">
+                <option value="labeling">Start with a fresh labels file</option>
+                <option value="curation">Load a previous labels file</option>
+            </param>
+            <when value="labeling"/>
+            <when value="curation">
+                <param name="inputlabel" type="data" format="csv"  label="Input sound data labels file in csv format"/>
+            </when>
+        </conditional>
     </inputs>
     <outputs>
         <data name="outfile" format="txt" />
