@@ -40,6 +40,7 @@ describe("stores/EntryPointStore", () => {
                 name: "Oh there you go, bringing class into it again.",
                 created_time: "2020-01-24T15:59:22.406480",
                 modified_time: "2020-02-24T15:59:24.757453",
+                output_datasets_ids: ["4e9e0c7225b0bb81"],
                 target: "http://b887d74393f85b6d-b1fd3f42331a49c1b3d8a4d1b27240b8.interactivetoolentrypoint.interactivetool.localhost:8080/loginapikey/oleg",
             },
         ];
@@ -60,5 +61,11 @@ describe("stores/EntryPointStore", () => {
         expect(entryPointForJob.length).toBe(1);
         expect(entryPointForJob[0].id === "52e496b945151ee8").toBeTruthy();
         expect(entryPointForJob[0].active).toBeTruthy();
+    });
+    it("retrieves entry points for a given hda", async () => {
+        const entryPointForHda = store.entryPointsForHda("4e9e0c7225b0bb81");
+        expect(entryPointForHda.length).toBe(1);
+        expect(entryPointForHda[0].id === "52e496b945151ee8").toBeTruthy();
+        expect(entryPointForHda[0].active).toBeTruthy();
     });
 });
