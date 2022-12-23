@@ -20,7 +20,7 @@ const getters = {
     },
     currentFavorites(state) {
         const preferences = state.currentPreferences;
-        if (preferences.favorites) {
+        if (preferences && preferences.favorites) {
             return JSON.parse(preferences.favorites);
         } else {
             return { tools: [] };
