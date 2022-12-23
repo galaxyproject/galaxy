@@ -46,6 +46,7 @@ In order to use this.
 
 import inspect
 from enum import IntEnum
+import logging
 from typing import (
     Callable,
     List,
@@ -60,6 +61,8 @@ from galaxy.util import (
     etree,
     submodules,
 )
+
+log = logging.getLogger(__name__)
 
 
 class LintLevel(IntEnum):
@@ -323,7 +326,7 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> Lint
     linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
     linter_modules.extend(extra_modules)
     for module in linter_modules:
-        lint_tool_types = getattr(module, "lint_tool_types", ["default"])
+        lint_tool_types = getattr(module, "lint_tool_types", ["default", "manage_data"])
         if not ("*" in lint_tool_types or tool_type in lint_tool_types):
             continue
 
