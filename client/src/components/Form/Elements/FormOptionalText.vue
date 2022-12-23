@@ -1,11 +1,6 @@
 <template>
     <div>
-        <b-form-checkbox
-            v-model="currentStatus"
-            class="ui-switch"
-            value="optional_text"
-            unchecked-value="no_optional_text"
-            switch
+        <b-form-checkbox v-model="currentStatus" class="ui-switch" switch
             >Set value for this optional select field?</b-form-checkbox
         >
         <FormText
@@ -76,7 +71,7 @@ export default {
     },
     data() {
         return {
-            status: "no_optional_text",
+            status: false,
         };
     },
     computed: {
@@ -94,7 +89,7 @@ export default {
             },
             set(val) {
                 this.status = val;
-                if (val == "no_optional_text") {
+                if (val == false) {
                     this.currentValue = null;
                 } else {
                     this.currentValue = "";
@@ -102,11 +97,11 @@ export default {
             },
         },
         textEnabled() {
-            return this.currentStatus == "optional_text";
+            return this.currentStatus == true;
         },
     },
     created() {
-        this.status = "no_optional_text";
+        this.status = false;
     },
     methods: {
         /** Submits a changed value. */
