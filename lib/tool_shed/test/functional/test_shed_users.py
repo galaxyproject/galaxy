@@ -7,12 +7,12 @@ from tool_shed_client.schema import (
     CreateUserRequest,
     User,
 )
-from ..base.api import (
+from ..base.api import ShedApiTestCase
+from ..base.api_util import (
     email_to_username,
     ensure_user_with_email,
-    ShedApiTestCase,
+    get_admin_api_key,
 )
-from ..base.api_util import get_admin_api_key
 
 
 class TestShedUsersApi(ShedApiTestCase):
@@ -78,4 +78,4 @@ class TestShedUsersApi(ShedApiTestCase):
         assert show_response.json()["id"] == user_id
 
     def _verify_username_password(self, email, password):
-        self._api_key(email, password)
+        self.api_interactor.create_api_key(email, password)

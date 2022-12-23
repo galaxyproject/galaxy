@@ -41,7 +41,10 @@ from tool_shed_client.schema import (
     ToolSearchRequest,
     ToolSearchResults,
 )
-from .api_util import ShedApiInteractor
+from .api_util import (
+    ensure_user_with_email,
+    ShedApiInteractor,
+)
 
 HasRepositoryId = Union[str, Repository]
 
