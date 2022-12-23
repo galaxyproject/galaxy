@@ -770,7 +770,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         val = getattr(self, config_option)
         if config_option in self.schema.per_host_options:
             per_host_option = f"{config_option}_by_host"
-            per_host = {}
+            per_host: Dict[str, Any] = {}
             if per_host_option in self.config_dict:
                 per_host = self.config_dict[per_host_option] or {}
             else:
