@@ -26,7 +26,7 @@
             <i class="pref-icon pt-1 fa fa-lg fa-palette" />
             <div class="pref-content pr-1">
                 <b-badge variant="danger">New!</b-badge>
-                <a v-b-toggle.preference-themes-collapse href="javascript:void(0)" @click="">
+                <a v-b-toggle.preference-themes-collapse href="javascript:void(0)">
                     <b v-localize>Pick a Color Theme</b>
                 </a>
                 <div v-localize class="form-text text-muted">Click here to change the user interface color theme.</div>

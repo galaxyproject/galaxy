@@ -30,34 +30,34 @@ library.add(faPalette);
 <template>
     <b-card :show="show">
         <b-form-radio-group v-model="currentValue">
-            <b-form-radio class="mb-2" v-for="(theme, name) in config.themes" :key="name" :value="name">
+            <b-form-radio v-for="(theme, name) in config.themes" :key="name" :value="name" class="mb-2">
                 <span class="font-weight-bold mb-1">{{ name }}</span>
                 <div class="rounded p-2" :style="{ background: theme['--masthead-color'] }">
                     <span
-                        class="rounded p-1"
+                        v-localize
                         :style="{
                             background: theme['--masthead-link-color'],
                             color: theme['--masthead-text-color'],
                         }"
-                        v-localize>
+                        class="rounded p-1">
                         Text
                     </span>
                     <span
-                        class="rounded p-1"
+                        v-localize
                         :style="{
                             background: theme['--masthead-link-active'],
                             color: theme['--masthead-text-active'],
                         }"
-                        v-localize>
+                        class="rounded p-1">
                         Active
                     </span>
                     <span
-                        class="rounded p-1"
+                        v-localize
                         :style="{
                             background: theme['--masthead-link-hover'],
                             color: theme['--masthead-text-hover'],
                         }"
-                        v-localize>
+                        class="rounded p-1">
                         Hover
                     </span>
                 </div>
