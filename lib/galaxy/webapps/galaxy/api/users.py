@@ -740,19 +740,6 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         return favorites
 
     @expose_api
-    def get_theme(self, trans, id, payload=None, **kwd):
-        """Return the user's theme choice.
-        GET /api/users/{id}/theme
-
-        :param id: the encoded id of the user
-        :type  id: str
-        """
-        payload = payload or {}
-        user = self._get_user(trans, id)
-        theme_id = user.preferences["theme_id"] if "theme_id" in user.preferences else None
-        return theme_id
-
-    @expose_api
     def set_theme(self, trans, id, theme_id, payload=None, **kwd):
         """Sets the user's theme choice.
         PUT /api/users/{id}/theme/{theme_id}
