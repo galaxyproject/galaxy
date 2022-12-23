@@ -29,53 +29,47 @@ export default {
     props: {
         value: {
             // String; Array for multiple
-            required: false,
             default: "",
         },
         id: {
             type: String,
-            required: false,
+            default: "",
         },
         type: {
             type: String,
-            required: false,
             default: "text",
         },
         area: {
             // <textarea> instead of <input> element
             type: Boolean,
-            required: false,
             default: false,
         },
         multiple: {
             // Allow multiple entries to be created
             type: Boolean,
-            required: false,
             default: false,
         },
         readonly: {
             type: Boolean,
-            required: false,
             default: false,
         },
         placeholder: {
             type: String,
-            required: false,
+            default: "",
         },
         color: {
             type: String,
-            required: false,
+            default: "",
         },
         styleObj: {
             // This will be applied to the input element
             type: Object,
-            required: false,
             default: () => {},
         },
         datalist: {
             // Display list of suggestions in autocomplete dialog
             type: Array,
-            required: false,
+            default: [],
         },
 
         // These last three are for handling special input cases only
@@ -83,22 +77,20 @@ export default {
         optional: {
             type: Boolean,
             default: false,
-            required: false,
         },
         model_class: {
             type: String,
-            required: false,
+            default: "",
         },
         data: {
             type: Object, // ?
-            required: false,
+            default: () => {},
         },
     },
     data() {
-        let inputArea;
-        if (["SelectTagParameter", "ColumnListParameter"].includes(this.model_class) || (this.options && this.data)) {
-            inputArea = this.multiple;
-        }
+        const inputArea =
+            this.multiple &&
+            (["SelectTagParameter", "ColumnListParameter"].includes(this.model_class) || (this.options && this.data));
         return {
             dismissSecs: 5,
             dismissCountDown: 0,
