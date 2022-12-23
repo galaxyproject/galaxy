@@ -275,38 +275,52 @@ export default {
         }
 
         function changeQDayView() {
+            clearPopups()
             ganttView.value = "Quarter Day";
             gantt.value.change_view_mode("Quarter Day");
         }
 
         function changeHDayView() {
+            clearPopups()
             ganttView.value = "Half Day";
             gantt.value.change_view_mode("Half Day");
         }
 
         function changeDayView() {
+            clearPopups()
             ganttView.value = "Day";
             gantt.value.change_view_mode("Day");
         }
 
         function changeWeekView() {
+            clearPopups()
             ganttView.value = "Week";
             gantt.value.change_view_mode("Week");
         }
 
         function changeMonthView() {
+            clearPopups()
             ganttView.value = "Month";
             gantt.value.change_view_mode("Month");
         }
 
         function changeHourView() {
+            clearPopups()
             ganttView.value = "Hour";
             gantt.value.change_view_mode("Hour");
         }
 
         function changeMinuteView() {
+            clearPopups()
             ganttView.value = "Minute";
             openModal.value = true;
+        }
+
+        function clearPopups() {
+            const popups = document.getElementsByClassName('popup.wrapper')
+            popups.forEach((popup) => {
+                popups.innerHTML = ""
+            })
         }
 
         function createKeyedColorForButtons() {
