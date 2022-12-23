@@ -11,24 +11,14 @@
         <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
-                <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick"
-                    ><b>{{ link.title }}</b></a
-                >
-                <a v-else :id="link.id" :href="`${baseUrl}/${link.action}`"
-                    ><b>{{ link.title }}</b></a
-                >
+                <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick">
+                    <b>{{ link.title }}</b>
+                </a>
+                <a v-else :id="link.id" :href="`${baseUrl}/${link.action}`">
+                    <b>{{ link.title }}</b>
+                </a>
                 <div class="form-text text-muted">
                     {{ link.description }}
-                </div>
-            </div>
-        </b-row>
-        <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
-            <div class="pref-content pr-1">
-                <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
-                <div v-localize class="form-text text-muted">
-                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
-                    privilege in your browser.
                 </div>
             </div>
         </b-row>
@@ -43,6 +33,16 @@
                 <b-collapse id="preference-themes-collapse" class="mt-2">
                     <ThemeSelector />
                 </b-collapse>
+            </div>
+        </b-row>
+        <b-row class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
+            <div class="pref-content pr-1">
+                <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
+                <div v-localize class="form-text text-muted">
+                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
+                    privilege in your browser.
+                </div>
             </div>
         </b-row>
         <ConfigProvider v-slot="{ config }">
