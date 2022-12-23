@@ -226,10 +226,10 @@ export default {
         },
         onDisplay() {
             const entryPointStore = useEntryPointStore();
-            const entryPointsForJob = entryPointStore.entryPointsForJob(this.item.creating_job);
-            if (entryPointsForJob && entryPointsForJob.length > 0) {
+            const entryPointsForHda = entryPointStore.entryPointsForHda(this.item.id);
+            if (entryPointsForHda && entryPointsForHda.length > 0) {
                 // there can be more than one entry point, choose the first
-                const url = entryPointsForJob[0].target;
+                const url = entryPointsForHda[0].target;
                 window.open(url, "_blank");
             } else {
                 this.$router.push(this.itemUrls.display, { title: this.name });

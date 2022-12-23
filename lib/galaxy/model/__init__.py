@@ -2347,8 +2347,24 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     modified_time = Column(DateTime, default=now, onupdate=now)
     job = relationship("Job", back_populates="interactivetool_entry_points", uselist=False)
 
-    dict_collection_visible_keys = ["id", "job_id", "name", "active", "created_time", "modified_time"]
-    dict_element_visible_keys = ["id", "job_id", "name", "active", "created_time", "modified_time"]
+    dict_collection_visible_keys = [
+        "id",
+        "job_id",
+        "name",
+        "active",
+        "created_time",
+        "modified_time",
+        "output_datasets_ids",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "job_id",
+        "name",
+        "active",
+        "created_time",
+        "modified_time",
+        "output_datasets_ids",
+    ]
 
     def __init__(self, requires_domain=True, configured=False, deleted=False, **kwd):
         super().__init__(**kwd)
@@ -2364,6 +2380,10 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
             # FIXME: don't included queued?
             return not self.job.finished
         return False
+
+    @property
+    def output_datasets_ids(self):
+        return [da.dataset.id for da in self.job.output_datasets]
 
 
 class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost

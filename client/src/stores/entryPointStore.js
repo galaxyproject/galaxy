@@ -13,6 +13,10 @@ export const useEntryPointStore = defineStore("entryPointStore", {
         entryPointsForJob: (state) => {
             return (jobId) => state.entryPoints.filter((entryPoint) => entryPoint["job_id"] === jobId);
         },
+        entryPointsForHda: (state) => {
+            return (hdaId) =>
+                state.entryPoints.filter((entryPoint) => entryPoint["output_datasets_ids"].includes(hdaId));
+        },
     },
     actions: {
         ensurePollingEntryPoints() {
