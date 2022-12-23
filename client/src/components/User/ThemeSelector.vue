@@ -1,5 +1,5 @@
 <script setup>
-import { useCurrentTheme } from "@/composables/userFlags";
+import { useCurrentTheme } from "@/composables/user";
 import { useConfig } from "@/composables/config";
 import { computed, watch, ref } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";

@@ -55,7 +55,7 @@ import { ref } from "vue";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { useCurrentTheme } from "@/composables/userFlags";
+import { useCurrentTheme } from "@/composables/user";
 
 export default {
     components: {

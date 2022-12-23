@@ -1,4 +1,4 @@
-import { addFavoriteTool, removeFavoriteTool, getCurrentUser } from "./queries";
+import { addFavoriteTool, removeFavoriteTool, getCurrentUser, setCurrentTheme } from "./queries";
 import User from "./User";
 
 const state = {
@@ -57,6 +57,10 @@ const actions = {
         commit("setCurrentUser", user);
         dispatch("history/loadCurrentHistory", user, { root: true });
         dispatch("history/loadHistories", user, { root: true });
+    },
+    async setCurrentTheme({ commit, state }, themeId) {
+        const currentThemeId = await setCurrentTheme(state.currentUser.id, themeId);
+        commit("setCurrentTheme", currentThemeId);
     },
     async addFavoriteTool({ commit, state }, toolId) {
         const tools = await addFavoriteTool(state.currentUser.id, toolId);

@@ -5,15 +5,11 @@
 
 const state = {
     showSelectionQueryBreakWarning: true,
-    currentTheme: null,
 };
 
 const getters = {
     getShowSelectionQueryBreakWarning: (state) => () => {
         return state.showSelectionQueryBreakWarning;
-    },
-    getCurrentTheme(state) {
-        return state.currentTheme;
     },
 };
 
@@ -26,9 +22,6 @@ const actions = {
 const mutations = {
     saveShowSelectionQueryBreakWarningFlag: (state, { show }) => {
         state.showSelectionQueryBreakWarning = show;
-    },
-    setCurrentTheme(state, theme) {
-        state.currentTheme = theme;
     },
 };
 
