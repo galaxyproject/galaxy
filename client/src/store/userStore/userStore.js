@@ -16,7 +16,7 @@ const getters = {
         return Object.freeze(user);
     },
     currentTheme(state) {
-        return state.currentTheme;
+        return state.currentUser?.preferences?.theme_id;
     },
 };
 
@@ -24,8 +24,8 @@ const mutations = {
     setCurrentUser(state, user) {
         state.currentUser = user;
     },
-    setCurrentTheme(state, theme) {
-        state.currentTheme = theme;
+    setCurrentTheme(state, themeId) {
+        state.currentUser.preferences.theme_id = themeId;
     },
     setFavoriteTools(state, tools) {
         const favoritesJson = state.currentUser.preferences.favorites;
