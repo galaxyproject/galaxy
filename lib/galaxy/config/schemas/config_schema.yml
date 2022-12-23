@@ -3688,6 +3688,8 @@ mapping:
         type: str
         default: themes_conf.yml
         path_resolves_to: config_dir
+        resolves_to: themes
+        per_host: true
         required: false
         desc: |
           Optional file containing one or more themes for galaxy. If several themes
