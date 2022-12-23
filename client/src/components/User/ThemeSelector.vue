@@ -29,11 +29,11 @@ library.add(faPalette);
 </script>
 <template>
     <b-card :show="show">
-        <b-form-radio-group v-model="currentValue" stacked>
-            <b-form-radio v-for="(theme, name) in config.themes" :key="name" :value="name">
-                <span>{{ name }}</span>
+        <b-form-radio-group v-model="currentValue">
+            <b-form-radio class="mb-2" v-for="(theme, name) in config.themes" :key="name" :value="name">
+                <span class="font-weight-bold mb-1">{{ name }}</span>
                 <div class="rounded p-2" :style="{ background: theme['--masthead-color'] }">
-                    <div
+                    <span
                         class="rounded p-1"
                         :style="{
                             background: theme['--masthead-link-color'],
@@ -41,8 +41,8 @@ library.add(faPalette);
                         }"
                         v-localize>
                         Text
-                    </div>
-                    <div
+                    </span>
+                    <span
                         class="rounded p-1"
                         :style="{
                             background: theme['--masthead-link-active'],
@@ -50,8 +50,8 @@ library.add(faPalette);
                         }"
                         v-localize>
                         Active
-                    </div>
-                    <div
+                    </span>
+                    <span
                         class="rounded p-1"
                         :style="{
                             background: theme['--masthead-link-hover'],
@@ -59,7 +59,7 @@ library.add(faPalette);
                         }"
                         v-localize>
                         Hover
-                    </div>
+                    </span>
                 </div>
             </b-form-radio>
         </b-form-radio-group>
