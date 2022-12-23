@@ -31,10 +31,10 @@ export async function removeFavoriteTool(userId, toolId) {
     }
 }
 
-export async function setCurrentTheme(userId, themeId) {
-    const url = prependPath(`/api/users/${userId}/theme/${themeId}`);
+export async function setCurrentTheme(userId, theme) {
+    const url = prependPath(`/api/users/${userId}/theme/${theme}`);
     try {
-        const { data } = await axios.put(url, { theme_id: themeId });
+        const { data } = await axios.put(url, { theme: theme });
         return data;
     } catch (e) {
         rethrowSimple(e);

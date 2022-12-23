@@ -894,7 +894,7 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.connect(
         "set_theme",
-        "/api/users/{id}/theme/{theme_id}",
+        "/api/users/{id}/theme/{theme}",
         controller="users",
         action="set_theme",
         conditions=dict(method=["PUT"]),

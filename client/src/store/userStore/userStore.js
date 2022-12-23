@@ -16,7 +16,7 @@ const getters = {
         return Object.freeze(user);
     },
     currentTheme(state) {
-        return state.currentPreferences.theme_id;
+        return state.currentPreferences.theme;
     },
     currentFavorites(state) {
         const preferences = state.currentPreferences;
@@ -33,8 +33,8 @@ const mutations = {
         state.currentUser = user;
         state.currentPreferences = user.preferences;
     },
-    setCurrentTheme(state, themeId) {
-        state.currentPreferences.theme_id = themeId;
+    setCurrentTheme(state, theme) {
+        state.currentPreferences.theme = theme;
     },
     setFavoriteTools(state, tools) {
         const favoritesJson = state.currentPreferences.favorites;
@@ -67,9 +67,9 @@ const actions = {
         dispatch("history/loadCurrentHistory", user, { root: true });
         dispatch("history/loadHistories", user, { root: true });
     },
-    async setCurrentTheme({ commit, state }, themeId) {
-        const currentThemeId = await setCurrentTheme(state.currentUser.id, themeId);
-        commit("setCurrentTheme", currentThemeId);
+    async setCurrentTheme({ commit, state }, theme) {
+        const currentTheme = await setCurrentTheme(state.currentUser.id, theme);
+        commit("setCurrentTheme", currentTheme);
     },
     async addFavoriteTool({ commit, state }, toolId) {
         const tools = await addFavoriteTool(state.currentUser.id, toolId);
