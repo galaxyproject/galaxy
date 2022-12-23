@@ -5,17 +5,28 @@
         </b-alert>
         <b-row align-v="center">
             <b-col>
-                <component
-                    :is="componentName"
+                <b-form-textarea
+                    v-if="this.area || this.multiple"
                     :id="id"
                     v-model="currentValue"
                     class="text-input"
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
-                    :type="localType"
-                    @change="onInputChange" />
-
+                    :type="type"
+                    @change="onInputChange">
+                </b-form-textarea>
+                <b-form-input
+                    v-else
+                    :id="id"
+                    v-model="currentValue"
+                    class="text-input"
+                    :readonly="readonly"
+                    :placeholder="placeholder"
+                    :style="style"
+                    :type="type"
+                    @change="onInputChange">
+                </b-form-input>
                 <datalist v-if="datalist && !inputArea && !multiple" :id="`${id}-datalist`">
                     <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value"></option>
                 </datalist>
@@ -68,8 +79,8 @@ export default {
         },
         datalist: {
             // Display list of suggestions in autocomplete dialog
-            type: Array,
-            default: [],
+            type: Function,
+            default: () => {},
         },
 
         // These last three are for handling special input cases only
@@ -99,13 +110,6 @@ export default {
         };
     },
     computed: {
-        localType() {
-            // this seems silly, if we're in a component called FormText ... this has to be text??
-            if (this.inputArea) {
-                return "text";
-            }
-            return this.type;
-        },
         currentValue: {
             get() {
                 // TODO: is silent fail on non-strings appropriate?
@@ -123,9 +127,6 @@ export default {
                     this.$emit("input", newVal);
                 }
             },
-        },
-        componentName() {
-            return this.area || this.multiple ? "b-form-textarea" : "b-form-input";
         },
         style() {
             return this.color ? { ...this.styleObj, color: this.color } : this.styleObj;
