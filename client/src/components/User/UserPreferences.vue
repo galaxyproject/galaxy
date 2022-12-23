@@ -32,6 +32,19 @@
                 </div>
             </div>
         </b-row>
+        <b-row class="ml-3 mb-1">
+            <i class="pref-icon pt-1 fa fa-lg fa-palette" />
+            <div class="pref-content pr-1">
+                <b-badge variant="danger">New!</b-badge>
+                <a v-b-toggle.preference-themes-collapse href="javascript:void(0)" @click="">
+                    <b v-localize>Pick a Color Theme</b>
+                </a>
+                <div v-localize class="form-text text-muted">Click here to change the user interface color theme.</div>
+                <b-collapse id="preference-themes-collapse" class="mt-2">
+                    <ThemeSelector />
+                </b-collapse>
+            </div>
+        </b-row>
         <ConfigProvider v-slot="{ config }">
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
@@ -56,6 +69,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
@@ -74,6 +88,7 @@ export default {
     components: {
         ConfigProvider,
         UserDeletion,
+        ThemeSelector,
     },
     props: {
         userId: {
