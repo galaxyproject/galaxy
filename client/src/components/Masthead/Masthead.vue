@@ -199,6 +199,7 @@ onMounted(() => {
         font-family: Verdana, sans-serif;
         font-size: 1rem;
         line-height: 2rem;
+        background: var(--masthead-color);
         color: var(--masthead-text-color);
     }
 }

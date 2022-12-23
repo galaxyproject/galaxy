@@ -16,10 +16,10 @@ const currentValue = computed({
         setCurrentTheme(theme);
     },
 });
-function getStyle(theme, variantKey) {
+function getStyle(themeDetails, variantKey) {
     return {
-        background: theme[`--masthead-link-${variantKey}`],
-        color: theme[`--masthead-text-${variantKey}`],
+        background: themeDetails[`--masthead-link-${variantKey}`],
+        color: themeDetails[`--masthead-text-${variantKey}`],
     };
 }
 watch(
@@ -37,13 +37,13 @@ library.add(faPalette);
 <template>
     <b-card :show="show">
         <b-form-radio-group v-model="currentValue">
-            <b-form-radio v-for="(theme, name) in config.themes" :key="name" :value="name" class="mb-2">
-                <span class="font-weight-bold mb-1">{{ name }}</span>
-                <div class="rounded p-1" :style="{ background: theme['--masthead-color'] }">
-                    <img :src="safePath(theme['--masthead-logo-img'])" alt="image" />
-                    <span v-localize :style="getStyle(theme, 'color')" class="rounded p-1">Text</span>
-                    <span v-localize :style="getStyle(theme, 'active')" class="rounded p-1">Active</span>
-                    <span v-localize :style="getStyle(theme, 'hover')" class="rounded p-1">Hover</span>
+            <b-form-radio v-for="(themeDetails, theme) in config.themes" :key="theme" :value="theme" class="mb-2">
+                <span class="font-weight-bold mb-1">{{ theme }}</span>
+                <div class="rounded p-1" :style="{ background: themeDetails['--masthead-color'] }">
+                    <img :src="safePath(themeDetails['--masthead-logo-img'])" alt="image" />
+                    <span v-localize :style="getStyle(themeDetails, 'color')" class="rounded p-1">Text</span>
+                    <span v-localize :style="getStyle(themeDetails, 'hover')" class="rounded p-1">Hover</span>
+                    <span v-localize :style="getStyle(themeDetails, 'active')" class="rounded p-1">Active</span>
                 </div>
             </b-form-radio>
         </b-form-radio-group>
@@ -51,6 +51,7 @@ library.add(faPalette);
 </template>
 <style scoped>
 img {
+    cursor: pointer;
     display: inline;
     border: none;
     height: 2rem;
