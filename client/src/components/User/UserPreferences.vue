@@ -21,17 +21,14 @@
                 >.
             </span>
         </p>
-        <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
-            <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
-            <div class="pref-content pr-1">
-                <router-link :id="link.id" :to="`/user/${index}`">
-                    <b>{{ link.title }}</b>
-                </router-link>
-                <div class="form-text text-muted">
-                    {{ link.description }}
-                </div>
+        <user-preferences-element v-for="(link, index) in activeLinks" :key="index" :icon="link.icon">
+            <router-link :id="link.id" :to="`/user/${index}`">
+                <b v-localize>{{ link.title }}</b>
+            </router-link>
+            <div class="form-text text-muted">
+                {{ link.description }}
             </div>
-        </b-row>
+        </user-preferences-element>
         <user-preferences-element icon="fa-key">
             <router-link id="edit-preferences-api-key" :to="`/user/api_key`">
                 <b v-localize>Manage API Key</b>
