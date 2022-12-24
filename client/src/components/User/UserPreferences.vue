@@ -82,7 +82,6 @@
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
                 :email="email"
-                :root="root"
                 :user-id="userId">
             </UserDeletion>
         </ConfigProvider>
@@ -108,7 +107,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
+import { safePath } from "utils/redirect";
 import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -144,8 +143,7 @@ export default {
             email: "",
             diskUsage: "",
             diskQuota: "",
-            storageDashboardUrl: `${getAppRoot()}storage`,
-            root: getAppRoot(),
+            storageDashboardUrl: safePath("/storage"),
             messageVariant: null,
             message: null,
             submittedNames: [],
@@ -153,7 +151,7 @@ export default {
     },
     computed: {
         baseUrl() {
-            return `${this.root}user`;
+            return safePath("user");
         },
         activeLinks() {
             const activeLinks = {};
@@ -177,7 +175,7 @@ export default {
             this.message = message;
             this.messageVariant = status;
         }
-        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
+        axios.get(safePath(`/api/users/${this.userId}`)).then((response) => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
             this.diskQuota = response.data.quota;
@@ -218,10 +216,12 @@ export default {
                     )
                 )
             ) {
-                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then((response) => {
+                axios.post(safePath(`/history/make_private?all_histories=true`)).then((response) => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
-                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${Galaxy.root}user/permissions">User Permissions</a> interface.`,
+                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${safePath(
+                            "/user/permissions"
+                        )}">User Permissions</a> interface.`,
                         buttons: {
                             Close: () => {
                                 Galaxy.modal.hide();
