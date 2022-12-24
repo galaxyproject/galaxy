@@ -1,9 +1,25 @@
 <script setup>
 import { BRow } from "bootstrap-vue";
 const props = defineProps({
+    id: {
+        type: String,
+        default: null,
+    },
     icon: {
         type: String,
         default: "fa-gear",
+    },
+    title: {
+        type: String,
+        default: "Title not available.",
+    },
+    description: {
+        type: String,
+        default: "Description not available.",
+    },
+    to: {
+        type: String,
+        default: null,
     },
 });
 </script>
@@ -11,6 +27,12 @@ const props = defineProps({
     <b-row class="ml-3 mb-1">
         <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
         <div class="pref-content pr-1">
+            <router-link v-if="to" :id="id" :to="to">
+                <b v-localize>{{ title }}</b>
+            </router-link>
+            <div class="form-text text-muted">
+                {{ description }}
+            </div>
             <slot />
         </div>
     </b-row>

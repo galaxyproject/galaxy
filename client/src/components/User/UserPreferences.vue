@@ -21,51 +21,47 @@
                 >.
             </span>
         </p>
-        <user-preferences-element v-for="(link, index) in activeLinks" :key="index" :icon="link.icon">
-            <router-link :id="link.id" :to="`/user/${index}`">
-                <b v-localize>{{ link.title }}</b>
-            </router-link>
-            <div class="form-text text-muted">
-                {{ link.description }}
-            </div>
-        </user-preferences-element>
-        <user-preferences-element icon="fa-key">
-            <router-link id="edit-preferences-api-key" :to="`/user/api_key`">
-                <b v-localize>Manage API Key</b>
-            </router-link>
-            <div v-localize class="form-text text-muted">Access your current API key or create a new one.</div>
-        </user-preferences-element>
-        <user-preferences-element icon="fa-cloud">
-            <router-link id="edit-preferences-cloud-auth" :to="`/user/cloud_auth`">
-                <b v-localize>Manage Cloud Authorization</b>
-            </router-link>
-            <div v-localize class="form-text text-muted">
-                Add or modify the configuration that grants Galaxy to access your cloud-based resources.
-            </div>
-        </user-preferences-element>
+        <user-preferences-element
+            v-for="(link, index) in activeLinks"
+            :key="index"
+            :title="link.title"
+            :icon="link.icon"
+            :description="link.description"
+            :to="`/user/${index}`" />
+        <user-preferences-element
+            id="edit-preferences-api-key"
+            icon="fa-key"
+            title="Manage API Key"
+            description="Access your current API key or create a new one."
+            to="/user/api_key" />
+        <user-preferences-element
+            id="edit-preferences-cloud-auth"
+            icon="fa-cloud"
+            title="Manage Cloud Authorization"
+            description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
+            to="/user/cloud_auth" />
         <ConfigProvider v-slot="{ config }">
-            <user-preferences-element v-if="!config.enable_oidc" icon="fa-id-card-o">
-                <router-link id="manage-third-party-identities" :to="`/user/external_ids`">
-                    <b v-localize>Manage Third-Party Identities</b>
-                </router-link>
-                <div v-localize class="form-text text-muted">
-                    Connect or disconnect access to your third-party identities.
-                </div>
-            </user-preferences-element>
+            <user-preferences-element
+                v-if="!config.enable_oidc"
+                id="manage-third-party-identities"
+                icon="fa-id-card-o"
+                title="Manage Third-Party Identities"
+                description="Connect or disconnect access to your third-party identities."
+                to="/user/external_ids" />
         </ConfigProvider>
-        <user-preferences-element icon="fa-cubes">
-            <router-link to="/custom_builds">
-                <b v-localize>Manage Custom Builds</b>
-            </router-link>
-            <div v-localize class="form-text text-muted">Add or remove custom builds using history datasets.</div>
-        </user-preferences-element>
+        <user-preferences-element
+            id="edit-preferences-custom-builds"
+            icon="fa-cubes"
+            title="Manage Custom Builds"
+            description="Add or remove custom builds using history datasets."
+            to="/custom_builds" />
         <user-preferences-element icon="fa-palette">
             <b-badge variant="danger">New!</b-badge>
             <a v-b-toggle.preference-themes-collapse href="#">
                 <b v-localize>Pick a Color Theme</b>
             </a>
             <div v-localize class="form-text text-muted">Click here to change the user interface color theme.</div>
-            <b-collapse id="preference-themes-collapse" class="mt-2">
+            <b-collapse id="preference-themes-collapse">
                 <ThemeSelector />
             </b-collapse>
         </user-preferences-element>
