@@ -35,13 +35,10 @@
 
 <script>
 import Gantt from "../../../../node_modules/frappe-gantt";
-import { ref, watch, onMounted, computed } from 'vue'
-import store from "@/store"
-import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
+import { ref, watch, onMounted, computed } from "vue";
+import store from "@/store";
 import { keyedColorScheme } from "utils/color";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import { mapState, mapActions } from "pinia";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import LoadingSpan from "components/LoadingSpan";
@@ -59,78 +56,73 @@ export default {
         DateTimeModal,
     },
     setup() {
-        
         // Store
-        const piniaStore = useHistoryItemsStore() 
+        const piniaStore = useHistoryItemsStore();
 
         // Refs
-        const historyId = ref(store.getters['history/currentHistoryId'])
-        const accountingArray = ref([])
-        const accountingArrayMinutes = ref([])
-        const historyItems = ref(piniaStore.items[historyId.value])
-        const gantt = ref() 
-        const ganttView = ref('Hour')
-        const currentlyProcessing = ref(false)
-        const isLoading = ref(true)
-        const openModal = ref(false)
-        const emptyHistory = ref(false)
-        const dateTimeVal = ref(new Date().toLocaleString("en-GB"))
-        const start_time = ref(null)
-        const end_time = ref(null)
+        const historyId = ref(store.getters["history/currentHistoryId"]);
+        const accountingArray = ref([]);
+        const accountingArrayMinutes = ref([]);
+        const historyItems = ref(piniaStore.items[historyId.value]);
+        const gantt = ref();
+        const ganttView = ref("Hour");
+        const currentlyProcessing = ref(false);
+        const isLoading = ref(true);
+        const openModal = ref(false);
+        const emptyHistory = ref(false);
+        const dateTimeVal = ref(new Date().toLocaleString("en-GB"));
+        const start_time = ref(null);
+        const end_time = ref(null);
 
-        
-        // Computed properties
-        // const history = computed(() => {
-        //     return store.getters['history/currentHistoryId'];
-        // }) 
-
-        const historyContent = computed( async () => {
-            return await piniaStore.items[historyId.value];
-        })
+        const historyContent = computed(() => {
+            return piniaStore.items[historyId.value];
+        });
 
         // Hooks
         onMounted(() => {
-            getData()
-            createKeyedColorForButtons()
-        })
+            getData();
+            createKeyedColorForButtons();
+        });
 
         // Watchers
-        watch(() => store.getters['history/currentHistoryId'], (newHistoryId, oldHistoryId) => {
-            if (newHistoryId !== oldHistoryId) {
-                // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
-                currentlyProcessing.value = false;
-                historyId.value = newHistoryId;
-                clearGantt()
-                ganttView.value = "Day"
-                createKeyedColorForButtons();
-            }
-        })
-
-        watch(historyContent, (newContent, oldContent) => {
-            newContent.then((res) => {
-                if (res && res.length > 0 && !currentlyProcessing.value) {
-                emptyHistory.value = false;
-                historyItems.value = res;
-                getData();
-                } else if (res && res.length == 0 && currentlyProcessing.value) {
-                    isLoading.value = false
-                    emptyHistory.value = true;
+        watch(
+            () => store.getters["history/currentHistoryId"],
+            (newHistoryId, oldHistoryId) => {
+                if (newHistoryId !== oldHistoryId) {
+                    // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
+                    currentlyProcessing.value = false;
+                    historyId.value = newHistoryId;
+                    clearGantt();
+                    ganttView.value = "Day";
+                    createKeyedColorForButtons();
                 }
-                createKeyedColorForButtons();
-            })
-        })
+            }
+        );
+
+        watch(historyContent, async (newContent, oldContent) => {
+            await newContent;
+            if (newContent && newContent.length > 0 && !currentlyProcessing.value) {
+                emptyHistory.value = false;
+                historyItems.value = newContent;
+                getData();
+            } else if (newContent && newContent.length === 0 && !currentlyProcessing.value) {
+                isLoading.value = false;
+                emptyHistory.value = true;
+            }
+            createKeyedColorForButtons();
+        });
 
         watch(emptyHistory, (newEmpty, oldEmpty) => {
             if (newEmpty === true) {
-              clearGantt()    
+                clearGantt();
             }
-        })
-        
+        });
+
         watch(ganttView, (newval, oldval) => {
             if (oldval == "Minute") {
                 makeGantt();
             }
-        })
+        });
 
         // Methods/Functions
         function makeGantt() {
@@ -196,22 +188,22 @@ export default {
         }
 
         function clearGantt() {
-          var container = document.getElementsByClassName("gantt");
-          if (container && container.length > 0) {
-              // We will make .gantt empty so that old data from the visualization is removed and transition to the new one looks more smooth 
-              accountingArray.value = [];
-              accountingArrayMinutes.value = [];
-              container[0].innerHTML = "";
-          }
+            var container = document.getElementsByClassName("gantt");
+            if (container && container.length > 0) {
+                // We will make .gantt empty so that old data from the visualization is removed and transition to the new one looks more smooth
+                accountingArray.value = [];
+                accountingArrayMinutes.value = [];
+                container[0].innerHTML = "";
+            }
         }
 
         async function getData() {
             isLoading.value = true;
             currentlyProcessing.value = true;
-            historyId.value = store.getters['history/currentHistoryId'];
+            historyId.value = store.getters["history/currentHistoryId"];
             accountingArray.value = [];
-            accountingArrayMinutes.value = []
-            historyItems.value = piniaStore.getHistoryItems( historyId.value, "" );
+            accountingArrayMinutes.value = [];
+            historyItems.value = piniaStore.getHistoryItems(historyId.value, "");
             if (historyItems.value.length == 0) {
                 currentlyProcessing.value = false;
                 getHistoryItems();
@@ -220,7 +212,7 @@ export default {
                 for await (const job of historyItems.value) {
                     var Accounting = {};
                     if (job.id) {
-                        await store.dispatch('fetchJobMetricsForDatasetId', { datasetId: job.id, datasetType: "hda" });
+                        await store.dispatch("fetchJobMetricsForDatasetId", { datasetId: job.id, datasetType: "hda" });
                         const metrics = await store.state?.jobMetrics?.jobMetricsByHdaId[`${job.id}`];
                         if (metrics && metrics[1] && metrics[2]) {
                             Accounting = {
@@ -241,14 +233,14 @@ export default {
             }
         }
 
-        async function getHistoryItems() { 
+        async function getHistoryItems() {
             if (historyId.value && piniaStore.fetchHistoryItems) {
-              try {
-                await piniaStore.fetchHistoryItems(historyId.value, "", 0);
-            } catch (error) {
-                console.debug("Gantt error.", error);
-            } 
-          }
+                try {
+                    await piniaStore.fetchHistoryItems(historyId.value, "", 0);
+                } catch (error) {
+                    console.debug("Gantt error.", error);
+                }
+            }
         }
 
         function changeDate(value, status) {
@@ -275,52 +267,52 @@ export default {
         }
 
         function changeQDayView() {
-            clearPopups()
+            clearPopups();
             ganttView.value = "Quarter Day";
             gantt.value.change_view_mode("Quarter Day");
         }
 
         function changeHDayView() {
-            clearPopups()
+            clearPopups();
             ganttView.value = "Half Day";
             gantt.value.change_view_mode("Half Day");
         }
 
         function changeDayView() {
-            clearPopups()
+            clearPopups();
             ganttView.value = "Day";
             gantt.value.change_view_mode("Day");
         }
 
         function changeWeekView() {
-            clearPopups()
+            clearPopups();
             ganttView.value = "Week";
             gantt.value.change_view_mode("Week");
         }
 
         function changeMonthView() {
-            clearPopups()
+            clearPopups();
             ganttView.value = "Month";
             gantt.value.change_view_mode("Month");
         }
 
         function changeHourView() {
-            clearPopups()
+            clearPopups();
             ganttView.value = "Hour";
             gantt.value.change_view_mode("Hour");
         }
 
         function changeMinuteView() {
-            clearPopups()
+            clearPopups();
             ganttView.value = "Minute";
             openModal.value = true;
         }
 
         function clearPopups() {
-            const popups = document.getElementsByClassName('popup.wrapper')
+            const popups = document.getElementsByClassName("popup.wrapper");
             popups.forEach((popup) => {
-                popups.innerHTML = ""
-            })
+                popups.innerHTML = "";
+            });
         }
 
         function createKeyedColorForButtons() {
@@ -389,10 +381,9 @@ export default {
             openModal,
             dateTimeVal,
             closeModal,
-            changeDate
-        }
+            changeDate,
+        };
     },
-    
 };
 
 function createClassWithCSS(selector, style) {

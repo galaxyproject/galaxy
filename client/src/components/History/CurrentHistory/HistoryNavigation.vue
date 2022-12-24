@@ -177,7 +177,6 @@
 
 <script>
 import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
-import { FontAwesomeIcon } from "@fortawesome/free-solid-svg-icons";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 import { mapGetters } from "vuex";
@@ -186,7 +185,6 @@ export default {
     components: {
         CopyModal,
         SelectorModal,
-        FontAwesomeIcon
     },
     mixins: [legacyNavigationMixin],
     props: {

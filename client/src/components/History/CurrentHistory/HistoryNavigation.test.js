@@ -17,6 +17,7 @@ const createStore = (currentUser) => {
 // all options
 const expectedOptions = [
     "Show Histories Side-by-Side",
+    "Gantt Visualization",
     "Resume Paused Jobs",
     "Copy this History",
     "Delete this History",
