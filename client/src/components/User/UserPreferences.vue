@@ -6,8 +6,20 @@
         </b-alert>
         <p>
             <span v-localize>You are logged in as</span>
-            <strong id="user-preferences-current-email">{{ email }}</strong
-            >.
+            <strong id="user-preferences-current-email">{{ email }}</strong>
+            <span v-localize>and you are using</span>
+            <strong>{{ diskUsage }}</strong>
+            <span v-localize>of disk space.</span>
+            <span v-localize>If this is more than expected, please visit the</span>
+            <router-link id="edit-preferences-cloud-auth" to="/storage">
+                <b v-localize>Storage Dashboard</b>
+            </router-link>
+            <span v-localize>to free up disk space.</span>
+            <span v-if="enableQuotas">
+                <span v-localize>Your disk quota is:</span>
+                <strong>{{ diskQuota }}</strong
+                >.
+            </span>
         </p>
         <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
@@ -22,26 +34,26 @@
         </b-row>
         <ConfigProvider v-slot="{ config }">
             <user-preferences-element v-if="!config.enable_oidc" icon="fa-id-card-o">
-                <a id="manage-third-party-identities" :href="`${baseUrl}/external_ids`">
+                <router-link id="manage-third-party-identities" :to="`/user/external_ids`">
                     <b v-localize>Manage Third-Party Identities</b>
-                </a>
+                </router-link>
                 <div v-localize class="form-text text-muted">
                     Connect or disconnect access to your third-party identities.
                 </div>
             </user-preferences-element>
         </ConfigProvider>
         <user-preferences-element icon="fa-cloud">
-            <a id="edit-preferences-cloud-auth" :href="`${baseUrl}/cloud_auth`">
+            <router-link id="edit-preferences-cloud-auth" :to="`/user/cloud_auth`">
                 <b v-localize>Manage Cloud Authorization</b>
-            </a>
+            </router-link>
             <div v-localize class="form-text text-muted">
                 Add or modify the configuration that grants Galaxy to access your cloud-based resources.
             </div>
         </user-preferences-element>
         <user-preferences-element icon="fa-key">
-            <a id="edit-preferences-api-key" :href="`${baseUrl}/api_key`">
+            <router-link id="edit-preferences-api-key" :to="`/user/api_key`">
                 <b v-localize>Manage API Key</b>
-            </a>
+            </router-link>
             <div v-localize class="form-text text-muted">Access your current API key or create a new one.</div>
         </user-preferences-element>
         <user-preferences-element icon="fa-cubes">
@@ -83,19 +95,11 @@
             </UserDeletion>
         </ConfigProvider>
         <user-preferences-element v-if="hasLogout" icon="fa-sign-out">
-            <a id="edit-preferences-sign-out" href="javascript:void(0)" @click="signOut"><b v-localize>Sign Out</b></a>
+            <a id="edit-preferences-sign-out" href="javascript:void(0)" @click="signOut">
+                <b v-localize>Sign Out</b>
+            </a>
             <div v-localize class="form-text text-muted">Click here to sign out of all sessions.</div>
         </user-preferences-element>
-        <p class="mt-2">
-            You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
-            <span v-if="enableQuotas">
-                Your disk quota is: <strong>{{ diskQuota }}</strong
-                >.
-            </span>
-            Is your usage more than expected? Review your
-            <b-link :href="storageDashboardUrl"><b>Storage Dashboard</b></b-link
-            >.
-        </p>
     </b-container>
 </template>
 
@@ -140,7 +144,6 @@ export default {
             email: "",
             diskUsage: "",
             diskQuota: "",
-            storageDashboardUrl: safePath("/storage"),
             messageVariant: null,
             message: null,
             submittedNames: [],
