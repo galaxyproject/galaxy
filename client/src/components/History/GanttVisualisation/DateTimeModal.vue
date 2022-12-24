@@ -7,7 +7,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title">Choose time</h4>
-                                <button type="button" class="close" @click="close">
+                                <button type="button" class="close" @click="$emit('closeModal')">
                                     <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
@@ -28,7 +28,7 @@
                                                 ><button
                                                     @click="
                                                         $emit('changeDate', date, 'confirmed');
-                                                        close();
+                                                        $emit('closeModal');
                                                     ">
                                                     Confirm Date
                                                 </button></b-col
@@ -46,6 +46,7 @@
 </template>
 
 <script>
+import { ref } from "vue";
 import datetime from "vuejs-datetimepicker";
 import moment from "moment";
 
@@ -58,16 +59,17 @@ export default {
             default: false,
         },
     },
-    data() {
+    setup() {
+        const date = ref(moment().format("YYYY-MM-DD HH:mm:ss"));
         return {
-            date: moment().format("YYYY-MM-DD HH:mm:ss"),
+            date,
         };
     },
-    methods: {
-        close() {
-            this.$emit("closeModal");
-        },
-    },
+    // data() {
+    //     return {
+    //         date: moment().format("YYYY-MM-DD HH:mm:ss"),
+    //     };
+    // },
 };
 </script>
 <style scoped>
