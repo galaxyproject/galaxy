@@ -8,6 +8,7 @@ import { safePath } from "@/utils/redirect";
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isLoaded } = useConfig();
 const show = ref(false);
+const rs = getComputedStyle(document.documentElement);
 const currentValue = computed({
     get: () => {
         return currentTheme;
@@ -16,11 +17,15 @@ const currentValue = computed({
         setCurrentTheme(theme);
     },
 });
+function getImage(themeDetails, imageKey) {
+    return themeDetails[`--masthead-${imageKey}`] ?? config.value.logo_src;
+}
 function getStyle(themeDetails, variantKey) {
-    return {
-        background: themeDetails[`--masthead-link-${variantKey}`],
-        color: themeDetails[`--masthead-text-${variantKey}`],
-    };
+    const backgroundKey = `--masthead-link-${variantKey}`;
+    const colorKey = `--masthead-text-${variantKey}`;
+    const background = themeDetails[backgroundKey] ?? rs.getPropertyValue(backgroundKey);
+    const color = themeDetails[colorKey] ?? rs.getPropertyValue(colorKey);
+    return { background, color };
 }
 watch(
     () => isLoaded.value,
@@ -40,7 +45,7 @@ library.add(faPalette);
             <b-form-radio v-for="(themeDetails, theme) in config.themes" :key="theme" :value="theme" class="mb-2">
                 <span class="font-weight-bold mb-1">{{ theme }}</span>
                 <div class="rounded p-1" :style="{ background: themeDetails['--masthead-color'] }">
-                    <img :src="safePath(themeDetails['--masthead-logo-img'])" alt="image" />
+                    <img :src="safePath(getImage(themeDetails, 'logo-img'))" alt="image" />
                     <span v-localize :style="getStyle(themeDetails, 'color')" class="rounded p-1">Text</span>
                     <span v-localize :style="getStyle(themeDetails, 'hover')" class="rounded p-1">Hover</span>
                     <span v-localize :style="getStyle(themeDetails, 'active')" class="rounded p-1">Active</span>

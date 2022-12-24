@@ -8,6 +8,7 @@
             {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
+        <ThemeSelector />
         <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
