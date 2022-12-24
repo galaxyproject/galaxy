@@ -5,7 +5,8 @@
             {{ message }}
         </b-alert>
         <p>
-            {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
+            <span v-localize>You are logged in as</span>
+            <strong id="user-preferences-current-email">{{ email }}</strong
             >.
         </p>
         <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
@@ -116,7 +117,6 @@ export default {
             messageVariant: null,
             message: null,
             submittedNames: [],
-            titleLoggedInAs: _l("You are logged in as"),
         };
     },
     computed: {
