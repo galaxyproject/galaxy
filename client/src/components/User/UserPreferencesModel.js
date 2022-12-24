@@ -48,21 +48,6 @@ export const getUserPreferencesModel = (user_id) => {
             redirect: "/user",
             shouldRender: !config.single_user,
         },
-        api_key: {
-            id: "edit-preferences-api-key",
-            title: _l("Manage API Key"),
-            description: _l("Access your current API key or create a new one."),
-            icon: "fa-key",
-        },
-        cloud_auth: {
-            id: "edit-preferences-cloud-auth",
-            title: _l("Manage Cloud Authorization"),
-            description: _l("Add or modify the configuration that grants Galaxy to access your cloud-based resources."),
-            icon: "fa-cloud",
-            submitTitle: "Create a new Key",
-            submitIcon: "fa-check",
-            shouldRender: true,
-        },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),
             id: "edit-preferences-toolbox-filters",

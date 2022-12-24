@@ -23,6 +23,20 @@
                 </div>
             </div>
         </b-row>
+        <user-preferences-element icon="fa-cloud">
+            <a id="edit-preferences-cloud-auth" :href="`${baseUrl}/cloud_auth`">
+                <b v-localize>Manage Cloud Authorization</b>
+            </a>
+            <div v-localize class="form-text text-muted">
+                Add or modify the configuration that grants Galaxy to access your cloud-based resources.
+            </div>
+        </user-preferences-element>
+        <user-preferences-element icon="fa-key">
+            <a id="edit-preferences-api-key" :href="`${baseUrl}/api_key`">
+                <b v-localize>Manage API Key</b>
+            </a>
+            <div v-localize class="form-text text-muted">Access your current API key or create a new one.</div>
+        </user-preferences-element>
         <user-preferences-element icon="fa-cubes">
             <a href="javascript:void(0)" @click="openManageCustomBuilds">
                 <b v-localize>Manage Custom Builds</b>
