@@ -32,6 +32,20 @@
                 </div>
             </div>
         </b-row>
+        <user-preferences-element icon="fa-key">
+            <router-link id="edit-preferences-api-key" :to="`/user/api_key`">
+                <b v-localize>Manage API Key</b>
+            </router-link>
+            <div v-localize class="form-text text-muted">Access your current API key or create a new one.</div>
+        </user-preferences-element>
+        <user-preferences-element icon="fa-cloud">
+            <router-link id="edit-preferences-cloud-auth" :to="`/user/cloud_auth`">
+                <b v-localize>Manage Cloud Authorization</b>
+            </router-link>
+            <div v-localize class="form-text text-muted">
+                Add or modify the configuration that grants Galaxy to access your cloud-based resources.
+            </div>
+        </user-preferences-element>
         <ConfigProvider v-slot="{ config }">
             <user-preferences-element v-if="!config.enable_oidc" icon="fa-id-card-o">
                 <router-link id="manage-third-party-identities" :to="`/user/external_ids`">
@@ -42,20 +56,6 @@
                 </div>
             </user-preferences-element>
         </ConfigProvider>
-        <user-preferences-element icon="fa-cloud">
-            <router-link id="edit-preferences-cloud-auth" :to="`/user/cloud_auth`">
-                <b v-localize>Manage Cloud Authorization</b>
-            </router-link>
-            <div v-localize class="form-text text-muted">
-                Add or modify the configuration that grants Galaxy to access your cloud-based resources.
-            </div>
-        </user-preferences-element>
-        <user-preferences-element icon="fa-key">
-            <router-link id="edit-preferences-api-key" :to="`/user/api_key`">
-                <b v-localize>Manage API Key</b>
-            </router-link>
-            <div v-localize class="form-text text-muted">Access your current API key or create a new one.</div>
-        </user-preferences-element>
         <user-preferences-element icon="fa-cubes">
             <router-link to="/custom_builds">
                 <b v-localize>Manage Custom Builds</b>
