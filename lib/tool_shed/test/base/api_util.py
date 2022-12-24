@@ -99,6 +99,10 @@ class ShedApiInteractor:
         response.raise_for_status()
         return response.json()
 
+    @property
+    def hg_url_base(self):
+        return self.url
+
 
 def create_user(admin_interactor: ShedApiInteractor, user_dict: Dict[str, Any], assert_ok=True) -> Dict[str, Any]:
     email = user_dict["email"]

@@ -132,16 +132,24 @@ class ToolShedPopulator:
         assert_ok=True,
         start: int = 0,
         end: Optional[int] = None,
+        category_id: Optional[str] = None,
     ) -> Repository:
         if repository is None:
             prefix = test_data_path.replace("_", "")
-            category_id = self.new_category(prefix=prefix).id
+            if category_id is None:
+                category_id = self.new_category(prefix=prefix).id
             repository = self.new_repository(category_id, prefix=prefix)
         self.setup_test_data_repo_by_id(test_data_path, repository, assert_ok=assert_ok, start=start, end=end)
         return repository
 
-    def setup_column_maker_repo(self, prefix=DEFAULT_PREFIX) -> Repository:
-        category_id = self.new_category(prefix=prefix).id
+    def setup_column_maker_repo(
+        self,
+        prefix=DEFAULT_PREFIX,
+        category_id: Optional[str] = None,
+    ) -> Repository:
+        if category_id is None:
+            category_id = self.new_category(prefix=prefix).id
+        assert category_id
         repository = self.new_repository(category_id, prefix=prefix)
         repository_id = repository.id
         assert repository_id
@@ -409,6 +417,9 @@ class ToolShedPopulator:
         url = self._api_interactor.url
         base = url.split("://")[1].split("/")[0]
         return f"{base}/repos/{repository.owner}/{repository.name}/{tool_id}/{tool_version}"
+
+    def new_user(self, username: str, password: str):
+        return ensure_user_with_email(self._admin_api_interactor, username, password)
 
     def _repository_id(self, has_id: HasRepositoryId) -> str:
         if isinstance(has_id, Repository):
