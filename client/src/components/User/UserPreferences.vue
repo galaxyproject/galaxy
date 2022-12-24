@@ -47,6 +47,14 @@
             </div>
         </user-preferences-element>
         <ConfigProvider v-slot="{ config }">
+            <user-preferences-element v-if="!config.single_user" icon="fa-lock">
+                <a id="edit-preferences-make-data-private" href="javascript:void(0)" @click="makeDataPrivate">
+                    <b v-localize>Make All Data Private</b>
+                </a>
+                <div v-localize class="form-text text-muted">Click here to make all data private.</div>
+            </user-preferences-element>
+        </ConfigProvider>
+        <ConfigProvider v-slot="{ config }">
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
                 :email="email"
@@ -129,19 +137,9 @@ export default {
             for (const key in UserPreferencesModel) {
                 if (UserPreferencesModel[key].shouldRender !== false) {
                     activeLinks[key] = UserPreferencesModel[key];
-                    switch (key) {
-                        case "make_data_private":
-                            activeLinks[key].onclick = this.makeDataPrivate;
-                            break;
-                        case "custom_builds":
-                            activeLinks[key].onclick = this.openManageCustomBuilds;
-                            break;
-                        default:
-                            activeLinks[key].action = key;
-                    }
+                    activeLinks[key].action = key;
                 }
             }
-
             return activeLinks;
         },
         hasLogout() {

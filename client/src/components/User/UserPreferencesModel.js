@@ -48,13 +48,6 @@ export const getUserPreferencesModel = (user_id) => {
             redirect: "/user",
             shouldRender: !config.single_user,
         },
-        make_data_private: {
-            title: _l("Make All Data Private"),
-            id: "edit-preferences-make-data-private",
-            description: _l("Click here to make all data private."),
-            icon: "fa-lock",
-            shouldRender: !config.single_user,
-        },
         api_key: {
             id: "edit-preferences-api-key",
             title: _l("Manage API Key"),
