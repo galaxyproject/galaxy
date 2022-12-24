@@ -5,7 +5,7 @@
                 <b-alert v-if="historiesLoading || isLoading" class="m-2" variant="info" show>
                     <LoadingSpan message="Loading Gantt Visualization" />
                 </b-alert>
-                <b-alert v-if="emptyHistory" class="m-2" variant="info" show>
+                <b-alert v-if="emptyHistory && !historiesLoading" class="m-2" variant="info" show>
                     <EmptyHistory />
                 </b-alert>
                 <div class="sticky">
@@ -80,8 +80,8 @@ export default {
 
         // Hooks
         onMounted(() => {
-            getData();
             createKeyedColorForButtons();
+            getData();
         });
 
         // Watchers
@@ -93,6 +93,7 @@ export default {
                     currentlyProcessing.value = false;
                     historyId.value = newHistoryId;
                     clearGantt();
+                    clearPopups();
                     ganttView.value = "Day";
                     createKeyedColorForButtons();
                 }
@@ -206,6 +207,8 @@ export default {
             historyItems.value = piniaStore.getHistoryItems(historyId.value, "");
             if (historyItems.value.length == 0) {
                 currentlyProcessing.value = false;
+                isLoading.value = false;
+                emptyHistory.value = true;
                 getHistoryItems();
             }
             if (historyItems.value && historyItems.value.length > 0) {
