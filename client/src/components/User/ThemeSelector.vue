@@ -16,22 +16,19 @@ const currentValue = computed({
         setCurrentTheme(theme);
     },
 });
-function getBackground(themeDetails, variantKey) {
-    const background = themeDetails[`--${variantKey}`];
-    const styles = {};
+function getBackground(themeDetails) {
+    const background = themeDetails["--masthead-color"];
     if (background) {
-        styles["background"] = background;
+        return { background };
     }
-    return styles;
+    return {};
 }
-function getImage(themeDetails, imageKey) {
-    return themeDetails[`--masthead-${imageKey}`] ?? config.value.logo_src;
+function getLogo(themeDetails) {
+    return themeDetails["--masthead-logo-img"] ?? config.value.logo_src;
 }
 function getStyle(themeDetails, variantKey) {
-    const backgroundKey = `--masthead-link-${variantKey}`;
-    const colorKey = `--masthead-text-${variantKey}`;
-    const background = themeDetails[backgroundKey];
-    const color = themeDetails[colorKey];
+    const background = themeDetails[`--masthead-link-${variantKey}`];
+    const color = themeDetails[`--masthead-text-${variantKey}`];
     const styles = {};
     if (background) {
         styles["background"] = background;
@@ -58,8 +55,8 @@ library.add(faPalette);
         <b-form-radio-group v-model="currentValue">
             <b-form-radio v-for="(themeDetails, theme) in config.themes" :key="theme" :value="theme" class="mb-2">
                 <span class="font-weight-bold mb-1">Theme: {{ theme }}</span>
-                <div class="default-theme-masthead" :style="getBackground(themeDetails, 'masthead-color')">
-                    <img :src="safePath(getImage(themeDetails, 'logo-img'))" alt="image" />
+                <div class="default-theme-masthead" :style="getBackground(themeDetails)">
+                    <img :src="safePath(getLogo(themeDetails))" alt="image" />
                     <span v-localize :style="getStyle(themeDetails, 'color')" class="default-theme-color">Text</span>
                     <span v-localize :style="getStyle(themeDetails, 'hover')" class="default-theme-hover">Hover</span>
                     <span v-localize :style="getStyle(themeDetails, 'active')" class="default-theme-active">
