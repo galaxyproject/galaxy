@@ -2,8 +2,6 @@
 import { useCurrentTheme } from "@/composables/user";
 import { useConfig } from "@/composables/config";
 import { computed, watch, ref } from "vue";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPalette } from "@fortawesome/free-solid-svg-icons";
 import { safePath } from "@/utils/redirect";
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isLoaded } = useConfig();
@@ -48,7 +46,6 @@ watch(
         }
     }
 );
-library.add(faPalette);
 </script>
 <template>
     <b-card :show="show" class="overflow-auto">
