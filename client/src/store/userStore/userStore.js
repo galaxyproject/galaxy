@@ -31,7 +31,7 @@ const getters = {
 const mutations = {
     setCurrentUser(state, user) {
         state.currentUser = user;
-        state.currentPreferences = user.preferences;
+        state.currentPreferences = user.preferences ?? {};
     },
     setCurrentTheme(state, theme) {
         state.currentPreferences.theme = theme;
