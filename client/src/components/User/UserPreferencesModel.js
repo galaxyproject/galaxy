@@ -80,10 +80,5 @@ export const getUserPreferencesModel = (user_id) => {
             redirect: "/user",
             shouldRender: !!config.has_user_tool_filters,
         },
-        custom_builds: {
-            title: _l("Manage Custom Builds"),
-            description: _l("Add or remove custom builds using history datasets."),
-            icon: "fa-cubes",
-        },
     };
 };

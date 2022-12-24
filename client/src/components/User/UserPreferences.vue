@@ -22,6 +22,12 @@
                 </div>
             </div>
         </b-row>
+        <user-preferences-element icon="fa-cubes">
+            <a href="javascript:void(0)" @click="openManageCustomBuilds">
+                <b v-localize>Manage Custom Builds</b>
+            </a>
+            <div v-localize class="form-text text-muted">Add or remove custom builds using history datasets.</div>
+        </user-preferences-element>
         <user-preferences-element icon="fa-palette">
             <b-badge variant="danger">New!</b-badge>
             <a v-b-toggle.preference-themes-collapse href="javascript:void(0)">
