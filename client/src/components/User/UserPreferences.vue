@@ -35,8 +35,8 @@
         <user-preferences-element icon="fa-plus-square-o">
             <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
             <div v-localize class="form-text text-muted">
-                Allow push and tab notifcations on job completion. To disable, revoke the site notification
-                privilege in your browser.
+                Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in
+                your browser.
             </div>
         </user-preferences-element>
         <ConfigProvider v-slot="{ config }">
@@ -47,6 +47,10 @@
                 :user-id="userId">
             </UserDeletion>
         </ConfigProvider>
+        <user-preferences-element v-if="hasLogout" icon="fa-sign-out">
+            <a id="edit-preferences-sign-out" href="javascript:void(0)" @click="signOut"><b v-localize>Sign Out</b></a>
+            <div v-localize class="form-text text-muted">Click here to sign out of all sessions.</div>
+        </user-preferences-element>
         <p class="mt-2">
             You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
             <span v-if="enableQuotas">
@@ -126,11 +130,6 @@ export default {
                         case "custom_builds":
                             activeLinks[key].onclick = this.openManageCustomBuilds;
                             break;
-                        case "logout":
-                            activeLinks[key].onclick = this.signOut;
-                            break;
-                        // case "delete_user":
-                        //     activeLinks[key].onclick = this.deleteUser;
                         default:
                             activeLinks[key].action = key;
                     }
@@ -138,6 +137,10 @@ export default {
             }
 
             return activeLinks;
+        },
+        hasLogout() {
+            const Galaxy = getGalaxyInstance();
+            return !!Galaxy.session_csrf_token && !config.single_user;
         },
     },
     created() {

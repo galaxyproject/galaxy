@@ -85,12 +85,5 @@ export const getUserPreferencesModel = (user_id) => {
             description: _l("Add or remove custom builds using history datasets."),
             icon: "fa-cubes",
         },
-        logout: {
-            title: _l("Sign out"),
-            id: "edit-preferences-sign-out",
-            description: _l("Click here to sign out of all sessions."),
-            icon: "fa-sign-out",
-            shouldRender: !!Galaxy.session_csrf_token && !config.single_user,
-        },
     };
 };
