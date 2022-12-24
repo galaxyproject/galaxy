@@ -15,7 +15,7 @@
                 <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick">
                     <b>{{ link.title }}</b>
                 </a>
-                <a v-else :id="link.id" :href="`${baseUrl}/${link.action}`">
+                <a v-else :id="link.id" :href="`${baseUrl}/${index}`">
                     <b>{{ link.title }}</b>
                 </a>
                 <div class="form-text text-muted">
@@ -23,6 +23,16 @@
                 </div>
             </div>
         </b-row>
+        <ConfigProvider v-slot="{ config }">
+            <user-preferences-element v-if="!config.enable_oidc" icon="fa-id-card-o">
+                <a id="manage-third-party-identities" :href="`${baseUrl}/external_ids`">
+                    <b v-localize>Manage Third-Party Identities</b>
+                </a>
+                <div v-localize class="form-text text-muted">
+                    Connect or disconnect access to your third-party identities.
+                </div>
+            </user-preferences-element>
+        </ConfigProvider>
         <user-preferences-element icon="fa-cloud">
             <a id="edit-preferences-cloud-auth" :href="`${baseUrl}/cloud_auth`">
                 <b v-localize>Manage Cloud Authorization</b>
@@ -149,9 +159,8 @@ export default {
             const activeLinks = {};
             const UserPreferencesModel = getUserPreferencesModel();
             for (const key in UserPreferencesModel) {
-                if (UserPreferencesModel[key].shouldRender !== false) {
+                if (!UserPreferencesModel[key].disabled) {
                     activeLinks[key] = UserPreferencesModel[key];
-                    activeLinks[key].action = key;
                 }
             }
             return activeLinks;

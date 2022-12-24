@@ -15,7 +15,7 @@ export const getUserPreferencesModel = (user_id) => {
             url: `/api/users/${user_id}/information/inputs`,
             icon: "fa-user",
             redirect: "/user",
-            shouldRender: !config.use_remote_user,
+            disabled: config.use_remote_user,
         },
         password: {
             title: _l("Change Password"),
@@ -25,16 +25,7 @@ export const getUserPreferencesModel = (user_id) => {
             url: `/api/users/${user_id}/password/inputs`,
             submit_title: "Save Password",
             redirect: "/user",
-            shouldRender: !config.use_remote_user && config.enable_account_interface,
-        },
-        external_ids: {
-            title: _l("Manage Third-Party Identities"),
-            id: "manage-third-party-identities",
-            description: _l("Connect or disconnect access to your third-party identities."),
-            icon: "fa-id-card-o",
-            submitTitle: "Disconnect identity",
-            submitIcon: "fa-trash",
-            shouldRender: config.enable_oidc,
+            disabled: config.use_remote_user || !config.enable_account_interface,
         },
         permissions: {
             title: _l("Set Dataset Permissions for New Histories"),
@@ -46,7 +37,7 @@ export const getUserPreferencesModel = (user_id) => {
             icon: "fa-users",
             submitTitle: "Save Permissions",
             redirect: "/user",
-            shouldRender: !config.single_user,
+            disabled: config.single_user,
         },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),
@@ -56,7 +47,7 @@ export const getUserPreferencesModel = (user_id) => {
             icon: "fa-filter",
             submitTitle: "Save Filters",
             redirect: "/user",
-            shouldRender: !!config.has_user_tool_filters,
+            disabled: !config.has_user_tool_filters,
         },
     };
 };
