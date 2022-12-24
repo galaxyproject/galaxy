@@ -50,8 +50,13 @@ watch(
 <template>
     <b-card :show="show" class="overflow-auto">
         <b-form-radio-group v-model="currentValue">
-            <b-form-radio v-for="(themeDetails, theme) in config.themes" :key="theme" :value="theme" class="mb-2">
-                <span class="font-weight-bold mb-1">Theme: {{ theme }}</span>
+            <b-form-radio
+                v-for="(themeDetails, theme, index) in config.themes"
+                :key="theme"
+                :value="theme"
+                class="mb-2">
+                <span v-if="index === 0" class="font-weight-bold mb-1"> Default Theme ({{ theme }}). </span>
+                <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
                 <div class="default-theme-masthead" :style="getBackground(themeDetails)">
                     <img :src="safePath(getLogo(themeDetails))" alt="image" />
                     <span v-localize :style="getStyle(themeDetails, 'color')" class="default-theme-color">Text</span>

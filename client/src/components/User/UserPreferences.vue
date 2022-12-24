@@ -22,10 +22,11 @@
             </span>
         </p>
         <user-preferences-element
-            v-for="(link, index) in activeLinks"
+            v-for="(link, index) in activePreferences"
+            :id="link.id"
             :key="index"
-            :title="link.title"
             :icon="link.icon"
+            :title="link.title"
             :description="link.description"
             :to="`/user/${index}`" />
         <user-preferences-element
@@ -55,12 +56,14 @@
             title="Manage Custom Builds"
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
-        <user-preferences-element icon="fa-palette" badge="new">
-            <a v-b-toggle.preference-themes-collapse href="#">
-                <b v-localize>Pick a Color Theme</b>
-            </a>
-            <div v-localize class="form-text text-muted">Click here to change the user interface color theme.</div>
-            <b-collapse id="preference-themes-collapse">
+        <user-preferences-element
+            v-if="hasThemes"
+            icon="fa-palette"
+            title="Pick a Color Theme"
+            description="Click here to change the user interface color theme."
+            badge="New!"
+            @click="toggleTheme = !toggleTheme">
+            <b-collapse v-model="toggleTheme">
                 <ThemeSelector />
             </b-collapse>
         </user-preferences-element>
@@ -88,6 +91,7 @@
         </ConfigProvider>
         <user-preferences-element
             v-if="hasLogout"
+            id="edit-preferences-sign-out"
             icon="fa-sign-out"
             title="Sign Out"
             description="Click here to sign out of all sessions."
@@ -138,26 +142,22 @@ export default {
             diskQuota: "",
             messageVariant: null,
             message: null,
-            submittedNames: [],
+            toggleTheme: false,
         };
     },
     computed: {
-        baseUrl() {
-            return safePath("user");
-        },
-        activeLinks() {
-            const activeLinks = {};
-            const UserPreferencesModel = getUserPreferencesModel();
-            for (const key in UserPreferencesModel) {
-                if (!UserPreferencesModel[key].disabled) {
-                    activeLinks[key] = UserPreferencesModel[key];
-                }
-            }
-            return activeLinks;
+        activePreferences() {
+            const enabledPreferences = Object.entries(getUserPreferencesModel()).filter((f) => !f.disabled);
+            return Object.fromEntries(enabledPreferences);
         },
         hasLogout() {
             const Galaxy = getGalaxyInstance();
-            return !!Galaxy.session_csrf_token && !config.single_user;
+            return !!Galaxy.session_csrf_token && !Galaxy.config.single_user;
+        },
+        hasThemes() {
+            const Galaxy = getGalaxyInstance();
+            const themes = Object.keys(Galaxy.config.themes);
+            return themes?.length > 1 ?? false;
         },
     },
     created() {
@@ -236,6 +236,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-@import "user-styles.scss";
-</style>

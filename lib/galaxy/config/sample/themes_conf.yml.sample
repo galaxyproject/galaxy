@@ -1,18 +1,3 @@
-
-smokey:
-  masthead:
-    color: "#0C0F0A"
-    text:
-      color: white
-      hover: "#FBFF12"
-      active: white
-    link:
-      color: transparent
-      hover: transparent
-      active: "#FF206E"
-    logo:
-      img: "/static/favicon.svg"
-
 blue:
   masthead:
     color: "#2c3143"
@@ -75,3 +60,17 @@ pride:
       logo:
         img: "/static/favicon.svg"
         img-secondary: null
+
+smoky:
+  masthead:
+    color: "#0C0F0A"
+    text:
+      color: white
+      hover: "#FBFF12"
+      active: white
+    link:
+      color: transparent
+      hover: transparent
+      active: "#FF206E"
+    logo:
+      img: "/static/favicon.svg"
