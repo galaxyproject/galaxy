@@ -57,11 +57,11 @@ library.add(faPalette);
     <b-card :show="show" class="overflow-auto">
         <b-form-radio-group v-model="currentValue">
             <b-form-radio v-for="(themeDetails, theme) in config.themes" :key="theme" :value="theme" class="mb-2">
-                <span class="font-weight-bold mb-1">{{ theme }}</span>
+                <span class="font-weight-bold mb-1">Theme: {{ theme }}</span>
                 <div class="default-theme-masthead" :style="getBackground(themeDetails, 'masthead-color')">
                     <img :src="safePath(getImage(themeDetails, 'logo-img'))" alt="image" />
-                    <span v-localize :style="getStyle(themeDetails, 'color')" class="default-theme-color"> Text </span>
-                    <span v-localize :style="getStyle(themeDetails, 'hover')" class="default-theme-hover"> Hover </span>
+                    <span v-localize :style="getStyle(themeDetails, 'color')" class="default-theme-color">Text</span>
+                    <span v-localize :style="getStyle(themeDetails, 'hover')" class="default-theme-hover">Hover</span>
                     <span v-localize :style="getStyle(themeDetails, 'active')" class="default-theme-active">
                         Active
                     </span>
