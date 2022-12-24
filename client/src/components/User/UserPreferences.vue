@@ -32,17 +32,13 @@
                 <ThemeSelector />
             </b-collapse>
         </user-preferences-element>
-
-        <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
-            <div class="pref-content pr-1">
-                <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
-                <div v-localize class="form-text text-muted">
-                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
-                    privilege in your browser.
-                </div>
+        <user-preferences-element icon="fa-plus-square-o">
+            <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
+            <div v-localize class="form-text text-muted">
+                Allow push and tab notifcations on job completion. To disable, revoke the site notification
+                privilege in your browser.
             </div>
-        </b-row>
+        </user-preferences-element>
         <ConfigProvider v-slot="{ config }">
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
