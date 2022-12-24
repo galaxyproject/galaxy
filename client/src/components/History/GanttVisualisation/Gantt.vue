@@ -250,10 +250,16 @@ export default {
                 end_time.value = moment(value).add(10, "minutes").format("YYYY-MM-DD HH:mm:ss");
                 if (start_time.value && end_time.value) {
                     isLoading.value = true;
-                    accountingArrayMinutes.value = accountingArray.value.filter((entry) => {
-                        if (moment(end_time.value).isBefore(moment(entry.endTime))) {
-                            end_time.value = moment(entry.endTime).format("YYYY-MM-DD HH:mm:ss");
+                    // Finalizing on end_time before filtering records
+                    accountingArray.value.forEach((entry) => {
+                        if (moment(entry.startTime).isBetween(moment(start_time.value), moment(end_time.value))) {
+                            if (moment(end_time.value).isBefore(moment(entry.endTime))) {
+                                end_time.value = moment(entry.endTime).format("YYYY-MM-DD HH:mm:ss");
+                            }
                         }
+                    });
+                    // Filtering based on finalized end_time
+                    accountingArrayMinutes.value = accountingArray.value.filter((entry) => {
                         return moment(entry.startTime).isBetween(moment(start_time.value), moment(end_time.value));
                     });
                     makeGantt();
