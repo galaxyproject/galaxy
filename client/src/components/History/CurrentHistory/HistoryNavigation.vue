@@ -58,6 +58,7 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
+                        :disabled="currentUser.isAnonymous"
                         :title="l('Visualiye the jobs in your history using a Gantt chart')"
                         @click="$router.push(`/visualizations/gantt`)">
                         <Icon fixed-width icon="stream" class="mr-1" />
