@@ -57,14 +57,14 @@
             <div v-localize class="form-text text-muted">Access your current API key or create a new one.</div>
         </user-preferences-element>
         <user-preferences-element icon="fa-cubes">
-            <a href="javascript:void(0)" @click="openManageCustomBuilds">
+            <router-link to="/custom_builds">
                 <b v-localize>Manage Custom Builds</b>
-            </a>
+            </router-link>
             <div v-localize class="form-text text-muted">Add or remove custom builds using history datasets.</div>
         </user-preferences-element>
         <user-preferences-element icon="fa-palette">
             <b-badge variant="danger">New!</b-badge>
-            <a v-b-toggle.preference-themes-collapse href="javascript:void(0)">
+            <a v-b-toggle.preference-themes-collapse href="#">
                 <b v-localize>Pick a Color Theme</b>
             </a>
             <div v-localize class="form-text text-muted">Click here to change the user interface color theme.</div>
@@ -73,7 +73,7 @@
             </b-collapse>
         </user-preferences-element>
         <user-preferences-element icon="fa-plus-square-o">
-            <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
+            <a href="#" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
             <div v-localize class="form-text text-muted">
                 Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in
                 your browser.
@@ -81,7 +81,7 @@
         </user-preferences-element>
         <ConfigProvider v-slot="{ config }">
             <user-preferences-element v-if="!config.single_user" icon="fa-lock">
-                <a id="edit-preferences-make-data-private" href="javascript:void(0)" @click="makeDataPrivate">
+                <a id="edit-preferences-make-data-private" href="#" @click="makeDataPrivate">
                     <b v-localize>Make All Data Private</b>
                 </a>
                 <div v-localize class="form-text text-muted">Click here to make all data private.</div>
@@ -95,7 +95,7 @@
             </UserDeletion>
         </ConfigProvider>
         <user-preferences-element v-if="hasLogout" icon="fa-sign-out">
-            <a id="edit-preferences-sign-out" href="javascript:void(0)" @click="signOut">
+            <a id="edit-preferences-sign-out" href="#" @click="signOut">
                 <b v-localize>Sign Out</b>
             </a>
             <div v-localize class="form-text text-muted">Click here to sign out of all sessions.</div>
@@ -197,9 +197,6 @@ export default {
             } else {
                 alert("Notifications are not supported by this browser.");
             }
-        },
-        openManageCustomBuilds() {
-            this.$router.push(`/custom_builds`);
         },
         makeDataPrivate() {
             const Galaxy = getGalaxyInstance();
