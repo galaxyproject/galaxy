@@ -12,12 +12,9 @@
         <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
             <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
             <div class="pref-content pr-1">
-                <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick">
+                <router-link :id="link.id" :to="`/user/${index}`">
                     <b>{{ link.title }}</b>
-                </a>
-                <a v-else :id="link.id" :href="`${baseUrl}/${index}`">
-                    <b>{{ link.title }}</b>
-                </a>
+                </router-link>
                 <div class="form-text text-muted">
                     {{ link.description }}
                 </div>
