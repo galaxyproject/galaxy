@@ -21,15 +21,25 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    badge: {
+        type: String,
+        default: null,
+    },
 });
 </script>
 <template>
     <b-row class="ml-3 mb-1">
+        <b-badge v-if="!!badge" variant="danger">
+            {{ badge }}
+        </b-badge>
         <i :class="['pref-icon pt-1 fa fa-lg', icon]" />
         <div class="pref-content pr-1">
             <router-link v-if="to" :id="id" :to="to">
                 <b v-localize>{{ title }}</b>
             </router-link>
+            <a v-else href="#" @click="$emit('click')">
+                <b v-localize>{{ title }}</b>
+            </a>
             <div class="form-text text-muted">
                 {{ description }}
             </div>

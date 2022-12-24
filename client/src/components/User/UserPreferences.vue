@@ -55,8 +55,7 @@
             title="Manage Custom Builds"
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
-        <user-preferences-element icon="fa-palette">
-            <b-badge variant="danger">New!</b-badge>
+        <user-preferences-element icon="fa-palette" badge="new">
             <a v-b-toggle.preference-themes-collapse href="#">
                 <b v-localize>Pick a Color Theme</b>
             </a>
@@ -65,20 +64,20 @@
                 <ThemeSelector />
             </b-collapse>
         </user-preferences-element>
-        <user-preferences-element icon="fa-plus-square-o">
-            <a href="#" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
-            <div v-localize class="form-text text-muted">
-                Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in
-                your browser.
-            </div>
-        </user-preferences-element>
+        <user-preferences-element
+            id="edit-preferences-notifications"
+            icon="fa-plus-square-o"
+            title="Enable notifications"
+            description="Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser."
+            @click="toggleNotifications" />
         <ConfigProvider v-slot="{ config }">
-            <user-preferences-element v-if="!config.single_user" icon="fa-lock">
-                <a id="edit-preferences-make-data-private" href="#" @click="makeDataPrivate">
-                    <b v-localize>Make All Data Private</b>
-                </a>
-                <div v-localize class="form-text text-muted">Click here to make all data private.</div>
-            </user-preferences-element>
+            <user-preferences-element
+                v-if="!config.single_user"
+                id="edit-preferences-make-data-private"
+                icon="fa-lock"
+                title="Make All Data Private"
+                description="Click here to make all data private."
+                @click="makeDataPrivate" />
         </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
             <UserDeletion
@@ -87,12 +86,12 @@
                 :user-id="userId">
             </UserDeletion>
         </ConfigProvider>
-        <user-preferences-element v-if="hasLogout" icon="fa-sign-out">
-            <a id="edit-preferences-sign-out" href="#" @click="signOut">
-                <b v-localize>Sign Out</b>
-            </a>
-            <div v-localize class="form-text text-muted">Click here to sign out of all sessions.</div>
-        </user-preferences-element>
+        <user-preferences-element
+            v-if="hasLogout"
+            icon="fa-sign-out"
+            title="Sign Out"
+            description="Click here to sign out of all sessions."
+            @click="signOut" />
     </b-container>
 </template>
 
