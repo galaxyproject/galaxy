@@ -41,20 +41,16 @@
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
-                <div v-else>
-                    <div v-if="obj.args.collapsed !== undefined">
-                        COLLAPSIBLE
-                    </div>
-                    <markdown-element
-                        :obj="obj"
-                        :datasets="historyDatasets"
-                        :collections="historyDatasetCollections"
-                        :histories="histories"
-                        :invocations="invocations"
-                        :jobs="jobs"
-                        :workflows="workflows"
-                    />
-                </div>
+                <markdown-container
+                    v-else
+                    :obj="obj"
+                    :datasets="datasets"
+                    :collections="collections"
+                    :histories="histories"
+                    :invocations="invocations"
+                    :jobs="jobs"
+                    :workflows="workflows"
+                />
             </div>
         </div>
     </div>
@@ -72,7 +68,7 @@ import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 
 import LoadingSpan from "components/LoadingSpan";
 import StsDownloadButton from "components/StsDownloadButton";
-import MarkdownElement from "./MarkdownElement.vue";
+import MarkdownContainer from "./MarkdownContainer.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
@@ -93,7 +89,7 @@ library.add(faDownload, faEdit);
 export default {
     store: store,
     components: {
-        MarkdownElement,
+        MarkdownContainer,
         FontAwesomeIcon,
         StsDownloadButton,
     },
@@ -123,9 +119,9 @@ export default {
         return {
             markdownObjects: [],
             markdownErrors: [],
-            historyDatasets: {},
+            datasets: {},
             histories: {},
-            historyDatasetCollections: {},
+            collections: {},
             workflows: {},
             jobs: {},
             invocations: {},
@@ -169,9 +165,9 @@ export default {
                 const markdown = config.content || config.markdown;
                 this.markdownErrors = config.errors || [];
                 this.markdownObjects = this.splitMarkdown(markdown);
-                this.historyDatasets = config.history_datasets || {};
+                this.datasets = config.history_datasets || {};
                 this.histories = config.histories || {};
-                this.historyDatasetCollections = config.history_dataset_collections || {};
+                this.collections = config.history_dataset_collections || {};
                 this.workflows = config.workflows || {};
                 this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
