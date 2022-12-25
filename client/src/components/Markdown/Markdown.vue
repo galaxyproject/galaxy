@@ -41,47 +41,20 @@
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
-                <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
-                    <pre><code>{{ getVersion }}</code></pre>
+                <div v-else>
+                    <div v-if="obj.args.collapsed !== undefined">
+                        COLLAPSIBLE
+                    </div>
+                    <markdown-element
+                        :obj="obj"
+                        :datasets="historyDatasets"
+                        :collections="historyDatasetCollections"
+                        :histories="histories"
+                        :invocations="invocations"
+                        :jobs="jobs"
+                        :workflows="workflows"
+                    />
                 </div>
-                <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
-                    <pre><code>{{ getTime }}</code></pre>
-                </div>
-                <HistoryLink v-else-if="obj.name == 'history_link'" :args="obj.args" :histories="histories" />
-                <HistoryDatasetAsImage v-else-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
-                <HistoryDatasetLink v-else-if="obj.name == 'history_dataset_link'" :args="obj.args" />
-                <HistoryDatasetIndex v-else-if="obj.name == 'history_dataset_index'" :args="obj.args" />
-                <InvocationTime v-else-if="obj.name == 'invocation_time'" :args="obj.args" :invocations="invocations" />
-                <JobMetrics v-else-if="obj.name == 'job_metrics'" :args="obj.args" />
-                <JobParameters v-else-if="obj.name == 'job_parameters'" :args="obj.args" />
-                <WorkflowDisplay v-else-if="obj.name == 'workflow_display'" :args="obj.args" :workflows="workflows" />
-                <Visualization v-else-if="obj.name == 'visualization'" :args="obj.args" />
-                <HistoryDatasetCollectionDisplay
-                    v-else-if="obj.name == 'history_dataset_collection_display'"
-                    :args="obj.args"
-                    :collections="historyDatasetCollections" />
-                <ToolStd
-                    v-else-if="['tool_stdout', 'tool_stderr'].includes(obj.name)"
-                    :args="obj.args"
-                    :name="obj.name"
-                    :jobs="jobs" />
-                <HistoryDatasetDisplay
-                    v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(obj.name)"
-                    :args="obj.args"
-                    :datasets="historyDatasets"
-                    :embedded="obj.name == 'history_dataset_embedded'" />
-                <HistoryDatasetDetails
-                    v-else-if="
-                        [
-                            'history_dataset_name',
-                            'history_dataset_info',
-                            'history_dataset_peek',
-                            'history_dataset_type',
-                        ].includes(obj.name)
-                    "
-                    :name="obj.name"
-                    :args="obj.args"
-                    :datasets="historyDatasets" />
             </div>
         </div>
     </div>
@@ -98,20 +71,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 
 import LoadingSpan from "components/LoadingSpan";
-import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
-import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay";
-import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
-import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex";
-import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay";
-import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails";
-import HistoryLink from "./Elements/HistoryLink";
-import InvocationTime from "./Elements/InvocationTime";
-import JobMetrics from "./Elements/JobMetrics";
-import JobParameters from "./Elements/JobParameters";
-import ToolStd from "./Elements/ToolStd";
-import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
-import Visualization from "./Elements/Visualization";
 import StsDownloadButton from "components/StsDownloadButton";
+import MarkdownElement from "./MarkdownElement.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
@@ -132,20 +93,7 @@ library.add(faDownload, faEdit);
 export default {
     store: store,
     components: {
-        HistoryDatasetDetails,
-        HistoryDatasetAsImage,
-        HistoryDatasetCollectionDisplay,
-        HistoryDatasetDisplay,
-        HistoryDatasetIndex,
-        HistoryDatasetLink,
-        HistoryLink,
-        JobMetrics,
-        JobParameters,
-        LoadingSpan,
-        ToolStd,
-        WorkflowDisplay,
-        Visualization,
-        InvocationTime,
+        MarkdownElement,
         FontAwesomeIcon,
         StsDownloadButton,
     },
