@@ -319,25 +319,20 @@ export interface paths {
         /** Displays a collection (list) of groups. */
         get: operations["index_api_groups__group_id__roles_get"];
     };
-    "/api/groups/{group_id}/roles/{id}": {
-        /** Displays information about a group role. */
-        get: operations["group_role_api_groups__group_id__roles__id__get"];
-    };
     "/api/groups/{group_id}/roles/{role_id}": {
+        /** Displays information about a group role. */
+        get: operations["group_role_api_groups__group_id__roles__role_id__get"];
         /** Adds a role to a group */
         put: operations["update_api_groups__group_id__roles__role_id__put"];
         /** Removes a role from a group */
         delete: operations["delete_api_groups__group_id__roles__role_id__delete"];
     };
-    "/api/groups/{group_id}/user/{id}": {
+    "/api/groups/{group_id}/user/{user_id}": {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
-        get: operations["group_user_api_groups__group_id__user__id__get"];
-    };
-    "/api/groups/{group_id}/user/{user_id}": {
+        get: operations["group_user_api_groups__group_id__user__user_id__get"];
         /**
          * Adds a user to a group
          * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
@@ -359,15 +354,12 @@ export interface paths {
          */
         get: operations["index_api_groups__group_id__users_get"];
     };
-    "/api/groups/{group_id}/users/{id}": {
+    "/api/groups/{group_id}/users/{user_id}": {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
-        get: operations["group_user_api_groups__group_id__users__id__get"];
-    };
-    "/api/groups/{group_id}/users/{user_id}": {
+        get: operations["group_user_api_groups__group_id__users__user_id__get"];
         /**
          * Adds a user to a group
          * @description PUT /api/groups/{encoded_group_id}/users/{encoded_user_id}
@@ -456,6 +448,15 @@ export interface paths {
          */
         post: operations["create_api_histories__history_id__contents_post"];
     };
+    "/api/histories/{history_id}/contents/archive": {
+        /**
+         * Build and return a compressed archive of the selected history contents.
+         * @description Build and return a compressed archive of the selected history contents.
+         *
+         * **Note**: this is a volatile endpoint and settings and behavior may change.
+         */
+        get: operations["archive_api_histories__history_id__contents_archive_get"];
+    };
     "/api/histories/{history_id}/contents/archive/{filename}.{format}": {
         /**
          * Build and return a compressed archive of the selected history contents.
@@ -464,15 +465,6 @@ export interface paths {
          * **Note**: this is a volatile endpoint and settings and behavior may change.
          */
         get: operations["archive_api_histories__history_id__contents_archive__filename___format__get"];
-    };
-    "/api/histories/{history_id}/contents/archive/{id}": {
-        /**
-         * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         * **Note**: this is a volatile endpoint and settings and behavior may change.
-         */
-        get: operations["archive_api_histories__history_id__contents_archive__id__get"];
     };
     "/api/histories/{history_id}/contents/bulk": {
         /**
@@ -490,15 +482,6 @@ export interface paths {
          * while maintaining approximate collection structure.
          */
         get: operations["download_dataset_collection_api_histories__history_id__contents_dataset_collections__id__download_get"];
-    };
-    "/api/histories/{history_id}/contents/dataset_collections/{id}/prepare_download": {
-        /**
-         * Prepare an short term storage object that the collection will be downloaded to.
-         * @description The history dataset collection will be written as a `zip` archive to the
-         * returned short term storage object. Progress tracking this file's creation
-         * can be tracked with the short_term_storage API.
-         */
-        post: operations["prepare_collection_download_api_histories__history_id__contents_dataset_collections__id__prepare_download_post"];
     };
     "/api/histories/{history_id}/contents/datasets/{id}/materialize": {
         /** Materialize a deferred dataset into real, usable dataset. */
@@ -1426,6 +1409,9 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the role
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -1555,6 +1541,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of the element.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id?: string;
             /**
@@ -1718,7 +1707,7 @@ export interface components {
             id?: string;
             /**
              * Name
-             * @description A name declared by the bundle author that must be used when materialising this object, overriding any name directly associated with the object itself. The name must be unique with the containing bundle. This string is made up of uppercase and lowercase letters, decimal digits, hypen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
+             * @description A name declared by the bundle author that must be used when materialising this object, overriding any name directly associated with the object itself. The name must be unique with the containing bundle. This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
              */
             name: string;
         };
@@ -1781,6 +1770,9 @@ export interface components {
             /**
              * Folder Id
              * @description The ID of the library folder that will contain the collection. Required if `instance_type=library`.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             folder_id?: string;
             /**
@@ -1792,6 +1784,9 @@ export interface components {
             /**
              * History Id
              * @description The ID of the history that will contain the collection. Required if `instance_type=history`.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id?: string;
             /**
@@ -1848,11 +1843,17 @@ export interface components {
             /**
              * From HDA ID
              * @description The ID of an accessible HDA to copy into the library.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             from_hda_id?: string;
             /**
              * From HDCA ID
              * @description The ID of an accessible HDCA to copy into the library. Nested collections are not allowed, you must flatten the collection first.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             from_hdca_id?: string;
             /**
@@ -1942,6 +1943,9 @@ export interface components {
             /**
              * Folder Id
              * @description The ID of the library folder that will contain the collection. Required if `instance_type=library`.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             folder_id?: string;
             /**
@@ -1953,6 +1957,9 @@ export interface components {
             /**
              * History Id
              * @description The ID of the history that will contain the collection. Required if `instance_type=history`.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id?: string;
             /**
@@ -1993,6 +2000,9 @@ export interface components {
             /**
              * Workflow invocation ID
              * @description Encoded ID used by workflow generated reports.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             invocation_id?: string;
             /**
@@ -2059,6 +2069,9 @@ export interface components {
             /**
              * ID
              * @description The `encoded identifier` of the quota.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -2070,7 +2083,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default Quota
-             * @constant
              * @enum {string}
              */
             model_class: "Quota";
@@ -2135,13 +2147,15 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default DatasetCollectionElement
-             * @constant
              * @enum {string}
              */
             model_class: "DatasetCollectionElement";
@@ -2189,13 +2203,15 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default DatasetCollection
-             * @constant
              * @enum {string}
              */
             model_class: "DatasetCollection";
@@ -2310,7 +2326,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default HistoryDatasetCollectionAssociation
-             * @constant
              * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
@@ -2385,6 +2400,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -2590,7 +2608,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default DefaultQuotaAssociation
-             * @constant
              * @enum {string}
              */
             model_class: "DefaultQuotaAssociation";
@@ -2686,6 +2703,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of the history item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -2764,11 +2784,6 @@ export interface components {
              */
             file_name?: string;
             /**
-             * Force Rebuild
-             * @description Whether to force a rebuild of the history archive.
-             */
-            force?: boolean;
-            /**
              * GZip
              * @description Whether to export as gzip archive.
              * @default true
@@ -2800,14 +2815,24 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         ExportObjectRequestMetadata: {
-            /** Object Id */
+            /**
+             * Object Id
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
             object_id: string;
             object_type: components["schemas"]["ExportObjectType"];
             /** Payload */
             payload:
                 | components["schemas"]["WriteStoreToPayload"]
                 | components["schemas"]["ShortTermStoreExportPayload"];
-            /** User Id */
+            /**
+             * User Id
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
             user_id?: string;
         };
         /**
@@ -2854,6 +2879,9 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id: string;
             /** Targets */
@@ -2945,13 +2973,23 @@ export interface components {
             file_ext: string;
             /** File Size */
             file_size: string;
-            /** Id */
+            /**
+             * Id
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
             id: string;
             /** Is Private */
             is_private: boolean;
             /** Is Unrestricted */
             is_unrestricted: boolean;
-            /** Ldda Id */
+            /**
+             * Ldda Id
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
             ldda_id: string;
             /** Message */
             message?: string;
@@ -3069,7 +3107,12 @@ export interface components {
              * @default
              */
             description?: string;
-            /** Id */
+            /**
+             * Id
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
             id: string;
             /** Name */
             name: string;
@@ -3178,13 +3221,15 @@ export interface components {
             /**
              * ID
              * @description Encoded group ID
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Group
-             * @constant
              * @enum {string}
              */
             model_class: "Group";
@@ -3208,7 +3253,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default GroupQuotaAssociation
-             * @constant
              * @enum {string}
              */
             model_class: "GroupQuotaAssociation";
@@ -3226,6 +3270,9 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the role
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -3258,6 +3305,9 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the user
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -3314,6 +3364,9 @@ export interface components {
             /**
              * Dataset ID
              * @description The encoded ID of the dataset associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             dataset_id: string;
             /**
@@ -3382,11 +3435,17 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id: string;
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -3529,18 +3588,23 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id: string;
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default HistoryDatasetAssociation
-             * @constant
              * @enum {string}
              */
             model_class: "HistoryDatasetAssociation";
@@ -3564,6 +3628,9 @@ export interface components {
             /**
              * Dataset ID
              * @description The encoded ID of the dataset associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             dataset_id: string;
             /**
@@ -3590,11 +3657,17 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id: string;
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -3650,6 +3723,9 @@ export interface components {
             /**
              * Collection ID
              * @description The encoded ID of the dataset collection associated with this HDCA.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             collection_id: string;
             /**
@@ -3702,16 +3778,25 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id: string;
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Job Source ID
              * @description The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             job_source_id?: string;
             /**
@@ -3728,7 +3813,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default HistoryDatasetCollectionAssociation
-             * @constant
              * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
@@ -3792,6 +3876,9 @@ export interface components {
             /**
              * Collection ID
              * @description The encoded ID of the dataset collection associated with this HDCA.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             collection_id: string;
             /**
@@ -3833,16 +3920,25 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id: string;
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Job Source ID
              * @description The encoded ID of the Job that produced this dataset collection. Used to track the state of the job.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             job_source_id?: string;
             /**
@@ -3859,7 +3955,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default HistoryDatasetCollectionAssociation
-             * @constant
              * @enum {string}
              */
             model_class: "HistoryDatasetCollectionAssociation";
@@ -4125,6 +4220,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
         };
@@ -4240,6 +4338,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -4251,7 +4352,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default History
-             * @constant
              * @enum {string}
              */
             model_class: "History";
@@ -4315,6 +4415,9 @@ export interface components {
             /**
              * User ID
              * @description The encoded ID of the user that owns this History.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             user_id: string;
             /**
@@ -4346,13 +4449,15 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default History
-             * @constant
              * @enum {string}
              */
             model_class: "History";
@@ -4410,13 +4515,15 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default ImplicitCollectionJobs
-             * @constant
              * @enum {string}
              */
             model: "ImplicitCollectionJobs";
@@ -4440,12 +4547,12 @@ export interface components {
          */
         InstalledRepositoryToolShedStatus: {
             /**
-             * Latest Installable Revision
-             * @description Most recent version avialable on the tool shed
+             * Latest installed revision
+             * @description Most recent version available on the tool shed
              */
             latest_installable_revision: string;
             /**
-             * Repository Deprecated
+             * Repository deprecated
              * @description Repository has been depreciated on the tool shed
              */
             repository_deprecated: string;
@@ -4460,12 +4567,12 @@ export interface components {
          */
         InstalledToolShedRepository: {
             /**
-             * Changeset Revision
+             * Changeset revision
              * @description Changeset revision of the repository - a mercurial commit hash
              */
             changeset_revision: string;
             /**
-             * Ctx Rev
+             * Changeset revision number
              * @description The linearized 0-based index of the changeset on the tool shed (0, 1, 2,...)
              */
             ctx_rev: string;
@@ -4481,10 +4588,13 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the install tool shed repository.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
-             * Installed Changeset Revision
+             * Installed changeset revision
              * @description Initially installed changeset revision. Used to construct path to repository within Galaxies filesystem. Does not change if a repository is updated.
              */
             installed_changeset_revision: string;
@@ -4492,7 +4602,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default ToolShedRepository
-             * @constant
              * @enum {string}
              */
             model_class: "ToolShedRepository";
@@ -4509,11 +4618,11 @@ export interface components {
             /** Status */
             status: string;
             /**
-             * Tool Shed
+             * Tool shed
              * @description Hostname of the tool shed this was installed from
              */
             tool_shed: string;
-            /** Tool Shed Status */
+            /** Latest updated status from the tool shed */
             tool_shed_status?: components["schemas"]["InstalledRepositoryToolShedStatus"];
             /** Uninstalled */
             uninstalled: boolean;
@@ -4531,6 +4640,9 @@ export interface components {
             /**
              * Item ID
              * @description The `encoded identifier` of the item whose tags will be updated.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             item_id: string;
             /**
@@ -4575,11 +4687,17 @@ export interface components {
             /**
              * ID
              * @description The encoded database ID of the export request.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Job ID
              * @description The encoded database ID of the job that generated this history export archive.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             job_id: string;
             /**
@@ -4606,6 +4724,9 @@ export interface components {
             /**
              * Job ID
              * @description The encoded database ID of the job that is currently processing a particular request.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             job_id: string;
         };
@@ -4634,11 +4755,17 @@ export interface components {
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             history_id?: string;
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -4650,7 +4777,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default Job
-             * @constant
              * @enum {string}
              */
             model_class: "Job";
@@ -4705,13 +4831,15 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Job
-             * @constant
              * @enum {string}
              */
             model: "Job";
@@ -4897,7 +5025,12 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         LibraryFolderDestination: {
-            /** Library Folder Id */
+            /**
+             * Library Folder Id
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
             library_folder_id: string;
             /**
              * Type
@@ -4930,6 +5063,9 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the library folder.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -4947,7 +5083,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default LibraryFolder
-             * @constant
              * @enum {string}
              */
             model_class: "LibraryFolder";
@@ -4959,11 +5094,17 @@ export interface components {
             /**
              * Parent Folder ID
              * @description Encoded ID of the parent folder. Empty if it's the root folder.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             parent_id?: string;
             /**
              * Parent Library ID
              * @description Encoded ID of the Library this folder belongs to.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             parent_library_id: string;
             /**
@@ -4988,7 +5129,12 @@ export interface components {
             folder_name: string;
             /** Full Path */
             full_path: string[][];
-            /** Parent Library Id */
+            /**
+             * Parent Library Id
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
+             */
             parent_library_id: string;
             /** Total Rows */
             total_rows: number;
@@ -5053,13 +5199,15 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the Library.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Library
-             * @constant
              * @enum {string}
              */
             model_class: "Library";
@@ -5071,6 +5219,9 @@ export interface components {
             /**
              * Root Folder ID
              * @description Encoded ID of the Library's base folder.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             root_folder_id: string;
             /**
@@ -5172,13 +5323,15 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the Library.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Library
-             * @constant
              * @enum {string}
              */
             model_class: "Library";
@@ -5195,6 +5348,9 @@ export interface components {
             /**
              * Root Folder ID
              * @description Encoded ID of the Library's base folder.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             root_folder_id: string;
             /**
@@ -5287,6 +5443,10 @@ export interface components {
              * @description Depending on the `source` it can be:
              * - The encoded id of the source library dataset
              * - The encoded id of the the HDA
+             *
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             content?: string;
             /**
@@ -5396,7 +5556,7 @@ export interface components {
             /**
              * Name
              * @description A string that can be used to name a `DrsObject`.
-             * This string is made up of uppercase and lowercase letters, decimal digits, hypen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
+             * This string is made up of uppercase and lowercase letters, decimal digits, hyphen, period, and underscore [A-Za-z0-9.-_]. See http://pubs.opengroup.org/onlinepubs/9699919799/basedefs/V1_chap03.html#tag_03_282[portable filenames].
              */
             name?: string;
             /**
@@ -5510,6 +5670,9 @@ export interface components {
             /**
              * ID
              * @description The encoded database ID of the export request.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -5596,6 +5759,9 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the Page.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -5606,13 +5772,15 @@ export interface components {
             /**
              * Latest revision ID
              * @description The encoded ID of the last revision of this Page.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             latest_revision_id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Page
-             * @constant
              * @enum {string}
              */
             model_class: "Page";
@@ -5666,6 +5834,9 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the Page.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -5676,13 +5847,15 @@ export interface components {
             /**
              * Latest revision ID
              * @description The encoded ID of the last revision of this Page.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             latest_revision_id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Page
-             * @constant
              * @enum {string}
              */
             model_class: "Page";
@@ -5935,13 +6108,15 @@ export interface components {
             /**
              * ID
              * @description The `encoded identifier` of the quota.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Quota
-             * @constant
              * @enum {string}
              */
             model_class: "Quota";
@@ -5977,13 +6152,15 @@ export interface components {
             /**
              * ID
              * @description The `encoded identifier` of the quota.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Quota
-             * @constant
              * @enum {string}
              */
             model_class: "Quota";
@@ -6081,13 +6258,15 @@ export interface components {
             /**
              * ID
              * @description Encoded ID of the role
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default Role
-             * @constant
              * @enum {string}
              */
             model_class: "Role";
@@ -6323,6 +6502,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of the resource to be shared.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -6376,6 +6558,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of the resource to be shared.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -6773,6 +6958,9 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
         };
@@ -6958,6 +7146,9 @@ export interface components {
             /**
              * User ID
              * @description The encoded ID of the user.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
         };
@@ -6984,6 +7175,9 @@ export interface components {
             /**
              * ID
              * @description User ID
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
@@ -6995,7 +7189,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default User
-             * @constant
              * @enum {string}
              */
             model_class: "User";
@@ -7014,7 +7207,6 @@ export interface components {
              * Model class
              * @description The name of the database model class.
              * @default UserQuotaAssociation
-             * @constant
              * @enum {string}
              */
             model_class: "UserQuotaAssociation";
@@ -7046,13 +7238,15 @@ export interface components {
             /**
              * ID
              * @description The encoded ID of this entity.
+             * @example [
+             *   "0123456789ABCDEF"
+             * ]
              */
             id: string;
             /**
              * Model class
              * @description The name of the database model class.
              * @default WorkflowInvocation
-             * @constant
              * @enum {string}
              */
             model: "WorkflowInvocation";
@@ -7192,11 +7386,17 @@ export interface components {
             /**
              * Name
              * @description Name of external reference
+             * @example [
+             *   "PubChem-compound"
+             * ]
              */
             name: string;
             /**
              * Namespace
              * @description External resource vendor prefix
+             * @example [
+             *   "pubchem.compound"
+             * ]
              */
             namespace: string;
         };
@@ -7614,15 +7814,13 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The ID of the History. */
             /** @description The ID of the `HDCA` contained in the history. */
             path: {
-                history_id: string;
                 id: string;
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description Short term storage reference for async monitoring of this download. */
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncFile"];
@@ -7634,6 +7832,8 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
+            /** @description Required asynchronous tasks required for this operation not available. */
+            501: never;
         };
     };
     suitable_converters_api_dataset_collections__id__suitable_converters_get: {
@@ -7670,7 +7870,7 @@ export interface operations {
     index_api_datasets_get: {
         /** Search datasets or collections using a query system. */
         parameters?: {
-            /** @description Optional identifier of a History. Use it to restrict the search whithin a particular History. */
+            /** @description Optional identifier of a History. Use it to restrict the search within a particular History. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /**
@@ -8869,7 +9069,7 @@ export interface operations {
             };
         };
     };
-    group_role_api_groups__group_id__roles__id__get: {
+    group_role_api_groups__group_id__roles__role_id__get: {
         /** Displays information about a group role. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -8880,7 +9080,7 @@ export interface operations {
             /** @description The ID of the role */
             path: {
                 group_id: string;
-                id: string;
+                role_id: string;
             };
         };
         responses: {
@@ -8956,11 +9156,10 @@ export interface operations {
             };
         };
     };
-    group_user_api_groups__group_id__user__id__get: {
+    group_user_api_groups__group_id__user__user_id__get: {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -8971,7 +9170,7 @@ export interface operations {
             /** @description The ID of the user */
             path: {
                 group_id: string;
-                id: string;
+                user_id: string;
             };
         };
         responses: {
@@ -9086,11 +9285,10 @@ export interface operations {
             };
         };
     };
-    group_user_api_groups__group_id__users__id__get: {
+    group_user_api_groups__group_id__users__user_id__get: {
         /**
          * Displays information about a group user.
-         * @description GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
-         * Displays information about a group user.
+         * @description Displays information about a group user.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -9101,7 +9299,7 @@ export interface operations {
             /** @description The ID of the user */
             path: {
                 group_id: string;
-                id: string;
+                user_id: string;
             };
         };
         responses: {
@@ -9916,64 +10114,7 @@ export interface operations {
             };
         };
     };
-    archive_api_histories__history_id__contents_archive__filename___format__get: {
-        /**
-         * Build and return a compressed archive of the selected history contents.
-         * @description Build and return a compressed archive of the selected history contents.
-         *
-         * **Note**: this is a volatile endpoint and settings and behavior may change.
-         */
-        parameters: {
-            /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
-            /**
-             * @description Generally a property name to filter by followed by an (often optional) hyphen and operator string.
-             * @example create_time-gt
-             */
-            /**
-             * @description The value to filter by.
-             * @example 2015-01-29
-             */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
-            query?: {
-                dry_run?: boolean;
-                q?: string[];
-                qv?: string[];
-                offset?: number;
-                limit?: number;
-                order?: string;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the History. */
-            path: {
-                history_id: string;
-                filename: string;
-                format: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    archive_api_histories__history_id__contents_archive__id__get: {
+    archive_api_histories__history_id__contents_archive_get: {
         /**
          * Build and return a compressed archive of the selected history contents.
          * @description Build and return a compressed archive of the selected history contents.
@@ -10018,6 +10159,63 @@ export interface operations {
             /** @description The ID of the History. */
             path: {
                 history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_api_histories__history_id__contents_archive__filename___format__get: {
+        /**
+         * Build and return a compressed archive of the selected history contents.
+         * @description Build and return a compressed archive of the selected history contents.
+         *
+         * **Note**: this is a volatile endpoint and settings and behavior may change.
+         */
+        parameters: {
+            /** @description Whether to return the archive and file paths only (as JSON) and not an actual archive file. */
+            /**
+             * @description Generally a property name to filter by followed by an (often optional) hyphen and operator string.
+             * @example create_time-gt
+             */
+            /**
+             * @description The value to filter by.
+             * @example 2015-01-29
+             */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /**
+             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
+             * @example name-dsc,create_time
+             */
+            query?: {
+                dry_run?: boolean;
+                q?: string[];
+                qv?: string[];
+                offset?: number;
+                limit?: number;
+                order?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the History. */
+            path: {
+                history_id: string;
+                filename: string;
+                format: string;
             };
         };
         responses: {
@@ -10110,42 +10308,6 @@ export interface operations {
                     "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
-        };
-    };
-    prepare_collection_download_api_histories__history_id__contents_dataset_collections__id__prepare_download_post: {
-        /**
-         * Prepare an short term storage object that the collection will be downloaded to.
-         * @description The history dataset collection will be written as a `zip` archive to the
-         * returned short term storage object. Progress tracking this file's creation
-         * can be tracked with the short_term_storage API.
-         */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the History. */
-            /** @description The ID of the `HDCA` contained in the history. */
-            path: {
-                history_id: string;
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Short term storage reference for async monitoring of this download. */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["AsyncFile"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-            /** @description Required asynchronous tasks required for this operation not available. */
-            501: never;
         };
     };
     materialize_dataset_api_histories__history_id__contents_datasets__id__materialize_post: {
@@ -11791,7 +11953,7 @@ export interface operations {
              * generally a partial match will be used to filter the query (i.e. in terms of the implementation
              * this means the database operation `ILIKE` will typically be used).
              *
-             * Once the tagged filters are extracted from the search query, the remaing text is just
+             * Once the tagged filters are extracted from the search query, the remaining text is just
              * used to search various documented attributes of the object.
              *
              * ## GitHub-style Tags Available
@@ -13941,7 +14103,7 @@ export interface operations {
              * generally a partial match will be used to filter the query (i.e. in terms of the implementation
              * this means the database operation `ILIKE` will typically be used).
              *
-             * Once the tagged filters are extracted from the search query, the remaing text is just
+             * Once the tagged filters are extracted from the search query, the remaining text is just
              * used to search various documented attributes of the object.
              *
              * ## GitHub-style Tags Available

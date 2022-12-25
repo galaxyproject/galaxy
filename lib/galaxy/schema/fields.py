@@ -41,9 +41,9 @@ class BaseDatabaseIdField:
         # __modify_schema__ should mutate the dict it receives in place,
         # the returned value will be ignored
         field_schema.update(
-            min_length=16,
+            minLength=16,
             pattern="[0-9a-fA-F]+",
-            examples=["0123456789ABCDEF"],
+            example=["0123456789ABCDEF"],
             type="string",
         )
 

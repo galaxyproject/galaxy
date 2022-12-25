@@ -5,15 +5,14 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
-import { watch, computed, ref } from "vue";
+import { watch, ref } from "vue";
 import { onMounted } from "vue";
 import { useRoute } from "vue-router/composables";
+import ThemeSelector from "./ThemeSelector.vue";
 
-// basics
 const route = useRoute();
 const emit = defineEmits(["open-url"]);
 
-/* props */
 const props = defineProps({
     tabs: {
         type: Array,
@@ -45,24 +44,19 @@ const props = defineProps({
     },
 });
 
-/* refs */
 const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
-/* computed */
-const allTabs = computed(() => [].concat(props.tabs, extensionTabs.value));
-
-/* methods */
 function setActiveTab() {
     const currentRoute = route.path;
     activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
 }
+
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
 }
 
-/* watchers */
 watch(
     () => route.path,
     () => {
@@ -70,7 +64,6 @@ watch(
     }
 );
 
-/* lifecyle */
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
     setActiveTab();
@@ -80,21 +73,32 @@ onMounted(() => {
 <template>
     <b-navbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
         <b-navbar-nav>
-            <b-navbar-brand id="analysis" :href="safePath(logoUrl)" aria-label="homepage">
-                <b-button v-b-tooltip.hover variant="link" size="sm" title="Home">
-                    <img alt="logo" :src="safePath(logoSrc)" />
-                    <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
-                </b-button>
+            <b-navbar-brand
+                v-b-tooltip.hover
+                class="ml-2 mr-1"
+                title="Home"
+                aria-label="homepage"
+                :href="safePath(logoUrl)">
+                <img alt="logo" :src="safePath(logoSrc)" />
+                <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
             </b-navbar-brand>
-            <b-nav-item v-if="brand" class="navbar-brand-title" disabled>
+            <span v-if="brand" class="navbar-text">
                 {{ brand }}
-            </b-nav-item>
+            </span>
         </b-navbar-nav>
         <b-navbar-nav>
             <masthead-item
-                v-for="(tab, idx) in allTabs"
+                v-for="(tab, idx) in props.tabs"
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
+                :tab="tab"
+                :active-tab="activeTab"
+                @open-url="emit('open-url', $event)" />
+            <ThemeSelector />
+            <masthead-item
+                v-for="(tab, idx) in extensionTabs"
+                v-show="tab.hidden !== true"
+                :key="`extension-tab-${idx}`"
                 :tab="tab"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
@@ -103,3 +107,72 @@ onMounted(() => {
         <quota-meter />
     </b-navbar>
 </template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+#masthead {
+    padding: 0;
+    margin-bottom: 0;
+    background: var(--masthead-color);
+    height: $masthead-height;
+    &:deep(.navbar-nav) {
+        height: $masthead-height;
+        & > li {
+            // This allows the background color to fill the full height of the
+            // masthead, while still keeping the contents centered (using flex)
+            min-height: 100%;
+            display: flex;
+            align-items: center;
+            background: var(--masthead-link-color);
+            &:hover {
+                background: var(--masthead-link-hover);
+            }
+            &.show,
+            &.active {
+                background: var(--masthead-link-active);
+                .nav-link {
+                    color: var(--masthead-text-active);
+                }
+            }
+            .nav-link {
+                position: relative;
+                cursor: pointer;
+                text-decoration: none;
+                color: var(--masthead-text-color);
+                &:hover {
+                    color: var(--masthead-text-hover);
+                }
+                &.nav-icon {
+                    font-size: 1.3em;
+                    .nav-note {
+                        position: absolute;
+                        left: 1.9rem;
+                        top: 1.9rem;
+                        font-size: 0.6rem;
+                        font-weight: bold;
+                    }
+                }
+                &.toggle {
+                    color: var(--masthead-text-hover);
+                }
+            }
+        }
+    }
+    .navbar-brand {
+        cursor: pointer;
+        img {
+            display: inline;
+            border: none;
+            height: 2.3rem;
+        }
+    }
+    .navbar-text {
+        font-weight: bold;
+        font-family: Verdana, sans-serif;
+        font-size: 1rem;
+        line-height: 2rem;
+        color: var(--masthead-text-color);
+    }
+}
+</style>

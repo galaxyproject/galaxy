@@ -1,5 +1,5 @@
-import { ExportRecordModel } from "components/Common/models/exportRecordModel";
-import type { components } from "schema";
+import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
+import type { components } from "@/schema";
 
 type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
 type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];

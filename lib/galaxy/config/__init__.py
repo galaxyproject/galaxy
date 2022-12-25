@@ -48,6 +48,7 @@ from galaxy.util.properties import (
     read_properties_from_file,
     running_from_source,
 )
+from galaxy.util.themes import flatten_theme
 from ..version import (
     VERSION_MAJOR,
     VERSION_MINOR,
@@ -663,6 +664,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "file_path",
         "tool_data_table_config_path",
         "tool_config_file",
+        "themes_config_file",
     }
 
     add_sample_file_to_defaults = {
@@ -718,6 +720,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     pretty_datetime_format: str
     visualization_plugins_directory: str
     galaxy_infrastructure_url: str
+    themes: Dict[str, Dict[str, str]]
+    themes_by_host: Dict[str, Dict[str, Dict[str, str]]]
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -766,12 +770,15 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         val = getattr(self, config_option)
         if config_option in self.schema.per_host_options:
             per_host_option = f"{config_option}_by_host"
+            per_host: Dict[str, Any] = {}
             if per_host_option in self.config_dict:
                 per_host = self.config_dict[per_host_option] or {}
-                for host_key, host_val in per_host.items():
-                    if host_key in host:
-                        val = host_val
-                        break
+            else:
+                per_host = getattr(self, per_host_option, {})
+            for host_key, host_val in per_host.items():
+                if host_key in host:
+                    val = host_val
+                    break
 
         return val
 
@@ -1165,6 +1172,27 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 "backupCount": log_rotate_count,
             }
             LOGGING_CONFIG_DEFAULT["root"]["handlers"].append("files")
+
+        # Load and flatten themes into css variables
+        def _load_theme(path: str, theme_dict: dict):
+            if self._path_exists(path):
+                with open(path) as f:
+                    themes = yaml.safe_load(f)
+                    for key, val in themes.items():
+                        theme_dict[key] = flatten_theme(val)
+
+        self.themes = {}
+
+        if "themes_config_file_by_host" in self.config_dict:
+            self.themes_by_host = {}
+            resolve_to_dir = self.schema.paths_to_resolve["themes_config_file"]
+            resolve_dir_path = getattr(self, resolve_to_dir)
+            for host, file_name in self.config_dict["themes_config_file_by_host"].items():
+                self.themes_by_host[host] = {}
+                file_path = self._in_dir(resolve_dir_path, file_name)
+                _load_theme(file_path, self.themes_by_host[host])
+        else:
+            _load_theme(self.themes_config_file, self.themes)
 
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default

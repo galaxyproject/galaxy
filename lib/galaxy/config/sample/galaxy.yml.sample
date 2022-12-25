@@ -1292,7 +1292,7 @@ galaxy:
   #logo_url: /
 
   # The brand image source.
-  #logo_src: /static/favicon.png
+  #logo_src: /static/favicon.svg
 
   # The custom brand image source.
   #logo_src_secondary: null
@@ -2651,11 +2651,11 @@ galaxy:
 
   # Set remote path of the trained model (HDF5 file) for tool
   # recommendation.
-  #tool_recommendation_model_path: https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5
+  #tool_recommendation_model_path: https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5
 
   # Set the number of predictions/recommendations to be made by the
   # model
-  #topk_recommendations: 10
+  #topk_recommendations: 20
 
   # Set path to the additional tool preferences from Galaxy admins. It
   # has two blocks. One for listing deprecated tools which will be
@@ -2696,4 +2696,11 @@ galaxy:
 
   # Display built-in converters in the tool panel.
   #display_builtin_converters: true
+
+  # Optional file containing one or more themes for galaxy. If several
+  # themes are defined, users can choose their preferred theme in the
+  # client.
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
+  #themes_config_file: themes_conf.yml
 

@@ -11,7 +11,7 @@ The following individuals have contributed code to Galaxy:
 * Patrick Austin <patrick.austin@stfc.ac.uk>
 * Raj Ayyampalayam <raj76@uga.edu>
 * Abdulrahman Azab <eng.azab@gmail.com>
-* Finn Bacall <finn.bacall@cs.man.ac.uk>
+* Finn Bacall <finn.bacall@manchester.ac.uk>
 * Dannon Baker <dannon.baker@gmail.com>
 * balto <balto_59@hotmail.fr>
 * Christopher Bare <christopherbare@gmail.com>

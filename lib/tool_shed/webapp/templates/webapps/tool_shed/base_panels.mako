@@ -20,7 +20,7 @@
     <script type="text/javascript">
         config.addInitialization(function() {
             console.log("toolshed/base_panels.mako", "hardcoded dropdown init");
-            
+
             // Masthead dropdown menus
             var $dropdowns = $("#masthead ul.nav > li.dropdown > .dropdown-menu");
             $("body").on( "click.nav_popups", function( e ) {
@@ -60,7 +60,7 @@
 
       ## Logo, layered over tabs to be clickable
       <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" aria-label="homepage" class="navbar-brand">
-          <img alt="logo" class="navbar-brand-image" src="${h.url_for('/static/favicon.ico')}">
+          <img alt="logo" class="navbar-brand-image" src="${h.url_for('/static/favicon.svg')}">
           <span class="navbar-brand-title">
           Galaxy Tool Shed
           %if app.config.brand:

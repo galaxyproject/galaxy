@@ -37,5 +37,5 @@ class TrsSearchAPIController(BaseGalaxyAPIController):
         :type  query: str
         """
         search_kwd = parse_search_kwds(query)
-        rval = self._trs_proxy.get_tools(trs_server, **search_kwd)
+        rval = self._trs_proxy.get_server(trs_server).get_tools(**search_kwd)
         return rval

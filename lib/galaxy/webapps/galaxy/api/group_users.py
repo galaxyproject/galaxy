@@ -30,7 +30,7 @@ UserIDParam: DecodedDatabaseIdField = Path(..., title="UserID", description="The
 def group_user_to_model(trans, group_id, user):
     encoded_group_id = DecodedDatabaseIdField.encode(group_id)
     encoded_user_id = DecodedDatabaseIdField.encode(user.id)
-    url = trans.url_builder("group_user", group_id=encoded_group_id, id=encoded_user_id)
+    url = trans.url_builder("group_user", group_id=encoded_group_id, user_id=encoded_user_id)
     return GroupUserModel.construct(id=encoded_user_id, email=user.email, url=url)
 
 
@@ -50,8 +50,8 @@ class FastAPIGroupUsers:
         return GroupUserListModel(__root__=[group_user_to_model(trans, group_id, gr) for gr in group_users])
 
     @router.get(
-        "/api/groups/{group_id}/user/{id}",
-        alias="/api/groups/{group_id}/users/{id}",
+        "/api/groups/{group_id}/user/{user_id}",
+        alias="/api/groups/{group_id}/users/{user_id}",
         name="group_user",
         require_admin=True,
         summary="Displays information about a group user.",
@@ -60,13 +60,12 @@ class FastAPIGroupUsers:
         self,
         trans: ProvidesAppContext = DependsOnTrans,
         group_id: DecodedDatabaseIdField = GroupIDParam,
-        id: DecodedDatabaseIdField = UserIDParam,
+        user_id: DecodedDatabaseIdField = UserIDParam,
     ) -> GroupUserModel:
         """
-        GET /api/groups/{encoded_group_id}/users/{encoded_user_id}
         Displays information about a group user.
         """
-        user = self.manager.show(trans, id, group_id)
+        user = self.manager.show(trans, user_id, group_id)
         return group_user_to_model(trans, group_id, user)
 
     @router.put(

@@ -87,7 +87,6 @@ export async function bulkUpdate(history, operation, filters, items = [], params
         params,
     };
     const response = await axios.put(prependPath(url), payload);
-    console.debug(`Submitted request to ${operation} selected content in bulk. Parameters: ${params}`, response);
     return doResponse(response);
 }
 

@@ -1,10 +1,9 @@
 import axios from "axios";
 import { safePath } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
-import { getQueryString } from "utils/filterConversion";
 
-export async function getPublishedHistories({ limit, offset, sortBy, sortDesc, filterText }) {
-    const queryString = getQueryString(filterText, false);
+export async function getPublishedHistories({ limit, offset, sortBy, sortDesc, filterText }, filters) {
+    const queryString = filters.getQueryString(filterText);
     let params = `view=summary&keys=username,username_and_slug&offset=${offset}&limit=${limit}`;
     if (sortBy) {
         const sortPrefix = sortDesc ? "-dsc" : "-asc";

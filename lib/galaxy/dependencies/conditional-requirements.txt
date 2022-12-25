@@ -12,7 +12,7 @@ python-ldap==3.4.0
 python-pam
 galaxycloudrunner
 pkce
-total-perspective-vortex<2
+total-perspective-vortex<3
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
@@ -47,7 +47,7 @@ pygithub
 influxdb
 
 # Deep learning packages for tool recommendation
-tensorflow==2.7.2
+tensorflow==2.9.3
 
 # weasyprint has problematic requirements (cairo, Pango, see:
 # https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#linux)

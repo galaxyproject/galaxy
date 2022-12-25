@@ -324,67 +324,6 @@ body {
     }
 }
 
-// ==== Masthead ====
-#masthead {
-    @extend .p-0;
-    @extend .mb-0;
-    background-color: $brand-masthead;
-    height: $masthead-height;
-    .navbar-nav {
-        height: $masthead-height;
-        > li {
-            // This allows the background color to fill the full height of the
-            // masthead, while still keeping the contents centered (using flex)
-            min-height: 100%;
-            display: flex;
-            align-items: center;
-            &.active {
-                background: darken($brand-masthead, 10%);
-            }
-            .nav-link {
-                position: relative;
-                cursor: pointer;
-                text-decoration: none;
-                color: $brand-masthead-text;
-                &:hover {
-                    color: $brand-masthead-text-hover;
-                }
-                &.nav-icon {
-                    font-size: 1.3em;
-                    .nav-note {
-                        @extend .font-weight-bold;
-                        @extend .position-absolute;
-                        left: 1.9rem;
-                        top: 1.9rem;
-                        font-size: 0.6rem;
-                    }
-                }
-                &.toggle {
-                    color: $brand-masthead-text-hover;
-                }
-            }
-        }
-    }
-    .navbar-brand {
-        @extend .ml-2;
-        @extend .mr-1;
-        button {
-            @extend .p-0;
-            img {
-                display: inline;
-                border: none;
-                height: 2.22rem;
-            }
-        }
-    }
-    .navbar-brand-title {
-        font-weight: bold;
-        font-family: Verdana, sans-serif;
-        font-size: calc($masthead-height / 3);
-        line-height: calc($masthead-height / 3);
-    }
-}
-
 // State colors
 
 $galaxy-state-border: (
