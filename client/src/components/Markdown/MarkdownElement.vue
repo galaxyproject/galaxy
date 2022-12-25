@@ -30,12 +30,9 @@
         :embedded="obj.name == 'history_dataset_embedded'" />
     <HistoryDatasetDetails
         v-else-if="
-            [
-                'history_dataset_name',
-                'history_dataset_info',
-                'history_dataset_peek',
-                'history_dataset_type',
-            ].includes(obj.name)
+            ['history_dataset_name', 'history_dataset_info', 'history_dataset_peek', 'history_dataset_type'].includes(
+                obj.name
+            )
         "
         :name="obj.name"
         :args="obj.args"

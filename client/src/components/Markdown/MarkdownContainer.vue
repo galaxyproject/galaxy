@@ -1,9 +1,9 @@
 <template>
     <div>
-        <b-button v-if="isCollapsible" class="m-1" @click="toggle != toggle">
-            Toggle Collapse
-        </b-button>
-        <b-collapsible v-model="toggle">
+        <b-link v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
+            {{ obj.args.collapse }}
+        </b-link>
+        <b-collapse :visible="isVisible">
             <markdown-element
                 :obj="obj"
                 :datasets="datasets"
@@ -11,9 +11,8 @@
                 :histories="histories"
                 :invocations="invocations"
                 :jobs="jobs"
-                :workflows="workflows"
-            />
-        </b-collapsible>
+                :workflows="workflows" />
+        </b-collapse>
     </div>
 </template>
 
@@ -56,11 +55,14 @@ export default {
     data() {
         return {
             toggle: false,
-        }
+        };
     },
     computed: {
+        isVisible() {
+            return !this.isCollapsible || this.toggle;
+        },
         isCollapsible() {
-            return this.obj.args.collapsed !== undefined;
+            return this.obj.args.collapse !== undefined;
         },
     },
 };

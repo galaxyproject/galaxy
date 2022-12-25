@@ -24,7 +24,7 @@ class DynamicArguments:
 
 
 DYNAMIC_ARGUMENTS = DynamicArguments()
-SHARED_ARGUMENTS: List[str] = ["collapsed"]
+SHARED_ARGUMENTS: List[str] = ["collapse"]
 VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],

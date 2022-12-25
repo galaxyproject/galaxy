@@ -49,8 +49,7 @@
                     :histories="histories"
                     :invocations="invocations"
                     :jobs="jobs"
-                    :workflows="workflows"
-                />
+                    :workflows="workflows" />
             </div>
         </div>
     </div>
