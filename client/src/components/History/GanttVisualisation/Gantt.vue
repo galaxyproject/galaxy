@@ -5,7 +5,11 @@
                 <b-alert v-if="historiesLoading || isLoading" class="m-2" variant="info" show>
                     <LoadingSpan message="Loading Gantt Visualization" />
                 </b-alert>
-                <b-alert v-if="emptyHistory && !historiesLoading" class="m-2" variant="info" show>
+                <b-alert
+                    v-else-if="emptyHistory && !historiesLoading && !isLoading && !currentlyProcessing"
+                    class="m-2"
+                    variant="info"
+                    show>
                     <EmptyHistory />
                 </b-alert>
                 <div class="sticky">
@@ -35,7 +39,7 @@
 
 <script>
 import Gantt from "../../../../node_modules/frappe-gantt";
-import { ref, watch, onMounted, computed } from "vue";
+import { ref, watch, onMounted } from "vue";
 import store from "@/store";
 import { keyedColorScheme } from "utils/color";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
@@ -74,10 +78,6 @@ export default {
         const start_time = ref(null);
         const end_time = ref(null);
 
-        const historyContent = computed(() => {
-            return piniaStore.items[historyId.value];
-        });
-
         // Hooks
         onMounted(() => {
             createKeyedColorForButtons();
@@ -101,15 +101,16 @@ export default {
         );
 
         watch(historyContent, async (newContent, oldContent) => {
-            await newContent;
-            if (newContent && newContent.length > 0 && !currentlyProcessing.value) {
-                emptyHistory.value = false;
-                historyItems.value = newContent;
-                getData();
-            } else if (newContent && newContent.length === 0 && !currentlyProcessing.value) {
-                isLoading.value = false;
-                emptyHistory.value = true;
-            }
+            newContent.then((res) => {
+                if (res && res.length > 0 && !currentlyProcessing.value) {
+                    emptyHistory.value = false;
+                    historyItems.value = res;
+                    getData();
+                } else if (res && res.length == 0 && !currentlyProcessing.value) {
+                    isLoading.value = false;
+                    emptyHistory.value = true;
+                }
+            });
             createKeyedColorForButtons();
         });
 
@@ -196,6 +197,10 @@ export default {
                 accountingArrayMinutes.value = [];
                 container[0].innerHTML = "";
             }
+        }
+
+        async function historyContent() {
+            return await piniaStore.items[historyId.value];
         }
 
         async function getData() {
@@ -387,6 +392,7 @@ export default {
             changeDayView,
             changeHourView,
             changeMinuteView,
+            currentlyProcessing,
             openModal,
             dateTimeVal,
             closeModal,

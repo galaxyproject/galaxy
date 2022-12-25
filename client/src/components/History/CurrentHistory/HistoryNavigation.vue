@@ -61,7 +61,10 @@
                         :disabled="currentUser.isAnonymous"
                         :title="userTitle('Visualize the jobs in your history using a Gantt chart')"
                         @click="$router.push(`/visualizations/gantt`)">
-                        <Icon fixed-width icon="stream" class="mr-1" />
+                        <font-awesome-icon
+                            title="Gantt visualization"
+                            icon="fa-solid fa-chart-bar"
+                            class="fa-rotate-90" />
                         <span v-localize>Gantt Visualization</span>
                     </b-dropdown-item>
 
@@ -181,11 +184,17 @@ import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
 import { mapGetters } from "vuex";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChartBar } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faChartBar);
 
 export default {
     components: {
         CopyModal,
         SelectorModal,
+        FontAwesomeIcon,
     },
     mixins: [legacyNavigationMixin],
     props: {
