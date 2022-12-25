@@ -1,10 +1,10 @@
 import Vuex from "vuex";
 import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
 import { WindowManager } from "layout/window-manager";
 import { loadWebhookMenuItems } from "./_webhooks";
-import { userStore } from "store/userStore";
+import { userStore, userFlagsStore } from "store/userStore";
 import { configStore } from "store/configStore";
 import { getActiveTab } from "./utilities";
 
@@ -20,8 +20,6 @@ describe("Masthead.vue", () => {
     let windowManager;
     let tabs;
     let store;
-    let state;
-    let actions;
 
     function stubLoadWebhooks(items) {
         items.push({
@@ -39,20 +37,9 @@ describe("Masthead.vue", () => {
 
         store = new Vuex.Store({
             modules: {
-                user: {
-                    state,
-                    actions: {
-                        loadUser: jest.fn(),
-                    },
-                    getters: userStore.getters,
-                    namespaced: true,
-                },
-                config: {
-                    state,
-                    actions,
-                    getters: configStore.getters,
-                    namespaced: true,
-                },
+                user: mockModule(userStore),
+                config: mockModule(configStore),
+                userFlags: mockModule(userFlagsStore),
             },
         });
 
@@ -89,6 +76,7 @@ describe("Masthead.vue", () => {
                 initialActiveTab,
             },
             store,
+            provide: { store },
             localVue,
         });
     });
@@ -99,7 +87,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(5);
+        expect(wrapper.findAll("li.nav-item").length).toBe(5 + 1);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
         expect(wrapper.find("#analysis a").attributes("href")).toBe("root");

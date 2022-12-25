@@ -1,5 +1,5 @@
 <template>
-    <div id="app">
+    <div id="app" :style="theme">
         <div id="everything">
             <div id="background" />
             <Masthead
@@ -7,8 +7,8 @@
                 id="masthead"
                 :brand="config.brand"
                 :logo-url="config.logo_url"
-                :logo-src="config.logo_src"
-                :logo-src-secondary="config.logo_src_secondary"
+                :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
+                :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
                 :tabs="tabs"
                 :window-tab="windowTab"
                 @open-url="openUrl" />
@@ -55,6 +55,7 @@ import { ref } from "vue";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
+import { useCurrentTheme } from "@/composables/userFlags";
 
 export default {
     components: {
@@ -66,12 +67,16 @@ export default {
     setup() {
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
+
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
+
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        return { toastRef, confirmDialogRef, uploadModal };
+        const { currentTheme } = useCurrentTheme();
+
+        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
     },
     data() {
         return {
@@ -91,6 +96,9 @@ export default {
                 return masthead.toLowerCase() != "true";
             }
             return true;
+        },
+        theme() {
+            return this.config.themes[this.currentTheme];
         },
         windowTab() {
             return this.windowManager.getTab();
@@ -131,3 +139,7 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+@import "custom_theme_variables.scss";
+</style>
