@@ -1,8 +1,8 @@
 <template>
     <div>
-        <b-form-checkbox v-model="currentStatus" class="ui-switch" switch
-            >Set value for this optional select field?</b-form-checkbox
-        >
+        <b-form-checkbox v-model="currentStatus" class="ui-switch" switch>
+            Set value for this optional select field?
+        </b-form-checkbox>
         <FormText
             v-if="textEnabled"
             :id="id"
@@ -26,47 +26,42 @@ export default {
     },
     props: {
         value: {
-            required: false,
             default: "",
         },
         id: {
             type: String,
-            required: false,
+            default: null,
         },
         type: {
             type: String,
-            required: false,
             default: "text",
         },
         area: {
             // <textarea> instead of <input> element
             type: Boolean,
-            required: false,
             default: false,
         },
         multiple: {
             // Allow multiple entries to be created
             type: Boolean,
-            required: false,
             default: false,
         },
         readonly: {
             type: Boolean,
-            required: false,
             default: false,
         },
         placeholder: {
             type: String,
-            required: false,
+            default: null,
         },
         color: {
             type: String,
-            required: false,
+            default: null,
         },
         datalist: {
             // Display list of suggestions in autocomplete dialog
             type: Array,
-            required: false,
+            default: null,
         },
     },
     data() {
@@ -99,9 +94,6 @@ export default {
         textEnabled() {
             return this.currentStatus == true;
         },
-    },
-    created() {
-        this.status = false;
     },
     methods: {
         /** Submits a changed value. */

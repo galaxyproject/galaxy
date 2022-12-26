@@ -79,8 +79,8 @@ export default {
         },
         datalist: {
             // Display list of suggestions in autocomplete dialog
-            type: Function,
-            default: () => {},
+            type: Array,
+            default: null,
         },
 
         // These last three are for handling special input cases only
@@ -121,7 +121,6 @@ export default {
                 }
                 return typeof v === "string" ? v : "";
             },
-            // TODO: handle the emmitted "input"
             set(newVal, oldVal) {
                 if (newVal !== oldVal) {
                     this.$emit("input", newVal);
