@@ -748,7 +748,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             )
 
     @expose_api
-    def set_theme(self, trans, id, theme, payload=None, **kwd):
+    def set_theme(self, trans, id: str, theme: str, payload=None, **kwd) -> str:
         """Sets the user's theme choice.
         PUT /api/users/{id}/theme/{theme}
 
