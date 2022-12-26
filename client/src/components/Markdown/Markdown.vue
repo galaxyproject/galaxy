@@ -1,6 +1,6 @@
 <template>
     <div class="markdown-wrapper">
-        <LoadingSpan v-if="loading" />
+        <loading-span v-if="loading" />
         <div v-else>
             <div>
                 <sts-download-button
@@ -65,8 +65,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 
-import LoadingSpan from "components/LoadingSpan";
-import StsDownloadButton from "components/StsDownloadButton";
+import LoadingSpan from "components/LoadingSpan.vue";
+import StsDownloadButton from "components/StsDownloadButton.vue";
 import MarkdownContainer from "./MarkdownContainer.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
@@ -90,6 +90,7 @@ export default {
     components: {
         MarkdownContainer,
         FontAwesomeIcon,
+        LoadingSpan,
         StsDownloadButton,
     },
     props: {
