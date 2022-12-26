@@ -46,7 +46,6 @@ In order to use this.
 
 import inspect
 from enum import IntEnum
-import logging
 from typing import (
     Callable,
     List,
@@ -61,8 +60,6 @@ from galaxy.util import (
     etree,
     submodules,
 )
-
-log = logging.getLogger(__name__)
 
 
 class LintLevel(IntEnum):
