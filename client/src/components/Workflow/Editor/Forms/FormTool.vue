@@ -84,7 +84,7 @@ export default {
         },
         nodeLabel: {
             type: String,
-            required: true,
+            default: null,
         },
         nodeInputs: {
             type: Array,
