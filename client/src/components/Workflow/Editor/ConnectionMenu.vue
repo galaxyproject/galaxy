@@ -15,7 +15,7 @@
 </template>
 <script lang="ts" setup>
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { computed, nextTick, onMounted, ref, watch, type ComputedRef } from "vue";
+import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
 import { type OutputTerminals, type InputTerminals, terminalFactory } from "./modules/terminals";
 import { useFocusWithin } from "@/composables/useActiveElement";
 
