@@ -204,7 +204,7 @@ import WorkflowText from "./WorkflowText";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
-import Vue from "vue";
+import Vue, { onUnmounted } from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -260,6 +260,14 @@ export default {
         const { getStepIndex, steps } = storeToRefs(stepStore);
         const stateStore = useWorkflowStateStore();
         const { nodes, activeNode, activeNodeId } = storeToRefs(stateStore);
+        function resetStores() {
+            connectionsStore.$reset();
+            stepStore.$reset();
+            stateStore.$reset();
+        }
+        onUnmounted(() => {
+            resetStores();
+        });
         return {
             connectionsStore,
             stepStore,
@@ -272,6 +280,7 @@ export default {
             datatypesMapper,
             datatypesMapperLoading,
             stateStore,
+            resetStores,
         };
     },
     data() {
@@ -705,6 +714,7 @@ export default {
             this.hasChanges = has_changes;
         },
         _loadCurrent(id, version) {
+            this.resetStores();
             this.onWorkflowMessage("Loading workflow...", "progress");
             this.lastQueue
                 .enqueue(loadWorkflow, { id, version, workflow: this })
