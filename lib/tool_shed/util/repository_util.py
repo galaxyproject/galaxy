@@ -58,6 +58,7 @@ from tool_shed.util.hg_util import (
 from tool_shed.util.metadata_util import (
     get_next_downloadable_changeset_revision,
     get_repository_metadata_by_changeset_revision,
+    repository_metadata_by_changeset_revision,
 )
 
 if TYPE_CHECKING:
@@ -109,8 +110,8 @@ def create_repo_info_dict(
     repository = get_repository_by_name_and_owner(app, repository_name, repository_owner)
     if app.name == "tool_shed":
         # We're in the tool shed.
-        repository_metadata = get_repository_metadata_by_changeset_revision(
-            app, app.security.encode_id(repository.id), changeset_revision
+        repository_metadata = repository_metadata_by_changeset_revision(
+            app.model, repository.id, changeset_revision
         )
         if repository_metadata:
             metadata = repository_metadata.metadata
@@ -368,8 +369,7 @@ def get_repositories_by_category(
         repository_dict = repository.to_dict(value_mapper=default_value_mapper)
         repository_dict["metadata"] = {}
         for changeset, changehash in repository.installable_revisions(app):
-            encoded_id = app.security.encode_id(repository.id)
-            metadata = get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
+            metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changehash)
             assert metadata
             repository_dict["metadata"][f"{changeset}:{changehash}"] = metadata.to_dict(
                 value_mapper=default_value_mapper
