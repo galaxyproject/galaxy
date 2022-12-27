@@ -26,6 +26,7 @@ import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { computed } from "@vue/reactivity";
 import { inject, ref, watchEffect } from "vue";
+import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -61,7 +62,6 @@ export default {
         const el = ref(null);
         const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
         const isDragging = inject("isDragging");
-        const draggingConnection = inject("draggingConnection");
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);
         const connectionStore = useConnectionStore();
@@ -69,11 +69,12 @@ export default {
         watchEffect(() => (connectedTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value)));
         const terminal = useTerminal(ref(props.stepId), ref(props.input), ref(props.datatypesMapper));
         const stateStore = useWorkflowStateStore();
+        const { draggingTerminal } = storeToRefs(stateStore);
         return {
             el,
             position,
             isDragging,
-            draggingConnection,
+            draggingTerminal,
             connectionStore,
             id,
             iconId,
@@ -105,7 +106,9 @@ export default {
             return this.input.label || this.input.name;
         },
         canAccept() {
-            return this.draggingConnection && this.terminal.canAccept(this.draggingConnection.terminal);
+            if (this.draggingTerminal) {
+                return this.terminal.canAccept(this.draggingTerminal);
+            }
         },
         reason() {
             const reason = this.canAccept?.reason;
@@ -115,7 +118,7 @@ export default {
             const classes = ["terminal", "input-terminal", "prevent-zoom"];
             if (this.isDragging) {
                 classes.push("input-terminal-active");
-                if (this.canAccept.canAccept) {
+                if (this.canAccept?.canAccept) {
                     classes.push("can-accept");
                 } else {
                     classes.push("cannot-accept");
@@ -168,7 +171,7 @@ export default {
         onDrop(e) {
             this.$root.$emit("bv::hide::tooltip", this.iconId);
             if (this.canAccept.canAccept) {
-                this.terminal.connect(this.draggingConnection.terminal);
+                this.terminal.connect(this.draggingTerminal);
                 this.showRemove = true;
             }
         },

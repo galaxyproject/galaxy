@@ -50,14 +50,12 @@ interface InputObject {
 }
 
 function increment() {
-    console.log("incr");
     activeElement.value += 1;
     activeElement.value = Math.min(activeElement.value, menuItem.value!.length - 1);
     menuItem.value![activeElement.value].focus();
 }
 
 function decrement() {
-    console.log("decr");
     activeElement.value = Math.max(activeElement.value - 1, 0);
     menuItem.value![activeElement.value].focus();
 }

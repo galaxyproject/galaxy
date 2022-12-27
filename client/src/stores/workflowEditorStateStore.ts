@@ -1,5 +1,7 @@
 import Vue from "vue";
 import { defineStore } from "pinia";
+import type { BaseTerminal } from "./workflowConnectionStore";
+import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 
 export const state = {
     inputTerminals: {},
@@ -16,10 +18,17 @@ export interface TerminalPosition {
     endY: number;
 }
 
+export interface XYPosition {
+    x: number;
+    y: number;
+}
+
 interface State {
     inputTerminals: { [index: number]: { [index: string]: TerminalPosition } };
     outputTerminals: { [index: number]: { [index: string]: TerminalPosition } };
-    activeNodeId: number;
+    draggingPosition: TerminalPosition | null;
+    draggingTerminal: OutputTerminals | null;
+    activeNodeId: number | null;
     scale: number;
     nodes: { [index: number]: any };
 }
@@ -28,7 +37,9 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
     state: (): State => ({
         inputTerminals: {},
         outputTerminals: {},
-        activeNodeId: -1,
+        draggingPosition: null,
+        draggingTerminal: null,
+        activeNodeId: null,
         scale: 1,
         nodes: {},
     }),
@@ -43,7 +54,10 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
             return (nodeId: number) => state.nodes[nodeId];
         },
         activeNode(state: State) {
-            return state.nodes[state.activeNodeId];
+            if (state.activeNodeId) {
+                return state.nodes[state.activeNodeId];
+            }
+            return null;
         },
     },
     actions: {
@@ -67,7 +81,7 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         deleteOutputTerminalPosition(stepId: number, outputName: string) {
             delete this.outputTerminals[stepId]?.[outputName];
         },
-        setActiveNode(nodeId: number) {
+        setActiveNode(nodeId: number | null) {
             this.activeNodeId = nodeId;
         },
         setScale(scale: number) {

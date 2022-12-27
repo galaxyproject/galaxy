@@ -28,16 +28,14 @@
 import MinimapNode from "./MinimapNode.vue";
 import { computed, reactive, ref } from "vue";
 import { useDraggable } from "@vueuse/core";
+import { storeToRefs } from "pinia";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 export default {
     components: {
         MinimapNode,
     },
     props: {
-        nodes: {
-            type: Object,
-            required: true,
-        },
         steps: {
             type: Object,
             required: true,
@@ -76,6 +74,7 @@ export default {
             const rval = { x, y, width, height };
             return rval;
         });
+        const { nodes } = storeToRefs(useWorkflowStateStore());
         const bounds = computed(() => {
             let left = props.pan.x * -1;
             let right = props.rootOffset.width;
@@ -83,7 +82,7 @@ export default {
             let bottom = props.rootOffset.bottom;
             let p;
             Object.values(props.steps).forEach((step) => {
-                const node = props.nodes[step.id];
+                const node = nodes.value[step.id];
                 // TODO: something here isn't fully "reactive", this breaks when HMR kicks in,
                 // because position is not a reactive property of node (and I guess it shouldn't be?)
                 p = node.position;
@@ -138,6 +137,7 @@ export default {
             scaleFactorY,
             startX,
             startY,
+            nodes,
         };
     },
     data() {

@@ -108,7 +108,6 @@ export default {
         const terminal = useTerminal(ref(props.stepId), effectiveOutput, ref(props.datatypesMapper));
 
         function closeMenu() {
-            console.log("closing Menu");
             showChildComponent.value = false;
         }
 
@@ -118,7 +117,6 @@ export default {
             showChildComponent.value = !showChildComponent.value;
             if (showChildComponent.value) {
                 await nextTick();
-                console.log(menu);
                 menu.value.$el.focus();
             }
         }
@@ -195,11 +193,7 @@ export default {
         },
         dragPosition() {
             if (this.isDragging) {
-                const dragConnection = {
-                    ...this.dragPosition,
-                    terminal: this.terminal,
-                };
-                this.$emit("onDragConnector", dragConnection);
+                this.$emit("onDragConnector", this.dragPosition, this.terminal);
             }
         },
         label() {

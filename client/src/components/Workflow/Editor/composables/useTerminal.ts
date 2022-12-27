@@ -11,7 +11,6 @@ export function useTerminal(
     const terminal = ref();
     watchEffect(() => {
         const newTerminal = terminalFactory(stepId.value, terminalSource.value, datatypesMapper.value);
-        console.log("built new terminal with datatypes mapper!", datatypesMapper.value);
         newTerminal.destroyInvalidConnections();
         terminal.value = newTerminal;
     });

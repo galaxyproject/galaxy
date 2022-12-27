@@ -147,10 +147,6 @@ export default {
             type: Object,
             default: null,
         },
-        getManager: {
-            type: Function,
-            default: null,
-        },
         datatypesMapper: {
             type: Object,
         },
