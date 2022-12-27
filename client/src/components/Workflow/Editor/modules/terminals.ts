@@ -177,6 +177,9 @@ class BaseInputTerminal extends Terminal {
         }
     }
     canAccept(outputTerminal: BaseOutputTerminal) {
+        if (this.stepId == outputTerminal.stepId) {
+            return new ConnectionAcceptable(false, "Cannot connection output to input of same step.");
+        }
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
                 false,
@@ -289,13 +292,17 @@ class BaseInputTerminal extends Terminal {
         }
         return otherCollectionType;
     }
-    destroyInvalidConnections() {
-        this.connections.forEach((connection) => {
+    getConnectedTerminals() {
+        return this.connections.map((connection) => {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
             const terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name)!;
-            const outputTerminal = terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
-            if (!this.attachable(outputTerminal).canAccept) {
-                this.disconnect(outputTerminal);
+            return terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
+        });
+    }
+    destroyInvalidConnections() {
+        this.getConnectedTerminals().forEach((terminal) => {
+            if (!this.attachable(terminal).canAccept) {
+                this.disconnect(terminal);
             }
         });
     }
@@ -503,15 +510,31 @@ class BaseOutputTerminal extends Terminal {
         this.optional = attr.optional;
         this.terminalType = "output";
     }
-    destroyInvalidConnections() {
-        this.connections.forEach((connection) => {
+    getConnectedTerminals() {
+        return this.connections.map((connection) => {
             const inputStep = this.stepStore.getStep(connection.input.stepId);
             const terminalSource = inputStep.inputs.find((input) => input.name === connection.input.name)!;
-            const inputTerminal = terminalFactory(inputStep.id, terminalSource, this.datatypesMapper);
-            if (!inputTerminal.attachable(this).canAccept) {
-                inputTerminal.disconnect(this);
+            return terminalFactory(inputStep.id, terminalSource, this.datatypesMapper);
+        });
+    }
+    destroyInvalidConnections() {
+        this.getConnectedTerminals().forEach((terminal) => {
+            if (!terminal.attachable(this).canAccept) {
+                terminal.disconnect(this);
             }
         });
+    }
+    validInputTerminals() {
+        const validInputTerminals: InputTerminals[] = [];
+        Object.entries(this.stepStore.steps).map(([stepId, step]) => {
+            step.inputs?.forEach((input) => {
+                const inputTerminal = terminalFactory(step.id, input, this.datatypesMapper);
+                if (inputTerminal.canAccept(this).canAccept) {
+                    validInputTerminals.push(inputTerminal);
+                }
+            });
+        });
+        return validInputTerminals;
     }
 }
 
@@ -548,6 +571,9 @@ export class OutputParameterTerminal extends BaseOutputTerminal {
         this.type = attr.type;
     }
 }
+
+export type OutputTerminals = OutputTerminal | OutputCollectionTerminal | OutputParameterTerminal;
+export type InputTerminals = InputTerminal | InputCollectionTerminal | InputParameterTerminal;
 
 export function producesAcceptableDatatype(
     datatypesMapper: DatatypesMapperModel,

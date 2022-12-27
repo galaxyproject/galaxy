@@ -28,6 +28,7 @@ import { computed } from "@vue/reactivity";
 import { inject, ref, watchEffect } from "vue";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 export default {
     props: {
@@ -67,6 +68,7 @@ export default {
         const connectedTerminals = ref([]);
         watchEffect(() => (connectedTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value)));
         const terminal = useTerminal(ref(props.stepId), ref(props.input), ref(props.datatypesMapper));
+        const stateStore = useWorkflowStateStore();
         return {
             el,
             position,
@@ -77,6 +79,7 @@ export default {
             iconId,
             connectedTerminals,
             terminal,
+            stateStore,
         };
     },
     data() {
@@ -102,7 +105,6 @@ export default {
             return this.input.label || this.input.name;
         },
         canAccept() {
-            // TODO: put producesAcceptableDatatype ... in datatypesMapper ?
             return this.draggingConnection && this.terminal.canAccept(this.draggingConnection.terminal);
         },
         reason() {
@@ -130,15 +132,11 @@ export default {
     },
     watch: {
         terminalPosition(position) {
-            this.$store.commit("workflowState/setInputTerminalPosition", {
-                stepId: this.stepId,
-                inputName: this.input.name,
-                position,
-            });
+            this.stateStore.setInputTerminalPosition(this.stepId, this.input.name, position);
         },
     },
     beforeDestroy() {
-        this.$store.commit("workflowState/deleteInputTerminalPosition", {
+        this.stateStore.deleteInputTerminalPosition({
             stepId: this.stepId,
             inputName: this.input.name,
         });
@@ -148,7 +146,6 @@ export default {
             if (this.reason) {
                 this.$root.$emit("bv::show::tooltip", this.iconId);
             }
-            console.log("dragover input", event);
         },
         dragLeave(event) {
             this.$root.$emit("bv::hide::tooltip", this.iconId);
@@ -163,11 +160,7 @@ export default {
             this.showRemove = false;
         },
         enter() {
-            if (this.hasTerminals) {
-                this.showRemove = true;
-            } else {
-                this.showRemove = false;
-            }
+            this.showRemove = Boolean(this.hasTerminals);
         },
         leave() {
             this.showRemove = false;

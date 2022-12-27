@@ -206,7 +206,8 @@ import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
 import Vue from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
-import { useWorkflowStepStore } from "stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { storeToRefs } from "pinia";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 
@@ -257,14 +258,20 @@ export default {
         const connectionsStore = useConnectionStore();
         const stepStore = useWorkflowStepStore();
         const { getStepIndex, steps } = storeToRefs(stepStore);
+        const stateStore = useWorkflowStateStore();
+        const { nodes, activeNode, activeNodeId } = storeToRefs(stateStore);
         return {
             connectionsStore,
             stepStore,
             steps: steps,
             nodeIndex: getStepIndex,
             datatypes,
+            activeNode,
+            activeNodeId,
+            nodes,
             datatypesMapper,
             datatypesMapperLoading,
+            stateStore,
         };
     },
     data() {
@@ -297,9 +304,6 @@ export default {
         };
     },
     computed: {
-        nodes() {
-            return this.$store.getters["workflowState/getNodes"];
-        },
         showAttributes() {
             return this.showInPanel == "attributes";
         },
@@ -308,13 +312,6 @@ export default {
         },
         postJobActions() {
             return this.activeNode.postJobActions;
-        },
-        activeNode() {
-            // TODO: replace usage of this with just data ?
-            return this.nodes[this.activeNodeId];
-        },
-        activeNodeId() {
-            return this.$store.getters["workflowState/getActiveNode"];
         },
         activeNodeName() {
             return this.activeNode?.name;
@@ -496,7 +493,7 @@ export default {
                 tool_state: JSON.parse(JSON.stringify(node.tool_state)),
                 post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
             });
-            this.$store.commit("workflowState/setActiveNode", id);
+            this.stateStore.setActiveNode(id);
         },
         onInsertTool(tool_id, tool_name) {
             this._insertStep(tool_id, tool_name, "tool");
@@ -569,11 +566,11 @@ export default {
         },
         onAttributes() {
             this._ensureParametersSet();
-            this.$store.commit("workflowState/setActiveNode", null);
+            this.stateStore.setActiveNode(null);
             this.showInPanel = "attributes";
         },
         onWorkflowTextEditor() {
-            this.$store.commit("workflowState/setActiveNode", null);
+            this.stateStore.setActiveNode(null);
             this.showInPanel = "attributes";
         },
         onAnnotation(nodeId, newAnnotation) {
@@ -689,7 +686,7 @@ export default {
                 type: type,
                 position: defaultPosition(this.graphOffset, this.transform),
             });
-            this.$store.commit("workflowState/setActiveNode", this.nodeIndex);
+            this.stateStore.setActiveNode(this.nodeIndex);
         },
         async _loadEditorData(data) {
             const report = data.report || {};

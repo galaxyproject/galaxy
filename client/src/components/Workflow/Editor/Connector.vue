@@ -1,58 +1,72 @@
 <template>
     <g class="ribbon">
-        <path class="ribbon-outer" :d="line" stroke-width="6" fill="none"></path>
-        <path class="ribbon-inner" :d="line" stroke-width="4" fill="none"></path>
+        <g v-for="line in paths">
+            <path class="ribbon-outer" :d="line" :stroke-width="stroke.outerStroke" fill="none"></path>
+            <path class="ribbon-inner" :d="line" :stroke-width="stroke.innerStroke" fill="none"></path>
+        </g>
     </g>
 </template>
-<script>
-import { svg } from "d3";
+<script lang="ts" setup>
+import { line, curveBasis } from "d3";
+import { computed } from "vue";
+import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 
-export default {
-    props: {
-        id: {
-            type: String,
-            required: false,
-        },
-        position: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            lineShift: 30,
-        };
-    },
-    computed: {
-        offsetStart() {
-            return 0;
-        },
-        offsetEnd() {
-            return 0;
-        },
-        lineData() {
-            const data = [
-                { x: this.position.startX, y: this.position.startY + this.offsetStart },
-                { x: this.position.startX + this.lineShift, y: this.position.startY + this.offsetStart },
-                { x: this.position.endX - this.lineShift, y: this.position.endY + this.offsetEnd },
-                { x: this.position.endX, y: this.position.endY + this.offsetEnd },
-            ];
-            return data;
-        },
-        path() {
-            return svg
-                .line()
-                .x(function (d) {
-                    return d.x;
-                })
-                .y(function (d) {
-                    return d.y;
-                })
-                .interpolate("basis");
-        },
-        line() {
-            return this.path(this.lineData);
-        },
-    },
-};
+const props = withDefaults(
+    defineProps<{
+        id?: string;
+        position: TerminalPosition;
+        inputIsMappedOver: boolean;
+        outputIsMappedOver: boolean;
+    }>(),
+    {
+        inputIsMappedOver: false,
+        outputIsMappedOver: false,
+    }
+);
+
+const path = line().curve(curveBasis);
+
+const ribbonMargin = 4;
+const lineShift = 30;
+
+const stroke = computed(() => {
+    let innerStroke = 4;
+    let outerStroke = 6;
+    if (props.outputIsMappedOver || props.inputIsMappedOver) {
+        innerStroke = 1;
+        outerStroke = 3;
+    }
+    return { innerStroke, outerStroke };
+});
+
+const offsets = computed(() => {
+    const _offsets = [-2 * ribbonMargin, -ribbonMargin, 0, ribbonMargin, 2 * ribbonMargin];
+    let startOffsets = [0];
+    let endOffsets = [0];
+    let numOffsets = 1;
+
+    if (props.outputIsMappedOver) {
+        startOffsets = _offsets;
+        numOffsets = _offsets.length;
+    }
+    if (props.inputIsMappedOver) {
+        endOffsets = _offsets;
+        numOffsets = _offsets.length;
+    }
+    return { numOffsets, startOffsets, endOffsets };
+});
+
+const paths = computed(() => {
+    const lines = [...Array(offsets.value.numOffsets).keys()].map((offsetIndex) => {
+        const startOffset = offsets.value.startOffsets[offsetIndex] || 0;
+        const endOffset = offsets.value.endOffsets[offsetIndex] || 0;
+        return [
+            [props.position.startX, props.position.startY + startOffset],
+            [props.position.startX + lineShift, props.position.startY + startOffset],
+            [props.position.endX - lineShift, props.position.endY + endOffset],
+            [props.position.endX, props.position.endY + endOffset],
+        ] as [number, number][];
+    });
+    return lines.map((line) => path(line)!);
+});
 </script>

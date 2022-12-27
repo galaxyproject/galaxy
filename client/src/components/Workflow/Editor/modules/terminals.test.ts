@@ -142,6 +142,12 @@ describe("canAccept", () => {
         multiDataInOne.connect(collectionOut);
         expect(multiDataInTwo.canAccept(collectionOut).canAccept).toBe(true);
     });
+    it("rejects connecting output to input of same step", () => {
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(dataOut).reason).toBe("Cannot connection output to input of same step.");
+    });
     it("rejects paired input on multi-data input", () => {
         const multiDataIn = terminals["multi data"]["f1"] as InputTerminal;
         const pairedOut = terminals["paired input"]["output"] as OutputCollectionTerminal;
@@ -415,11 +421,12 @@ describe("canAccept", () => {
 describe("Input terminal", () => {
     let stepStore: ReturnType<typeof useWorkflowStepStore>;
     let connectionStore: ReturnType<typeof useConnectionStore>;
-    let terminals: { [index: number]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
+    let terminals: { [index: number]: { [index: string]: ReturnType<typeof terminalFactory> } };
     beforeEach(() => {
         setActivePinia(createPinia());
         stepStore = useWorkflowStepStore();
         connectionStore = useConnectionStore();
+        terminals = {};
         Object.entries(simpleSteps).map(([key, step]) => {
             stepStore.addStep(step);
             terminals[step.id] = {};
@@ -463,8 +470,10 @@ describe("Input terminal", () => {
         const dataInputOutputTerminal = terminals[0]["output"] as OutputTerminal;
         const connection = firstInputTerminal.connections[0];
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);
+        expect(dataInputOutputTerminal.validInputTerminals().length).toBe(0);
         firstInputTerminal.disconnect(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(true);
+        expect(dataInputOutputTerminal.validInputTerminals().length).toBe(1);
         connectionStore.addConnection(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);
     });

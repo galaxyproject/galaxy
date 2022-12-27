@@ -114,6 +114,7 @@ import DraggableWrapper from "./DraggablePan";
 import { ActiveOutputs } from "./modules/outputs";
 import { computed, inject, reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 Vue.use(BootstrapVue);
 
@@ -171,7 +172,8 @@ export default {
         const position = reactive(useElementBounding(el, { windowResize: false }));
         const transform = inject("transform");
         const postJobActions = computed(() => props.step.post_job_actions || {});
-        return { el, position, transform, nodeIOKey, postJobActions };
+        const stateStore = useWorkflowStateStore();
+        return { el, position, transform, nodeIOKey, postJobActions, stateStore };
     },
     data() {
         return {
@@ -246,7 +248,7 @@ export default {
         },
     },
     created() {
-        this.$store.commit("workflowState/setNode", this);
+        this.stateStore.setNode(this);
         this.activeOutputs = new ActiveOutputs();
         this.content_id = this.contentId;
         // initialize node data
@@ -257,7 +259,7 @@ export default {
         }
     },
     beforeDestroy() {
-        this.$store.commit("workflowState/deleteNode", this.id);
+        this.stateStore.deleteNode(this.id);
     },
     methods: {
         onMoveTo(position, event) {

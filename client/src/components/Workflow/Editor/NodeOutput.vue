@@ -18,12 +18,22 @@
             :prevent-default="false"
             :stop-propagation="true"
             draggable="true"
-            @dragstart="dragStart"
             @pan-by="onPanBy"
             @start="isDragging = true"
             @stop="onStopDragging"
             @move="onMove">
-            <div class="icon prevent-zoom"></div>
+            <div
+                class="icon prevent-zoom"
+                tabindex="0"
+                @keyup.space="toggleChildComponent"
+                @keyup.enter="toggleChildComponent"
+                @keyup.esc="toggleChildComponent">
+                <connection-menu
+                    ref="menu"
+                    v-if="showChildComponent"
+                    :terminal="terminal"
+                    @closeMenu="closeMenu"></connection-menu>
+            </div>
         </draggable-wrapper>
     </div>
 </template>
@@ -32,11 +42,14 @@
 import DraggableWrapper from "./DraggablePan";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useTerminal } from "./composables/useTerminal";
-import { ref, computed, watch, reactive } from "vue";
+import { ref, computed, watch, nextTick } from "vue";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu";
 
 export default {
     components: {
+        ConnectionMenu,
         DraggableWrapper,
     },
     props: {
@@ -93,7 +106,35 @@ export default {
             effectiveOutput.value = { ...props.output, extensions: extensions.value };
         });
         const terminal = useTerminal(ref(props.stepId), effectiveOutput, ref(props.datatypesMapper));
-        return { el, position, terminal, extensions };
+
+        function closeMenu() {
+            console.log("closing Menu");
+            showChildComponent.value = false;
+        }
+
+        const menu = ref(null);
+        const showChildComponent = ref(false);
+        async function toggleChildComponent() {
+            showChildComponent.value = !showChildComponent.value;
+            if (showChildComponent.value) {
+                await nextTick();
+                console.log(menu);
+                menu.value.$el.focus();
+            }
+        }
+
+        const stateStore = useWorkflowStateStore();
+        return {
+            el,
+            position,
+            terminal,
+            extensions,
+            stateStore,
+            menu,
+            showChildComponent,
+            toggleChildComponent,
+            closeMenu,
+        };
     },
     data() {
         return {
@@ -150,11 +191,7 @@ export default {
     },
     watch: {
         terminalPosition(position) {
-            this.$store.commit("workflowState/setOutputTerminalPosition", {
-                stepId: this.stepId,
-                outputName: this.output.name,
-                position,
-            });
+            this.stateStore.setOutputTerminalPosition(this.stepId, this.output.name, position);
         },
         dragPosition() {
             if (this.isDragging) {
@@ -173,7 +210,7 @@ export default {
         },
     },
     beforeDestroy() {
-        this.$store.commit("workflowState/deleteOutputTerminalPosition", {
+        this.stateStore.deleteOutputTerminalPosition({
             stepId: this.stepId,
             outputName: this.output.name,
         });
@@ -194,9 +231,6 @@ export default {
             this.dragX = 0;
             this.dragY = 0;
             this.$emit("stopDragging");
-        },
-        dragStart(e) {
-            console.log("dragStart", e);
         },
         inputDragEnter(e) {},
         inputDragLeave(e) {},

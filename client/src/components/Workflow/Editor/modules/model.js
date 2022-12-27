@@ -34,15 +34,6 @@ export function toSimple(workflow) {
     return { steps, report, license, creator, annotation, name };
 }
 
-function _scaledNodePosition(element, canvasZoom) {
-    const rect = element.getBoundingClientRect();
-    const coords = {
-        left: rect.left / canvasZoom,
-        top: rect.top / canvasZoom,
-    };
-    return coords;
-}
-
 function _rectifyOutputs(workflow) {
     // Find out if we're using workflow_outputs or not.
     let using_workflow_outputs = false;

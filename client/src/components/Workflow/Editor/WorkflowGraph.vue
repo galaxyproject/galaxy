@@ -51,7 +51,8 @@ import { computed, reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
 import D3Zoom from "./D3Zoom.vue";
 import { provide } from "vue";
-import { useScale, setScale, useActiveNodeId, setActiveNodeId } from "./composables/useWorkflowState";
+import { storeToRefs } from "pinia";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 defineProps({
     steps: {
@@ -77,8 +78,9 @@ const isDragging = ref(false);
 provide("draggingConnection", draggingConnection);
 provide("isDragging", isDragging);
 provide("transform", transform);
-const scale = useScale();
-const activeNodeId = useActiveNodeId();
+
+const stateStore = useWorkflowStateStore();
+const { scale, activeNodeId } = storeToRefs(stateStore);
 const el = ref(null);
 const zoom = ref(null);
 const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
@@ -91,7 +93,7 @@ function onZoom(zoomLevel, panTo = null) {
     if (panTo) {
         onPan({ x: panTo.x - transform.x, y: panTo.y - transform.y });
     }
-    setScale(zoomLevel);
+    stateStore.setScale(zoomLevel);
 }
 function onMoveTo(moveTo) {
     zoom.value.moveTo(moveTo);
@@ -109,18 +111,18 @@ function onDragConnector(vector) {
 }
 function onActivate(nodeId) {
     if (activeNodeId != nodeId) {
-        setActiveNodeId(nodeId);
+        stateStore.setActiveNode(nodeId);
     }
 }
 function onDeactivate() {
-    setActiveNodeId(null);
+    stateStore.setActiveNode(null);
 }
 
 function onTransform(newTransform) {
     transform.x = newTransform.x;
     transform.y = newTransform.y;
     transform.k = newTransform.k;
-    setScale(transform.k);
+    stateStore.setScale(transform.k);
 }
 
 const nodesStyle = computed(() => {
