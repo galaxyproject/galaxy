@@ -54,7 +54,7 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
             return (nodeId: number) => state.nodes[nodeId];
         },
         activeNode(state: State) {
-            if (state.activeNodeId) {
+            if (state.activeNodeId !== null) {
                 return state.nodes[state.activeNodeId];
             }
             return null;
