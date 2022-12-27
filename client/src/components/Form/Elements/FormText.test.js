@@ -1,5 +1,4 @@
 import { mount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import FormText from "./FormText";
 
@@ -13,55 +12,66 @@ describe("FormText", () => {
         });
 
     it("should render the appropriate input type", async () => {
-        let wrapper = await mountFormText({});
-        await flushPromises();
-        let el = await wrapper.find("input[type='text']");
+        const wrapper = await mountFormText({});
+        const el = wrapper.find("input[type='text']");
         expect(el.exists()).toBe(true);
-
-        wrapper = await mountFormText({ type: "password" });
-        await flushPromises();
-        el = await wrapper.find("input[type='password']");
-        expect(el.exists()).toBe(true);
+        await wrapper.setProps({ type: "password" });
+        const elPassword = wrapper.find("input[type='password']");
+        expect(elPassword.exists()).toBe(true);
+        await wrapper.setProps({ type: "anyothertype" });
+        const elOtherType = wrapper.find("input[type='text']");
+        expect(elOtherType.exists()).toBe(true);
     });
 
     it("should render the appropriate component", async () => {
-        let wrapper = await mountFormText({ area: true });
-        await flushPromises();
-        let el = await wrapper.find("textarea");
+        const wrapper = await mountFormText({ area: true });
+        const el = wrapper.find("textarea");
         expect(el.exists()).toBe(true);
-
-        wrapper = await mountFormText({ multiple: true });
-        await flushPromises();
-        el = await wrapper.find("textarea");
-        expect(el.exists()).toBe(true);
+        await wrapper.setProps({ area: false, multiple: true });
+        const elMultiple = wrapper.find("textarea");
+        expect(elMultiple.exists()).toBe(true);
     });
 
     it("should be able to render a datalist", async () => {
-        const wrapper = await mountFormText({ datalist: ["one", "two", "three"] });
-        await flushPromises();
-        let el = await wrapper.find("datalist");
+        const wrapper = await mountFormText({ id: "text-input", datalist: ["one", "two", "three"] });
+        let el = wrapper.find("datalist");
         expect(el.exists()).toBe(true);
-        el = await wrapper.find("option");
+        el = wrapper.find("option");
+        expect(el.exists()).toBe(true);
+        el = wrapper.find("[list='text-input-datalist']");
         expect(el.exists()).toBe(true);
     });
 
     it("should be able to render style from props", async () => {
         let wrapper = await mountFormText({ styleObj: { fontSize: "18px" } });
-        await flushPromises();
-        let el = await wrapper.find("input");
+        let el = wrapper.find("input");
         expect(el.element.style).toMatchObject({ fontSize: "18px" });
-
         wrapper = await mountFormText({ styleObj: { fontSize: "18px" }, color: "white" });
-        await flushPromises();
-        el = await wrapper.find("input");
+        el = wrapper.find("input");
         expect(el.element.style).toMatchObject({ fontSize: "18px", color: "white" });
     });
 
     it("should be able to accept a default value", async () => {
         const v = "something";
         const wrapper = await mountFormText({ value: v });
-        await flushPromises();
-        const el = await wrapper.find("input");
+        const el = wrapper.find("input");
         expect(el.props("value")).toEqual(v);
+    });
+
+    it("should be able to accept an array as value", async () => {
+        const v = ["field_1", "field_2", "field_3"];
+        const wrapper = await mountFormText({ value: v });
+        const el = wrapper.find("input");
+        expect(el.props("value")).toEqual("field_1");
+        await wrapper.setProps({ multiple: true });
+        const elMultiple = wrapper.find("textarea");
+        expect(elMultiple.props("value")).toEqual("field_1\nfield_2\nfield_3\n");
+    });
+
+    it("should be able to accept an empty array as value", async () => {
+        const v = [];
+        const wrapper = await mountFormText({ value: v });
+        const el = wrapper.find("input");
+        expect(el.props("value")).toEqual("");
     });
 });
