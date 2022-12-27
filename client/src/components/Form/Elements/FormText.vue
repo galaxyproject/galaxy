@@ -23,7 +23,7 @@
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
-                    :type="type"
+                    :type="acceptedTypes"
                     :list="`${id}-datalist`"
                     @change="onInputChange">
                 </b-form-input>
@@ -91,16 +91,18 @@ export default {
         };
     },
     computed: {
+        acceptedTypes() {
+            return ["text", "password"].includes(this.type) ? this.type : "text";
+        },
         currentValue: {
             get() {
-                // TODO: is silent fail on non-strings appropriate?
-                const v = this.value || "";
-                if (Array.isArray(v)) {
+                const v = this.value ?? "";
+                if (Array.isArray(v) && v.length > 0) {
                     return this.multiple
                         ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
                         : String(this.value[0]);
                 }
-                return typeof v === "string" ? v : "";
+                return String(v);
             },
             set(newVal, oldVal) {
                 if (newVal !== oldVal) {

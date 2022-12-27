@@ -216,7 +216,6 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 - optional
             </span>
         </div>
-
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
             <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
             <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
@@ -229,7 +228,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :type="props.type ?? 'float'"
                 :workflow-building-mode="workflowBuildingMode" />
             <FormOptionalText
-                v-else-if="type === 'select' && attrs.is_workflow == true && attrs.optional"
+                v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
                 :id="id"
                 v-model="currentValue"
                 :readonly="attrs.readonly"
@@ -240,15 +239,11 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :multiple="attrs.multiple"
                 :style="attrs.style"
                 :datalist="attrs.datalist"
-                :type="type" />
+                :type="props.type" />
             <FormText
                 v-else-if="
-                    type === 'text' ||
-                    type === 'password' ||
-                    (type === 'select' && attrs.is_workflow == true) ||
-                    (type === 'genomebuild' && attrs.is_workflow == true) ||
-                    (type === 'data_column' && attrs.is_workflow == true) ||
-                    (type === 'group_tag' && attrs.is_workflow == true)
+                    ['text', 'password'].includes(props.type) ||
+                    (attrs.is_workflow && ['select', 'genomebuild', 'data_column', 'group_tag'].includes(props.type))
                 "
                 :id="id"
                 v-model="currentValue"
@@ -260,7 +255,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :multiple="attrs.multiple"
                 :style="attrs.style"
                 :datalist="attrs.datalist"
-                :type="type" />
+                :type="props.type" />
             <FormSelection
                 v-else-if="props.type === 'select' && ['radio', 'checkboxes'].includes(attrs.display)"
                 :id="id"
@@ -272,7 +267,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :multiple="attrs.multiple" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
-            <FormRulesEdit v-else-if="type == 'rules'" v-model="currentValue" :target="attrs.target" />
+            <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
             <FormParameter
                 v-else-if="backbonejs"
                 :id="props.id"
