@@ -97,7 +97,10 @@ export default {
         currentValue: {
             get() {
                 const v = this.value ?? "";
-                if (Array.isArray(v) && v.length > 0) {
+                if (Array.isArray(v)) {
+                    if (v.length === 0) {
+                        return "";
+                    }
                     return this.multiple
                         ? this.value.reduce((str_value, v) => str_value + String(v) + "\n", "")
                         : String(this.value[0]);
