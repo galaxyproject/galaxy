@@ -24,6 +24,7 @@
                     :placeholder="placeholder"
                     :style="style"
                     :type="type"
+                    :list="`${id}-datalist`"
                     @change="onInputChange">
                 </b-form-input>
                 <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
