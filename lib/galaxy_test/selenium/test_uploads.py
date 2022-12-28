@@ -161,9 +161,10 @@ class TestUploads(SeleniumTestCase, UsesHistoryItemAssertions):
         self.upload_paired_list(
             [self.get_filename("1.tabular"), self.get_filename("2.tabular")], name="Test Paired List"
         )
-        self.history_panel_wait_for_hid_ok(3)
         # Make sure modals disappeared - both collection creator (TODO: upload).
+        self.sleep_for(self.wait_types.UX_RENDER)
         self.wait_for_selector_absent_or_hidden(".collection-creator")
+        self.history_panel_wait_for_hid_ok(3)
         self.assert_item_name(3, "Test Paired List")
 
         # Make sure source items are hidden when the collection is created.
