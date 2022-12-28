@@ -844,8 +844,8 @@ steps:
 
         sink_node_label, sink_input_name = sink.split("#", 1)
         sink_node = editor.node._(label=sink_node_label)
-        sink_input = sink_node.input_terminal(name=sink_input_name)
-        sink_input.wait_for_and_click()
+        sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
+        self.hover_over(sink_input)
         editor.connector_destroy_callout.wait_for_and_click()
 
     def assert_input_mapped(self, sink):

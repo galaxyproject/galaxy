@@ -638,7 +638,7 @@ workflow_editor:
       selector: >
         //div[@data-label='Remove Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
     tool_version_button: ".tool-versions"
-    connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
+    connector_for: "#connection-${sink_id}-${source_id}"
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'

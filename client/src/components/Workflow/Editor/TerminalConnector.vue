@@ -1,6 +1,7 @@
 <template>
     <raw-connector
         v-if="position"
+        :id="connectionId"
         :position="position"
         :output-is-mapped-over="outputIsMappedOver"
         :input-is-mapped-over="inputIsMappedOver"></raw-connector>
@@ -22,6 +23,9 @@ const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection
 const inputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.input.stepId]?.isCollection);
 
 const stateStore = useWorkflowStateStore();
+const connectionId = computed(() => {
+    return `connection-node-${props.connection.input.stepId}-input-${props.connection.input.name}-node-${props.connection.output.stepId}-output-${props.connection.output.name}`;
+});
 const position = computed(() => {
     const outputPos = stateStore.getOutputTerminalPosition(
         props.connection.output.stepId,
