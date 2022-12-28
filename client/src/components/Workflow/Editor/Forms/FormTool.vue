@@ -44,7 +44,7 @@
                         :id="nodeId"
                         :node-inputs="nodeInputs"
                         :node-outputs="nodeOutputs"
-                        :node-active-outputs="nodeActiveOutputs"
+                        :step="step"
                         :datatypes="datatypes"
                         :post-job-actions="postJobActions"
                         @onChange="onChangePostJobActions" />
@@ -63,6 +63,7 @@ import FormElement from "components/Form/FormElement";
 import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
 import Heading from "components/Common/Heading";
+import { Step } from "@/stores/workflowStepStore";
 
 export default {
     components: {
@@ -94,8 +95,8 @@ export default {
             type: Array,
             required: true,
         },
-        nodeActiveOutputs: {
-            type: Object,
+        step: {
+            type: Step,
             required: true,
         },
         configForm: {

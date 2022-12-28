@@ -58,6 +58,10 @@ export default {
             type: Object,
             required: true,
         },
+        workflowOutputs: {
+            type: Array,
+            required: true,
+        },
         stepType: {
             type: String,
             required: true,
@@ -112,6 +116,14 @@ export default {
             showChildComponent.value = false;
         }
 
+        const label = computed(() => {
+            const workflowOutput = props.workflowOutputs.find(
+                (workflowOutput) => workflowOutput.output_name == props.output.name
+            );
+            const activeLabel = workflowOutput?.label || props.output.name;
+            return `${activeLabel} (${extensions.value.join(", ")})`;
+        });
+
         const menu = ref(null);
         const showChildComponent = ref(false);
         async function toggleChildComponent() {
@@ -127,7 +139,7 @@ export default {
             el,
             position,
             terminal,
-            extensions,
+            label,
             stateStore,
             menu,
             showChildComponent,
@@ -171,10 +183,7 @@ export default {
         id() {
             return `node-${this.stepId}-output-${this.output.name}`;
         },
-        label() {
-            const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
-            return `${activeLabel} (${this.extensions.join(", ")})`;
-        },
+
         activeClass() {
             return this.output.activeOutput && "mark-terminal-active";
         },

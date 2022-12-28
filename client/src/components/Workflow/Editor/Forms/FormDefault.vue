@@ -42,10 +42,10 @@
             <FormDisplay v-if="configForm.inputs" :id="formDisplayId" :inputs="inputs" @onChange="onChange" />
             <div v-if="isSubworkflow">
                 <FormOutputLabel
-                    v-for="(output, index) in nodeOutputs"
+                    v-for="(output, index) in step.outputs"
                     :key="index"
                     :name="output.name"
-                    :active-outputs="nodeActiveOutputs"
+                    :step="step"
                     :show-details="true" />
             </div>
         </template>
@@ -53,12 +53,13 @@
 </template>
 
 <script>
-import FormDisplay from "components/Form/FormDisplay";
-import FormCard from "components/Form/FormCard";
-import FormElement from "components/Form/FormElement";
-import FormOutputLabel from "./FormOutputLabel";
-import { checkLabels } from "components/Workflow/Editor/modules/utilities";
-import WorkflowIcons from "components/Workflow/icons";
+import FormDisplay from "@/components/Form/FormDisplay";
+import FormCard from "@/components/Form/FormCard";
+import FormElement from "@/components/Form/FormElement";
+import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel";
+import { checkLabels } from "@/components/Workflow/Editor/modules/utilities";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { Step } from "@/stores/workflowStepStore";
 
 export default {
     components: {
@@ -74,6 +75,10 @@ export default {
         },
         nodeId: {
             type: Number,
+            required: true,
+        },
+        step: {
+            type: Step,
             required: true,
         },
         nodeContentId: {

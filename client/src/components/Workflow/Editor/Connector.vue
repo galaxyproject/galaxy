@@ -1,5 +1,5 @@
 <template>
-    <g class="ribbon" :id="id">
+    <g :id="id" class="ribbon">
         <g v-for="line in paths">
             <path class="ribbon-outer" :d="line" :stroke-width="stroke.outerStroke" fill="none"></path>
             <path class="ribbon-inner" :d="line" :stroke-width="stroke.innerStroke" fill="none"></path>

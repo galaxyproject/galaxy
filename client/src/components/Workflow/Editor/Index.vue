@@ -114,7 +114,7 @@
                                     :node-label="activeNodeLabel"
                                     :node-inputs="activeNodeInputs"
                                     :node-outputs="activeNodeOutputs"
-                                    :node-active-outputs="activeNodeActiveOutputs"
+                                    :step="activeStep"
                                     :config-form="activeNodeConfigForm"
                                     :datatypes="datatypes"
                                     :post-job-actions="postJobActions"
@@ -124,6 +124,7 @@
                                     @onSetData="onSetData" />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
+                                    :step="activeStep"
                                     :node-name="activeNodeName"
                                     :node-id="activeNodeId"
                                     :node-content-id="activeNodeContentId"
@@ -186,8 +187,8 @@ import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/se
 import { getUntypedWorkflowParameters } from "./modules/parameters";
 import { getStateUpgradeMessages } from "./modules/utilities";
 import WorkflowOptions from "./Options";
-import FormDefault from "./Forms/FormDefault";
-import FormTool from "./Forms/FormTool";
+import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault";
+import FormTool from "@/components/Workflow/Editor/Forms/FormTool";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import ProviderAwareToolBoxWorkflow from "components/Panels/ProviderAwareToolBoxWorkflow";
 import SidePanel from "components/Panels/SidePanel";
@@ -204,7 +205,7 @@ import WorkflowText from "./WorkflowText";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
-import Vue, { onUnmounted } from "vue";
+import Vue, { onUnmounted, computed } from "vue";
 import { ConfirmDialog } from "composables/confirmDialog";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -260,6 +261,8 @@ export default {
         const { getStepIndex, steps } = storeToRefs(stepStore);
         const stateStore = useWorkflowStateStore();
         const { nodes, activeNode, activeNodeId } = storeToRefs(stateStore);
+        const activeStep = computed(() => steps.value[activeNodeId.value.toString()]);
+
         function resetStores() {
             connectionsStore.$reset();
             stepStore.$reset();
@@ -274,6 +277,7 @@ export default {
             steps: steps,
             nodeIndex: getStepIndex,
             datatypes,
+            activeStep,
             activeNode,
             activeNodeId,
             nodes,

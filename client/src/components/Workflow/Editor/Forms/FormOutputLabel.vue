@@ -9,56 +9,55 @@
         @input="onInput" />
 </template>
 
-<script>
-import FormElement from "components/Form/FormElement";
+<script lang="ts" setup>
+import FormElement from "@/components/Form/FormElement.vue";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { computed, ref } from "vue";
+import type { Ref } from "vue";
+import type { Step } from "@/stores/workflowStepStore";
 
-export default {
-    components: {
-        FormElement,
-    },
-    props: {
-        name: {
-            type: String,
-            required: true,
-        },
-        showDetails: {
-            type: Boolean,
-            default: false,
-        },
-        activeOutputs: {
-            type: Object,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            error: null,
-        };
-    },
-    computed: {
-        id() {
-            return `__label__${this.name}`;
-        },
-        title() {
-            if (this.showDetails) {
-                return `Label for: '${this.name}'`;
-            } else {
-                return "Label";
-            }
-        },
-        label() {
-            const activeOutput = this.activeOutputs.get(this.name);
-            return activeOutput && activeOutput.label;
-        },
-    },
-    methods: {
-        onInput(newLabel) {
-            if (this.activeOutputs.labelOutput(this.name, newLabel)) {
-                this.error = null;
-            } else {
-                this.error = `Duplicate output label '${newLabel}' will be ignored.`;
-            }
-        },
-    },
-};
+const props = withDefaults(
+    defineProps<{
+        name: string;
+        step: Step;
+        showDetails?: boolean;
+    }>(),
+    {
+        showDetails: false,
+    }
+);
+
+const stepStore = useWorkflowStepStore();
+
+const error: Ref<string | undefined> = ref(undefined);
+const id = computed(() => `__label__${props.name}`);
+const title = computed(() => (props.showDetails ? `Label for: '${props.name}'` : "Label"));
+const label = computed(() => {
+    if (props.step.workflow_outputs?.length) {
+        const workflowOutput = props.step.workflow_outputs.find(
+            (workflowOutput) => workflowOutput.output_name === props.name
+        );
+        if (workflowOutput) {
+            return workflowOutput.label;
+        }
+    }
+    return null;
+});
+
+function onInput(newLabel: string) {
+    console.log("wfo", props.step);
+    if (!stepStore.workflowOutputs[newLabel]) {
+        const newWorkflowOutputs = [...(props.step.workflow_outputs || [])].filter(
+            (workflowOutput) => workflowOutput.output_name !== props.name
+        );
+        newWorkflowOutputs.push({
+            label: newLabel,
+            output_name: props.name,
+        });
+        stepStore.updateStep({ ...props.step, workflow_outputs: newWorkflowOutputs });
+        error.value = undefined;
+    } else {
+        error.value = `Duplicate output label '${newLabel}' will be ignored.`;
+    }
+}
 </script>

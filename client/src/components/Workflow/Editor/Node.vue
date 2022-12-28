@@ -84,6 +84,7 @@
                 v-for="output in outputs"
                 :key="nodeIOKey(output.name, step.position)"
                 :output="output"
+                :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
                 :step-id="id"
                 :step-type="step.type"
@@ -168,8 +169,9 @@ export default {
         const position = reactive(useElementBounding(el, { windowResize: false }));
         const transform = inject("transform");
         const postJobActions = computed(() => props.step.post_job_actions || {});
+        const workflowOutputs = computed(() => props.step.workflow_outputs || []);
         const stateStore = useWorkflowStateStore();
-        return { el, position, transform, nodeIOKey, postJobActions, stateStore };
+        return { el, position, transform, nodeIOKey, postJobActions, workflowOutputs, stateStore };
     },
     data() {
         return {

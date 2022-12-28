@@ -81,6 +81,12 @@ type InputTerminalSource = DataStepInput | DataCollectionStepInput | ParameterSt
 type OutputTerminalSource = DataOutput | CollectionOutput | ParameterOutput;
 export type TerminalSource = InputTerminalSource | OutputTerminalSource;
 
+interface WorkflowOutput {
+    output_name: string;
+    label?: string;
+    uuid?: string;
+}
+
 export interface NewStep {
     annotation?: string;
     config_form?: object;
@@ -97,7 +103,7 @@ export interface NewStep {
     tooltip?: string;
     type: string;
     uuid?: string;
-    workflow_outputs?: Array<any>;
+    workflow_outputs?: WorkflowOutput[];
 }
 
 export interface Step extends NewStep {
@@ -111,6 +117,13 @@ export interface StepInputConnection {
 interface ConnectionOutputLink {
     output_name: string;
     id: number;
+}
+
+interface WorkflowOutputs {
+    [index: string]: {
+        stepId: number;
+        outputName: string;
+    };
 }
 
 export const useWorkflowStepStore = defineStore("workflowStepStore", {
@@ -127,6 +140,20 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         getStepIndex(state: State) {
             return Math.max(...Object.entries(state.steps).map(([_, step]) => step.id), state.stepIndex);
+        },
+        workflowOutputs(state: State) {
+            const workflowOutputs: WorkflowOutputs = {};
+            Object.values(state.steps).forEach((step) => {
+                if (step.workflow_outputs?.length) {
+                    step.workflow_outputs.forEach((workflowOutput) => {
+                        workflowOutputs[workflowOutput.label || workflowOutput.output_name] = {
+                            outputName: workflowOutput.output_name,
+                            stepId: step.id,
+                        };
+                    });
+                }
+            });
+            return workflowOutputs;
         },
     },
     actions: {
