@@ -165,6 +165,7 @@ class BaseInputTerminal extends Terminal {
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
+        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
     }
     connect(other: BaseOutputTerminal): void {
         super.connect(other);

@@ -5,16 +5,14 @@
         @mouseenter="enter"
         @focusin="enter"
         @focusout="leave">
-        <div :id="id" :input-name="input.name" :class="terminalClass">
-            <div
-                :id="iconId"
-                ref="el"
-                class="icon"
-                @dragenter="dragEnter"
-                @dragleave="dragLeave"
-                @drop="onDrop"
-                v-b-tooltip.manual
-                :title="reason" />
+        <div
+            :id="id"
+            :input-name="input.name"
+            :class="terminalClass"
+            @drop.prevent="onDrop"
+            @dragenter.prevent="dragEnter"
+            @dragleave.prevent="dragLeave">
+            <div :id="iconId" ref="el" class="icon" v-b-tooltip.manual :title="reason" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" @keyup.delete="onRemove" />
         {{ label }}
@@ -30,6 +28,7 @@ import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { terminalFactory } from "@/components/Workflow/Editor/modules/terminals";
 
 export default {
     props: {
@@ -65,9 +64,13 @@ export default {
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);
         const connectionStore = useConnectionStore();
-        const connectedTerminals = ref([]);
-        watchEffect(() => (connectedTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value)));
         const terminal = useTerminal(ref(props.stepId), ref(props.input), ref(props.datatypesMapper));
+        const connectedTerminals = ref([]);
+        const isMultiple = ref(false);
+        watchEffect(() => {
+            connectedTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value);
+            isMultiple.value = terminal.value.isMappedOver();
+        });
         const stateStore = useWorkflowStateStore();
         const { draggingTerminal } = storeToRefs(stateStore);
         return {
@@ -81,11 +84,11 @@ export default {
             connectedTerminals,
             terminal,
             stateStore,
+            isMultiple,
         };
     },
     data() {
         return {
-            isMultiple: false,
             showRemove: false,
         };
     },
@@ -149,12 +152,12 @@ export default {
             if (this.reason) {
                 this.$root.$emit("bv::show::tooltip", this.iconId);
             }
+            event.preventDefault();
         },
         dragLeave(event) {
             this.$root.$emit("bv::hide::tooltip", this.iconId);
         },
         onChange() {
-            this.isMultiple = this.terminal.isMappedOver();
             this.$emit("onChange");
         },
         onRemove() {
@@ -169,9 +172,11 @@ export default {
             this.showRemove = false;
         },
         onDrop(e) {
+            const stepOut = JSON.parse(e.dataTransfer.getData("text/plain"));
+            const droppedTerminal = terminalFactory(stepOut.stepId, stepOut.output, this.datatypesMapper);
             this.$root.$emit("bv::hide::tooltip", this.iconId);
-            if (this.canAccept.canAccept) {
-                this.terminal.connect(this.draggingTerminal);
+            if (this.terminal.canAccept(droppedTerminal).canAccept) {
+                this.terminal.connect(droppedTerminal);
                 this.showRemove = true;
             }
         },

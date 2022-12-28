@@ -3,6 +3,7 @@
         :root-offset="rootOffset"
         :prevent-default="preventDefault"
         :stop-propagation="stopPropagation"
+        :drag-data="dragData"
         @move="onMove"
         @mouseup="onMouseUp"
         v-on="$listeners">
@@ -34,6 +35,10 @@ export default {
         stopPropagation: {
             type: Boolean,
             default: true,
+        },
+        dragData: {
+            type: Object,
+            required: false,
         },
     },
     data() {

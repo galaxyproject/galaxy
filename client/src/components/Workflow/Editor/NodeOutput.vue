@@ -17,6 +17,7 @@
             :root-offset="rootOffset"
             :prevent-default="false"
             :stop-propagation="true"
+            :dragData="{ stepId: stepId, output: effectiveOutput }"
             draggable="true"
             @pan-by="onPanBy"
             @start="isDragging = true"
@@ -132,6 +133,7 @@ export default {
             showChildComponent,
             toggleChildComponent,
             closeMenu,
+            effectiveOutput,
         };
     },
     data() {

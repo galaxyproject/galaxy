@@ -1,7 +1,8 @@
-<script setup>
+<script lang="ts" setup>
 import { ref, inject, reactive } from "vue";
 import { useElementSize } from "@vueuse/core";
 import { useDraggable } from "./composables/useDraggable.js";
+import type { ZoomTransform } from "d3-zoom";
 
 const props = defineProps({
     rootOffset: {
@@ -16,36 +17,43 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    dragData: {
+        type: Object,
+        required: false,
+    },
 });
 
-const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart"]);
+const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart", "start", "stop"]);
 
 const draggable = ref();
 const size = reactive(useElementSize(draggable));
-const transform = inject("transform");
+const transform: ZoomTransform | undefined = inject("transform");
 
-const onStart = (position, event) => {
+const onStart = (position: any, event: DragEvent) => {
     emit("start");
     emit("mousedown", event);
     if (event.type == "dragstart") {
         // I guess better than copy ?
-        event.dataTransfer.effectAllowed = "link";
+        event.dataTransfer!.effectAllowed = "link";
+        if (props.dragData) {
+            event.dataTransfer!.setData("text/plain", JSON.stringify(props.dragData));
+        }
         emit("dragstart", event);
     }
 };
 
-const onMove = (position, event) => {
+const onMove = (position: any, event: DragEvent) => {
     if (event.type == "drag" && event.x == 0 && event.y == 0) {
         // the last drag event has no coordinate ... this is obviously a hack!
         return;
     }
     position.unscaled = { ...position, ...size };
-    position.x = (position.x - props.rootOffset.x - transform.x) / transform.k;
-    position.y = (position.y - props.rootOffset.y - transform.y) / transform.k;
+    position.x = (position.x - props.rootOffset.x - transform!.x) / transform!.k;
+    position.y = (position.y - props.rootOffset.y - transform!.y) / transform!.k;
     emit("move", position, event);
 };
 
-const onEnd = (position, event) => {
+const onEnd = (position: any, event: DragEvent) => {
     emit("stop");
     emit("mouseup");
 };
