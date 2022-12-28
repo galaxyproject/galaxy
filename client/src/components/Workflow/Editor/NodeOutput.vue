@@ -26,6 +26,7 @@
             <div
                 class="icon prevent-zoom"
                 tabindex="0"
+                :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"
                 @keyup.space="toggleChildComponent"
                 @keyup.enter="toggleChildComponent"
                 @keyup.esc="toggleChildComponent">
