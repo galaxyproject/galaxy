@@ -136,7 +136,7 @@ class TestManageInformation(SeleniumTestCase):
 
     def get_address_input_field(self, address_form, input_field_label):
         return address_form.find_element(
-            self.by.CSS_SELECTOR, f"[data-label='{input_field_label}'] > div > div > div > input"
+            self.by.CSS_SELECTOR, f"[data-label='{input_field_label}'] > div > div > input"
         )
 
 

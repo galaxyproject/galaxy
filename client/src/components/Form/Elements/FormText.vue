@@ -1,38 +1,29 @@
 <template>
-    <div>
-        <b-alert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
-            {{ errorMessage }}
-        </b-alert>
-        <b-row align-v="center">
-            <b-col>
-                <b-form-textarea
-                    v-if="inputArea"
-                    :id="id"
-                    v-model="currentValue"
-                    :class="['ui-text-area', cls]"
-                    :readonly="readonly"
-                    :placeholder="placeholder"
-                    :style="style"
-                    @change="resetAlert">
-                </b-form-textarea>
-                <b-form-input
-                    v-else
-                    :id="id"
-                    v-model="currentValue"
-                    :class="['ui-input', cls]"
-                    :readonly="readonly"
-                    :placeholder="placeholder"
-                    :style="style"
-                    :type="acceptedTypes"
-                    :list="`${id}-datalist`"
-                    @change="resetAlert">
-                </b-form-input>
-                <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
-                    <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value"></option>
-                </datalist>
-            </b-col>
-        </b-row>
-    </div>
+    <b-row align-v="center">
+        <b-col>
+            <b-form-textarea
+                v-if="inputArea"
+                :id="id"
+                v-model="currentValue"
+                :class="['ui-text-area', cls]"
+                :readonly="readonly"
+                :placeholder="placeholder"
+                :style="style" />
+            <b-form-input
+                v-else
+                :id="id"
+                v-model="currentValue"
+                :class="['ui-input', cls]"
+                :readonly="readonly"
+                :placeholder="placeholder"
+                :style="style"
+                :type="acceptedTypes"
+                :list="`${id}-datalist`" />
+            <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
+                <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value" />
+            </datalist>
+        </b-col>
+    </b-row>
 </template>
 
 <script>
@@ -70,7 +61,7 @@ export default {
         },
         color: {
             type: String,
-            default: "",
+            default: null,
         },
         cls: {
             // Refers to an optional custom css class name
@@ -82,13 +73,6 @@ export default {
             type: Array,
             default: null,
         },
-    },
-    data() {
-        return {
-            dismissSecs: 5,
-            dismissCountDown: 0,
-            errorMessage: "",
-        };
     },
     computed: {
         acceptedTypes() {
@@ -123,17 +107,6 @@ export default {
                       "border-color": this.color,
                   }
                 : null;
-        },
-    },
-    methods: {
-        showAlert(error) {
-            if (error) {
-                this.errorMessage = error;
-                this.dismissCountDown = this.dismissSecs;
-            }
-        },
-        resetAlert() {
-            this.dismissCountDown = 0;
         },
     },
 };
