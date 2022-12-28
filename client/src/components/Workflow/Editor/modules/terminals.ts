@@ -165,7 +165,6 @@ class BaseInputTerminal extends Terminal {
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
-        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
     }
     connect(other: BaseOutputTerminal): void {
         super.connect(other);
@@ -316,6 +315,7 @@ export class InputTerminal extends BaseInputTerminal {
     constructor(attr: InputTerminalArgs) {
         super(attr);
         this.collection = false;
+        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
     }
 
     attachable(other: BaseOutputTerminal) {
@@ -392,6 +392,7 @@ export class InputParameterTerminal extends BaseInputTerminal {
     constructor(attr: InputParameterTerminalArgs) {
         super(attr);
         this.type = attr.type;
+        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
     }
 
     effectiveType(parameterType: string) {
@@ -426,6 +427,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         if (!this.collectionTypes.length) {
             this.collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
         }
+        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
     }
     _effectiveMapOver(otherCollectionType: CollectionTypeDescriptor) {
         const collectionTypes = this.collectionTypes;
