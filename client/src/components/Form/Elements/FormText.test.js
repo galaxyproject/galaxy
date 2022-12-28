@@ -42,13 +42,14 @@ describe("FormText", () => {
         expect(el.exists()).toBe(true);
     });
 
-    it("should be able to render style from props", async () => {
-        let wrapper = await mountFormText({ styleObj: { fontSize: "18px" } });
-        let el = wrapper.find("input");
-        expect(el.element.style).toMatchObject({ fontSize: "18px" });
-        wrapper = await mountFormText({ styleObj: { fontSize: "18px" }, color: "white" });
-        el = wrapper.find("input");
-        expect(el.element.style).toMatchObject({ fontSize: "18px", color: "white" });
+    it("should be able to render border and text color from props", async () => {
+        const wrapper = await mountFormText({});
+        const el = wrapper.find("input");
+        expect(el.element.style).toMatchObject({});
+        await wrapper.setProps({ color: "green" });
+        expect(el.element.style).toMatchObject({ color: "green", "border-color": "green" });
+        await wrapper.setProps({ cls: "my-custom-class" });
+        expect(el.element.classList).toContain("my-custom-class");
     });
 
     it("should be able to accept a default value", async () => {

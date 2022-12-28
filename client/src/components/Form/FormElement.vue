@@ -235,9 +235,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :value="attrs.value"
                 :area="attrs.area"
                 :placeholder="attrs.placeholder"
-                :color="attrs.color"
                 :multiple="attrs.multiple"
-                :style="attrs.style"
                 :datalist="attrs.datalist"
                 :type="props.type" />
             <FormText
@@ -253,7 +251,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :placeholder="attrs.placeholder"
                 :color="attrs.color"
                 :multiple="attrs.multiple"
-                :style="attrs.style"
+                :cls="attrs.cls"
                 :datalist="attrs.datalist"
                 :type="props.type" />
             <FormSelection

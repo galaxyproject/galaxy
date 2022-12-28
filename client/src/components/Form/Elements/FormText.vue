@@ -9,23 +9,23 @@
                     v-if="inputArea"
                     :id="id"
                     v-model="currentValue"
-                    class="text-input"
+                    :class="['ui-text-area', cls]"
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
-                    @change="onInputChange">
+                    @change="resetAlert">
                 </b-form-textarea>
                 <b-form-input
                     v-else
                     :id="id"
                     v-model="currentValue"
-                    class="text-input"
+                    :class="['ui-input', cls]"
                     :readonly="readonly"
                     :placeholder="placeholder"
                     :style="style"
                     :type="acceptedTypes"
                     :list="`${id}-datalist`"
-                    @change="onInputChange">
+                    @change="resetAlert">
                 </b-form-input>
                 <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
                     <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value"></option>
@@ -72,10 +72,10 @@ export default {
             type: String,
             default: "",
         },
-        styleObj: {
-            // This will be applied to the input element
-            type: Object,
-            default: () => {},
+        cls: {
+            // Refers to an optional custom css class name
+            type: String,
+            default: null,
         },
         datalist: {
             // Display list of suggestions in autocomplete dialog
@@ -117,13 +117,15 @@ export default {
             return this.area || this.multiple;
         },
         style() {
-            return this.color ? { ...this.styleObj, color: this.color } : this.styleObj;
+            return this.color
+                ? {
+                      color: this.color,
+                      "border-color": this.color,
+                  }
+                : null;
         },
     },
     methods: {
-        onInputChange(value) {
-            this.resetAlert();
-        },
         showAlert(error) {
             if (error) {
                 this.errorMessage = error;
@@ -136,3 +138,8 @@ export default {
     },
 };
 </script>
+<style scoped>
+.ui-input-linked {
+    border-left-width: 0.5rem;
+}
+</style>

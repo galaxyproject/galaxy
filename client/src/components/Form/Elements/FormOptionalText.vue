@@ -11,7 +11,6 @@
             :value="value"
             :area="area"
             :placeholder="placeholder"
-            :color="color"
             :multiple="multiple"
             :datalist="datalist"
             :type="type" />
@@ -51,10 +50,6 @@ export default {
             default: false,
         },
         placeholder: {
-            type: String,
-            default: null,
-        },
-        color: {
             type: String,
             default: null,
         },
