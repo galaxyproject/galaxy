@@ -80,7 +80,7 @@ export default {
         },
         currentStatus: {
             get() {
-                return this.status;
+                return this.status || this.value !== null;
             },
             set(val) {
                 this.status = Boolean(val);
