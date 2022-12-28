@@ -1,14 +1,14 @@
 <template>
-    <b-list-group ref="menu" id="input-choices-menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
+    <b-list-group id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
         <b-list-group-item
             v-for="(input, index) in allElements"
-            role="menu-item"
             ref="menuItem"
+            role="menu-item"
+            tabindex="0"
+            :active="activeElement === index"
             @click="toggleConnection(input)"
             @keyup.enter="toggleConnection(input)"
-            @focus="activeElement = index"
-            tabindex="0"
-            :active="activeElement === index">
+            @focus="activeElement = index">
             {{ input.connected ? "Disconnect" : "Connect" }} to {{ input.inputLabel }}
         </b-list-group-item>
     </b-list-group>
