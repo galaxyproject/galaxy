@@ -66,15 +66,6 @@ export async function saveWorkflow(workflow) {
     return {};
 }
 
-export async function getDatatypeMapping() {
-    try {
-        const { data } = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}
-
 export async function getToolPredictions(requestData) {
     try {
         const { data } = await axios.post(`${getAppRoot()}api/workflows/get_tool_predictions`, requestData);
