@@ -4,7 +4,7 @@
             Set value for this optional select field?
         </b-form-checkbox>
         <FormText
-            v-if="textEnabled"
+            v-if="currentStatus"
             :id="id"
             v-model="currentValue"
             :readonly="readonly"
@@ -75,7 +75,7 @@ export default {
                 return this.value;
             },
             set(val) {
-                this.setValue(val);
+                this.$emit("input", val);
             },
         },
         currentStatus: {
@@ -83,23 +83,13 @@ export default {
                 return this.status;
             },
             set(val) {
-                this.status = val;
-                if (val == false) {
-                    this.currentValue = null;
-                } else {
+                this.status = Boolean(val);
+                if (this.status) {
                     this.currentValue = "";
+                } else {
+                    this.currentValue = null;
                 }
             },
-        },
-        textEnabled() {
-            return this.currentStatus == true;
-        },
-    },
-    methods: {
-        /** Submits a changed value. */
-        setValue(value) {
-            this.$emit("input", value, this.id);
-            this.$emit("change", this.refreshOnChange);
         },
     },
 };
