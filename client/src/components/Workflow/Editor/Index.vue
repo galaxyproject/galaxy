@@ -495,16 +495,15 @@ export default {
             const editUrl = `/workflows/edit?workflow_id=${contentId}`;
             this.onNavigate(editUrl);
         },
-        async onClone(node) {
-            const stepCopy = JSON.parse(JSON.stringify(node.step));
+        async onClone(stepId) {
+            const sourceStep = this.steps[parseInt(stepId)];
+            const stepCopy = JSON.parse(JSON.stringify(sourceStep));
             const { id } = this.stepStore.addStep({
                 ...stepCopy,
+                id: null,
                 uuid: null,
                 label: null,
-                config_form: JSON.parse(JSON.stringify(node.config_form)),
-                annotation: JSON.parse(JSON.stringify(node.annotation)),
-                tool_state: JSON.parse(JSON.stringify(node.tool_state)),
-                post_job_actions: JSON.parse(JSON.stringify(node.postJobActions)),
+                position: defaultPosition(this.graphOffset, this.transform),
             });
             this.stateStore.setActiveNode(id);
         },

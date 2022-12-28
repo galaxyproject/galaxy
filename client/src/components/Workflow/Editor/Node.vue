@@ -49,7 +49,7 @@
                 size="sm"
                 aria-label="clone node"
                 title="Duplicate"
-                @click="onClone">
+                @click.prevent.stop="onClone">
                 <i class="fa fa-files-o" />
             </b-button>
             <i :class="iconClass" />
@@ -306,7 +306,7 @@ export default {
             this.popoverShow = false;
         },
         onClone() {
-            this.$emit("onClone", this);
+            this.$emit("onClone", this.id);
         },
         onRemove() {
             Object.values(this.inputTerminals).forEach((t) => {
