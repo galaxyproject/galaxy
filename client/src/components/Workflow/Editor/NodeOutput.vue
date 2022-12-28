@@ -17,7 +17,7 @@
             :root-offset="rootOffset"
             :prevent-default="false"
             :stop-propagation="true"
-            :dragData="{ stepId: stepId, output: effectiveOutput }"
+            :drag-data="{ stepId: stepId, output: effectiveOutput }"
             draggable="true"
             @pan-by="onPanBy"
             @start="isDragging = true"
@@ -30,8 +30,8 @@
                 @keyup.enter="toggleChildComponent"
                 @keyup.esc="toggleChildComponent">
                 <connection-menu
-                    ref="menu"
                     v-if="showChildComponent"
+                    ref="menu"
                     :terminal="terminal"
                     @closeMenu="closeMenu"></connection-menu>
             </div>

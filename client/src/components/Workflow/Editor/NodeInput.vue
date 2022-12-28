@@ -12,7 +12,7 @@
             @drop.prevent="onDrop"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
-            <div :id="iconId" ref="el" class="icon" v-b-tooltip.manual :title="reason" />
+            <div :id="iconId" ref="el" v-b-tooltip.manual class="icon" :title="reason" />
         </div>
         <div v-if="showRemove" class="delete-terminal" @click="onRemove" @keyup.delete="onRemove" />
         {{ label }}
