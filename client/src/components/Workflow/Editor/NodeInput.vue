@@ -177,7 +177,6 @@ export default {
             this.$root.$emit("bv::hide::tooltip", this.iconId);
             if (this.terminal.canAccept(droppedTerminal).canAccept) {
                 this.terminal.connect(droppedTerminal);
-                this.showRemove = true;
             }
         },
     },
