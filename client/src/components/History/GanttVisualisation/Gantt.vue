@@ -14,13 +14,55 @@
                 </b-alert>
                 <div class="sticky">
                     <div class="timeButtonsDiv">
-                        <button id="QDayView" :disabled="emptyHistory" @click="changeQDayView">Quarter Day View</button>
-                        <button id="HDayView" :disabled="emptyHistory" @click="changeHDayView">Half Day View</button>
-                        <button id="dayView" :disabled="emptyHistory" @click="changeDayView">Day View</button>
-                        <button id="weekView" :disabled="emptyHistory" @click="changeWeekView">Week View</button>
-                        <button id="monthView" :disabled="emptyHistory" @click="changeMonthView">Month View</button>
-                        <button id="hourView" :disabled="emptyHistory" @click="changeHourView">Hour View</button>
-                        <button id="minuteView" :disabled="emptyHistory" @click="changeMinuteView">Minute View</button>
+                        <button
+                            id="QDayView"
+                            :disabled="emptyHistory"
+                            data-description="change view button"
+                            @click="changeQDayView">
+                            Quarter Day View
+                        </button>
+                        <button
+                            id="HDayView"
+                            :disabled="emptyHistory"
+                            data-description="change view button"
+                            @click="changeHDayView">
+                            Half Day View
+                        </button>
+                        <button
+                            id="dayView"
+                            :disabled="emptyHistory"
+                            data-description="change view button"
+                            @click="changeDayView">
+                            Day View
+                        </button>
+                        <button
+                            id="weekView"
+                            :disabled="emptyHistory"
+                            data-description="change view button"
+                            @click="changeWeekView">
+                            Week View
+                        </button>
+                        <button
+                            id="monthView"
+                            :disabled="emptyHistory"
+                            data-description="change view button"
+                            @click="changeMonthView">
+                            Month View
+                        </button>
+                        <button
+                            id="hourView"
+                            :disabled="emptyHistory"
+                            data-description="change view button"
+                            @click="changeHourView">
+                            Hour View
+                        </button>
+                        <button
+                            id="minuteView"
+                            :disabled="emptyHistory"
+                            data-description="change view button"
+                            @click="changeMinuteView">
+                            Minute View
+                        </button>
                     </div>
                 </div>
                 <div>
@@ -336,49 +378,70 @@ export default {
                     keyedColorScheme("QDayView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById("QDayView").className = "QDayView";
+
+            if (document.getElementById("QDayView")) {
+                document.getElementById("QDayView").className = "QDayView";
+            }
             createClassWithCSS(
                 ".HDayView",
                 `background : ${keyedColorScheme("HDayView")["primary"]}; border-color : ${
                     keyedColorScheme("HDayView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById("HDayView").className = "HDayView";
+
+            if (document.getElementById("HDayView")) {
+                document.getElementById("HDayView").className = "HDayView";
+            }
             createClassWithCSS(
                 ".dayView",
                 `background : ${keyedColorScheme("dayView")["primary"]}; border-color : ${
                     keyedColorScheme("dayView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById("dayView").className = "dayView";
+
+            if (document.getElementById("dayView")) {
+                document.getElementById("dayView").className = "dayView";
+            }
             createClassWithCSS(
                 ".weekView",
                 `background : ${keyedColorScheme("weekView")["primary"]}; border-color : ${
                     keyedColorScheme("weekView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById("weekView").className = "weekView";
+
+            if (document.getElementById("weekView")) {
+                document.getElementById("weekView").className = "weekView";
+            }
             createClassWithCSS(
                 ".monthView",
                 `background : ${keyedColorScheme("monthView")["primary"]}; border-color : ${
                     keyedColorScheme("monthView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById("monthView").className = "monthView";
+
+            if (document.getElementById("monthView")) {
+                document.getElementById("monthView").className = "monthView";
+            }
             createClassWithCSS(
                 ".hourView",
                 `background : ${keyedColorScheme("hourView")["primary"]}; border-color : ${
                     keyedColorScheme("hourView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById("hourView").className = "hourView";
+
+            if (document.getElementById("hourView")) {
+                document.getElementById("hourView").className = "hourView";
+            }
             createClassWithCSS(
                 ".minuteView",
                 `background : ${keyedColorScheme("minuteView")["primary"]}; border-color : ${
                     keyedColorScheme("minuteView")["darker"]
                 } ; color :"black"`
             );
-            document.getElementById("minuteView").className = "minuteView";
+
+            if (document.getElementById("minuteView")) {
+                document.getElementById("minuteView").className = "minuteView";
+            }
         }
 
         // return to use in template
