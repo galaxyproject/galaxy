@@ -276,6 +276,24 @@ class ToolShedPopulator:
         api_asserts.assert_status_code_is_ok(repository_response)
         return RepositoryIndexResponse(__root__=repository_response.json())
 
+    def get_usernames_allowed_to_push(self, repository: HasRepositoryId) -> List[str]:
+        repository_id = self._repository_id(repository)
+        show_response = self._api_interactor.get(f"repositories/{repository_id}/allow_push")
+        show_response.raise_for_status()
+        as_list = show_response.json()
+        assert isinstance(as_list, list)
+        return as_list
+
+    def allow_user_to_push(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        post_response = self._api_interactor.post(f"repositories/{repository_id}/allow_push/{username}")
+        post_response.raise_for_status()
+
+    def disallow_user_to_push(self, repository: HasRepositoryId, username: str) -> None:
+        repository_id = self._repository_id(repository)
+        delete_response = self._api_interactor.delete(f"repositories/{repository_id}/allow_push/{username}")
+        delete_response.raise_for_status()
+
     def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)
         metadata_response = self._api_interactor.get(

@@ -5,6 +5,7 @@ from galaxy.tool_util.parser import get_tool_source
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.resources import resource_path
 from galaxy_test.base import api_asserts
+from tool_shed.test.base.api_util import create_user
 from tool_shed.test.base.populators import repo_tars
 from ..base.api import ShedApiTestCase
 
@@ -67,6 +68,37 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         repository = self.populator.get_repository_for(repo.owner, repo.name)
         assert repository.owner == repo.owner
         assert repository.name == repo.name
+
+    def test_allow_push(self):
+        populator = self.populator
+        request = {
+            "email": "sharewith@galaxyproject.org",
+            "username": "sharewith",
+            "password": "pAssworD1",
+        }
+        create_user(self.admin_api_interactor, request)
+        request = {
+            "email": "alsosharewith@galaxyproject.org",
+            "username": "alsosharewith",
+            "password": "pAssworD2",
+        }
+        create_user(self.admin_api_interactor, request)
+
+        repo = populator.setup_column_maker_repo(prefix="repoforindex")
+        assert "sharewith" not in populator.get_usernames_allowed_to_push(repo)
+        assert "alsosharewith" not in populator.get_usernames_allowed_to_push(repo)
+
+        populator.allow_user_to_push(repo, "sharewith")
+        assert "sharewith" in populator.get_usernames_allowed_to_push(repo)
+        assert "alsosharewith" not in populator.get_usernames_allowed_to_push(repo)
+
+        populator.allow_user_to_push(repo, "alsosharewith")
+        assert "sharewith" in populator.get_usernames_allowed_to_push(repo)
+        assert "alsosharewith" in populator.get_usernames_allowed_to_push(repo)
+
+        populator.disallow_user_to_push(repo, "sharewith")
+        assert "sharewith" not in populator.get_usernames_allowed_to_push(repo)
+        assert "alsosharewith" in populator.get_usernames_allowed_to_push(repo)
 
     def test_install_info(self):
         # actually installing requires a whole Galaxy setup and the install manager but
