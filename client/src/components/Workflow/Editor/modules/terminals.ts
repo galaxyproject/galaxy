@@ -295,7 +295,18 @@ class BaseInputTerminal extends Terminal {
     getConnectedTerminals() {
         return this.connections.map((connection) => {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
-            const terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name)!;
+            let terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name)!;
+            const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
+            if (
+                "extensions" in terminalSource &&
+                outputStep.post_job_actions &&
+                postJobActionKey in outputStep.post_job_actions
+            ) {
+                terminalSource = {
+                    ...terminalSource,
+                    extensions: [outputStep.post_job_actions[postJobActionKey].action_arguments.newtype],
+                };
+            }
             return terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
         });
     }
