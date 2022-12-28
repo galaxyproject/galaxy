@@ -569,8 +569,10 @@ export default {
         onLayout() {
             // this.canvasManager.drawOverview();
             // this.canvasManager.scrollToNodes();
-            return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.js").then((layout) => {
-                layout.autoLayout(this);
+            return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
+                layout.autoLayout(this.steps).then((newSteps) => {
+                    newSteps.map((step) => this.onUpdateStep(step));
+                });
             });
         },
         onAttributes() {
