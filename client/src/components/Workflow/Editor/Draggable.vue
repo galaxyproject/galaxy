@@ -47,10 +47,12 @@ const onMove = (position: any, event: DragEvent) => {
         // the last drag event has no coordinate ... this is obviously a hack!
         return;
     }
-    position.unscaled = { ...position, ...size };
-    position.x = (position.x - props.rootOffset.x - transform!.x) / transform!.k;
-    position.y = (position.y - props.rootOffset.y - transform!.y) / transform!.k;
-    emit("move", position, event);
+    const newPosition = {
+        unscaled: { ...position, ...size },
+        x: (position.x - props.rootOffset.x - transform!.x) / transform!.k,
+        y: (position.y - props.rootOffset.y - transform!.y) / transform!.k,
+    };
+    emit("move", newPosition, event);
 };
 
 const onEnd = (position: any, event: DragEvent) => {
