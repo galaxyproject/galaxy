@@ -25,14 +25,16 @@ interface StepPosition {
       }
 */
 
-interface PostJobActions {
-    [index: string]: {
-        action_type: string;
-        output_name: string;
-        action_arguments: {
-            [index: string]: string;
-        };
+export interface PostJobAction {
+    action_type: string;
+    output_name: string;
+    action_arguments: {
+        [index: string]: string;
     };
+}
+
+export interface PostJobActions {
+    [index: string]: PostJobAction;
 }
 
 export interface DataOutput {
@@ -89,9 +91,10 @@ interface WorkflowOutput {
 
 export interface NewStep {
     annotation?: string;
-    config_form?: object;
+    config_form?: { [index: string]: any };
     content_id?: string | null;
     id?: number;
+    errors?: string[] | null;
     input_connections: StepInputConnection;
     inputs: Array<InputTerminalSource>;
     label?: string;
@@ -101,13 +104,17 @@ export interface NewStep {
     post_job_actions?: PostJobActions;
     tool_state: Record<string, unknown>;
     tooltip?: string;
-    type: string;
+    type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
     workflow_outputs?: WorkflowOutput[];
 }
 
 export interface Step extends NewStep {
     id: number;
+}
+
+export interface Steps {
+    [index: string]: Step;
 }
 
 export interface StepInputConnection {
@@ -128,7 +135,7 @@ interface WorkflowOutputs {
 
 export const useWorkflowStepStore = defineStore("workflowStepStore", {
     state: (): State => ({
-        steps: {} as { [index: string]: Step },
+        steps: {} as Steps,
         stepMapOver: {} as { [index: number]: CollectionTypeDescriptor },
         stepIndex: -1,
     }),

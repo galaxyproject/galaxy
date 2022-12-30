@@ -67,11 +67,11 @@ export async function autoLayout(steps: { [index: string]: Step }) {
                 },
             };
         });
-        const node = stateStore.getNode(step.id);
+        const position = stateStore.stepPosition[step.id];
         return {
             id: stepId,
-            height: node.position.height + 20,
-            width: node.position.width + 60,
+            height: position.height + 20,
+            width: position.width + 60,
             ports: inputs.concat(outputs),
         };
     });

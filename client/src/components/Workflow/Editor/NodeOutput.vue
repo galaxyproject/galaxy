@@ -44,7 +44,7 @@
 import DraggableWrapper from "./DraggablePan";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useTerminal } from "./composables/useTerminal";
-import { ref, computed, watch, nextTick } from "vue";
+import { ref, computed, watch, nextTick, watchEffect, toRefs } from "vue";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu";
@@ -92,7 +92,8 @@ export default {
     },
     setup(props) {
         const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
+        const { rootOffset, parentOffset, stepPosition } = toRefs(props);
+        const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
         const extensions = computed(() => {
             const changeDatatype =
                 props.postJobActions[`ChangeDatatypeAction${props.output.label}`] ||
@@ -208,12 +209,6 @@ export default {
                 this.$emit("onDragConnector", this.dragPosition, this.terminal);
             }
         },
-        label() {
-            // See discussion at: https://github.com/vuejs/vue/issues/8030
-            this.$nextTick(() => {
-                this.$emit("onChange");
-            });
-        },
     },
     beforeDestroy() {
         this.stateStore.deleteOutputTerminalPosition({
@@ -222,9 +217,6 @@ export default {
         });
     },
     methods: {
-        debugHandler(event) {
-            console.log("debug", event);
-        },
         onPanBy(panBy) {
             this.$emit("pan-by", panBy);
         },
@@ -237,13 +229,6 @@ export default {
             this.dragX = 0;
             this.dragY = 0;
             this.$emit("stopDragging");
-        },
-        inputDragEnter(e) {},
-        inputDragLeave(e) {},
-        onDrop(e) {},
-        onChange() {
-            // this.isMultiple = this.terminal.isMappedOver();
-            // this.$emit("onChange");
         },
         onToggle() {
             this.$emit("onToggle", this.output.name);

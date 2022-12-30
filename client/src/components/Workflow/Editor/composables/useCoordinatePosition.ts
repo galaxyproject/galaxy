@@ -1,5 +1,9 @@
-import { reactive, unref, watchEffect, inject } from "vue";
-import { useElementBounding } from "@vueuse/core";
+import { reactive, unref, watchEffect, inject, type UnwrapRef, type Ref, ref } from "vue";
+import { useElementBounding, type MaybeComputedElementRef, type UseElementBoundingReturn } from "@vueuse/core";
+import type { Step } from "@/stores/workflowStepStore";
+import type { ZoomTransform } from "d3-zoom";
+
+type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 
 /**
  * Return the element position relative to the child of the element that determines rootOffset
@@ -7,22 +11,28 @@ import { useElementBounding } from "@vueuse/core";
  * @param {Object} rootOffset - Bounding rectangle of element that determines the canvas coordinates
  * @param {Object} parentOffset - Bounding rectangle of direct parent.
  */
-export function useCoordinatePosition(target, rootOffset, parentOffset = null, stepPosition = null) {
+export function useCoordinatePosition(
+    target: MaybeComputedElementRef,
+    rootOffset: Ref<ElementBounding>,
+    parentOffset: Ref<ElementBounding>,
+    stepPosition: Ref<NonNullable<Step["position"]>>
+) {
     const position = reactive(useElementBounding(target, { windowResize: false }));
-    const offset = unref(rootOffset);
-    const transform = inject("transform");
-    const parent = unref(parentOffset);
-    const step = unref(stepPosition);
+    const transform = inject("transform") as ZoomTransform;
 
     watchEffect(() => {
         /*
          * Touch parentOffset to establish dependency, so that changes in parentOffset
          * force an update of child coordinates, think addition/removal of extra outputs,
          * adding a long label, etc.
+         *
+         * Maybe this can be simplified ? I think the way I'm using reactive I'm dismissing updated values from useCoordinatePosition run
+         * before I hit watchEffect
          */
-        parent?.height;
-        step?.left;
-        step?.top;
+        parentOffset.value.height;
+        stepPosition.value.left;
+        stepPosition.value.top;
+        const offset = reactive(rootOffset.value);
         position.update();
         // Apply scale and offset so that position is in an unscaled coordinate system
         applyTransform(position, offset, transform);
@@ -30,11 +40,12 @@ export function useCoordinatePosition(target, rootOffset, parentOffset = null, s
     return position;
 }
 
-export function applyTransform(position, offset, transform) {
+export function applyTransform(position: ElementBounding, offset: ElementBounding, transform: ZoomTransform) {
     position.top = (position.top - offset.top - transform.y) / transform.k;
     position.left = (position.left - offset.left - transform.x) / transform.k;
     position.width /= transform.k;
     position.height /= transform.k;
     position.bottom = position.top + position.height;
     position.right = position.left + position.width;
+    return position;
 }

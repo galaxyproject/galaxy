@@ -30,7 +30,7 @@
                 :value="nodeLabel"
                 title="Label"
                 help="Add a step label."
-                :error="errorLabel"
+                :error="uniqueErrorLabel"
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
@@ -57,9 +57,9 @@ import FormDisplay from "@/components/Form/FormDisplay";
 import FormCard from "@/components/Form/FormCard";
 import FormElement from "@/components/Form/FormElement";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel";
-import { checkLabels } from "@/components/Workflow/Editor/modules/utilities";
 import WorkflowIcons from "@/components/Workflow/icons";
-import { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore, Step } from "@/stores/workflowStepStore";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 
 export default {
     components: {
@@ -97,10 +97,6 @@ export default {
             type: String,
             required: true,
         },
-        nodeActiveOutputs: {
-            type: Object,
-            required: true,
-        },
         nodeOutputs: {
             type: Array,
             required: true,
@@ -113,17 +109,15 @@ export default {
             type: Array,
             required: true,
         },
-        getManager: {
-            type: Function,
-            required: true,
-        },
+    },
+    setup(props) {
+        const stepStore = useWorkflowStepStore();
+        const uniqueErrorLabel = useUniqueLabelError(stepStore, props.nodeLabel);
+        return { uniqueErrorLabel };
     },
     computed: {
         nodeIcon() {
             return WorkflowIcons[this.nodeType];
-        },
-        workflow() {
-            return this.getManager();
         },
         formDisplayId() {
             return this.nodeId.toString();
@@ -133,9 +127,6 @@ export default {
         },
         isSubworkflow() {
             return this.nodeType == "subworkflow";
-        },
-        errorLabel() {
-            return checkLabels(this.nodeId, this.nodeLabel, this.workflow.nodes);
         },
     },
     methods: {

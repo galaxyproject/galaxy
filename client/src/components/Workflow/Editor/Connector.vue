@@ -1,8 +1,8 @@
 <template>
     <g :id="id" class="ribbon">
-        <g v-for="line in paths">
-            <path class="ribbon-outer" :d="line" :stroke-width="stroke.outerStroke" fill="none"></path>
-            <path class="ribbon-inner" :d="line" :stroke-width="stroke.innerStroke" fill="none"></path>
+        <g v-for="svgLine in paths" :key="svgLine">
+            <path class="ribbon-outer" :d="svgLine" :stroke-width="stroke.outerStroke" fill="none"></path>
+            <path class="ribbon-inner" :d="svgLine" :stroke-width="stroke.innerStroke" fill="none"></path>
         </g>
     </g>
 </template>

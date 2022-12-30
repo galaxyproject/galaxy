@@ -1,28 +1,44 @@
-import Utils from "utils/utils";
+import type { Step, Steps, PostJobAction } from "@/stores/workflowStepStore";
+import Utils from "@/utils/utils";
 
 class UntypedParameterReference {
-    constructor(parameter, node) {
+    stepId: number;
+
+    constructor(parameter: UntypedParameter, step: Step) {
         parameter.references.push(this);
-        this.nodeId = node.id;
+        this.stepId = step.id;
     }
 }
 
 class ToolInputUntypedParameterReference extends UntypedParameterReference {
-    constructor(parameter, node, tooInput) {
-        super(parameter, node);
-        this.toolInput = tooInput;
+    // TODO: replace any when we have a defined tool state
+    toolInput: any;
+
+    constructor(parameter: UntypedParameter, step: Step, toolInput: any) {
+        super(parameter, step);
+        this.toolInput = toolInput;
     }
 }
 
 class PjaUntypedParameterReference extends UntypedParameterReference {
-    constructor(parameter, node, pja) {
-        super(parameter, node);
+    pja: PostJobAction;
+
+    constructor(parameter: UntypedParameter, step: Step, pja: PostJobAction) {
+        super(parameter, step);
         this.pja = pja;
     }
 }
 
+type UntypedParameterReferenceTypes =
+    | UntypedParameterReference
+    | ToolInputUntypedParameterReference
+    | PjaUntypedParameterReference;
+
 class UntypedParameter {
-    constructor(name) {
+    name: string;
+    references: UntypedParameterReferenceTypes[];
+
+    constructor(name: string) {
         this.name = name;
         this.references = [];
     }
@@ -36,11 +52,13 @@ class UntypedParameter {
 }
 
 export class UntypedParameters {
+    parameters: UntypedParameter[];
+
     constructor() {
         this.parameters = [];
     }
 
-    getParameter(name) {
+    getParameter(name: string) {
         for (const parameter of this.parameters) {
             if (parameter.name == name) {
                 return parameter;
@@ -51,30 +69,31 @@ export class UntypedParameters {
         return untypedParameter;
     }
 
-    getParameterFromMatch(match) {
+    getParameterFromMatch(match: string) {
         return this.getParameter(match.substring(2, match.length - 1));
     }
 }
 
-export function getUntypedWorkflowParameters(nodes) {
+export function getUntypedWorkflowParameters(steps: Steps) {
     const untypedParameters = new UntypedParameters();
     const parameter_re = /\$\{.+?\}/g;
-    Object.entries(nodes).forEach(([k, node]) => {
-        if (node.config_form && node.config_form.inputs) {
-            Utils.deepeach(node.config_form.inputs, (d) => {
+    Object.values(steps).forEach((step) => {
+        if (step.config_form?.inputs) {
+            // TODO: with new tool state we could type this and drop the any
+            Utils.deepeach(step.config_form.inputs, (d: any) => {
                 if (typeof d.value == "string") {
-                    var form_matches = d.value.match(parameter_re);
-                    if (form_matches) {
-                        for (const match of form_matches) {
+                    const formMatches = d.value.match(parameter_re);
+                    if (formMatches) {
+                        for (const match of formMatches) {
                             const untypedParameter = untypedParameters.getParameterFromMatch(match);
-                            new ToolInputUntypedParameterReference(untypedParameter, node, d);
+                            new ToolInputUntypedParameterReference(untypedParameter, step, d);
                         }
                     }
                 }
             });
         }
-        if (node.postJobActions) {
-            Object.values(node.postJobActions).forEach((pja) => {
+        if (step.post_job_actions) {
+            Object.values(step.post_job_actions).forEach((pja) => {
                 if (pja.action_arguments) {
                     Object.values(pja.action_arguments).forEach((action_argument) => {
                         if (typeof action_argument === "string") {
@@ -82,7 +101,7 @@ export function getUntypedWorkflowParameters(nodes) {
                             if (arg_matches) {
                                 for (const match of arg_matches) {
                                     const untypedParameter = untypedParameters.getParameterFromMatch(match);
-                                    new PjaUntypedParameterReference(untypedParameter, node, pja);
+                                    new PjaUntypedParameterReference(untypedParameter, step, pja);
                                 }
                             }
                         }

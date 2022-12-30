@@ -32,6 +32,9 @@ const position = computed(() => {
         props.connection.output.name
     );
     const inputPos = stateStore.getInputTerminalPosition(props.connection.input.stepId, props.connection.input.name);
-    return { ...inputPos, ...outputPos };
+    if (inputPos && outputPos) {
+        return { ...inputPos, ...outputPos };
+    }
+    return null;
 });
 </script>

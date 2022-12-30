@@ -8,11 +8,9 @@
         :node-label="title"
         :class="classes"
         :style="style"
-        @updatePosition="onUpdatePosition"
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive">
-            <!-- clicking destroy shouldn't also trigger makeActive -->
             <b-button
                 v-b-tooltip.hover
                 class="node-destroy py-0 float-right"
@@ -56,7 +54,7 @@
             <span
                 v-b-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
-                >{{ stepIndex }}:
+                >{{ step.id + 1 }}:
             </span>
             <span class="node-title">{{ title }}</span>
         </div>
@@ -67,7 +65,7 @@
             <loading-span v-if="showLoading" message="Loading details" />
             <node-input
                 v-for="input in inputs"
-                :key="nodeIOKey(input.name, step.position)"
+                :key="nodeIOKey(input.name, position)"
                 :input="input"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
@@ -75,14 +73,11 @@
                 :root-offset="rootOffset"
                 :parent-offset="position"
                 v-on="$listeners"
-                @onAdd="onAddInput"
-                @onRemove="onRemoveInput"
-                @onDisconnect="onDisconnect"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
                 v-for="output in outputs"
-                :key="nodeIOKey(output.name, step.position)"
+                :key="output.name"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
@@ -94,277 +89,136 @@
                 :datatypes-mapper="datatypesMapper"
                 v-on="$listeners"
                 @stopDragging="onStopDragging"
-                @onAdd="onAddOutput"
-                @onRemove="onRemoveOutput"
                 @onToggle="onToggleOutput"
                 @onChange="onChange" />
         </div>
     </draggable-wrapper>
 </template>
 
-<script>
+<script lang="ts" setup>
+import type { PropType, Ref, UnwrapRef } from "vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import WorkflowIcons from "components/Workflow/icons";
-import LoadingSpan from "components/LoadingSpan";
-import { getGalaxyInstance } from "app";
-import Recommendations from "components/Workflow/Editor/Recommendations";
-import NodeInput from "./NodeInput";
-import NodeOutput from "./NodeOutput";
-import DraggableWrapper from "./DraggablePan";
+import WorkflowIcons from "@/components/Workflow/icons";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import { getGalaxyInstance } from "@/app";
+// import Recommendations from "components/Workflow/Editor/Recommendations";
+import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
+import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import { ActiveOutputs } from "./modules/outputs";
-import { computed, inject, reactive, ref } from "vue";
-import { useElementBounding } from "@vueuse/core";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { computed, ref } from "vue";
+import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
+import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Step } from "@/stores/workflowStepStore";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { UseElementBoundingReturn } from "@vueuse/core";
 
 Vue.use(BootstrapVue);
 
-export default {
-    components: {
-        DraggableWrapper,
-        LoadingSpan,
-        Recommendations,
-        NodeInput,
-        NodeOutput,
+const props = defineProps({
+    id: { type: Number, required: true },
+    contentId: { type: String as PropType<string | null> },
+    name: { type: String as PropType<string | null> },
+    type: { type: String, required: true },
+    step: { type: Object as PropType<Step>, required: true },
+    datatypesMapper: { type: DatatypesMapperModel, required: true },
+    activeNodeId: {
+        type: null as unknown as PropType<number | null>,
+        required: true,
+        validator: (v: any) => typeof v === "number" || v === null,
     },
-    props: {
-        id: {
-            type: Number,
-            required: true,
-        },
-        contentId: {
-            type: String,
-            default: "",
-        },
-        name: {
-            type: String,
-            default: "name",
-        },
-        type: {
-            type: String,
-            default: null,
-        },
-        step: {
-            type: Object,
-            default: null,
-        },
-        datatypesMapper: {
-            type: Object,
-        },
-        activeNodeId: {
-            type: Number,
-            required: false,
-        },
-        rootOffset: {
-            type: Object,
-            required: true,
-        },
-        scale: {
-            type: Number,
-        },
-    },
-    setup(props) {
-        const nodeIOKey = (key, position) => key + position?.left + position?.right;
-        const el = ref(null);
-        const position = reactive(useElementBounding(el, { windowResize: false }));
-        const transform = inject("transform");
-        const postJobActions = computed(() => props.step.post_job_actions || {});
-        const workflowOutputs = computed(() => props.step.workflow_outputs || []);
-        const stateStore = useWorkflowStateStore();
-        return { el, position, transform, nodeIOKey, postJobActions, workflowOutputs, stateStore };
-    },
-    data() {
-        return {
-            popoverShow: false,
-            inputs: [],
-            outputs: [],
-            inputTerminals: {},
-            outputTerminals: {},
-            activeOutputs: null,
-            errors: null,
-            config_form: {},
-            showLoading: true,
-            highlight: false,
-            scrolledTo: false,
-            offset: {
-                x: 0,
-                y: 0,
-            },
-        };
-    },
-    computed: {
-        title() {
-            return this.step.label || this.step.name;
-        },
-        idString() {
-            return `wf-node-step-${this.id}`;
-        },
-        showRule() {
-            return this.inputs.length > 0 && this.outputs.length > 0;
-        },
-        iconClass() {
-            const iconType = WorkflowIcons[this.type];
-            if (iconType) {
-                return `icon fa fa-fw ${iconType}`;
-            }
-            return null;
-        },
-        popoverId() {
-            return `popover-${this.id}`;
-        },
-        canClone() {
-            return this.type != "subworkflow";
-        },
-        isEnabled() {
-            return getGalaxyInstance().config.enable_tool_recommendations;
-        },
-        isInput() {
-            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
-        },
-        stepIndex() {
-            return parseInt(this.id) + 1;
-        },
-        isActive() {
-            return this.id == this.activeNodeId;
-        },
-        classes() {
-            const cssObj = {
-                "workflow-node": true,
-                "node-on-scroll-to": this.scrolledTo,
-                "node-highlight": this.highlight || this.isActive,
-            };
-            if (this.isActive) {
-                return { ...cssObj, "is-active": true };
-            }
-            return cssObj;
-        },
-        style() {
-            if (isNaN(this.step.position?.top) || isNaN(this.step.position?.left)) {
-                return this.defaultPosition;
-            }
-            return { top: this.step.position.top + "px", left: this.step.position.left + "px" };
-        },
-    },
-    created() {
-        this.stateStore.setNode(this);
-        this.activeOutputs = new ActiveOutputs();
-        this.content_id = this.contentId;
-        // initialize node data
-        if (this.step.config_form) {
-            this.initData(this.step);
-        } else {
-            this.$emit("onUpdate", this);
-        }
-    },
-    beforeDestroy() {
-        this.stateStore.deleteNode(this.id);
-    },
-    methods: {
-        onMoveTo(position, event) {
-            this.onUpdatePosition({
-                top: position.y,
-                left: position.x,
-            });
-        },
-        onPanBy(panBy) {
-            this.$emit("pan-by", panBy);
-        },
-        onStopDragging() {
-            this.$emit("stopDragging");
-        },
-        onUpdatePosition(position) {
-            this.$emit("onUpdateStepPosition", this.step.id, position);
-        },
-        onChange() {
-            this.$emit("onChange");
-        },
-        onAddInput(input, terminal) {
-            this.inputTerminals[input.name] = terminal;
-            this.onRedraw();
-        },
-        onRemoveInput(input) {
-            delete this.inputTerminals[input.name];
-            this.onRedraw();
-        },
-        onDisconnect(inputName) {
-            this.$emit("onDisconnect", this.id, inputName);
-        },
-        onAddOutput(output, terminal) {
-            this.outputTerminals[output.name] = terminal;
-            this.onRedraw();
-        },
-        onRemoveOutput(output) {
-            delete this.outputTerminals[output.name];
-            this.onRedraw();
-        },
-        onToggleOutput(name) {
-            this.activeOutputs.toggle(name);
-            this.$emit("onChange");
-        },
-        onCreate(contentId, name) {
-            this.$emit("onCreate", contentId, name);
-            this.popoverShow = false;
-        },
-        onClone() {
-            this.$emit("onClone", this.id);
-        },
-        onRemove() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            this.activeOutputs.filterOutputs([]);
-            this.$emit("onRemove", this.id);
-        },
-        onRedraw() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.redraw();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.redraw();
-            });
-        },
-        getNode() {
-            return this;
-        },
-        setNode(data) {
-            this.initData(data);
-            this.$emit("onChange");
-        },
-        setData(data) {
-            this.content_id = data.content_id;
-            this.tool_state = data.tool_state;
-            this.errors = data.errors;
-            this.tooltip = data.tooltip || "";
-            this.inputs = data.inputs ? data.inputs.slice() : [];
-            this.outputs = data.outputs ? data.outputs.slice() : [];
-            const outputNames = this.outputs.map((output) => output.name);
-            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            this.activeOutputs.filterOutputs(outputNames);
-            this.config_form = data.config_form;
-        },
-        initData(data) {
-            this.uuid = data.uuid;
-            this.setData(data);
-            this.showLoading = false;
-        },
-        onScrollTo() {
-            this.scrolledTo = true;
-            setTimeout(() => {
-                this.scrolledTo = false;
-            }, 2000);
-        },
-        onHighlight() {
-            this.highlight = true;
-        },
-        onUnhighlight() {
-            this.highlight = false;
-        },
-        makeActive() {
-            this.$emit("onActivate", this.id);
-        },
-    },
-};
+    rootOffset: { type: Object as PropType<UseElementBoundingReturn>, required: true },
+    scale: { type: Number, default: 1 },
+    highlight: { type: Boolean, default: false },
+});
+
+const emit = defineEmits([
+    "onRemove",
+    "onActivate",
+    "onChange",
+    "onCreate",
+    "onUpdate",
+    "onClone",
+    "onUpdateStepPosition",
+    "pan-by",
+    "stopDragging",
+]);
+
+// const popoverShow = ref(false)
+const showLoading = ref(false);
+const scrolledTo = ref(false);
+
+function nodeIOKey(key: string, position: UnwrapRef<UseElementBoundingReturn>) {
+    return key + position?.left + position?.right;
+}
+
+function onRemove() {
+    emit("onRemove", props.id);
+}
+
+const el: Ref<HTMLElement | null> = ref(null);
+const postJobActions = computed(() => props.step.post_job_actions || {});
+const workflowOutputs = computed(() => props.step.workflow_outputs || []);
+const stateStore = useWorkflowStateStore();
+const position = useNodePosition(el, props.id, stateStore);
+const title = computed(() => props.step.label || props.step.name);
+const idString = computed(() => `wf-node-step-${props.id}`);
+const showRule = computed(() => props.step.inputs.length > 0 && props.step.outputs.length > 0);
+const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
+const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
+const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
+
+const isActive = computed(() => props.id === props.activeNodeId);
+const classes = computed(() => {
+    return {
+        "workflow-node": true,
+        "node-on-scroll-to": scrolledTo.value,
+        "node-highlight": props.highlight || isActive.value,
+        "is-active": isActive.value,
+    };
+});
+const style = computed(() => {
+    return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
+});
+const activeOutputs = new ActiveOutputs();
+const errors = computed(() => props.step.errors);
+const inputs = computed(() => props.step.inputs);
+const outputs = computed(() => props.step.outputs);
+
+function onMoveTo(position: XYPosition) {
+    emit("onUpdateStepPosition", props.id, {
+        top: position.y,
+        left: position.x,
+    });
+}
+
+function onPanBy(panBy: XYPosition) {
+    emit("pan-by", panBy);
+}
+
+function onStopDragging() {
+    emit("stopDragging");
+}
+
+function onChange() {
+    emit("onChange");
+}
+
+// function onCreate(contentId: string, name: string) {
+//     emit("onCreate", contentId, name);
+//     // popoverShow.value = false
+// }
+
+function onClone() {
+    emit("onClone", props.id);
+}
+
+function onToggleOutput(name: string) {
+    activeOutputs.toggle(name);
+}
+
+function makeActive() {
+    emit("onActivate", props.id);
+}
 </script>

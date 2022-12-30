@@ -2,12 +2,7 @@
     <div ref="overview" class="workflow-overview" :style="style" aria-hidden="true">
         <div class="workflow-overview-body" @click="onClick">
             <svg width="100%" height="100%" :viewBox="viewBox">
-                <MinimapNode
-                    v-for="node of Object.values(nodes)"
-                    :key="node.id"
-                    class="mini-node"
-                    :node="node"
-                    :step="steps[node.id]" />
+                <MinimapNode v-for="step of Object.values(steps)" :key="step.id" class="mini-node" :step="step" />
                 <rect
                     ref="rect"
                     class="viewport"
@@ -28,7 +23,6 @@
 import MinimapNode from "./MinimapNode.vue";
 import { computed, reactive, ref } from "vue";
 import { useDraggable } from "@vueuse/core";
-import { storeToRefs } from "pinia";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 export default {
@@ -74,24 +68,18 @@ export default {
             const rval = { x, y, width, height };
             return rval;
         });
-        const { nodes } = storeToRefs(useWorkflowStateStore());
+        const stepStore = useWorkflowStateStore();
         const bounds = computed(() => {
             let left = props.pan.x * -1;
             let right = props.rootOffset.width;
             let top = props.pan.y * -1;
             let bottom = props.rootOffset.bottom;
-            let p;
             Object.values(props.steps).forEach((step) => {
-                const node = nodes.value[step.id];
-                // TODO: something here isn't fully "reactive", this breaks when HMR kicks in,
-                // because position is not a reactive property of node (and I guess it shouldn't be?)
-                p = node.position;
-                if (p) {
-                    left = Math.min(left, step.position.left);
-                    right = Math.max(right, p.right);
-                    top = Math.min(top, step.position.top);
-                    bottom = Math.max(bottom, p.bottom);
-                }
+                const stepPosition = stepStore.stepPosition[step.id];
+                left = Math.min(left, step.position.left);
+                right = Math.max(right, stepPosition.right);
+                top = Math.min(top, step.position.top);
+                bottom = Math.max(bottom, stepPosition.bottom);
             });
 
             return {
@@ -137,7 +125,6 @@ export default {
             scaleFactorY,
             startX,
             startY,
-            nodes,
         };
     },
     data() {

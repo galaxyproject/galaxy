@@ -1,7 +1,8 @@
 import Vue from "vue";
+import type { UnwrapRef } from "vue";
 import { defineStore } from "pinia";
-import type { BaseTerminal } from "./workflowConnectionStore";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
+import type { UseElementBoundingReturn } from "@vueuse/core";
 
 export const state = {
     inputTerminals: {},
@@ -30,7 +31,7 @@ interface State {
     draggingTerminal: OutputTerminals | null;
     activeNodeId: number | null;
     scale: number;
-    nodes: { [index: number]: any };
+    stepPosition: { [index: number]: UnwrapRef<UseElementBoundingReturn> };
 }
 
 export const useWorkflowStateStore = defineStore("workflowStateStore", {
@@ -41,7 +42,7 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         draggingTerminal: null,
         activeNodeId: null,
         scale: 1,
-        nodes: {},
+        stepPosition: {},
     }),
     getters: {
         getInputTerminalPosition(state: State) {
@@ -49,15 +50,6 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         },
         getOutputTerminalPosition(state: State) {
             return (stepId: number, outputName: string) => state.outputTerminals[stepId]?.[outputName];
-        },
-        getNode(state: State) {
-            return (nodeId: number) => state.nodes[nodeId];
-        },
-        activeNode(state: State) {
-            if (state.activeNodeId !== null) {
-                return state.nodes[state.activeNodeId];
-            }
-            return null;
         },
     },
     actions: {
@@ -87,11 +79,11 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         setScale(scale: number) {
             this.scale = scale;
         },
-        setNode(node: any) {
-            Vue.set(this.nodes, node.id, node);
+        setStepPosition(stepId: number, position: UnwrapRef<UseElementBoundingReturn>) {
+            Vue.set(this.stepPosition, stepId, position);
         },
-        deleteNode(nodeId: number) {
-            delete this.nodes[nodeId];
+        deleteStepPosition(stepId: number) {
+            delete this.stepPosition[stepId];
         },
     },
 });

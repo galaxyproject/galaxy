@@ -18,7 +18,7 @@
                     :value="nodeLabel"
                     title="Label"
                     help="Add a step label."
-                    :error="errorLabel"
+                    :error="uniqueErrorLabel"
                     @input="onLabel" />
                 <FormElement
                     id="__annotation"
@@ -60,10 +60,10 @@ import FormDisplay from "components/Form/FormDisplay";
 import ToolCard from "components/Tool/ToolCard";
 import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
-import { checkLabels } from "components/Workflow/Editor/modules/utilities";
 import Utils from "utils/utils";
 import Heading from "components/Common/Heading";
-import { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore, Step } from "@/stores/workflowStepStore";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 
 export default {
     components: {
@@ -107,14 +107,15 @@ export default {
             type: Array,
             required: true,
         },
-        getManager: {
-            type: Function,
-            required: true,
-        },
         postJobActions: {
             type: Object,
             required: true,
         },
+    },
+    setup(props) {
+        const stepStore = useWorkflowStepStore();
+        const uniqueErrorLabel = useUniqueLabelError(stepStore, props.nodeLabel);
+        return { uniqueErrorLabel };
     },
     data() {
         return {
@@ -124,9 +125,6 @@ export default {
         };
     },
     computed: {
-        workflow() {
-            return this.getManager();
-        },
         id() {
             return `${this.nodeId}:${this.configForm.id}`;
         },
@@ -135,9 +133,6 @@ export default {
         },
         hasData() {
             return !!this.configForm?.id;
-        },
-        errorLabel() {
-            return checkLabels(this.nodeId, this.nodeLabel, this.workflow.nodes);
         },
         inputs() {
             const inputs = this.configForm.inputs;

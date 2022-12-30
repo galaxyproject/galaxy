@@ -45,7 +45,6 @@ const label = computed(() => {
 });
 
 function onInput(newLabel: string) {
-    console.log("wfo", props.step);
     if (!stepStore.workflowOutputs[newLabel]) {
         const newWorkflowOutputs = [...(props.step.workflow_outputs || [])].filter(
             (workflowOutput) => workflowOutput.output_name !== props.name

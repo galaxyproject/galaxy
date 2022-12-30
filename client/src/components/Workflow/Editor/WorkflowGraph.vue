@@ -32,6 +32,7 @@
             </d3-zoom>
         </div>
         <Minimap
+            v-if="position"
             :steps="steps"
             :root-offset="position"
             :scale="scale"
@@ -45,23 +46,25 @@ import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import Minimap from "@/components/Workflow/Editor/Minimap.vue";
-import { computed, reactive, ref, type Ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
 import D3Zoom from "@/components/Workflow/Editor/D3Zoom.vue";
 import { provide } from "vue";
 import { storeToRefs } from "pinia";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import type { PropType } from "vue";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
-import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { Step } from "@/stores/workflowStepStore";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { ZoomTransform } from "d3-zoom";
 import type { OutputTerminals } from "./modules/terminals";
 
-defineProps<{
-    steps: { [index: string]: Step };
-    datatypesMapper: DatatypesMapperModel;
-}>();
+defineProps({
+    steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
+    datatypesMapper: { type: DatatypesMapperModel, required: true },
+    highlightId: { type: null as unknown as PropType<number | null> },
+});
 const transform = reactive({ x: 0, y: 0, k: 1 });
 
 const isDragging = ref(false);

@@ -15,7 +15,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["new-steps"]);
+// const emit = defineEmits(["new-steps"]);
 
 const code = ref(null);
 

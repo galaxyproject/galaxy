@@ -31,7 +31,7 @@
             :markdown-text="markdownText"
             :markdown-config="markdownConfig"
             :title="'Workflow Report: ' + name"
-            :get-manager="getManager"
+            :steps="steps"
             @onUpdate="onReportUpdate">
             <template v-slot:buttons>
                 <b-button
@@ -69,8 +69,7 @@
                     v-if="!datatypesMapperLoading"
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
-                    :get-manager="getManager"
-                    :nodes="nodes"
+                    :highlight-id="highlightId"
                     @transform="(value) => (transform = value)"
                     @graph-offset="(value) => (graphOffset = value)"
                     @onUpdate="onUpdate"
@@ -108,7 +107,6 @@
                                 <FormTool
                                     v-if="hasActiveNodeTool"
                                     :key="activeNodeId"
-                                    :get-manager="getManager"
                                     :node-id="activeNodeId"
                                     :node-annotation="activeNodeAnnotation"
                                     :node-label="activeNodeLabel"
@@ -134,7 +132,6 @@
                                     :node-outputs="activeNodeOutputs"
                                     :node-active-outputs="activeNodeActiveOutputs"
                                     :config-form="activeNodeConfigForm"
-                                    :get-manager="getManager"
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
@@ -163,7 +160,8 @@
                                     :annotation="annotation"
                                     :creator="creator"
                                     :license="license"
-                                    :get-manager="getManager"
+                                    :steps="steps"
+                                    :datatypes-mapper="datatypesMapper"
                                     @onAttributes="onAttributes"
                                     @onHighlight="onHighlight"
                                     @onUnhighlight="onUnhighlight"
@@ -181,32 +179,32 @@
 
 <script>
 import axios from "axios";
-import { LastQueue } from "utils/promise-queue";
+import { LastQueue } from "@/utils/promise-queue";
 import { fromSimple, toSimple } from "./modules/model";
 import { getModule, getVersions, saveWorkflow, loadWorkflow } from "./modules/services";
-import { getUntypedWorkflowParameters } from "./modules/parameters";
+import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { getStateUpgradeMessages } from "./modules/utilities";
-import WorkflowOptions from "./Options";
-import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault";
-import FormTool from "@/components/Workflow/Editor/Forms/FormTool";
-import MarkdownEditor from "components/Markdown/MarkdownEditor";
-import ProviderAwareToolBoxWorkflow from "components/Panels/ProviderAwareToolBoxWorkflow";
-import SidePanel from "components/Panels/SidePanel";
-import { getAppRoot } from "onload/loadConfig";
+import WorkflowOptions from "./Options.vue";
+import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
+import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
+import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
+import ProviderAwareToolBoxWorkflow from "@/components/Panels/ProviderAwareToolBoxWorkflow.vue";
+import SidePanel from "@/components/Panels/SidePanel.vue";
+import { getAppRoot } from "@/onload/loadConfig";
 import reportDefault from "./reportDefault";
-import WorkflowLint from "./Lint";
-import StateUpgradeModal from "./StateUpgradeModal";
-import RefactorConfirmationModal from "./RefactorConfirmationModal";
-import MessagesModal from "./MessagesModal";
-import { hide_modal } from "layout/modal";
-import WorkflowAttributes from "./Attributes";
+import WorkflowLint from "./Lint.vue";
+import StateUpgradeModal from "./StateUpgradeModal.vue";
+import RefactorConfirmationModal from "./RefactorConfirmationModal.vue";
+import MessagesModal from "./MessagesModal.vue";
+import { hide_modal } from "@/layout/modal";
+import WorkflowAttributes from "./Attributes.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
-import WorkflowText from "./WorkflowText";
+import WorkflowText from "./WorkflowText.vue";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
 import Vue, { onUnmounted, computed } from "vue";
-import { ConfirmDialog } from "composables/confirmDialog";
+import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { storeToRefs } from "pinia";
@@ -260,8 +258,13 @@ export default {
         const stepStore = useWorkflowStepStore();
         const { getStepIndex, steps } = storeToRefs(stepStore);
         const stateStore = useWorkflowStateStore();
-        const { nodes, activeNode, activeNodeId } = storeToRefs(stateStore);
-        const activeStep = computed(() => steps.value[activeNodeId.value.toString()]);
+        const { activeNodeId } = storeToRefs(stateStore);
+        const activeStep = computed(() => {
+            if (activeNodeId.value) {
+                return stepStore.getStep(activeNodeId.value);
+            }
+            return null;
+        });
 
         function resetStores() {
             connectionsStore.$reset();
@@ -278,9 +281,7 @@ export default {
             nodeIndex: getStepIndex,
             datatypes,
             activeStep,
-            activeNode,
             activeNodeId,
-            nodes,
             datatypesMapper,
             datatypesMapperLoading,
             stateStore,
@@ -304,6 +305,7 @@ export default {
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
+            highlightId: null,
             messageTitle: null,
             messageBody: null,
             messageIsError: false,
@@ -324,40 +326,42 @@ export default {
             return this.showInPanel == "lint";
         },
         postJobActions() {
-            return this.activeNode.postJobActions;
+            return this.activeStep?.post_job_actions;
         },
         activeNodeName() {
-            return this.activeNode?.name;
+            return this.activeStep?.label || this.activeStep?.content_id;
         },
         activeNodeContentId() {
-            return this.activeNode && this.activeNode.contentId;
+            return this.activeStep?.contentId;
         },
         activeNodeLabel() {
-            return this.steps[this.activeNodeId]?.label;
+            return this.activeStep?.label;
         },
         activeNodeAnnotation() {
-            return this.steps[this.activeNodeId]?.annotation;
+            return this.activeStep?.annotation;
         },
         activeNodeConfigForm() {
-            return this.activeNode?.config_form;
+            return this.activeStep?.config_form;
         },
         activeNodeInputs() {
-            return this.activeNode?.inputs;
+            return this.activeStep?.inputs;
         },
         activeNodeOutputs() {
-            return this.activeNode?.outputs;
+            return this.activeStep?.outputs;
         },
         activeNodeActiveOutputs() {
-            return this.activeNode?.activeOutputs;
+            // TODO: track activeOutputs in stateStore
+            // return this.activeNode?.activeOutputs;
+            return null;
         },
         activeNodeType() {
-            return this.activeNode?.type;
+            return this.activeStep?.type;
         },
         hasActiveNodeDefault() {
-            return this.activeNode && this.activeNode.type != "tool";
+            return this.activeStep && this.activeStep?.type != "tool";
         },
         hasActiveNodeTool() {
-            return this.activeNode && this.activeNode.type == "tool";
+            return this.activeStep?.type == "tool";
         },
     },
     watch: {
@@ -592,7 +596,6 @@ export default {
             this.onUpdateStep(step);
         },
         onSetData(nodeId, newData) {
-            const node = this.nodes[nodeId];
             this.lastQueue.enqueue(getModule, newData).then((data) => {
                 // TODO: change data in store, don't change node ...
                 // also check that PJAs and other modification survive, or limit to input/output ?
@@ -602,9 +605,9 @@ export default {
                     outputs: data.outputs,
                     config_form: data.config_form,
                     tool_state: data.tool_state,
+                    errors: data.errors,
                 };
                 this.onUpdateStep(step);
-                node.setData(data);
             });
         },
         onLabel(nodeId, newLabel) {
@@ -612,21 +615,19 @@ export default {
             this.onUpdateStep(step);
         },
         onScrollTo(nodeId) {
-            const node = this.nodes[nodeId];
-            this.canvasManager.scrollToNode(node);
-            node.onScrollTo();
+            // TODO: use panBy to scroll to step position
+            // const node = this.nodes[nodeId];
+            // this.canvasManager.scrollToNode(node);
+            // node.onScrollTo();
         },
-        onHighlight(nodeId) {
-            const node = this.nodes[nodeId];
-            node.onHighlight();
+        onHighlight(stepId) {
+            this.highlightId = stepId;
         },
-        onUnhighlight(nodeId) {
-            const node = this.nodes[nodeId];
-            node.onUnhighlight();
+        onUnhighlight(stepId) {
+            this.highlightId = null;
         },
         onLint() {
             this._ensureParametersSet();
-            this.onDeactivate();
             this.showInPanel = "lint";
         },
         onUpgrade() {
@@ -685,7 +686,7 @@ export default {
             }
         },
         _ensureParametersSet() {
-            this.parameters = getUntypedWorkflowParameters(this.nodes);
+            this.parameters = getUntypedWorkflowParameters(this.steps);
         },
         _insertStep(contentId, name, type) {
             if (!this.isCanvas) {
@@ -743,14 +744,7 @@ export default {
             }
         },
         onActiveNode(nodeId) {
-            this.activeNode = this.nodes[nodeId];
             this.$refs["right-panel"].scrollTop = 0;
-        },
-        getManager() {
-            return this;
-        },
-        getNode() {
-            return this.activeNode;
         },
         onInsertedStateMessages(insertedStateMessages) {
             this.insertedStateMessages = insertedStateMessages;

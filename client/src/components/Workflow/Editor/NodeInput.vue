@@ -23,7 +23,7 @@
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { computed } from "@vue/reactivity";
-import { inject, ref, watchEffect } from "vue";
+import { inject, ref, toRefs, watchEffect } from "vue";
 import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -59,7 +59,8 @@ export default {
     },
     setup(props) {
         const el = ref(null);
-        const position = useCoordinatePosition(el, props.rootOffset, props.parentOffset, props.stepPosition);
+        const { rootOffset, parentOffset, stepPosition } = toRefs(props);
+        const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
         const isDragging = inject("isDragging");
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);
@@ -112,6 +113,7 @@ export default {
             if (this.draggingTerminal) {
                 return this.terminal.canAccept(this.draggingTerminal);
             }
+            return null;
         },
         reason() {
             const reason = this.canAccept?.reason;
