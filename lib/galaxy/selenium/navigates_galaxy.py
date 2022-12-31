@@ -1938,7 +1938,7 @@ class NavigatesGalaxy(HasDriver):
                     break
             else:
                 # Pick first match. We're replacing select2 anyway ...
-                select_elem = elem
+                select_elem = candidate_elements[0]
             action_chains = self.action_chains()
             action_chains.move_to_element(select_elem).click().perform()
         self.wait_for_selector_absent_or_hidden("#select2-drop")
