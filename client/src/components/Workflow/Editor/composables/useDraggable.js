@@ -14,6 +14,8 @@ export function useDraggable(target, options = {}) {
     const draggingHandle = options.handle ?? target;
     const position = ref(resolveUnref(options.initialValue) ?? { x: 0, y: 0 });
     const pressedDelta = ref();
+    const cleanUpPointerMove = ref();
+    const cleanUpDragMove = ref();
 
     const filterEvent = (e) => {
         if (options.pointerTypes) {
@@ -47,20 +49,35 @@ export function useDraggable(target, options = {}) {
             return;
         }
         pressedDelta.value = pos;
-        handleEvent(e);
-    };
-    const move = (e) => {
-        if (!filterEvent(e)) {
-            return;
-        }
-        if (!pressedDelta.value) {
-            return;
-        }
-        position.value = {
-            x: e.pageX - pressedDelta.value.x,
-            y: e.pageY - pressedDelta.value.y,
+        // define move inline because the event lister scope never receives updates to the initial pressedDelta value
+        // (interestingly not a problem if using move directly)
+        const move = (e) => {
+            if (!filterEvent(e)) {
+                return;
+            }
+            if (!pressedDelta.value) {
+                return;
+            }
+            position.value = {
+                x: e.pageX - pressedDelta.value.x,
+                y: e.pageY - pressedDelta.value.y,
+            };
+            options.onMove?.(position.value, e);
+            handleEvent(e);
         };
-        options.onMove?.(position.value, e);
+        function throttleMove(e) {
+            return throttledWrite(() => move(e));
+        }
+
+        cleanUpPointerMove.value && cleanUpPointerMove.value();
+        cleanUpDragMove.value && cleanUpDragMove.value();
+        cleanUpDragMove.value = useEventListener(window, "dragover", throttleMove, options.useCapture ?? true);
+        cleanUpPointerMove.value = useEventListener(
+            draggingElement,
+            "pointermove",
+            throttleMove,
+            options.useCapture ?? true
+        );
         handleEvent(e);
     };
     const end = (e) => {
@@ -73,14 +90,14 @@ export function useDraggable(target, options = {}) {
         pressedDelta.value = undefined;
         options.onEnd?.(position.value, e);
         handleEvent(e);
+        cleanUpPointerMove.value && cleanUpPointerMove.value();
+        cleanUpDragMove.value && cleanUpDragMove.value();
     };
 
     if (isClient) {
         const useCapture = options.useCapture ?? true;
         useEventListener(draggingHandle, "dragstart", start, useCapture);
         useEventListener(draggingHandle, "pointerdown", start, useCapture);
-        useEventListener(draggingElement, "drag", move, useCapture);
-        useEventListener(draggingElement, "pointermove", move, useCapture);
         useEventListener(draggingElement, "dragend", end, useCapture);
         useEventListener(draggingElement, "pointerup", end, useCapture);
     }
@@ -92,3 +109,19 @@ export function useDraggable(target, options = {}) {
         style: computed(() => `left:${position.value.x}px;top:${position.value.y}px;`),
     };
 }
+
+function throttle(timer) {
+    let queuedCallback;
+    return (callback) => {
+        if (!queuedCallback) {
+            timer(() => {
+                const cb = queuedCallback;
+                queuedCallback = null;
+                cb();
+            });
+        }
+        queuedCallback = callback;
+    };
+}
+
+const throttledWrite = throttle(requestAnimationFrame);
