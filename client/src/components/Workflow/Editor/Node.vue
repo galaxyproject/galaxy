@@ -62,10 +62,9 @@
             {{ errors }}
         </b-alert>
         <div v-else class="node-body" @click="makeActive">
-            <loading-span v-if="showLoading" message="Loading details" />
             <node-input
                 v-for="input in inputs"
-                :key="nodeIOKey(input.name, position)"
+                :key="input.name"
                 :input="input"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
@@ -146,12 +145,7 @@ const emit = defineEmits([
 ]);
 
 // const popoverShow = ref(false)
-const showLoading = ref(false);
 const scrolledTo = ref(false);
-
-function nodeIOKey(key: string, position: UnwrapRef<UseElementBoundingReturn>) {
-    return key + position?.left + position?.right;
-}
 
 function onRemove() {
     emit("onRemove", props.id);
