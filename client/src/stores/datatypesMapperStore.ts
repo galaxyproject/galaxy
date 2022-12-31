@@ -20,6 +20,7 @@ export const useDatatypesMapperStore = defineStore("datatypesMapperStore", {
                 this.loading = true;
                 try {
                     this.datatypesMapper = await getDatatypesMapper(false);
+                    this.loading = false;
                 } catch (error) {
                     this.loading = false;
                     rethrowSimple(error);
