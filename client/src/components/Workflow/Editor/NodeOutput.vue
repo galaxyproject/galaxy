@@ -44,7 +44,7 @@
 import DraggableWrapper from "./DraggablePan";
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useTerminal } from "./composables/useTerminal";
-import { ref, computed, watch, nextTick, watchEffect, toRefs } from "vue";
+import { ref, computed, watch, nextTick, toRefs } from "vue";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu";

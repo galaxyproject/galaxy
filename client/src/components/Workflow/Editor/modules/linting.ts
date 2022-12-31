@@ -12,7 +12,6 @@ interface LintState {
     autofix?: boolean;
 }
 
-// TODO: steps
 export function getDisconnectedInputs(steps: Steps = {}, datatypesMapper: DatatypesMapperModel) {
     const inputs: LintState[] = [];
     Object.values(steps).forEach((step) => {
@@ -63,7 +62,6 @@ export function getMissingMetadata(steps: Steps) {
     return inputs;
 }
 
-// TODO: steps
 export function getUnlabeledOutputs(steps: Steps) {
     const outputs: LintState[] = [];
     Object.values(steps).forEach((step) => {
