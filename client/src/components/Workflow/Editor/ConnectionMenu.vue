@@ -2,8 +2,9 @@
     <b-list-group id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
         <b-list-group-item
             v-for="(input, index) in allElements"
+            :key="input.inputLabel + input.stepId"
             ref="menuItem"
-            role="menu-item"
+            role="menuitem"
             tabindex="0"
             :active="activeElement === index"
             @click="toggleConnection(input)"
