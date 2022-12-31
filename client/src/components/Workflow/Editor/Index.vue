@@ -260,7 +260,7 @@ export default {
         const stateStore = useWorkflowStateStore();
         const { activeNodeId } = storeToRefs(stateStore);
         const activeStep = computed(() => {
-            if (activeNodeId.value) {
+            if (activeNodeId.value !== null) {
                 return stepStore.getStep(activeNodeId.value);
             }
             return null;
@@ -277,7 +277,7 @@ export default {
         return {
             connectionsStore,
             stepStore,
-            steps: steps,
+            steps,
             nodeIndex: getStepIndex,
             datatypes,
             activeStep,
@@ -515,7 +515,7 @@ export default {
             this._insertStep(tool_id, tool_name, "tool");
         },
         onInsertModule(module_id, module_name) {
-            this._insertStep(null, module_name, module_id);
+            this._insertStep(module_name, module_name, module_id);
         },
         onInsertWorkflow(workflow_id, workflow_name) {
             this._insertStep(workflow_id, workflow_name, "subworkflow");
@@ -693,15 +693,23 @@ export default {
                 this.isCanvas = true;
                 return;
             }
-            this.stepStore.addStep({
-                inputs: [],
-                input_connections: {},
+            const stepData = {
                 name: name,
                 content_id: contentId,
                 type: type,
                 position: defaultPosition(this.graphOffset, this.transform),
+                post_job_actions: {},
+            };
+            getModule(stepData).then((response) => {
+                const { id } = this.stepStore.addStep({
+                    ...stepData,
+                    tool_state: response.tool_state,
+                    inputs: response.inputs,
+                    outputs: response.outputs,
+                    config_form: response.config_form,
+                });
+                this.stateStore.setActiveNode(id);
             });
-            this.stateStore.setActiveNode(this.nodeIndex);
         },
         async _loadEditorData(data) {
             const report = data.report || {};

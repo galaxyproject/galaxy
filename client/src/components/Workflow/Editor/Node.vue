@@ -18,7 +18,7 @@
                 size="sm"
                 aria-label="destroy node"
                 title="Remove"
-                @click.prevent.stop="onRemove">
+                @click.prevent.stop="remove">
                 <i class="fa fa-times" />
             </b-button>
             <b-button
@@ -147,7 +147,7 @@ const emit = defineEmits([
 // const popoverShow = ref(false)
 const scrolledTo = ref(false);
 
-function onRemove() {
+function remove() {
     emit("onRemove", props.id);
 }
 
