@@ -69,9 +69,10 @@
                     <svg id="gantt"></svg>
                 </div>
                 <DateTimeModal
-                    v-if="openModal"
+                    v-show="openModal"
                     :dateTimeVal="dateTimeVal"
                     :openModal="openModal"
+                    :static="true"
                     @closeModal="closeModal"
                     @changeDate="changeDate" />
             </div>

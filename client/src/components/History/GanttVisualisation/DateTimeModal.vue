@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div id="dateTimeModal">
         <transition name="modal">
             <div class="modal-mask">
                 <div class="modal-wrapper">
@@ -26,6 +26,7 @@
                                             ></b-col>
                                             <b-col
                                                 ><button
+                                                    id="confirmDate"
                                                     @click="
                                                         $emit('changeDate', date, 'confirmed');
                                                         $emit('closeModal');
