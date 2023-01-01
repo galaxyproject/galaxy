@@ -4,12 +4,10 @@ import "utils/uploadbox";
 import { mount, createLocalVue } from "@vue/test-utils";
 import BootstrapVue from "bootstrap-vue";
 
-export const createMockApp = (options = {}) => {
+export const createMockDetails = (options = {}) => {
     return _.defaults(options, {
         defaultExtension: "auto",
-        currentFtp: () => {
-            return "ftp://localhost";
-        },
+        currentFtp: "ftp://localhost",
         model: new Backbone.Model(),
         effectiveExtensions: [
             { id: "ab1", text: "ab1", description: "A binary sequence file in 'ab1' format with a '.ab1'" },
@@ -34,9 +32,9 @@ export const createMockApp = (options = {}) => {
     });
 };
 
-export function mountWithApp(component, options = {}, propsData_ = {}) {
-    const app = createMockApp(options);
-    const propsData = _.defaults(propsData_, { app });
+export function mountWithDetails(component, options = {}, propsData_ = {}) {
+    const details = createMockDetails(options);
+    const propsData = _.defaults(propsData_, { details });
 
     const localVue = createLocalVue();
     localVue.use(BootstrapVue);
