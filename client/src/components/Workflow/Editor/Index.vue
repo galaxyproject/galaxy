@@ -106,16 +106,8 @@
                             <div>
                                 <FormTool
                                     v-if="hasActiveNodeTool"
-                                    :key="activeNodeId"
-                                    :node-id="activeNodeId"
-                                    :node-annotation="activeNodeAnnotation"
-                                    :node-label="activeNodeLabel"
-                                    :node-inputs="activeNodeInputs"
-                                    :node-outputs="activeNodeOutputs"
                                     :step="activeStep"
-                                    :config-form="activeNodeConfigForm"
                                     :datatypes="datatypes"
-                                    :post-job-actions="postJobActions"
                                     @onChangePostJobActions="onChangePostJobActions"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
@@ -123,15 +115,6 @@
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
                                     :step="activeStep"
-                                    :node-name="activeNodeName"
-                                    :node-id="activeNodeId"
-                                    :node-content-id="activeNodeContentId"
-                                    :node-annotation="activeNodeAnnotation"
-                                    :node-label="activeNodeLabel"
-                                    :node-type="activeNodeType"
-                                    :node-outputs="activeNodeOutputs"
-                                    :node-active-outputs="activeNodeActiveOutputs"
-                                    :config-form="activeNodeConfigForm"
                                     :datatypes="datatypes"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
@@ -324,35 +307,6 @@ export default {
         },
         showLint() {
             return this.showInPanel == "lint";
-        },
-        postJobActions() {
-            return this.activeStep?.post_job_actions;
-        },
-        activeNodeName() {
-            return this.activeStep?.label || this.activeStep?.content_id;
-        },
-        activeNodeContentId() {
-            return this.activeStep?.contentId;
-        },
-        activeNodeLabel() {
-            return this.activeStep?.label;
-        },
-        activeNodeAnnotation() {
-            return this.activeStep?.annotation;
-        },
-        activeNodeConfigForm() {
-            return this.activeStep?.config_form;
-        },
-        activeNodeInputs() {
-            return this.activeStep?.inputs;
-        },
-        activeNodeOutputs() {
-            return this.activeStep?.outputs;
-        },
-        activeNodeActiveOutputs() {
-            // TODO: track activeOutputs in stateStore
-            // return this.activeNode?.activeOutputs;
-            return null;
         },
         activeNodeType() {
             return this.activeStep?.type;

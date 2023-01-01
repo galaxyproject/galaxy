@@ -15,14 +15,14 @@
             <template v-slot:body>
                 <FormElement
                     id="__label"
-                    :value="nodeLabel"
+                    :value="label"
                     title="Label"
                     help="Add a step label."
                     :error="uniqueErrorLabel"
                     @input="onLabel" />
                 <FormElement
                     id="__annotation"
-                    :value="nodeAnnotation"
+                    :value="annotation"
                     title="Step Annotation"
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
@@ -41,9 +41,9 @@
                 <div class="mt-2 mb-4">
                     <Heading h2 separator bold size="sm"> Additional Options </Heading>
                     <FormSection
-                        :id="nodeId"
-                        :node-inputs="nodeInputs"
-                        :node-outputs="nodeOutputs"
+                        :id="stepId"
+                        :node-inputs="stepInputs"
+                        :node-outputs="stepOutputs"
                         :step="step"
                         :datatypes="datatypes"
                         :post-job-actions="postJobActions"
@@ -64,6 +64,8 @@ import Utils from "utils/utils";
 import Heading from "components/Common/Heading";
 import { useWorkflowStepStore, Step } from "@/stores/workflowStepStore";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
+import { useStepProps } from "../composables/useStepProps";
+import { toRef } from "vue";
 
 export default {
     components: {
@@ -75,47 +77,22 @@ export default {
         Heading,
     },
     props: {
-        nodeId: {
-            type: Number,
-            required: true,
-        },
-        nodeAnnotation: {
-            type: String,
-            required: false,
-        },
-        nodeLabel: {
-            type: String,
-            required: false,
-        },
-        nodeInputs: {
-            type: Array,
-            required: true,
-        },
-        nodeOutputs: {
-            type: Array,
-            required: true,
-        },
         step: {
             type: Step,
-            required: true,
-        },
-        configForm: {
-            type: Object,
             required: true,
         },
         datatypes: {
             type: Array,
             required: true,
         },
-        postJobActions: {
-            type: Object,
-            required: true,
-        },
     },
     setup(props) {
+        const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
+            toRef(props, "step")
+        );
         const stepStore = useWorkflowStepStore();
-        const uniqueErrorLabel = useUniqueLabelError(stepStore, props.nodeLabel);
-        return { uniqueErrorLabel };
+        const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
+        return { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions, uniqueErrorLabel };
     },
     data() {
         return {
@@ -126,10 +103,10 @@ export default {
     },
     computed: {
         id() {
-            return `${this.nodeId}:${this.configForm.id}`;
+            return `${this.stepId}:${this.configForm.id}`;
         },
         toolCardId() {
-            return `${this.nodeId}`;
+            return `${this.stepId}`;
         },
         hasData() {
             return !!this.configForm?.id;
@@ -167,17 +144,17 @@ export default {
     },
     methods: {
         onAnnotation(newAnnotation) {
-            this.$emit("onAnnotation", this.nodeId, newAnnotation);
+            this.$emit("onAnnotation", this.stepId, newAnnotation);
         },
         onLabel(newLabel) {
-            this.$emit("onLabel", this.nodeId, newLabel);
+            this.$emit("onLabel", this.stepId, newLabel);
         },
         onChange(values) {
             this.mainValues = values;
             this.postChanges();
         },
         onChangePostJobActions(postJobActions) {
-            this.$emit("onChangePostJobActions", this.nodeId, postJobActions);
+            this.$emit("onChangePostJobActions", this.stepId, postJobActions);
         },
         onChangeVersion(newVersion) {
             this.messageText = `Now you are using '${this.configForm.name}' version ${newVersion}.`;
@@ -195,7 +172,7 @@ export default {
                 toolId = toolId.replace(toolVersion, newVersion);
                 toolVersion = newVersion;
             }
-            this.$emit("onSetData", this.nodeId, {
+            this.$emit("onSetData", this.stepId, {
                 tool_id: toolId,
                 tool_version: toolVersion,
                 type: "tool",

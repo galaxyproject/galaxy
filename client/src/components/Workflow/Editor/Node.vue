@@ -95,11 +95,12 @@
 </template>
 
 <script lang="ts" setup>
-import type { PropType, Ref, UnwrapRef } from "vue";
+import type { PropType, Ref } from "vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "@/components/Workflow/icons";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+// TODO: implemnt scheme for loading tool state here
+// import LoadingSpan from "@/components/LoadingSpan.vue";
 import { getGalaxyInstance } from "@/app";
 // import Recommendations from "components/Workflow/Editor/Recommendations";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";

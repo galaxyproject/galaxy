@@ -1,4 +1,4 @@
-import { reactive, unref, watchEffect, inject, type UnwrapRef, type Ref, ref } from "vue";
+import { reactive, watchEffect, inject, type UnwrapRef, type Ref } from "vue";
 import { useElementBounding, type MaybeComputedElementRef, type UseElementBoundingReturn } from "@vueuse/core";
 import type { Step } from "@/stores/workflowStepStore";
 import type { ZoomTransform } from "d3-zoom";
