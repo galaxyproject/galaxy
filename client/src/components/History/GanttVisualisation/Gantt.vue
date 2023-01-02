@@ -12,6 +12,13 @@
                     show>
                     <EmptyHistory />
                 </b-alert>
+                <b-alert
+                    v-else-if="noMinuteJobs"
+                    class="m-2"
+                    variant="info"
+                    show>
+                    <EmptyHistory message="No jobs lie in the specified time-span"/>
+                </b-alert>
                 <div class="sticky">
                     <div class="timeButtonsDiv">
                         <button
@@ -113,6 +120,7 @@ export default {
         const historyItems = ref(piniaStore.items[historyId.value]);
         const gantt = ref();
         const ganttView = ref("Hour");
+        const noMinuteJobs = ref(false)
         const currentlyProcessing = ref(false);
         const isLoading = ref(true);
         const openModal = ref(false);
@@ -173,7 +181,8 @@ export default {
         function makeGantt() {
             var entries = [];
             if (ganttView.value == "Minute") {
-                accountingArrayMinutes.value.map((row, idx) => {
+                if(accountingArrayMinutes.value.length > 0) {
+                    accountingArrayMinutes.value.map((row, idx) => {
                     createClassWithCSS(
                         `.class-${row["id"]} .bar-progress`,
                         `fill : ${keyedColorScheme(`random-${row["label"]}`)["primary"]} !important`
@@ -187,7 +196,11 @@ export default {
                         progress: 100,
                         custom_class: `class-${row["id"]}`,
                     });
-                });
+                    });
+                } else {
+                    clearGrid()
+                }
+                
             } else {
                 accountingArray.value.map((row, idx) => {
                     createClassWithCSS(
@@ -240,6 +253,18 @@ export default {
                 accountingArrayMinutes.value = [];
                 container[0].innerHTML = "";
             }
+        }
+
+        function clearGrid() {
+            var parent = document.querySelector("#gantt")
+            parent.remove()
+            var div_svg = document.createElement('div')
+            var xmlns = "http://www.w3.org/2000/svg";
+            var svg = document.createElementNS(xmlns, 'svg')
+            svg.setAttribute('id', 'gantt')
+            div_svg.appendChild(svg)
+            document.querySelector('.gantt-container').appendChild(div_svg)
+            noMinuteJobs.value = true
         }
 
         async function historyContent() {
@@ -325,36 +350,42 @@ export default {
 
         function changeQDayView() {
             clearPopups();
+            noMinuteJobs.value = false
             ganttView.value = "Quarter Day";
             gantt.value.change_view_mode("Quarter Day");
         }
 
         function changeHDayView() {
             clearPopups();
+            noMinuteJobs.value = false
             ganttView.value = "Half Day";
             gantt.value.change_view_mode("Half Day");
         }
 
         function changeDayView() {
             clearPopups();
+            noMinuteJobs.value = false
             ganttView.value = "Day";
             gantt.value.change_view_mode("Day");
         }
 
         function changeWeekView() {
             clearPopups();
+            noMinuteJobs.value = false
             ganttView.value = "Week";
             gantt.value.change_view_mode("Week");
         }
 
         function changeMonthView() {
             clearPopups();
+            noMinuteJobs.value = false
             ganttView.value = "Month";
             gantt.value.change_view_mode("Month");
         }
 
         function changeHourView() {
             clearPopups();
+            noMinuteJobs.value = false
             ganttView.value = "Hour";
             gantt.value.change_view_mode("Hour");
         }
@@ -449,6 +480,7 @@ export default {
         return {
             isLoading,
             emptyHistory,
+            noMinuteJobs,
             changeMonthView,
             changeWeekView,
             changeQDayView,
