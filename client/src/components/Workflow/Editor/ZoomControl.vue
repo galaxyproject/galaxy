@@ -39,89 +39,68 @@
             @click="onResetAll" />
         <label
             >panX
-            <input
-                type="number"
-                :value="pan.x"
-                @change="$emit('update:pan', { x: parseInt($event.target.value), y: pan.x })" />
+            <input type="number" :value="pan.x" />
         </label>
         <label
             >panY
-            <input
-                type="number"
-                :value="pan.y"
-                @change="$emit('update:pan', { x: pan.x, y: parseInt($event.target.value) })" />
+            <input type="number" :value="pan.y" />
         </label>
     </span>
 </template>
 
-<script>
-import Vue from "vue";
+<script lang="ts" setup>
+import Vue, { computed } from "vue";
 import BootstrapVue from "bootstrap-vue";
+import type { XYPosition } from "@/stores/workflowEditorStateStore";
 
 Vue.use(BootstrapVue);
 
-export default {
-    props: {
-        zoomLevel: {
-            type: Number,
-            default: 1,
-        },
-        pan: {
-            type: Object,
-        },
-    },
-    data() {
-        return {
-            zoomLevels: [
-                0.1, 0.2, 0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9,
-                10,
-            ],
-            zoomDefault: 1,
-        };
-    },
+const props = withDefaults(
+    defineProps<{
+        zoomLevel: number;
+        pan: XYPosition;
+    }>(),
+    {
+        zoomLevel: 1,
+    }
+);
+const emit = defineEmits(["onZoom", "reset-all"]);
 
-    computed: {
-        isMin() {
-            return Math.round(this.zoomLevel * 100) == Math.round(this.zoomLevels[0] * 100);
-        },
-        isMax() {
-            return Math.round(this.zoomLevel * 100) == Math.round(this.zoomLevels.at(-1) * 100);
-        },
-        zoomPercentage() {
-            return Math.round(this.zoomLevel * 100);
-        },
-        index() {
-            let index = this.zoomLevels.indexOf(this.zoomLevel);
-            if (index < 0) {
-                const closest = this.zoomLevels.reduce((prev, curr) => {
-                    return Math.abs(curr - this.zoomLevel) < Math.abs(prev - this.zoomLevel) ? curr : prev;
-                });
-                index = this.zoomLevels.indexOf(closest);
-            }
-            return index;
-        },
-    },
-    methods: {
-        onZoomIn() {
-            const zoomLevel = this.zoomLevels[this.index + 1];
-            if (zoomLevel) {
-                this.$emit("onZoom", zoomLevel);
-            }
-        },
-        onZoomOut() {
-            const zoomLevel = this.zoomLevels[this.index - 1];
-            if (zoomLevel) {
-                this.$emit("onZoom", zoomLevel);
-            }
-        },
-        onZoomReset() {
-            this.$emit("onZoom", this.zoomDefault);
-        },
-        onResetAll() {
-            this.$emit("reset-all");
-        },
-    },
-};
+const zoomDefault = 1;
+const zoomLevels = [
+    0.1, 0.2, 0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4, 5, 6, 7, 8, 9, 10,
+];
+const isMin = computed(() => Math.round(props.zoomLevel * 100) == Math.round(zoomLevels[0] * 100));
+const isMax = computed(() => Math.round(props.zoomLevel * 100) == Math.round(zoomLevels.at(-1)! * 100));
+const zoomPercentage = computed(() => Math.round(props.zoomLevel * 100));
+const index = computed(() => {
+    let index = zoomLevels.indexOf(props.zoomLevel);
+    if (index < 0) {
+        const closest = zoomLevels.reduce((prev, curr) => {
+            return Math.abs(curr - props.zoomLevel) < Math.abs(prev - props.zoomLevel) ? curr : prev;
+        });
+        index = zoomLevels.indexOf(closest);
+    }
+    return index;
+});
+function onZoomIn() {
+    const zoomLevel = zoomLevels[index.value + 1];
+    if (zoomLevel) {
+        emit("onZoom", zoomLevel);
+    }
+}
+function onZoomOut() {
+    const zoomLevel = zoomLevels[index.value - 1];
+    if (zoomLevel) {
+        emit("onZoom", zoomLevel);
+    }
+}
+function onZoomReset() {
+    emit("onZoom", zoomDefault);
+}
+function onResetAll() {
+    emit("reset-all");
+}
 </script>
 
 <style scoped>
