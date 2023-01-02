@@ -33,7 +33,7 @@ const localVue = getLocalVue();
 
 describe("gantt component", () => {
     let wrapper;
-    let  Modal;
+    let Modal;
 
     beforeEach(async () => {
         wrapper = shallowMount(Gantt, {
@@ -101,5 +101,4 @@ describe("gantt component", () => {
         await wrapper.setData({ openModal: false });
         expect(mod.isVisible()).toBe(false);
     });
-
 });
