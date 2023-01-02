@@ -15,7 +15,6 @@
                         :id="step.id"
                         :key="key"
                         :name="step.name"
-                        :type="step.type"
                         :content-id="step.content_id"
                         :step="step"
                         :datatypes-mapper="datatypesMapper"

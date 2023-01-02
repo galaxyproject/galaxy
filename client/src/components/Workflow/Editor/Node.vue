@@ -120,7 +120,6 @@ const props = defineProps({
     id: { type: Number, required: true },
     contentId: { type: String as PropType<string | null> },
     name: { type: String as PropType<string | null> },
-    type: { type: String, required: true },
     step: { type: Object as PropType<Step>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
     activeNodeId: {
