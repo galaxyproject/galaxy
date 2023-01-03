@@ -409,7 +409,7 @@ def validate_create_action(ro_crate: ROCrate):
     assert wf_action["instrument"] is workflow
     wf_objects = wf_action["object"]
     wf_results = wf_action["result"]
-    assert len(wf_objects) == 0
+    assert len(wf_objects) == 1
     assert len(wf_results) == 1
     for entity in wf_results:
         if entity.id.endswith(".txt"):
@@ -804,10 +804,12 @@ def _setup_invocation(app):
     sa_session = app.model.context
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
+    j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
+    workflow_step_1.tool_inputs = "data_input"
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
@@ -819,6 +821,8 @@ def _setup_invocation(app):
     invocation_step.job = j
     sa_session.add(invocation_step)
     input_assoc = model.WorkflowRequestToInputDatasetAssociation()
+    input_assoc.workflow_invocation = workflow_invocation
+    input_assoc.workflow_step = workflow_step_1
     input_assoc.dataset = d1
     invocation_step.input_datasets = [input_assoc]
     output_assoc = model.WorkflowInvocationStepOutputDatasetAssociation()

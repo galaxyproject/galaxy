@@ -17,6 +17,7 @@ from rocrate.rocrate import ROCrate
 from galaxy.model import (
     JobToInputDatasetAssociation,
     JobToOutputDatasetAssociation,
+    JobParameter,
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
@@ -190,6 +191,12 @@ class WorkflowRunCrateProfileBuilder:
                     dataset_id = job_output.dataset.dataset.id
                     output_file_entity = file_entities.get(dataset_id)
                     workflow_outputs.append(output_file_entity)
+                for param in job.parameters:
+                    property_value = self._add_job_property_value(crate, param)
+                    workflow_inputs.append(property_value)
+                    # need a new function?
+                    formal_param = self._add_formal_parameter(crate, output_step.workflow_step)
+                    input_formal_params.append(formal_param)
             if output_step.workflow_step.type == "parameter_input":
                 property_value = self._add_param_property_value(crate, output_step)
                 workflow_inputs.append(property_value)
@@ -225,16 +232,17 @@ class WorkflowRunCrateProfileBuilder:
         self.main_action = input_param_value
 
     def _add_formal_parameter(self, crate: ROCrate, step: WorkflowStep, tool_input: Optional[str] = None):
+        param_id = ""
+        param_type = None
         if not tool_input:
-            param_id = step.output_connections[0].input_name
-            param_type = None
+            if step.output_connections:
+                param_id = step.output_connections[0].input_name
             if step.annotations:
                 param_type = step.annotations[0].workflow_step.tool_inputs.get("parameter_type")
-
-            param_type = param_type or step.tool_inputs.get("parameter_type")
+            if step.tool_inputs:
+                param_type = param_type or step.tool_inputs.get("parameter_type")
         else:
             param_id = tool_input
-            param_type = None
 
         return crate.add(
             ContextEntity(
@@ -250,6 +258,33 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
+    
+    # def _add_formal_parameter_job(self, crate: ROCrate, param: JobParameter):
+    #     if not tool_input:
+    #         param_id = step.output_connections[0].input_name
+    #         param_type = None
+    #         if step.annotations:
+    #             param_type = step.annotations[0].workflow_step.tool_inputs.get("parameter_type")
+
+    #         param_type = param_type or step.tool_inputs.get("parameter_type")
+    #     else:
+    #         param_id = tool_input
+    #         param_type = None
+
+    #     return crate.add(
+    #         ContextEntity(
+    #             crate,
+    #             f"{param}-param",
+    #             # step.uuid.urn,
+    #             properties={
+    #                 "@type": "FormalParameter",
+    #                 "additionalType": self.param_type_mapping[param_type],
+    #                 "description": step.annotations[0].annotation if step.annotations else "",
+    #                 "name": f"{step.label} parameter",
+    #                 "valueRequired": not step.input_optional,
+    #             },
+    #         )
+    #     )
 
     def _add_formal_parameter_input(self, crate: ROCrate, input: JobToInputDatasetAssociation):
         # TODO: add more details for output formal definitions?
@@ -280,6 +315,25 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
+
+    def _add_job_property_value(self, crate: ROCrate, param: JobParameter):
+        input_name = param.name
+        if self.pv_entities.get(input_name):
+            return
+        job_pv = crate.add(
+            ContextEntity(
+                crate,
+                f"{input_name}-pv",
+                properties={
+                    "@type": "PropertyValue",
+                    "name": input_name,
+                    "value": param.value,
+                    "exampleOfWork": {"@id": f"{input_name}-param"},
+                },
+            )
+        )
+        self.pv_entities[input_name] = job_pv
+        return job_pv
 
     def _add_wf_property_value(self, crate: ROCrate, param: WorkflowRequestInputStepParameter):
         input_name = param.workflow_step.output_connections[0].input_name
@@ -314,7 +368,6 @@ class WorkflowRunCrateProfileBuilder:
                     "name": tool_input,
                     "value": invocation_step.workflow_step.tool_inputs[tool_input],
                     "exampleOfWork": {"@id": f"{tool_input}-param"},
-                    # invocation_step.workflow_step.uuid.urn
                 },
             )
         )
