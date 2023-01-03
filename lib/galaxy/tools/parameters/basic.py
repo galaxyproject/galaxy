@@ -542,7 +542,7 @@ class BooleanToolParameter(ToolParameter):
     >>> p = BooleanToolParameter(None, XML('<param name="_name" type="boolean" checked="yes" truevalue="_truevalue" falsevalue="_falsevalue" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', 'true')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('argument', None), ('falsevalue', '_falsevalue'), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'BooleanToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('truevalue', '_truevalue'), ('type', 'boolean'), ('value', True)]
     >>> print(p.from_json('true'))
     True
     >>> print(p.to_param_dict_string(True))
@@ -551,6 +551,12 @@ class BooleanToolParameter(ToolParameter):
     False
     >>> print(p.to_param_dict_string(False))
     _falsevalue
+    >>> value = p.to_json('false', trans.app, use_security=False)
+    >>> assert isinstance(value, bool)
+    >>> assert value == False
+    >>> value = p.to_json(True, trans.app, use_security=False)
+    >>> assert isinstance(value, bool)
+    >>> assert value == True
     """
 
     def __init__(self, tool, input_source):
