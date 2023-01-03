@@ -4,7 +4,8 @@ import Lint from "./Lint.vue";
 import { getUntypedWorkflowParameters } from "./modules/parameters";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { createPinia, setActivePinia, PiniaVuePlugin } from "pinia";
+import { PiniaVuePlugin } from "pinia";
+import { createTestingPinia } from "@pinia/testing";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
@@ -84,8 +85,6 @@ describe("Lint", () => {
     let stepStore;
 
     beforeEach(() => {
-        const pinia = createPinia();
-        setActivePinia(pinia);
         wrapper = mount(Lint, {
             propsData: {
                 untypedParameters: getUntypedWorkflowParameters(steps),
@@ -96,9 +95,7 @@ describe("Lint", () => {
                 datatypesMapper: testDatatypesMapper,
             },
             localVue,
-            global: {
-                plugins: [pinia],
-            },
+            pinia: createTestingPinia({ stubActions: false }),
         });
         stepStore = useWorkflowStepStore();
         Object.values(steps).map((step) => stepStore.addStep(step));
