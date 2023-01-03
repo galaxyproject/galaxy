@@ -1577,7 +1577,7 @@ def test_tests_asserts(lint_ctx):
         "Test 1: unknown attribute 'invalid_attrib_also_checked_in_nested_asserts' for 'not_has_text'"
         in lint_ctx.error_messages
     )
-    assert "Test 1: 'has_size' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
+    assert "Test 1: 'has_size' needs to specify 'value', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_columns' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert "Test 1: 'has_n_lines' needs to specify 'n', 'min', or 'max'" in lint_ctx.error_messages
     assert not lint_ctx.warn_messages

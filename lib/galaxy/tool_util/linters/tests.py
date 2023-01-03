@@ -214,7 +214,7 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                     lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
             if a.tag == "has_size":
                 if "value" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
+                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'value', 'min', or 'max'", node=a)
 
 
 def _handle_optionals(annotation):
