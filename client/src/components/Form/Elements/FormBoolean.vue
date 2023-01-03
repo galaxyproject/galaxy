@@ -12,7 +12,7 @@ const emit = defineEmits<{
 
 const currentValue = computed({
     get() {
-        return ["true", true].includes(props.value);
+        return String(props.value).toLowerCase() === "true";
     },
     set(newValue) {
         emit("input", newValue);
