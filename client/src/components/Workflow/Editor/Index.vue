@@ -555,6 +555,7 @@ export default {
                 // also check that PJAs and other modification survive, or limit to input/output ?
                 const step = {
                     ...this.steps[nodeId],
+                    content_id: data.content_id,
                     inputs: data.inputs,
                     outputs: data.outputs,
                     config_form: data.config_form,
