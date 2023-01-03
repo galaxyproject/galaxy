@@ -30,7 +30,7 @@
                 </div>
             </d3-zoom>
         </div>
-        <Minimap
+        <workflow-minimap
             v-if="position"
             :steps="steps"
             :root-offset="position"
@@ -44,7 +44,7 @@
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
-import Minimap from "@/components/Workflow/Editor/Minimap.vue";
+import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import { computed, reactive, ref } from "vue";
 import { useElementBounding } from "@vueuse/core";
 import D3Zoom from "@/components/Workflow/Editor/D3Zoom.vue";
