@@ -1,10 +1,15 @@
 <template>
     <div class="infomessagelarge">
-        <p v-if="entryPoints.length == 0">Waiting for InteractiveTool result view(s) to become available.</p>
-        <p v-else-if="entryPoints.length == 1">
-            <span v-if="entryPoints[0].active">
+        <p v-if="entryPointsForJob(jobId).length == 0">
+            Waiting for InteractiveTool result view(s) to become available.
+        </p>
+        <p v-else-if="entryPointsForJob(jobId).length == 1">
+            <span v-if="entryPointsForJob(jobId)[0].active">
                 There is an InteractiveTool result view available,
-                <a :href="entryPoints[0].target">click here to display</a>.
+                <a v-b-tooltip title="Open Interactive Tool" :href="entryPointsForJob(jobId)[0].target" target="_blank">
+                    Open
+                    <font-awesome-icon icon="external-link-alt" />
+                </a>
             </span>
             <span v-else>
                 There is an InteractiveTool result view available, waiting for view to become active...
@@ -13,9 +18,14 @@
         <div v-else>
             There are multiple InteractiveTool result views available:
             <ul>
-                <li v-for="entryPoint of entryPoints" :key="entryPoint.id">
+                <li v-for="entryPoint of entryPointsForJob(jobId)" :key="entryPoint.id">
                     {{ entryPoint.name }}
-                    <span v-if="entryPoint.active"> (<a :href="entryPoint.target">click here to display</a>) </span>
+                    <span v-if="entryPoint.active">
+                        <a v-b-tooltip title="Open Interactive Tool" :href="entryPoint.target" target="_blank">
+                            (Open
+                            <font-awesome-icon icon="external-link-alt" />)
+                        </a>
+                    </span>
                     <span v-else> (waiting to become active...) </span>
                 </li>
             </ul>
@@ -27,42 +37,36 @@
 </template>
 
 <script>
-import { clearPolling, pollUntilActive } from "./poll";
+import { mapActions, mapState } from "pinia";
+import { useEntryPointStore } from "stores/entryPointStore";
 import { getAppRoot } from "onload/loadConfig";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faExternalLinkAlt);
 
 export default {
+    components: {
+        FontAwesomeIcon,
+    },
     props: {
         jobId: {
             type: String,
             required: true,
         },
     },
-    data() {
-        return {
-            entryPoints: [],
-        };
-    },
     computed: {
+        ...mapState(useEntryPointStore, ["entryPointsForJob"]),
         interactiveToolsLink: function () {
             return getAppRoot() + "interactivetool_entry_points/list";
         },
     },
     created: function () {
-        this.pollEntryPoints();
-    },
-    beforeDestroy: function () {
-        clearPolling();
+        this.ensurePollingEntryPoints();
     },
     methods: {
-        pollEntryPoints: function () {
-            const onUpdate = (entryPoints) => {
-                this.entryPoints = entryPoints;
-            };
-            const onError = (e) => {
-                console.error(e);
-            };
-            pollUntilActive(onUpdate, onError, { job_id: this.jobId });
-        },
+        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints"]),
     },
 };
 </script>
