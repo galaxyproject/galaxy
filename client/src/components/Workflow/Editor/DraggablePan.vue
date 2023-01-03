@@ -21,7 +21,7 @@ export default {
     props: {
         rootOffset: {
             type: Object,
-            required: false,
+            required: true,
         },
         scale: {
             type: Number,
@@ -39,6 +39,7 @@ export default {
         dragData: {
             type: Object,
             required: false,
+            default: null,
         },
     },
     data() {

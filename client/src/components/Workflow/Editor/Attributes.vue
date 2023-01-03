@@ -85,12 +85,14 @@ export default {
         },
         annotation: {
             type: String,
+            default: null,
         },
         license: {
             type: String,
             default: "",
         },
         creator: {
+            type: Object,
             default: null,
         },
         version: {

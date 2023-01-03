@@ -54,6 +54,7 @@ export default {
         },
         rootOffset: {
             type: Object,
+            required: true,
         },
     },
     setup(props, { emit }) {

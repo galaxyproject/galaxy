@@ -88,8 +88,8 @@ export async function autoLayout(steps: { [index: string]: Step }) {
     try {
         const elkNode = await elk.layout(newGraph);
         // Reapply positions to galaxy graph from our relayed out graph.
-        const newSteps = elkNode.children!.map((q) => {
-            const newStep = { ...steps[q.id], position: { top: q.y!, left: q.x! } };
+        const newSteps = elkNode.children?.map((q) => {
+            const newStep = { ...steps[q.id], position: { top: q.y, left: q.x } };
             return newStep;
         });
         return newSteps;

@@ -21,7 +21,7 @@ export function getDisconnectedInputs(steps: Steps = {}, datatypesMapper: Dataty
                 const inputLabel = inputSource.label || inputSource.name;
                 inputs.push({
                     stepId: step.id,
-                    stepLabel: (step.label || step.content_id)!, // label but falls back to tool title...
+                    stepLabel: step.label || step.content_id || step.name,
                     warningLabel: inputLabel,
                     inputName: inputSource.name,
                     autofix: !inputTerminal.multiple,
@@ -53,7 +53,7 @@ export function getMissingMetadata(steps: Steps) {
             if (warningLabel) {
                 inputs.push({
                     stepId: step.id,
-                    stepLabel: (step.label || step.content_id)!,
+                    stepLabel: step.label || step.content_id || step.name,
                     warningLabel: warningLabel,
                 });
             }
@@ -76,7 +76,7 @@ export function getUnlabeledOutputs(steps: Steps) {
             if (!workflowOutput.label) {
                 outputs.push({
                     stepId: step.id,
-                    stepLabel: (step.label || step.content_id)!, // label but falls back to tool title...
+                    stepLabel: step.label || step.content_id || step.name,
                     warningLabel: workflowOutput.output_name,
                     autofix: true,
                 });

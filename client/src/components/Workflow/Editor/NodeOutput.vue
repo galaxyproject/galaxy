@@ -5,6 +5,7 @@
             v-b-tooltip
             :class="['callout-terminal', output.name]"
             title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
+            @keyup="onToggle"
             @click="onToggle">
             <i :class="['mark-terminal', activeClass]" />
         </div>
@@ -77,6 +78,7 @@ export default {
         },
         stepPosition: {
             type: Object,
+            required: true,
         },
         rootOffset: {
             type: Object,
@@ -84,6 +86,7 @@ export default {
         },
         parentOffset: {
             type: Object,
+            required: true,
         },
         datatypesMapper: {
             type: DatatypesMapperModel,

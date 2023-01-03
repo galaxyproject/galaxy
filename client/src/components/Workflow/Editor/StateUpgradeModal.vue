@@ -27,7 +27,7 @@ export default {
     props: {
         stateMessages: {
             type: Array,
-            requierd: true,
+            required: true,
         },
         title: {
             type: String,

@@ -116,10 +116,6 @@ export default {
             type: String,
             default: null,
         },
-        outputLabelError: {
-            type: String,
-            required: null,
-        },
         inputs: {
             type: Array,
             required: true,

@@ -295,7 +295,15 @@ class BaseInputTerminal extends Terminal {
     getConnectedTerminals() {
         return this.connections.map((connection) => {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
-            let terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name)!;
+            let terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name);
+            if (!terminalSource) {
+                /*
+                / This can't happen, I think, because we'd drop the connection.
+                / We (probably) want to eventually display invalid connections,
+                / so maybe generate a NullTerminal when there is no terminalSource ?
+                */
+                throw `Could not find output ${connection.output.name} on step ${connection.output.stepId}`;
+            }
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
             if (
                 "extensions" in terminalSource &&
@@ -527,7 +535,10 @@ class BaseOutputTerminal extends Terminal {
     getConnectedTerminals() {
         return this.connections.map((connection) => {
             const inputStep = this.stepStore.getStep(connection.input.stepId);
-            const terminalSource = inputStep.inputs.find((input) => input.name === connection.input.name)!;
+            const terminalSource = inputStep.inputs.find((input) => input.name === connection.input.name);
+            if (!terminalSource) {
+                throw `Could not find input ${connection.input.name} on step ${connection.input.stepId}`;
+            }
             return terminalFactory(inputStep.id, terminalSource, this.datatypesMapper);
         });
     }
@@ -540,7 +551,7 @@ class BaseOutputTerminal extends Terminal {
     }
     validInputTerminals() {
         const validInputTerminals: InputTerminals[] = [];
-        Object.entries(this.stepStore.steps).map(([stepId, step]) => {
+        Object.values(this.stepStore.steps).map((step) => {
             step.inputs?.forEach((input) => {
                 const inputTerminal = terminalFactory(step.id, input, this.datatypesMapper);
                 if (inputTerminal.canAccept(this).canAccept) {

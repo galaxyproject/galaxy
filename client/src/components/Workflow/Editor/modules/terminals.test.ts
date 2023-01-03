@@ -23,7 +23,7 @@ const advancedSteps = _advancedSteps as { [index: string]: Step };
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
-    Object.entries(advancedSteps).map(([key, step]) => {
+    Object.values(advancedSteps).map((step) => {
         const stepLabel = step.label;
         if (stepLabel) {
             terminals[stepLabel] = {};
@@ -83,7 +83,7 @@ describe("canAccept", () => {
         terminals = setupAdvanced();
         stepStore = useWorkflowStepStore();
         connectionStore = useConnectionStore();
-        Object.entries(JSON.parse(JSON.stringify(advancedSteps)) as { [index: string]: Step }).map(([key, step]) => {
+        Object.values(JSON.parse(JSON.stringify(advancedSteps)) as { [index: string]: Step }).map((step) => {
             stepStore.addStep(step);
         });
     });
@@ -427,7 +427,7 @@ describe("Input terminal", () => {
         stepStore = useWorkflowStepStore();
         connectionStore = useConnectionStore();
         terminals = {};
-        Object.entries(simpleSteps).map(([key, step]) => {
+        Object.values(simpleSteps).map((step) => {
             stepStore.addStep(step);
             terminals[step.id] = {};
             const stepTerminals = terminals[step.id];

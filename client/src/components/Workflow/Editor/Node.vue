@@ -10,7 +10,7 @@
         :style="style"
         @move="onMoveTo"
         @pan-by="onPanBy">
-        <div class="node-header unselectable clearfix" @click="makeActive">
+        <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
             <b-button
                 v-b-tooltip.hover
                 class="node-destroy py-0 float-right"
@@ -61,7 +61,7 @@
         <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
             {{ errors }}
         </b-alert>
-        <div v-else class="node-body" @click="makeActive">
+        <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <node-input
                 v-for="input in inputs"
                 :key="input.name"
@@ -99,7 +99,7 @@ import type { PropType, Ref } from "vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "@/components/Workflow/icons";
-// TODO: implemnt scheme for loading tool state here
+// TODO: implement scheme for loading tool state here
 // import LoadingSpan from "@/components/LoadingSpan.vue";
 import { getGalaxyInstance } from "@/app";
 // import Recommendations from "components/Workflow/Editor/Recommendations";
@@ -118,8 +118,8 @@ Vue.use(BootstrapVue);
 
 const props = defineProps({
     id: { type: Number, required: true },
-    contentId: { type: String as PropType<string | null> },
-    name: { type: String as PropType<string | null> },
+    contentId: { type: String as PropType<string | null>, default: null },
+    name: { type: String as PropType<string | null>, default: null },
     step: { type: Object as PropType<Step>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
     activeNodeId: {

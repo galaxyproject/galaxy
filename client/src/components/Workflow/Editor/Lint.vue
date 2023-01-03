@@ -108,6 +108,7 @@ export default {
     props: {
         untypedParameters: {
             type: UntypedParameters,
+            required: true,
         },
         steps: {
             type: Object,
@@ -122,6 +123,7 @@ export default {
             default: null,
         },
         creator: {
+            type: Array,
             default: null,
         },
         datatypesMapper: {

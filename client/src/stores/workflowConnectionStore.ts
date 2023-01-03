@@ -5,18 +5,6 @@ export interface State {
     connections: Connection[];
 }
 
-interface Step {
-    id: number;
-    input_connections: StepInputConnection;
-}
-
-interface StepInputConnection {
-    [index: string]: {
-        output_name: string;
-        id: number;
-    };
-}
-
 export class Connection {
     input: InputTerminal;
     output: OutputTerminal;

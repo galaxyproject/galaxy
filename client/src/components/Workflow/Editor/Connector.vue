@@ -19,6 +19,7 @@ const props = withDefaults(
         outputIsMappedOver: boolean;
     }>(),
     {
+        id: undefined,
         inputIsMappedOver: false,
         outputIsMappedOver: false,
     }

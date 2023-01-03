@@ -146,7 +146,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             };
         },
         getStepIndex(state: State) {
-            return Math.max(...Object.entries(state.steps).map(([_, step]) => step.id), state.stepIndex);
+            return Math.max(...Object.values(state.steps).map((step) => step.id), state.stepIndex);
         },
         workflowOutputs(state: State) {
             const workflowOutputs: WorkflowOutputs = {};

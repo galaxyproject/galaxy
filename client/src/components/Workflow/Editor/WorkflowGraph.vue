@@ -62,7 +62,7 @@ import type { OutputTerminals } from "./modules/terminals";
 defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
-    highlightId: { type: null as unknown as PropType<number | null> },
+    highlightId: { type: null as unknown as PropType<number | null>, default: null },
 });
 const transform = reactive({ x: 0, y: 0, k: 1 });
 

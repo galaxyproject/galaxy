@@ -20,6 +20,7 @@ const props = defineProps({
     dragData: {
         type: Object,
         required: false,
+        default: null,
     },
 });
 

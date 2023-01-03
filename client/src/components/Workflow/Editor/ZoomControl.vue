@@ -37,14 +37,8 @@
             size="sm"
             aria-label="Reset all"
             @click="onResetAll" />
-        <label
-            >panX
-            <input type="number" :value="pan.x" />
-        </label>
-        <label
-            >panY
-            <input type="number" :value="pan.y" />
-        </label>
+        <span>panX: {{ pan.x }}</span>
+        <span>panY: {{ pan.y }}</span>
     </span>
 </template>
 
