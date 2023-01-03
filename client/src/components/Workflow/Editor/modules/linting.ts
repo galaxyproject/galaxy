@@ -17,7 +17,7 @@ export function getDisconnectedInputs(steps: Steps = {}, datatypesMapper: Dataty
     Object.values(steps).forEach((step) => {
         step.inputs.map((inputSource) => {
             const inputTerminal = terminalFactory(step.id, inputSource, datatypesMapper);
-            if (!(inputTerminal.optional && inputTerminal.connections.length > 0)) {
+            if (!inputTerminal.optional && inputTerminal.connections.length === 0) {
                 const inputLabel = inputSource.label || inputSource.name;
                 inputs.push({
                     stepId: step.id,
