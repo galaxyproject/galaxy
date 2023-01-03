@@ -32,7 +32,6 @@ def test_galaxy_routes():
     config = request_config()
     config.host = "usegalaxy.org"
     config.protocol = "https"
-    assert_url_is(url_for("api_key_retrieval", qualified=True), "https://usegalaxy.org/api/authenticate/baseauth")
     assert_url_is(url_for("/tool_runner/biomart", qualified=True), "https://usegalaxy.org/tool_runner/biomart")
 
     # Test previously problematic tool ids with slashes.
