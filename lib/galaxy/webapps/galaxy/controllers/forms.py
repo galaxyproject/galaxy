@@ -130,6 +130,7 @@ class Forms(BaseUIController):
                         "label": "Import from CSV",
                         "type": "upload",
                         "help": "Import fields from CSV-file with the following format: Label, Help, Type, Value, Options, Required=True/False.",
+                        "optional": True,
                     },
                 ],
             }
@@ -188,7 +189,7 @@ class Forms(BaseUIController):
                     "label": "Options",
                     "help": "*Only for fields which allow multiple selections, provide comma-separated values.",
                 },
-                {"name": "required", "label": "Required", "type": "boolean"},
+                {"name": "required", "label": "Required", "type": "boolean", "value": False},
             ]
             form_dict = {
                 "title": "Edit form for '%s'" % (util.sanitize_text(latest_form.name)),
