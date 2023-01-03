@@ -123,7 +123,7 @@ class Forms(BaseUIController):
                     {
                         "name": "type",
                         "type": "select",
-                        "options": [("None", "none")] + [(ft[1], ft[1]) for ft in fd_types],
+                        "options": [(ft[1], ft[1]) for ft in fd_types],
                         "label": "Type",
                     },
                     {
