@@ -802,7 +802,10 @@ class NavigatesGalaxy(HasDriver):
     def upload_build(self, tab="collection"):
         build_selector = f"div#{tab} button#btn-build"
         # Pause a bit to let the callback on the build button be registered.
-        time.sleep(0.5)
+        # This needs to be investigated further -- on clicking 'build' if the
+        # original upload has not appeared in the history we get this error.
+        # The wait is a hacky workaround for now that does get selenium green again.
+        time.sleep(1.5)
         # Click the Build button and make sure it disappears.
         self.wait_for_and_click_selector(build_selector)
         try:
