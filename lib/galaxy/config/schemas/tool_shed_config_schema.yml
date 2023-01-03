@@ -31,6 +31,13 @@ mapping:
           Where the hgweb.config file is stored.
           The default is the Galaxy installation directory.
 
+      config_hg_for_dev:
+        type: str
+        required: false
+        desc: |
+          Allow pushing directly to mercurial repositories directly
+          and without authentication.
+
       file_path:
         type: str
         default: database/community_files

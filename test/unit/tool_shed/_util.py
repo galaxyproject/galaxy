@@ -40,6 +40,7 @@ class TestToolShedConfig:
     file_path: str
     id_secret: str = "thisistheshedunittestsecret"
     smtp_server: Optional[str] = None
+    config_hg_for_dev = False
 
     def __init__(self, temp_directory):
         files_path = os.path.join(temp_directory, "files")
