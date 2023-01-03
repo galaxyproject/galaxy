@@ -145,7 +145,7 @@ class Forms(BaseUIController):
                 for row in rows:
                     if len(row) >= 6:
                         for column in range(len(row)):
-                            row[column] = str(row[column]).strip('\"')
+                            row[column] = str(row[column]).strip('"')
                         prefix = "fields_%i|" % index
                         payload[f"{prefix}name"] = "%i_imported_field" % (index + 1)
                         payload[f"{prefix}label"] = row[0]
@@ -172,9 +172,7 @@ class Forms(BaseUIController):
         latest_form = form.latest_form
         if trans.request.method == "GET":
             fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
-            ff_types = [
-                (t.__name__, t.__name__) for t in trans.model.FormDefinition.supported_field_types
-            ]
+            ff_types = [(t.__name__, t.__name__) for t in trans.model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [
                 {
