@@ -281,7 +281,7 @@ class Forms(BaseUIController):
             desc=current_form["desc"],
             fields=current_form["fields"],
             form_definition_current=None,
-            form_type=current_form["type"],
+            type=current_form["type"],
             layout=current_form["layout"],
         )
         # save changes to the existing form
