@@ -11,6 +11,7 @@ import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 jest.mock("app");
 
 const _mockOffset = toRefs(reactive({ top: 0, left: 0, bottom: 10, right: 10, width: 100, height: 100, x: 0, y: 0 }));
+// eslint-disable-next-line @typescript-eslint/no-empty-function
 const mockOffset: UseElementBoundingReturn = { ..._mockOffset, update: () => {} };
 
 const localVue = getLocalVue();
