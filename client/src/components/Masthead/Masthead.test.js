@@ -23,8 +23,6 @@ describe("Masthead.vue", () => {
     let windowManager;
     let tabs;
     let store;
-    let state;
-    let actions;
     let testPinia;
 
     function stubLoadWebhooks(items) {
@@ -95,7 +93,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(6);
+        expect(wrapper.findAll("li.nav-item").length).toBe(7);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
         expect(wrapper.find("#analysis a").attributes("href")).toBe("root");

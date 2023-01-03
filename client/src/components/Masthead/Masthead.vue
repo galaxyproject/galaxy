@@ -5,7 +5,7 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
-import { watch, computed, ref, reactive } from "vue";
+import { watch, ref, reactive } from "vue";
 import { onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
 import { useEntryPointStore } from "stores/entryPointStore";
@@ -56,11 +56,6 @@ const itsMenu = reactive({
     tooltip: "See Running Interactive Tools",
     icon: "fa-cogs",
     hidden: true,
-});
-
-/* computed */
-const allTabs = computed(() => {
-    return [].concat(props.tabs, itsMenu, extensionTabs.value);
 });
 
 function setActiveTab() {
