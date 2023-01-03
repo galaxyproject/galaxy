@@ -6,14 +6,13 @@ export interface FormBooleanProps {
 }
 
 const props = defineProps<FormBooleanProps>();
-
 const emit = defineEmits<{
     (e: "input", value: boolean): void;
 }>();
 
 const currentValue = computed({
     get() {
-        return Boolean(props.value);
+        return ["true", true].includes(props.value);
     },
     set(newValue) {
         emit("input", newValue);
