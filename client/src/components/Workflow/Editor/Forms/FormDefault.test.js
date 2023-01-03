@@ -1,10 +1,11 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import FormDefault from "./FormDefault";
-import { ActiveOutputs } from "components/Workflow/Editor/modules/outputs";
 import { createTestingPinia } from "@pinia/testing";
+import { PiniaVuePlugin } from "pinia";
 
 const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 describe("FormDefault", () => {
     let wrapper;
