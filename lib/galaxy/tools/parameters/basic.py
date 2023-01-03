@@ -573,8 +573,7 @@ class BooleanToolParameter(ToolParameter):
         return ret_val
 
     def to_json(self, value, app, use_security):
-        rval = json.dumps(self.to_python(value, app))
-        return rval
+        return self.to_python(value, app)
 
     def get_initial_value(self, trans, other_values):
         return self.checked
