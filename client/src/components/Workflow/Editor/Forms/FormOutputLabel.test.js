@@ -27,9 +27,7 @@ describe("FormOutputLabel", () => {
                 step: stepOne,
             },
             localVue,
-            global: {
-                plugins: [pinia],
-            },
+            pinia,
         });
         const stepTwo = { id: 1, workflow_outputs: outputs };
         wrapperOther = mount(FormOutputLabel, {
@@ -38,6 +36,7 @@ describe("FormOutputLabel", () => {
                 step: stepTwo,
             },
             localVue,
+            pinia,
         });
         stepStore = useWorkflowStepStore();
         stepStore.addStep(stepOne);
