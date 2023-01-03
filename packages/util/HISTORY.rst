@@ -4,10 +4,23 @@ History
 .. to_doc
 
 ---------------------
-21.1.1.dev0
+22.5.0.dev0
 ---------------------
 
 
+
+---------------------
+22.1.2 (2022-12-08)
+---------------------
+
+* Pin packaging dependency to < 22, fixes ``LegacyVersion`` import errors
+* Add missing pyparsing dependency
+
+---------------------
+22.1.1 (2022-08-22)
+---------------------
+
+* First release from the 22.01 branch of Galaxy
 
 ---------------------
 21.1.0 (2021-03-19)

@@ -206,6 +206,14 @@ RELEASE_ISSUE_TEMPLATE = string.Template(
 
           make release-create-rc
 
+    - [ ] Create dev packages:
+
+          cd packages && DEV_RELEASE=1 ./build_packages.sh
+
+
+    - [ ] Review created packages (HISTORY.rst correct, setup.cfg correct, correct version in filename)
+    - [ ] Upload galaxy-util & galaxy-tool-util dev packages to pypi
+    - [ ] Open PR against planemo with a pin to the dev packages
     - [ ] Open PRs from your fork of branch ``version-${version}`` to upstream ``release_${version}`` and of ``version-${next_version}.dev`` to ``dev``.
     - [ ] Update ``MILESTONE_NUMBER`` in the [maintenance bot](https://github.com/galaxyproject/galaxy/blob/dev/.github/workflows/maintenance_bot.yaml) to `${next_version}` so it properly tags new PRs.
 
@@ -263,6 +271,13 @@ RELEASE_ISSUE_TEMPLATE = string.Template(
 
           make release-create
 
+    - [ ] Create dev packages:
+
+          cd packages && ./build_packages.sh
+
+
+    - [ ] Review created packages (HISTORY.rst correct, setup.cfg correct, correct version in filename)
+    - [ ] Upload built packages to pypi
     - [ ] Add the branch `*/release_{version}` to Jenkins documentation build [configuration matrix](https://jenkins.galaxyproject.org/job/galaxy-sphinx-by-branch/configure).
     - [ ] Trigger the [branch documentation build](https://jenkins.galaxyproject.org/job/galaxy-sphinx-by-branch/)
     - [ ] Verify that everything is merged from ${version}->master, and then trigger the ['latest' documentation build](https://jenkins.galaxyproject.org/job/latest-Sphinx-Docs/)

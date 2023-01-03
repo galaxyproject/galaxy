@@ -4,8 +4,9 @@ _.extend(window.bundleEntries || {}, {
         var chart = options.chart;
         var dataset = options.dataset;
         var settings = options.chart.settings;
+        const safe_download_url = `${options.root}${dataset.download_url}`;
         $.ajax( {
-            url     : dataset.download_url,
+            url     : safe_download_url,
             success : function( content ) {
                 try {
                     var tree = Phylocanvas.default.createTree( options.target ),

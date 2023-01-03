@@ -749,32 +749,6 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
             self._assert_user_has_workflow_with_name(name)
         return upload_response
 
-    def test_get_tool_predictions(self):
-        request = {
-            "tool_sequence": "Cut1",
-            "remote_model_url": "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5",
-        }
-        actual_recommendations = ["Filter1", "cat1", "addValue", "comp1", "Grep1"]
-        route = "workflows/get_tool_predictions"
-        response = self._post(route, data=request)
-        recommendation_response = response.json()
-        is_empty = bool(recommendation_response["current_tool"])
-        if is_empty is False:
-            self._assert_status_code_is(response, 400)
-        else:
-            # check Ok response from the API
-            self._assert_status_code_is(response, 200)
-            recommendation_response = response.json()
-            # check the input tool sequence
-            assert recommendation_response["current_tool"] == request["tool_sequence"]
-            # check non-empty predictions list
-            predicted_tools = recommendation_response["predicted_data"]["children"]
-            assert len(predicted_tools) > 0
-            # check for the correct predictions
-            for tool in predicted_tools:
-                assert tool["tool_id"] in actual_recommendations
-                break
-
     def test_update(self):
         original_workflow = self.workflow_populator.load_workflow(name="test_import")
         uuids = {}
@@ -1053,7 +1027,6 @@ steps:
     def test_base64_import(self):
         base64_url = "base64://" + base64.b64encode(workflow_str.encode("utf-8")).decode("utf-8")
         response = self._post("workflows", data={"archive_source": base64_url})
-        print(response.content)
         response.raise_for_status()
         workflow_id = response.json()["id"]
         workflow = self._download_workflow(workflow_id)
@@ -1071,6 +1044,71 @@ steps:
         assert "Test Workflow" in original_workflow["name"]
         assert original_workflow.get("source_metadata").get("trs_tool_id") == trs_payload["trs_tool_id"]
         assert original_workflow.get("source_metadata").get("trs_version_id") == trs_payload["trs_version_id"]
+        assert original_workflow.get("source_metadata").get("trs_server") == "dockstore"
+
+        # refactor workflow and check that the trs id is removed
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactored_workflow = self._download_workflow(workflow_id)
+        assert refactored_workflow.get("source_metadata") is None
+
+        # reupload original_workflow and check that the trs id is removed
+        reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
+        reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
+        assert reuploaded_workflow.get("source_metadata") is None
+
+    def test_trs_import_from_dockstore_trs_url(self):
+        trs_payload = {
+            "archive_source": "trs_tool",
+            "trs_url": "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+            "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
+            "versions/master",
+        }
+        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        original_workflow = self._download_workflow(workflow_id)
+        assert "Test Workflow" in original_workflow["name"]
+        assert (
+            original_workflow.get("source_metadata").get("trs_tool_id")
+            == "#workflow/github.com/jmchilton/galaxy-workflow-dockstore-example-1/mycoolworkflow"
+        )
+        assert original_workflow.get("source_metadata").get("trs_version_id") == "master"
+        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert original_workflow.get("source_metadata").get("trs_url") == (
+            "https://dockstore.org/api/ga4gh/trs/v2/tools/"
+            "%23workflow%2Fgithub.com%2Fjmchilton%2Fgalaxy-workflow-dockstore-example-1%2Fmycoolworkflow/"
+            "versions/master"
+        )
+
+        # refactor workflow and check that the trs id is removed
+        actions = [
+            {"action_type": "update_step_label", "step": {"order_index": 0}, "label": "new_label"},
+        ]
+        self.workflow_populator.refactor_workflow(workflow_id, actions)
+        refactored_workflow = self._download_workflow(workflow_id)
+        assert refactored_workflow.get("source_metadata") is None
+
+        # reupload original_workflow and check that the trs id is removed
+        reuploaded_workflow_id = self.workflow_populator.create_workflow(original_workflow)
+        reuploaded_workflow = self._download_workflow(reuploaded_workflow_id)
+        assert reuploaded_workflow.get("source_metadata") is None
+
+    def test_trs_import_from_workflowhub_trs_url(self):
+        trs_payload = {
+            "archive_source": "trs_tool",
+            "trs_url": "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5",
+        }
+        workflow_id = self._post("workflows", data=trs_payload).json()["id"]
+        original_workflow = self._download_workflow(workflow_id)
+        assert "COVID-19: variation analysis reporting" in original_workflow["name"]
+        assert original_workflow.get("source_metadata").get("trs_tool_id") == "109"
+        assert original_workflow.get("source_metadata").get("trs_version_id") == "5"
+        assert original_workflow.get("source_metadata").get("trs_server") == ""
+        assert (
+            original_workflow.get("source_metadata").get("trs_url")
+            == "https://workflowhub.eu/ga4gh/trs/v2/tools/109/versions/5"
+        )
 
         # refactor workflow and check that the trs id is removed
         actions = [

@@ -16,7 +16,7 @@ python '$__tool_directory__/cram_to_bam.py' '$input' '$output'
             <param name="input" ftype="cram" value="2.cram"/>
             <output name="output" ftype="bam">
                 <assert_contents>
-                    <has_size value="57232"/>
+                    <has_size value="60331"/>
                 </assert_contents>
             </output>
         </test>

@@ -4,10 +4,12 @@ from typing import (
     Dict,
     Optional,
     Tuple,
+    Union,
 )
 from urllib.parse import unquote
 
 from pydantic import BaseModel
+from starlette.requests import Request as StartletteRequest
 
 from galaxy import exceptions
 from galaxy.auth import AuthManager
@@ -17,7 +19,9 @@ from galaxy.util import (
     smart_str,
     unicodify,
 )
-from galaxy.web.framework.base import Request
+from galaxy.web.framework.base import Request as GxRequest
+
+Request = Union[GxRequest, StartletteRequest]
 
 
 class APIKeyResponse(BaseModel):

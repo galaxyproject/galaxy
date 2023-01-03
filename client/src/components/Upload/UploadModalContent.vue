@@ -2,7 +2,8 @@
     <b-tabs v-if="ready">
         <b-tab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <default
-                :app="this"
+                ref="regular"
+                :details="details"
                 :lazy-load-max="50"
                 :multiple="multiple"
                 :has-callback="hasCallback"
@@ -10,13 +11,13 @@
                 v-on="$listeners" />
         </b-tab>
         <b-tab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
-            <composite :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <composite :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
         <b-tab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
-            <collection :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <collection :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
         <b-tab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
-            <rules-input :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <rules-input :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
     </b-tabs>
     <div v-else>
@@ -35,7 +36,6 @@ import RulesInput from "./RulesInput";
 import LoadingSpan from "components/LoadingSpan";
 import { uploadModelsToPayload } from "./helpers";
 import { BTabs, BTab } from "bootstrap-vue";
-import { commonProps } from "./helpers";
 
 export default {
     components: {
@@ -50,7 +50,29 @@ export default {
     props: {
         currentHistoryId: { type: String, required: true },
         currentUserId: { type: String, default: "" },
-        ...commonProps,
+        uploadPath: { type: String, required: true },
+        chunkUploadSize: { type: Number, default: 1024 },
+        fileSourcesConfigured: { type: Boolean, default: false },
+        ftpUploadSite: { type: String, default: "" },
+        defaultDbKey: { type: String, default: UploadUtils.DEFAULT_DBKEY },
+        defaultExtension: { type: String, default: UploadUtils.DEFAULT_EXTENSION },
+        datatypesDisableAuto: { type: Boolean, default: false },
+        formats: { type: Array, default: null },
+        multiple: {
+            // Restrict the forms to a single dataset upload if false
+            type: Boolean,
+            default: true,
+        },
+        hasCallback: {
+            // Return uploads when done if supplied.
+            type: Boolean,
+            default: false,
+        },
+        selectable: { type: Boolean, default: false },
+        auto: {
+            type: Object,
+            default: () => UploadUtils.AUTO_EXTENSION,
+        },
     },
     data: function () {
         return {
@@ -113,6 +135,23 @@ export default {
             }
             return this.multiple;
         },
+        currentFtp() {
+            return this.currentUserId && this.ftpUploadSite;
+        },
+        details() {
+            return {
+                effectiveExtensions: this.effectiveExtensions,
+                listGenomes: this.listGenomes,
+                currentFtp: this.currentFtp,
+                fileSourcesConfigured: this.fileSourcesConfigured,
+                defaultExtension: this.defaultExtension,
+                defaultDbKey: this.defaultDbKey,
+                uploadPath: this.uploadPath,
+                model: this.model,
+                chunkUploadSize: this.chunkUploadSize,
+                history_id: this.currentHistoryId,
+            };
+        },
     },
     created() {
         this.model = new Backbone.Model({
@@ -170,15 +209,16 @@ export default {
         this.id = String(this._uid);
     },
     methods: {
-        currentFtp: function () {
-            return this.currentUserId && this.ftpUploadSite;
-        },
         /**
          * Package API data from array of backbone models
          * @param{Array} items - Upload items/rows filtered from a collection
          */
         toData: function (items, history_id, composite = false) {
             return uploadModelsToPayload(items, history_id, composite);
+        },
+        immediateUpload: function (files) {
+            this.$refs.regular?.addFiles(files);
+            this.$refs.regular?._eventStart();
         },
     },
 };

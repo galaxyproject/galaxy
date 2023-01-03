@@ -15,11 +15,13 @@ from logging import getLogger
 from typing import (
     Any,
     Callable,
+    cast,
     Dict,
     Generator,
     List,
     NamedTuple,
     Optional,
+    Union,
 )
 
 import requests
@@ -29,10 +31,15 @@ from packaging.version import (
 )
 from requests import Response
 from requests.cookies import RequestsCookieJar
-from typing_extensions import Protocol
+from typing_extensions import (
+    Literal,
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import (
+    AssertionList,
     TestCollectionDef,
     TestCollectionOutputDef,
 )
@@ -78,8 +85,46 @@ class OutputsDict(dict):
 
 JobDataT = Dict[str, Any]
 JobDataCallbackT = Callable[[JobDataT], None]
-ToolTestDictT = Dict[str, Any]
-ToolTestDictsT = List[ToolTestDictT]
+ValidToolTestDict = TypedDict(
+    "ValidToolTestDict",
+    {
+        "inputs": Any,
+        "outputs": Any,
+        "output_collections": List[Dict[str, Any]],
+        "stdout": AssertionList,
+        "stderr": AssertionList,
+        "expect_exit_code": Optional[int],
+        "expect_failure": bool,
+        "expect_test_failure": bool,
+        "maxseconds": Optional[int],
+        "num_outputs": Optional[int],
+        "command_line": AssertionList,
+        "command_version": AssertionList,
+        "required_files": List[Any],
+        "required_data_tables": List[Any],
+        "required_loc_files": List[str],
+        "error": Literal[False],
+        "tool_id": str,
+        "tool_version": str,
+        "test_index": int,
+    },
+)
+
+InvalidToolTestDict = TypedDict(
+    "InvalidToolTestDict",
+    {
+        "error": Literal[True],
+        "tool_id": str,
+        "tool_version": str,
+        "test_index": int,
+        "inputs": Any,
+        "exception": str,
+        "maxseconds": Optional[int],
+    },
+)
+
+ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
+ToolTestDictsT = List[ToolTestDict]
 
 
 def stage_data_in_history(
@@ -1228,16 +1273,16 @@ def verify_tool(
     publish_history: bool = False,
     force_path_paste: bool = False,
     maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
-    tool_test_dicts: Optional[ToolTestDictsT] = None,
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
+    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
     if client_test_config is None:
         client_test_config = NullClientTestConfig()
-    tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+    tool_test_dicts = _tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     if "test_index" not in tool_test_dict:
         tool_test_dict["test_index"] = test_index
@@ -1272,7 +1317,7 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
-    testdef = ToolTestDescription(tool_test_dict)
+    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
     _handle_def_errors(testdef)
 
     created_history = False

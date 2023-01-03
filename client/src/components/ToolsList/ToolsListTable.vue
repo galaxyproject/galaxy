@@ -1,59 +1,25 @@
 <template>
-    <div v-infinite-scroll="loadTools" infinite-scroll-disabled="busy">
-        <b-table striped bordered :fields="fields" :items="buffer">
-            <template v-slot:cell(name)="row">
-                <span v-if="!row.item.help">
-                    <b>{{ row.item.name }}</b> {{ row.item.description }}
-                </span>
-                <span v-else>
-                    <b-link href="javascript:void(0)" role="button" @click.stop="row.toggleDetails()">
-                        <b>{{ row.item.name }}</b> {{ row.item.description }}
-                    </b-link>
-                    <p v-if="!row.item._showDetails && row.item.summary" v-html="row.item.summary" />
-                </span>
-            </template>
-            <template v-slot:row-details="row">
-                <b-card v-if="row.item.help">
-                    <p class="mb-1" v-html="row.item.help" />
-                    <a
-                        :href="row.item.target === 'galaxy_main' ? 'javascript:void(0)' : row.item.link"
-                        @click.stop="onOpen(row.item)">
-                        Click here to open the tool
-                    </a>
-                </b-card>
-            </template>
-            <template v-slot:cell(section)="row">
-                {{ row.item.panel_section_name }}
-            </template>
-            <template v-slot:cell(workflow)="row">
-                <span
-                    v-if="row.item.is_workflow_compatible"
-                    v-b-tooltip.hover
-                    class="fa fa-check text-success"
-                    title="Is Workflow Compatible" />
-                <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Workflow Compatible" />
-            </template>
-            <template v-slot:cell(target)="row">
-                <span
-                    v-if="row.item.target === 'galaxy_main'"
-                    v-b-tooltip.hover
-                    class="fa fa-check text-success"
-                    title="Is Local" />
-                <span v-else v-b-tooltip.hover class="fa fa-times text-danger" title="Not Local" />
-            </template>
-            <template v-slot:cell(open)="row">
-                <b-button
-                    v-b-tooltip.hover.top
-                    :title="'Open Tool' | localize"
-                    class="fa fa-play"
-                    size="sm"
-                    variant="primary"
-                    :href="row.item.target === 'galaxy_main' ? 'javascript:void(0)' : row.item.link"
-                    @click.stop="onOpen(row.item)" />
-            </template>
-        </b-table>
+    <div
+        v-infinite-scroll="loadTools"
+        class="tools-list-table"
+        infinite-scroll-distance="200"
+        infinite-scroll-disabled="busy">
+        <ToolsListItem
+            v-for="item of buffer"
+            :id="item.id"
+            :key="item.id"
+            :name="item.name"
+            :section="item.panel_section_name"
+            :description="item.description"
+            :summary="item.summary"
+            :help="item.help"
+            :local="item.target === 'galaxy_main'"
+            :link="item.link"
+            :workflow-compatible="item.is_workflow_compatible"
+            :version="item.version"
+            @open="() => onOpen(item)" />
         <div>
-            <i v-if="allLoaded">All {{ tools.length > 1 ? tools.length : "" }} results loaded</i>
+            <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>
             <b-overlay :show="busy" opacity="0.5" />
         </div>
     </div>
@@ -61,15 +27,16 @@
 
 <script>
 import Vue from "vue";
-import _l from "utils/localization";
 import infiniteScroll from "vue-infinite-scroll";
-import { openGlobalUploadModal } from "components/Upload";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { fetchData } from "./services";
+import ToolsListItem from "./ToolsListItem";
 
 const defaultBufferLen = 4;
 const loadTimeout = 100;
 
 export default {
+    components: { ToolsListItem },
     directives: { infiniteScroll },
     props: {
         tools: {
@@ -77,37 +44,15 @@ export default {
             default: null,
         },
     },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
+    },
     data() {
         return {
             allLoaded: false,
             bufferLen: 0,
             busy: false,
-            fields: [
-                {
-                    key: "name",
-                    label: _l("Name"),
-                    sortable: true,
-                },
-                {
-                    key: "section",
-                    label: _l("Section"),
-                    sortable: true,
-                },
-                {
-                    key: "workflow",
-                    label: _l("Workflow Compatible"),
-                    sortable: false,
-                },
-                {
-                    key: "target",
-                    label: _l("Local Tool"),
-                    sortable: false,
-                },
-                {
-                    key: "open",
-                    label: "",
-                },
-            ],
         };
     },
     computed: {
@@ -121,7 +66,7 @@ export default {
     methods: {
         onOpen(tool) {
             if (tool.id === "upload1") {
-                openGlobalUploadModal();
+                this.openGlobalUploadModal();
             } else if (tool.form_style === "regular") {
                 // encode spaces in tool.id
                 const toolId = tool.id;
@@ -181,3 +126,19 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+
+.tools-list-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+
+    .list-end {
+        width: 100%;
+        text-align: center;
+        color: $text-light;
+    }
+}
+</style>

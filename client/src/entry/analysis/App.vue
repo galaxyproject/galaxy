@@ -1,5 +1,5 @@
 <template>
-    <div id="app">
+    <div id="app" :style="theme">
         <div id="everything">
             <div id="background" />
             <Masthead
@@ -7,8 +7,8 @@
                 id="masthead"
                 :brand="config.brand"
                 :logo-url="config.logo_url"
-                :logo-src="config.logo_src"
-                :logo-src-secondary="config.logo_src_secondary"
+                :logo-src="theme?.['--masthead-logo-img'] ?? config.logo_src"
+                :logo-src-secondary="theme?.['--masthead-logo-img-secondary'] ?? config.logo_src_secondary"
                 :tabs="tabs"
                 :window-tab="windowTab"
                 @open-url="openUrl" />
@@ -36,6 +36,7 @@
         <div id="dd-helper" />
         <Toast ref="toastRef" />
         <ConfirmDialog ref="confirmDialogRef" />
+        <UploadModal ref="uploadModal" />
     </div>
 </template>
 <script>
@@ -49,23 +50,33 @@ import { WindowManager } from "layout/window-manager";
 import { safePath } from "utils/redirect";
 import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
+import UploadModal from "components/Upload/UploadModal.vue";
+import { ref } from "vue";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
-import { ref } from "vue";
+import { setGlobalUploadModal } from "composables/globalUploadModal";
+import { useCurrentTheme } from "@/composables/userFlags";
 
 export default {
     components: {
         Masthead,
         Toast,
         ConfirmDialog,
+        UploadModal,
     },
     setup() {
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
+
         const confirmDialogRef = ref(null);
         setConfirmDialogComponentRef(confirmDialogRef);
 
-        return { toastRef, confirmDialogRef };
+        const uploadModal = ref(null);
+        setGlobalUploadModal(uploadModal);
+
+        const { currentTheme } = useCurrentTheme();
+
+        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
     },
     data() {
         return {
@@ -85,6 +96,9 @@ export default {
                 return masthead.toLowerCase() != "true";
             }
             return true;
+        },
+        theme() {
+            return this.config.themes[this.currentTheme];
         },
         windowTab() {
             return this.windowManager.getTab();
@@ -125,3 +139,7 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+@import "custom_theme_variables.scss";
+</style>

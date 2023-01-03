@@ -1378,6 +1378,20 @@ class BaseDatasetPopulator(BasePopulator):
         task_ok = self.wait_on_task_id(task_id)
         assert task_ok, f"Task: Import history from {target_uri} failed"
 
+    def download_history_to_store(self, history_id: str, extension: str = "tgz", serve_file: bool = False):
+        url = f"histories/{history_id}/prepare_store_download"
+        download_response = self._post(url, dict(include_files=False, model_store_format=extension), json=True)
+        storage_request_id = self.assert_download_request_ok(download_response)
+        self.wait_for_download_ready(storage_request_id)
+        if serve_file:
+            return self._get_to_tempfile(f"short_term_storage/{storage_request_id}")
+
+    def get_history_export_tasks(self, history_id: str):
+        headers = {"accept": "application/vnd.galaxy.task.export+json"}
+        response = self._get(f"histories/{history_id}/exports", headers=headers)
+        api_asserts.assert_status_code_is_ok(response)
+        return response.json()
+
 
 class GalaxyInteractorHttpMixin:
     galaxy_interactor: ApiTestInteractor

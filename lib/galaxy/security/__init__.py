@@ -2,11 +2,24 @@
 Galaxy Security
 
 """
+from typing import (
+    List,
+    Optional,
+)
+
+from typing_extensions import Literal
+
 from galaxy.util.bunch import Bunch
+
+ActionModel = Literal["grant", "restrict"]
 
 
 class Action:
-    def __init__(self, action, description, model):
+    action: str
+    description: str
+    model: ActionModel
+
+    def __init__(self, action: str, description: str, model: ActionModel):
         self.action = action
         self.description = description
         self.model = model
@@ -42,14 +55,14 @@ class RBACAgent:
         ),
     )
 
-    def get_action(self, name, default=None):
+    def get_action(self, name: str, default: Optional[Action] = None) -> Optional[Action]:
         """Get a permitted action by its dict key or action name"""
         for k, v in self.permitted_actions.items():
             if k == name or v.action == name:
                 return v
         return default
 
-    def get_actions(self):
+    def get_actions(self) -> List[Action]:
         """Get all permitted actions as a list of Action objects"""
         return list(self.permitted_actions.__dict__.values())
 
@@ -165,5 +178,5 @@ def get_permitted_actions(filter=None):
     if filter is None:
         return RBACAgent.permitted_actions
     tmp_bunch = Bunch()
-    [tmp_bunch.__dict__.__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
+    [tmp_bunch.dict().__setitem__(k, v) for k, v in RBACAgent.permitted_actions.items() if k.startswith(filter)]
     return tmp_bunch

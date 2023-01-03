@@ -15,8 +15,11 @@ class XForwardedHostMiddleware:
         x_forwarded_for = environ.get("HTTP_X_FORWARDED_FOR", None)
         if x_forwarded_for:
             environ["ORGINAL_REMOTE_ADDR"] = environ["REMOTE_ADDR"]
-            environ["REMOTE_ADDR"] = x_forwarded_for.split(", ", 1)[0]
-        x_url_scheme = environ.get("HTTP_X_URL_SCHEME", None)
+            environ["REMOTE_ADDR"] = x_forwarded_for.split(",", 1)[0].strip()
+        x_forwarded_proto = environ.get("HTTP_X_FORWARDED_PROTO", None)
+        if x_forwarded_proto:
+            x_forwarded_proto = x_forwarded_proto.split(",", 1)[0].strip()
+        x_url_scheme = environ.get("HTTP_X_URL_SCHEME", x_forwarded_proto)
         if x_url_scheme:
             environ["original_wsgi.url_scheme"] = environ["wsgi.url_scheme"]
             environ["wsgi.url_scheme"] = x_url_scheme

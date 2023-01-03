@@ -151,13 +151,13 @@ import {
     addTagsToSelectedContent,
     removeTagsFromSelectedContent,
 } from "components/History/model/crud";
-import { checkFilter, getQueryDict } from "utils/filterConversion";
 import { createDatasetCollection } from "components/History/model/queries";
 import { buildCollectionModal } from "components/History/adapters/buildCollectionModal";
 import { DbKeyProvider, DatatypesProvider } from "components/providers";
 import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 import ConfigProvider from "components/providers/ConfigProvider";
+import { HistoryFilters } from "components/History/HistoryFilters";
 
 export default {
     components: {
@@ -185,11 +185,11 @@ export default {
     computed: {
         /** @returns {Boolean} */
         showHidden() {
-            return checkFilter(this.filterText, "visible", false);
+            return HistoryFilters.checkFilter(this.filterText, "visible", false);
         },
         /** @returns {Boolean} */
         showDeleted() {
-            return checkFilter(this.filterText, "deleted", true);
+            return HistoryFilters.checkFilter(this.filterText, "deleted", true);
         },
         /** @returns {Boolean} */
         showBuildOptions() {
@@ -265,7 +265,7 @@ export default {
         async runOnSelection(operation, extraParams = null) {
             this.$emit("update:operation-running", this.history.update_time);
             const items = this.getExplicitlySelectedItems();
-            const filters = getQueryDict(this.filterText);
+            const filters = HistoryFilters.getQueryDict(this.filterText);
             this.$emit("update:show-selection", false);
             let expectHistoryUpdate = false;
             try {

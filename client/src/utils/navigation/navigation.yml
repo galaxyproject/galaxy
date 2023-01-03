@@ -158,7 +158,7 @@ history_panel:
       info_button: '${_} .params-btn'
       tool_help_button: '${_} .fa.fa-question'
       rerun_button: '${_} .rerun-btn'
-      alltags: '${_} .alltags .ti-tags'
+      alltags: '${_} .stateless-tags .tag'
 
   # history content item
   content_item:
@@ -188,7 +188,7 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
-      alltags: '${_} .alltags .ti-tags'
+      alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
       dataset_operations_dropdown: '${_}  .dataset-actions'
@@ -202,18 +202,18 @@ history_panel:
       form: '${_} [data-description="edit form"]'
       name_input: '${_} [data-description="name input"]'
       annotation_input: '${_} [data-description="annotation input"]'
-      tags_input: '${_} .tags input'
+      tags_input: '${_} .stateless-tags button'
       save_button: '${_} [data-description="editor save button"]'
 
   # history tags
   tag_editor:
     selectors:
-      _: '${scope} .details .tags'
+      _: '${scope} .details .stateless-tags'
       toggle: '${_} .toggle-link'
-      display: '${_} .tag-area .tag-name'
+      display: '${_} .tag span'
       input: '${_} input'
-      tag_area: '${_} .tag-area'
-      tag_close_btn: '${_} .ti-icon-close'
+      tag_area: '${_} .multiselect__tags'
+      tag_close_btn: '${_} .tag-delete-button'
 
   multi_operations:
     selectors:
@@ -237,7 +237,8 @@ history_panel:
       title_input: '.dataset-collection-panel .controls .title input'
       subtitle: '.dataset-collection-panel .controls .title .subtitle'
       elements_warning: '.dataset-collection-panel .controls .elements-warning'
-      tag_area_input: '.controls .tags-display .tags-input input'
+      tag_area_button: '.details .stateless-tags .multiselect button'
+      tag_area_input: '.details .stateless-tags .multiselect input'
       list_items: '.dataset-collection-panel .listing .content-item'
 
   selectors:
@@ -251,11 +252,11 @@ history_panel:
     contents: '.history-index .content-item'
     empty_message: '.empty-message'
     size: '.history-size'
-    tag_icon: '.actions .history-tag-btn'
-    tag_area: '.details .tags-display'
-    tag_area_input: '.details .tags-display .tags-input input'
-    tag_close_btn: '.tags-display .ti-icon-close'
-    tags: 'li.ti-tag.ti-valid .tag-name'
+    tag_area: '.details .stateless-tags'
+    tag_area_button: '.details .stateless-tags .multiselect button'
+    tag_area_input: '.details .stateless-tags .multiselect input'
+    tag_close_btn: '.tags-display .tag-delete-button'
+    tags: '.tag span'
 
     annotation_icon: '.actions .history-annotate-btn'
     annotation_area: '.details .history-annotation'
@@ -419,6 +420,28 @@ history_export:
     export_button: '.export-button'
     success_message: '.history-export-component .alert-success'
 
+history_export_tasks:
+  selectors:
+    direct_download: '.direct-download-btn'
+    file_source_tab: '.tab-export-to-file'
+    remote_file_name_input: '#file-source-tab #name'
+    toggle_options_link: '#toggle-options-link'
+    export_format_selector: '#format-selector'
+    select_format:
+        type: xpath
+        selector: '//select[@id="format-selector"]/option[@value="${format}"]'
+
+last_export_record:
+  selectors:
+    details: '.export-record-details'
+    preparing_export: '.export-record-details .loading-icon'
+    export_format: '.record-archive-format'
+    up_to_date_icon: '.record-up-to-date-icon'
+    outdated_icon: '.record-outdated-icon'
+    expiration_warning_icon: '.record-expiration-warning-icon'
+    download_btn: '.record-download-btn'
+    reimport_btn: '.record-reimport-btn'
+
 history_import:
   selectors:
     radio_button_remote_files: '.history-import-component .fa-folder-open'
@@ -524,6 +547,8 @@ trs_import:
     select_server:
       type: xpath
       selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
+    url_input: "#trs-import-url-input"
+    url_import_button: "#trs-url-import-button"
 
 workflow_run:
   selectors:
@@ -917,4 +942,3 @@ job_details:
       type: xpath
       selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
-

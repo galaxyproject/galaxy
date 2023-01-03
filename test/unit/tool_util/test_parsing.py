@@ -31,6 +31,11 @@ TOOL_XML_1 = """
         <container type="docker">mycool/bwa</container>
         <requirement type="package" version="1.0">bwa</requirement>
         <resource type="cores_min">1</resource>
+        <resource type="cuda_version_min">10.2</resource>
+        <resource type="cuda_compute_capability">6.1</resource>
+        <resource type="gpu_memory_min">4042</resource>
+        <resource type="cuda_device_count_min">1</resource>
+        <resource type="cuda_device_count_max">2</resource>
     </requirements>
     <outputs>
         <data name="out1" format="bam" from_work_dir="out1.bam" />
@@ -125,6 +130,16 @@ requirements:
     version: 1.0.1
   - type: resource
     cores_min: 1
+  - type: resource
+    cuda_version_min: 10.2
+  - type: resource
+    cuda_compute_capability: 6.1
+  - type: resource
+    gpu_memory_min: 4042
+  - type: resource
+    cuda_device_count_min: 1
+  - type: resource
+    cuda_device_count_max: 2
 containers:
   - type: docker
     identifier: "awesome/bowtie"
@@ -311,6 +326,11 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert requirements[0].type == "package"
         assert list(containers)[0].identifier == "mycool/bwa"
         assert resource_requirements[0].resource_type == "cores_min"
+        assert resource_requirements[1].resource_type == "cuda_version_min"
+        assert resource_requirements[2].resource_type == "cuda_compute_capability"
+        assert resource_requirements[3].resource_type == "gpu_memory_min"
+        assert resource_requirements[4].resource_type == "cuda_device_count_min"
+        assert resource_requirements[5].resource_type == "cuda_device_count_max"
         assert not resource_requirements[0].runtime_required
 
     def test_outputs(self):
@@ -486,8 +506,22 @@ class TestYamlLoader(BaseLoaderTestCase):
             "resolve_dependencies": False,
             "shell": "/bin/sh",
         }
-        assert len(resource_requirements) == 1
+        assert len(resource_requirements) == 6
         assert resource_requirements[0].to_dict() == {"resource_type": "cores_min", "value_or_expression": 1}
+        assert resource_requirements[1].to_dict() == {"resource_type": "cuda_version_min", "value_or_expression": 10.2}
+        assert resource_requirements[2].to_dict() == {
+            "resource_type": "cuda_compute_capability",
+            "value_or_expression": 6.1,
+        }
+        assert resource_requirements[3].to_dict() == {"resource_type": "gpu_memory_min", "value_or_expression": 4042}
+        assert resource_requirements[4].to_dict() == {
+            "resource_type": "cuda_device_count_min",
+            "value_or_expression": 1,
+        }
+        assert resource_requirements[5].to_dict() == {
+            "resource_type": "cuda_device_count_max",
+            "value_or_expression": 2,
+        }
 
     def test_outputs(self):
         outputs, output_collections = self._tool_source.parse_outputs(object())

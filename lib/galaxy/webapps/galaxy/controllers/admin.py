@@ -1,9 +1,11 @@
 import logging
+from typing import Set
 
 from sqlalchemy import (
     false,
     func,
 )
+from typing_extensions import TypedDict
 
 from galaxy import (
     model,
@@ -17,6 +19,7 @@ from galaxy.exceptions import (
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.security.validate_user_input import validate_password
+from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     nice_size,
     pretty_print_time_interval,
@@ -535,6 +538,10 @@ class ToolVersionListGrid(grids.Grid):
         return trans.install_model.context.query(self.model_class)
 
 
+# TODO: Convert admin UI to use the API and drop this.
+DatatypesEntryT = TypedDict("DatatypesEntryT", {"status": str, "keys": list, "data": list, "message": str})
+
+
 class AdminGalaxy(controller.JSAppLauncher):
 
     user_list_grid = UserListGrid()
@@ -564,7 +571,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         "Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False
     )
 
-    def __init__(self, app):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self.quota_manager: QuotaManager = QuotaManager(app)
 
@@ -594,9 +601,9 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.expose
     @web.json
     @web.require_admin
-    def data_types_list(self, trans, **kwd):
+    def data_types_list(self, trans, **kwd) -> DatatypesEntryT:
         datatypes = []
-        keys = set()
+        keys: Set[str] = set()
         message = kwd.get("message", "")
         status = kwd.get("status", "done")
         for dtype in sorted(trans.app.datatypes_registry.datatype_elems, key=lambda dt: dt.get("extension")):

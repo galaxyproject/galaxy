@@ -4,7 +4,7 @@
             :id="datasetId"
             v-slot="{ result: dataset, loading: isDatasetLoading, error: datasetLoadingError }">
             <div aria-labelledby="dataset-details-heading">
-                <h1 id="dataset-details-heading" class="hide-element">Dataset Details</h1>
+                <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
                 <LoadingSpan v-if="isDatasetLoading" />
                 <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
                 <CurrentUser v-else v-slot="{ user }">
