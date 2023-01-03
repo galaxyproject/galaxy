@@ -2378,12 +2378,15 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
         "output_datasets_ids",
     ]
 
-    def __init__(self, requires_domain=True, configured=False, deleted=False, **kwd):
+    def __init__(self, requires_domain=True, configured=False, deleted=False, short_token=False, **kwd):
         super().__init__(**kwd)
         self.requires_domain = requires_domain
         self.configured = configured
         self.deleted = deleted
-        self.token = self.token or uuid4().hex
+        if short_token:
+            self.token = (self.token or uuid4().hex)[:10]
+        else:
+            self.token = self.token or uuid4().hex
         self.info = self.info or {}
 
     @property
