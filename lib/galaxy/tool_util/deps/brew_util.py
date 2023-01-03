@@ -2,7 +2,7 @@
 builds on those abstraction and provides Galaxy specific functionality
 not useful to the brew external commands.
 """
-from ..deps import brew_exts
+from . import brew_exts
 
 DEFAULT_TAP = "homebrew/science"
 
