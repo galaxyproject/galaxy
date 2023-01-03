@@ -83,7 +83,7 @@ PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
 pyparsing = "*"
-pysam = "*"
+pysam = ">=0.20"
 python = ">=3.7,<3.11"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"
 python-magic = "*"
