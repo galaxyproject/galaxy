@@ -1619,6 +1619,37 @@ def test_xml_order(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" type="manage_data">
+    <inputs>
+        <param name="select" type="select">
+            <option value="a">a</option>
+            <option value="a">a</option>
+        </param>
+    </inputs>
+</tool>
+"""
+
+
+def test_data_manager(lint_ctx_xpath, lint_ctx):
+    """
+    test that all (not really testing 'all', but more than the general linter
+    which was the only one applied to data managers until 23.0) linters are applied
+    """
+    tool_xml = get_xml_tool_source(DATA_MANAGER)
+    tool_source = XmlToolSource(tool_xml)
+    lint_tool_source_with(lint_ctx, tool_source)
+    assert "No tests found, most tools should define test cases." in lint_ctx.warn_messages
+    assert "Tool contains no outputs section, most tools should produce outputs." in lint_ctx.warn_messages
+    assert "No help section found, consider adding a help section to your tool." in lint_ctx.warn_messages
+    assert "No citations found, consider adding citations to your tool." in lint_ctx.warn_messages
+    assert "Select parameter [select] has multiple options with the same text content" in lint_ctx.error_messages
+    assert "Select parameter [select] has multiple options with the same value" in lint_ctx.error_messages
+    assert "No command tag found, must specify a command template to execute." in lint_ctx.error_messages
+    assert lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 4
+    assert len(lint_ctx.error_messages) == 3
+
+
 COMPLETE = """<tool>
     <macros>
         <import>macros.xml</import>
