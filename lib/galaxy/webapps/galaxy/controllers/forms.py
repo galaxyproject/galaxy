@@ -173,7 +173,7 @@ class Forms(BaseUIController):
         if trans.request.method == "GET":
             fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
             ff_types = [
-                (t.__name__.replace("Field", ""), t.__name__) for t in trans.model.FormDefinition.supported_field_types
+                (t.__name__, t.__name__) for t in trans.model.FormDefinition.supported_field_types
             ]
             field_cache = []
             field_inputs = [
