@@ -46,7 +46,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             returned_datasets = dataset_collection["elements"]
             assert len(returned_datasets) == 3, dataset_collection
 
-    def test_create_list_of_existing_pairs(self, history_id):
+    def test_create_list_of_existing_pairs(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             pair_payload = self.dataset_collection_populator.create_pair_payload(
                 history_id,
@@ -133,7 +133,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             for element, zip_path in zip(returned_dce, namelist):
                 assert f"{collection_name}/{element['element_identifier']}.{element['object']['file_ext']}" == zip_path
 
-    def test_list_pair_download(self, history_id):
+    def test_list_pair_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             fetch_response = self.dataset_collection_populator.create_list_of_pairs_in_history(history_id).json()
             dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
@@ -166,7 +166,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             namelist = archive.namelist()
             assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
-    def test_list_list_list_download(self, history_id):
+    def test_list_list_list_download(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             dataset_collection = self.dataset_collection_populator.create_list_of_list_in_history(
                 history_id,
@@ -181,7 +181,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             namelist = archive.namelist()
             assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
-    def test_hda_security(self, history_id):
+    def test_hda_security(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             element_identifiers = self.dataset_collection_populator.pair_identifiers(history_id)
             self.dataset_populator.make_private(history_id, element_identifiers[0]["id"])
@@ -210,7 +210,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             create_response = self._post("dataset_collections", payload, json=True)
             self._assert_status_code_is(create_response, 400)
 
-    def test_upload_collection(self, history_id):
+    def test_upload_collection(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             elements = [
                 {
@@ -248,7 +248,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             dataset_tags = dataset0["tags"]
             assert len(dataset_tags) == 3, dataset0
 
-    def test_upload_nested(self, history_id):
+    def test_upload_nested(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             elements = [{"name": "samp1", "elements": [{"src": "files", "dbkey": "hg19", "info": "my cool bed"}]}]
             targets = [

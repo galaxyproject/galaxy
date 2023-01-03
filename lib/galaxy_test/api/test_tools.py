@@ -959,7 +959,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert tool_info["version"] == "0.2"
 
     @skip_without_tool("cat1")
-    def test_run_cat1_single_meta_wrapper(self, history_id):
+    def test_run_cat1_single_meta_wrapper(self):
         with self.dataset_populator.test_history_for(self.test_run_cat1_single_meta_wrapper) as history_id:
             # Wrap input in a no-op meta parameter wrapper like Sam is planning to
             # use for all UI API submissions.
