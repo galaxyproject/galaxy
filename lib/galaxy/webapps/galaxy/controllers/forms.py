@@ -1,4 +1,5 @@
 import copy
+import csv
 import logging
 import re
 
@@ -140,16 +141,18 @@ class Forms(BaseUIController):
             index = 0
             if csv_file:
                 lines = csv_file.splitlines()
-                for line in lines:
-                    row = line.split(",")
+                rows = csv.reader(lines)
+                for row in rows:
                     if len(row) >= 6:
+                        for column in range(len(row)):
+                            row[column] = str(row[column]).strip('\"')
                         prefix = "fields_%i|" % index
                         payload[f"{prefix}name"] = "%i_imported_field" % (index + 1)
                         payload[f"{prefix}label"] = row[0]
                         payload[f"{prefix}helptext"] = row[1]
                         payload[f"{prefix}type"] = row[2]
                         payload[f"{prefix}default"] = row[3]
-                        payload[f"{prefix}selectlist"] = row[4].split(",")
+                        payload[f"{prefix}selectlist"] = row[4]
                         payload[f"{prefix}required"] = row[5].lower() == "true"
                     index = index + 1
             new_form, message = self.save_form_definition(trans, None, payload)
@@ -245,7 +248,6 @@ class Forms(BaseUIController):
                 field_attributes = ["name", "label", "helptext", "required", "type", "selectlist", "default"]
                 field_dict = {attr: payload.get(f"{prefix}{attr}") for attr in field_attributes}
                 field_dict["visible"] = True
-                field_dict["required"] = field_dict["required"] == "true"
                 if isinstance(field_dict["selectlist"], str):
                     field_dict["selectlist"] = field_dict["selectlist"].split(",")
                 else:
