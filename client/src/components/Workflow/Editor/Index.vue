@@ -423,14 +423,6 @@ export default {
                     outputs: response.outputs,
                     config_form: response.config_form,
                 });
-                const newData = { ...this.steps[node.id] };
-                newData.workflow_outputs = newData.outputs.map((o) => {
-                    return {
-                        output_name: o.name,
-                        label: o.label,
-                    };
-                });
-                node.setNode(newData);
             });
         },
         onChange() {
