@@ -1,28 +1,28 @@
 <script setup>
 import { computed, ref } from "vue";
-import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
-import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay";
-import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
-import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex";
-import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay";
-import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails";
-import HistoryLink from "./Elements/HistoryLink";
-import InvocationTime from "./Elements/InvocationTime";
-import JobMetrics from "./Elements/JobMetrics";
-import JobParameters from "./Elements/JobParameters";
-import ToolStd from "./Elements/ToolStd";
-import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
-import Visualization from "./Elements/Visualization";
+import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
+import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay.vue";
+import HistoryDatasetLink from "./Elements/HistoryDatasetLink.vue";
+import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex.vue";
+import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
+import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails.vue";
+import HistoryLink from "./Elements/HistoryLink.vue";
+import InvocationTime from "./Elements/InvocationTime.vue";
+import JobMetrics from "./Elements/JobMetrics.vue";
+import JobParameters from "./Elements/JobParameters.vue";
+import ToolStd from "./Elements/ToolStd.vue";
+import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
+import Visualization from "./Elements/Visualization.vue";
 
 const toggle = ref(false);
 const props = defineProps({
     name: {
         type: String,
-        default: null,
+        required: true,
     },
     args: {
         type: Object,
-        default: null,
+        required: true,
     },
     datasets: {
         type: Object,
