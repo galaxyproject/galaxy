@@ -195,7 +195,7 @@ class WorkflowRunCrateProfileBuilder:
                     property_value = self._add_job_property_value(crate, param)
                     workflow_inputs.append(property_value)
                     # need a new function?
-                    formal_param = self._add_formal_parameter(crate, output_step.workflow_step)
+                    formal_param = self._add_formal_parameter(crate, output_step.workflow_step, param.name)
                     input_formal_params.append(formal_param)
             if output_step.workflow_step.type == "parameter_input":
                 property_value = self._add_param_property_value(crate, output_step)
@@ -258,7 +258,7 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
-    
+
     # def _add_formal_parameter_job(self, crate: ROCrate, param: JobParameter):
     #     if not tool_input:
     #         param_id = step.output_connections[0].input_name
@@ -328,7 +328,7 @@ class WorkflowRunCrateProfileBuilder:
                     "@type": "PropertyValue",
                     "name": input_name,
                     "value": param.value,
-                    "exampleOfWork": {"@id": f"{input_name}-param"},
+                    "exampleOfWork": {"@id": f"#{input_name}-param"},
                 },
             )
         )
@@ -347,7 +347,7 @@ class WorkflowRunCrateProfileBuilder:
                     "@type": "PropertyValue",
                     "name": input_name,
                     "value": param.parameter_value,
-                    "exampleOfWork": {"@id": f"{input_name}-param"},
+                    "exampleOfWork": {"@id": f"#{input_name}-param"},
                     # param.workflow_step.uuid.urn
                 },
             )
@@ -367,7 +367,7 @@ class WorkflowRunCrateProfileBuilder:
                     "@type": "PropertyValue",
                     "name": tool_input,
                     "value": invocation_step.workflow_step.tool_inputs[tool_input],
-                    "exampleOfWork": {"@id": f"{tool_input}-param"},
+                    "exampleOfWork": {"@id": f"#{tool_input}-param"},
                 },
             )
         )
@@ -386,7 +386,7 @@ class WorkflowRunCrateProfileBuilder:
                     "@type": "PropertyValue",
                     "name": invocation_step.workflow_step.label,
                     "value": invocation_step.output_value.value,
-                    "exampleOfWork": {"@id": f"{input_name}-param"},
+                    "exampleOfWork": {"@id": f"#{input_name}-param"},
                     # invocation_step.workflow_step.uuid.urn
                 },
             )

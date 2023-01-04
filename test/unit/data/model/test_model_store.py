@@ -396,7 +396,7 @@ def validate_main_entity(ro_crate: ROCrate):
     assert workflow["name"] == "Test Workflow"
     assert "SoftwareSourceCode" in workflow.type
     assert "ComputationalWorkflow" in workflow.type
-    assert len(workflow["input"]) == 1
+    assert len(workflow["input"]) == 2
     assert len(workflow["output"]) == 1
 
 
@@ -409,7 +409,7 @@ def validate_create_action(ro_crate: ROCrate):
     assert wf_action["instrument"] is workflow
     wf_objects = wf_action["object"]
     wf_results = wf_action["result"]
-    assert len(wf_objects) == 1
+    assert len(wf_objects) == 2
     assert len(wf_results) == 1
     for entity in wf_results:
         if entity.id.endswith(".txt"):
@@ -423,9 +423,13 @@ def validate_other_entities(ro_crate: ROCrate):
     workflow = ro_crate.mainEntity
     inputs = workflow["input"]
     outputs = workflow["output"]
+    assert inputs[0]["additionalType"] == "File"
+    assert inputs[1]["additionalType"] == "None"
+    assert outputs[0]["additionalType"] == "File"
+
     for entity in inputs + outputs:
         assert "FormalParameter" in entity.type
-        assert "File" in entity["additionalType"]
+
     sel = [_ for _ in ro_crate.contextual_entities if "OrganizeAction" in _.type]
     assert len(sel) == 1
     engine_action = sel[0]
@@ -809,7 +813,8 @@ def _setup_invocation(app):
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
-    workflow_step_1.tool_inputs = "data_input"
+    workflow_step_1.tool_inputs = {}
+    # workflow_step_1.input_optional = False
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
