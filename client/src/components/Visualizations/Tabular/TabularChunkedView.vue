@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
-import { getAppRoot } from "onload/loadConfig";
+import { getAppRoot } from "@/onload/loadConfig";
 import { parse } from "csv-parse/sync";
 
 
