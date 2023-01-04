@@ -30,15 +30,18 @@
                 aria-label="tool recommendations">
                 <i class="fa fa-arrow-right" />
             </b-button>
-            <!-- somehow incredibly slow
-                <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                    <Recommendations
-                        :get-node="getNode"
-                        :get-manager="getManager"
-                        :datatypes-mapper="datatypesMapper"
-                        @onCreate="onCreate" />
-                </b-popover>
-            -->
+            <b-popover
+                v-if="isEnabled"
+                :target="popoverId"
+                triggers="hover"
+                placement="bottom"
+                :show.sync="popoverShow">
+                <Recommendations
+                    v-if="popoverShow"
+                    :step-id="id"
+                    :datatypes-mapper="datatypesMapper"
+                    @onCreate="onCreate" />
+            </b-popover>
             <b-button
                 v-if="canClone"
                 v-b-tooltip.hover
@@ -102,7 +105,7 @@ import WorkflowIcons from "@/components/Workflow/icons";
 // TODO: implement scheme for loading tool state here
 // import LoadingSpan from "@/components/LoadingSpan.vue";
 import { getGalaxyInstance } from "@/app";
-// import Recommendations from "components/Workflow/Editor/Recommendations";
+import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
@@ -144,7 +147,8 @@ const emit = defineEmits([
     "stopDragging",
 ]);
 
-// const popoverShow = ref(false)
+const popoverShow = ref(false);
+const popoverId = computed(() => `popover-${props.id}`);
 const scrolledTo = ref(false);
 
 function remove() {
@@ -199,10 +203,10 @@ function onChange() {
     emit("onChange");
 }
 
-// function onCreate(contentId: string, name: string) {
-//     emit("onCreate", contentId, name);
-//     // popoverShow.value = false
-// }
+function onCreate(contentId: string, name: string) {
+    emit("onCreate", contentId, name);
+    popoverShow.value = false;
+}
 
 function onClone() {
     emit("onClone", props.id);
