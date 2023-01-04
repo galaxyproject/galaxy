@@ -77,7 +77,6 @@
                     @onCreate="onInsertTool"
                     @onChange="onChange"
                     @onConnect="onConnect"
-                    @onDisconnect="onDisconnect"
                     @onRemove="onRemove"
                     @onUpdateStep="onUpdateStep"
                     @onUpdateStepPosition="onUpdateStepPosition">
@@ -363,9 +362,6 @@ export default {
         onConnect(connection) {
             this.connectionsStore.addConnection(connection);
         },
-        onDisconnect(nodeId, inputName) {
-            // delete this.steps[nodeId].input_connections[inputName];
-        },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
                 const r = window.confirm(
@@ -528,8 +524,6 @@ export default {
             this.showSaveAsModal = true;
         },
         onLayout() {
-            // this.canvasManager.drawOverview();
-            // this.canvasManager.scrollToNodes();
             return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
                 layout.autoLayout(this.steps).then((newSteps) => {
                     newSteps.map((step) => this.onUpdateStep(step));
@@ -551,8 +545,6 @@ export default {
         },
         onSetData(nodeId, newData) {
             this.lastQueue.enqueue(getModule, newData).then((data) => {
-                // TODO: change data in store, don't change node ...
-                // also check that PJAs and other modification survive, or limit to input/output ?
                 const step = {
                     ...this.steps[nodeId],
                     content_id: data.content_id,
