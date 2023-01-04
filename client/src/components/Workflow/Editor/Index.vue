@@ -70,6 +70,8 @@
                     :steps="steps"
                     :datatypes-mapper="datatypesMapper"
                     :highlight-id="highlightId"
+                    :scroll-to-id="scrollToId"
+                    @scrollTo="scrollToId = null"
                     @transform="(value) => (transform = value)"
                     @graph-offset="(value) => (graphOffset = value)"
                     @onUpdate="onUpdate"
@@ -287,6 +289,7 @@ export default {
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
+            scrollToId: null,
             highlightId: null,
             messageTitle: null,
             messageBody: null,
@@ -559,11 +562,9 @@ export default {
             const step = { ...this.steps[nodeId], label: newLabel };
             this.onUpdateStep(step);
         },
-        onScrollTo(nodeId) {
-            // TODO: use panBy to scroll to step position
-            // const node = this.nodes[nodeId];
-            // this.canvasManager.scrollToNode(node);
-            // node.onScrollTo();
+        onScrollTo(stepId) {
+            this.scrollToId = stepId;
+            this.onHighlight(stepId);
         },
         onHighlight(stepId) {
             this.highlightId = stepId;
@@ -573,6 +574,7 @@ export default {
         },
         onLint() {
             this._ensureParametersSet();
+            this.stateStore.setActiveNode(null);
             this.showInPanel = "lint";
         },
         onUpgrade() {

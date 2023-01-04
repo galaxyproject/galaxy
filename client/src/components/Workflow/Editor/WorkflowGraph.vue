@@ -45,7 +45,7 @@ import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { useElementBounding } from "@vueuse/core";
 import D3Zoom from "@/components/Workflow/Editor/D3Zoom.vue";
 import { provide } from "vue";
@@ -54,15 +54,16 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { PropType } from "vue";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { Step } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { ZoomTransform } from "d3-zoom";
 import type { OutputTerminals } from "./modules/terminals";
 
-defineProps({
+const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
     highlightId: { type: null as unknown as PropType<number | null>, default: null },
+    scrollToId: { type: null as unknown as PropType<number | null>, default: null },
 });
 const transform = reactive({ x: 0, y: 0, k: 1 });
 
@@ -71,10 +72,32 @@ provide("isDragging", isDragging);
 provide("transform", transform);
 
 const stateStore = useWorkflowStateStore();
+const stepStore = useWorkflowStepStore();
 const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
 const el = ref(null);
 const zoom = ref(null) as any;
 const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
+
+watch(
+    () => props.scrollToId,
+    () => {
+        if (props.scrollToId !== null) {
+            const { width: stepWidth, height: stepHeight } = stateStore.stepPosition[props.scrollToId];
+            const { position: stepPosition } = stepStore.getStep(props.scrollToId);
+            if (stepPosition) {
+                const { width, height } = position;
+                const centerScreenX = width / 2;
+                const centerScreenY = height / 2;
+                const offsetX = centerScreenX - (stepPosition.left + stepWidth / 2);
+                const offsetY = centerScreenY - (stepPosition.top + stepHeight / 2);
+                onZoom(1, { x: offsetX, y: offsetY });
+            } else {
+                console.log("Step has no position");
+            }
+            emit("scrollTo");
+        }
+    }
+);
 
 function onPan(pan: XYPosition) {
     zoom.value.panBy(pan);
@@ -122,7 +145,7 @@ const nodesStyle = computed(() => {
     return { transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})` };
 });
 
-const emit = defineEmits(["transform", "graph-offset", "onRemove"]);
+const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 emit("transform", transform);
 emit("graph-offset", position);
 </script>
