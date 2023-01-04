@@ -4,14 +4,6 @@ import { defineStore } from "pinia";
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 import type { UseElementBoundingReturn } from "@vueuse/core";
 
-export const state = {
-    inputTerminals: {},
-    outputTerminals: {},
-    activeNode: null,
-    scale: 1,
-    nodes: {},
-};
-
 export interface TerminalPosition {
     startX: number;
     endX: number;
@@ -32,6 +24,7 @@ interface State {
     activeNodeId: number | null;
     scale: number;
     stepPosition: { [index: number]: UnwrapRef<UseElementBoundingReturn> };
+    stepLoadingState: { [index: number]: { loading?: boolean; error?: string } };
 }
 
 export const useWorkflowStateStore = defineStore("workflowStateStore", {
@@ -43,6 +36,7 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         activeNodeId: null,
         scale: 1,
         stepPosition: {},
+        stepLoadingState: {},
     }),
     getters: {
         getInputTerminalPosition(state: State) {
@@ -50,6 +44,9 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         },
         getOutputTerminalPosition(state: State) {
             return (stepId: number, outputName: string) => state.outputTerminals[stepId]?.[outputName];
+        },
+        getStepLoadingState(state: State) {
+            return (stepId: number) => state.stepLoadingState[stepId];
         },
     },
     actions: {
@@ -84,6 +81,9 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
         },
         deleteStepPosition(stepId: number) {
             delete this.stepPosition[stepId];
+        },
+        setLoadingState(stepId: number, loading: boolean, error: string | undefined) {
+            Vue.set(this.stepLoadingState, stepId, { loading, error });
         },
     },
 });

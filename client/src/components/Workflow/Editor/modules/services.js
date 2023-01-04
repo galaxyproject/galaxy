@@ -1,5 +1,5 @@
 import axios from "axios";
-import { rethrowSimple } from "utils/simple-error";
+import { rethrowSimple, errorMessageAsString } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
 import { fromSimple, toSimple } from "./model";
 
@@ -13,11 +13,14 @@ export async function getVersions(id) {
     }
 }
 
-export async function getModule(request_data) {
+export async function getModule(request_data, stepId, setLoadingState) {
+    setLoadingState(stepId, true);
     try {
         const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);
+        setLoadingState(stepId, false);
         return data;
     } catch (e) {
+        setLoadingState(stepId, false, errorMessageAsString(e));
         rethrowSimple(e);
     }
 }

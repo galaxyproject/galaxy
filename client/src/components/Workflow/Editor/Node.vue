@@ -11,6 +11,7 @@
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
+            <loading-span v-if="isLoading" message="Loading details" />
             <b-button
                 v-b-tooltip.hover
                 class="node-destroy py-0 float-right"
@@ -102,8 +103,7 @@ import type { PropType, Ref } from "vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import WorkflowIcons from "@/components/Workflow/icons";
-// TODO: implement scheme for loading tool state here
-// import LoadingSpan from "@/components/LoadingSpan.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import { getGalaxyInstance } from "@/app";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
@@ -159,6 +159,7 @@ const el: Ref<HTMLElement | null> = ref(null);
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const stateStore = useWorkflowStateStore();
+const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 const position = useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
@@ -180,7 +181,7 @@ const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
 const activeOutputs = new ActiveOutputs();
-const errors = computed(() => props.step.errors);
+const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
 const inputs = computed(() => props.step.inputs);
 const outputs = computed(() => props.step.outputs);
 

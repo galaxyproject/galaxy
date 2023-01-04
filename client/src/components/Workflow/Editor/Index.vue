@@ -408,20 +408,24 @@ export default {
             await fromSimple(this, response.workflow);
             this._loadEditorData(response.workflow);
         },
-        onUpdate(node) {
-            getModule({
-                type: node.type,
-                content_id: node.contentId,
-                _: "true",
-            }).then((response) => {
-                // TODO: state, inputs and outputs should go to store and data should flow from there,
-                // but complicated by mixing state and presentation details
+        onUpdate(step) {
+            getModule(
+                {
+                    type: step.type,
+                    content_id: step.contentId,
+                    _: "true",
+                },
+                this.id,
+                this.stateStore.setLoadingState
+            ).then((response) => {
                 this.onUpdateStep({
-                    ...this.steps[node.id],
-                    tool_state: response.tool_state,
+                    ...this.steps[step.id],
+                    config_form: response.config_form,
+                    content_id: response.content_id,
+                    errors: response.errors,
                     inputs: response.inputs,
                     outputs: response.outputs,
-                    config_form: response.config_form,
+                    tool_state: response.tool_state,
                 });
             });
         },
@@ -535,19 +539,21 @@ export default {
             const step = { ...this.steps[nodeId], annotation: newAnnotation };
             this.onUpdateStep(step);
         },
-        onSetData(nodeId, newData) {
-            this.lastQueue.enqueue(getModule, newData).then((data) => {
-                const step = {
-                    ...this.steps[nodeId],
-                    content_id: data.content_id,
-                    inputs: data.inputs,
-                    outputs: data.outputs,
-                    config_form: data.config_form,
-                    tool_state: data.tool_state,
-                    errors: data.errors,
-                };
-                this.onUpdateStep(step);
-            });
+        onSetData(stepId, newData) {
+            this.lastQueue
+                .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState))
+                .then((data) => {
+                    const step = {
+                        ...this.steps[stepId],
+                        content_id: data.content_id,
+                        inputs: data.inputs,
+                        outputs: data.outputs,
+                        config_form: data.config_form,
+                        tool_state: data.tool_state,
+                        errors: data.errors,
+                    };
+                    this.onUpdateStep(step);
+                });
         },
         onLabel(nodeId, newLabel) {
             const step = { ...this.steps[nodeId], label: newLabel };
@@ -639,8 +645,9 @@ export default {
                 position: defaultPosition(this.graphOffset, this.transform),
                 post_job_actions: {},
             };
-            getModule(stepData).then((response) => {
-                const { id } = this.stepStore.addStep({
+            const { id } = this.stepStore.addStep(stepData);
+            getModule(stepData, id, this.stateStore.setLoadingState).then((response) => {
+                this.stepStore.updateStep({
                     ...stepData,
                     tool_state: response.tool_state,
                     inputs: response.inputs,
