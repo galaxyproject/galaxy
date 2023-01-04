@@ -20,6 +20,7 @@ except ImportError:
     Template = None  # type: ignore[assignment,misc]
     UndefinedError = Exception  # type: ignore[assignment,misc]
 
+from galaxy.util import check_github_api_response_rate_limit
 from .util import (
     get_file_from_recipe_url,
     MULLED_SOCKET_TIMEOUT,
@@ -175,6 +176,7 @@ def get_alternative_versions(filepath, filename, recipes_path=None, github_repo=
     # else use the GitHub API:
     versions = []
     r = requests.get(f"https://api.github.com/repos/{github_repo}/contents/{filepath}", timeout=MULLED_SOCKET_TIMEOUT)
+    check_github_api_response_rate_limit(r)
     r.raise_for_status()
     for subfile in json.loads(r.text):
         if subfile["type"] == "dir":
