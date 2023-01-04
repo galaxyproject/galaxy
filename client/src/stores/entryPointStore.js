@@ -7,7 +7,7 @@ import isEqual from "lodash.isequal";
 export const useEntryPointStore = defineStore("entryPointStore", {
     state: () => ({
         entryPoints: [],
-        interval: undefined,
+        pollTimeout: undefined,
     }),
     getters: {
         entryPointsForJob: (state) => {
@@ -19,18 +19,17 @@ export const useEntryPointStore = defineStore("entryPointStore", {
         },
     },
     actions: {
-        ensurePollingEntryPoints() {
-            if (this.interval === undefined) {
-                this.fetchEntryPoints();
-                this.interval = setInterval(() => {
-                    this.fetchEntryPoints();
-                }, 5000);
-            }
+        async ensurePollingEntryPoints() {
+            await this.fetchEntryPoints();
+            this.pollTimeout = setTimeout(() => {
+                this.ensurePollingEntryPoints();
+            }, 10000);
         },
         stopPollingEntryPoints() {
-            this.interval = clearInterval(this.interval);
+            this.pollTimeout = clearTimeout(this.pollTimeout);
         },
         async fetchEntryPoints() {
+            this.stopPollingEntryPoints();
             const url = getAppRoot() + `api/entry_points`;
             const params = { running: true };
             axios
