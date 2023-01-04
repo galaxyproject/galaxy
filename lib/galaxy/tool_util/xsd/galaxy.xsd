@@ -237,7 +237,7 @@ a short [SPDX](https://spdx.org/licenses/) identifier for a license for this too
 wrapper. The tool wrapper version can be indepedent of the underlying tool. This
 license covers the tool XML and associated scripts shipped with the tool.
 
-This is interpreted as [schema.org/license](https://schema.org/license)).
+This is interpreted as [schema.org/license](https://schema.org/license) property.
 </xs:documentation>
         </xs:annotation>
       </xs:attribute>
@@ -7030,7 +7030,7 @@ and ``bibtex`` are the only supported options.</xs:documentation>
       <xs:documentation xml:lang="en">Type of comparison to use when comparing
 test generated output files to expected output files. Currently valid value are
 ``diff`` (the default), ``re_match``, ``re_match_multiline``,
-and ``contains``. In addtion there is ``sim_size`` which is discouraged in fafour of a ``has_size`` assertion.</xs:documentation>
+and ``contains``. In addition there is ``sim_size`` which is discouraged in favour of a ``has_size`` assertion.</xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="diff"/>
@@ -7057,7 +7057,7 @@ and ``contains``. In addtion there is ``sim_size`` which is discouraged in fafou
   </xs:simpleType>
   <xs:simpleType name="Bytes">
     <xs:annotation>
-      <xs:documentation xml:lang="en">Number of bytes alowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
+      <xs:documentation xml:lang="en">Number of bytes allowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>

@@ -11,7 +11,7 @@ from collections.abc import (
 )
 from decimal import Decimal
 
-from ..util import unicodify
+from . import unicodify
 
 __all__ = ("safe_dumps", "validate_jsonrpc_request", "validate_jsonrpc_response", "jsonrpc_request", "jsonrpc_response")
 

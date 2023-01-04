@@ -30,7 +30,7 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from ..objectstore import DiskObjectStore
+from . import DiskObjectStore
 
 IRODS_IMPORT_MESSAGE = "The Python irods package is required to use this feature, please install it"
 # 1 MB
