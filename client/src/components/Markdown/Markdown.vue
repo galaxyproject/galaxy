@@ -28,7 +28,7 @@
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Published with Galaxy {{ version }} on {{ timeStamp }}</div>
+                <div class="float-left m-1">Published with Galaxy {{ version }} on {{ time }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
