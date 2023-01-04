@@ -28,7 +28,7 @@
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Published with Galaxy {{ getVersion }} on {{ getTime }}</div>
+                <div class="float-left m-1">Published with Galaxy {{ version }} on {{ timeStamp }}</div>
                 <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
@@ -43,12 +43,15 @@
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
                 <markdown-container
                     v-else
-                    :obj="obj"
+                    :name="obj.name"
+                    :args="obj.args"
                     :datasets="datasets"
                     :collections="collections"
                     :histories="histories"
                     :invocations="invocations"
                     :jobs="jobs"
+                    :time="time"
+                    :version="version"
                     :workflows="workflows" />
             </div>
         </div>
@@ -129,10 +132,10 @@ export default {
         };
     },
     computed: {
-        getVersion() {
-            return this.markdownConfig.generate_version || "Unknown Galaxy Version";
+        effectiveExportLink() {
+            return this.enable_beta_markdown_export ? this.exportLink : null;
         },
-        getTime() {
+        time() {
             const generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
                 const date = new Date(generateTime);
@@ -146,8 +149,8 @@ export default {
             }
             return "unavailable";
         },
-        effectiveExportLink() {
-            return this.enable_beta_markdown_export ? this.exportLink : null;
+        version() {
+            return this.markdownConfig.generate_version || "Unknown Galaxy Version";
         },
     },
     watch: {
