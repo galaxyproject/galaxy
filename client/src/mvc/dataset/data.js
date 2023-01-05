@@ -647,5 +647,5 @@ export var createTabularDatasetChunkedView = (options) => {
 
 export const createNewTabularDatasetChunkedView = (options) => {
     // We'll always have a parent_elt in options, so create a div and insert it into that.
-    return appendVueComponent(options.parent_elt, TabularChunkedView, {options});
+    return appendVueComponent(options.parent_elt, TabularChunkedView, { options });
 };
