@@ -7,12 +7,15 @@ export function useTerminal(
     stepId: Ref<Step["id"]>,
     terminalSource: Ref<TerminalSource>,
     datatypesMapper: Ref<DatatypesMapperModel>
-): Ref<ReturnType<typeof terminalFactory>> {
+) {
     const terminal = ref();
+    const isMappedOver = ref(false);
     watchEffect(() => {
+        // rebuild terminal if any of the tracked dependencies change
         const newTerminal = terminalFactory(stepId.value, terminalSource.value, datatypesMapper.value);
         newTerminal.destroyInvalidConnections();
         terminal.value = newTerminal;
+        isMappedOver.value = newTerminal.isMappedOver();
     });
-    return terminal as Ref<ReturnType<typeof terminalFactory>>;
+    return { terminal: terminal as Ref<ReturnType<typeof terminalFactory>>, isMappedOver };
 }

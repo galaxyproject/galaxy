@@ -95,7 +95,7 @@ export default {
     },
     setup(props) {
         const el = ref(null);
-        const { rootOffset, parentOffset, stepPosition } = toRefs(props);
+        const { rootOffset, parentOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
         const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
         const extensions = computed(() => {
             const changeDatatype =
@@ -111,11 +111,11 @@ export default {
             }
             return extensions;
         });
-        const effectiveOutput = ref({ ...props.output, extensions: extensions.value });
+        const effectiveOutput = ref({ ...output.value, extensions: extensions.value });
         watch(extensions, () => {
-            effectiveOutput.value = { ...props.output, extensions: extensions.value };
+            effectiveOutput.value = { ...output.value, extensions: extensions.value };
         });
-        const terminal = useTerminal(ref(props.stepId), effectiveOutput, ref(props.datatypesMapper));
+        const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutput, datatypesMapper);
 
         function closeMenu() {
             showChildComponent.value = false;
@@ -144,6 +144,7 @@ export default {
             el,
             position,
             terminal,
+            isMultiple,
             label,
             stateStore,
             menu,
@@ -155,7 +156,6 @@ export default {
     },
     data() {
         return {
-            isMultiple: false,
             isDragging: false,
             dragX: 0,
             dragY: 0,

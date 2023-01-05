@@ -59,18 +59,16 @@ export default {
     },
     setup(props) {
         const el = ref(null);
-        const { rootOffset, parentOffset, stepPosition } = toRefs(props);
+        const { rootOffset, parentOffset, stepPosition, stepId, input, datatypesMapper } = toRefs(props);
         const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
         const isDragging = inject("isDragging");
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);
         const connectionStore = useConnectionStore();
-        const terminal = useTerminal(ref(props.stepId), ref(props.input), ref(props.datatypesMapper));
-        const connectedTerminals = ref([]);
-        const isMultiple = ref(false);
+        const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, datatypesMapper);
+        const hasTerminals = ref(false);
         watchEffect(() => {
-            connectedTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value);
-            isMultiple.value = terminal.value.isMappedOver();
+            hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
         });
         const stateStore = useWorkflowStateStore();
         const { draggingTerminal } = storeToRefs(stateStore);
@@ -82,7 +80,7 @@ export default {
             connectionStore,
             id,
             iconId,
-            connectedTerminals,
+            hasTerminals,
             terminal,
             stateStore,
             isMultiple,
@@ -134,9 +132,6 @@ export default {
             }
             return classes;
         },
-        hasTerminals() {
-            return this.connectedTerminals.length > 0;
-        },
     },
     watch: {
         terminalPosition(position) {
@@ -168,7 +163,7 @@ export default {
             this.showRemove = false;
         },
         enter() {
-            this.showRemove = Boolean(this.hasTerminals);
+            this.showRemove = this.hasTerminals;
         },
         leave() {
             this.showRemove = false;
