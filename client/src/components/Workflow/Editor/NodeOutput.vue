@@ -117,10 +117,6 @@ export default {
         });
         const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutput, datatypesMapper);
 
-        function closeMenu() {
-            showChildComponent.value = false;
-        }
-
         const label = computed(() => {
             const workflowOutput = props.workflowOutputs.find(
                 (workflowOutput) => workflowOutput.output_name == props.output.name
@@ -131,6 +127,11 @@ export default {
 
         const menu = ref(null);
         const showChildComponent = ref(false);
+
+        function closeMenu() {
+            showChildComponent.value = false;
+        }
+
         async function toggleChildComponent() {
             showChildComponent.value = !showChildComponent.value;
             if (showChildComponent.value) {
