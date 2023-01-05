@@ -1,9 +1,9 @@
 import Composite from "./Composite.vue";
-import { mountWithApp } from "./testHelpers";
+import { mountWithDetails } from "./testHelpers";
 
 describe("Composite.vue", () => {
     it("loads with correct initial state", async () => {
-        const { wrapper } = mountWithApp(Composite);
+        const { wrapper } = mountWithDetails(Composite);
         expect(wrapper.find("#btn-start").classes()).toEqual(expect.arrayContaining(["disabled"]));
         expect(wrapper.vm.showHelper).toBe(true);
         expect(wrapper.vm.readyStart).toBe(false);

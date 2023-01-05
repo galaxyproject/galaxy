@@ -14,7 +14,7 @@ from typing import (
 import fs
 from fs.base import FS
 
-from ..sources import BaseFilesSource
+from . import BaseFilesSource
 
 log = logging.getLogger(__name__)
 

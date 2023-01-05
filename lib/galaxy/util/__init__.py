@@ -25,7 +25,10 @@ import threading
 import time
 import unicodedata
 import xml.dom.minidom
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
@@ -1804,6 +1807,17 @@ def is_url(uri, allow_list=None):
     if allow_list is None:
         allow_list = ("http://", "https://", "ftp://")
     return any(uri.startswith(scheme) for scheme in allow_list)
+
+
+def check_github_api_response_rate_limit(response):
+    if response.status_code == 403 and "API rate limit exceeded" in response.json()["message"]:
+        # It can take tens of minutes before the rate limit window resets
+        message = "GitHub API rate limit exceeded."
+        rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
+        if rate_limit_reset_UTC_timestamp:
+            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+            message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
+        raise Exception(message)
 
 
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):

@@ -1,12 +1,12 @@
 # Styleguide
 
-Most of the client's code style is handled by prettier. Prettier does a good job of keeping an overall consistent code style, however there are some cases it can not account for.
+Most of the client's code style is handled by Prettier. Prettier does a good job of keeping an overall consistent code style, however there are some cases it cannot account for.
 This document serves as a guide on how to style your code in such cases, with explanations as to why.
-Treat it more like a set of recommendations, than hard rules.
+Treat it more like a set of recommendations than hard rules.
 
 ## Naming
 
-Do not abbreviate. This includes naming `variables`, `functions` and `modules`.
+Do not abbreviate. This includes naming variables, functions and modules.
 
 > **Do**
 >
@@ -106,7 +106,7 @@ When possible, use arrow functions instead.
 
 ## HTML Multi-Line Layout
 
-Prettier tires to respect whitespace when formatting your HTML templates, even when it doesn't need to. So for example this code:
+Prettier tries to respect whitespace when formatting your HTML templates, even when it doesn't need to. So for example this code:
 
 ```vue
 <b-button class="danger-button mb-4" variant="danger" @click="onDangerButtonClick">A very Long Button Text</b-button>
@@ -122,7 +122,7 @@ Might get turned into:
 
 Notice the strange positioning of the `>` brackets.
 
-In the case of the button, this formatting is equivalent to the much more readable:
+In this case the formatting is equivalent to the much more readable:
 
 ```vue
 <b-button class="danger-button mb-4" variant="danger" @click="onDangerButtonClick">
@@ -136,11 +136,11 @@ Prettier does not know if our element has significant whitespace, or not. Check 
 
 ## Spacing
 
-Prettier adds no empty newlines into your code, but they can help in making it more readable.
+Prettier doesn't add empty lines to your code, but they can help in making it more readable.
 
 ### Javascript
 
-Add space between blocks of variable definitions and other code.
+Add an empty line between a block of variable definitions and other code.
 
 > **Do**
 >

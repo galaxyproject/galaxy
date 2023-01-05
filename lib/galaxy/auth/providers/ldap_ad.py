@@ -12,7 +12,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from ..providers import AuthProvider
+from . import AuthProvider
 
 try:
     import ldap

@@ -5,9 +5,10 @@ import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
 import { safePath } from "utils/redirect";
 import { getActiveTab } from "./utilities";
-import { watch, ref } from "vue";
-import { onMounted } from "vue";
+import { watch, ref, reactive } from "vue";
+import { onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
+import { useEntryPointStore } from "stores/entryPointStore";
 import ThemeSelector from "./ThemeSelector.vue";
 
 const route = useRoute();
@@ -48,6 +49,15 @@ const activeTab = ref(props.initialActiveTab);
 const extensionTabs = ref([]);
 const windowToggle = ref(false);
 
+let entryPointStore;
+const itsMenu = reactive({
+    id: "interactive",
+    url: "/interactivetool_entry_points/list",
+    tooltip: "See Running Interactive Tools",
+    icon: "fa-cogs",
+    hidden: true,
+});
+
 function setActiveTab() {
     const currentRoute = route.path;
     activeTab.value = getActiveTab(currentRoute, props.tabs) || activeTab.value;
@@ -55,6 +65,9 @@ function setActiveTab() {
 
 function onWindowToggle() {
     windowToggle.value = !windowToggle.value;
+}
+function updateVisibility(isActive) {
+    itsMenu.hidden = !isActive;
 }
 
 watch(
@@ -64,6 +77,14 @@ watch(
     }
 );
 
+/* lifecyle */
+onBeforeMount(() => {
+    entryPointStore = useEntryPointStore();
+    entryPointStore.ensurePollingEntryPoints();
+    entryPointStore.$subscribe((mutation, state) => {
+        updateVisibility(state.entryPoints.length > 0);
+    });
+});
 onMounted(() => {
     loadWebhookMenuItems(extensionTabs.value);
     setActiveTab();
@@ -92,6 +113,12 @@ onMounted(() => {
                 v-show="tab.hidden !== true"
                 :key="`tab-${idx}`"
                 :tab="tab"
+                :active-tab="activeTab"
+                @open-url="emit('open-url', $event)" />
+            <masthead-item
+                v-show="itsMenu.hidden !== true"
+                :key="`its-tab`"
+                :tab="itsMenu"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <ThemeSelector />

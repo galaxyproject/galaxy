@@ -28,7 +28,7 @@ from galaxy.util import (
 )
 from galaxy.util.path import safe_relpath
 from galaxy.util.sleeper import Sleeper
-from ..objectstore import (
+from . import (
     ConcreteObjectStore,
     convert_bytes,
 )

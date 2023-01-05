@@ -2,7 +2,7 @@ from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
 )
-from ..types import BaseDatasetCollectionType
+from . import BaseDatasetCollectionType
 
 FORWARD_IDENTIFIER = "forward"
 REVERSE_IDENTIFIER = "reverse"

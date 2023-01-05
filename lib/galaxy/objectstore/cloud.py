@@ -23,11 +23,11 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.sleeper import Sleeper
-from .s3 import parse_config_xml
-from ..objectstore import (
+from . import (
     ConcreteObjectStore,
     convert_bytes,
 )
+from .s3 import parse_config_xml
 
 try:
     from cloudbridge.factory import (

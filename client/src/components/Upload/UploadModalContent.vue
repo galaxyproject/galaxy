@@ -3,7 +3,7 @@
         <b-tab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <default
                 ref="regular"
-                :app="this"
+                :details="details"
                 :lazy-load-max="50"
                 :multiple="multiple"
                 :has-callback="hasCallback"
@@ -11,13 +11,13 @@
                 v-on="$listeners" />
         </b-tab>
         <b-tab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
-            <composite :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <composite :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
         <b-tab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
-            <collection :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <collection :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
         <b-tab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
-            <rules-input :app="this" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <rules-input :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
         </b-tab>
     </b-tabs>
     <div v-else>
@@ -135,6 +135,23 @@ export default {
             }
             return this.multiple;
         },
+        currentFtp() {
+            return this.currentUserId && this.ftpUploadSite;
+        },
+        details() {
+            return {
+                effectiveExtensions: this.effectiveExtensions,
+                listGenomes: this.listGenomes,
+                currentFtp: this.currentFtp,
+                fileSourcesConfigured: this.fileSourcesConfigured,
+                defaultExtension: this.defaultExtension,
+                defaultDbKey: this.defaultDbKey,
+                uploadPath: this.uploadPath,
+                model: this.model,
+                chunkUploadSize: this.chunkUploadSize,
+                history_id: this.currentHistoryId,
+            };
+        },
     },
     created() {
         this.model = new Backbone.Model({
@@ -192,9 +209,6 @@ export default {
         this.id = String(this._uid);
     },
     methods: {
-        currentFtp: function () {
-            return this.currentUserId && this.ftpUploadSite;
-        },
         /**
          * Package API data from array of backbone models
          * @param{Array} items - Upload items/rows filtered from a collection
