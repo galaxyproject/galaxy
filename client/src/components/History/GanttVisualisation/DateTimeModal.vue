@@ -18,7 +18,7 @@
                                         <b-row>
                                             <b-col>
                                                 <DatePicker v-model="date" mode="dateTime">
-                                                    <template #default="{ inputValue, inputEvents }">
+                                                    <template v-slot="{ inputValue, inputEvents }">
                                                         <input
                                                             class="px-3 py-1 border rounded"
                                                             :value="inputValue"
@@ -68,11 +68,6 @@ export default {
             date,
         };
     },
-    // data() {
-    //     return {
-    //         date: moment().format("YYYY-MM-DD HH:mm:ss"),
-    //     };
-    // },
 };
 </script>
 <style scoped>
