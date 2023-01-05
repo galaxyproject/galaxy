@@ -75,7 +75,7 @@
 </template>
 
 <script>
-import Vue, { computed } from "vue";
+import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
@@ -94,6 +94,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { storeToRefs } from "pinia";
 
 Vue.use(BootstrapVue);
 
@@ -131,9 +132,8 @@ export default {
             required: true,
         },
     },
-    setup(props) {
-        const stepStore = useWorkflowStepStore();
-        const hasActiveOutputs = computed(() => Object.keys(stepStore.workflowOutputs).length > 0);
+    setup() {
+        const { hasActiveOutputs } = storeToRefs(useWorkflowStepStore());
         return { hasActiveOutputs };
     },
     computed: {

@@ -163,6 +163,14 @@
                     @extend .fa;
                     @extend .fa-check-square;
                 }
+                &.mark-terminal-visible {
+                    @extend .fa;
+                    @extend .fa-eye;
+                }
+                &.mark-terminal-hidden {
+                    @extend .fa;
+                    @extend .fa-eye-slash;
+                }
             }
             .delete-terminal {
                 @extend .btn;

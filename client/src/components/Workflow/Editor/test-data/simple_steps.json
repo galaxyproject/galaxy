@@ -19,8 +19,7 @@
         "extensions": [
           "input"
         ],
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",

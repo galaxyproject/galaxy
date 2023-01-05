@@ -41,7 +41,6 @@ export interface DataOutput {
     extensions: string[];
     name: string;
     optional: boolean;
-    activeOutput?: boolean;
 }
 
 export interface CollectionOutput extends Omit<DataOutput, "type"> {
@@ -148,15 +147,20 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         getStepIndex(state: State) {
             return Math.max(...Object.values(state.steps).map((step) => step.id), state.stepIndex);
         },
+        hasActiveOutputs(state: State) {
+            return Boolean(Object.values(state.steps).find((step) => step.workflow_outputs?.length));
+        },
         workflowOutputs(state: State) {
             const workflowOutputs: WorkflowOutputs = {};
             Object.values(state.steps).forEach((step) => {
                 if (step.workflow_outputs?.length) {
                     step.workflow_outputs.forEach((workflowOutput) => {
-                        workflowOutputs[workflowOutput.label || workflowOutput.output_name] = {
-                            outputName: workflowOutput.output_name,
-                            stepId: step.id,
-                        };
+                        if (workflowOutput.label) {
+                            workflowOutputs[workflowOutput.label] = {
+                                outputName: workflowOutput.output_name,
+                                stepId: step.id,
+                            };
+                        }
                     });
                 }
             });
@@ -174,6 +178,9 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             return step;
         },
         updateStep(this: State, step: Step) {
+            step.workflow_outputs = step.workflow_outputs?.filter((workflowOutput) =>
+                step.outputs.find((output) => workflowOutput.output_name == output.name)
+            );
             this.steps[step.id.toString()] = step;
         },
         changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {

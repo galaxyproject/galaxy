@@ -18,7 +18,7 @@ describe("FormOutputLabel", () => {
     ];
 
     beforeEach(() => {
-        const stepOne = { id: 0, workflow_outputs: outputs };
+        const stepOne = { id: 0, outputs: [{ name: "output-name" }], workflow_outputs: outputs };
         const pinia = createPinia();
         setActivePinia(pinia);
         wrapper = mount(FormOutputLabel, {
@@ -29,7 +29,7 @@ describe("FormOutputLabel", () => {
             localVue,
             pinia,
         });
-        const stepTwo = { id: 1, workflow_outputs: outputs };
+        const stepTwo = { id: 1, outputs: [{ name: "other-name" }], workflow_outputs: outputs };
         wrapperOther = mount(FormOutputLabel, {
             propsData: {
                 name: "other-name",

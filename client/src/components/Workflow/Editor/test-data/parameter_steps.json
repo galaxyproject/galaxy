@@ -19,8 +19,7 @@
         "extensions": [
           "input"
         ],
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -66,8 +65,7 @@
           "tabular"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -109,8 +107,7 @@
         ],
         "collection": true,
         "collection_type": "list",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -146,8 +143,7 @@
         ],
         "collection": true,
         "collection_type": "list:list",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -183,8 +179,7 @@
         ],
         "collection": true,
         "collection_type": "paired",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -216,8 +211,7 @@
         "label": "integer parameter input",
         "type": "integer",
         "optional": false,
-        "parameter": true,
-        "activeOutput": false
+        "parameter": true
       }
     ],
     "annotation": "",
@@ -263,8 +257,7 @@
           "tabular"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -319,8 +312,7 @@
         "optional": false,
         "collection": true,
         "collection_type": null,
-        "collection_type_source": null,
-        "activeOutput": false
+        "collection_type_source": null
       }
     ],
     "annotation": "",
@@ -376,8 +368,7 @@
         ],
         "type": "data",
         "optional": false,
-        "label": "input dataset(s) (extracted element)",
-        "activeOutput": false
+        "label": "input dataset(s) (extracted element)"
       }
     ],
     "annotation": "",
@@ -416,8 +407,7 @@
         "extensions": [
           "input"
         ],
-        "optional": true,
-        "activeOutput": false
+        "optional": true
       }
     ],
     "annotation": "",
@@ -449,8 +439,7 @@
         "label": "text parameter input",
         "type": "text",
         "optional": false,
-        "parameter": true,
-        "activeOutput": false
+        "parameter": true
       }
     ],
     "annotation": "",
@@ -497,8 +486,7 @@
           "txt"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -564,8 +552,7 @@
           "txt"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -618,8 +605,7 @@
           "txt"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -680,8 +666,7 @@
           "input"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -761,8 +746,7 @@
           "txt"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       },
       {
         "name": "out2",
@@ -770,8 +754,7 @@
           "txt"
         ],
         "type": "data",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",
@@ -818,8 +801,7 @@
         ],
         "collection": true,
         "collection_type": "list:list:list",
-        "optional": false,
-        "activeOutput": false
+        "optional": false
       }
     ],
     "annotation": "",

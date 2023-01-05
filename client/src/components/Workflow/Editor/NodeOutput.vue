@@ -1,13 +1,22 @@
 <template>
     <div class="form-row dataRow output-data-row">
         <div
-            v-if="showCallout"
+            v-if="showCalloutActiveOutput"
             v-b-tooltip
             :class="['callout-terminal', output.name]"
             title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
-            @keyup="onToggle"
-            @click="onToggle">
+            @keyup="onToggleActive"
+            @click="onToggleActive">
             <i :class="['mark-terminal', activeClass]" />
+        </div>
+        <div
+            v-if="showCalloutVisible"
+            v-b-tooltip
+            :class="['callout-terminal', output.name]"
+            :title="visibleHint"
+            @keyup="onToggleVisible"
+            @click="onToggleVisible">
+            <i :class="['mark-terminal', visibleClass]" />
         </div>
         {{ label }}
         <draggable-wrapper
@@ -49,6 +58,7 @@ import { ref, computed, watch, nextTick, toRefs } from "vue";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export default {
     components: {
@@ -94,6 +104,8 @@ export default {
         },
     },
     setup(props) {
+        const stateStore = useWorkflowStateStore();
+        const stepStore = useWorkflowStepStore();
         const el = ref(null);
         const { rootOffset, parentOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
         const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
@@ -117,11 +129,24 @@ export default {
         });
         const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutput, datatypesMapper);
 
+        const workflowOutput = computed(() =>
+            props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name)
+        );
+        const activeClass = computed(() => workflowOutput.value && "mark-terminal-active");
+        const isVisible = computed(() => {
+            const isHidden = `HideDatasetAction${props.output.name}` in props.postJobActions;
+            return !isHidden;
+        });
+        const visibleClass = computed(() => (isVisible.value ? "mark-terminal-visible" : "mark-terminal-hidden"));
+        const visibleHint = computed(() => {
+            if (isVisible.value) {
+                return `Output will be visible in history. Click to hide output.`;
+            } else {
+                return `Output will be hidden in history. Click to make output visible.`;
+            }
+        });
         const label = computed(() => {
-            const workflowOutput = props.workflowOutputs.find(
-                (workflowOutput) => workflowOutput.output_name == props.output.name
-            );
-            const activeLabel = workflowOutput?.label || props.output.name;
+            const activeLabel = workflowOutput.value?.label || props.output.name;
             return `${activeLabel} (${extensions.value.join(", ")})`;
         });
 
@@ -140,10 +165,45 @@ export default {
             }
         }
 
-        const stateStore = useWorkflowStateStore();
+        function onToggleActive() {
+            const step = stepStore.getStep(stepId.value);
+            if (workflowOutput.value) {
+                console.log("wfo", workflowOutput.value);
+                step.workflow_outputs = step.workflow_outputs.filter(
+                    (workflowOutput) => workflowOutput.output_name !== output.value.name
+                );
+            } else {
+                step.workflow_outputs.push({ output_name: output.value.name });
+            }
+            stepStore.updateStep(step);
+        }
+
+        function onToggleVisible() {
+            const actionKey = `HideDatasetAction${props.output.name}`;
+            const step = stepStore.getStep(stepId.value);
+            if (isVisible.value) {
+                step.post_job_actions = {
+                    ...step.post_job_actions,
+                    [actionKey]: {
+                        action_type: "HideDatasetAction",
+                        output_name: props.output.name,
+                        action_arguments: {},
+                    },
+                };
+            } else {
+                const { [actionKey]: ignoreUnused, ...newPostJobActions } = step.post_job_actions;
+                step.post_job_actions = newPostJobActions;
+            }
+            stepStore.updateStep(step);
+        }
+
         return {
             el,
             position,
+            activeClass,
+            visibleClass,
+            visibleHint,
+            isVisible,
             terminal,
             isMultiple,
             label,
@@ -153,6 +213,8 @@ export default {
             toggleChildComponent,
             closeMenu,
             effectiveOutput,
+            onToggleActive,
+            onToggleVisible,
         };
     },
     data() {
@@ -189,12 +251,11 @@ export default {
         id() {
             return `node-${this.stepId}-output-${this.output.name}`;
         },
-
-        activeClass() {
-            return this.output.activeOutput && "mark-terminal-active";
+        showCalloutActiveOutput() {
+            return this.stepType === "tool" || this.stepType === "subworkflow";
         },
-        showCallout() {
-            return this.stepType == "tool";
+        showCalloutVisible() {
+            return this.stepType === "tool";
         },
         terminalClass() {
             const cls = "terminal output-terminal";
@@ -233,9 +294,6 @@ export default {
             this.dragX = 0;
             this.dragY = 0;
             this.$emit("stopDragging");
-        },
-        onToggle() {
-            this.$emit("onToggle", this.output.name);
         },
     },
 };

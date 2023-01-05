@@ -92,7 +92,6 @@
                 :datatypes-mapper="datatypesMapper"
                 v-on="$listeners"
                 @stopDragging="onStopDragging"
-                @onToggle="onToggleOutput"
                 @onChange="onChange" />
         </div>
     </draggable-wrapper>
@@ -109,7 +108,6 @@ import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
-import { ActiveOutputs } from "./modules/outputs";
 import { computed, ref } from "vue";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
@@ -163,7 +161,7 @@ const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id
 const position = useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
-const showRule = computed(() => props.step.inputs.length > 0 && props.step.outputs.length > 0);
+const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
 const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
 const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
 const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
@@ -180,7 +178,6 @@ const classes = computed(() => {
 const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
-const activeOutputs = new ActiveOutputs();
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
 const inputs = computed(() => props.step.inputs);
 const outputs = computed(() => props.step.outputs);
@@ -211,10 +208,6 @@ function onCreate(contentId: string, name: string) {
 
 function onClone() {
     emit("onClone", props.id);
-}
-
-function onToggleOutput(name: string) {
-    activeOutputs.toggle(name);
 }
 
 function makeActive() {
