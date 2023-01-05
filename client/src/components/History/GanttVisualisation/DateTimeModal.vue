@@ -16,14 +16,16 @@
                                     <h2>Choose a starting date</h2>
                                     <b-container class="bv-example-row">
                                         <b-row>
-                                            <b-col
-                                                ><datetime
-                                                    v-model="date"
-                                                    format="YYYY-MM-DD H:i:s"
-                                                    width="300px"
-                                                    :value="date"
-                                                    @input="$emit('changeDate', date, 'not-confirmed')"></datetime
-                                            ></b-col>
+                                            <b-col>
+                                                <DatePicker v-model="date" mode="dateTime">
+                                                    <template #default="{ inputValue, inputEvents }">
+                                                        <input
+                                                            class="px-3 py-1 border rounded"
+                                                            :value="inputValue"
+                                                            v-on="inputEvents" />
+                                                    </template>
+                                                </DatePicker>
+                                            </b-col>
                                             <b-col
                                                 ><button
                                                     id="confirmDate"
@@ -48,12 +50,12 @@
 
 <script>
 import { ref } from "vue";
-import datetime from "vuejs-datetimepicker";
+import DatePicker from "v-calendar/lib/components/date-picker.umd";
 import moment from "moment";
 
 export default {
     name: "DateTimeModal",
-    components: { datetime },
+    components: { DatePicker },
     props: {
         openModal: {
             type: Boolean,
@@ -91,6 +93,6 @@ export default {
 .modal-dialog,
 .modal-content {
     /* 80% of window height */
-    height: 70%;
+    height: 500px;
 }
 </style>

@@ -93,6 +93,7 @@
     "tus-js-client": "^2.3.0",
     "underscore": "^1.13.2",
     "util": "^0.12.4",
+    "v-calendar": "^2.4.1",
     "vue": "^2.7.8",
     "vue-infinite-scroll": "^2.0.2",
     "vue-multiselect": "^2.1.6",
