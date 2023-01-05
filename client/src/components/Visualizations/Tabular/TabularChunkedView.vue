@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import axios from "axios";
 import { computed, onMounted, reactive, ref } from "vue";
-import { getAppRoot } from "@/onload/loadConfig";
 import { parse } from "csv-parse/sync";
-
+import { getAppRoot } from "@/onload/loadConfig";
 
 interface TabularChunk {
     ck_data: string;
@@ -69,11 +68,29 @@ function processChunk(chunk: TabularChunk) {
     });
 }
 
+function nextChunk() {
+    loading.value = true;
+    axios
+        .get(chunkUrl.value, {
+            params: {
+                offset: props.options.dataset_config.first_data_chunk.offset,
+            },
+        })
+        .then((response) => {
+            processChunk(response.data);
+            loading.value = false;
+        });
+}
+
 onMounted(() => {
     if (props.options.dataset_config.first_data_chunk) {
         processChunk(props.options.dataset_config.first_data_chunk);
         loading.value = false;
     }
+    // Wait 2 seconds, then fetch another chunk
+    setTimeout(() => {
+        nextChunk();
+    }, 2000);
 });
 </script>
 
