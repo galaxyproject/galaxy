@@ -1,6 +1,6 @@
 import { setActivePinia, createPinia } from "pinia";
 
-import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import {
     terminalFactory,
     InputCollectionTerminal,
@@ -11,15 +11,11 @@ import {
     OutputParameterTerminal,
     producesAcceptableDatatype,
 } from "./terminals";
-import * as _simpleSteps from "../test-data/simple_steps.json";
-import * as _advancedSteps from "../test-data/parameter_steps.json";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { DataOutput } from "@/stores/workflowStepStore";
+import type { DataOutput, Steps } from "@/stores/workflowStepStore";
 import { NULL_COLLECTION_TYPE_DESCRIPTION } from "./collectionTypeDescription";
-
-const simpleSteps = _simpleSteps as { [index: string]: Step };
-const advancedSteps = _advancedSteps as { [index: string]: Step };
+import { simpleSteps, advancedSteps } from "../test_fixtures";
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
@@ -83,7 +79,7 @@ describe("canAccept", () => {
         terminals = setupAdvanced();
         stepStore = useWorkflowStepStore();
         connectionStore = useConnectionStore();
-        Object.values(JSON.parse(JSON.stringify(advancedSteps)) as { [index: string]: Step }).map((step) => {
+        Object.values(JSON.parse(JSON.stringify(advancedSteps)) as Steps).map((step) => {
             stepStore.addStep(step);
         });
     });
