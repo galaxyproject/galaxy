@@ -22,7 +22,7 @@ interface TabularChunkedViewProps {
             metadata_column_names: string[];
             // metadata_data_lines: number,
             // metadata_comment_lines: null | number,
-            // INCOMPLETE
+            // INCOMPLETE: add more options as needed
         };
     };
 }
@@ -66,7 +66,7 @@ function processChunk(chunk: TabularChunk) {
     // parsedChunk is a 2d array of strings
     let parsedChunk = [];
     try {
-        parsedChunk = parse(chunk.ck_data, { delimiter: delimiter.value });
+        parsedChunk = parse(chunk.ck_data, { delimiter: delimiter.value, relax_quotes: true });
     } catch (error) {
         // If this blows up it's likely data in a comment or header line
         // (e.g. VCF files) so just split it by newline first then parse
