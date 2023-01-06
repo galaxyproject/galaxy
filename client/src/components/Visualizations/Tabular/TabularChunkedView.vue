@@ -19,7 +19,7 @@ interface TabularChunkedViewProps {
             first_data_chunk: TabularChunk;
             metadata_columns: number;
             metadata_column_types: string[];
-            metadata_column_names: null | string[];
+            metadata_column_names: string[];
             // metadata_data_lines: number,
             // metadata_comment_lines: null | number,
             // INCOMPLETE
@@ -32,15 +32,20 @@ const props = defineProps<TabularChunkedViewProps>();
 const offset = ref(0);
 const loading = ref(true);
 
-const tabularData = reactive<{ columns: string[]; rows: string[][] }>({
-    columns: [],
+const tabularData = reactive<{ rows: string[][] }>({
     rows: [],
 });
 
-const numColumns = computed(() => {
-    return tabularData.columns.length;
-}); 
-// pop columns out, they don't change.
+const columns = computed(() => {
+    const columns = Array(props.options.dataset_config.metadata_columns);
+    // for each column_name, inject header
+    if (props.options.dataset_config.metadata_column_names?.length > 0) {
+        props.options.dataset_config.metadata_column_names.forEach((column_name, index) => {
+            columns[index] = column_name;
+        });
+    }
+    return columns;
+});
 
 const delimiter = computed(() => {
     return props.options.dataset_config.file_ext === "csv" ? "," : "\t";
@@ -87,13 +92,13 @@ function processChunk(chunk: TabularChunk) {
 }
 
 function processRow(row: string[]) {
-    const num_columns = numColumns.value;
+    const num_columns = columns.value.length;
     if (row.length === num_columns) {
         // pass through
         return row;
     } else if (row.length > num_columns) {
         // SAM file or like format with optional metadata included.
-        return row.slice(0, num_columns -1).concat([row.slice(num_columns - 1).join("\t")]);
+        return row.slice(0, num_columns - 1).concat([row.slice(num_columns - 1).join("\t")]);
     } else if (row.length === 1) {
         // Try to split by comma first
         let rowDataSplit = row[0].split(",");
@@ -102,9 +107,9 @@ function processRow(row: string[]) {
         } else {
             rowDataSplit = row[0].split(" ");
             if (rowDataSplit.length === num_columns) {
-                return rowDataSplit
+                return rowDataSplit;
             } else {
-                return row
+                return row;
             }
         }
     } else {
@@ -130,13 +135,6 @@ function nextChunk() {
 }
 
 onMounted(() => {
-    const columnNames = props.options.dataset_config.metadata_column_names;
-    if (columnNames !== null) {
-        tabularData.columns = columnNames;
-    }
-    else {
-        tabularData.columns = Array(props.options.dataset_config.metadata_columns);
-    }
     // Setup done, render first chunk if available.
     if (props.options.dataset_config.first_data_chunk) {
         processChunk(props.options.dataset_config.first_data_chunk);
@@ -151,7 +149,7 @@ onMounted(() => {
         <b-table-simple hover small striped>
             <b-thead head-variant="dark">
                 <b-tr>
-                    <b-th v-for="(column, index) in tabularData.columns" :key="column">{{ column || index + 1 }}</b-th>
+                    <b-th v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</b-th>
                 </b-tr>
             </b-thead>
             <b-tbody>
