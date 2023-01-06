@@ -74,10 +74,10 @@ const props = defineProps<{
 }>();
 const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEditSubworkflow", "onSetData"]);
 const stepRef = toRef(props, "step");
-const { stepId, contentId, annotation, label, type, configForm } = useStepProps(stepRef);
+const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
 const stepStore = useWorkflowStepStore();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label?.value);
-const stepTitle = computed(() => (label?.value || contentId?.value)!);
+const stepTitle = computed(() => (label?.value || contentId?.value || name.value)!);
 const nodeIcon = computed(() => WorkflowIcons[type.value]);
 const formDisplayId = computed(() => stepId.value.toString());
 const isSubworkflow = computed(() => type.value === "subworkflow");
