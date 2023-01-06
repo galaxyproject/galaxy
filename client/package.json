@@ -36,7 +36,6 @@
     "@popperjs/core": "^2.11.5",
     "@sentry/browser": "^6.17.4",
     "@types/d3": "^7.4.0",
-    "@vue/runtime-dom": "^3.2.45",
     "@vueuse/core": "^9.10.0",
     "assert": "^2.0.0",
     "axios": "^0.25.0",
