@@ -188,7 +188,7 @@ class Forms(BaseUIController):
                     "label": "Options",
                     "help": "*Only for fields which allow multiple selections, provide comma-separated values.",
                 },
-                {"name": "required", "label": "Required", "type": "boolean", "value": "false"},
+                {"name": "required", "label": "Required", "type": "boolean"},
             ]
             form_dict = {
                 "title": "Edit form for '%s'" % (util.sanitize_text(latest_form.name)),
