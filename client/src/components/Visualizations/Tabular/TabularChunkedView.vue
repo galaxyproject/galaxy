@@ -27,10 +27,22 @@ interface TabularChunkedViewProps {
     };
 }
 
+/* 
+TODO: align columns depending on type.
+    if (column_types[index] === "str" || column_types[index] === "list") {
+        // Left align all str columns, right align the rest
+        $cell.addClass("stringalign");
+    }
+*/
+
 const props = defineProps<TabularChunkedViewProps>();
 
 const offset = ref(0);
+// const rowCount = ref(0);  // Do we need rowCount?
 const loading = ref(true);
+// TODO: add visual loading indicator
+const atEOF = ref(false);
+// TODO: link up EOF handling
 
 const tabularData = reactive<{ rows: string[][] }>({
     rows: [],
@@ -55,9 +67,14 @@ const chunkUrl = computed(() => {
     return `${getAppRoot()}dataset/display?dataset_id=${props.options.dataset_config.id}`;
 });
 
+// Loading more data on user scroll to (near) bottom.
 const { y } = useWindowScroll();
 watch(y, (newY) => {
-    if (loading.value === false && newY > document.body.scrollHeight - window.innerHeight - 100) {
+    if (
+        atEOF.value !== true &&
+        loading.value === false &&
+        newY > document.body.scrollHeight - window.innerHeight - 100
+    ) {
         nextChunk();
     }
 });
@@ -126,6 +143,7 @@ function processRow(row: string[]) {
 }
 
 function nextChunk() {
+    // Attempt to fetch next chunk, given the current offset.
     loading.value = true;
     axios
         .get(chunkUrl.value, {
@@ -134,13 +152,19 @@ function nextChunk() {
             },
         })
         .then((response) => {
-            processChunk(response.data);
+            if (response.data.ck_data === "") {
+                // Galaxy returns an empty chunk if there's no more.
+                atEOF.value = true;
+            } else {
+                // Otherwise process the chunk.
+                processChunk(response.data);
+            }
             loading.value = false;
         });
 }
 
 onMounted(() => {
-    // Setup done, render first chunk if available.
+    // Render first chunk if available.
     if (props.options.dataset_config.first_data_chunk) {
         processChunk(props.options.dataset_config.first_data_chunk);
         loading.value = false;
