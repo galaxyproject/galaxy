@@ -27,22 +27,13 @@ interface TabularChunkedViewProps {
     };
 }
 
-/* 
-TODO: align columns depending on type.
-    if (column_types[index] === "str" || column_types[index] === "list") {
-        // Left align all str columns, right align the rest
-        $cell.addClass("stringalign");
-    }
-*/
-
 const props = defineProps<TabularChunkedViewProps>();
 
 const offset = ref(0);
-// const rowCount = ref(0);  // Do we need rowCount?
+// const rowCount = ref(0);  // Do we need rowCount?  Useful to display (percentage, minimap, etc.)
 const loading = ref(true);
 // TODO: add visual loading indicator
 const atEOF = ref(false);
-// TODO: link up EOF handling
 
 const tabularData = reactive<{ rows: string[][] }>({
     rows: [],
@@ -57,6 +48,16 @@ const columns = computed(() => {
         });
     }
     return columns;
+});
+
+const columnStyle = computed(() => {
+    const columnStyle = Array(props.options.dataset_config.metadata_columns);
+    if (props.options.dataset_config.metadata_column_types?.length > 0) {
+        props.options.dataset_config.metadata_column_types.forEach((column_type, index) => {
+            columnStyle[index] = column_type === "str" || column_type === "list" ? "stringalign" : "numberalign";
+        });
+    }
+    return columnStyle;
 });
 
 const delimiter = computed(() => {
@@ -183,11 +184,20 @@ onMounted(() => {
             </b-thead>
             <b-tbody>
                 <b-tr v-for="(row, index) in tabularData.rows" :key="index">
-                    <b-td v-for="element in row" :key="element">{{ element }}</b-td>
+                    <b-td v-for="(element, elementIndex) in row" :key="elementIndex" :class="columnStyle[elementIndex]">
+                        {{ element }}
+                    </b-td>
                 </b-tr>
             </b-tbody>
         </b-table-simple>
     </div>
 </template>
 
-<style lang="scss" scoped></style>
+<style lang="scss" scoped>
+.stringalign {
+    text-align: left;
+}
+.numberalign {
+    text-align: right;
+}
+</style>
