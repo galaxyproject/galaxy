@@ -275,7 +275,6 @@ export default {
             };
             Galaxy.currHistoryPanel.buildCollection(this.collectionType, selection);
             this.counterRunning = 0;
-            this._updateStateForCounters();
             this._eventReset();
             this.$emit("dismiss");
         },
