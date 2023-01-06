@@ -22,30 +22,28 @@ interface TabularChunkedViewProps {
     };
 }
 
-const { y } = useWindowScroll();
-
-watch(y, (newY) => {
-    if (loading.value === false && newY > document.body.scrollHeight - window.innerHeight - 100) {
-        nextChunk();
-    }
-});
-
 const props = defineProps<TabularChunkedViewProps>();
 
 const offset = ref(0);
+const loading = ref(true);
 
 const tabularData = reactive<{ columns: string[]; rows: string[][] }>({
     columns: [],
     rows: [],
 });
 
-const loading = ref(true);
-
 const delimiter = computed(() => {
     return props.options.dataset_config.file_ext === "csv" ? "," : "\t";
 });
 const chunkUrl = computed(() => {
     return `${getAppRoot()}dataset/display?dataset_id=${props.options.dataset_config.id}`;
+});
+
+const { y } = useWindowScroll();
+watch(y, (newY) => {
+    if (loading.value === false && newY > document.body.scrollHeight - window.innerHeight - 100) {
+        nextChunk();
+    }
 });
 
 // const columns = computed(() => {
@@ -101,10 +99,6 @@ onMounted(() => {
         processChunk(props.options.dataset_config.first_data_chunk);
         loading.value = false;
     }
-    // Wait 2 seconds, then fetch another chunk
-    // setTimeout(() => {
-    //     nextChunk();
-    // }, 2000);
 });
 </script>
 
