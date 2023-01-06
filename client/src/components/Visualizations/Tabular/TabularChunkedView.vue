@@ -34,7 +34,7 @@ const props = defineProps<TabularChunkedViewProps>();
 
 const offset = ref(0);
 
-const tabularData = reactive<{ columns: string[]; rows: string[] }>({
+const tabularData = reactive<{ columns: string[]; rows: string[][] }>({
     columns: [],
     rows: [],
 });
@@ -72,8 +72,9 @@ function processChunk(chunk: TabularChunk) {
             }
         });
     }
-    parsedChunk.forEach((row: any, index: Number) => {
+    parsedChunk.forEach((row: string[], index: number) => {
         if (index >= (chunk.data_line_offset || 0)) {
+            // TODO test perf of a batch update instead of individual row pushes?
             tabularData.rows.push(row);
         }
     });
