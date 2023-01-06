@@ -37,6 +37,11 @@ const tabularData = reactive<{ columns: string[]; rows: string[][] }>({
     rows: [],
 });
 
+const numColumns = computed(() => {
+    return tabularData.columns.length;
+}); 
+// pop columns out, they don't change.
+
 const delimiter = computed(() => {
     return props.options.dataset_config.file_ext === "csv" ? "," : "\t";
 });
@@ -74,11 +79,40 @@ function processChunk(chunk: TabularChunk) {
     parsedChunk.forEach((row: string[], index: number) => {
         if (index >= (chunk.data_line_offset || 0)) {
             // TODO test perf of a batch update instead of individual row pushes?
-            tabularData.rows.push(row);
+            tabularData.rows.push(processRow(row));
         }
     });
     // update new offset
     offset.value = chunk.offset;
+}
+
+function processRow(row: string[]) {
+    const num_columns = numColumns.value;
+    if (row.length === num_columns) {
+        // pass through
+        return row;
+    } else if (row.length > num_columns) {
+        // SAM file or like format with optional metadata included.
+        return row.slice(0, num_columns -1).concat([row.slice(num_columns - 1).join("\t")]);
+    } else if (row.length === 1) {
+        // Try to split by comma first
+        let rowDataSplit = row[0].split(",");
+        if (rowDataSplit.length === num_columns) {
+            return rowDataSplit;
+        } else {
+            rowDataSplit = row[0].split(" ");
+            if (rowDataSplit.length === num_columns) {
+                return rowDataSplit
+            } else {
+                return row
+            }
+        }
+    } else {
+        // rowData.length is greater than one, but less than num_columns.  Render cells and pad tds.
+        // Possibly a SAM file or like format with optional metadata missing.
+        // Could also be a tabular file with a line with missing columns.
+        return row.concat(Array(num_columns - row.length).fill(""));
+    }
 }
 
 function nextChunk() {
@@ -96,16 +130,17 @@ function nextChunk() {
 }
 
 onMounted(() => {
-    if (props.options.dataset_config.first_data_chunk) {
-        processChunk(props.options.dataset_config.first_data_chunk);
-        loading.value = false;
-    }
     const columnNames = props.options.dataset_config.metadata_column_names;
     if (columnNames !== null) {
         tabularData.columns = columnNames;
     }
     else {
         tabularData.columns = Array(props.options.dataset_config.metadata_columns);
+    }
+    // Setup done, render first chunk if available.
+    if (props.options.dataset_config.first_data_chunk) {
+        processChunk(props.options.dataset_config.first_data_chunk);
+        loading.value = false;
     }
 });
 </script>
