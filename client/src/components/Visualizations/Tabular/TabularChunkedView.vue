@@ -17,7 +17,12 @@ interface TabularChunkedViewProps {
             id: string;
             file_ext: string;
             first_data_chunk: TabularChunk;
-            // NOT COMPLETE
+            metadata_columns: number;
+            metadata_column_types: string[];
+            metadata_column_names: null | string[];
+            // metadata_data_lines: number,
+            // metadata_comment_lines: null | number,
+            // INCOMPLETE
         };
     };
 }
@@ -45,10 +50,6 @@ watch(y, (newY) => {
         nextChunk();
     }
 });
-
-// const columns = computed(() => {
-//     return props.options.headers;
-// });
 
 function processChunk(chunk: TabularChunk) {
     // parsedChunk is a 2d array of strings
@@ -99,6 +100,13 @@ onMounted(() => {
         processChunk(props.options.dataset_config.first_data_chunk);
         loading.value = false;
     }
+    const columnNames = props.options.dataset_config.metadata_column_names;
+    if (columnNames !== null) {
+        tabularData.columns = columnNames;
+    }
+    else {
+        tabularData.columns = Array(props.options.dataset_config.metadata_columns);
+    }
 });
 </script>
 
@@ -108,7 +116,7 @@ onMounted(() => {
         <b-table-simple hover small striped>
             <b-thead head-variant="dark">
                 <b-tr>
-                    <b-th v-for="column in tabularData.columns" :key="column">{{ column }}</b-th>
+                    <b-th v-for="(column, index) in tabularData.columns" :key="column">{{ column || index + 1 }}</b-th>
                 </b-tr>
             </b-thead>
             <b-tbody>
