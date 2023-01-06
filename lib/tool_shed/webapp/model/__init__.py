@@ -1,5 +1,7 @@
 import logging
 import os
+import random
+import string
 import weakref
 from datetime import (
     datetime,
@@ -171,6 +173,14 @@ class User(Base, Dictifiable):
             raise Exception(f"Invalid password: {message}")
         # Set 'self.password' to the digest of 'cleartext'.
         self.password = new_insecure_hash(text_type=cleartext)
+
+    def set_random_password(self, length=16):
+        """
+        Sets user password to a random string of the given length.
+        :return: void
+        """
+        self.set_password_cleartext(
+            ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length)))
 
 
 class PasswordResetToken(Base):
