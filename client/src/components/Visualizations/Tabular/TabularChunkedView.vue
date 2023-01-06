@@ -50,6 +50,7 @@ const columns = computed(() => {
 const delimiter = computed(() => {
     return props.options.dataset_config.file_ext === "csv" ? "," : "\t";
 });
+
 const chunkUrl = computed(() => {
     return `${getAppRoot()}dataset/display?dataset_id=${props.options.dataset_config.id}`;
 });
@@ -104,14 +105,18 @@ function processRow(row: string[]) {
         let rowDataSplit = row[0].split(",");
         if (rowDataSplit.length === num_columns) {
             return rowDataSplit;
-        } else {
-            rowDataSplit = row[0].split(" ");
-            if (rowDataSplit.length === num_columns) {
-                return rowDataSplit;
-            } else {
-                return row;
-            }
         }
+        // Try to split by tab
+        rowDataSplit = row[0].split("\t");
+        if (rowDataSplit.length === num_columns) {
+            return rowDataSplit;
+        }
+        // Try to split by space
+        rowDataSplit = row[0].split(" ");
+        if (rowDataSplit.length === num_columns) {
+            return rowDataSplit;
+        }
+        return row;
     } else {
         // rowData.length is greater than one, but less than num_columns.  Render cells and pad tds.
         // Possibly a SAM file or like format with optional metadata missing.
