@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import axios from "axios";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { parse } from "csv-parse/sync";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useWindowScroll } from "@vueuse/core";
 
 interface TabularChunk {
     ck_data: string;
-    offset: Number;
-    data_line_offset: Number;
+    offset: number;
+    data_line_offset: number;
 }
 
 interface TabularChunkedViewProps {
@@ -21,7 +22,17 @@ interface TabularChunkedViewProps {
     };
 }
 
+const { y } = useWindowScroll();
+
+watch(y, (newY) => {
+    if (loading.value === false && newY > document.body.scrollHeight - window.innerHeight - 100) {
+        nextChunk();
+    }
+});
+
 const props = defineProps<TabularChunkedViewProps>();
+
+const offset = ref(0);
 
 const tabularData = reactive<{ columns: string[]; rows: string[] }>({
     columns: [],
@@ -66,6 +77,8 @@ function processChunk(chunk: TabularChunk) {
             tabularData.rows.push(row);
         }
     });
+    // update new offset
+    offset.value = chunk.offset;
 }
 
 function nextChunk() {
@@ -73,7 +86,7 @@ function nextChunk() {
     axios
         .get(chunkUrl.value, {
             params: {
-                offset: props.options.dataset_config.first_data_chunk.offset,
+                offset: offset.value,
             },
         })
         .then((response) => {
@@ -88,9 +101,9 @@ onMounted(() => {
         loading.value = false;
     }
     // Wait 2 seconds, then fetch another chunk
-    setTimeout(() => {
-        nextChunk();
-    }, 2000);
+    // setTimeout(() => {
+    //     nextChunk();
+    // }, 2000);
 });
 </script>
 
