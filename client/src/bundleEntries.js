@@ -17,7 +17,7 @@ export { TracksterUI } from "viz/trackster";
 import Circster from "viz/circster";
 export { PhylovizView as phyloviz } from "viz/phyloviz";
 export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepster";
-export { createTabularDatasetChunkedView, createNewTabularDatasetChunkedView } from "mvc/dataset/data";
+export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
 export { runTour } from "components/Tour/runTour";

@@ -13,7 +13,7 @@
             var dataset = ${ h.dumps( trans.security.encode_dict_ids( dataset.to_dict() ) )};
             var firstChunk = ${chunk};
             var datasetConfig = Object.assign(dataset, { first_data_chunk: firstChunk })
-            window.bundleEntries.createNewTabularDatasetChunkedView({
+            window.bundleEntries.createTabularDatasetChunkedView({
                 dataset_config : datasetConfig,
                 parent_elt : document.body
             });
