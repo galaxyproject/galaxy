@@ -6,9 +6,10 @@
             @onZoom="onZoom"
             @reset-all="onResetAll"
             @update:pan="panBy" />
-        <div class="canvas-viewport" :style="nodesStyle"></div>
         <div ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
-            <div class="node-area" :style="nodesStyle">
+            <!-- canvas-background is sibling of node-area because it has a different transform origin, so can't be parent of node-area -->
+            <div class="canvas-background" :style="canvasStyle" />
+            <div class="node-area" :style="canvasStyle">
                 <WorkflowEdges :dragging-terminal="draggingTerminal" :dragging-connection="draggingPosition" />
                 <WorkflowNode
                     v-for="(step, key) in steps"
@@ -57,7 +58,6 @@ import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import { useZoom } from "./composables/useZoom";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
-import type { ZoomTransform } from "d3-zoom";
 
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
@@ -133,7 +133,7 @@ watch(
     () => stateStore.setScale(transform.value.k)
 );
 
-const nodesStyle = computed(() => {
+const canvasStyle = computed(() => {
     return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
 

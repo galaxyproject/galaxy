@@ -72,16 +72,31 @@
             }
         }
         .workflow-canvas {
-            .canvas-viewport {
+            // Set the position to relative, so that absolute position coordinates are relative to the canvas (and not the top of the iframe)
+            position: relative;
+
+            .canvas-content {
+                width: 100%;
+                height: 100%;
+                position: absolute;
+                left: 0px;
+                top: 0px;
+                overflow: hidden;
+            }
+            .canvas-background {
                 @extend .rounded;
                 background: $workflow-editor-bg;
                 background-size: $workflow-editor-grid-size $workflow-editor-grid-size;
                 background-image: linear-gradient(to right, $workflow-editor-grid-color 1px, transparent 1px),
                     linear-gradient(to bottom, $workflow-editor-grid-color 1px, transparent 1px);
-                width: 100%;
-                height: 100%;
+                // Set width and height to 10 times larger than canvas, so that we can zoom out and still see the grid
+                width: 1000%;
+                height: 1000%;
+                // Set the initial position to the center of the canvas, again so that we can zoom out and still see the grid in the top left direction
+                top: -500%;
+                left: -500%;
+                transform-origin: center;
                 position: relative;
-                overflow: hidden;
             }
             .ribbon {
                 .ribbon-outer {
