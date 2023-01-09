@@ -22,7 +22,7 @@
 <script>
 import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { computed } from "@vue/reactivity";
+import { computed } from "vue";
 import { inject, ref, toRefs, watchEffect } from "vue";
 import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
