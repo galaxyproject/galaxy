@@ -12,7 +12,6 @@ const modulesToTransform = [
     "pretty-bytes",
     "@fortawesome",
     "openapi-typescript-fetch",
-    "monaco-editor",
 ].join("|");
 
 module.exports = {

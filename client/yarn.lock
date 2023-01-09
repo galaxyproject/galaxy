@@ -8034,24 +8034,6 @@ moment@2.x:
   resolved "https://registry.npmjs.org/moment/-/moment-2.29.4.tgz"
   integrity sha512-5LC9SOxjSc2HF6vO2CyuTDNivEdoz2IvyJJGj6X8DJ0eFyfszE0QiEd+iXmBvUP3WHxSjFH/vIsA0EN00cgr8w==
 
-monaco-editor-vue@^1.0.10:
-  version "1.0.10"
-  resolved "https://registry.yarnpkg.com/monaco-editor-vue/-/monaco-editor-vue-1.0.10.tgz#56d9f928ec16864054f989de0558e11fcda045e9"
-  integrity sha512-FO6rioCXkonKmDZYB2WDhDNekXuNJgjxoAPfzwYX+5NTMaxRJcWl3bcUByRpL6LQQ1bTEYLZ+ZdDpoJ+la2trQ==
-  dependencies:
-    monaco-editor "^0.19.3"
-    vue "^2.6.11"
-
-monaco-editor@^0.19.3:
-  version "0.19.3"
-  resolved "https://registry.yarnpkg.com/monaco-editor/-/monaco-editor-0.19.3.tgz#1c994b3186c00650dbcd034d5370d46bf56c0663"
-  integrity sha512-2n1vJBVQF2Hhi7+r1mMeYsmlf18hjVb6E0v5SoMZyb4aeOmYPKun+CE3gYpiNA1KEvtSdaDHFBqH9d7Wd9vREg==
-
-monaco-json@^3.9.0:
-  version "3.9.0"
-  resolved "https://registry.yarnpkg.com/monaco-json/-/monaco-json-3.9.0.tgz#4deafaedb8022725422b7b79595737771d189122"
-  integrity sha512-Vj8wTxBH29JeqDzO8T8kgv4sk8Hbq8gxiyzmvn+92FAYh3Iba3fnTq9WjKCSR3ALRw65NjDgkFlSwkGyVjT2uA==
-
 moo@^0.5.1:
   version "0.5.1"
   resolved "https://registry.npmjs.org/moo/-/moo-0.5.1.tgz"
@@ -11080,7 +11062,7 @@ vue-virtual-scroll-list@^2.3.4:
   resolved "https://registry.yarnpkg.com/vue-virtual-scroll-list/-/vue-virtual-scroll-list-2.3.4.tgz#0d08c2d26299d8609018b8c04f5e3ca608fbe2d6"
   integrity sha512-a9bmmIhAdnKcp8NG0C9ZQ+pW9nAOrDv5SHqJfbbEpXxVVERCtbIgGeBnkwrGgmoILBoFz/WANIZgA22G44F0Yw==
 
-vue@2.7.8, vue@^2.6.10, vue@^2.6.11, vue@^2.7.8:
+vue@2.7.8, vue@^2.6.10, vue@^2.7.8:
   version "2.7.8"
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.7.8.tgz#34e06553137611d8cecc4b0cd78b7a59f80b1299"
   integrity sha512-ncwlZx5qOcn754bCu5/tS/IWPhXHopfit79cx+uIlLMyt3vCMGcXai5yCG5y+I6cDmEj4ukRYyZail9FTQh7lQ==

@@ -71,8 +71,6 @@
     "lodash.isequal": "^4.5.0",
     "markdown-it": "^12.3.2",
     "markdown-it-regexp": "^0.4.0",
-    "monaco-editor-vue": "^1.0.10",
-    "monaco-json": "^3.9.0",
     "object-hash": "^3.0.0",
     "openapi-typescript": "^6.1.0",
     "openapi-typescript-fetch": "^1.1.3",
