@@ -104,6 +104,7 @@ export default {
                 const selectedTheme = foundTheme ? this.currentTheme : themeKeys[0];
                 return this.config.themes[selectedTheme];
             }
+            return null;
         },
         windowTab() {
             return this.windowManager.getTab();
