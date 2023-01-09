@@ -55,7 +55,7 @@ fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
-gravity = ">=0.10.0"
+gravity = {git = "https://github.com/galaxyproject/gravity.git", branch = "release_1.x"}  # https://github.com/galaxyproject/gravity/issues/92
 gunicorn = "*"
 gxformat2 = "*"
 h5py = "*"
