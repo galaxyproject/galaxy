@@ -6,6 +6,7 @@ import MockConfigProvider from "components/providers/MockConfigProvider";
 import Vuex from "vuex";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
+import { createTestingPinia } from "@pinia/testing";
 
 const localVue = getLocalVue();
 
@@ -24,25 +25,21 @@ describe("FormTool", () => {
             propsData: {
                 id: "input",
                 datatypes: [],
-                configForm: {
-                    id: "tool_id+1.0",
-                    name: "tool_name",
-                    version: "1.0",
-                    description: "description",
+                step: {
+                    id: 0,
+                    config_form: {
+                        id: "tool_id+1.0",
+                        name: "tool_name",
+                        version: "1.0",
+                        description: "description",
+                        inputs: [],
+                        help: "help_text",
+                        versions: ["1.0", "2.0", "3.0"],
+                        hasCitations: false,
+                    },
+                    outputs: [],
                     inputs: [],
-                    help: "help_text",
-                    versions: ["1.0", "2.0", "3.0"],
-                    hasCitations: false,
-                },
-                nodeId: "id",
-                nodeAnnotation: "",
-                nodeLabel: "",
-                nodeInputs: [],
-                nodeOutputs: [],
-                nodeActiveOutputs: {},
-                postJobActions: {},
-                getManager: () => {
-                    return {};
+                    post_job_actions: {},
                 },
             },
             localVue,
@@ -52,6 +49,7 @@ describe("FormTool", () => {
                 FormElement: { template: "<div>form-element</div>" },
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
+            pinia: createTestingPinia(),
             provide: { store },
         });
     });

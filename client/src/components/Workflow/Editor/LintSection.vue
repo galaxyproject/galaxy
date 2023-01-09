@@ -12,7 +12,9 @@
                     v-for="(item, idx) in warningItems"
                     :key="idx"
                     class="ml-2"
+                    @focusin="onMouseOver(item)"
                     @mouseover="onMouseOver(item)"
+                    @focusout="onMouseLeave(item)"
                     @mouseleave="onMouseLeave(item)">
                     <a href="#" class="scrolls" @click="onClick(item)">
                         <font-awesome-icon v-if="item.autofix" icon="magic" class="mr-1" />

@@ -1,10 +1,17 @@
 <template>
-    <div
+    <draggable-wrapper
         :id="idString"
+        ref="el"
+        :scale="scale"
+        :root-offset="rootOffset"
         :name="name"
-        :node-label="label"
-        :class="{ 'workflow-node': true, 'node-on-scroll-to': scrolledTo, 'node-highlight': highlight }">
-        <div class="node-header unselectable clearfix">
+        :node-label="title"
+        :class="classes"
+        :style="style"
+        @move="onMoveTo"
+        @pan-by="onPanBy">
+        <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
+            <loading-span v-if="isLoading" message="Loading details" />
             <b-button
                 v-b-tooltip.hover
                 class="node-destroy py-0 float-right"
@@ -12,7 +19,7 @@
                 size="sm"
                 aria-label="destroy node"
                 title="Remove"
-                @click="onRemove">
+                @click.prevent.stop="remove">
                 <i class="fa fa-times" />
             </b-button>
             <b-button
@@ -24,10 +31,15 @@
                 aria-label="tool recommendations">
                 <i class="fa fa-arrow-right" />
             </b-button>
-            <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
+            <b-popover
+                v-if="isEnabled"
+                :target="popoverId"
+                triggers="hover"
+                placement="bottom"
+                :show.sync="popoverShow">
                 <Recommendations
-                    :get-node="getNode"
-                    :get-manager="getManager"
+                    v-if="popoverShow"
+                    :step-id="id"
                     :datatypes-mapper="datatypesMapper"
                     @onCreate="onCreate" />
             </b-popover>
@@ -39,331 +51,166 @@
                 size="sm"
                 aria-label="clone node"
                 title="Duplicate"
-                @click="onClone">
+                @click.prevent.stop="onClone">
                 <i class="fa fa-files-o" />
             </b-button>
             <i :class="iconClass" />
             <span
                 v-b-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
-                >{{ stepIndex }}:
+                >{{ step.id + 1 }}:
             </span>
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error">
+        <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
             {{ errors }}
         </b-alert>
-        <div v-else class="node-body">
-            <loading-span v-if="showLoading" message="Loading details" />
+        <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <node-input
                 v-for="input in inputs"
                 :key="input.name"
                 :input="input"
-                :get-node="getNode"
-                :get-manager="getManager"
+                :step-id="id"
                 :datatypes-mapper="datatypesMapper"
-                @onAdd="onAddInput"
-                @onRemove="onRemoveInput"
+                :step-position="step.position"
+                :root-offset="rootOffset"
+                :parent-offset="position"
+                v-on="$listeners"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
                 v-for="output in outputs"
                 :key="output.name"
                 :output="output"
+                :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
-                :get-node="getNode"
-                :get-manager="getManager"
-                @onAdd="onAddOutput"
-                @onRemove="onRemoveOutput"
-                @onToggle="onToggleOutput"
+                :step-id="id"
+                :step-type="step.type"
+                :step-position="step.position"
+                :root-offset="rootOffset"
+                :parent-offset="position"
+                :datatypes-mapper="datatypesMapper"
+                v-on="$listeners"
+                @stopDragging="onStopDragging"
                 @onChange="onChange" />
         </div>
-    </div>
+    </draggable-wrapper>
 </template>
 
-<script>
+<script lang="ts" setup>
+import type { PropType, Ref } from "vue";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import WorkflowIcons from "components/Workflow/icons";
-import LoadingSpan from "components/LoadingSpan";
-import { getGalaxyInstance } from "app";
-import Recommendations from "components/Workflow/Editor/Recommendations";
-import NodeInput from "./NodeInput";
-import NodeOutput from "./NodeOutput";
-import { ActiveOutputs } from "./modules/outputs";
-import { attachDragging } from "./modules/dragging";
+import WorkflowIcons from "@/components/Workflow/icons";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import { getGalaxyInstance } from "@/app";
+import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
+import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
+import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
+import { computed, ref } from "vue";
+import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
+import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Step } from "@/stores/workflowStepStore";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { UseElementBoundingReturn } from "@vueuse/core";
+
 Vue.use(BootstrapVue);
 
-const OFFSET_RANGE = 100;
+const props = defineProps({
+    id: { type: Number, required: true },
+    contentId: { type: String as PropType<string | null>, default: null },
+    name: { type: String as PropType<string | null>, default: null },
+    step: { type: Object as PropType<Step>, required: true },
+    datatypesMapper: { type: DatatypesMapperModel, required: true },
+    activeNodeId: {
+        type: null as unknown as PropType<number | null>,
+        required: true,
+        validator: (v: any) => typeof v === "number" || v === null,
+    },
+    rootOffset: { type: Object as PropType<UseElementBoundingReturn>, required: true },
+    scale: { type: Number, default: 1 },
+    highlight: { type: Boolean, default: false },
+});
 
-export default {
-    components: {
-        LoadingSpan,
-        Recommendations,
-        NodeInput,
-        NodeOutput,
-    },
-    props: {
-        id: {
-            type: String,
-            default: "",
-        },
-        contentId: {
-            type: String,
-            default: "",
-        },
-        name: {
-            type: String,
-            default: "name",
-        },
-        type: {
-            type: String,
-            default: null,
-        },
-        step: {
-            type: Object,
-            default: null,
-        },
-        getManager: {
-            type: Function,
-            default: null,
-        },
-        getCanvasManager: {
-            type: Function,
-            default: null,
-        },
-        datatypesMapper: {
-            type: Object,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            popoverShow: false,
-            inputs: [],
-            outputs: [],
-            inputTerminals: {},
-            outputTerminals: {},
-            postJobActions: {},
-            activeOutputs: null,
-            errors: null,
-            label: null,
-            annotation: null,
-            config_form: {},
-            showLoading: true,
-            highlight: false,
-            scrolledTo: false,
-        };
-    },
-    computed: {
-        title() {
-            return this.label || this.name;
-        },
-        idString() {
-            return `wf-node-step-${this.id}`;
-        },
-        showRule() {
-            return this.inputs.length > 0 && this.outputs.length > 0;
-        },
-        iconClass() {
-            const iconType = WorkflowIcons[this.type];
-            if (iconType) {
-                return `icon fa fa-fw ${iconType}`;
-            }
-            return null;
-        },
-        popoverId() {
-            return `popover-${this.id}`;
-        },
-        canClone() {
-            return this.type != "subworkflow";
-        },
-        isEnabled() {
-            return getGalaxyInstance().config.enable_tool_recommendations;
-        },
-        isInput() {
-            return this.type == "data_input" || this.type == "data_collection_input" || this.type == "parameter_input";
-        },
-        stepIndex() {
-            return parseInt(this.id) + 1;
-        },
-    },
-    mounted() {
-        this.canvasManager = this.getCanvasManager();
-        this.activeOutputs = new ActiveOutputs();
-        this.element = this.$el;
-        this.content_id = this.contentId;
+const emit = defineEmits([
+    "onRemove",
+    "onActivate",
+    "onChange",
+    "onCreate",
+    "onUpdate",
+    "onClone",
+    "onUpdateStepPosition",
+    "pan-by",
+    "stopDragging",
+]);
 
-        // Set initial scroll position
-        const step = this.step;
-        const el = this.$el;
-        if (step.position) {
-            el.style.top = step.position.top + "px";
-            el.style.left = step.position.left + "px";
-        } else {
-            const p = document.getElementById("canvas-viewport");
-            const o = document.getElementById("canvas-container");
-            if (p && o) {
-                const left =
-                    -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                const top =
-                    -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2 + this.offsetVaryPosition(OFFSET_RANGE);
-                el.style.top = `${top}px`;
-                el.style.left = `${left}px`;
-            }
-        }
+const popoverShow = ref(false);
+const popoverId = computed(() => `popover-${props.id}`);
+const scrolledTo = ref(false);
 
-        // Attach node dragging events
-        attachDragging(this.$el, {
-            dragstart: () => {
-                this.$emit("onActivate", this);
-            },
-            dragend: () => {
-                this.$emit("onChange");
-                this.canvasManager.drawOverview();
-            },
-            drag: (e, d) => {
-                const o = document.getElementById("canvas-container");
-                const el = this.$el;
-                const rect = o.getBoundingClientRect();
-                const left = (d.offsetX - rect.left) / this.canvasManager.canvasZoom;
-                const top = (d.offsetY - rect.top) / this.canvasManager.canvasZoom;
-                el.style.left = `${left}px`;
-                el.style.top = `${top}px`;
-                this.onRedraw();
-            },
-            dragclickonly: () => {
-                this.$emit("onActivate", this);
-            },
-        });
+function remove() {
+    emit("onRemove", props.id);
+}
 
-        // initialize node data
-        this.$emit("onAdd", this);
-        if (this.step.config_form) {
-            this.initData(this.step);
-        } else {
-            this.$emit("onUpdate", this);
-        }
-    },
+const el: Ref<HTMLElement | null> = ref(null);
+const postJobActions = computed(() => props.step.post_job_actions || {});
+const workflowOutputs = computed(() => props.step.workflow_outputs || []);
+const stateStore = useWorkflowStateStore();
+const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
+const position = useNodePosition(el, props.id, stateStore);
+const title = computed(() => props.step.label || props.step.name);
+const idString = computed(() => `wf-node-step-${props.id}`);
+const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
+const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
+const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
+const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
 
-    methods: {
-        onChange() {
-            this.onRedraw();
-            this.$emit("onChange");
-        },
-        onAddInput(input, terminal) {
-            this.inputTerminals[input.name] = terminal;
-            this.onRedraw();
-        },
-        onRemoveInput(input) {
-            delete this.inputTerminals[input.name];
-            this.onRedraw();
-        },
-        onAddOutput(output, terminal) {
-            this.outputTerminals[output.name] = terminal;
-            this.onRedraw();
-        },
-        onRemoveOutput(output) {
-            delete this.outputTerminals[output.name];
-            this.onRedraw();
-        },
-        onToggleOutput(name) {
-            this.activeOutputs.toggle(name);
-            this.$emit("onChange");
-        },
-        onCreate(contentId, name) {
-            this.$emit("onCreate", contentId, name);
-            this.popoverShow = false;
-        },
-        onClone() {
-            this.$emit("onClone", this);
-        },
-        onRemove() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            this.activeOutputs.filterOutputs([]);
-            this.$emit("onRemove", this);
-        },
-        onRedraw() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.redraw();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.redraw();
-            });
-        },
-        getNode() {
-            return this;
-        },
-        setNode(data) {
-            this.initData(data);
-            this.$emit("onChange");
-            this.$emit("onActivate", this);
-        },
-        setAnnotation(annotation) {
-            this.annotation = annotation;
-            this.$emit("onChange");
-        },
-        setLabel(label) {
-            this.label = label;
-            this.$emit("onChange");
-        },
-        setData(data) {
-            this.content_id = data.content_id;
-            this.tool_state = data.tool_state;
-            this.errors = data.errors;
-            this.tooltip = data.tooltip || "";
-            this.inputs = data.inputs ? data.inputs.slice() : [];
-            this.outputs = data.outputs ? data.outputs.slice() : [];
-            const outputNames = this.outputs.map((output) => output.name);
-            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            this.activeOutputs.filterOutputs(outputNames);
-            // data coming from the workflow editor API has post job actions,
-            // data coming from the build_module call does not (and should not)
-            this.postJobActions = data.post_job_actions || this.postJobActions;
-            this.config_form = data.config_form;
-        },
-        initData(data) {
-            this.uuid = data.uuid;
-            this.annotation = data.annotation;
-            this.label = data.label;
-            this.setData(data);
-            this.showLoading = false;
-        },
-        onScrollTo() {
-            this.scrolledTo = true;
-            setTimeout(() => {
-                this.scrolledTo = false;
-            }, 2000);
-        },
-        onHighlight() {
-            this.highlight = true;
-        },
-        onUnhighlight() {
-            this.highlight = false;
-        },
-        makeActive() {
-            this.element.classList.add("node-active");
-        },
-        makeInactive() {
-            // Keep inactive nodes stacked from most to least recently active
-            // by moving element to the end of parent's node list
-            document.activeElement.blur();
-            const element = this.element;
-            ((p) => {
-                p.removeChild(element);
-                p.appendChild(element);
-            })(element.parentNode);
-            // Remove active class
-            element.classList.remove("node-active");
-        },
-        offsetVaryPosition(offsetRange) {
-            return Math.floor(Math.random() * offsetRange);
-        },
-    },
-};
+const isActive = computed(() => props.id === props.activeNodeId);
+const classes = computed(() => {
+    return {
+        "workflow-node": true,
+        "node-on-scroll-to": scrolledTo.value,
+        "node-highlight": props.highlight || isActive.value,
+        "is-active": isActive.value,
+    };
+});
+const style = computed(() => {
+    return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
+});
+const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
+const inputs = computed(() => props.step.inputs);
+const outputs = computed(() => props.step.outputs);
+
+function onMoveTo(position: XYPosition) {
+    emit("onUpdateStepPosition", props.id, {
+        top: position.y,
+        left: position.x,
+    });
+}
+
+function onPanBy(panBy: XYPosition) {
+    emit("pan-by", panBy);
+}
+
+function onStopDragging() {
+    emit("stopDragging");
+}
+
+function onChange() {
+    emit("onChange");
+}
+
+function onCreate(contentId: string, name: string) {
+    emit("onCreate", contentId, name);
+    popoverShow.value = false;
+}
+
+function onClone() {
+    emit("onClone", props.id);
+}
+
+function makeActive() {
+    emit("onActivate", props.id);
+}
 </script>

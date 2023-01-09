@@ -1,39 +1,47 @@
+import { expect, jest } from "@jest/globals";
+
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import Index from "./Index";
+import { PiniaVuePlugin } from "pinia";
+import { setActivePinia } from "pinia";
+import { createTestingPinia } from "@pinia/testing";
+
+import Index from "./Index.vue";
 
 const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 jest.mock("components/Datatypes/factory");
 jest.mock("./modules/services");
 jest.mock("layout/modal");
 jest.mock("onload/loadConfig");
 jest.mock("./modules/utilities");
-jest.mock("./modules/canvas");
 
 jest.mock("app");
 
-import { getDatatypesMapper } from "components/Datatypes/factory";
-import { testDatatypesMapper } from "components/Datatypes/test_fixtures";
-import { getVersions, loadWorkflow } from "./modules/services";
+import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
+import { loadWorkflow, getVersions } from "./modules/services";
 import { getStateUpgradeMessages } from "./modules/utilities";
-import { getAppRoot } from "onload/loadConfig";
-import WorkflowCanvas from "./modules/canvas";
+import { getAppRoot } from "@/onload/loadConfig";
+import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
 
-getAppRoot.mockImplementation(() => "prefix/");
+const mockGetAppRoot = getAppRoot as jest.Mocked<typeof getAppRoot>;
+const mockGetStateUpgradeMessages = getStateUpgradeMessages as jest.Mock<typeof getStateUpgradeMessages>;
+const mockLoadWorkflow = loadWorkflow as jest.Mocked<typeof loadWorkflow>;
+const MockGetVersions = getVersions as jest.Mocked<typeof getVersions>;
 
 describe("Index", () => {
-    let wrapper;
+    let wrapper: any; // don't know how to add type hints here, see https://github.com/vuejs/vue-test-utils/issues/255
 
     beforeEach(() => {
-        getDatatypesMapper.mockResolvedValue(testDatatypesMapper);
-        getStateUpgradeMessages.mockImplementation(() => []);
-        getVersions.mockResolvedValue((id) => []);
-        WorkflowCanvas.mockClear();
-    });
-
-    async function mountAndWaitForCreated(workflow = {}) {
-        loadWorkflow.mockResolvedValue(workflow);
+        const testingPinia = createTestingPinia();
+        setActivePinia(testingPinia);
+        const datatypesStore = useDatatypesMapperStore();
+        datatypesStore.datatypesMapper = testDatatypesMapper;
+        mockLoadWorkflow.mockResolvedValue({});
+        MockGetVersions.mockResolvedValue(() => []);
+        mockGetStateUpgradeMessages.mockImplementation(() => []);
+        mockGetAppRoot.mockImplementation(() => "prefix/");
         Object.defineProperty(window, "onbeforeunload", {
             value: null,
             writable: true,
@@ -49,25 +57,21 @@ describe("Index", () => {
                 toolbox: [],
             },
             localVue,
+            pinia: testingPinia,
         });
-        await wrapper.vm.$nextTick();
-        expect(WorkflowCanvas).toHaveBeenCalledTimes(1);
-    }
+    });
 
     async function resetChanges() {
         wrapper.vm.hasChanges = false;
         await wrapper.vm.$nextTick();
     }
 
-    it("resolved datatypes", async () => {
-        await mountAndWaitForCreated();
+    it("resolves datatypes", async () => {
         expect(wrapper.datatypesMapper).not.toBeNull();
         expect(wrapper.datatypes).not.toBeNull();
-        expect(wrapper.canvasManager).not.toBeNull();
     });
 
-    it("routes to run to download URL and respects Galaxy prefix", async () => {
-        await mountAndWaitForCreated();
+    it("routes to download URL and respects Galaxy prefix", async () => {
         Object.defineProperty(window, "location", {
             value: "original",
             writable: true,
@@ -77,37 +81,40 @@ describe("Index", () => {
     });
 
     it("tracks changes to annotations", async () => {
-        await mountAndWaitForCreated();
         expect(wrapper.vm.hasChanges).toBeFalsy();
-        await wrapper.setData({ annotation: "original annotation" });
+        wrapper.vm.annotation = "original annotation";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.hasChanges).toBeTruthy();
 
         resetChanges();
 
-        await wrapper.setData({ annotation: "original annotation" });
+        wrapper.vm.annotation = "original annotation";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.hasChanges).toBeFalsy();
 
-        await wrapper.setData({ annotation: "new annotation" });
+        wrapper.vm.annotation = "new annotation";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.hasChanges).toBeTruthy();
     });
 
     it("tracks changes to name", async () => {
-        await mountAndWaitForCreated();
         expect(wrapper.hasChanges).toBeFalsy();
-        await wrapper.setData({ name: "original name" });
+        wrapper.vm.name = "original name";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.hasChanges).toBeTruthy();
 
         resetChanges();
 
-        await wrapper.setData({ name: "original name" });
+        wrapper.vm.name = "original name";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.hasChanges).toBeFalsy();
 
-        await wrapper.setData({ name: "new name" });
+        wrapper.vm.name = "new name";
+        await wrapper.vm.$nextTick();
         expect(wrapper.vm.hasChanges).toBeTruthy();
     });
 
     it("prevents navigation only if hasChanges", async () => {
-        await mountAndWaitForCreated();
         expect(wrapper.vm.hasChanges).toBeFalsy();
         await wrapper.vm.onChange();
         const confirmationRequired = wrapper.emitted()["update:confirmation"][0][0];
