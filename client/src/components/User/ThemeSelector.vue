@@ -5,6 +5,7 @@ import { computed, watch, ref } from "vue";
 import { safePath } from "@/utils/redirect";
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isLoaded } = useConfig();
+
 const show = ref(false);
 const currentValue = computed({
     get: () => {
@@ -14,6 +15,7 @@ const currentValue = computed({
         setCurrentTheme(theme);
     },
 });
+
 function getBackground(themeDetails) {
     const background = themeDetails["--masthead-color"];
     if (background) {
@@ -36,6 +38,7 @@ function getStyle(themeDetails, variantKey) {
     }
     return styles;
 }
+
 watch(
     () => isLoaded.value,
     () => {
@@ -47,6 +50,7 @@ watch(
     }
 );
 </script>
+
 <template>
     <b-card :show="show" class="overflow-auto">
         <b-form-radio-group v-model="currentValue">
@@ -69,6 +73,7 @@ watch(
         </b-form-radio-group>
     </b-card>
 </template>
+
 <style lang="scss" scoped>
 @import "~bootstrap/scss/bootstrap.scss";
 @import "custom_theme_variables.scss";
