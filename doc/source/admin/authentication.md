@@ -30,11 +30,11 @@ Galaxy is distributed with a plugin-driven authentication framework for which th
 just one (and the default plugin). This framework can be used to allow Galaxy to delegate authentication to
 an LDAP server, an Active Directory server, or to PAM.
 
-Currently, we provide two variants of LDAP authenticator namely, `ldap` and `ldap3`. Both are identical implementations that use different Python modules for binding and making queries to a LDAP server. The authenticator
-`ldap` is based on [python-ldap](https://www.python-ldap.org/en/python-ldap-3.4.3/) module which is a wrapper around 
-OpenLDAP's client library `libldap`. As of writing, `python-ldap` does not provide pre-build wheel packages and hence, OpenLDAP client libraries are prerequisites for building `python-ldap`. 
+Currently, we provide two variants of the LDAP authenticator namely, `ldap` and `ldap3`. Both are identical implementations that use different Python modules for binding and making queries to a LDAP server. The authenticator
+`ldap` is based on the [python-ldap](https://www.python-ldap.org/) module which is a wrapper around the 
+OpenLDAP's client library `libldap`. Currently, `python-ldap` does not provide pre-built Python wheel packages and hence, the OpenLDAP client libraries are needed to install `python-ldap` on the Galaxy server. 
 
-On the otherhand, `ldap3` is pure Python implementation of OpenLDAP client library and has no external dependencies. This package works out-of-the-box and we recommend to use it when OpenLDAP client libraries are not available on the host. 
+On the otherhand, `ldap3` is a pure-Python implementation of the OpenLDAP client library and has no external dependencies. This package can be installed out-of-the-box, so we recommend to use it when the OpenLDAP client libraries are not available on the Galaxy server.
 
 These same mechanisms can also be configured by proxies serving Galaxy (e.g. nginx or Apache), but configuring them
 within Galaxy allows users to use the Galaxy UI for logging in instead of relying on a proxy.
