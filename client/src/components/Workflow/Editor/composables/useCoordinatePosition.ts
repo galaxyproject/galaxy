@@ -18,7 +18,7 @@ export function useCoordinatePosition(
     stepPosition: Ref<NonNullable<Step["position"]>>
 ) {
     const position = reactive(useElementBounding(target, { windowResize: false }));
-    const transform = inject("transform") as ZoomTransform;
+    const transform = inject("transform") as Ref<ZoomTransform>;
 
     watchEffect(() => {
         /*
@@ -35,7 +35,7 @@ export function useCoordinatePosition(
         const offset = reactive(rootOffset.value);
         position.update();
         // Apply scale and offset so that position is in an unscaled coordinate system
-        applyTransform(position, offset, transform);
+        applyTransform(position, offset, transform.value);
     });
     return position;
 }

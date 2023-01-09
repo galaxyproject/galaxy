@@ -5,7 +5,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { useWorkflowStepStore, type Step, type Steps } from "@/stores/workflowStepStore";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { mockOffset, advancedSteps } from "./test_fixtures";
-import { nextTick } from "vue";
+import { nextTick, ref } from "vue";
 import { terminalFactory } from "./modules/terminals";
 
 const localVue = getLocalVue();
@@ -32,6 +32,8 @@ function stepForLabel(label: string, steps: Steps) {
     return step;
 }
 
+const transform = ref({ x: 0, y: 0, k: 1 });
+
 describe("NodeOutput", () => {
     let pinia: ReturnType<typeof createPinia>;
     let stepStore: ReturnType<typeof useWorkflowStepStore>;
@@ -50,11 +52,7 @@ describe("NodeOutput", () => {
             propsData: propsData,
             localVue,
             pinia,
-            provide: {
-                transform() {
-                    return { x: 0, y: 0, k: 1 };
-                },
-            },
+            provide: { transform },
         });
         expect(wrapper.find(".multiple").exists()).toBe(false);
     });
@@ -68,11 +66,7 @@ describe("NodeOutput", () => {
             propsData: propsData,
             localVue,
             pinia,
-            provide: {
-                transform() {
-                    return { x: 0, y: 0, k: 1 };
-                },
-            },
+            provide: { transform },
         });
         expect(wrapper.find(".multiple").exists()).toBe(false);
         inputTerminal.connect(outputTerminal);

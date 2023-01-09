@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { ref, inject, reactive } from "vue";
+import type { Ref } from "vue";
 import { useElementSize } from "@vueuse/core";
 import { useDraggable } from "./composables/useDraggable.js";
 import type { ZoomTransform } from "d3-zoom";
@@ -28,7 +29,7 @@ const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart", "start", 
 
 const draggable = ref();
 const size = reactive(useElementSize(draggable));
-const transform: ZoomTransform | undefined = inject("transform");
+const transform: Ref<ZoomTransform> | undefined = inject("transform");
 
 const onStart = (position: any, event: DragEvent) => {
     emit("start");
@@ -50,8 +51,8 @@ const onMove = (position: any, event: DragEvent) => {
     }
     const newPosition = {
         unscaled: { ...position, ...size },
-        x: (position.x - props.rootOffset.x - transform!.x) / transform!.k,
-        y: (position.y - props.rootOffset.y - transform!.y) / transform!.k,
+        x: (position.x - props.rootOffset.x - transform!.value.x) / transform!.value.k,
+        y: (position.y - props.rootOffset.y - transform!.value.y) / transform!.value.k,
     };
     emit("move", newPosition, event);
 };

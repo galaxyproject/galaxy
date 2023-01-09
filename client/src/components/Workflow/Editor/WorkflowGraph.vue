@@ -5,30 +5,29 @@
             :pan="transform"
             @onZoom="onZoom"
             @reset-all="onResetAll"
-            @update:pan="onPan" />
-        <div ref="el" class="canvas-viewport" @drop.prevent @dragover.prevent>
-            <d3-zoom id="canvas-container" ref="zoom" @transform="onTransform">
-                <div ref="nodes" class="node-area" :style="nodesStyle">
-                    <WorkflowEdges :dragging-terminal="draggingTerminal" :dragging-connection="draggingPosition" />
-                    <WorkflowNode
-                        v-for="(step, key) in steps"
-                        :id="step.id"
-                        :key="key"
-                        :name="step.name"
-                        :content-id="step.content_id"
-                        :step="step"
-                        :datatypes-mapper="datatypesMapper"
-                        :active-node-id="activeNodeId"
-                        :root-offset="position"
-                        :scale="scale"
-                        @pan-by="onPan"
-                        @stopDragging="onStopDragging"
-                        @onDragConnector="onDragConnector"
-                        @onActivate="onActivate"
-                        @onDeactivate="onDeactivate"
-                        v-on="$listeners" />
-                </div>
-            </d3-zoom>
+            @update:pan="panBy" />
+        <div class="canvas-viewport" :style="nodesStyle"></div>
+        <div ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
+            <div class="node-area" :style="nodesStyle">
+                <WorkflowEdges :dragging-terminal="draggingTerminal" :dragging-connection="draggingPosition" />
+                <WorkflowNode
+                    v-for="(step, key) in steps"
+                    :id="step.id"
+                    :key="key"
+                    :name="step.name"
+                    :content-id="step.content_id"
+                    :step="step"
+                    :datatypes-mapper="datatypesMapper"
+                    :active-node-id="activeNodeId"
+                    :root-offset="position"
+                    :scale="scale"
+                    @pan-by="panBy"
+                    @stopDragging="onStopDragging"
+                    @onDragConnector="onDragConnector"
+                    @onActivate="onActivate"
+                    @onDeactivate="onDeactivate"
+                    v-on="$listeners" />
+            </div>
         </div>
         <workflow-minimap
             v-if="position"
@@ -36,8 +35,8 @@
             :root-offset="position"
             :scale="scale"
             :pan="transform"
-            @pan-by="onPan"
-            @moveTo="onMoveTo" />
+            @pan-by="panBy"
+            @moveTo="moveTo" />
     </div>
 </template>
 <script lang="ts" setup>
@@ -47,17 +46,18 @@ import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import { computed, reactive, ref, watch } from "vue";
 import { useElementBounding } from "@vueuse/core";
-import D3Zoom from "@/components/Workflow/Editor/D3Zoom.vue";
 import { provide } from "vue";
+import type { Ref } from "vue";
 import { storeToRefs } from "pinia";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { PropType } from "vue";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
+import { useZoom } from "./composables/useZoom";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
-import type { ZoomTransform } from "d3-zoom";
 import type { OutputTerminals } from "./modules/terminals";
+import type { ZoomTransform } from "d3-zoom";
 
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
@@ -65,18 +65,18 @@ const props = defineProps({
     highlightId: { type: null as unknown as PropType<number | null>, default: null },
     scrollToId: { type: null as unknown as PropType<number | null>, default: null },
 });
-const transform = reactive({ x: 0, y: 0, k: 1 });
-
-const isDragging = ref(false);
-provide("isDragging", isDragging);
-provide("transform", transform);
 
 const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
 const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
-const el = ref(null);
-const zoom = ref(null) as any;
-const position = reactive(useElementBounding(el, { windowResize: false, windowScroll: false }));
+const canvas: Ref<HTMLElement | null> = ref(null);
+const { transform, panBy, setZoom, moveTo } = useZoom(1, 0.2, 5, canvas);
+
+const position = reactive(useElementBounding(canvas, { windowResize: false, windowScroll: false }));
+
+const isDragging = ref(false);
+provide("isDragging", isDragging);
+provide("transform", transform);
 
 watch(
     () => props.scrollToId,
@@ -99,18 +99,12 @@ watch(
     }
 );
 
-function onPan(pan: XYPosition) {
-    zoom.value.panBy(pan);
-}
 function onZoom(zoomLevel: number, panTo: XYPosition | null = null) {
-    zoom.value.setZoom(zoomLevel);
+    setZoom(zoomLevel);
     if (panTo) {
-        onPan({ x: panTo.x - transform.x, y: panTo.y - transform.y });
+        panBy({ x: panTo.x - transform.value.x, y: panTo.y - transform.value.y });
     }
     stateStore.setScale(zoomLevel);
-}
-function onMoveTo(moveTo: XYPosition) {
-    zoom.value.moveTo(moveTo);
 }
 function onResetAll() {
     onZoom(1, { x: 0, y: 0 });
@@ -134,15 +128,13 @@ function onDeactivate() {
     stateStore.setActiveNode(null);
 }
 
-function onTransform(newTransform: ZoomTransform) {
-    transform.x = newTransform.x;
-    transform.y = newTransform.y;
-    transform.k = newTransform.k;
-    stateStore.setScale(transform.k);
-}
+watch(
+    () => transform.value.k,
+    () => stateStore.setScale(transform.value.k)
+);
 
 const nodesStyle = computed(() => {
-    return { transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})` };
+    return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
