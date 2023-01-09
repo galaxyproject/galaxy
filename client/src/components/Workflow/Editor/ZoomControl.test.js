@@ -10,12 +10,11 @@ describe("ZoomControl", () => {
         const wrapper = mount(ZoomControl, {
             propsData: {
                 zoomLevel: 1,
-                pan: { x: 0, y: 0 },
             },
             localVue,
         });
         const buttons = wrapper.findAll("button");
-        expect(buttons.length).toBe(4);
+        expect(buttons.length).toBe(3);
         await buttons.at(0).trigger("click");
         expect(wrapper.emitted().onZoom[0][0]).toBe(0.9);
         await buttons.at(1).trigger("click");

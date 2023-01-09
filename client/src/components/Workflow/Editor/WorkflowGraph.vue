@@ -1,11 +1,6 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-        <ZoomControl
-            :zoom-level="scale"
-            :pan="transform"
-            @onZoom="onZoom"
-            @reset-all="onResetAll"
-            @update:pan="panBy" />
+        <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
         <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
             <!-- canvas-background is sibling of node-area because it has a different transform origin, so can't be parent of node-area -->
             <div class="canvas-background" :style="canvasStyle" />
@@ -102,9 +97,6 @@ function onZoom(zoomLevel: number, panTo: XYPosition | null = null) {
         panBy({ x: panTo.x - transform.value.x, y: panTo.y - transform.value.y });
     }
     stateStore.setScale(zoomLevel);
-}
-function onResetAll() {
-    onZoom(1, { x: 0, y: 0 });
 }
 function onStopDragging() {
     stateStore.draggingPosition = null;

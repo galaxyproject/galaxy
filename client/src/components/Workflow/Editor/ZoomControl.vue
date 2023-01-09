@@ -29,36 +29,24 @@
             size="sm"
             aria-label="Zoom In"
             @click="onZoomIn" />
-        <b-button
-            v-b-tooltip.hover
-            role="button"
-            class="fa fa-plus"
-            title="Reset all"
-            size="sm"
-            aria-label="Reset all"
-            @click="onResetAll" />
-        <span>panX: {{ pan.x }}</span>
-        <span>panY: {{ pan.y }}</span>
     </span>
 </template>
 
 <script lang="ts" setup>
 import Vue, { computed } from "vue";
 import BootstrapVue from "bootstrap-vue";
-import type { XYPosition } from "@/stores/workflowEditorStateStore";
 
 Vue.use(BootstrapVue);
 
 const props = withDefaults(
     defineProps<{
         zoomLevel: number;
-        pan: XYPosition;
     }>(),
     {
         zoomLevel: 1,
     }
 );
-const emit = defineEmits(["onZoom", "reset-all"]);
+const emit = defineEmits(["onZoom"]);
 
 const zoomDefault = 1;
 const zoomLevels = [0.1, 0.2, 0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4, 5];
@@ -89,9 +77,6 @@ function onZoomOut() {
 }
 function onZoomReset() {
     emit("onZoom", zoomDefault);
-}
-function onResetAll() {
-    emit("reset-all");
 }
 </script>
 
