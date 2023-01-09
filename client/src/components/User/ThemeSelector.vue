@@ -16,27 +16,8 @@ const currentValue = computed({
     },
 });
 
-function getBackground(themeDetails) {
-    const background = themeDetails["--masthead-color"];
-    if (background) {
-        return { background };
-    }
-    return {};
-}
 function getLogo(themeDetails) {
     return themeDetails["--masthead-logo-img"] ?? config.value.logo_src;
-}
-function getStyle(themeDetails, variantKey) {
-    const background = themeDetails[`--masthead-link-${variantKey}`];
-    const color = themeDetails[`--masthead-text-${variantKey}`];
-    const styles = {};
-    if (background) {
-        styles["background"] = background;
-    }
-    if (color) {
-        styles["color"] = color;
-    }
-    return styles;
 }
 
 watch(
@@ -61,13 +42,11 @@ watch(
                 class="mb-2">
                 <span v-if="index === 0" class="font-weight-bold mb-1"> Default Theme ({{ theme }}). </span>
                 <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
-                <div class="default-theme-masthead" :style="getBackground(themeDetails)">
+                <div :style="themeDetails" class="theme-masthead">
                     <img :src="safePath(getLogo(themeDetails))" alt="image" />
-                    <span v-localize :style="getStyle(themeDetails, 'color')" class="default-theme-color">Text</span>
-                    <span v-localize :style="getStyle(themeDetails, 'hover')" class="default-theme-hover">Hover</span>
-                    <span v-localize :style="getStyle(themeDetails, 'active')" class="default-theme-active">
-                        Active
-                    </span>
+                    <span v-localize :style="themeDetails" class="theme-color">Text</span>
+                    <span v-localize :style="themeDetails" class="theme-hover">Hover</span>
+                    <span v-localize :style="themeDetails" class="theme-active"> Active </span>
                 </div>
             </b-form-radio>
         </b-form-radio-group>
@@ -77,28 +56,28 @@ watch(
 <style lang="scss" scoped>
 @import "~bootstrap/scss/bootstrap.scss";
 @import "custom_theme_variables.scss";
-.default-element {
+.theme-element {
     @extend .rounded;
     @extend .p-1;
 }
-.default-theme-masthead {
-    @extend .default-element;
-    background: $masthead-color;
+.theme-masthead {
+    @extend .theme-element;
+    background: var(--masthead-color);
 }
-.default-theme-color {
-    @extend .default-element;
-    color: $masthead-text-color;
-    background: $masthead-link-color;
+.theme-color {
+    @extend .theme-element;
+    color: var(--masthead-text-color);
+    background: var(--masthead-link-color);
 }
-.default-theme-hover {
-    @extend .default-element;
-    color: $masthead-text-hover;
-    background: $masthead-link-hover;
+.theme-hover {
+    @extend .theme-element;
+    color: var(--masthead-text-hover);
+    background: var(--masthead-link-hover);
 }
-.default-theme-active {
-    @extend .default-element;
-    color: $masthead-text-active;
-    background: $masthead-link-active;
+.theme-active {
+    @extend .theme-element;
+    color: var(--masthead-text-active);
+    background: var(--masthead-link-active);
 }
 img {
     cursor: pointer;
