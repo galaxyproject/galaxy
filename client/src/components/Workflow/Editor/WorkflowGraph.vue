@@ -6,7 +6,7 @@
             @onZoom="onZoom"
             @reset-all="onResetAll"
             @update:pan="panBy" />
-        <div ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
+        <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
             <!-- canvas-background is sibling of node-area because it has a different transform origin, so can't be parent of node-area -->
             <div class="canvas-background" :style="canvasStyle" />
             <div class="node-area" :style="canvasStyle">
