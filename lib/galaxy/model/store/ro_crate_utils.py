@@ -15,9 +15,9 @@ from rocrate.model.softwareapplication import SoftwareApplication
 from rocrate.rocrate import ROCrate
 
 from galaxy.model import (
+    JobParameter,
     JobToInputDatasetAssociation,
     JobToOutputDatasetAssociation,
-    JobParameter,
     Workflow,
     WorkflowInvocation,
     WorkflowInvocationStep,
@@ -258,33 +258,6 @@ class WorkflowRunCrateProfileBuilder:
                 },
             )
         )
-
-    # def _add_formal_parameter_job(self, crate: ROCrate, param: JobParameter):
-    #     if not tool_input:
-    #         param_id = step.output_connections[0].input_name
-    #         param_type = None
-    #         if step.annotations:
-    #             param_type = step.annotations[0].workflow_step.tool_inputs.get("parameter_type")
-
-    #         param_type = param_type or step.tool_inputs.get("parameter_type")
-    #     else:
-    #         param_id = tool_input
-    #         param_type = None
-
-    #     return crate.add(
-    #         ContextEntity(
-    #             crate,
-    #             f"{param}-param",
-    #             # step.uuid.urn,
-    #             properties={
-    #                 "@type": "FormalParameter",
-    #                 "additionalType": self.param_type_mapping[param_type],
-    #                 "description": step.annotations[0].annotation if step.annotations else "",
-    #                 "name": f"{step.label} parameter",
-    #                 "valueRequired": not step.input_optional,
-    #             },
-    #         )
-    #     )
 
     def _add_formal_parameter_input(self, crate: ROCrate, input: JobToInputDatasetAssociation):
         # TODO: add more details for output formal definitions?
