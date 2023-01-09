@@ -44,9 +44,9 @@ watch(
                 <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
                 <div :style="themeDetails" class="theme-masthead">
                     <img :src="safePath(getLogo(themeDetails))" alt="image" />
-                    <span v-localize :style="themeDetails" class="theme-color">Text</span>
-                    <span v-localize :style="themeDetails" class="theme-hover">Hover</span>
-                    <span v-localize :style="themeDetails" class="theme-active"> Active </span>
+                    <span v-localize class="theme-color">Text</span>
+                    <span v-localize class="theme-hover">Hover</span>
+                    <span v-localize class="theme-active"> Active </span>
                 </div>
             </b-form-radio>
         </b-form-radio-group>
