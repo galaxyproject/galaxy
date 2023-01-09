@@ -50,12 +50,12 @@ dictobj = "*"
 dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 edam-ontology = "*"
-fastapi = ">=0.71.0"  # https://github.com/tiangolo/fastapi/issues/4041
+fastapi = ">=0.71.0, !=0.89.0"  # https://github.com/tiangolo/fastapi/issues/4041 https://github.com/tiangolo/fastapi/issues/5861
 fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
-gravity = ">=0.10.0"
+gravity = {git = "https://github.com/galaxyproject/gravity.git", branch = "release_1.x"}  # https://github.com/galaxyproject/gravity/issues/92
 gunicorn = "*"
 gxformat2 = "*"
 h5py = "*"
