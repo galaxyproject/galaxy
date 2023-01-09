@@ -65,7 +65,7 @@ export default {
         },
     },
     created() {
-        this.services = new Services();
+        this.services = new Services({ root: this.root });
     },
     methods: {
         onDelete() {
