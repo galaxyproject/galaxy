@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import FormElement from "./FormElement";
 import FormHidden from "./Elements/FormHidden";
-import FormInput from "./Elements/FormInput";
+import FormText from "./Elements/FormText";
 
 const localVue = getLocalVue();
 
@@ -70,12 +70,17 @@ describe("FormElement", () => {
 
     it("check type matching", async () => {
         await wrapper.setProps({ type: "text" });
-        expect(wrapper.findComponent(FormInput).exists()).toBe(true);
+        expect(wrapper.findComponent(FormText).exists()).toBe(true);
         expect(wrapper.findComponent(FormHidden).exists()).toBe(false);
 
         await wrapper.setProps({ attributes: { titleonly: true } });
         expect(wrapper.findComponent(FormHidden).exists()).toBe(true);
-        expect(wrapper.findComponent(FormInput).exists()).toBe(false);
+        expect(wrapper.findComponent(FormText).exists()).toBe(false);
+    });
+
+    it("displays as the correct type if is_workflow is true", async () => {
+        await wrapper.setProps({ type: "data_column", attributes: { is_workflow: true } });
+        expect(wrapper.findComponent(FormText).exists()).toBe(true);
     });
 
     it("marks required values", async () => {

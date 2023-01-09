@@ -135,7 +135,9 @@ class TestManageInformation(SeleniumTestCase):
         element.send_keys(new_input_text)
 
     def get_address_input_field(self, address_form, input_field_label):
-        return address_form.find_element(self.by.CSS_SELECTOR, f"[data-label='{input_field_label}'] > input")
+        return address_form.find_element(
+            self.by.CSS_SELECTOR, f"[data-label='{input_field_label}'] > div > div > input"
+        )
 
 
 class TestDeleteCurrentAccount(SeleniumTestCase):

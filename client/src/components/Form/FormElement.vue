@@ -7,6 +7,8 @@ import FormSelection from "./Elements/FormSelection.vue";
 import FormColor from "./Elements/FormColor.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormNumber from "./Elements/FormNumber.vue";
+import FormText from "./Elements/FormText.vue";
+import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
@@ -214,7 +216,6 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 - optional
             </span>
         </div>
-
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
             <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
             <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
@@ -226,6 +227,33 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :min="attrs.min"
                 :type="props.type ?? 'float'"
                 :workflow-building-mode="workflowBuildingMode" />
+            <FormOptionalText
+                v-else-if="props.type === 'select' && attrs.is_workflow && attrs.optional"
+                :id="id"
+                v-model="currentValue"
+                :readonly="attrs.readonly"
+                :value="attrs.value"
+                :area="attrs.area"
+                :placeholder="attrs.placeholder"
+                :multiple="attrs.multiple"
+                :datalist="attrs.datalist"
+                :type="props.type" />
+            <FormText
+                v-else-if="
+                    ['text', 'password'].includes(props.type) ||
+                    (attrs.is_workflow && ['select', 'genomebuild', 'data_column', 'group_tag'].includes(props.type))
+                "
+                :id="id"
+                v-model="currentValue"
+                :readonly="attrs.readonly"
+                :value="attrs.value"
+                :area="attrs.area"
+                :placeholder="attrs.placeholder"
+                :color="attrs.color"
+                :multiple="attrs.multiple"
+                :cls="attrs.cls"
+                :datalist="attrs.datalist"
+                :type="props.type" />
             <FormSelection
                 v-else-if="props.type === 'select' && ['radio', 'checkboxes'].includes(attrs.display)"
                 :id="id"
@@ -237,7 +265,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :multiple="attrs.multiple" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
-            <FormRulesEdit v-else-if="type == 'rules'" v-model="currentValue" :target="attrs.target" />
+            <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
             <FormParameter
                 v-else-if="backbonejs"
                 :id="props.id"

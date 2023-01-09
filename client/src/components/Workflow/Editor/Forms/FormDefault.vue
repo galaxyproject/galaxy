@@ -78,7 +78,7 @@ export default {
         },
         nodeContentId: {
             type: String,
-            required: true,
+            default: null,
         },
         nodeAnnotation: {
             type: String,

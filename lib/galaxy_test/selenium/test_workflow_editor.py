@@ -101,11 +101,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         node = editor.node._(label="select_from_dataset_optional")
         node.title.wait_for_and_click()
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
-        # External (selenium-side) debounce hack for old backbone input
-        # TODO: remove when form elements are all converted.
-        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter valu")
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("e")
+        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter value")
+        # onSetData does an extra POST to build_modules, so we need to wait for that ...
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
