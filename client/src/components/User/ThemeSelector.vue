@@ -46,7 +46,7 @@ watch(
                     <img :src="safePath(getLogo(themeDetails))" alt="image" />
                     <span v-localize class="theme-color">Text</span>
                     <span v-localize class="theme-hover">Hover</span>
-                    <span v-localize class="theme-active"> Active </span>
+                    <span v-localize class="theme-active">Active</span>
                 </div>
             </b-form-radio>
         </b-form-radio-group>
