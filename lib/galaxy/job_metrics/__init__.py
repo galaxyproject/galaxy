@@ -27,11 +27,11 @@ from typing import (
 
 from galaxy import util
 from galaxy.util import plugin_config
+from . import formatting
 from .safety import (
     DEFAULT_SAFETY,
     Safety,
 )
-from ..job_metrics import formatting
 
 log = logging.getLogger(__name__)
 

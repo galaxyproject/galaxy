@@ -7,6 +7,7 @@ from pydantic import (
 )
 
 from galaxy.util.hash_util import HashFunctionNameEnum
+from . import PdfDocumentType
 from .schema import (
     BcoGenerationParametersMixin,
     DatasetSourceType,
@@ -15,7 +16,6 @@ from .schema import (
     ShortTermStoreExportPayload,
     WriteStoreToPayload,
 )
-from ..schema import PdfDocumentType
 
 
 class SetupHistoryExportJob(BaseModel):

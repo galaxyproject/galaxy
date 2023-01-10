@@ -1,64 +1,261 @@
 <template>
     <div class="form-row dataRow output-data-row">
         <div
-            v-if="showCallout"
+            v-if="showCalloutActiveOutput"
             v-b-tooltip
             :class="['callout-terminal', output.name]"
             title="Unchecked outputs will be hidden and are not available as subworkflow outputs."
-            @click="onToggle">
+            @keyup="onToggleActive"
+            @click="onToggleActive">
             <i :class="['mark-terminal', activeClass]" />
         </div>
-        {{ label }}
-        <div :id="id" ref="terminal" :output-name="output.name" :class="terminalClass">
-            <div class="icon" />
+        <div
+            v-if="showCalloutVisible"
+            v-b-tooltip
+            :class="['callout-terminal', output.name]"
+            :title="visibleHint"
+            @keyup="onToggleVisible"
+            @click="onToggleVisible">
+            <i :class="['mark-terminal', visibleClass]" />
         </div>
+        {{ label }}
+        <draggable-wrapper
+            :id="id"
+            ref="el"
+            :class="terminalClass"
+            :output-name="output.name"
+            :root-offset="rootOffset"
+            :prevent-default="false"
+            :stop-propagation="true"
+            :drag-data="{ stepId: stepId, output: effectiveOutput }"
+            draggable="true"
+            @pan-by="onPanBy"
+            @start="isDragging = true"
+            @stop="onStopDragging"
+            @move="onMove">
+            <div
+                class="icon prevent-zoom"
+                tabindex="0"
+                :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"
+                @keyup.space="toggleChildComponent"
+                @keyup.enter="toggleChildComponent"
+                @keyup.esc="toggleChildComponent">
+                <connection-menu
+                    v-if="showChildComponent"
+                    ref="menu"
+                    :terminal="terminal"
+                    @closeMenu="closeMenu"></connection-menu>
+            </div>
+        </draggable-wrapper>
     </div>
 </template>
 
 <script>
-import Terminals from "./modules/terminals";
-import { OutputDragging } from "./modules/dragging";
-import Connector from "./modules/connector";
+import DraggableWrapper from "./DraggablePan";
+import { useCoordinatePosition } from "./composables/useCoordinatePosition";
+import { useTerminal } from "./composables/useTerminal";
+import { ref, computed, watch, nextTick, toRefs } from "vue";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import ConnectionMenu from "@/components/Workflow/Editor/ConnectionMenu";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export default {
+    components: {
+        ConnectionMenu,
+        DraggableWrapper,
+    },
     props: {
         output: {
             type: Object,
             required: true,
         },
-        getNode: {
-            type: Function,
+        workflowOutputs: {
+            type: Array,
             required: true,
         },
-        getManager: {
-            type: Function,
+        stepType: {
+            type: String,
+            required: true,
+        },
+        stepId: {
+            type: Number,
             required: true,
         },
         postJobActions: {
             type: Object,
             required: true,
         },
+        stepPosition: {
+            type: Object,
+            required: true,
+        },
+        rootOffset: {
+            type: Object,
+            required: true,
+        },
+        parentOffset: {
+            type: Object,
+            required: true,
+        },
+        datatypesMapper: {
+            type: DatatypesMapperModel,
+            required: true,
+        },
+    },
+    setup(props) {
+        const stateStore = useWorkflowStateStore();
+        const stepStore = useWorkflowStepStore();
+        const el = ref(null);
+        const { rootOffset, parentOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
+        const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
+        const extensions = computed(() => {
+            const changeDatatype =
+                props.postJobActions[`ChangeDatatypeAction${props.output.label}`] ||
+                props.postJobActions[`ChangeDatatypeAction${props.output.name}`];
+            let extensions =
+                changeDatatype?.action_arguments.newtype ||
+                props.output.extensions ||
+                props.output.type ||
+                "unspecified";
+            if (!Array.isArray(extensions)) {
+                extensions = [extensions];
+            }
+            return extensions;
+        });
+        const effectiveOutput = ref({ ...output.value, extensions: extensions.value });
+        watch(extensions, () => {
+            effectiveOutput.value = { ...output.value, extensions: extensions.value };
+        });
+        const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, effectiveOutput, datatypesMapper);
+
+        const workflowOutput = computed(() =>
+            props.workflowOutputs.find((workflowOutput) => workflowOutput.output_name == props.output.name)
+        );
+        const activeClass = computed(() => workflowOutput.value && "mark-terminal-active");
+        const isVisible = computed(() => {
+            const isHidden = `HideDatasetAction${props.output.name}` in props.postJobActions;
+            return !isHidden;
+        });
+        const visibleClass = computed(() => (isVisible.value ? "mark-terminal-visible" : "mark-terminal-hidden"));
+        const visibleHint = computed(() => {
+            if (isVisible.value) {
+                return `Output will be visible in history. Click to hide output.`;
+            } else {
+                return `Output will be hidden in history. Click to make output visible.`;
+            }
+        });
+        const label = computed(() => {
+            const activeLabel = workflowOutput.value?.label || props.output.name;
+            return `${activeLabel} (${extensions.value.join(", ")})`;
+        });
+
+        const menu = ref(null);
+        const showChildComponent = ref(false);
+
+        function closeMenu() {
+            showChildComponent.value = false;
+        }
+
+        async function toggleChildComponent() {
+            showChildComponent.value = !showChildComponent.value;
+            if (showChildComponent.value) {
+                await nextTick();
+                menu.value.$el.focus();
+            }
+        }
+
+        function onToggleActive() {
+            const step = stepStore.getStep(stepId.value);
+            if (workflowOutput.value) {
+                console.log("wfo", workflowOutput.value);
+                step.workflow_outputs = step.workflow_outputs.filter(
+                    (workflowOutput) => workflowOutput.output_name !== output.value.name
+                );
+            } else {
+                step.workflow_outputs.push({ output_name: output.value.name });
+            }
+            stepStore.updateStep(step);
+        }
+
+        function onToggleVisible() {
+            const actionKey = `HideDatasetAction${props.output.name}`;
+            const step = stepStore.getStep(stepId.value);
+            if (isVisible.value) {
+                step.post_job_actions = {
+                    ...step.post_job_actions,
+                    [actionKey]: {
+                        action_type: "HideDatasetAction",
+                        output_name: props.output.name,
+                        action_arguments: {},
+                    },
+                };
+            } else {
+                const { [actionKey]: ignoreUnused, ...newPostJobActions } = step.post_job_actions;
+                step.post_job_actions = newPostJobActions;
+            }
+            stepStore.updateStep(step);
+        }
+
+        return {
+            el,
+            position,
+            activeClass,
+            visibleClass,
+            visibleHint,
+            isVisible,
+            terminal,
+            isMultiple,
+            label,
+            stateStore,
+            menu,
+            showChildComponent,
+            toggleChildComponent,
+            closeMenu,
+            effectiveOutput,
+            onToggleActive,
+            onToggleVisible,
+        };
     },
     data() {
         return {
-            isMultiple: false,
+            isDragging: false,
+            dragX: 0,
+            dragY: 0,
         };
     },
     computed: {
+        terminalPosition() {
+            return Object.freeze({ startX: this.startX, startY: this.startY });
+        },
+        startX() {
+            return this.position.left + this.position.width / 2;
+        },
+        startY() {
+            return this.position.top + this.position.height / 2;
+        },
+        endX() {
+            return this.dragX || this.startX;
+        },
+        endY() {
+            return this.dragY || this.startY;
+        },
+        dragPosition() {
+            return {
+                startX: this.startX,
+                endX: this.endX,
+                startY: this.startY,
+                endY: this.endY,
+            };
+        },
         id() {
-            const node = this.getNode();
-            return `node-${node.id}-output-${this.output.name}`;
+            return `node-${this.stepId}-output-${this.output.name}`;
         },
-        label() {
-            const activeLabel = this.output.activeLabel || this.output.label || this.output.name;
-            return `${activeLabel} (${this.extensions.join(", ")})`;
+        showCalloutActiveOutput() {
+            return this.stepType === "tool" || this.stepType === "subworkflow";
         },
-        activeClass() {
-            return this.output.activeOutput && "mark-terminal-active";
-        },
-        showCallout() {
-            const node = this.getNode();
-            return node.type == "tool";
+        showCalloutVisible() {
+            return this.stepType === "tool";
         },
         terminalClass() {
             const cls = "terminal output-terminal";
@@ -67,107 +264,36 @@ export default {
             }
             return cls;
         },
-        forcedExtension() {
-            const changeDatatype =
-                this.postJobActions[`ChangeDatatypeAction${this.output.label}`] ||
-                this.postJobActions[`ChangeDatatypeAction${this.output.name}`];
-            return changeDatatype?.action_arguments.newtype;
-        },
-        extensions() {
-            let extensions = this.forcedExtension || this.output.extensions || this.output.type || "unspecified";
-            if (!Array.isArray(extensions)) {
-                extensions = [extensions];
-            }
-            return extensions;
-        },
-        effectiveOutput() {
-            return { ...this.output, extensions: this.extensions };
-        },
     },
     watch: {
-        label() {
-            // See discussion at: https://github.com/vuejs/vue/issues/8030
-            this.$nextTick(() => {
-                this.$emit("onChange");
-            });
+        terminalPosition(position) {
+            this.stateStore.setOutputTerminalPosition(this.stepId, this.output.name, position);
         },
-        effectiveOutput(newOutput) {
-            const oldTerminal = this.terminal;
-            if (oldTerminal instanceof this.terminalClassForOutput(newOutput)) {
-                oldTerminal.update(newOutput);
-                oldTerminal.destroyInvalidConnections();
-            } else {
-                // create new terminal, connect like old terminal, destroy old terminal
-                // this might be a little buggy, we should replace this with proper vue components
-                this.$emit("onRemove", this.output);
-                this.createTerminal(newOutput);
-                this.terminal.connectors = oldTerminal.connectors.map((c) => {
-                    return new Connector(this.getManager().canvasManager, this.terminal, c.inputHandle);
-                });
-                this.terminal.destroyInvalidConnections();
-                oldTerminal.destroy();
+        dragPosition() {
+            if (this.isDragging) {
+                this.$emit("onDragConnector", this.dragPosition, this.terminal);
             }
         },
-    },
-    mounted() {
-        this.createTerminal(this.output);
     },
     beforeDestroy() {
-        this.$emit("onRemove", this.output);
-        this.terminal.destroy();
+        this.stateStore.deleteOutputTerminalPosition({
+            stepId: this.stepId,
+            outputName: this.output.name,
+        });
     },
     methods: {
-        terminalClassForOutput(output) {
-            let terminalClass = Terminals.OutputTerminal;
-            if (output.collection) {
-                terminalClass = Terminals.OutputCollectionTerminal;
-            } else if (output.parameter) {
-                terminalClass = Terminals.OutputParameterTerminal;
-            }
-            return terminalClass;
+        onPanBy(panBy) {
+            this.$emit("pan-by", panBy);
         },
-        createTerminal(output) {
-            const terminalClass = this.terminalClassForOutput(output);
-            const parameters = {
-                node: this.getNode(),
-                name: output.name,
-                element: this.$refs.terminal,
-                optional: output.optional,
-            };
-            if (output.collection) {
-                const collection_type = output.collection_type;
-                const collection_type_source = output.collection_type_source;
-                this.terminal = new terminalClass({
-                    ...parameters,
-                    collection_type: collection_type,
-                    collection_type_source: collection_type_source,
-                    datatypes: this.extensions,
-                });
-            } else if (output.parameter) {
-                this.terminal = new terminalClass({
-                    ...parameters,
-                    type: output.type,
-                });
-            } else {
-                this.terminal = new terminalClass({
-                    ...parameters,
-                    datatypes: this.extensions,
-                });
-            }
-            new OutputDragging(this.getManager(), {
-                el: this.$refs.terminal,
-                terminal: this.terminal,
-            });
-            this.terminal.on("change", this.onChange.bind(this));
-            this.terminal.emit("change");
-            this.$emit("onAdd", this.output, this.terminal);
+        onMove(position, event) {
+            this.dragX = position.x + this.position.width / 2;
+            this.dragY = position.y + this.position.height / 2;
         },
-        onChange() {
-            this.isMultiple = this.terminal.isMappedOver();
-            this.$emit("onChange");
-        },
-        onToggle() {
-            this.$emit("onToggle", this.output.name);
+        onStopDragging(e) {
+            this.isDragging = false;
+            this.dragX = 0;
+            this.dragY = 0;
+            this.$emit("stopDragging");
         },
     },
 };

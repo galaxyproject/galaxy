@@ -1,4 +1,4 @@
-from ..objectstore import BaseObjectStore
+from . import BaseObjectStore
 
 try:
     from pulsar.client.manager import ObjectStoreClientManager

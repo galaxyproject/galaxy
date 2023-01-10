@@ -3,7 +3,7 @@
 from logging import getLogger
 from os import path
 
-from ..job import (
+from . import (
     BaseJobExec,
     job_states,
 )

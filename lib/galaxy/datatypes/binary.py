@@ -749,13 +749,13 @@ class Bam(BamNative):
                 cmd = [
                     "python",
                     "-c",
-                    f"import pysam; pysam.set_verbosity(0); pysam.index('{file_name}', '{index_name}')",
+                    f"import pysam; pysam.set_verbosity(0); pysam.index('-o', '{index_name}', '{file_name}')",
                 ]
             else:
                 cmd = [
                     "python",
                     "-c",
-                    f"import pysam; pysam.set_verbosity(0); pysam.index('{index_flag}', '{file_name}', '{index_name}')",
+                    f"import pysam; pysam.set_verbosity(0); pysam.index('{index_flag}', '-o', '{index_name}', '{file_name}')",
                 ]
             with open(os.devnull, "w") as devnull:
                 subprocess.check_call(cmd, stderr=devnull, shell=False)
@@ -786,9 +786,9 @@ class Bam(BamNative):
             )
         if index_flag == "-b":
             # IOError: No such file or directory: '-b' if index_flag is set to -b (pysam 0.15.4)
-            pysam.index(dataset.file_name, index_file.file_name)  # type: ignore [attr-defined]
+            pysam.index("-o", index_file.file_name, dataset.file_name)  # type: ignore [attr-defined]
         else:
-            pysam.index(index_flag, dataset.file_name, index_file.file_name)  # type: ignore [attr-defined]
+            pysam.index(index_flag, "-o", index_file.file_name, dataset.file_name)  # type: ignore [attr-defined]
         dataset.metadata.bam_index = index_file
 
     def sniff(self, filename: str) -> bool:
@@ -979,7 +979,7 @@ class CRAM(Binary):
 
     def set_index_file(self, dataset: "DatasetInstance", index_file) -> bool:
         try:
-            pysam.index(dataset.file_name, index_file.file_name)  # type: ignore [attr-defined]
+            pysam.index("-o", index_file.file_name, dataset.file_name)  # type: ignore [attr-defined]
             return True
         except Exception as exc:
             log.warning("%s, set_index_file Exception: %s", self, exc)
@@ -4000,6 +4000,34 @@ class WiffTar(BafTar):
 
     def get_type(self) -> str:
         return "Sciex WIFF/SCAN archive"
+
+
+class Wiff2Tar(BafTar):
+    """
+    A tar'd up .wiff2/.scan pair containing Sciex WIFF format data
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('some.wiff2.tar')
+    >>> Wiff2Tar().sniff(fname)
+    True
+    >>> fname = get_test_fname('brukerbaf.d.tar')
+    >>> Wiff2Tar().sniff(fname)
+    False
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> Wiff2Tar().sniff(fname)
+    False
+    """
+
+    file_ext = "wiff2.tar"
+
+    def sniff(self, filename: str) -> bool:
+        if tarfile.is_tarfile(filename):
+            with tarfile.open(filename) as rawtar:
+                return ".wiff2" in [os.path.splitext(os.path.basename(f).lower())[1] for f in rawtar.getnames()]
+        return False
+
+    def get_type(self) -> str:
+        return "Sciex WIFF2/SCAN archive"
 
 
 @build_sniff_from_prefix

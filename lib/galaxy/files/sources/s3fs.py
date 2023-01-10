@@ -12,7 +12,7 @@ try:
 except ImportError:
     s3fs = None
 
-from ..sources import BaseFilesSource
+from . import BaseFilesSource
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False

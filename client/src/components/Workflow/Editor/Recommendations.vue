@@ -21,26 +21,26 @@
 import { getToolPredictions } from "./modules/services";
 import { getCompatibleRecommendations } from "./modules/utilities";
 import LoadingSpan from "components/LoadingSpan";
-import { toSimple } from "./modules/model";
 import _l from "utils/localization";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 export default {
     components: {
         LoadingSpan,
     },
     props: {
-        getNode: {
-            type: Function,
-            required: true,
-        },
-        getManager: {
-            type: Function,
+        stepId: {
+            type: Number,
             required: true,
         },
         datatypesMapper: {
             type: Object,
             required: true,
         },
+    },
+    setup() {
+        const stepStore = useWorkflowStepStore();
+        return { stepStore };
     },
     data() {
         return {
@@ -63,11 +63,10 @@ export default {
             }
             return toolId;
         },
-        getWorkflowPath(wfSteps, currentNodeId) {
+        getWorkflowPath(currentNodeId) {
             const steps = {};
             const stepNames = {};
-            for (const stpIdx in wfSteps.steps) {
-                const step = wfSteps.steps[stpIdx];
+            Object.values(this.stepStore.steps).map((step) => {
                 const inputConnections = step.input_connections;
                 stepNames[step.id] = this.getToolId(step.content_id);
                 for (const icIdx in inputConnections) {
@@ -80,7 +79,7 @@ export default {
                         steps[step.id.toString()] = prevConn;
                     }
                 }
-            }
+            });
             // recursive call to determine path
             function readPaths(nodeId, ph) {
                 for (const st in steps) {
@@ -109,10 +108,7 @@ export default {
             return stepNameList.join(",");
         },
         loadRecommendations() {
-            const node = this.getNode();
-            const workflow = this.getManager();
-            const workflowSimple = toSimple(workflow);
-            const toolSequence = this.getWorkflowPath(workflowSimple, node.id);
+            const toolSequence = this.getWorkflowPath(this.stepId);
             const requestData = { tool_sequence: toolSequence };
             getToolPredictions(requestData).then((responsePred) => {
                 const predictedData = responsePred.predicted_data;

@@ -1,3 +1,5 @@
+from unittest import SkipTest
+
 from galaxy.tool_util.deps.mulled.get_tests import (
     deep_test_search,
     find_anaconda_versions,
@@ -76,7 +78,12 @@ def test_open_recipe_file():
 
 @external_dependency_management
 def test_get_alternative_versions():
-    versions = get_alternative_versions("recipes/bioblend", "meta.yaml")
+    try:
+        versions = get_alternative_versions("recipes/bioblend", "meta.yaml")
+    except Exception as e:
+        if "API rate limit" in str(e):
+            raise SkipTest("Hitting GitHub API rate limit")
+        raise
     assert versions == ["recipes/bioblend/0.7.0/meta.yaml"]
 
 

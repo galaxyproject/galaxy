@@ -20,6 +20,7 @@ except ImportError:
     Template = None  # type: ignore[assignment,misc]
     UndefinedError = Exception  # type: ignore[assignment,misc]
 
+from galaxy.util import check_github_api_response_rate_limit
 from .util import (
     get_file_from_recipe_url,
     MULLED_SOCKET_TIMEOUT,
@@ -142,6 +143,7 @@ def find_anaconda_versions(name, anaconda_channel="bioconda"):
     Find a list of available anaconda versions for a given container name
     """
     r = requests.get(f"https://anaconda.org/{anaconda_channel}/{name}/files", timeout=MULLED_SOCKET_TIMEOUT)
+    r.raise_for_status()
     urls = []
     for line in r.text.split("\n"):
         if "download/linux" in line:
@@ -173,12 +175,10 @@ def get_alternative_versions(filepath, filename, recipes_path=None, github_repo=
         return [n.replace(f"{recipes_path}/", "") for n in glob(f"{recipes_path}/{filepath}/*/{filename}")]
     # else use the GitHub API:
     versions = []
-    r = json.loads(
-        requests.get(
-            f"https://api.github.com/repos/{github_repo}/contents/{filepath}", timeout=MULLED_SOCKET_TIMEOUT
-        ).text
-    )
-    for subfile in r:
+    r = requests.get(f"https://api.github.com/repos/{github_repo}/contents/{filepath}", timeout=MULLED_SOCKET_TIMEOUT)
+    check_github_api_response_rate_limit(r)
+    r.raise_for_status()
+    for subfile in json.loads(r.text):
         if subfile["type"] == "dir":
             if (
                 requests.get(
@@ -295,6 +295,7 @@ def hashed_test_search(
     containers = []
     for package in packages:
         r = requests.get(f"https://anaconda.org/bioconda/{package[0]}/files", timeout=MULLED_SOCKET_TIMEOUT)
+        r.raise_for_status()
         p = "-".join(package)
         for line in r.text.split("\n"):
             if p in line:

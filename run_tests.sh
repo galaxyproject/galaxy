@@ -236,8 +236,8 @@ GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 config/shed_tool_conf.xml) used when testing
                                 installed to tools with -installed.
 GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
-                                is fairly limited and not compatible with parrallel testing
-                                so should be limited to debugging one off tests.
+                                is fairly limited and not compatible with parallel testing
+                                so should be limited to debugging one-off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.

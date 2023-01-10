@@ -10,7 +10,7 @@ from galaxy.util import (
     commands,
     string_as_bool,
 )
-from ..providers import AuthProvider
+from . import AuthProvider
 
 log = logging.getLogger(__name__)
 

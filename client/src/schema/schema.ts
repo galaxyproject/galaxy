@@ -4,6 +4,10 @@
  */
 
 export interface paths {
+    "/api/authenticate/baseauth": {
+        /** Returns returns an API key for authenticated user based on BaseAuth headers. */
+        get: operations["get_api_key_api_authenticate_baseauth_get"];
+    };
     "/api/configuration": {
         /**
          * Return an object containing exposable configuration settings
@@ -1333,6 +1337,11 @@ export interface components {
              * @description API key to interact with the Galaxy API
              */
             key: string;
+        };
+        /** APIKeyResponse */
+        APIKeyResponse: {
+            /** Api Key */
+            api_key: string;
         };
         /** AccessMethod */
         AccessMethod: {
@@ -7462,6 +7471,17 @@ export interface components {
 export type external = Record<string, never>;
 
 export interface operations {
+    get_api_key_api_authenticate_baseauth_get: {
+        /** Returns returns an API key for authenticated user based on BaseAuth headers. */
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["APIKeyResponse"];
+                };
+            };
+        };
+    };
     index_api_configuration_get: {
         /**
          * Return an object containing exposable configuration settings

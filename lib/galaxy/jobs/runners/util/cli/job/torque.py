@@ -1,7 +1,7 @@
 from logging import getLogger
 
 from galaxy.util import parse_xml_string
-from ..job import (
+from . import (
     BaseJobExec,
     job_states,
 )

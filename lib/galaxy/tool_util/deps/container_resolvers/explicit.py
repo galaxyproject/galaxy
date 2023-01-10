@@ -4,9 +4,9 @@ import os
 from typing import cast
 
 from galaxy.util.commands import shell
+from . import ContainerResolver
 from .mulled import CliContainerResolver
 from ..container_classes import SingularityContainer
-from ..container_resolvers import ContainerResolver
 from ..requirements import ContainerDescription
 
 log = logging.getLogger(__name__)

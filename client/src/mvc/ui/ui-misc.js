@@ -247,12 +247,14 @@ export var Upload = Backbone.View.extend({
         return this;
     },
     _readFile: function (e) {
-        var self = this;
         var file = e.target.files && e.target.files[0];
         if (file) {
             var reader = new FileReader();
-            reader.onload = function () {
-                self.model.set({ wait: false, value: this.result });
+            reader.onload = () => {
+                this.model.set({ wait: false, value: reader.result });
+                if (this.model.get("onchange")) {
+                    this.model.get("onchange")(this.value());
+                }
             };
             this.model.set({ wait: true, value: null });
             reader.readAsText(file);

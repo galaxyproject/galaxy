@@ -152,6 +152,14 @@ class TestInteractiveToolsPulsarIntegration(AbstractTestCases.BaseInteractiveToo
         disable_dependency_resolution(config)
 
 
+class TestInteractiveToolsShortURLIntegration(AbstractTestCases.BaseInteractiveToolsIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["interactivetools_shorten_url"] = True
+        config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
+
+
 class TestInteractiveToolsRemoteProxyIntegration(AbstractTestCases.BaseInteractiveToolsIntegrationTestCase):
     """
     $ cd gx-it-proxy

@@ -163,6 +163,7 @@ class InteractiveToolManager:
                 entry_url=entry["url"],
                 name=entry["name"],
                 requires_domain=entry["requires_domain"],
+                short_token=self.app.config.interactivetools_shorten_url,
             )
             self.sa_session.add(ep)
         if flush:

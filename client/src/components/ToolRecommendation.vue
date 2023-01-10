@@ -95,7 +95,7 @@ export default {
             svgElem.setAttribute("viewBox", -translateX + " 0 " + 0.5 * clientW + " " + clientH);
             svgElem.setAttribute("preserveAspectRatio", "xMidYMid meet");
 
-            const tree = d3.layout.tree().size([clientH, clientW]);
+            const tree = d3.tree().size([clientH, clientW]);
             const diagonal = d3.svg.diagonal().projection((d) => {
                 return [d.y, d.x];
             });

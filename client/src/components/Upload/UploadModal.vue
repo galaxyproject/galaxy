@@ -110,8 +110,8 @@ defineExpose({
             v-if="currentHistoryId"
             ref="content"
             :key="showModal"
-            :currentUserId="currentUser.id"
-            :currentHistoryId="currentHistoryId"
+            :current-user-id="currentUser.id"
+            :current-history-id="currentHistoryId"
             v-bind="options"
             @dismiss="dismiss" />
     </b-modal>
