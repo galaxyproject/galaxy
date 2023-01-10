@@ -2,69 +2,78 @@
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" v-slot="{ historiesLoading }" :user="user">
             <div>
-                <b-alert v-if="historiesLoading || isLoading" class="m-2" variant="info" show>
+                <b-alert v-if="historiesLoading || isLoading" variant="info" show>
                     <LoadingSpan message="Loading Gantt Visualization" />
                 </b-alert>
                 <b-alert
                     v-else-if="emptyHistory && !historiesLoading && !isLoading && !currentlyProcessing"
-                    class="m-2"
                     variant="info"
                     show>
-                    <EmptyHistory />
+                    No Jobs Exist In This History
                 </b-alert>
-                <b-alert v-else-if="noMinuteJobs || noMetrics" class="m-2" variant="info" show>
-                    <EmptyHistory :message="message" />
+                <b-alert v-else-if="noMinuteJobs || noMetrics" variant="info" show>
+                    {{ message }}
                 </b-alert>
                 <div class="sticky">
                     <div class="timeButtonsDiv">
                         <button
                             id="QDayView"
-                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Quarter Day'"
+                            :disabled="
+                                historiesLoading || isLoading || emptyHistory || noMetrics || ganttView == 'Quarter Day'
+                            "
                             data-description="change view button"
                             @click="changeQDayView">
                             Quarter Day View
                         </button>
                         <button
                             id="HDayView"
-                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Half Day'"
+                            :disabled="
+                                historiesLoading || isLoading || emptyHistory || noMetrics || ganttView == 'Half Day'
+                            "
                             data-description="change view button"
                             @click="changeHDayView">
                             Half Day View
                         </button>
                         <button
                             id="dayView"
-                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Day'"
+                            :disabled="historiesLoading || isLoading || emptyHistory || noMetrics || ganttView == 'Day'"
                             data-description="change view button"
                             @click="changeDayView">
                             Day View
                         </button>
                         <button
                             id="weekView"
-                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Week'"
+                            :disabled="
+                                historiesLoading || isLoading || emptyHistory || noMetrics || ganttView == 'Week'
+                            "
                             data-description="change view button"
                             @click="changeWeekView">
                             Week View
                         </button>
                         <button
                             id="monthView"
-                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Month'"
+                            :disabled="
+                                historiesLoading || isLoading || emptyHistory || noMetrics || ganttView == 'Month'
+                            "
                             data-description="change view button"
                             @click="changeMonthView">
                             Month View
                         </button>
                         <button
                             id="hourView"
-                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Hour'"
+                            :disabled="
+                                historiesLoading || isLoading || emptyHistory || noMetrics || ganttView == 'Hour'
+                            "
                             data-description="change view button"
                             @click="changeHourView">
                             Hour View
                         </button>
                         <button
                             id="minuteView"
-                            :disabled="isLoading || emptyHistory || noMetrics"
+                            v-b-modal.dateTimeModal
+                            :disabled="historiesLoading || isLoading || emptyHistory || noMetrics"
                             data-description="change view button"
-                            @click="changeMinuteView"
-                            v-b-modal.dateTimeModal>
+                            @click="changeMinuteView">
                             Minute View
                         </button>
                     </div>
@@ -72,14 +81,16 @@
                 <div>
                     <svg id="gantt"></svg>
                 </div>
-                <b-modal class="test" id="dateTimeModal" ref="modal" v-bind="$attrs" title="Choose a starting time">
+                <b-modal id="dateTimeModal" ref="modal" class="test" v-bind="$attrs" title="Choose a starting time">
                     <DatePicker v-model="date" mode="dateTime">
                         <template v-slot="{ inputValue, inputEvents }">
                             <input class="px-3 py-1 border rounded" :value="inputValue" v-on="inputEvents" />
                         </template>
                     </DatePicker>
                     <template v-slot:modal-footer>
-                        <b-button id="confirmDate" variant="primary" @click="changeDate(date, 'confirmed')"> Confirm Date </b-button>
+                        <b-button id="confirmDate" variant="primary" @click="changeDate(date, 'confirmed')">
+                            Confirm Date
+                        </b-button>
                     </template>
                 </b-modal>
             </div>
@@ -91,12 +102,11 @@
 import Gantt from "../../../../node_modules/frappe-gantt";
 import { ref, watch, onMounted } from "vue";
 import store from "@/store";
-import { keyedColorScheme } from "utils/color";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
-import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/UserHistories";
-import LoadingSpan from "components/LoadingSpan";
-import EmptyHistory from "./EmptyHistory.vue";
+import { keyedColorScheme } from "@/utils/color";
+import { useHistoryItemsStore } from "@/stores/history/historyItemsStore";
+import CurrentUser from "@/components/providers/CurrentUser";
+import UserHistories from "@/components/providers/UserHistories";
+import LoadingSpan from "@/components/LoadingSpan";
 import DatePicker from "v-calendar/lib/components/date-picker.umd";
 import { BModal } from "bootstrap-vue";
 import BootstrapVue from "bootstrap-vue";
@@ -109,11 +119,10 @@ export default {
     name: "Gantt",
     components: {
         LoadingSpan,
-        EmptyHistory,
         CurrentUser,
         UserHistories,
         DatePicker,
-        BModal
+        BModal,
     },
     setup() {
         // Store
@@ -135,7 +144,7 @@ export default {
         const end_time = ref(null);
         const empty_metrics = ref(0);
         const noMetrics = ref(false);
-        const message = ref("");
+        const message = ref("No Jobs Exist In This History");
         const date = ref(moment().format("YYYY-MM-DD HH:mm:ss"));
 
         // Hooks
@@ -154,6 +163,7 @@ export default {
                     historyId.value = newHistoryId;
                     empty_metrics.value = 0;
                     noMetrics.value = false;
+                    noMinuteJobs.value = false;
                     message.value = "";
                     clearGantt();
                     clearPopups();
@@ -265,12 +275,12 @@ export default {
         }
 
         function clearGantt() {
-            var container = document.getElementsByClassName("gantt");
-            if (container && container.length > 0) {
+            var container = document.querySelector("#gantt");
+            if (container) {
                 // We will make .gantt empty so that old data from the visualization is removed and transition to the new one looks more smooth
                 accountingArray.value = [];
                 accountingArrayMinutes.value = [];
-                container[0].innerHTML = "";
+                container.innerHTML = "";
             }
         }
 
@@ -412,7 +422,7 @@ export default {
         function changeMinuteView() {
             clearPopups();
             ganttView.value = "Minute";
-        };
+        }
 
         function clearPopups() {
             const popups = document.getElementsByClassName("popup.wrapper");
@@ -512,7 +522,7 @@ export default {
             currentlyProcessing,
             dateTimeVal,
             changeDate,
-            date
+            date,
         };
     },
 };
@@ -633,7 +643,7 @@ function createClassWithCSS(selector, style) {
     margin-left: 15px;
     margin-right: 15px;
 }
-.modal-content{
+.modal-content {
     height: 550px;
 }
 </style>
