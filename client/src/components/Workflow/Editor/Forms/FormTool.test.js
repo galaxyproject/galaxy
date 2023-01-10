@@ -35,7 +35,7 @@ describe("FormTool", () => {
                         inputs: [],
                         help: "help_text",
                         versions: ["1.0", "2.0", "3.0"],
-                        hasCitations: false,
+                        citations: false,
                     },
                     outputs: [],
                     inputs: [],
