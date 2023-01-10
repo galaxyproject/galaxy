@@ -959,14 +959,3 @@ body.reports {
         margin-left: 10px;
     }
 }
-
-/* Used in Galaxy IE for spinner loading TODO: Remove in IE entrypoint refactoring */
-#ie-loading-spinner {
-    position: absolute;
-    margin: auto;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url(../../assets/images/largespinner.gif) no-repeat center center fixed;
-}
