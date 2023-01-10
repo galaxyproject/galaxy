@@ -194,16 +194,9 @@ export default {
         });
 
         watch(ganttView, (newval, oldval) => {
+            clearPopups();
             if (oldval == "Minute") {
                 makeGantt();
-            }
-        });
-
-        watch(empty_metrics, (newVal, oldVal) => {
-            if (newVal == historyItems.value.length) {
-                isLoading.value = false;
-                noMetrics.value = true;
-                message.value = "No data";
             }
         });
 
@@ -338,6 +331,11 @@ export default {
                     currentlyProcessing.value = false;
                     makeGantt();
                 }
+                if (empty_metrics.value == historyItems.value.length) {
+                    isLoading.value = false;
+                    noMetrics.value = true;
+                    message.value = "No data";
+                }
             }
         }
 
@@ -378,49 +376,42 @@ export default {
         }
 
         function changeQDayView() {
-            clearPopups();
             noMinuteJobs.value = false;
             ganttView.value = "Quarter Day";
             gantt.value.change_view_mode("Quarter Day");
         }
 
         function changeHDayView() {
-            clearPopups();
             noMinuteJobs.value = false;
             ganttView.value = "Half Day";
             gantt.value.change_view_mode("Half Day");
         }
 
         function changeDayView() {
-            clearPopups();
             noMinuteJobs.value = false;
             ganttView.value = "Day";
             gantt.value.change_view_mode("Day");
         }
 
         function changeWeekView() {
-            clearPopups();
             noMinuteJobs.value = false;
             ganttView.value = "Week";
             gantt.value.change_view_mode("Week");
         }
 
         function changeMonthView() {
-            clearPopups();
             noMinuteJobs.value = false;
             ganttView.value = "Month";
             gantt.value.change_view_mode("Month");
         }
 
         function changeHourView() {
-            clearPopups();
             noMinuteJobs.value = false;
             ganttView.value = "Hour";
             gantt.value.change_view_mode("Hour");
         }
 
         function changeMinuteView() {
-            clearPopups();
             ganttView.value = "Minute";
         }
 
