@@ -43,6 +43,14 @@ class ToolShedTestDriver(driver_util.TestDriver):
 
     def setup(self):
         """Entry point for test driver script."""
+        self.external_shed = bool(os.environ.get("TOOL_SHED_TEST_EXTERNAL", None))
+        if not self.external_shed:
+            self._setup_local()
+        else:
+            # Going to also need to set TOOL_SHED_TEST_HOST.
+            assert os.environ["TOOL_SHED_TEST_HOST"]
+
+    def _setup_local(self):
         # ---- Configuration ------------------------------------------------------
         tool_shed_test_tmp_dir = driver_util.setup_tool_shed_tmp_dir()
         if not os.path.isdir(tool_shed_test_tmp_dir):
