@@ -55,7 +55,7 @@ import { ref } from "vue";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { useCurrentTheme } from "@/composables/userFlags";
+import { useCurrentTheme } from "@/composables/user";
 
 export default {
     components: {
@@ -98,7 +98,13 @@ export default {
             return true;
         },
         theme() {
-            return this.config.themes[this.currentTheme];
+            const themeKeys = Object.keys(this.config.themes);
+            if (themeKeys.length > 0) {
+                const foundTheme = themeKeys.includes(this.currentTheme);
+                const selectedTheme = foundTheme ? this.currentTheme : themeKeys[0];
+                return this.config.themes[selectedTheme];
+            }
+            return null;
         },
         windowTab() {
             return this.windowManager.getTab();

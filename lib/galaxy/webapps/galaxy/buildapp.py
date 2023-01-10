@@ -892,6 +892,14 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["DELETE"]),
     )
 
+    webapp.mapper.connect(
+        "set_theme",
+        "/api/users/{id}/theme/{theme}",
+        controller="users",
+        action="set_theme",
+        conditions=dict(method=["PUT"]),
+    )
+
     # ========================
     # ===== WEBHOOKS API =====
     # ========================

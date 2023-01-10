@@ -5,59 +5,106 @@
             {{ message }}
         </b-alert>
         <p>
-            {{ titleLoggedInAs }} <strong id="user-preferences-current-email">{{ email }}</strong
-            >.
+            <span v-localize>You are logged in as</span>
+            <strong id="user-preferences-current-email">{{ email }}</strong>
+            <span v-localize>and you are using</span>
+            <strong>{{ diskUsage }}</strong>
+            <span v-localize>of disk space.</span>
+            <span v-localize>If this is more than expected, please visit the</span>
+            <router-link id="edit-preferences-cloud-auth" to="/storage">
+                <b v-localize>Storage Dashboard</b>
+            </router-link>
+            <span v-localize>to free up disk space.</span>
+            <span v-if="enableQuotas">
+                <span v-localize>Your disk quota is:</span>
+                <strong>{{ diskQuota }}</strong
+                >.
+            </span>
         </p>
-        <b-row v-for="(link, index) in activeLinks" :key="index" class="ml-3 mb-1">
-            <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
-            <div class="pref-content pr-1">
-                <a v-if="link.onclick" :id="link.id" href="javascript:void(0)" @click="link.onclick"
-                    ><b>{{ link.title }}</b></a
-                >
-                <a v-else :id="link.id" :href="`${baseUrl}/${link.action}`"
-                    ><b>{{ link.title }}</b></a
-                >
-                <div class="form-text text-muted">
-                    {{ link.description }}
-                </div>
-            </div>
-        </b-row>
-        <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
-            <div class="pref-content pr-1">
-                <a href="javascript:void(0)" @click="toggleNotifications"><b v-localize>Enable notifications</b></a>
-                <div v-localize class="form-text text-muted">
-                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
-                    privilege in your browser.
-                </div>
-            </div>
-        </b-row>
+        <user-preferences-element
+            v-for="(link, index) in activePreferences"
+            :id="link.id"
+            :key="index"
+            :icon="link.icon"
+            :title="link.title"
+            :description="link.description"
+            :to="`/user/${index}`" />
+        <user-preferences-element
+            id="edit-preferences-api-key"
+            icon="fa-key"
+            title="Manage API Key"
+            description="Access your current API key or create a new one."
+            to="/user/api_key" />
+        <user-preferences-element
+            id="edit-preferences-cloud-auth"
+            icon="fa-cloud"
+            title="Manage Cloud Authorization"
+            description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
+            to="/user/cloud_auth" />
+        <ConfigProvider v-slot="{ config }">
+            <user-preferences-element
+                v-if="!config.enable_oidc"
+                id="manage-third-party-identities"
+                icon="fa-id-card-o"
+                title="Manage Third-Party Identities"
+                description="Connect or disconnect access to your third-party identities."
+                to="/user/external_ids" />
+        </ConfigProvider>
+        <user-preferences-element
+            id="edit-preferences-custom-builds"
+            icon="fa-cubes"
+            title="Manage Custom Builds"
+            description="Add or remove custom builds using history datasets."
+            to="/custom_builds" />
+        <user-preferences-element
+            v-if="hasThemes"
+            icon="fa-palette"
+            title="Pick a Color Theme"
+            description="Click here to change the user interface color theme."
+            badge="New!"
+            @click="toggleTheme = !toggleTheme">
+            <b-collapse v-model="toggleTheme">
+                <ThemeSelector />
+            </b-collapse>
+        </user-preferences-element>
+        <user-preferences-element
+            id="edit-preferences-notifications"
+            icon="fa-plus-square-o"
+            title="Enable notifications"
+            description="Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser."
+            @click="toggleNotifications" />
+        <ConfigProvider v-slot="{ config }">
+            <user-preferences-element
+                v-if="!config.single_user"
+                id="edit-preferences-make-data-private"
+                icon="fa-lock"
+                title="Make All Data Private"
+                description="Click here to make all data private."
+                @click="makeDataPrivate" />
+        </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
                 :email="email"
-                :root="root"
                 :user-id="userId">
             </UserDeletion>
         </ConfigProvider>
-        <p class="mt-2">
-            You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
-            <span v-if="enableQuotas">
-                Your disk quota is: <strong>{{ diskQuota }}</strong
-                >.
-            </span>
-            Is your usage more than expected? Review your
-            <b-link :href="storageDashboardUrl"><b>Storage Dashboard</b></b-link
-            >.
-        </p>
+        <user-preferences-element
+            v-if="hasLogout"
+            id="edit-preferences-sign-out"
+            icon="fa-sign-out"
+            title="Sign Out"
+            description="Click here to sign out of all sessions."
+            @click="signOut" />
     </b-container>
 </template>
 
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
+import { safePath } from "utils/redirect";
 import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
@@ -65,6 +112,7 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
+import UserPreferencesElement from "./UserPreferencesElement";
 
 import "@fortawesome/fontawesome-svg-core";
 
@@ -74,6 +122,8 @@ export default {
     components: {
         ConfigProvider,
         UserDeletion,
+        UserPreferencesElement,
+        ThemeSelector,
     },
     props: {
         userId: {
@@ -90,43 +140,24 @@ export default {
             email: "",
             diskUsage: "",
             diskQuota: "",
-            storageDashboardUrl: `${getAppRoot()}storage`,
-            root: getAppRoot(),
             messageVariant: null,
             message: null,
-            submittedNames: [],
-            titleLoggedInAs: _l("You are logged in as"),
+            toggleTheme: false,
         };
     },
     computed: {
-        baseUrl() {
-            return `${this.root}user`;
+        activePreferences() {
+            const enabledPreferences = Object.entries(getUserPreferencesModel()).filter((f) => !f.disabled);
+            return Object.fromEntries(enabledPreferences);
         },
-        activeLinks() {
-            const activeLinks = {};
-            const UserPreferencesModel = getUserPreferencesModel();
-            for (const key in UserPreferencesModel) {
-                if (UserPreferencesModel[key].shouldRender !== false) {
-                    activeLinks[key] = UserPreferencesModel[key];
-                    switch (key) {
-                        case "make_data_private":
-                            activeLinks[key].onclick = this.makeDataPrivate;
-                            break;
-                        case "custom_builds":
-                            activeLinks[key].onclick = this.openManageCustomBuilds;
-                            break;
-                        case "logout":
-                            activeLinks[key].onclick = this.signOut;
-                            break;
-                        // case "delete_user":
-                        //     activeLinks[key].onclick = this.deleteUser;
-                        default:
-                            activeLinks[key].action = key;
-                    }
-                }
-            }
-
-            return activeLinks;
+        hasLogout() {
+            const Galaxy = getGalaxyInstance();
+            return !!Galaxy.session_csrf_token && !Galaxy.config.single_user;
+        },
+        hasThemes() {
+            const Galaxy = getGalaxyInstance();
+            const themes = Object.keys(Galaxy.config.themes);
+            return themes?.length > 1 ?? false;
         },
     },
     created() {
@@ -136,7 +167,7 @@ export default {
             this.message = message;
             this.messageVariant = status;
         }
-        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
+        axios.get(safePath(`/api/users/${this.userId}`)).then((response) => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
             this.diskQuota = response.data.quota;
@@ -159,9 +190,6 @@ export default {
                 alert("Notifications are not supported by this browser.");
             }
         },
-        openManageCustomBuilds() {
-            this.$router.push(`/custom_builds`);
-        },
         makeDataPrivate() {
             const Galaxy = getGalaxyInstance();
             if (
@@ -177,10 +205,12 @@ export default {
                     )
                 )
             ) {
-                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then((response) => {
+                axios.post(safePath(`/history/make_private?all_histories=true`)).then((response) => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
-                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${Galaxy.root}user/permissions">User Permissions</a> interface.`,
+                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${safePath(
+                            "/user/permissions"
+                        )}">User Permissions</a> interface.`,
                         buttons: {
                             Close: () => {
                                 Galaxy.modal.hide();
@@ -206,6 +236,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-@import "user-styles.scss";
-</style>

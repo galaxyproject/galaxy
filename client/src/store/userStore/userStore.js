@@ -1,8 +1,9 @@
-import { addFavoriteTool, removeFavoriteTool, getCurrentUser } from "./queries";
+import { addFavoriteTool, removeFavoriteTool, getCurrentUser, setCurrentTheme } from "./queries";
 import User from "./User";
 
 const state = {
     currentUser: null,
+    currentPreferences: null,
 };
 
 const getters = {
@@ -10,21 +11,40 @@ const getters = {
     // persist it easily in localStorage or something,
     // hydrate with model object using the getter
     currentUser(state) {
-        const userProps = state.currentUser || {};
+        const userProps = state.currentUser ?? {};
         const user = new User(userProps);
         return Object.freeze(user);
+    },
+    currentTheme(state) {
+        return state.currentPreferences?.theme ?? null;
+    },
+    currentFavorites(state) {
+        const preferences = state.currentPreferences;
+        if (preferences && preferences.favorites) {
+            return JSON.parse(preferences.favorites);
+        } else {
+            return { tools: [] };
+        }
     },
 };
 
 const mutations = {
     setCurrentUser(state, user) {
         state.currentUser = user;
+        state.currentPreferences = user?.preferences ?? null;
+    },
+    setCurrentTheme(state, theme) {
+        if (state.currentPreferences) {
+            state.currentPreferences.theme = theme;
+        }
     },
     setFavoriteTools(state, tools) {
-        const favoritesJson = state.currentUser.preferences.favorites;
-        const favorites = favoritesJson ? JSON.parse(favoritesJson) : { tools: [] };
-        favorites.tools = tools;
-        state.currentUser.preferences.favorites = JSON.stringify(favorites);
+        if (state.currentPreferences) {
+            const favorites = state.currentPreferences.favorites;
+            const favoritesDict = favorites ? JSON.parse(favorites) : { tools: [] };
+            favoritesDict.tools = tools;
+            state.currentPreferences.favorites = JSON.stringify(favoritesDict);
+        }
     },
 };
 
@@ -50,6 +70,10 @@ const actions = {
         commit("setCurrentUser", user);
         dispatch("history/loadCurrentHistory", user, { root: true });
         dispatch("history/loadHistories", user, { root: true });
+    },
+    async setCurrentTheme({ commit, state }, theme) {
+        const currentTheme = await setCurrentTheme(state.currentUser.id, theme);
+        commit("setCurrentTheme", currentTheme);
     },
     async addFavoriteTool({ commit, state }, toolId) {
         const tools = await addFavoriteTool(state.currentUser.id, toolId);

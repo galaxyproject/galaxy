@@ -748,6 +748,22 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             )
 
     @expose_api
+    def set_theme(self, trans, id: str, theme: str, payload=None, **kwd) -> str:
+        """Sets the user's theme choice.
+        PUT /api/users/{id}/theme/{theme}
+
+        :param id: the encoded id of the user
+        :type  id: str
+        :param theme: the theme identifier/name that the user has selected as preference
+        :type  theme: str
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+        user.preferences["theme"] = theme
+        trans.sa_session.flush()
+        return theme
+
+    @expose_api
     def get_password(self, trans, id, payload=None, **kwd):
         """
         Return available password inputs.

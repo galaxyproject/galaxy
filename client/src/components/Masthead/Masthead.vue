@@ -9,7 +9,6 @@ import { watch, ref, reactive } from "vue";
 import { onMounted, onBeforeMount } from "vue";
 import { useRoute } from "vue-router/composables";
 import { useEntryPointStore } from "stores/entryPointStore";
-import ThemeSelector from "./ThemeSelector.vue";
 
 const route = useRoute();
 const emit = defineEmits(["open-url"]);
@@ -121,7 +120,6 @@ onMounted(() => {
                 :tab="itsMenu"
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
-            <ThemeSelector />
             <masthead-item
                 v-for="(tab, idx) in extensionTabs"
                 v-show="tab.hidden !== true"
