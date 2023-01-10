@@ -12,56 +12,56 @@
                     show>
                     <EmptyHistory />
                 </b-alert>
-                <b-alert v-else-if="noMinuteJobs" class="m-2" variant="info" show>
-                    <EmptyHistory message="No jobs lie in the specified time-span" />
+                <b-alert v-else-if="noMinuteJobs || noMetrics" class="m-2" variant="info" show>
+                    <EmptyHistory :message="message" />
                 </b-alert>
                 <div class="sticky">
                     <div class="timeButtonsDiv">
                         <button
                             id="QDayView"
-                            :disabled="emptyHistory"
+                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Quarter Day'"
                             data-description="change view button"
                             @click="changeQDayView">
                             Quarter Day View
                         </button>
                         <button
                             id="HDayView"
-                            :disabled="emptyHistory"
+                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Half Day'"
                             data-description="change view button"
                             @click="changeHDayView">
                             Half Day View
                         </button>
                         <button
                             id="dayView"
-                            :disabled="emptyHistory"
+                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Day'"
                             data-description="change view button"
                             @click="changeDayView">
                             Day View
                         </button>
                         <button
                             id="weekView"
-                            :disabled="emptyHistory"
+                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Week'"
                             data-description="change view button"
                             @click="changeWeekView">
                             Week View
                         </button>
                         <button
                             id="monthView"
-                            :disabled="emptyHistory"
+                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Month'"
                             data-description="change view button"
                             @click="changeMonthView">
                             Month View
                         </button>
                         <button
                             id="hourView"
-                            :disabled="emptyHistory"
+                            :disabled="isLoading || emptyHistory || noMetrics || ganttView == 'Hour'"
                             data-description="change view button"
                             @click="changeHourView">
                             Hour View
                         </button>
                         <button
                             id="minuteView"
-                            :disabled="emptyHistory"
+                            :disabled="isLoading || emptyHistory || noMetrics"
                             data-description="change view button"
                             @click="changeMinuteView">
                             Minute View
@@ -115,7 +115,7 @@ export default {
         const accountingArrayMinutes = ref([]);
         const historyItems = ref(piniaStore.items[historyId.value]);
         const gantt = ref();
-        const ganttView = ref("Hour");
+        const ganttView = ref("Day");
         const noMinuteJobs = ref(false);
         const currentlyProcessing = ref(false);
         const isLoading = ref(true);
@@ -124,6 +124,9 @@ export default {
         const dateTimeVal = ref(new Date().toLocaleString("en-GB"));
         const start_time = ref(null);
         const end_time = ref(null);
+        const empty_metrics = ref(0);
+        const noMetrics = ref(false);
+        const message = ref("");
 
         // Hooks
         onMounted(() => {
@@ -139,6 +142,9 @@ export default {
                     // Making currently processing false so that when you switch to a new History, we can re-fetch the historyContents to refresh the GANTT
                     currentlyProcessing.value = false;
                     historyId.value = newHistoryId;
+                    empty_metrics.value = 0;
+                    noMetrics.value = false;
+                    message.value = "";
                     clearGantt();
                     clearPopups();
                     ganttView.value = "Day";
@@ -170,6 +176,14 @@ export default {
         watch(ganttView, (newval, oldval) => {
             if (oldval == "Minute") {
                 makeGantt();
+            }
+        });
+
+        watch(empty_metrics, (newVal, oldVal) => {
+            if (newVal == historyItems.value.length) {
+                isLoading.value = false;
+                noMetrics.value = true;
+                message.value = "No data";
             }
         });
 
@@ -260,6 +274,7 @@ export default {
             div_svg.appendChild(svg);
             document.querySelector(".gantt-container").appendChild(div_svg);
             noMinuteJobs.value = true;
+            message.value = "No jobs lie in the specified time-span";
         }
 
         async function historyContent() {
@@ -294,6 +309,8 @@ export default {
                                 endTime: metrics[2].value,
                             };
                             accountingArray.value.push(Accounting);
+                        } else {
+                            empty_metrics.value += 1;
                         }
                     }
                 }
@@ -476,6 +493,9 @@ export default {
             isLoading,
             emptyHistory,
             noMinuteJobs,
+            noMetrics,
+            message,
+            ganttView,
             changeMonthView,
             changeWeekView,
             changeQDayView,
