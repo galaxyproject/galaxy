@@ -29,9 +29,6 @@ const actions = {
         const { data } = await axios.get(`${getAppRoot()}api/jobs/${jobId}/metrics`);
         commit("saveJobMetricsForJobId", { jobId, jobMetrics: data });
     },
-    storeIntoAccountingArray: ({ commit }, data) => {
-        commit("saveAccountingData", data);
-    },
 };
 
 const mutations = {
@@ -41,9 +38,6 @@ const mutations = {
     },
     saveJobMetricsForJobId: (state, { jobId, jobMetrics }) => {
         Vue.set(state.jobMetricsByJobId, jobId, jobMetrics);
-    },
-    saveAccountingData: (state, AccountingObject) => {
-        Vue.set(state.AccountingObject, AccountingObject.length, AccountingObject);
     },
 };
 
