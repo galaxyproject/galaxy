@@ -163,7 +163,8 @@ class ToolsService(ServiceBase):
         )
 
         input_format = str(payload.get("input_format", "legacy"))
-
+        if "data_manager_mode" in payload:
+            incoming["__data_manager_mode"] = payload["data_manager_mode"]
         vars = tool.handle_input(
             trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format
         )

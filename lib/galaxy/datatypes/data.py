@@ -452,6 +452,7 @@ class Data(metaclass=DataMeta):
         # Relocate all composite datatype display to a common location.
         composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
         composite_extensions.append("html")  # for archiving composite datatypes
+        composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         headers["X-Content-Type-Options"] = "nosniff"
