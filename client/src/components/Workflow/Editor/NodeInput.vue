@@ -52,15 +52,11 @@ export default {
             type: Object,
             required: true,
         },
-        parentOffset: {
-            type: Object,
-            required: true,
-        },
     },
     setup(props) {
         const el = ref(null);
-        const { rootOffset, parentOffset, stepPosition, stepId, input, datatypesMapper } = toRefs(props);
-        const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
+        const { rootOffset, stepPosition, stepId, input, datatypesMapper } = toRefs(props);
+        const position = useCoordinatePosition(el, rootOffset, stepPosition);
         const isDragging = inject("isDragging");
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);

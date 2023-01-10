@@ -74,7 +74,6 @@
                 :datatypes-mapper="datatypesMapper"
                 :step-position="step.position"
                 :root-offset="rootOffset"
-                :parent-offset="position"
                 v-on="$listeners"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
@@ -88,7 +87,6 @@
                 :step-type="step.type"
                 :step-position="step.position"
                 :root-offset="rootOffset"
-                :parent-offset="position"
                 :datatypes-mapper="datatypesMapper"
                 v-on="$listeners"
                 @stopDragging="onStopDragging"
@@ -158,7 +156,7 @@ const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const stateStore = useWorkflowStateStore();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
-const position = useNodePosition(el, props.id, stateStore);
+useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
 const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);

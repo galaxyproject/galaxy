@@ -94,10 +94,6 @@ export default {
             type: Object,
             required: true,
         },
-        parentOffset: {
-            type: Object,
-            required: true,
-        },
         datatypesMapper: {
             type: DatatypesMapperModel,
             required: true,
@@ -107,8 +103,8 @@ export default {
         const stateStore = useWorkflowStateStore();
         const stepStore = useWorkflowStepStore();
         const el = ref(null);
-        const { rootOffset, parentOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
-        const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
+        const { rootOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
+        const position = useCoordinatePosition(el, rootOffset, stepPosition);
         const extensions = computed(() => {
             const changeDatatype =
                 props.postJobActions[`ChangeDatatypeAction${props.output.label}`] ||
