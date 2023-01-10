@@ -54,7 +54,7 @@
     "elkjs": "^0.7.1",
     "file-saver": "^2.0.5",
     "flush-promises": "^1.0.2",
-    "frappe-gantt": "https://github.com/MOHITRAJANI/gantt-advanced.git",
+    "frappe-gantt": "https://github.com/MOHITRAJANI/gantt-advanced.git#2cc2c6e9500eb0c0dcbd2f17c025e0699d9df937",
     "glob": "^7.2.0",
     "handsontable": "^4.0.0",
     "hsluv": "^0.1.0",
