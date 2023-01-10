@@ -1,17 +1,24 @@
 <template>
     <b-list-group id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
-        <b-list-group-item
-            v-for="(input, index) in allElements"
-            :key="input.inputLabel + input.stepId"
-            ref="menuItem"
-            role="menuitem"
-            tabindex="0"
-            :active="activeElement === index"
-            @click="toggleConnection(input)"
-            @keyup.enter="toggleConnection(input)"
-            @focus="activeElement = index">
-            {{ input.connected ? "Disconnect" : "Connect" }} to {{ input.inputLabel }}
-        </b-list-group-item>
+        <template v-if="allElements.length === 0">
+            <b-list-group-item ref="menuItem" tabindex="0" role="menuitem">
+                No compatible input found in workflow
+            </b-list-group-item>
+        </template>
+        <template v-else>
+            <b-list-group-item
+                v-for="(input, index) in allElements"
+                :key="input.inputLabel + input.stepId"
+                ref="menuItem"
+                role="menuitem"
+                tabindex="0"
+                :active="activeElement === index"
+                @click="toggleConnection(input)"
+                @keyup.enter="toggleConnection(input)"
+                @focus="activeElement = index">
+                {{ input.connected ? "Disconnect" : "Connect" }} to {{ input.inputLabel }}
+            </b-list-group-item>
+        </template>
     </b-list-group>
 </template>
 <script lang="ts" setup>
@@ -28,11 +35,17 @@ const menu = ref();
 const { focused } = useFocusWithin(menu);
 
 const activeElement = ref(0);
-const menuItem = ref<HTMLLIElement[]>();
+const menuItem = ref<HTMLLIElement[] | HTMLLIElement>();
 const emit = defineEmits<{ (e: "closeMenu", value: boolean): void }>();
 
 onMounted(() => {
-    menuItem.value![0].focus();
+    if (menuItem.value) {
+        if ("length" in menuItem.value) {
+            menuItem.value[0].focus();
+        } else {
+            menuItem.value.focus();
+        }
+    }
 });
 
 watch(focused, (focused) => {
@@ -51,14 +64,18 @@ interface InputObject {
 }
 
 function increment() {
-    activeElement.value += 1;
-    activeElement.value = Math.min(activeElement.value, menuItem.value!.length - 1);
-    menuItem.value![activeElement.value].focus();
+    if (menuItem.value && "length" in menuItem.value) {
+        activeElement.value += 1;
+        activeElement.value = Math.min(activeElement.value, menuItem.value!.length - 1);
+        menuItem.value![activeElement.value].focus();
+    }
 }
 
 function decrement() {
-    activeElement.value = Math.max(activeElement.value - 1, 0);
-    menuItem.value![activeElement.value].focus();
+    if (menuItem.value && "length" in menuItem.value) {
+        activeElement.value = Math.max(activeElement.value - 1, 0);
+        menuItem.value![activeElement.value].focus();
+    }
 }
 
 function terminalToInputObject(terminal: InputTerminals, connected: boolean): InputObject {
