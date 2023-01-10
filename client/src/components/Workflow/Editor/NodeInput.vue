@@ -53,6 +53,14 @@ export default {
             type: UseElementBoundingReturn,
             required: true,
         },
+        scale: {
+            type: Number,
+            required: true,
+        },
+        scroll: {
+            type: Object,
+            required: true,
+        },
     },
     setup(props) {
         const el = ref(null);
@@ -96,10 +104,10 @@ export default {
             return Object.freeze({ endX: this.startX, endY: this.startY });
         },
         startX() {
-            return this.position.left + this.position.width / 2;
+            return this.position.left + this.scroll.x.value / this.scale + this.position.width / 2;
         },
         startY() {
-            return this.position.top + this.position.height / 2;
+            return this.position.top + this.scroll.y.value / this.scale + this.position.height / 2;
         },
         label() {
             return this.input.label || this.input.name;

@@ -94,6 +94,14 @@ export default {
             type: Object,
             required: true,
         },
+        scroll: {
+            type: Object,
+            required: true,
+        },
+        scale: {
+            type: Number,
+            required: true,
+        },
         datatypesMapper: {
             type: DatatypesMapperModel,
             required: true,
@@ -225,16 +233,16 @@ export default {
             return Object.freeze({ startX: this.startX, startY: this.startY });
         },
         startX() {
-            return this.position.left + this.position.width / 2;
+            return this.position.left + this.scroll.x.value / this.scale + this.position.width / 2;
         },
         startY() {
-            return this.position.top + this.position.height / 2;
+            return this.position.top + this.scroll.y.value / this.scale + this.position.height / 2;
         },
         endX() {
-            return this.dragX || this.startX;
+            return (this.dragX || this.startX) + this.scroll.x.value / this.scale;
         },
         endY() {
-            return this.dragY || this.startY;
+            return (this.dragY || this.startY) + this.scroll.y.value / this.scale;
         },
         dragPosition() {
             return {

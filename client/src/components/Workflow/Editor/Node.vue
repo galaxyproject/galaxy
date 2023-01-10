@@ -74,6 +74,8 @@
                 :datatypes-mapper="datatypesMapper"
                 :step-position="step.position"
                 :root-offset="rootOffset"
+                :scroll="scroll"
+                :scale="scale"
                 v-on="$listeners"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
@@ -87,6 +89,8 @@
                 :step-type="step.type"
                 :step-position="step.position"
                 :root-offset="rootOffset"
+                :scroll="scroll"
+                :scale="scale"
                 :datatypes-mapper="datatypesMapper"
                 v-on="$listeners"
                 @stopDragging="onStopDragging"
@@ -111,7 +115,7 @@ import { useNodePosition } from "@/components/Workflow/Editor/composables/useNod
 import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 
 Vue.use(BootstrapVue);
 
@@ -127,6 +131,7 @@ const props = defineProps({
         validator: (v: any) => typeof v === "number" || v === null,
     },
     rootOffset: { type: Object as PropType<UseElementBoundingReturn>, required: true },
+    scroll: { type: Object as PropType<UseScrollReturn>, required: true },
     scale: { type: Number, default: 1 },
     highlight: { type: Boolean, default: false },
 });
@@ -182,8 +187,8 @@ const outputs = computed(() => props.step.outputs);
 
 function onMoveTo(position: XYPosition) {
     emit("onUpdateStepPosition", props.id, {
-        top: position.y,
-        left: position.x,
+        top: position.y + props.scroll.y.value / props.scale,
+        left: position.x + props.scroll.x.value / props.scale,
     });
 }
 

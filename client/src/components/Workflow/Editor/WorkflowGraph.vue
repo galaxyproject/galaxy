@@ -16,6 +16,7 @@
                     :datatypes-mapper="datatypesMapper"
                     :active-node-id="activeNodeId"
                     :root-offset="elementBounding"
+                    :scroll="scroll"
                     :scale="scale"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
@@ -41,7 +42,7 @@ import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import { computed, provide, reactive, ref, watch, type Ref, type PropType, watchEffect } from "vue";
-import { useElementBounding } from "@vueuse/core";
+import { useElementBounding, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
@@ -63,9 +64,10 @@ const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
 const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
 const canvas: Ref<HTMLElement | null> = ref(null);
-const { transform, panBy, setZoom, moveTo } = useZoom(1, 0.2, 5, canvas);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
+const scroll = useScroll(canvas);
+const { transform, panBy, setZoom, moveTo } = useZoom(1, 0.2, 5, canvas, scroll);
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);
