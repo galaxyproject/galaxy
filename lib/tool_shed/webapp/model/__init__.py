@@ -180,7 +180,8 @@ class User(Base, Dictifiable):
         :return: void
         """
         self.set_password_cleartext(
-            ''.join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length)))
+            "".join(random.SystemRandom().choice(string.ascii_letters + string.digits) for _ in range(length))
+        )
 
 
 class PasswordResetToken(Base):
