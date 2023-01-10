@@ -4,6 +4,7 @@
     <!--js-app.mako-->
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <meta name="description" content="Galaxy is an open-source, web-based analysis platform for life science research." />
 
         <title>
             Galaxy
