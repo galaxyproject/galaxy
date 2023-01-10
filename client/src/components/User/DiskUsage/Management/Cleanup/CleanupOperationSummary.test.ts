@@ -1,8 +1,8 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
-import CleanupOperationSummary from "./CleanupOperationSummary";
-import { CleanableSummary, CleanupOperation, CleanupResult } from "./model";
+import { getLocalVue } from "../../../../../../tests/jest/helpers";
+import CleanupOperationSummary from "./CleanupOperationSummary.vue";
+import { CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
 
 const localVue = getLocalVue();
 
@@ -10,37 +10,38 @@ const REVIEW_ITEMS_LINK = '[data-test-id="review-link"]';
 const NO_ITEMS_INDICATOR = '[data-test-id="no-items-indicator"]';
 
 /** Operation that can clean some items */
-const CLEANUP_OPERATION = new CleanupOperation({
+const CLEANUP_OPERATION: CleanupOperation = {
     id: "operation-id",
     name: "operation name",
     description: "operation description",
-    fetchSummary: () =>
+    fetchSummary: async () =>
         new CleanableSummary({
             totalSize: 1024,
             totalItems: 2,
         }),
-    fetchItems: () => [],
-    cleanupItems: (items) =>
+    fetchItems: async () => [],
+    cleanupItems: async () =>
         new CleanupResult({
             totalItemCount: 2,
             totalFreeBytes: 1024,
+            errors: [],
         }),
-});
+};
 /** Operation without items to clean*/
-const EMPTY_CLEANUP_OPERATION = new CleanupOperation({
+const EMPTY_CLEANUP_OPERATION: CleanupOperation = {
     id: "operation-id-empty",
     name: "empty operation",
     description: "operation that has no items to clean",
-    fetchSummary: () =>
+    fetchSummary: async () =>
         new CleanableSummary({
             totalSize: 0,
             totalItems: 0,
         }),
-    fetchItems: () => [],
-    cleanupItems: (items) => null,
-});
+    fetchItems: async () => [],
+    cleanupItems: async () => new CleanupResult(),
+};
 /** Operation that fails on every action */
-const ERROR_CLEANUP_OPERATION = new CleanupOperation({
+const ERROR_CLEANUP_OPERATION: CleanupOperation = {
     id: "operation-id-error",
     name: "operation with error",
     description: "operation causing errors",
@@ -50,17 +51,20 @@ const ERROR_CLEANUP_OPERATION = new CleanupOperation({
     fetchItems: () => {
         throw new Error("Cannot fetch items");
     },
-    cleanupItems: (items) => {
+    cleanupItems: () => {
         throw new Error("Cannot cleanup items");
     },
-});
+};
 
-async function mountCleanupOperationSummaryWith(operation, refreshOperationId = null, refreshDelay = 0) {
-    const wrapper = mount(
-        CleanupOperationSummary,
-        { propsData: { operation, refreshOperationId, refreshDelay } },
-        localVue
-    );
+async function mountCleanupOperationSummaryWith(
+    operation: CleanupOperation,
+    refreshOperationId = null,
+    refreshDelay = 0
+) {
+    const wrapper = mount(CleanupOperationSummary, {
+        propsData: { operation, refreshOperationId, refreshDelay },
+        localVue,
+    });
     await flushPromises();
     return wrapper;
 }

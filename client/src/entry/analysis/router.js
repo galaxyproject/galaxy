@@ -14,6 +14,7 @@ import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 // routes
 import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
+import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
 
 // child components
 import Citations from "components/Citation/Citations";
@@ -63,7 +64,6 @@ import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
-import { StorageDashboardRouter } from "components/User/DiskUsage";
 
 Vue.use(VueRouter);
 
@@ -86,6 +86,7 @@ export function getRouter(Galaxy) {
         routes: [
             ...AdminRoutes,
             ...LibraryRoutes,
+            ...StorageDashboardRoutes,
             /** Login entry route */
             { path: "/login/start", component: Login },
             /** Page editor */
@@ -305,11 +306,6 @@ export function getRouter(Galaxy) {
                             item: "page",
                             plural: "Pages",
                         }),
-                    },
-                    {
-                        path: "storage",
-                        component: StorageDashboardRouter,
-                        redirect: redirectAnon(),
                     },
                     {
                         path: "tours",

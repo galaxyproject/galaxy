@@ -1,3 +1,34 @@
+<script setup lang="ts">
+import { bytesToString } from "@/utils/utils";
+import { computed } from "vue";
+import type { QuotaUsage } from "./model";
+import QuotaUsageBar from "./QuotaUsageBar.vue";
+
+interface QuotaUsageSummaryProps {
+    quotaUsages: QuotaUsage[];
+}
+
+const props = defineProps<QuotaUsageSummaryProps>();
+
+const totalQuotaInBytes = computed(() => {
+    const totalQuota = props.quotaUsages.reduce((acc, item) => acc + (item.quotaInBytes ?? 0), 0);
+    return totalQuota;
+});
+
+const niceTotalQuota = computed(() => {
+    return bytesToString(totalQuotaInBytes.value, true, undefined);
+});
+
+const allSourcesUnlimited = computed(() => {
+    const allUnlimited = props.quotaUsages.every((usage) => usage.isUnlimited);
+    return allUnlimited;
+});
+
+defineExpose({
+    totalQuotaInBytes,
+});
+</script>
+
 <template>
     <div class="quota-summary">
         <div class="text-center my-5">
@@ -16,41 +47,8 @@
             </div>
         </div>
 
-        <div v-for="quotaUsage in quotaUsages" :key="quotaUsage.sourceLabel">
-            <QuotaUsageBar :quota-usage="quotaUsage" />
+        <div v-for="quotaUsage in props.quotaUsages" :key="quotaUsage.sourceLabel">
+            <QuotaUsageBar :quota-usage="quotaUsage" class="quota-usage-bar" />
         </div>
     </div>
 </template>
-
-<script>
-import { bytesToString } from "utils/utils";
-import QuotaUsageBar from "./QuotaUsageBar";
-
-export default {
-    components: {
-        QuotaUsageBar,
-    },
-    props: {
-        quotaUsages: {
-            type: Array,
-            required: true,
-        },
-    },
-    computed: {
-        /** @returns {Number} */
-        totalQuota() {
-            const totalQuota = this.quotaUsages.reduce((acc, item) => acc + item.quotaInBytes, 0);
-            return totalQuota;
-        },
-        /** @returns {String} */
-        niceTotalQuota() {
-            return bytesToString(this.totalQuota, true);
-        },
-        /** @returns {Boolean} */
-        allSourcesUnlimited() {
-            const allUnlimited = this.quotaUsages.every((usage) => usage.isUnlimited);
-            return allUnlimited;
-        },
-    },
-};
-</script>

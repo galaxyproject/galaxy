@@ -1,3 +1,48 @@
+<script setup lang="ts">
+import localize from "@/utils/localization";
+import { computed, ref } from "vue";
+import type { CleanupResult } from "./model";
+
+interface CleanupResultDialogProps {
+    result?: CleanupResult;
+}
+
+const props = withDefaults(defineProps<CleanupResultDialogProps>(), {
+    result: undefined,
+});
+
+const showModal = ref(false);
+
+const isLoading = computed<boolean>(() => {
+    return props.result === undefined;
+});
+
+const title = computed<string>(() => {
+    let message = localize("Something went wrong...");
+    if (isLoading.value) {
+        message = localize("Freeing up some space...");
+    } else if (props.result.isPartialSuccess) {
+        message = localize("Sorry, some items couldn't be cleared");
+    } else if (props.result.success) {
+        message = localize("Congratulations!");
+    }
+    return message;
+});
+
+const errorFields = [
+    { key: "name", label: localize("Name") },
+    { key: "reason", label: localize("Reason") },
+];
+
+function openModal() {
+    showModal.value = true;
+}
+
+defineExpose({
+    openModal,
+});
+</script>
+
 <template>
     <b-modal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer static>
         <div class="text-center">
@@ -30,52 +75,3 @@
         </div>
     </b-modal>
 </template>
-
-<script>
-import _l from "utils/localization";
-import { CleanupResult } from "./model";
-
-export default {
-    props: {
-        result: {
-            type: CleanupResult,
-            required: false,
-            default: null,
-        },
-        show: {
-            type: Boolean,
-            required: false,
-        },
-    },
-    data() {
-        return {
-            showModal: false,
-            errorFields: [
-                { key: "name", label: _l("Name") },
-                { key: "reason", label: _l("Reason") },
-            ],
-        };
-    },
-    computed: {
-        /** @returns {Boolean} */
-        isLoading() {
-            return this.result === null;
-        },
-        /** @returns {String} */
-        title() {
-            let message = _l("Something went wrong...");
-            if (this.isLoading) {
-                message = _l("Freeing up some space...");
-            } else if (this.result.isPartialSuccess) {
-                message = _l("Sorry, some items couldn't be cleared");
-            } else if (this.result.success) {
-                message = _l("Congratulations!");
-            }
-            return message;
-        },
-    },
-    created() {
-        this.showModal = this.show;
-    },
-};
-</script>

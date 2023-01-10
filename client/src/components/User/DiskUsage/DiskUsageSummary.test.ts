@@ -1,10 +1,10 @@
 import { mount } from "@vue/test-utils";
-import MockConfigProvider from "components/providers/MockConfigProvider";
-import MockCurrentUser from "components/providers/MockCurrentUser";
-import MockProvider from "components/providers/MockProvider";
+import MockConfigProvider from "@/components/providers/MockConfigProvider";
+import MockCurrentUser from "@/components/providers/MockCurrentUser";
+import MockProvider from "@/components/providers/MockProvider";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import DiskUsageSummary from "./DiskUsageSummary";
+import DiskUsageSummary from "./DiskUsageSummary.vue";
 import { userStore } from "../../../store/userStore/userStore";
 import Vuex from "vuex";
 
@@ -32,7 +32,7 @@ const store = new Vuex.Store({
     },
 });
 
-async function mountDiskUsageSummaryWrapper(enableQuotas) {
+async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
     const wrapper = mount(DiskUsageSummary, {
         stubs: {
             ConfigProvider: MockConfigProvider({

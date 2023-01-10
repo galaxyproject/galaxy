@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import CleanupResultDialog from "./CleanupResultDialog";
+import CleanupResultDialog from "./CleanupResultDialog.vue";
 import { CleanupResult } from "./model";
 
 const localVue = getLocalVue();
@@ -12,13 +12,19 @@ const SUCCESS_INFO = '[data-test-id="success-info"]';
 const PARTIAL_SUCCESS_INFO = '[data-test-id="partial-success-info"]';
 const ERRORS_TABLE = '[data-test-id="errors-table"]';
 
-const NO_RESULT_YET = null;
+const NO_RESULT_YET = undefined;
 const FAILED_RESULT = () => {
-    return new CleanupResult({ errorMessage: "The operation failed" });
+    return new CleanupResult({
+        errorMessage: "The operation failed",
+        totalFreeBytes: 0,
+        totalItemCount: 0,
+        errors: [],
+    });
 };
 const PARTIAL_SUCCESS_RESULT = () => {
     return new CleanupResult({
         totalItemCount: 3,
+        totalFreeBytes: 1,
         errors: [
             { name: "Dataset X", reason: "Failed because of X" },
             { name: "Dataset Y", reason: "Failed because of Y" },
@@ -26,10 +32,10 @@ const PARTIAL_SUCCESS_RESULT = () => {
     });
 };
 const SUCCESS_RESULT = () => {
-    return new CleanupResult({ totalItemCount: 2 });
+    return new CleanupResult({ totalItemCount: 2, totalFreeBytes: 2, errors: [] });
 };
-async function mountCleanupResultDialogWith(result) {
-    const wrapper = mount(CleanupResultDialog, { propsData: { result, show: true } }, localVue);
+async function mountCleanupResultDialogWith(result?: CleanupResult) {
+    const wrapper = mount(CleanupResultDialog, { propsData: { result, show: true }, localVue });
     await flushPromises();
     return wrapper;
 }
