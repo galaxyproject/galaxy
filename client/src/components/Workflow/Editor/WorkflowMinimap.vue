@@ -22,7 +22,7 @@
 <script>
 import MinimapNode from "./MinimapNode.vue";
 import { computed, reactive, ref } from "vue";
-import { useDraggable } from "@vueuse/core";
+import { useDraggable, UseElementBoundingReturn } from "@vueuse/core";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 
 export default {
@@ -53,7 +53,7 @@ export default {
             },
         },
         rootOffset: {
-            type: Object,
+            type: UseElementBoundingReturn,
             required: true,
         },
     },
