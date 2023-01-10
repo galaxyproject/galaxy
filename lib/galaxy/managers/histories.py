@@ -19,6 +19,10 @@ from sqlalchemy import (
     and_,
     asc,
     desc,
+    false,
+    func,
+    select,
+    true,
 )
 from typing_extensions import Literal
 
@@ -36,6 +40,7 @@ from galaxy.managers.base import (
     ModelDeserializingError,
     Serializer,
     SortableManager,
+    StorageCleanerManager,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -45,13 +50,21 @@ from galaxy.schema.schema import (
     HDABasicInfo,
     ShareHistoryExtra,
 )
+from galaxy.schema.storage_cleaner import (
+    DiscardedItemsSummary,
+    StorageItemCleanupError,
+    StorageItemsCleanupResult,
+    StoredItem,
+)
 from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
 
 
-class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
+class HistoryManager(
+    sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager, StorageCleanerManager
+):
     model_class = model.History
     foreign_key_name = "history"
     user_share_model = model.HistoryUserShareAssociation
@@ -353,6 +366,57 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         log.warning(f"Unable to make dataset with id: {dataset.id} public")
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
+
+    def get_discarded_summary(self, user: model.User) -> DiscardedItemsSummary:
+        stmt = select([func.sum(model.History.disk_size), func.count(model.History.id)]).where(
+            model.History.user_id == user.id,
+            model.History.deleted == true(),
+            model.History.purged == false(),
+        )
+        result = self.session().execute(stmt).fetchone()
+        return DiscardedItemsSummary(total_size=result[0], total_items=result[1])
+
+    def get_discarded(self, user: model.User, offset: Optional[int], limit: Optional[int]) -> List[StoredItem]:
+        stmt = select(model.History).where(
+            model.History.user_id == user.id,
+            model.History.deleted == true(),
+            model.History.purged == false(),
+        )
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+        result = self.session().execute(stmt).scalars()
+        discarded = [self._history_to_stored_item(item) for item in result]
+        return discarded
+
+    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+        success_item_count = 0
+        total_free_bytes = 0
+        errors: List[StorageItemCleanupError] = []
+
+        for history_id in item_ids:
+            try:
+                history = self.get_owned(history_id, user)
+                self.purge(history, flush=False)
+                success_item_count += 1
+                total_free_bytes += int(history.disk_size)
+            except BaseException as e:
+                errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
+
+        if success_item_count:
+            self.session().flush()
+        return StorageItemsCleanupResult(
+            total_item_count=len(item_ids),
+            success_item_count=success_item_count,
+            total_free_bytes=total_free_bytes,
+            errors=errors,
+        )
+
+    def _history_to_stored_item(self, history: model.History) -> StoredItem:
+        return StoredItem(
+            id=history.id, name=history.name, type="history", size=history.disk_size, update_time=history.update_time
+        )
 
 
 class HistoryExportManager:
