@@ -63,7 +63,8 @@
                             id="minuteView"
                             :disabled="isLoading || emptyHistory || noMetrics"
                             data-description="change view button"
-                            @click="changeMinuteView">
+                            @click="changeMinuteView"
+                            v-b-modal.dateTimeModal>
                             Minute View
                         </button>
                     </div>
@@ -71,13 +72,16 @@
                 <div>
                     <svg id="gantt"></svg>
                 </div>
-                <DateTimeModal
-                    v-show="openModal"
-                    :dateTimeVal="dateTimeVal"
-                    :openModal="openModal"
-                    :static="true"
-                    @closeModal="closeModal"
-                    @changeDate="changeDate" />
+                <b-modal class="test" id="dateTimeModal" ref="modal" v-bind="$attrs" title="Choose a starting time">
+                    <DatePicker v-model="date" mode="dateTime">
+                        <template v-slot="{ inputValue, inputEvents }">
+                            <input class="px-3 py-1 border rounded" :value="inputValue" v-on="inputEvents" />
+                        </template>
+                    </DatePicker>
+                    <template v-slot:modal-footer>
+                        <b-button id="confirmDate" variant="primary" @click="changeDate(date, 'confirmed')"> Confirm Date </b-button>
+                    </template>
+                </b-modal>
             </div>
         </UserHistories>
     </CurrentUser>
@@ -92,9 +96,14 @@ import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import CurrentUser from "components/providers/CurrentUser";
 import UserHistories from "components/providers/UserHistories";
 import LoadingSpan from "components/LoadingSpan";
-import DateTimeModal from "./DateTimeModal.vue";
 import EmptyHistory from "./EmptyHistory.vue";
+import DatePicker from "v-calendar/lib/components/date-picker.umd";
+import { BModal } from "bootstrap-vue";
+import BootstrapVue from "bootstrap-vue";
 import moment from "moment";
+import Vue from "vue";
+
+Vue.use(BootstrapVue);
 
 export default {
     name: "Gantt",
@@ -103,7 +112,8 @@ export default {
         EmptyHistory,
         CurrentUser,
         UserHistories,
-        DateTimeModal,
+        DatePicker,
+        BModal
     },
     setup() {
         // Store
@@ -119,7 +129,6 @@ export default {
         const noMinuteJobs = ref(false);
         const currentlyProcessing = ref(false);
         const isLoading = ref(true);
-        const openModal = ref(false);
         const emptyHistory = ref(false);
         const dateTimeVal = ref(new Date().toLocaleString("en-GB"));
         const start_time = ref(null);
@@ -127,6 +136,7 @@ export default {
         const empty_metrics = ref(0);
         const noMetrics = ref(false);
         const message = ref("");
+        const date = ref(moment().format("YYYY-MM-DD HH:mm:ss"));
 
         // Hooks
         onMounted(() => {
@@ -352,12 +362,9 @@ export default {
                     });
                     makeGantt();
                     gantt.value.change_view_mode("Minute");
+                    this.$refs.modal.hide();
                 }
             }
-        }
-
-        function closeModal() {
-            openModal.value = false;
         }
 
         function changeQDayView() {
@@ -405,8 +412,7 @@ export default {
         function changeMinuteView() {
             clearPopups();
             ganttView.value = "Minute";
-            openModal.value = true;
-        }
+        };
 
         function clearPopups() {
             const popups = document.getElementsByClassName("popup.wrapper");
@@ -504,10 +510,9 @@ export default {
             changeHourView,
             changeMinuteView,
             currentlyProcessing,
-            openModal,
             dateTimeVal,
-            closeModal,
             changeDate,
+            date
         };
     },
 };
@@ -627,5 +632,8 @@ function createClassWithCSS(selector, style) {
     margin-top: 65px;
     margin-left: 15px;
     margin-right: 15px;
+}
+.modal-content{
+    height: 550px;
 }
 </style>
