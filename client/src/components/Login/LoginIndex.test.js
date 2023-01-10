@@ -28,7 +28,7 @@ describe("LoginIndex", () => {
         expect(registerToggle.exists()).toBeTruthy();
         await registerToggle.trigger("click");
         const newCardHeader = wrapper.find(".card-header");
-        expect(newCardHeader.text()).toBe("Create a Galaxy account");
+        expect(newCardHeader.text()).toBeLocalizationOf("Create a Galaxy account");
         const $loginToggle = "[id=login-toggle]";
         const loginToggle = wrapper.find($loginToggle);
         await loginToggle.trigger("click");

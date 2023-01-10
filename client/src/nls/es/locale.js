@@ -55,7 +55,14 @@ define({
     Register: "Registro",
 
     "Login or Register": "Iniciar sesión o Registrarse",
-
+    "Subscribe to mailing list": false,
+    "Already have an account?": false,
+    "Log in here.": false,
+    "Create a Galaxy account": false,
+    "Or, register with email": false,
+    "Forgot password?": false,
+    "Register here.": false,
+    "Click here to reset your password.": false,
     "Logged in as": "Se ha conectado como",
 
     Preferences: "Preferencias",
@@ -501,7 +508,7 @@ define({
     Groups: "Grupos",
     "API keys": "Llaves API",
     "Impersonate a user": "Acceder como otro usuario",
-    Data: false,
+    Data: "Datos",
     Quotas: false,
     Roles: false,
     "Local data": "Datos locales",
@@ -522,7 +529,7 @@ define({
     "Any additional comments you can provide regarding what you were doing at the time of the bug.":
         "Cualquier comentario adicional que puedas proporcionar sobre lo que estabas haciendo en el momento que se produjo el error.",
     "Your email address": "Tu dirección de correo electrónico",
-    Report: false,
+    Report: "Reporte",
     "Error Report": "Reporte de error",
     // ---------------------------------------------------------------------------- dataset-li
     "Dataset details": "Detalles del conjunto de datos",
@@ -538,11 +545,6 @@ define({
     "Change datatype": "Cambiar tipo de datos",
     "Convert datatype": "Convertir tipo de datos",
     "Convert to new format": "Convertir a formato nuevo",
-    Save: false,
-    Permissions: false,
-    Datatypes: false,
-    Convert: false,
-    Attributes: false,
 
     "This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.":
         "Esto cambiará el tipo de datos del conjunto de datos existente pero no modificará su contenido. Utilícelo si Galaxy identificó incorrectamente el tipo de su conjunto de datos",
@@ -627,8 +629,8 @@ define({
     "If you change your email address you will receive an activation link in the new mailbox and you have to activate your account by visiting it.":
         "Si cambias tu dirección de correo electrónico recibirás un vínculo de activación en tu nuevo correo. Debes activar tu cuenta recurriendo a esta notificación.",
     "Public name": "Nombre público",
-    'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.':
-        'Tu nombre público es un identificador que será utilizado para generar direcciones de información que compartas al público. Los nombres públicos deben contener al menos tres caracteres de longitud, solo letras minúsculas, números o el símbolo "-". ',
+    "Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes ('.', '_', '-').":
+        "Tu nombre público es un identificador que será utilizado para generar direcciones de información que compartas al público. Los nombres públicos deben contener al menos tres caracteres de longitud, solo letras minúsculas, números o el símbolo '-'. ",
     Address: "Dirección",
     "Insert address": "Escribir dirección",
     "Do you want to be able to re-use equivalent jobs ?": "¿Deseas poder reutilizar trabajos equivalentes?",
@@ -645,20 +647,15 @@ define({
     "Your EGA (European Genome Archive) Account": "Tu cuenta EGA (European Genome Archive)",
     Username: "Nombre de usuario",
     Password: "Contraseña",
+    "Confirm password": "Confirmar contraseña",
     "Your Dropbox Account": "Tu cuenta Dropbox",
     "Dropbox access token": "Token de acceso de Dropbox",
     "Your B2DROP Account": "Tu cuenta B2DROP",
-    Username: "Nombre de usuario",
-    Password: "Contraseña",
     "Your OMERO instance connection details": "Detalles de conección de tu instancia OMERO",
-    Username: "Nombre de usuario",
-    Password: "Contraseña",
     "Your ENA Webin account details": "Detalles de tu cuenta Webin de ENA",
     "ENA Webin ID": "Identificador Webin de ENA",
-    Password: "Contraseña",
     "Your CDS API Key": "Tu llave CDS API",
     Key: "Llave",
-    Save: "Guardar",
 
     //X GB  Tu cuota de disco es: X GB.
     //
@@ -768,7 +765,7 @@ define({
     "Phyloviz Help": "Ayuda de PhyloViz",
     "Save visualization": "Guardar visualización",
     "PhyloViz Settings": "Ajustes de PhyloViz",
-    Title: false,
+    Title: "Título",
     // ---------------------------------------------------------------------------- filters
     "Filtering Dataset": "Filtrando conjunto de datos",
     "Filter Dataset": "Filtrar conjunto de datos",
@@ -776,7 +773,7 @@ define({
     "Show individual tracks": "Mostrar pistas individuales",
     "Trackster Error": "Error de Trackster",
     "Tool parameter space visualization": "Visualización del espacio de parámetros de la herramienta",
-    Tool: false,
+    Tool: "Herramienta",
     "Set as overview": "Establecer como descripción general",
     "Set display mode": "Establecer modo de visualización",
     Filters: false,
@@ -788,7 +785,7 @@ define({
     "Test Title": "Título de prueba",
     "Test button": "Botón de prueba",
     // ---------------------------------------------------------------------------- ui_tests
-    title: false,
+    title: "título",
     // ---------------------------------------------------------------------------- user-custom-builds
     "Create new Build": "Crear nueva construcción",
     "Delete custom build.": "Eliminar construcción personalizada",

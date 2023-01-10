@@ -55,7 +55,7 @@ describe("LoginForm", () => {
             welcomeUrl: "welcome_url",
         });
         const register = wrapper.find($register);
-        expect(register.text()).toBe("Register here.");
+        expect(register.text()).toBeLocalizationOf("Register here.");
         const welcomePage = wrapper.find("iframe");
         expect(welcomePage.attributes("src")).toBe("welcome_url");
     });
