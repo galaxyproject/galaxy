@@ -447,14 +447,27 @@ def validate_invocation_crate_directory(crate_directory):
     validate_organize_action(crate)
     validate_has_mit_license(crate)
     # validate_has_readme(crate)
-    # print(json.dumps(metadata_json, indent=4))
 
 
 def validate_invocation_collection_crate_directory(crate_directory):
     ro_crate = open_ro_crate(crate_directory)
     workflow = ro_crate.mainEntity
+    root = ro_crate.root_dataset
+    actions = [_ for _ in ro_crate.contextual_entities if "CreateAction" in _.type]
+    assert len(actions) == 1
+    wf_action = actions[0]
+    wf_objects = wf_action["object"]
     assert len(workflow["input"]) == 3
     assert len(workflow["output"]) == 1
+    assert len(root["mentions"]) == 3
+    collections = [_ for _ in ro_crate.contextual_entities if "Collection" in _.type]
+    assert len(collections) == 3
+    collection = collections[0]
+    assert collection.type == "Collection"
+    assert collection["additionalType"] == "list"
+    assert len(collection["hasPart"]) == 2
+    for dataset in collection["hasPart"]:
+        assert dataset in wf_objects
 
 
 def test_export_history_to_ro_crate(tmp_path):
@@ -830,7 +843,6 @@ def _setup_invocation(app):
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_input"
     workflow_step_1.tool_inputs = {}
-    # workflow_step_1.input_optional = False
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
@@ -900,11 +912,6 @@ def _setup_simple_collection_job(app, state="ok"):
     sa_session.add(j)
     sa_session.flush()
 
-    # j = model.Job()
-    # j.user = u
-    # j.tool_id = "__MERGE_COLLECTION__"
-    # j.state = state
-
     return u, h, c1, c2, c3, hc1, hc2, hc3, j
 
 
@@ -917,7 +924,6 @@ def _setup_collection_invocation(app):
     workflow_step_1.order_index = 0
     workflow_step_1.type = "data_collection_input"
     workflow_step_1.tool_inputs = {}
-    # workflow_step_1.input_optional = False
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
