@@ -30,7 +30,7 @@ class DiscardedItemsSummary(Model):
     )
 
 
-StoredItemType = Union[Literal["history"], Literal["hda"]]
+StoredItemType = Union[Literal["history"], Literal["dataset"]]
 
 
 class StoredItem(Model):
