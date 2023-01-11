@@ -1,17 +1,16 @@
-<script setup>
-const props = defineProps({
-    trsTool: {
-        type: Object,
-        required: true,
-    },
-});
+<script setup lang="ts">
+import type { TrsTool, TrsToolVersion } from "./types";
 
-const emit = defineEmits(["onImport"]);
+const props = defineProps<{ trsTool: TrsTool }>();
 
-const importVersion = (version) => {
+const emit = defineEmits<{
+    (e: "onImport", versionId: string): void;
+}>();
+
+function importVersion(version: TrsToolVersion) {
     const version_id = version.id.includes(`:${version.name}`) ? version.name : version.id;
     emit("onImport", version_id);
-};
+}
 </script>
 
 <template>

@@ -182,7 +182,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                 <TrsTool
                     v-if="trsTool"
                     :trs-tool="trsTool"
-                    @onImport="importVersion(trsSelection?.id, trsTool?.id, $event)" />
+                    @onImport="(versionId) => importVersion(trsSelection?.id, trsTool?.id, versionId)" />
             </div>
             <hr />
             <div>
