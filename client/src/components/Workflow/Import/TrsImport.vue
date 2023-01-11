@@ -186,7 +186,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </div>
             <hr />
             <div>
-                <TrsUrlImport :query-trs-url="props.queryTrsUrl" @onImport="importVersionFromUrl($event)" />
+                <TrsUrlImport :query-trs-url="props.queryTrsUrl" @onImport="(url) => importVersionFromUrl(url)" />
             </div>
         </b-card>
         <b-alert v-else class="text-center my-2" show variant="danger">

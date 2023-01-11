@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from "vue";
 
 const props = defineProps({
@@ -18,12 +18,14 @@ const importTooltip = computed(() => {
     return isImportDisabled.value ? "You must provide a TRS URL." : "Import workflow from TRS URL";
 });
 
-const emit = defineEmits(["onImport"]);
+const emit = defineEmits<{
+    (e: "onImport", url: string): void;
+}>();
 
-const submit = (ev) => {
+function submit(ev: SubmitEvent) {
     ev.preventDefault();
     emit("onImport", trsUrl.value);
-};
+}
 
 // Automatically trigger the import if the TRS URL was provided as a query param
 if (trsUrl.value) {
