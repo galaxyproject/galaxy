@@ -374,7 +374,8 @@ class HistoryManager(
             model.History.purged == false(),
         )
         result = self.session().execute(stmt).fetchone()
-        return DiscardedItemsSummary(total_size=result[0], total_items=result[1])
+        total_size = 0 if result[0] is None else result[0]
+        return DiscardedItemsSummary(total_size=total_size, total_items=result[1])
 
     def get_discarded(self, user: model.User, offset: Optional[int], limit: Optional[int]) -> List[StoredItem]:
         stmt = select(model.History).where(
