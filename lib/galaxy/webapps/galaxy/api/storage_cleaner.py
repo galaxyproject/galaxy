@@ -60,10 +60,13 @@ class FastAPIStorageCleaner:
         return self.service.get_discarded_histories(trans, offset, limit)
 
     @router.delete(
-        "/api/storage/discarded/histories",
-        summary="Purges histories that has been previously deleted by the user.",
+        "/api/storage/histories",
+        summary="Purges a set of histories by ID. The histories must be owned by the user.",
     )
     def cleanup_histories(
         self, trans: ProvidesHistoryContext = DependsOnTrans, payload: CleanupStorageItemsRequest = Body(...)
     ) -> StorageItemsCleanupResult:
+        """
+        **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+        """
         return self.service.cleanup_histories(trans, set(payload.item_ids))

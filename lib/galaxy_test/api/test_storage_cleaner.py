@@ -56,7 +56,7 @@ class TestStorageCleanerApi(ApiTestCase):
 
         # Cleanup all the histories
         payload = {"item_ids": list(history_name_id_map.values())}
-        cleanup_response = self._delete("storage/discarded/histories", data=payload, json=True)
+        cleanup_response = self._delete("storage/histories", data=payload, json=True)
         self._assert_status_code_is_ok(cleanup_response)
         cleanup_result = cleanup_response.json()
         assert cleanup_result["total_item_count"] == expected_discarded_histories_count
