@@ -20,9 +20,6 @@ interface TabularChunkedViewProps {
             metadata_columns: number;
             metadata_column_types: string[];
             metadata_column_names: string[];
-            // metadata_data_lines: number,
-            // metadata_comment_lines: null | number,
-            // INCOMPLETE: add more options as needed
         };
     };
 }
@@ -30,7 +27,6 @@ interface TabularChunkedViewProps {
 const props = defineProps<TabularChunkedViewProps>();
 
 const offset = ref(0);
-// const rowCount = ref(0);  // Do we need rowCount?  Useful to display (percentage, minimap, etc.)
 const loading = ref(true);
 // TODO: add visual loading indicator
 const atEOF = ref(false);
