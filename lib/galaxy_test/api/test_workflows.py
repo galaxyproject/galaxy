@@ -2278,7 +2278,9 @@ steps:
             workflow = crate.mainEntity
             assert workflow
 
-    @skip_without_tool("cat1")
+    @skip_without_tool("__MERGE_COLLECTION__")
+    @skip_without_tool("cat_collection")
+    @skip_without_tool("head")
     def test_export_invocation_ro_crate_adv(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
@@ -2377,12 +2379,31 @@ input collection 2:
             )
             invocation_id = summary.invocation_id
             crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=True)
-            # TODO: make more assertions about collections and parameters
+            workflow = crate.mainEntity
+            root = crate.root_dataset
+            assert len(root["mentions"]) == 3
+            actions = [_ for _ in crate.contextual_entities if "CreateAction" in _.type]
+            assert len(actions) == 1
+            wf_action = actions[0]
+            wf_objects = wf_action["object"]
+            assert len(workflow["input"]) == 7
+            assert len(workflow["output"]) == 2
             collections = [_ for _ in crate.contextual_entities if "Collection" in _.type]
             assert len(collections) == 3
-            assert collections[0]["additionalType"] == "list"
-            coll_dataset = collections[0]["hasPart"][0].id
+            collection = collections[0]
+            assert collection["additionalType"] == "list"
+            assert collection.type == "Collection"
+            assert len(collection["hasPart"]) == 2
+            for dataset in collection["hasPart"]:
+                assert dataset in wf_objects
+
+            coll_dataset = collection["hasPart"][0].id
             assert coll_dataset in [_.id for _ in collections[2]["hasPart"]]
+            property_values = [_ for _ in crate.contextual_entities if "PropertyValue" in _.type]
+            assert len(property_values) == 2
+            for pv in property_values:
+                assert pv in wf_objects
+                assert pv["exampleOfWork"] in workflow["input"]
 
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
