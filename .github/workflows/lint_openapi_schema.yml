@@ -51,6 +51,9 @@ jobs:
       - name: Build typescript schema
         run: make update-client-api-schema
         working-directory: 'galaxy root'
+      - name: Diff...
+        run: git diff
+        working-directory: 'galaxy root'
       - name: Check for changes
         run: |
           if [[ `git status --porcelain` ]]; then
