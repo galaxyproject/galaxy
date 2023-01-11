@@ -443,6 +443,10 @@ export function getRouter(Galaxy) {
                         path: "workflows/list",
                         component: WorkflowList,
                         redirect: redirectAnon(),
+                        props: (route) => ({
+                            importMessage: route.query["message"],
+                            importStatus: route.query["status"],
+                        }),
                     },
                     {
                         path: "workflows/run",
