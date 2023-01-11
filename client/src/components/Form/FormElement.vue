@@ -19,7 +19,7 @@ import { faCaretSquareDown, faCaretSquareUp } from "@fortawesome/free-regular-sv
 import type { ComputedRef } from "vue";
 import type { FormParameterTypes, FormParameterAttributes, FormParameterValue } from "./parameterTypes";
 
-export interface FormElementProps {
+interface FormElementProps {
     id?: string;
     type?: FormParameterTypes;
     value?: FormParameterValue;

@@ -11,7 +11,7 @@ import { useUid } from "@/composables/utils/uid";
 
 import type { Ref } from "vue";
 
-export interface StatelessTagsProps {
+interface StatelessTagsProps {
     value?: string[];
     disabled?: boolean;
     clickable?: boolean;
