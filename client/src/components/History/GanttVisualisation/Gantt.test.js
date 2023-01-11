@@ -6,6 +6,7 @@ import store from "@/store";
 import Gantt from "./Gantt.vue";
 import MockCurrentUser from "components/providers/MockCurrentUser";
 import MockUserHistories from "components/providers/MockUserHistories";
+import moment from 'moment';
 
 const COUNT = 8;
 const USER_ID = "test-user-id";
@@ -24,6 +25,25 @@ const getFakeHistorySummaries = (num, selectedIndex = 0) => {
     return result;
 };
 
+const getFakeAccountingArray = (num) => {
+    const accountingArray = [];
+    for (let i = 0; i < num; i++) {
+        var startDate = moment(new Date()).format("YYYY-MM-DD HH:mm:ss");
+        accountingArray.push({
+            id: i.toString(),
+            label: `job-${i}`,
+            startTime: startDate,
+            endTime: moment(startDate).add(10, "minutes").format("YYYY-MM-DD HH:mm:ss"),
+        });
+    }
+    console.log(accountingArray);
+    return accountingArray;
+};
+
+const PROPS_WITH_5_JOBS = {
+    accountingArray : getFakeAccountingArray( 5 )
+};
+
 const CurrentUserMock = MockCurrentUser({ id: USER_ID });
 const UserHistoriesMock = MockUserHistories({ id: CURRENT_HISTORY_ID }, getFakeHistorySummaries(COUNT, 0), false);
 
@@ -36,6 +56,7 @@ describe("gantt component", () => {
         wrapper = shallowMount(Gantt, {
             store,
             pinia,
+            propsData : PROPS_WITH_5_JOBS,
             stubs: {
                 CurrentUser: CurrentUserMock,
                 UserHistories: UserHistoriesMock,
@@ -48,4 +69,11 @@ describe("gantt component", () => {
     it("7 change view buttons should be visible", () => {
         expect(wrapper.findAll('[data-description="change view button"]').length).toBe(7);
     });
+
+    it("chech rows", async () =>{
+        console.log(wrapper.attributes());
+        const row = wrapper.find('.grid-row');
+        console.log(row);
+        expect(wrapper.findAll('.grid-row').length).toBe(5);
+    })
 });
