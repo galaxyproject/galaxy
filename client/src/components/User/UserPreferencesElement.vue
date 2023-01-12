@@ -37,7 +37,7 @@ defineProps({
             <router-link v-if="to" :id="id" :to="to">
                 <b v-localize>{{ title }}</b>
             </router-link>
-            <a v-else href="#" @click="$emit('click')">
+            <a v-else :id="id" href="#" @click="$emit('click')">
                 <b v-localize>{{ title }}</b>
             </a>
             <div class="form-text text-muted">
