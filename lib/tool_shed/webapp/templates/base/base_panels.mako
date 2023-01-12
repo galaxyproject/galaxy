@@ -176,7 +176,7 @@
             <div id="background"></div>
 
             ## Layer iframes over backgrounds
-            <div id="masthead" class="navbar navbar-fixed-top navbar-inverse">
+            <div>
                 ${self.masthead()}
             </div>
 
