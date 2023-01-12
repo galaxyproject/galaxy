@@ -867,14 +867,14 @@ steps:
         source_node = editor.node._(label=source_node_label)
         sink_node = editor.node._(label=sink_node_label)
 
-        source_node.wait_for_visible()
-        sink_node.wait_for_visible()
+        source_node.wait_for_present()
+        sink_node.wait_for_present()
 
         output_terminal = source_node.output_terminal(name=source_output)
         input_terminal = sink_node.input_terminal(name=sink_input)
 
-        output_element = output_terminal.wait_for_visible()
-        input_element = input_terminal.wait_for_visible()
+        output_element = output_terminal.wait_for_present()
+        input_element = input_terminal.wait_for_present()
 
         source_id = output_element.get_attribute("id")
         sink_id = input_element.get_attribute("id")
