@@ -1,45 +1,46 @@
-<script setup>
-import { computed, ref } from "vue";
+<script setup lang="ts">
+import { computed, ref, type Ref } from "vue";
+//@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
-import MultipleViewItem from "./MultipleViewItem";
-import { useHistoryStore } from "stores/historyStore";
-import SelectorModal from "components/History/Modals/SelectorModal";
-import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
-import { useAnimationFrameResizeObserver } from "composables/sensors/animationFrameResizeObserver";
+import MultipleViewItem from "./MultipleViewItem.vue";
+import { useHistoryStore } from "@/stores/historyStore";
+import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
+import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 
 const historyStore = useHistoryStore();
 
-const props = defineProps({
-    histories: {
-        type: Array,
-        required: true,
-    },
-    currentHistory: {
-        type: Object,
-        required: true,
-    },
-    handlers: {
-        type: Object,
-        required: true,
-    },
-    filter: {
-        type: String,
-        default: "",
-    },
-});
+interface History {
+    id: string;
+}
+
+const props = withDefaults(
+    defineProps<{
+        histories: History[];
+        currentHistory: History;
+        // todo: stricter typedef for handlers, when MultipleViewItem is refactored
+        handlers: { [handler: string]: Function };
+        filter?: string;
+    }>(),
+    {
+        filter: "",
+    }
+);
+
+const scrollContainer: Ref<HTMLElement | null> = ref(null);
+const { arrived } = useAnimationFrameScroll(scrollContainer);
 
 const isScrollable = ref(false);
-const scrollContainer = ref(null);
-const { arrived } = useAnimationFrameScroll(scrollContainer);
 useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) => {
     isScrollable.value = scrollSize.width >= clientSize.width + 1;
 });
+
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
 
-const selectedHistories = computed(() => historyStore.pinnedHistories);
+const selectedHistories: Ref<History[]> = computed(() => historyStore.pinnedHistories);
 
-function removeHistoryFromList(history) {
+function removeHistoryFromList(history: History) {
     historyStore.unpinHistory(history.id);
 }
 
@@ -47,7 +48,7 @@ if (!selectedHistories.value.length) {
     historyStore.pinHistory(props.histories[0].id);
 }
 
-function addHistoriesToList(histories) {
+function addHistoriesToList(histories: History[]) {
     histories.forEach((history) => {
         const historyExists = selectedHistories.value.find((h) => h.id === history.id);
         if (!historyExists) {
