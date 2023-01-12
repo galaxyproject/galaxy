@@ -7,7 +7,6 @@ extend-exclude = '''
   | packages
 )/
 '''
-force-exclude = 'lib/galaxy/util/jstree.py'
 
 [tool.darker]
 isort = true
