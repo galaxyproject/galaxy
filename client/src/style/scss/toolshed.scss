@@ -20,7 +20,7 @@
     }
 }
 
-#toolshed-masthead {
+.masthead-toolshed {
     background-color: $brand-dark;
     height: $masthead-height;
     .navbar-brand {
@@ -30,11 +30,11 @@
             max-height: 2rem;
         }
     }
-    .nav-link {
-        color: $brand-light;
-    }
     .navbar-brand-title {
         color: $brand-light;
         font-size: 1.1rem;
+    }
+    .nav-link {
+        color: $brand-light !important;
     }
 }
