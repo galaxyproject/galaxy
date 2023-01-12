@@ -25,26 +25,6 @@
     ${h.dist_css(
         'base'
     )}
-    <style>
-        #masthead {
-            background: #2c3143;
-            height: 3rem;
-        }
-        .navbar-brand {
-            position: absolute;
-            left: 0.5rem;
-        }
-        .navbar-brand-image {
-            max-height: 2rem;
-        }
-        .navbar-brand-title {
-            color: white;
-            font-size: 1.1rem;
-        }
-        .nav-link {
-            color: white !important;
-        }
-    </style>
 </%def>
 
 ## Default javascripts
