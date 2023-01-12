@@ -39,7 +39,7 @@
         }
         .navbar-brand-title {
             color: white;
-            font-size: 1rem;
+            font-size: 1.1rem;
         }
         .nav-link {
             color: white !important;

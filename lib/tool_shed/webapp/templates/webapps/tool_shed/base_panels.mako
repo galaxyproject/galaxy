@@ -56,16 +56,17 @@
     %endif
 
     ## start main tag
-    <nav id="masthead" class="navbar navbar-expand fixed-top justify-content-center navbar-dark">
+    <nav id="masthead" class="navbar navbar-expand navbar-fixed-top justify-content-center navbar-dark">
 
         ## Logo, layered over tabs to be clickable
         <a href="${h.url_for( app.config.get( 'logo_url', '/' ) )}" aria-label="homepage" class="navbar-brand">
             <img alt="logo" class="navbar-brand-image" src="${h.url_for('/static/favicon.svg')}">
             <span class="navbar-brand-title">
-            Galaxy Tool Shed
-            %if app.config.brand:
-                / ${app.config.brand}
-            %endif
+                Tool Shed
+                %if app.config.brand:
+                    / ${app.config.brand}
+                %endif
+            </span>
         </a>
 
         ## Tab area, fills entire width
