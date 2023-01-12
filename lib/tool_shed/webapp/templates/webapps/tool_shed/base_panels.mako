@@ -178,4 +178,5 @@
                 tab( "user", "User", None, visible=visible, menu_options=menu_options )
             %>
         </ul>
+    </nav>
 </%def>
