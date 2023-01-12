@@ -767,6 +767,60 @@ steps:
         self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         assert_workflow_bookmarked_status(True)
 
+    def tab_to(self, accessible_name, direction="forward"):
+        for _ in range(100):
+            ac = self.action_chains()
+            if direction == "backwards":
+                ac.key_down(Keys.SHIFT)
+            ac.send_keys(Keys.TAB)
+            if direction == "backwards":
+                ac.key_down(Keys.SHIFT)
+            ac.perform()
+            if accessible_name in self.driver.switch_to.active_element.accessible_name:
+                return self.driver.switch_to.active_element
+        else:
+            raise Exception(f"Could not tab to element containing '{accessible_name}' in aria-label")
+
+    @selenium_test
+    def test_aria_connections_menu(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    position:
+      # Step should be positioned off-screen, tabbing should scroll to node
+      top: 2000
+      left: 2000
+    tool_id: cat
+    in:
+      input1: input1
+      queries_0|input2: input1
+""",
+            auto_layout=False,
+        )
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.screenshot("workflow_editor_connection_simple")
+        self.components.workflow_editor.canvas_body.wait_for_and_click()
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector.send_keys(Keys.SPACE)
+        assert self.driver.switch_to.active_element.text == "Disconnect from input1 in step 2: first_cat"
+        self.driver.switch_to.active_element.send_keys(Keys.ENTER)
+        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.action_chains().move_to_element(self.components.workflow_editor.canvas_body.wait_for_and_click()).perform()
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector.send_keys(Keys.SPACE)
+        assert self.driver.switch_to.active_element.text == "Connect to input1 in step 2: first_cat"
+        self.driver.switch_to.active_element.send_keys(Keys.ENTER)
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.action_chains().move_to_element(self.components.workflow_editor.canvas_body.wait_for_and_click()).perform()
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector.send_keys(Keys.SPACE)
+        assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
+
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
             self.components._.left_panel_collapse.wait_for_and_click()

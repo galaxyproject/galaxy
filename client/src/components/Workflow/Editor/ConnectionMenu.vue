@@ -16,7 +16,7 @@
                 @click="toggleConnection(input)"
                 @keyup.enter="toggleConnection(input)"
                 @focus="activeElement = index">
-                {{ input.connected ? "Disconnect" : "Connect" }} to {{ input.inputLabel }}
+                {{ input.connected ? "Disconnect from" : "Connect to" }} {{ input.inputLabel }}
             </b-list-group-item>
         </template>
     </b-list-group>

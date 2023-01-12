@@ -34,6 +34,7 @@
             @stop="onStopDragging"
             @move="onMove">
             <div
+                ref="icon"
                 class="icon prevent-zoom"
                 tabindex="0"
                 :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"
@@ -155,6 +156,7 @@ export default {
         });
 
         const menu = ref(null);
+        const icon = ref(null);
         const showChildComponent = ref(false);
 
         function closeMenu() {
@@ -166,6 +168,8 @@ export default {
             if (showChildComponent.value) {
                 await nextTick();
                 menu.value.$el.focus();
+            } else {
+                icon.value.focus();
             }
         }
 
@@ -203,6 +207,7 @@ export default {
 
         return {
             el,
+            icon,
             position,
             activeClass,
             visibleClass,
