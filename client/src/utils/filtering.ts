@@ -70,8 +70,8 @@ export function expandNameTag(value: string | object): string {
 }
 
 /** Converts string alias to string operator, e.g.: 'gt' to '>'
- * @param {string} alias
- * @returns {string} Arithmetic operator, e.g.: '>'
+ * @param alias
+ * @returns Arithmetic operator, e.g.: '>'
  * */
 export function getOperatorForAlias(alias: string): string {
     return operatorForAlias[alias];
@@ -344,10 +344,10 @@ export default class Filtering<T> {
     }
 
     /** Get the value of a particular filter from filterText.
-     * @param {String} filterText Raw filter text string
-     * @param {String} filterName Filter key to check
-     * @param {String} [alias="eq"] String alias for filter operator, e.g.:"lt"
-     * @returns {String | Boolean} The filterValue for the filter
+     * @param filterText Raw filter text string
+     * @param filterName Filter key to check
+     * @param [alias="eq"] String alias for filter operator, e.g.:"lt"
+     * @returns The filterValue for the filter
      * */
     getFilterValue(filterText: string, filterName: string, alias = "eq"): string | boolean {
         const op = getOperatorForAlias(alias);

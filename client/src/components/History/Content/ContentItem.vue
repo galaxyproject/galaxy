@@ -14,26 +14,34 @@
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
                     </b-button>
-                    <span v-if="highlight == 'input'" v-b-tooltip.hover title="Input" @click.stop="toggleHighlights">
+                    <b-button
+                        v-if="highlight == 'input'"
+                        v-b-tooltip.hover
+                        variant="link"
+                        class="p-0"
+                        title="Input"
+                        @click.stop="toggleHighlights">
                         <font-awesome-icon class="text-info" icon="arrow-circle-up" />
-                    </span>
-                    <span
+                    </b-button>
+                    <b-button
                         v-else-if="highlight == 'active'"
                         v-b-tooltip.hover
+                        variant="link"
+                        class="p-0"
                         title="Inputs/Outputs highlighted for this item"
-                        tabindex="0"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <font-awesome-icon icon="check-circle" />
-                    </span>
-                    <span
+                    </b-button>
+                    <b-button
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
+                        variant="link"
+                        class="p-0"
                         title="Output"
-                        tabindex="0"
                         @click.stop="toggleHighlights">
                         <font-awesome-icon class="text-info" icon="arrow-circle-down" />
-                    </span>
+                    </b-button>
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
