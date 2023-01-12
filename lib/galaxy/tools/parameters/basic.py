@@ -885,6 +885,19 @@ class SelectToolParameter(ToolParameter):
     [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True), ('z_label', 'z', True)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', ['y', 'z'])]
     >>> print(p.to_param_dict_string(["y", "z"]))
     y,z
+    >>> p = SelectToolParameter(None, XML(
+    ... '''
+    ... <param name="_name" type="select" multiple="true">
+    ...     <option value="x">x_label</option>
+    ...     <option value="y" selected="true">y_label</option>
+    ... </param>
+    ... '''))
+    >>> print(p.name)
+    _name
+    >>> sorted(p.to_dict(trans).items())
+    [('argument', None), ('display', None), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'SelectToolParameter'), ('multiple', True), ('name', '_name'), ('optional', True), ('options', [('x_label', 'x', False), ('y_label', 'y', True)]), ('refresh_on_change', False), ('textable', False), ('type', 'select'), ('value', ['y'])]
+    >>> print(p.to_param_dict_string(["y"]))
+    y
     """
 
     value_label: str
@@ -1017,11 +1030,11 @@ class SelectToolParameter(ToolParameter):
             if is_runtime_value(value):
                 return None
             if value in legal_values:
-                return value
+                rval = value
             elif value in fallback_values:
-                return fallback_values[value]
+                rval = fallback_values[value]
             elif not require_legal_value:
-                return value
+                rval = value
             else:
                 raise ParameterValueError(
                     f"an invalid option ({value!r}) was selected (valid options: {','.join(legal_values)})",
@@ -1029,6 +1042,10 @@ class SelectToolParameter(ToolParameter):
                     value,
                     is_dynamic=self.is_dynamic,
                 )
+            if self.multiple:
+                return [rval]
+            else:
+                return rval
 
     def to_param_dict_string(self, value, other_values=None):
         if value in (None, []):
@@ -1070,7 +1087,7 @@ class SelectToolParameter(ToolParameter):
                 value2 = options[0][1]
             else:
                 value2 = None
-        elif len(value) == 1 or not self.multiple:
+        elif len(value) == 1 and not self.multiple:
             value2 = value[0]
         else:
             value2 = value
