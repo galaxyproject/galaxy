@@ -77,6 +77,7 @@ from gxformat2 import (
 )
 from gxformat2._yaml import ordered_load
 from requests import Response
+from rocrate.rocrate import ROCrate
 from typing_extensions import Literal
 
 from galaxy.tool_util.client.staging import InteractorStaging
@@ -1570,9 +1571,9 @@ class BaseWorkflowPopulator(BasePopulator):
         r.raise_for_status()
         return r.json()
 
-    def download_invocation_to_store(self, invocation_id, extension="tgz"):
+    def download_invocation_to_store(self, invocation_id, include_files=False, extension="tgz"):
         url = f"invocations/{invocation_id}/prepare_store_download"
-        download_response = self._post(url, dict(include_files=False, model_store_format=extension), json=True)
+        download_response = self._post(url, dict(include_files=include_files, model_store_format=extension), json=True)
         storage_request_id = self.dataset_populator.assert_download_request_ok(download_response)
         self.dataset_populator.wait_for_download_ready(storage_request_id)
         return self._get_to_tempfile(f"short_term_storage/{storage_request_id}")
@@ -1621,6 +1622,19 @@ class BaseWorkflowPopulator(BasePopulator):
         self, bco, expected_schema_version="https://w3id.org/ieee/ieee-2791-schema/2791object.json"
     ):
         JsonSchemaValidator.validate_using_schema_url(bco, expected_schema_version)
+
+    def get_ro_crate(self, invocation_id, include_files=False):
+        crate_response = self.download_invocation_to_store(
+            invocation_id=invocation_id, include_files=include_files, extension="rocrate.zip"
+        )
+        return ROCrate(crate_response)
+
+    def validate_invocation_crate_directory(self, crate_directory):
+        # TODO: where can a ro_crate be extracted
+        metadata_json_path = crate_directory / "ro-crate-metadata.json"
+        with metadata_json_path.open() as f:
+            metadata_json = json.load(f)
+            assert metadata_json["@context"] == "https://w3id.org/ro/crate/1.1/context"
 
     def invoke_workflow_raw(self, workflow_id: str, request: dict, assert_ok: bool = False) -> Response:
         url = f"workflows/{workflow_id}/invocations"

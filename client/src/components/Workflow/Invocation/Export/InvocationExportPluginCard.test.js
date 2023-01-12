@@ -12,7 +12,12 @@ const FAKE_INVOCATION_ID = "fake-invocation-id";
 const FAKE_EXPORT_PLUGIN = new InvocationExportPlugin({
     title: "Plugin Title",
     markdownDescription: `some **markdown** description`,
-    downloadFormat: "tgz",
+    exportParams: {
+        modelStoreFormat: "tgz",
+        includeFiles: false,
+        includeDeleted: false,
+        includeHidden: false,
+    },
     additionalActions: [
         new InvocationExportPluginAction({
             id: "fake-action-1",

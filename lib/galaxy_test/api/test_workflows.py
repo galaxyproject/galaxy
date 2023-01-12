@@ -2269,6 +2269,142 @@ steps:
             self.workflow_populator.validate_biocompute_object(bco)
             assert bco["provenance_domain"]["name"] == "Simple Workflow"
 
+    @skip_without_tool("cat1")
+    def test_export_invocation_ro_crate(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(WORKFLOW_SIMPLE, test_data={"input1": "hello world"}, history_id=history_id)
+            invocation_id = summary.invocation_id
+            crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=True)
+            workflow = crate.mainEntity
+            assert workflow
+
+    @skip_without_tool("__MERGE_COLLECTION__")
+    @skip_without_tool("cat_collection")
+    @skip_without_tool("head")
+    def test_export_invocation_ro_crate_adv(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input collection 1:
+    type: collection
+    collection_type: list
+    optional: false
+  input collection 2:
+    type: collection
+    collection_type: list
+    optional: false
+  num_lines_param:
+    type: int
+    optional: false
+    default: 2
+outputs:
+  _anonymous_output_1:
+    outputSource: num_lines_param
+  output_collection:
+    outputSource: merge collections tool
+  concatenated_collection:
+    outputSource: concat collection/out_file1
+  output:
+    outputSource: select lines/out_file1
+steps:
+  merge collections tool:
+    tool_id: __MERGE_COLLECTION__
+    tool_version: 1.0.0
+    tool_state:
+      advanced:
+        conflict:
+          __current_case__: 0
+          duplicate_options: suffix_conflict
+          suffix_pattern: _#
+      inputs:
+      - __index__: 0
+        input:
+          __class__: ConnectedValue
+      - __index__: 1
+        input:
+          __class__: ConnectedValue
+    in:
+      inputs_1|input:
+        source: input collection 2
+      inputs_0|input:
+        source: input collection 1
+  concat collection:
+    tool_id: cat_collection
+    tool_state:
+      input1:
+        __class__: RuntimeValue
+    in:
+      input1:
+        source: merge collections tool
+  select lines:
+    tool_id: head
+    tool_state:
+      input:
+        __class__: RuntimeValue
+      lineNum:
+        __class__: ConnectedValue
+    in:
+      lineNum:
+        source: num_lines_param
+      input:
+        source: concat collection/out_file1
+""",
+                test_data="""
+num_lines_param:
+  type: int
+  value: 2
+input collection 1:
+  collection_type: list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+    - identifier: el2
+      value: 1.fastq
+      type: File
+input collection 2:
+  collection_type: list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+    - identifier: el2
+      value: 1.fastq
+      type: File
+""",
+                history_id=history_id,
+                wait=True,
+            )
+            invocation_id = summary.invocation_id
+            crate = self.workflow_populator.get_ro_crate(invocation_id, include_files=True)
+            workflow = crate.mainEntity
+            root = crate.root_dataset
+            assert len(root["mentions"]) == 3
+            actions = [_ for _ in crate.contextual_entities if "CreateAction" in _.type]
+            assert len(actions) == 1
+            wf_action = actions[0]
+            wf_objects = wf_action["object"]
+            assert len(workflow["input"]) == 7
+            assert len(workflow["output"]) == 2
+            collections = [_ for _ in crate.contextual_entities if "Collection" in _.type]
+            assert len(collections) == 3
+            collection = collections[0]
+            assert collection["additionalType"] == "list"
+            assert collection.type == "Collection"
+            assert len(collection["hasPart"]) == 2
+            for dataset in collection["hasPart"]:
+                assert dataset in wf_objects
+
+            coll_dataset = collection["hasPart"][0].id
+            assert coll_dataset in [_.id for _ in collections[2]["hasPart"]]
+            property_values = [_ for _ in crate.contextual_entities if "PropertyValue" in _.type]
+            assert len(property_values) == 2
+            for pv in property_values:
+                assert pv in wf_objects
+                assert pv["exampleOfWork"] in workflow["input"]
+
     @skip_without_tool("__APPLY_RULES__")
     def test_workflow_run_apply_rules(self):
         with self.dataset_populator.test_history() as history_id:

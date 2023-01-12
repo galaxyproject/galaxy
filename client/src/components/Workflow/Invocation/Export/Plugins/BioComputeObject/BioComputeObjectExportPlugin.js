@@ -13,7 +13,12 @@ A BCO is designed to communicate High-throughput Sequencing (HTS) analysis resul
 Learn more about [BioCompute Objects](https://biocomputeobject.org/).
 
 Instructions for [creating a BCO using Galaxy](https://w3id.org/biocompute/tutorials/galaxy_quick_start).`,
-    downloadFormat: "bco.json",
+    exportParams: {
+        modelStoreFormat: "bco.json",
+        includeFiles: false,
+        includeDeleted: false,
+        includeHidden: false,
+    },
     additionalActions: [
         new InvocationExportPluginAction({
             id: "send-to-bco-db",
