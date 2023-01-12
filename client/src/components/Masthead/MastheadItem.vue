@@ -2,7 +2,7 @@
 import Vue from "vue";
 import { VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { BNavItem, BNavItemDropdown, BDropdownItem } from "bootstrap-vue";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { ref, computed } from "vue";
 import { getCurrentInstance } from "vue";
 
@@ -32,7 +32,7 @@ const props = defineProps({
 /* computed */
 const menu = computed(() => props.tab.menu);
 const popoverNote = computed(
-    () => `Please <a href="${safePath("/login")}">log in or register</a> to use this feature.`
+    () => `Please <a href="${withPrefix("/login")}">log in or register</a> to use this feature.`
 );
 const classes = computed(() => {
     const isActiveTab = props.tab.id == props.activeTab;
@@ -79,7 +79,7 @@ function open(tab, event) {
         v-b-tooltip.hover.bottom
         v-b-popover.manual.bottom="{ id: tab.id, content: popoverNote, html: true }"
         :class="classes"
-        :href="safePath(tab.url)"
+        :href="withPrefix(tab.url)"
         :target="tab.target || '_parent'"
         :link-classes="linkClasses"
         :title="tab.tooltip"
@@ -114,7 +114,7 @@ function open(tab, event) {
             <b-dropdown-item
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
-                :href="safePath(item.url)"
+                :href="withPrefix(item.url)"
                 :target="item.target || '_parent'"
                 role="menuitem"
                 :active="item.disabled"

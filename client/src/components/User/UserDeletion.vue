@@ -41,7 +41,7 @@ import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { userLogoutClient } from "utils/logout";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 
 Vue.use(BootstrapVue);
 
@@ -91,7 +91,7 @@ export default {
             if (this.email === this.name) {
                 this.nameState = true;
                 try {
-                    await axios.delete(safePath(`/api/users/${this.userId}`));
+                    await axios.delete(withPrefix(`/api/users/${this.userId}`));
                 } catch (e) {
                     if (e.response.status === 403) {
                         this.deleteError =

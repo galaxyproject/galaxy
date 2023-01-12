@@ -39,7 +39,7 @@ export function absPath(path: string) {
  * @param path
  * @returns The relative URL or original path.
  */
-export function safePath(path: string) {
+export function withPrefix(path: string) {
     if (path && path.startsWith("/")) {
         return prependPath(path);
     }

@@ -1,4 +1,4 @@
-import { safePath } from "./redirect";
+import { withPrefix } from "./redirect";
 import { getAppRoot } from "onload/loadConfig";
 
 jest.mock("onload/loadConfig");
@@ -7,11 +7,11 @@ getAppRoot.mockImplementation(() => "/prefix");
 describe("test path handling", () => {
     it("route prefix changes", async () => {
         // test routes
-        expect(safePath()).toEqual(undefined);
-        expect(safePath("http://")).toEqual("http://");
-        expect(safePath("/")).toEqual("/prefix/");
-        expect(safePath("/home")).toEqual("/prefix/home");
+        expect(withPrefix()).toEqual(undefined);
+        expect(withPrefix("http://")).toEqual("http://");
+        expect(withPrefix("/")).toEqual("/prefix/");
+        expect(withPrefix("/home")).toEqual("/prefix/home");
         // ensure that it can only be called once
-        expect(safePath(safePath("/home"))).toEqual("/prefix/prefix/home");
+        expect(withPrefix(withPrefix("/home"))).toEqual("/prefix/prefix/home");
     });
 });

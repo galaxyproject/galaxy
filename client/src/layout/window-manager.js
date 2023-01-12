@@ -2,7 +2,7 @@
 import _l from "utils/localization";
 import WinBox from "winbox/src/js/winbox.js";
 import "winbox/dist/css/winbox.min.css";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 
 export class WindowManager {
     constructor(options) {
@@ -26,7 +26,7 @@ export class WindowManager {
 
     /** Add and display a new window based on options. */
     add(options) {
-        const url = safePath(options.url);
+        const url = withPrefix(options.url);
         this.counter++;
         const boxUrl = this._build_url(url, { hide_panels: true, hide_masthead: true });
         WinBox.new({

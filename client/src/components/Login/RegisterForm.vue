@@ -84,7 +84,7 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 
@@ -161,7 +161,7 @@ export default {
         submit() {
             this.disableCreate = true;
             axios
-                .post(safePath("/user/create"), {
+                .post(withPrefix("/user/create"), {
                     email: this.email,
                     username: this.username,
                     password: this.password,
@@ -173,7 +173,7 @@ export default {
                     if (response.data.message && response.data.status) {
                         alert(response.data.message);
                     }
-                    window.location = this.redirect || safePath("/welcome/new");
+                    window.location = this.redirect || withPrefix("/welcome/new");
                 })
                 .catch((error) => {
                     this.disableCreate = false;

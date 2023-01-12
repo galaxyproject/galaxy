@@ -2,7 +2,7 @@
 import { useCurrentTheme } from "@/composables/user";
 import { useConfig } from "@/composables/config";
 import { computed, watch, ref } from "vue";
-import { safePath } from "@/utils/redirect";
+import { withPrefix } from "@/utils/redirect";
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
 const { config, isLoaded } = useConfig();
 
@@ -43,7 +43,7 @@ watch(
                 <span v-if="index === 0" class="font-weight-bold mb-1"> Default Theme ({{ theme }}). </span>
                 <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
                 <div :style="themeDetails" class="theme-masthead">
-                    <img :src="safePath(getLogo(themeDetails))" alt="image" />
+                    <img :src="withPrefix(getLogo(themeDetails))" alt="image" />
                     <span v-localize class="theme-color">Text</span>
                     <span v-localize class="theme-hover">Hover</span>
                     <span v-localize class="theme-active">Active</span>
