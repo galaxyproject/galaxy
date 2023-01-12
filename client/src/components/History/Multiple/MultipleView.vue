@@ -1,3 +1,24 @@
+<script setup lang="ts">
+import { ref } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import DebouncedInput from "@/components/DebouncedInput";
+import CurrentUser from "@/components/providers/CurrentUser";
+import UserHistories from "@/components/providers/UserHistories";
+import MultipleViewList from "./MultipleViewList.vue";
+
+const filter = ref("");
+
+//@ts-ignore bad library types
+library.add(faTimes);
+
+function updateFilter(newFilter: string) {
+    filter.value = newFilter;
+}
+</script>
+
 <template>
     <CurrentUser v-slot="{ user }">
         <UserHistories v-if="user" v-slot="{ histories, handlers, historiesLoading, currentHistory }" :user="user">
@@ -19,7 +40,7 @@
                         </DebouncedInput>
                         <b-input-group-append>
                             <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
-                                <icon icon="times" />
+                                <FontAwesomeIcon icon="fa-times" />
                             </b-button>
                         </b-input-group-append>
                     </b-input-group>
@@ -36,35 +57,3 @@
         </UserHistories>
     </CurrentUser>
 </template>
-
-<script>
-import LoadingSpan from "components/LoadingSpan";
-import DebouncedInput from "components/DebouncedInput";
-import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/UserHistories";
-import MultipleViewList from "./MultipleViewList";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTimes } from "@fortawesome/free-solid-svg-icons";
-
-library.add(faTimes);
-
-export default {
-    components: {
-        LoadingSpan,
-        DebouncedInput,
-        CurrentUser,
-        UserHistories,
-        MultipleViewList,
-    },
-    data() {
-        return {
-            filter: "",
-        };
-    },
-    methods: {
-        updateFilter(filter) {
-            this.filter = filter;
-        },
-    },
-};
-</script>
