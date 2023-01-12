@@ -67,6 +67,7 @@ Markdown = "*"
 MarkupSafe = "*"
 Mercurial = "*"
 mrcfile = "*"
+msal = "*"
 nodeenv = "*"
 numpy = "*"
 packaging = "<22"  # packaging 22.0 dropped LegacyVersion

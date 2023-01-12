@@ -157,6 +157,8 @@ class AuthnzManager:
             rtv["icon"] = config_xml.find("icon").text
         if config_xml.find("extra_scopes") is not None:
             rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
+        if config_xml.find("tenant_id") is not None:
+            rtv["tenant_id"] = config_xml.find("tenant_id").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
 
@@ -194,6 +196,16 @@ class AuthnzManager:
         for k, v in BACKENDS_NAME.items():
             if v == provider:
                 return k.lower()
+        return None
+
+    def _get_provider_name(self, user):
+        if len(user.social_auth) == 1:
+            for k, v in BACKENDS_NAME.items():
+                if v == user.social_auth[0].provider:
+                    return k.lower()
+        if len(user.custos_auth) == 1:
+            if user.custos_auth[0].provider in KEYCLOAK_BACKENDS:
+                return user.custos_auth[0].provider
         return None
 
     def _get_authnz_backend(self, provider, idphint=None):
@@ -308,6 +320,23 @@ class AuthnzManager:
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
+
+    def refresh(self, trans, idphint=None):
+        try:
+            provider = self._get_provider_name(trans.user)
+            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            if success is False:
+                msg = f"An error occurred when refreshing user token on `{provider}` identity provider: {message}"
+                log.error(msg)
+                return False
+            refreshed = backend.refresh(trans)
+            if refreshed:
+                log.debug(f"Refreshed user token via `{provider}` identity provider")
+            return True
+        except Exception as e:
+            msg = f"An error occurred when refreshing user token: {e}"
+            log.exception(msg)
+            return False
 
     def authenticate(self, provider, trans, idphint=None):
         """

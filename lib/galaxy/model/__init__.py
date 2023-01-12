@@ -749,6 +749,38 @@ class User(Base, Dictifiable, RepresentById):
         if amount != 0:
             self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
 
+    def _oidc_tokens(self):
+        id_token = None
+        refresh_token = None
+        access_token = None
+        if self.social_auth:
+            if "access_token" in self.social_auth[0].extra_data:
+                access_token = self.social_auth[0].extra_data["access_token"]
+            if "refresh_token" in self.social_auth[0].extra_data:
+                refresh_token = self.social_auth[0].extra_data["refresh_token"]
+            if "id_token" in self.social_auth[0].extra_data:
+                id_token = self.social_auth[0].extra_data["id_token"]
+        if self.custos_auth:
+            access_token = self.custos_auth[0].access_token
+            refresh_token = self.custos_auth[0].refresh_token
+            id_token = self.custos_auth[0].id_token
+        return (id_token, access_token, refresh_token)
+
+    @property
+    def oidc_id_token(self):
+        id, _, _ = self._oidc_tokens()
+        return id
+
+    @property
+    def oidc_access_token(self):
+        _, access, _ = self._oidc_tokens()
+        return access
+
+    @property
+    def oidc_refresh_token(self):
+        _, _, refresh = self._oidc_tokens()
+        return refresh
+
     @property
     def nice_total_disk_usage(self):
         """

@@ -634,10 +634,27 @@ class ToolEvaluator:
             if inject == "api_key":
                 if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
-
                     environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
                 else:
                     environment_variable_template = ""
+                is_template = False
+            elif inject == "oidc_refresh_token":
+                if self._user:
+                    environment_variable_template = self._user.oidc_refresh_token
+                else:
+                    environment_variable_template = "token-unavailable"
+                is_template = False
+            elif inject == "oidc_access_token":
+                if self._user:
+                    environment_variable_template = self._user.oidc_access_token
+                else:
+                    environment_variable_template = "token-unavailable"
+                is_template = False
+            elif inject == "oidc_id_token":
+                if self._user:
+                    environment_variable_template = self._user.oidc_id_token
+                else:
+                    environment_variable_template = "token-unavailable"
                 is_template = False
             else:
                 is_template = True
