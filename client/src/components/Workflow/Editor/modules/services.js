@@ -1,7 +1,7 @@
 import axios from "axios";
 import { rethrowSimple, errorMessageAsString } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
-import { fromSimple, toSimple } from "./model";
+import { toSimple } from "./model";
 
 /** Workflow data request helper **/
 export async function getVersions(id) {
@@ -39,11 +39,10 @@ export async function refactor(id, actions, dryRun = false) {
     }
 }
 
-export async function loadWorkflow({ workflow, id, version = null, appendData = false }) {
+export async function loadWorkflow({ id, version = null }) {
     try {
         const versionQuery = Number.isInteger(version) ? `version=${version}` : "";
         const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
-        fromSimple(workflow, data, appendData);
         return data;
     } catch (e) {
         console.debug(e);

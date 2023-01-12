@@ -1,14 +1,9 @@
 import { reactive, watchEffect, inject, type UnwrapRef, type Ref } from "vue";
-import {
-    useElementBounding,
-    useScroll,
-    type MaybeComputedElementRef,
-    type UseElementBoundingReturn,
-} from "@vueuse/core";
+import { useElementBounding, type MaybeComputedElementRef, type UseElementBoundingReturn } from "@vueuse/core";
 import type { Step } from "@/stores/workflowStepStore";
 import type { ZoomTransform } from "d3-zoom";
 
-type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
+export type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 
 /**
  * Return the element position relative to the child of the element that determines rootOffset

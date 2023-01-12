@@ -711,6 +711,23 @@ steps:
         assert subworkflow_step["subworkflow"]["a_galaxy_workflow"] == "true"
 
     @selenium_test
+    def test_editor_insert_steps(self):
+        steps_to_insert = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        annotation = "insert step test"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_input(item_name="data_input")
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
+        editor.insert_steps(workflow_title=steps_to_insert).wait_for_and_click()
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.assert_workflow_has_changes_and_save()
+        workflow_id = self.driver.current_url.split("id=")[1]
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert len(workflow["steps"]) == 3
+
+    @selenium_test
     def test_editor_invalid_tool_state(self):
         workflow_populator = self.workflow_populator
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_INVALID_STATE, exact_tools=True)

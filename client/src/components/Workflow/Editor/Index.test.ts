@@ -38,7 +38,7 @@ describe("Index", () => {
         setActivePinia(testingPinia);
         const datatypesStore = useDatatypesMapperStore();
         datatypesStore.datatypesMapper = testDatatypesMapper;
-        mockLoadWorkflow.mockResolvedValue({});
+        mockLoadWorkflow.mockResolvedValue({ steps: {} });
         MockGetVersions.mockResolvedValue(() => []);
         mockGetStateUpgradeMessages.mockImplementation(() => []);
         mockGetAppRoot.mockImplementation(() => "prefix/");

@@ -120,7 +120,7 @@ export interface StepInputConnection {
     [index: string]: ConnectionOutputLink | ConnectionOutputLink[];
 }
 
-interface ConnectionOutputLink {
+export interface ConnectionOutputLink {
     output_name: string;
     id: number;
 }
