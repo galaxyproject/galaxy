@@ -12,48 +12,50 @@
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
             <loading-span v-if="isLoading" message="Loading details" />
-            <b-button
-                v-b-tooltip.hover
-                class="node-destroy py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="destroy node"
-                title="Remove"
-                @click.prevent.stop="remove">
-                <i class="fa fa-times" />
-            </b-button>
-            <b-button
-                v-if="isEnabled"
-                :id="popoverId"
-                class="node-recommendations py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="tool recommendations">
-                <i class="fa fa-arrow-right" />
-            </b-button>
-            <b-popover
-                v-if="isEnabled"
-                :target="popoverId"
-                triggers="hover"
-                placement="bottom"
-                :show.sync="popoverShow">
-                <Recommendations
-                    v-if="popoverShow"
-                    :step-id="id"
-                    :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate" />
-            </b-popover>
-            <b-button
-                v-if="canClone"
-                v-b-tooltip.hover
-                class="node-clone py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="clone node"
-                title="Duplicate"
-                @click.prevent.stop="onClone">
-                <i class="fa fa-files-o" />
-            </b-button>
+            <b-button-group class="float-right">
+                <b-button
+                    v-if="canClone"
+                    v-b-tooltip.hover
+                    class="node-clone py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="clone node"
+                    title="Duplicate"
+                    @click.prevent.stop="onClone">
+                    <i class="fa fa-files-o" />
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    class="node-destroy py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="destroy node"
+                    title="Remove"
+                    @click.prevent.stop="remove">
+                    <i class="fa fa-times" />
+                </b-button>
+                <b-button
+                    v-if="isEnabled"
+                    :id="popoverId"
+                    class="node-recommendations py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="tool recommendations">
+                    <i class="fa fa-arrow-right" />
+                </b-button>
+                <b-popover
+                    v-if="isEnabled"
+                    :target="popoverId"
+                    triggers="hover"
+                    placement="bottom"
+                    :show.sync="popoverShow">
+                    <Recommendations
+                        v-if="popoverShow"
+                        :step-id="id"
+                        :datatypes-mapper="datatypesMapper"
+                        @onCreate="onCreate" />
+                </b-popover>
+            </b-button-group>
             <i :class="iconClass" />
             <span
                 v-b-tooltip.hover
