@@ -1,7 +1,6 @@
 <script setup>
 import UtcDate from "components/UtcDate";
 import Tags from "components/Common/Tags";
-import { withPrefix } from "utils/redirect";
 import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
 import LoadingSpan from "components/LoadingSpan";
@@ -216,7 +215,7 @@ watch([filterText, sortBy, sortDesc], () => {
                 :sort-by.sync="sortBy"
                 :sort-desc.sync="sortDesc">
                 <template v-slot:cell(name)="row">
-                    <router-link :to="withPrefix(`/published/history?id=${row.item.id}`)">
+                    <router-link :to="`/published/history?id=${row.item.id}`">
                         {{ row.item.name }}
                     </router-link>
                 </template>
