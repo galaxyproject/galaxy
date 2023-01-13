@@ -634,6 +634,7 @@ class ToolEvaluator:
             if inject == "api_key":
                 if self._user and isinstance(self.app, BasicSharedApp):
                     from galaxy.managers import api_keys
+
                     environment_variable_template = api_keys.ApiKeyManager(self.app).get_or_create_api_key(self._user)
                 else:
                     environment_variable_template = ""
