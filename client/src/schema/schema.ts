@@ -4088,6 +4088,12 @@ export interface components {
              */
             running?: number;
             /**
+             * Skipped jobs
+             * @description Number of jobs that were skipped due to conditional workflow step execution.
+             * @default 0
+             */
+            skipped?: number;
+            /**
              * Upload jobs
              * @description Number of jobs in the `upload` state.
              * @default 0
@@ -7493,7 +7499,8 @@ export interface components {
             | "deleted"
             | "deleted_new"
             | "stop"
-            | "stopped";
+            | "stopped"
+            | "skipped";
         /**
          * populated_states
          * @description An enumeration.
