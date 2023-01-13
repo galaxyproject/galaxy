@@ -446,6 +446,8 @@ class DatasetsApiTestCase(ApiTestCase):
             hda = self.dataset_populator.new_dataset(history_id)
             dataset_map[index] = hda["id"]
 
+        self.dataset_populator.wait_for_history(history_id)
+
         expected_deleted_source_ids = [
             {"id": dataset_map[1], "src": "hda"},
             {"id": dataset_map[2], "src": "hda"},
