@@ -1,7 +1,7 @@
 """Add when_expression column
 
 Revision ID: 518c8438a91b
-Revises: e0e3bb173ee6
+Revises: 59e024ceaca1
 Create Date: 2022-10-24 16:43:39.565871
 
 """
@@ -16,7 +16,7 @@ from galaxy.model.migrations.util import (
 
 # revision identifiers, used by Alembic.
 revision = "518c8438a91b"
-down_revision = "e0e3bb173ee6"
+down_revision = "59e024ceaca1"
 branch_labels = None
 depends_on = None
 
