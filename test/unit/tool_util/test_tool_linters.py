@@ -1375,12 +1375,12 @@ def test_outputs_format_input(lint_ctx):
     assert "1 outputs found." in lint_ctx.info_messages
     assert (
         "Using format='input' on data, format_source attribute is less ambiguous and should be used instead."
-        in lint_ctx.warn_messages
+        in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
-    assert not lint_ctx.error_messages
+    assert not lint_ctx.warn_messages
+    assert len(lint_ctx.error_messages) == 1
 
 
 def test_outputs_collection_format_source(lint_ctx):
