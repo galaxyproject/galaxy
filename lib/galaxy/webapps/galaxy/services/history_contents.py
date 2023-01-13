@@ -1609,7 +1609,7 @@ class HistoryItemOperator:
             return
         if isinstance(item, HistoryDatasetCollectionAssociation):
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=True)
-        self.hda_manager.purge(item, flush=self.flush)
+        self.hda_manager.purge(item, flush=True)
 
     def _change_datatype(
         self, item: HistoryItemModel, params: ChangeDatatypeOperationParams, trans: ProvidesHistoryContext
