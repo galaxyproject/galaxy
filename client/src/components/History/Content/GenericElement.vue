@@ -1,9 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import Vue from "vue";
-import ContentItem from "./ContentItem";
+import ContentItem from "./ContentItem.vue";
 import { ref } from "vue";
 
-const props = defineProps({
+defineProps({
     dsc: {
         type: Object,
         required: true,
@@ -13,7 +13,7 @@ const props = defineProps({
 const expandCollections = ref({});
 const expandDatasets = ref({});
 
-function toggle(expansionMap, itemId) {
+function toggle(expansionMap: Record<string, boolean>, itemId: string) {
     Vue.set(expansionMap, itemId, !expansionMap[itemId]);
 }
 </script>
