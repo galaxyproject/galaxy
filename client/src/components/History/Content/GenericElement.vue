@@ -13,12 +13,8 @@ const props = defineProps({
 const expandCollections = ref({});
 const expandDatasets = ref({});
 
-function viewCollection(itemId) {
-    Vue.set(this.expandCollections, itemId, !this.expandCollections[itemId]);
-}
-
-function viewDataset(itemId) {
-    Vue.set(this.expandDatasets, itemId, !this.expandDatasets[itemId]);
+function toggle(expansionMap, itemId) {
+    Vue.set(expansionMap, itemId, !expansionMap[itemId]);
 }
 </script>
 
@@ -31,8 +27,8 @@ function viewDataset(itemId) {
                 :name="item.element_identifier"
                 :is-dataset="item.element_type == 'hda'"
                 :expand-dataset="!!expandDatasets[item.id]"
-                @update:expand-dataset="viewDataset(item.id)"
-                @view-collection="viewCollection(item.id)" />
+                @update:expand-dataset="toggle(expandDatasets, item.id)"
+                @view-collection="toggle(expandCollections, item.id)" />
             <div v-if="!!expandCollections[item.id]" class="mx-3">
                 <GenericElement :dsc="item.object" />
             </div>
