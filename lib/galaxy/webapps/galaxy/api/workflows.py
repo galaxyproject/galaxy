@@ -51,6 +51,7 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    InvocationMessage,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -764,12 +765,19 @@ class WorkflowsAPIController(
             invocations.append(workflow_invocation)
 
         trans.sa_session.flush()
-        invocations = [self.encode_all_ids(trans, invocation.to_dict(), recursive=True) for invocation in invocations]
+        encoded_invocations = []
+        for invocation in invocations:
+            as_dict = workflow_invocation.to_dict()
+            as_dict["messages"] = [
+                InvocationMessage.parse_obj(message).__root__.dict() for message in invocation.messages
+            ]
+            as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
+            encoded_invocations.append(as_dict)
 
         if is_batch:
-            return invocations
+            return encoded_invocations
         else:
-            return invocations[0]
+            return encoded_invocations[0]
 
     @expose_api
     def index_invocations(self, trans: GalaxyWebTransaction, **kwd):

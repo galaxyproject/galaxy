@@ -13,9 +13,21 @@ from typing import (
 from typing_extensions import Protocol
 
 from galaxy import model
+from galaxy.exceptions import MessageException
 from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
+)
+from galaxy.schema.schema import (
+    FailureReason,
+    InvocationCancellationHistoryDeleted,
+    InvocationFailureCollectionFailed,
+    InvocationFailureDatasetFailed,
+    InvocationFailureJobFailed,
+    InvocationFailureOutputNotFound,
+    InvocationUnexpectedFailure,
+    InvocationWarningWorkflowOutputNotFound,
+    WarningReason,
 )
 from galaxy.util import ExecutionTimer
 from galaxy.workflow import modules
@@ -73,21 +85,31 @@ def __invoke(
         workflow_invocation=workflow_invocation,
     )
     workflow_invocation = invoker.workflow_invocation
+    outputs = {}
     try:
         outputs = invoker.invoke()
-    except modules.CancelWorkflowEvaluation:
+    except modules.CancelWorkflowEvaluation as e:
         if workflow_invocation.cancel():
-            trans.sa_session.add(workflow_invocation)
-        outputs = {}
+            workflow_invocation.add_message(e.why)
+    except modules.FailWorkflowEvaluation as e:
+        workflow_invocation.fail()
+        workflow_invocation.add_message(e.why)
+    except MessageException as e:
+        # Convention for safe message we can show to users
+        workflow_invocation.fail()
+        failure = InvocationUnexpectedFailure(reason=FailureReason.unexpected_failure, details=str(e))
+        workflow_invocation.add_message(failure)
     except Exception:
+        # Could potentially be large and/or contain raw ids or other secrets, don't add details
         log.exception("Failed to execute scheduled workflow.")
         # Running workflow invocation in background, just mark
         # persistent workflow invocation as failed.
+        failure = InvocationUnexpectedFailure(reason=FailureReason.unexpected_failure)
         workflow_invocation.fail()
-        trans.sa_session.add(workflow_invocation)
-        outputs = {}
+        workflow_invocation.add_message(failure)
 
     # Be sure to update state of workflow_invocation.
+    trans.sa_session.add(workflow_invocation)
     trans.sa_session.flush()
 
     return outputs, workflow_invocation
@@ -176,8 +198,11 @@ class WorkflowInvoker:
             return self.progress.outputs
 
         if workflow_invocation.history.deleted:
-            log.info("Cancelled workflow evaluation due to deleted history")
-            raise modules.CancelWorkflowEvaluation()
+            raise modules.CancelWorkflowEvaluation(
+                why=InvocationCancellationHistoryDeleted(
+                    reason=FailureReason.history_deleted, history_id=workflow_invocation.history_id
+                )
+            )
 
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
@@ -244,9 +269,9 @@ class WorkflowInvoker:
         for input_connection in step.input_connections:
             if input_connection.non_data_connection:
                 output_id = input_connection.output_step.id
-                self.__check_implicitly_dependent_step(output_id)
+                self.__check_implicitly_dependent_step(output_id, step.id)
 
-    def __check_implicitly_dependent_step(self, output_id):
+    def __check_implicitly_dependent_step(self, output_id: int, step_id: int):
         step_invocation = self.workflow_invocation.step_invocation_for_step_id(output_id)
 
         # No steps created yet - have to delay evaluation.
@@ -268,7 +293,14 @@ class WorkflowInvoker:
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
 
             if job.state != job.states.OK:
-                raise modules.CancelWorkflowEvaluation()
+                raise modules.FailWorkflowEvaluation(
+                    why=InvocationFailureJobFailed(
+                        reason=FailureReason.job_failed,
+                        job_id=job.id,
+                        workflow_step_id=step_id,
+                        dependent_workflow_step_id=step_invocation.id,
+                    )
+                )
 
     def _invoke_step(self, invocation_step: WorkflowInvocationStep) -> Optional[bool]:
         incomplete_or_none = invocation_step.workflow_step.module.execute(
@@ -349,9 +381,10 @@ class WorkflowProgress:
             step_args = self.param_map.get(step_id, {})
             self.module_injector.compute_runtime_state(step, step_args=step_args)
             if step_id not in step_states:
-                raise Exception(
-                    f"Workflow invocation [{self.workflow_invocation.id}] has no step state for step {step.log_str()}. States ids are {list(step_states.keys())}."
-                )
+                # Can this ever happen?
+                public_message = f"Workflow invocation has no step state for step {step.order_index + 1}"
+                log.error(f"{public_message}. State is known for these step ids: {list(step_states.keys())}.")
+                raise MessageException(public_message)
             runtime_state = step_states[step_id].value
             assert step.module
             step.state = step.module.decode_runtime_state(runtime_state)
@@ -393,29 +426,45 @@ class WorkflowProgress:
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True) -> Any:
         output_step_id = connection.output_step.id
+        output_name = connection.output_name
         if output_step_id not in self.outputs:
-            message = f"No outputs found for step id {output_step_id}, outputs are {self.outputs}"
-            raise Exception(message)
+            raise modules.FailWorkflowEvaluation(
+                why=InvocationFailureOutputNotFound(
+                    reason=FailureReason.output_not_found,
+                    workflow_step_id=connection.input_step_id,
+                    output_name=output_name,
+                    dependent_workflow_step_id=output_step_id,
+                )
+            )
         step_outputs = self.outputs[output_step_id]
         if step_outputs is STEP_OUTPUT_DELAYED:
             delayed_why = f"dependent step [{output_step_id}] delayed, so this step must be delayed"
             raise modules.DelayedWorkflowEvaluation(why=delayed_why)
-        output_name = connection.output_name
         try:
             replacement = step_outputs[output_name]
         except KeyError:
-            # Must resolve.
-            template = "Workflow evaluation problem - failed to find output_name %s in step_outputs %s"
-            message = template % (output_name, step_outputs)
-            raise Exception(message)
+            raise modules.FailWorkflowEvaluation(
+                why=InvocationFailureOutputNotFound(
+                    reason=FailureReason.output_not_found,
+                    workflow_step_id=connection.input_step_id,
+                    output_name=output_name,
+                    dependent_workflow_step_id=output_step_id,
+                )
+            )
         if isinstance(replacement, model.HistoryDatasetCollectionAssociation):
             if not replacement.collection.populated:
                 if not replacement.waiting_for_elements:
                     # If we are not waiting for elements, there was some
                     # problem creating the collection. Collection will never
                     # be populated.
-                    # TODO: consider distinguish between cancelled and failed?
-                    raise modules.CancelWorkflowEvaluation()
+                    raise modules.FailWorkflowEvaluation(
+                        why=InvocationFailureCollectionFailed(
+                            reason=FailureReason.collection_failed,
+                            hdca_id=replacement.id,
+                            workflow_step_id=connection.input_step_id,
+                            dependent_workflow_step_id=output_step_id,
+                        )
+                    )
 
                 delayed_why = f"dependent collection [{replacement.id}] not yet populated with datasets"
                 raise modules.DelayedWorkflowEvaluation(why=delayed_why)
@@ -429,7 +478,14 @@ class WorkflowProgress:
                 if replacement.is_pending:
                     raise modules.DelayedWorkflowEvaluation()
                 if not replacement.is_ok:
-                    raise modules.CancelWorkflowEvaluation()
+                    raise modules.FailWorkflowEvaluation(
+                        why=InvocationFailureDatasetFailed(
+                            reason=FailureReason.dataset_failed,
+                            hda_id=replacement.id,
+                            workflow_step_id=connection.input_step_id,
+                            dependent_workflow_step_id=output_step_id,
+                        )
+                    )
             else:
                 if not replacement.collection.populated:
                     raise modules.DelayedWorkflowEvaluation()
@@ -438,7 +494,14 @@ class WorkflowProgress:
                     if dataset_instance.is_pending:
                         pending = True
                     elif not dataset_instance.is_ok:
-                        raise modules.CancelWorkflowEvaluation()
+                        raise modules.FailWorkflowEvaluation(
+                            why=InvocationFailureDatasetFailed(
+                                reason=FailureReason.dataset_failed,
+                                hda_id=replacement.id,
+                                workflow_step_id=connection.input_step_id,
+                                dependent_workflow_step_id=output_step_id,
+                            )
+                        )
                 if pending:
                     raise modules.DelayedWorkflowEvaluation()
 
@@ -469,7 +532,15 @@ class WorkflowProgress:
                 if default_value or step.input_optional:
                     outputs["output"] = default_value
                 else:
-                    raise ValueError(f"{step.log_str()} not found in inputs_step_id {self.inputs_by_step_id}")
+                    log.error(f"{step.log_str()} not found in inputs_step_id {self.inputs_by_step_id}")
+                    raise modules.FailWorkflowEvaluation(
+                        why=InvocationFailureOutputNotFound(
+                            reason=FailureReason.output_not_found,
+                            workflow_step_id=invocation_step.workflow_step_id,
+                            output_name="output",
+                            dependent_workflow_step_id=invocation_step.workflow_step_id,
+                        )
+                    )
             elif step_id in self.inputs_by_step_id:
                 outputs["output"] = self.inputs_by_step_id[step_id]
 
@@ -497,13 +568,14 @@ class WorkflowProgress:
             for workflow_output in step.workflow_outputs:
                 output_name = workflow_output.output_name
                 if output_name not in outputs:
+                    invocation_step.workflow_invocation.add_message(
+                        InvocationWarningWorkflowOutputNotFound(
+                            reason=WarningReason.workflow_output_not_found,
+                            workflow_step_id=step.id,
+                            output_name=output_name,
+                        )
+                    )
                     message = f"Failed to find expected workflow output [{output_name}] in step outputs [{outputs}]"
-                    # raise KeyError(message)
-                    # Pre-18.01 we would have never even detected this output wasn't configured
-                    # and even in 18.01 we don't have a way to tell the user something bad is
-                    # happening so I guess we just log a debug message and continue sadly for now.
-                    # Once https://github.com/galaxyproject/galaxy/issues/5142 is complete we could
-                    # at least tell the user what happened, give them a warning.
                     log.debug(message)
                     continue
                 output = outputs[output_name]
@@ -526,7 +598,7 @@ class WorkflowProgress:
         workflow_invocation = self.workflow_invocation
         subworkflow_invocation = workflow_invocation.get_subworkflow_invocation_for_step(step)
         if subworkflow_invocation is None:
-            raise Exception(f"Failed to find persisted workflow invocation for step [{step.id}]")
+            raise MessageException(f"Failed to find persisted subworkflow invocation for step [{step.order_index + 1}]")
         return subworkflow_invocation
 
     def subworkflow_invoker(
@@ -579,7 +651,14 @@ class WorkflowProgress:
                     break
 
             if not connection_found and not input_subworkflow_step.input_optional:
-                raise Exception("Could not find connections for all subworkflow inputs.")
+                raise modules.FailWorkflowEvaluation(
+                    InvocationFailureOutputNotFound(
+                        reason=FailureReason.output_not_found,
+                        workflow_step_id=step.id,
+                        output_name=input_connection.output_name,
+                        dependent_workflow_step_id=input_connection.output_step.id,
+                    )
+                )
 
         return WorkflowProgress(
             subworkflow_invocation,

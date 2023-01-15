@@ -9,9 +9,11 @@ from enum import Enum
 from typing import (
     Any,
     Dict,
+    Generic,
     List,
     Optional,
     Set,
+    TypeVar,
     Union,
 )
 from uuid import UUID
@@ -26,6 +28,7 @@ from pydantic import (
     Json,
     UUID4,
 )
+from pydantic.generics import GenericModel
 from typing_extensions import (
     Annotated,
     Literal,
@@ -1912,6 +1915,145 @@ class SubworkflowStep(WorkflowStepBase):
     workflow_id: DecodedDatabaseIdField = Field(
         ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
     )
+
+
+class WarningReason(str, Enum):
+    workflow_output_not_found = "workflow_output_not_found"
+
+
+class FailureReason(str, Enum):
+    dataset_failed = "dataset_failed"
+    collection_failed = "collection_failed"
+    job_failed = "job_failed"
+    output_not_found = "output_not_found"
+    unexpected_failure = "unexpected_failure"
+
+
+class CancelReason(str, Enum):
+    """Possible reasons for a cancelled workflow."""
+
+    history_deleted = "history_deleted"
+    user_request = "user_request"
+    cancelled_on_review = "cancelled_on_review"
+
+
+DatabaseIdT = TypeVar("DatabaseIdT")
+
+
+class InvocationMessageBase(GenericModel):
+    reason: Union[CancelReason, FailureReason, WarningReason]
+
+    class Config:
+        orm_mode = True
+
+
+class GenericInvocationCancellationReviewFailed(InvocationMessageBase, Generic[DatabaseIdT]):
+    reason: Literal[CancelReason.cancelled_on_review]
+    workflow_step_id: DatabaseIdT = Field(..., description="Workflow step id of paused step that did not pass review.")
+
+
+class GenericInvocationCancellationHistoryDeleted(InvocationMessageBase, Generic[DatabaseIdT]):
+    # reason: CancelReason.history_deleted
+    reason: Literal[CancelReason.history_deleted]
+    history_id: DatabaseIdT = Field(..., title="History ID", description="History ID of history that was deleted.")
+
+
+class GenericInvocationCancellationUserRequest(InvocationMessageBase, Generic[DatabaseIdT]):
+    reason: Literal[CancelReason.user_request]
+
+
+class InvocationFailureMessageBase(InvocationMessageBase, Generic[DatabaseIdT]):
+    workflow_step_id: DatabaseIdT = Field(..., description="Workflow step id of step that failed.")
+
+
+class GenericInvocationFailureDatasetFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.dataset_failed]
+    hda_id: DatabaseIdT = Field(
+        ..., title="HistoryDatasetAssociation ID", description="HistoryDatasetAssociation ID that relates to failure."
+    )
+    dependent_workflow_step_id: Optional[DatabaseIdT] = Field(
+        None, description="Workflow step id of step that caused failure."
+    )
+
+
+class GenericInvocationFailureCollectionFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.collection_failed]
+    hdca_id: DatabaseIdT = Field(
+        None,
+        title="HistoryDatasetCollectionAssociation ID",
+        description="HistoryDatasetCollectionAssociation ID that relates to failure.",
+    )
+    dependent_workflow_step_id: DatabaseIdT = Field(None, description="Workflow step id of step that caused failure.")
+
+
+class GenericInvocationFailureJobFailed(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.job_failed]
+    job_id: DatabaseIdT = Field(None, title="Job ID", description="Job ID that relates to failure.")
+    dependent_workflow_step_id: DatabaseIdT = Field(None, description="Workflow step id of step that caused failure.")
+
+
+class GenericInvocationFailureOutputNotFound(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.output_not_found]
+    output_name: str = Field(..., title="Tool or module output name that was referenced but not produced")
+    dependent_workflow_step_id: DatabaseIdT = Field(None, description="Workflow step id of step that caused failure.")
+
+
+class GenericInvocationUnexpectedFailure(InvocationFailureMessageBase[DatabaseIdT], Generic[DatabaseIdT]):
+    reason: Literal[FailureReason.unexpected_failure]
+    details: Optional[str] = Field(None, description="May contains details to help troubleshoot this problem.")
+
+
+class GenericInvocationWarning(InvocationMessageBase, Generic[DatabaseIdT]):
+    reason: WarningReason = Field(..., title="Failure Reason", description="Reason for warning")
+    workflow_step_id: Optional[DatabaseIdT] = Field(None, title="Workflow step id of step that caused a warning.")
+
+
+class GenericInvocationEvaluationWarningWorkflowOutputNotFound(
+    GenericInvocationWarning[DatabaseIdT], Generic[DatabaseIdT]
+):
+    reason: Literal[WarningReason.workflow_output_not_found]
+    output_name: str = Field(
+        ..., description="Output that was designated as workflow output but that has not been found"
+    )
+
+
+InvocationCancellationReviewFailed = GenericInvocationCancellationReviewFailed[int]
+InvocationCancellationHistoryDeleted = GenericInvocationCancellationHistoryDeleted[int]
+InvocationCancellationUserRequest = GenericInvocationCancellationUserRequest[int]
+InvocationFailureDatasetFailed = GenericInvocationFailureDatasetFailed[int]
+InvocationFailureCollectionFailed = GenericInvocationFailureCollectionFailed[int]
+InvocationFailureJobFailed = GenericInvocationFailureJobFailed[int]
+InvocationFailureOutputNotFound = GenericInvocationFailureOutputNotFound[int]
+InvocationUnexpectedFailure = GenericInvocationUnexpectedFailure[int]
+InvocationWarningWorkflowOutputNotFound = GenericInvocationEvaluationWarningWorkflowOutputNotFound[int]
+
+InvocationMessageUnion = Annotated[
+    Union[
+        GenericInvocationCancellationReviewFailed[DatabaseIdT],
+        GenericInvocationCancellationHistoryDeleted[DatabaseIdT],
+        GenericInvocationCancellationUserRequest[DatabaseIdT],
+        GenericInvocationFailureDatasetFailed[DatabaseIdT],
+        GenericInvocationFailureCollectionFailed[DatabaseIdT],
+        GenericInvocationFailureJobFailed[DatabaseIdT],
+        GenericInvocationFailureOutputNotFound[DatabaseIdT],
+        GenericInvocationFailureExpressionEvaluationFailed[DatabaseIdT],
+        GenericInvocationFailureWhenNotBoolean[DatabaseIdT],
+        GenericInvocationUnexpectedFailure[DatabaseIdT],
+        GenericInvocationEvaluationWarningWorkflowOutputNotFound[DatabaseIdT],
+    ],
+    Field(discriminator="reason"),
+]
+
+
+class GenericInvocationMessage(GenericModel, Generic[DatabaseIdT]):
+    __root__: InvocationMessageUnion[DatabaseIdT]
+
+    class Config:
+        orm_mode = True
+
+
+InvocationMessage = InvocationMessageUnion[int]
+InvocationMessageResponseModel = GenericInvocationMessage[EncodedDatabaseIdField]
 
 
 class Creator(Model):

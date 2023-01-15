@@ -13,6 +13,7 @@ from typing import (
     List,
     Optional,
     Type,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -37,6 +38,12 @@ from galaxy.model import (
     WorkflowStepConnection,
 )
 from galaxy.model.dataset_collections import matching
+from galaxy.schema.schema import (
+    CancelReason,
+    FailureReason,
+    InvocationCancellationReviewFailed,
+    InvocationFailureDatasetFailed,
+)
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
@@ -88,6 +95,9 @@ from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 
+if TYPE_CHECKING:
+    from galaxy.schema.schema import InvocationMessage
+
 log = logging.getLogger(__name__)
 
 # Key into Tool state to describe invocation-specific runtime properties.
@@ -137,7 +147,11 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
                 why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
                 raise DelayedWorkflowEvaluation(why=why)
             if not value.is_ok:
-                raise CancelWorkflowEvaluation()
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureDatasetFailed(
+                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                    )
+                )
             if value.ext == "expression.json":
                 with open(value.file_name) as f:
                     # OUR safe_loads won't work, will not load numbers, etc...
@@ -1599,7 +1613,11 @@ class PauseModule(WorkflowModule):
                 progress.set_step_outputs(invocation_step, {"output": replacement})
                 return
             elif action is False:
-                raise CancelWorkflowEvaluation()
+                raise CancelWorkflowEvaluation(
+                    why=InvocationCancellationReviewFailed(
+                        reason=CancelReason.cancelled_on_review, workflow_step_id=step.id
+                    )
+                )
         delayed_why = "workflow paused at this step waiting for review"
         raise DelayedWorkflowEvaluation(why=delayed_why)
 
@@ -2061,8 +2079,9 @@ class ToolModule(WorkflowModule):
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
         if not tool.is_workflow_compatible:
-            message = f"Specified tool [{tool.id}] in workflow is not workflow-compatible."
-            raise Exception(message)
+            # TODO: why do we even create an invocation, seems like something we could check on submit?
+            message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
+            raise exceptions.MessageException(message)
         tool_state = step.state
         tool_inputs = tool.inputs.copy()
         # Not strictly needed - but keep Tool state clean by stripping runtime
@@ -2134,8 +2153,7 @@ class ToolModule(WorkflowModule):
                     replace_optional_connections=True,
                 )
             except KeyError as k:
-                message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
-                message = message_template % (tool.name, unicodify(k))
+                message = f"Error due to input mapping of '{unicodify(k)}' in tool '{tool.id}'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review workflow step {step.order_index + 1}."
                 raise exceptions.MessageException(message)
 
             if step.when_expression and when_value is not False:
@@ -2380,7 +2398,13 @@ class DelayedWorkflowEvaluation(Exception):
 
 
 class CancelWorkflowEvaluation(Exception):
-    pass
+    def __init__(self, why: "InvocationMessage"):
+        self.why = why
+
+
+class FailWorkflowEvaluation(Exception):
+    def __init__(self, why: "InvocationMessage"):
+        self.why = why
 
 
 class SkipWorkflowStepEvaluation(Exception):

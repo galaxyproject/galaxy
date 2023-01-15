@@ -3450,6 +3450,12 @@ input1:
             self._delete(f"histories/{history_id}")
 
             invocation_cancelled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, "cancelled")
+            workflow_details = self._invocation_details(uploaded_workflow_id, invocation_id)
+            assert len(workflow_details["messages"]) == 1
+            message = workflow_details["messages"][0]
+            assert message["history_id"] == history_id
+            assert message["reason"] == "history_deleted"
+
             assert invocation_cancelled, "Workflow state is not cancelled..."
 
     @skip_without_tool("cat")
@@ -3471,6 +3477,11 @@ input1:
 
             invocation_cancelled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, "cancelled")
             assert invocation_cancelled, "Workflow state is not cancelled..."
+            workflow_details = self._invocation_details(uploaded_workflow_id, invocation_id)
+            assert len(workflow_details["messages"]) == 1
+            message = workflow_details["messages"][0]
+            assert message["history_id"] == history_id
+            assert message["reason"] == "history_deleted"
 
     @skip_without_tool("cat")
     def test_workflow_pause(self):
@@ -3519,6 +3530,11 @@ input1:
             # Ensure the workflow eventually becomes cancelled.
             invocation_cancelled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, "cancelled")
             assert invocation_cancelled, "Workflow state is not cancelled..."
+            workflow_details = self._invocation_details(uploaded_workflow_id, invocation_id)
+            assert len(workflow_details["messages"]) == 1
+            message = workflow_details["messages"][0]
+            assert "workflow_step_id" in message
+            assert message["reason"] == "cancelled_on_review"
 
     @skip_without_tool("head")
     def test_workflow_map_reduce_pause(self):
@@ -3574,6 +3590,71 @@ input1:
 
             invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
             assert invocation["state"] == "cancelled"
+            message = invocation["messages"][0]
+            assert message["reason"] == "user_request"
+
+    def test_workflow_failed_output_not_found(self, history_id):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  create_2:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "my new name"
+      out_file2:
+        rename: "my other new name"
+  first_cat1:
+    tool_id: cat
+    in:
+      input1: create_2/does_not_exist
+ """,
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        assert invocation["state"] == "failed"
+        assert len(invocation["message"]) == 1
+        message = invocation["message"]
+        assert message["reason"] == "output_not_found"
+        assert "workflow_step_id" in message
+        assert "dependent_workflow_step_id" in message
+
+    def test_workflow_warning_workflow_output_not_found(self, history_id):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs: []
+steps:
+  create_2:
+    tool_id: create_2
+    state:
+      sleep_time: 0
+    outputs:
+      out_file1:
+        rename: "my new name"
+      out_file2:
+        rename: "my other new name"
+outputs:
+  main_out:
+    outputSource: create_2/does_not_exist
+ """,
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id)
+        assert invocation["state"] == "scheduled"
+        assert len(invocation["messages"]) == 1
+        message = invocation["messages"][0]
+        assert message["reason"] == "workflow_output_not_found"
+        assert "workflow_step_id" in message
+        assert message["output_name"] == "does_not_exist"
 
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over(self, history_id):

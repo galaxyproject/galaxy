@@ -58,7 +58,10 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.schema import WorkflowIndexQueryPayload
+from galaxy.schema.schema import (
+    InvocationCancellationUserRequest,
+    WorkflowIndexQueryPayload,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,
@@ -402,6 +405,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         cancelled = workflow_invocation.cancel()
 
         if cancelled:
+            workflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             trans.sa_session.add(workflow_invocation)
             trans.sa_session.flush()
         else:
