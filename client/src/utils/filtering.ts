@@ -250,12 +250,15 @@ export default class Filtering<T> {
         }
         // check if any default filter keys have been used
         let hasDefaults = false;
-        for (const defaultKey in this.defaultFilters) {
-            if (result[defaultKey]) {
+        Object.keys(this.defaultFilters).forEach((defaultKey) => {
+            const value = result[defaultKey];
+            if (value !== undefined) {
+                if (value == "any") {
+                    delete result[defaultKey];
+                }
                 hasDefaults = true;
-                break;
             }
-        }
+        });
         // use default filters if none of the default filters has been explicitly specified
         if (!hasDefaults && this.useDefaultFilters) {
             result = { ...result, ...this.defaultFilters };
