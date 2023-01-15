@@ -27,6 +27,7 @@ function toggle(expansionMap: Record<string, boolean>, itemId: string) {
                 :name="item.element_identifier"
                 :is-dataset="item.element_type == 'hda'"
                 :expand-dataset="!!expandDatasets[item.id]"
+                class="mx-3"
                 @update:expand-dataset="toggle(expandDatasets, item.id)"
                 @view-collection="toggle(expandCollections, item.id)" />
             <div v-if="!!expandCollections[item.id]" class="mx-3">
