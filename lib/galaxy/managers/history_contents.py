@@ -566,7 +566,7 @@ class HistoryContentsFilters(
 
             if attr == "related" and op == "eq":
                 if isinstance(val, str):
-                    val = val.strip('][').split(', ')
+                    val = val.strip("][").split(", ")
                 return sql.column("hid").in_(val)
 
             if attr == "type_id":
