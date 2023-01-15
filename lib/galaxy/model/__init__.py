@@ -153,7 +153,7 @@ from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
-    from galaxy.schema.schema import InvocationMessage
+    from galaxy.schema.schema import InvocationMessageUnion
 
 log = logging.getLogger(__name__)
 
@@ -7898,7 +7898,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
 
-    def add_message(self, message: "InvocationMessage"):
+    def add_message(self, message: "InvocationMessageUnion"):
         self.messages.append(
             WorkflowInvocationMessage(
                 workflow_invocation_id=self.id,

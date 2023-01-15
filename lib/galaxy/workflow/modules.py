@@ -98,7 +98,7 @@ from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 
 if TYPE_CHECKING:
-    from galaxy.schema.schema import InvocationMessage
+    from galaxy.schema.schema import InvocationMessageUnion
 
 log = logging.getLogger(__name__)
 
@@ -2423,12 +2423,12 @@ class DelayedWorkflowEvaluation(Exception):
 
 
 class CancelWorkflowEvaluation(Exception):
-    def __init__(self, why: "InvocationMessage"):
+    def __init__(self, why: "InvocationMessageUnion"):
         self.why = why
 
 
 class FailWorkflowEvaluation(Exception):
-    def __init__(self, why: "InvocationMessage"):
+    def __init__(self, why: "InvocationMessageUnion"):
         self.why = why
 
 

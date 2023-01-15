@@ -2055,33 +2055,59 @@ InvocationFailureWhenNotBoolean = GenericInvocationFailureWhenNotBoolean[int]
 InvocationUnexpectedFailure = GenericInvocationUnexpectedFailure[int]
 InvocationWarningWorkflowOutputNotFound = GenericInvocationEvaluationWarningWorkflowOutputNotFound[int]
 
-InvocationMessageUnion = Annotated[
+InvocationMessageUnion = Union[
+    InvocationCancellationReviewFailed,
+    InvocationCancellationHistoryDeleted,
+    InvocationCancellationUserRequest,
+    InvocationFailureDatasetFailed,
+    InvocationFailureCollectionFailed,
+    InvocationFailureJobFailed,
+    InvocationFailureOutputNotFound,
+    InvocationFailureExpressionEvaluationFailed,
+    InvocationFailureWhenNotBoolean,
+    InvocationUnexpectedFailure,
+    InvocationWarningWorkflowOutputNotFound,
+]
+
+InvocationCancellationReviewFailedResponseModel = GenericInvocationCancellationReviewFailed[EncodedDatabaseIdField]
+InvocationCancellationHistoryDeletedResponseModel = GenericInvocationCancellationHistoryDeleted[EncodedDatabaseIdField]
+InvocationCancellationUserRequestResponseModel = GenericInvocationCancellationUserRequest[EncodedDatabaseIdField]
+InvocationFailureDatasetFailedResponseModel = GenericInvocationFailureDatasetFailed[EncodedDatabaseIdField]
+InvocationFailureCollectionFailedResponseModel = GenericInvocationFailureCollectionFailed[EncodedDatabaseIdField]
+InvocationFailureJobFailedResponseModel = GenericInvocationFailureJobFailed[EncodedDatabaseIdField]
+InvocationFailureOutputNotFoundResponseModel = GenericInvocationFailureOutputNotFound[EncodedDatabaseIdField]
+InvocationFailureExpressionEvaluationFailedResponseModel = GenericInvocationFailureExpressionEvaluationFailed[
+    EncodedDatabaseIdField
+]
+InvocationFailureWhenNotBooleanResponseModel = GenericInvocationFailureWhenNotBoolean[EncodedDatabaseIdField]
+InvocationUnexpectedFailureResponseModel = GenericInvocationUnexpectedFailure[EncodedDatabaseIdField]
+InvocationWarningWorkflowOutputNotFoundResponseModel = GenericInvocationEvaluationWarningWorkflowOutputNotFound[
+    EncodedDatabaseIdField
+]
+
+InvocationMessageResponseUnion = Annotated[
     Union[
-        GenericInvocationCancellationReviewFailed[DatabaseIdT],
-        GenericInvocationCancellationHistoryDeleted[DatabaseIdT],
-        GenericInvocationCancellationUserRequest[DatabaseIdT],
-        GenericInvocationFailureDatasetFailed[DatabaseIdT],
-        GenericInvocationFailureCollectionFailed[DatabaseIdT],
-        GenericInvocationFailureJobFailed[DatabaseIdT],
-        GenericInvocationFailureOutputNotFound[DatabaseIdT],
-        GenericInvocationFailureExpressionEvaluationFailed[DatabaseIdT],
-        GenericInvocationFailureWhenNotBoolean[DatabaseIdT],
-        GenericInvocationUnexpectedFailure[DatabaseIdT],
-        GenericInvocationEvaluationWarningWorkflowOutputNotFound[DatabaseIdT],
+        InvocationCancellationReviewFailedResponseModel,
+        InvocationCancellationHistoryDeletedResponseModel,
+        InvocationCancellationUserRequestResponseModel,
+        InvocationFailureDatasetFailedResponseModel,
+        InvocationFailureCollectionFailedResponseModel,
+        InvocationFailureJobFailedResponseModel,
+        InvocationFailureOutputNotFoundResponseModel,
+        InvocationFailureExpressionEvaluationFailedResponseModel,
+        InvocationFailureWhenNotBooleanResponseModel,
+        InvocationUnexpectedFailureResponseModel,
+        InvocationWarningWorkflowOutputNotFoundResponseModel,
     ],
     Field(discriminator="reason"),
 ]
 
 
-class GenericInvocationMessage(GenericModel, Generic[DatabaseIdT]):
-    __root__: InvocationMessageUnion[DatabaseIdT]
+class InvocationMessageResponseModel(Model):
+    __root__: InvocationMessageResponseUnion
 
     class Config:
         orm_mode = True
-
-
-InvocationMessage = InvocationMessageUnion[int]
-InvocationMessageResponseModel = GenericInvocationMessage[EncodedDatabaseIdField]
 
 
 class Creator(Model):
