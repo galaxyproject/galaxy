@@ -3,8 +3,8 @@ from sqlalchemy import (
     union,
 )
 from sqlalchemy.sql import (
-    select,
     expression,
+    select,
 )
 
 from galaxy import model

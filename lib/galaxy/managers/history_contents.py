@@ -32,7 +32,6 @@ from galaxy import (
     exceptions as glx_exceptions,
     model,
 )
-from galaxy.schema import ValueFilterQueryParams
 from galaxy.managers import (
     annotatable,
     base,
@@ -43,6 +42,7 @@ from galaxy.managers import (
     tools,
 )
 from galaxy.managers.job_connections import JobConnectionsManager
+from galaxy.schema import ValueFilterQueryParams
 from galaxy.structured_app import MinimalManagerApp
 from .base import (
     parse_bool,
