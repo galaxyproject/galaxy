@@ -2254,8 +2254,9 @@ class ToolModule(WorkflowModule):
 
             self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, progress.replacement_dict)
         if execution_tracker.execution_errors:
-            message = "Failed to create one or more job(s) for workflow step."
-            raise Exception(message)
+            # TODO: formalize into InvocationFailure ?
+            message = f"Failed to create {len(execution_tracker.execution_errors)} job(s) for workflow step {step.order_index + 1}: {str(execution_tracker.execution_errors[0])}"
+            raise exceptions.MessageException(message)
 
         return complete
 
