@@ -47,7 +47,7 @@ class JobConnectionsManager:
                 ).filter_by(history_id=history_id, hid=hid)
             )
         ).all()
-        result = [int(hid)]
+        result = [hid]
         for item_data in items_by_hid:
             graph = self.get_connections_graph(id=item_data[0], src=item_data[1])
             # Add found related items' hids to result list

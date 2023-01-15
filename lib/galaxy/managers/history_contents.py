@@ -2,6 +2,7 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
+import json
 import logging
 from typing import (
     Any,
@@ -543,7 +544,7 @@ class HistoryContentsFilters(
 
             # Make new query_filters with updated list of related hids for given hid
             new_q.append("related-eq")
-            new_qv.append(str(related))
+            new_qv.append(json.dumps(related))
             query_filters_with_relations = ValueFilterQueryParams(
                 q=new_q,
                 qv=new_qv,
@@ -565,9 +566,7 @@ class HistoryContentsFilters(
                 raise_filter_err(attr, op, val, "bad op in filter")
 
             if attr == "related" and op == "eq":
-                if isinstance(val, str):
-                    val = val.strip("][").split(", ")
-                return sql.column("hid").in_(val)
+                return sql.column("hid").in_(json.loads(val))
 
             if attr == "type_id":
                 if op == "eq":
