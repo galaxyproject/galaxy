@@ -40,8 +40,14 @@ def setup_connected_dataset(sa_session: galaxy_scoped_session):
     sa_session.add_all([center_hda, input_hda, input_hdca, output_hdca, input_job, output_job])
     sa_session.flush()
     expected_graph = {
-        "inputs": [{"src": "HistoryDatasetAssociation", "id": input_hda.id}, {"src": "HistoryDatasetCollectionAssociation", "id": input_hdca.id}],
-        "outputs": [{"src": "HistoryDatasetAssociation", "id": output_hda.id}, {"src": "HistoryDatasetCollectionAssociation", "id": output_hdca.id}],
+        "inputs": [
+            {"src": "HistoryDatasetAssociation", "id": input_hda.id},
+            {"src": "HistoryDatasetCollectionAssociation", "id": input_hdca.id},
+        ],
+        "outputs": [
+            {"src": "HistoryDatasetAssociation", "id": output_hda.id},
+            {"src": "HistoryDatasetCollectionAssociation", "id": output_hdca.id},
+        ],
     }
     return center_hda, expected_graph
 
@@ -68,9 +74,12 @@ def setup_connected_dataset_collection(sa_session: galaxy_scoped_session):
         "inputs": [
             {"src": "HistoryDatasetAssociation", "id": input_hda1.id},
             {"src": "HistoryDatasetAssociation", "id": input_hda2.id},
-            {"src": "HistoryDatasetCollectionAssociation", "id": input_hdca.id}
+            {"src": "HistoryDatasetCollectionAssociation", "id": input_hdca.id},
         ],
-        "outputs": [{"src": "HistoryDatasetAssociation", "id": output_hda.id}, {"src": "HistoryDatasetCollectionAssociation", "id": output_hdca.id}],
+        "outputs": [
+            {"src": "HistoryDatasetAssociation", "id": output_hda.id},
+            {"src": "HistoryDatasetCollectionAssociation", "id": output_hdca.id},
+        ],
     }
     return center_hdca, expected_graph
 
@@ -111,4 +120,7 @@ def test_graph_manager_hda(job_connections_manager: JobConnectionsManager):
 
 def test_graph_manager_hdca(job_connections_manager: JobConnectionsManager):
     center_hdca, expected_graph = setup_connected_dataset_collection(job_connections_manager.sa_session)
-    assert job_connections_manager.get_connections_graph(center_hdca.id, "HistoryDatasetCollectionAssociation") == expected_graph
+    assert (
+        job_connections_manager.get_connections_graph(center_hdca.id, "HistoryDatasetCollectionAssociation")
+        == expected_graph
+    )
