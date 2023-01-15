@@ -936,7 +936,7 @@ mapping:
 
       mulled_resolution_cache_type:
         type: str
-        default: file
+        default: ext:database
         required: false
         desc: |
           Mulled resolution caching. Mulled resolution uses external APIs of quay.io, these
@@ -964,6 +964,25 @@ mapping:
         required: false
         desc: |
           Seconds until the beaker cache is considered old and a new value is created.
+
+      mulled_resolution_cache_url:
+        type: str
+        required: false
+        desc: |
+          Url to database used by beaker for caching mulled resolution requests.
+
+      mulled_resolution_cache_table_name:
+        type: str
+        default: mulled_resolution_beaker_cache
+        required: false
+        desc: |
+          Database table used by beaker for caching mulled resolution requests.
+
+      mulled_resolution_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          Schema of database table used by beaker for caching mulled resolution requests.
 
       object_store_config_file:
         type: str
