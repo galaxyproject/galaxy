@@ -35,7 +35,7 @@ from galaxy.schema.schema import (
     AsyncTaskResultSummary,
     BcoGenerationParametersMixin,
     InvocationIndexQueryPayload,
-    InvocationMessage,
+    InvocationMessageResponseModel,
     StoreExportPayload,
     WriteStoreToPayload,
 )
@@ -200,8 +200,11 @@ class InvocationsService(ServiceBase):
         step_details = params.step_details
         legacy_job_state = params.legacy_job_state
         as_dict = invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state)
-        as_dict["messages"] = [InvocationMessage.parse_obj(message).__root__.dict() for message in invocation.messages]
-        return self.security.encode_all_ids(as_dict, recursive=True)
+        as_dict = self.security.encode_all_ids(as_dict, recursive=True)
+        as_dict["messages"] = [
+            InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
+        ]
+        return as_dict
 
     def serialize_workflow_invocations(
         self,

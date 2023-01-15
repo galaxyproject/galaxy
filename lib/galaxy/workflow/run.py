@@ -19,6 +19,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.schema.schema import (
+    CancelReason,
     FailureReason,
     InvocationCancellationHistoryDeleted,
     InvocationFailureCollectionFailed,
@@ -200,7 +201,7 @@ class WorkflowInvoker:
         if workflow_invocation.history.deleted:
             raise modules.CancelWorkflowEvaluation(
                 why=InvocationCancellationHistoryDeleted(
-                    reason=FailureReason.history_deleted, history_id=workflow_invocation.history_id
+                    reason=CancelReason.history_deleted, history_id=workflow_invocation.history_id
                 )
             )
 

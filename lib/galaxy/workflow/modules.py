@@ -43,6 +43,8 @@ from galaxy.schema.schema import (
     FailureReason,
     InvocationCancellationReviewFailed,
     InvocationFailureDatasetFailed,
+    InvocationFailureExpressionEvaluationFailed,
+    InvocationFailureWhenNotBoolean,
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
@@ -202,15 +204,38 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
             step_state[key] = to_cwl(value)
 
     if when_expression is not None:
-        as_cwl_value = do_eval(
-            when_expression,
-            step_state,
-            [{"class": "InlineJavascriptRequirement"}],
-            None,
-            None,
-            {},
-        )
-        return from_cwl(as_cwl_value)
+        try:
+            as_cwl_value = do_eval(
+                when_expression,
+                step_state,
+                [{"class": "InlineJavascriptRequirement"}],
+                None,
+                None,
+                {},
+            )
+        except Exception:
+            # Exception contains script and traceback, which could be helpful for debugging workflows,
+            # but both could conceivably contain secrets.
+            # CWL has a secret hint that should cause values to be sanitized,
+            # but Galaxy does not, so we can't really display anything here at this point.
+            # In any case I believe the CWL secret hint can be bypassed if the value is passed on
+            # to another step input that doesn't have the secret set.
+            # Complicated stuff, ignore for now.
+            raise FailWorkflowEvaluation(
+                InvocationFailureExpressionEvaluationFailed(
+                    reason=FailureReason.expression_evaluation_failed, workflow_step_id=step.id
+                )
+            )
+        when_value = from_cwl(as_cwl_value)
+        if not isinstance(when_value, bool):
+            raise FailWorkflowEvaluation(
+                InvocationFailureWhenNotBoolean(
+                    reason=FailureReason.when_not_boolean,
+                    workflow_step_id=step.id,
+                    details=f"Type is: {when_value.__class__.__name__}",
+                )
+            )
+        return when_value
 
 
 class WorkflowModule:
@@ -2184,7 +2209,6 @@ class ToolModule(WorkflowModule):
                     when_value = evaluate_value_from_expressions(
                         progress, step, execution_state=execution_state, extra_step_state=extra_step_state
                     )
-                    assert isinstance(when_value, bool)
             if when_value is not None:
                 # Track this more formally ?
                 execution_state.inputs["__when_value__"] = when_value

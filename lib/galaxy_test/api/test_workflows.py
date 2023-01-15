@@ -1963,6 +1963,78 @@ should_run:
                 if step["workflow_step_label"] == "cat1":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
+    def test_run_workflow_invalid_when_expression(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  some_file:
+    type: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: some_file
+      should_run: should_run
+    when: $(:syntaxError:)
+""",
+                test_data="""
+some_file:
+  value: 1.bed
+  type: File
+should_run:
+  value: false
+  type: raw
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "expression_evaluation_failed"
+
+    def test_run_workflow_fails_when_expression_not_boolean(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  some_file:
+    type: data
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: some_file
+      should_run: should_run
+    when: $("false")
+""",
+                test_data="""
+some_file:
+  value: 1.bed
+  type: File
+should_run:
+  value: false
+  type: raw
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=False,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            assert invocation_details["state"] == "failed"
+            assert len(invocation_details["messages"]) == 1
+            message = invocation_details["messages"][0]
+            assert message["reason"] == "when_not_boolean"
+            assert message["details"] == "Type is: str"
+            assert message["workflow_step_id"] == 2
+
     def test_run_workflow_subworkflow_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
@@ -3529,12 +3601,12 @@ input1:
 
             # Ensure the workflow eventually becomes cancelled.
             invocation_cancelled = self._wait_for_invocation_state(uploaded_workflow_id, invocation_id, "cancelled")
-            assert invocation_cancelled, "Workflow state is not cancelled..."
             workflow_details = self._invocation_details(uploaded_workflow_id, invocation_id)
             assert len(workflow_details["messages"]) == 1
             message = workflow_details["messages"][0]
             assert "workflow_step_id" in message
             assert message["reason"] == "cancelled_on_review"
+            assert invocation_cancelled, "Workflow state is not cancelled..."
 
     @skip_without_tool("head")
     def test_workflow_map_reduce_pause(self):
@@ -3619,11 +3691,11 @@ steps:
         )
         invocation = self.workflow_populator.get_invocation(summary.invocation_id)
         assert invocation["state"] == "failed"
-        assert len(invocation["message"]) == 1
-        message = invocation["message"]
+        assert len(invocation["messages"]) == 1
+        message = invocation["messages"][0]
         assert message["reason"] == "output_not_found"
-        assert "workflow_step_id" in message
-        assert "dependent_workflow_step_id" in message
+        assert message["workflow_step_id"] == 1
+        assert message["dependent_workflow_step_id"] == 0
 
     def test_workflow_warning_workflow_output_not_found(self, history_id):
         summary = self._run_workflow(
