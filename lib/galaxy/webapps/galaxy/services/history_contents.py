@@ -51,7 +51,6 @@ from galaxy.managers.history_contents import (
 from galaxy.managers.jobs import (
     fetch_job_states,
     summarize_jobs_to_dict,
-    JobConnectionsManager,
 )
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.model import (
@@ -941,18 +940,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         """
         history = self._get_history(trans, history_id)
 
-        # TODO: Would be better if the JobConnections Manager could be used in
-        # history_contents manager instead, can't now because of circular import there
-
-        # Related filter is included, get list of related item hids from jobs manager
-        if filter_query_params.q and filter_query_params.qv and 'related-eq' in filter_query_params.q:
-            related_qv_index = filter_query_params.q.index('related-eq')
-            related_hid = filter_query_params.qv[related_qv_index]
-            job_connections_manager = JobConnectionsManager(trans.sa_session)
-            related = job_connections_manager.get_related_hids(trans, history_id, related_hid)
-            filter_query_params.qv[related_qv_index] = related
-
-        filters = self.history_contents_filters.parse_query_filters(filter_query_params)
+        filters = self.history_contents_filters.parse_query_filters_with_relations(filter_query_params, history_id)
 
         stats_requested = accept == HistoryContentsWithStatsResult.__accept_type__
         if stats_requested and self.history_contents_filters.contains_non_orm_filter(filters):

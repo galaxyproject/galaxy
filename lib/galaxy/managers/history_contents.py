@@ -32,6 +32,7 @@ from galaxy import (
     exceptions as glx_exceptions,
     model,
 )
+from galaxy.schema import ValueFilterQueryParams
 from galaxy.managers import (
     annotatable,
     base,
@@ -41,6 +42,7 @@ from galaxy.managers import (
     taggable,
     tools,
 )
+from galaxy.managers.job_connections import JobConnectionsManager
 from galaxy.structured_app import MinimalManagerApp
 from .base import (
     parse_bool,
@@ -525,6 +527,30 @@ class HistoryContentsFilters(
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
 
+    def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
+        """Parse query filters but consider case where related filter is included."""
+        if query_filters.q and query_filters.qv and 'related-eq' in query_filters.q:
+            qv_index = query_filters.q.index('related-eq')
+            qv_hid = query_filters.qv[qv_index]
+
+            # Make new q and qv excluding related filter
+            new_q = [x for i, x in enumerate(query_filters.q) if i != qv_index]
+            new_qv = [x for i, x in enumerate(query_filters.qv) if i != qv_index]
+
+            # Get list of related item hids from job_connections manager
+            job_connections_manager = JobConnectionsManager(self.app.model.session)
+            related = job_connections_manager.get_related_hids(history_id, qv_hid)
+
+            # Make new query_filters with updated list of related hids for given hid
+            new_q.append("related-eq")
+            new_qv.append(str(related))
+            query_filters_with_relations = ValueFilterQueryParams(
+                q=new_q,
+                qv=new_qv,
+            )
+            return super().parse_query_filters(query_filters_with_relations)
+        return super().parse_query_filters(query_filters)
+
     def _parse_orm_filter(self, attr, op, val):
 
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
@@ -539,6 +565,8 @@ class HistoryContentsFilters(
                 raise_filter_err(attr, op, val, "bad op in filter")
 
             if attr == "related" and op == "eq":
+                if isinstance(val, str):
+                    val = val.strip('][').split(', ')
                 return sql.column("hid").in_(val)
 
             if attr == "type_id":
