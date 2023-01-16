@@ -557,7 +557,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 if dataset.src == DatasetSourceType.hda:
                     self.hda_manager.error_if_uploading(dataset_instance)
                 if payload.purge:
-                    manager.purge(dataset_instance, flush=False)
+                    manager.purge(dataset_instance, flush=True)
                 else:
                     manager.delete(dataset_instance, flush=False)
                 success_count += 1
