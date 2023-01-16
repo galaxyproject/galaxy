@@ -19,44 +19,44 @@ const defaultValidAliases: Array<[string, string]> = [
 ];
 
 /** Converts user input to backend compatible date
- * @param {string} value
- * @returns {Number} seconds since epoch
+ * @param value
+ * @returns seconds since epoch
  * */
 export function toDate(value: string): number {
     return Date.parse(value) / 1000;
 }
 
 /** Converts user input for case-insensitive filtering
- * @param {string} value
- * @returns {string} Lowercase value
+ * @param value
+ * @returns Lowercase value
  * */
 export function toLower<T>(value: T): string {
     return String(value).toLowerCase();
 }
 
 /** Converts user input to boolean
- * @param {string} value
- * @returns {boolean} true if value is 'true', false if value is 'false'
+ * @param value
+ * @returns true if value is 'true', false if value is 'false'
  * */
 export function toBool<T>(value: T): boolean {
     return toLower(value) === "true";
 }
 
 /** Converts user input to lower case and strips quotation marks
- * @param {string} value
- * @returns {string} Lowercase value without quotation marks
+ * @param value
+ * @returns Lowercase value without quotation marks
  * */
 export function toLowerNoQuotes<T>(value: T): string {
-    return toLower(value).split("'").join("");
+    return toLower(value).replace(/'/g, "");
 }
 
 /** Converts name tags starting with '#' to 'name:'
- * @param {string} value
- * @returns {string} Lowercase value with 'name:' replaced with '#'
+ * @param value
+ * @returns Lowercase value with 'name:' replaced with '#'
  * */
 export function expandNameTag(value: string | object): string {
-    if (value && typeof value === "string" && value.startsWith("#")) {
-        value = value.replace("#", "name:");
+    if (value && typeof value === "string") {
+        value = value.replace(/^#/, "name:");
     }
     return toLower(value);
 }
@@ -70,9 +70,9 @@ type HandlerReturn<T> = {
 
 /**
  * Checks if a query value is equal to the item value
- * @param {string} attribute of the content item
- * @param {string} [query] parameter if the attribute does not match the server query key
- * @param {function} [converter] if item attribute value has to be transformed e.g. to a date.
+ * @param attribute of the content item
+ * @param query parameter if the attribute does not match the server query key
+ * @param converter if item attribute value has to be transformed e.g. to a date.
  */
 export function equals<T>(attribute: string, query?: string, converter?: Converter<T>): HandlerReturn<T> {
     return {
@@ -91,9 +91,9 @@ export function equals<T>(attribute: string, query?: string, converter?: Convert
 
 /**
  * Checks if a query value is part of the item value
- * @param {string} attribute of the content item
- * @param {string} [query] parameter if the attribute does not match the server query key
- * @param {function} [converter] if item attribute value has to be transformed e.g. to a date.
+ * @param attribute of the content item
+ * @param query parameter if the attribute does not match the server query key
+ * @param converter if item attribute value has to be transformed e.g. to a date.
  */
 export function contains<T>(attribute: string, query?: string, converter?: Converter<T>): HandlerReturn<T> {
     return {
@@ -112,9 +112,9 @@ export function contains<T>(attribute: string, query?: string, converter?: Conve
 
 /**
  * Checks if a value is greater or smaller than the item value
- * @param {string} attribute of the content item
- * @param {string} variant specifying the comparison operation e.g. le(<=) and gt(>)
- * @param {function} [converter] if item attribute value has to be transformed e.g. to a date.
+ * @param attribute of the content item
+ * @param variant specifying the comparison operation e.g. le(<=) and gt(>)
+ * @param converter if item attribute value has to be transformed e.g. to a date.
  */
 export function compare<T>(attribute: string, variant: string, converter?: Converter<T>): HandlerReturn<T> {
     return {
@@ -162,7 +162,7 @@ export default class Filtering<T> {
     }
 
     /** Returns normalize defaults by adding the operator to the key identifier
-     * @returns {Object} Dictionary with query key and values for default filters
+     * @returns Dictionary with query key and values for default filters
      * */
     getDefaults(): Record<string, boolean> {
         const normalized: Record<string, boolean> = {};
@@ -173,8 +173,8 @@ export default class Filtering<T> {
     }
 
     /** Returns true if default filter values are not changed
-     * @param {Object} filterSettings Object containing filter settings
-     * @returns {Boolean} True if default filter values are not changed
+     * @param filterSettings Object containing filter settings
+     * @returns true if default filter values are not changed
      * **/
     containsDefaults(filterSettings: Record<string, string | boolean>): boolean {
         const normalized = this.getDefaults();
@@ -191,8 +191,8 @@ export default class Filtering<T> {
     }
 
     /** Build a text filter from filter settings
-     * @param {Object} filterSettings Object containing filter settings
-     * @returns {String} Parsed filter text string
+     * @param filterSettings Object containing filter settings
+     * @returns Parsed filter text string
      * */
     getFilterText(filterSettings: Record<string, string | boolean>): string {
         const normalized = this.getDefaults();
@@ -215,8 +215,8 @@ export default class Filtering<T> {
     }
 
     /** Parses single text input into a dict of field->value pairs.
-     * @param {string} filterText Raw filter text string
-     * @returns {object} Filters as dict of field->value pairs
+     * @param filterText Raw filter text string
+     * @returns Filters as dict of field->value pairs
      * */
     getFilters(filterText: string): [string, T][] {
         const pairSplitRE = /[^\s']+(?:'[^']*'[^\s']*)*|(?:'[^']*'[^\s']*)+/g;
@@ -272,10 +272,10 @@ export default class Filtering<T> {
      * e.g.: Unlike getFilters or getQueryDict, this maintains "hid>":"3" instead
      *       of changing it to "hid-gt":"3"
      * Only used to sync filterSettings (in HistoryFilters)
-     * @param {Object} filters Parsed filterText from getFilters()
-     * @returns {Object} filterSettings
+     * @param filters Parsed filterText from getFilters()
+     * @returns filterSettings
      */
-    toAlias(filters: [string, T][]): object {
+    toAlias(filters: [string, T][]) {
         const result: Record<string, T> = {};
         for (const [key, value] of filters) {
             let hasAlias = false;
@@ -295,10 +295,10 @@ export default class Filtering<T> {
     }
 
     /** Returns a dictionary with query key and values.
-     * @param {String} filterText Raw filter text string
-     * @returns {Object} Dictionary with query key and values
+     * @param filterText Raw filter text string
+     * @returns Dictionary with query key and values
      */
-    getQueryDict(filterText: string): object {
+    getQueryDict(filterText: string) {
         const queryDict: Record<string, T> = {};
         const filters = this.getFilters(filterText);
         for (const [key, value] of filters) {
@@ -310,8 +310,8 @@ export default class Filtering<T> {
     }
 
     /** Returns query string from filter text.
-     * @param {String} filterText Raw filter text string to be parsed
-     * @returns {String} Parsed query string
+     * @param filterText Raw filter text string to be parsed
+     * @returns Parsed query string
      * */
     getQueryString(filterText: string): string {
         const filterDict = this.getQueryDict(filterText);
@@ -321,12 +321,12 @@ export default class Filtering<T> {
     }
 
     /** Check the value of a particular filter.
-     * @param {String} filterText Raw filter text string
-     * @param {String} filterName Filter key to check
-     * @param {String | Object | Boolean} filterValue The filter value to check
-     * @returns {Boolean} True if the filter is set to the given value
+     * @param filterText Raw filter text string
+     * @param filterName Filter key to check
+     * @param filterValue The filter value to check
+     * @returns True if the filter is set to the given value
      * */
-    checkFilter<T>(filterText: string, filterName: string, filterValue: T): boolean {
+    checkFilter(filterText: string, filterName: string, filterValue: string | object | boolean): boolean {
         const re = new RegExp(`${filterName}:(\\S+)`);
         const reMatch = re.exec(filterText);
         const testValue = reMatch ? reMatch[1] : this.defaultFilters[filterName];
@@ -334,9 +334,9 @@ export default class Filtering<T> {
     }
 
     /** Test if an item passes all filters.
-     * @param {Object} filters Parsed in key-value pairs from getFilters()
-     * @param {Object} item Item to test against the filters
-     * @returns {Boolean} True if the item passes all filters
+     * @param filters Parsed in key-value pairs from getFilters()
+     * @param item Item to test against the filters
+     * @returns True if the item passes all filters
      * */
     testFilters(filters: [string, T][], item: Record<string, T>): boolean {
         for (const [key, filterValue] of filters) {
