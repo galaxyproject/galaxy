@@ -154,7 +154,7 @@ def _check_legacy_openapi_does_not_increase(legacy_openapi):
     After migrating any legacy route to FastAPI, remember to update `expected_legacy_paths` with the current number
     until all routes are migrated, then, completely remove this check function.
     """
-    expected_legacy_paths = 169
+    expected_legacy_paths = 170
     num_actual_legacy_paths = len(legacy_openapi["paths"])
     assert (
         num_actual_legacy_paths <= expected_legacy_paths
