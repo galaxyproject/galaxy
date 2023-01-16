@@ -19,3 +19,22 @@
         list-style-type: none;
     }
 }
+
+.masthead-toolshed {
+    background-color: $brand-dark;
+    height: $masthead-height;
+    .navbar-brand {
+        position: absolute;
+        left: 0.5rem;
+        .navbar-brand-image {
+            max-height: 2rem;
+        }
+    }
+    .navbar-brand-title {
+        color: $brand-light;
+        font-size: 1.1rem;
+    }
+    .nav-link {
+        color: $brand-light !important;
+    }
+}
