@@ -291,9 +291,6 @@ export default {
                 return null;
             }
         },
-        getItemKey(item) {
-            return `${item.id}-${item.history_content_type}`;
-        },
         hasMatches(items) {
             return !!items && items.length > 0;
         },
