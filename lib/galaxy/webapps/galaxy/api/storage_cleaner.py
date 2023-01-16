@@ -38,7 +38,7 @@ class FastAPIStorageCleaner:
     service: StorageCleanerService = depends(StorageCleanerService)
 
     @router.get(
-        "/api/storage/discarded/histories/summary",
+        "/api/storage/histories/discarded/summary",
         summary="Returns information with the total storage space taken by discarded histories associated with the given user.",
     )
     def discarded_histories_summary(
@@ -48,7 +48,7 @@ class FastAPIStorageCleaner:
         return self.service.get_discarded_histories_summary(trans)
 
     @router.get(
-        "/api/storage/discarded/histories",
+        "/api/storage/histories/discarded",
         summary="Returns all discarded histories associated with the given user.",
     )
     def discarded_histories(
