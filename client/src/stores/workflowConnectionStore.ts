@@ -41,6 +41,20 @@ interface TerminalToInputTerminals {
     [index: string]: InputTerminal[];
 }
 
+/**
+ * Pushes a value to an array in an object, if the array exists. Else creates a new array containing value.
+ * @param object Object which contains array
+ * @param key Key which array is in
+ * @param value Value to push
+ */
+function pushOrSet<T>(object: { [key: string | number]: Array<T> }, key: string | number, value: T) {
+    if (key in object) {
+        object[key]!.push(value);
+    } else {
+        object[key] = [value];
+    }
+}
+
 export const useConnectionStore = defineStore("workflowConnectionStore", {
     state: (): State => ({
         connections: [] as Connection[],
@@ -51,9 +65,7 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
             state.connections.map((connection) => {
                 const terminals = getTerminals(connection);
                 const inputTerminalId = getTerminalId(terminals.input);
-                inputTerminalId in inputTerminalToOutputTerminals
-                    ? inputTerminalToOutputTerminals[inputTerminalId].push(terminals.output)
-                    : (inputTerminalToOutputTerminals[inputTerminalId] = [terminals.output]);
+                pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output);
             });
             return (terminalId: string): OutputTerminal[] => {
                 return inputTerminalToOutputTerminals[terminalId] || [];
@@ -64,9 +76,7 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
             state.connections.map((connection) => {
                 const terminals = getTerminals(connection);
                 const outputTerminalId = getTerminalId(terminals.output);
-                outputTerminalId in outputTerminalToInputTerminals
-                    ? outputTerminalToInputTerminals[outputTerminalId].push(terminals.input)
-                    : (outputTerminalToInputTerminals[outputTerminalId] = [terminals.input]);
+                pushOrSet(outputTerminalToInputTerminals, outputTerminalId, terminals.input);
             });
             return (terminalId: string): BaseTerminal[] => {
                 return outputTerminalToInputTerminals[terminalId] || [];
@@ -77,17 +87,10 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
             state.connections.map((connection) => {
                 const terminals = getTerminals(connection);
                 const outputTerminalId = getTerminalId(terminals.output);
-                if (outputTerminalId in terminalToConnection) {
-                    terminalToConnection[outputTerminalId].push(connection);
-                } else {
-                    terminalToConnection[outputTerminalId] = [connection];
-                }
+                pushOrSet(terminalToConnection, outputTerminalId, connection);
+
                 const inputTerminalId = getTerminalId(terminals.input);
-                if (inputTerminalId in terminalToConnection) {
-                    terminalToConnection[inputTerminalId].push(connection);
-                } else {
-                    terminalToConnection[inputTerminalId] = [connection];
-                }
+                pushOrSet(terminalToConnection, inputTerminalId, connection);
             });
             return (terminalId: string): Connection[] => {
                 return terminalToConnection[terminalId] || [];
@@ -96,12 +99,8 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
         getConnectionsForStep(state: State) {
             const stepToConnections: { [index: number]: Connection[] } = {};
             state.connections.map((connection) => {
-                connection.input.stepId in stepToConnections
-                    ? stepToConnections[connection.input.stepId].push(connection)
-                    : (stepToConnections[connection.input.stepId] = [connection]);
-                connection.output.stepId in stepToConnections
-                    ? stepToConnections[connection.output.stepId].push(connection)
-                    : (stepToConnections[connection.output.stepId] = [connection]);
+                pushOrSet(stepToConnections, connection.input.stepId, connection);
+                pushOrSet(stepToConnections, connection.output.stepId, connection);
             });
             return (stepId: number): Connection[] => stepToConnections[stepId] || [];
         },
