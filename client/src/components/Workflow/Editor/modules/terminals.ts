@@ -18,6 +18,7 @@ import type {
     TerminalSource,
 } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { assertDefined } from "@/utils/assertions";
 
 class ConnectionAcceptable {
     reason: string | null;
@@ -296,25 +297,33 @@ class BaseInputTerminal extends Terminal {
         return this.connections.map((connection) => {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
             let terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name);
-            if (!terminalSource) {
-                /*
-                / This can't happen, I think, because we'd drop the connection.
-                / We (probably) want to eventually display invalid connections,
-                / so maybe generate a NullTerminal when there is no terminalSource ?
-                */
-                throw `Could not find output ${connection.output.name} on step ${connection.output.stepId}`;
-            }
+
+            /*
+             This can't happen, I think, because we'd drop the connection.
+             We (probably) want to eventually display invalid connections,
+             so maybe generate a NullTerminal when there is no terminalSource ?
+            */
+            assertDefined(
+                terminalSource,
+                `Could not find output ${connection.output.name} on step ${connection.output.stepId}`
+            );
+
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
+
             if (
                 "extensions" in terminalSource &&
                 outputStep.post_job_actions &&
                 postJobActionKey in outputStep.post_job_actions
             ) {
-                terminalSource = {
+                const extensionType = outputStep.post_job_actions![postJobActionKey]!.action_arguments.newtype;
+                assertDefined(extensionType);
+
+                (terminalSource as DataOutput | CollectionOutput) = {
                     ...terminalSource,
-                    extensions: [outputStep.post_job_actions[postJobActionKey].action_arguments.newtype],
+                    extensions: [extensionType],
                 };
             }
+
             return terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
         });
     }
@@ -453,9 +462,11 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         const canMatch = collectionTypes.some((collectionType) => collectionType.canMatch(otherCollectionType));
         if (!canMatch) {
             for (const collectionTypeIndex in collectionTypes) {
-                const collectionType = collectionTypes[collectionTypeIndex];
+                const collectionType = collectionTypes[collectionTypeIndex]!;
+
                 if (otherCollectionType.canMapOver(collectionType)) {
                     const effectiveMapOver = otherCollectionType.effectiveMapOver(collectionType);
+
                     if (effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION) {
                         return effectiveMapOver;
                     }
@@ -606,17 +617,20 @@ export function producesAcceptableDatatype(
     otherDatatypes: string[]
 ) {
     for (const t in inputDatatypes) {
-        const thisDatatype = inputDatatypes[t];
-        if (thisDatatype == "input") {
+        const thisDatatype = inputDatatypes[t]!;
+
+        if (thisDatatype === "input") {
             return new ConnectionAcceptable(true, null);
         }
+
         // FIXME: No idea what to do about case when datatype is 'input'
         const validMatch = otherDatatypes.some(
             (otherDatatype) =>
-                otherDatatype == "input" ||
-                otherDatatype == "_sniff_" ||
+                otherDatatype === "input" ||
+                otherDatatype === "_sniff_" ||
                 datatypesMapper.isSubType(otherDatatype, thisDatatype)
         );
+
         if (validMatch) {
             return new ConnectionAcceptable(true, null);
         }
