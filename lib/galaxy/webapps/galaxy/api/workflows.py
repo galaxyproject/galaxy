@@ -48,10 +48,10 @@ from galaxy.managers.workflows import (
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.invocation import InvocationMessageResponseModel
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
-    InvocationMessageResponseModel,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,

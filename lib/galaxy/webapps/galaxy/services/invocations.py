@@ -30,12 +30,12 @@ from galaxy.model.store import (
     get_export_store_factory,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.invocation import InvocationMessageResponseModel
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
     BcoGenerationParametersMixin,
     InvocationIndexQueryPayload,
-    InvocationMessageResponseModel,
     StoreExportPayload,
     WriteStoreToPayload,
 )

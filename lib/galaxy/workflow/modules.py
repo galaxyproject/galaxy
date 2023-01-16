@@ -98,7 +98,7 @@ from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 
 if TYPE_CHECKING:
-    from galaxy.schema.schema import InvocationMessageUnion
+    from galaxy.schema.invocation import InvocationMessageUnion
 
 log = logging.getLogger(__name__)
 

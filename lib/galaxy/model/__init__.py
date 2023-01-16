@@ -153,7 +153,7 @@ from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
-    from galaxy.schema.schema import InvocationMessageUnion
+    from galaxy.schema.invocation import InvocationMessageUnion
 
 log = logging.getLogger(__name__)
 
