@@ -361,11 +361,11 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         return True
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False):
-        q = trans.sa_session.query(self.app.model.WorkflowInvocation)
+    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> model.WorkflowInvocation:
+        q = trans.sa_session.query(model.WorkflowInvocation)
         if eager:
             q = q.options(
-                subqueryload(self.app.model.WorkflowInvocation.steps)
+                subqueryload(model.WorkflowInvocation.steps)
                 .joinedload("implicit_collection_jobs")
                 .joinedload("jobs")
                 .joinedload("job")

@@ -299,7 +299,7 @@ class WorkflowInvoker:
                         reason=FailureReason.job_failed,
                         job_id=job.id,
                         workflow_step_id=step_id,
-                        dependent_workflow_step_id=step_invocation.id,
+                        dependent_workflow_step_id=output_id,
                     )
                 )
 
