@@ -221,12 +221,11 @@ def is_aborted(session: galaxy_scoped_session, job_id: int):
     ).scalar()
 
 
-def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, *args, **kwargs) -> Any:
+def abort_when_job_stops(function: Callable, session: galaxy_scoped_session, job_id: int, **kwargs) -> Any:
     if not is_aborted(session, job_id):
         future = celery_app.fork_pool.submit(
             function,
             timeout=None,
-            *args,
             **kwargs,
         )
         while True:

@@ -131,14 +131,14 @@ def _expand_tokens_for_el(element, tokens):
     value = element.text
     if value:
         new_value = _expand_tokens_str(element.text, tokens)
-        if not (new_value is value):
+        if new_value is not value:
             element.text = new_value
     for key, value in element.attrib.items():
         new_value = _expand_tokens_str(value, tokens)
-        if not (new_value is value):
+        if new_value is not value:
             element.attrib[key] = new_value
         new_key = _expand_tokens_str(key, tokens)
-        if not (new_key is key):
+        if new_key is not key:
             element.attrib[new_key] = element.attrib[key]
             del element.attrib[key]
     # recursively expand in childrens

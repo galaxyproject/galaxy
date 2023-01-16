@@ -113,7 +113,7 @@ class RegexpFilter(Filter):
             pass
         filter_pattern = re.compile(filter_value)
         for fields in options:
-            if self.keep == (not filter_pattern.match(fields[self.column]) is None):
+            if self.keep == (filter_pattern.match(fields[self.column]) is not None):
                 rval.append(fields)
         return rval
 

@@ -167,7 +167,7 @@ class LegacyToolProvidedMetadata(BaseToolProvidedMetadata):
         return []
 
     def rewrite(self):
-        with open(self.meta_file, "wt") as job_metadata_fh:
+        with open(self.meta_file, "w") as job_metadata_fh:
             for meta in self.tool_provided_job_metadata:
                 job_metadata_fh.write(f"{json.dumps(meta)}\n")
 
@@ -230,5 +230,5 @@ class ToolProvidedMetadata(BaseToolProvidedMetadata):
         return self.tool_provided_job_metadata.get("__unnamed_outputs", [])
 
     def rewrite(self):
-        with open(self.meta_file, "wt") as job_metadata_fh:
+        with open(self.meta_file, "w") as job_metadata_fh:
             json.dump(self.tool_provided_job_metadata, job_metadata_fh)
