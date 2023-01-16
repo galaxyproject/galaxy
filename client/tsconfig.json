@@ -13,7 +13,8 @@
 
         "allowJs": true,
         "checkJs": false,
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "noUncheckedIndexedAccess": true
     },
     "vueCompilerOptions": {
         "target": 2.7
