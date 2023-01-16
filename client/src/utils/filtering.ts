@@ -13,7 +13,7 @@ type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
 
 /** Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
-const defaultValidAliases = [
+const defaultValidAliases: Array<[string, string]> = [
     [">", "_gt"],
     ["<", "_lt"],
 ];
@@ -144,14 +144,18 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
 
 export default class Filtering<T> {
     validFilters: Record<string, HandlerReturn<T>>;
-    validAliases: string[][];
+    validAliases: Array<[string, string]>;
     useDefaultFilters: boolean;
     defaultFilters: Record<string, boolean> = {
         deleted: false,
         visible: true,
     };
 
-    constructor(validFilters: Record<string, HandlerReturn<T>>, useDefaultFilters = true, validAliases?: string[][]) {
+    constructor(
+        validFilters: Record<string, HandlerReturn<T>>,
+        useDefaultFilters = true,
+        validAliases?: Array<[string, string]>
+    ) {
         this.validFilters = validFilters;
         this.useDefaultFilters = useDefaultFilters;
         this.validAliases = validAliases || defaultValidAliases;
@@ -224,9 +228,9 @@ export default class Filtering<T> {
                 const elgRE = /(\S+)([:><])(.+)/g;
                 const elgMatch = elgRE.exec(pair);
                 if (elgMatch) {
-                    let field = elgMatch[1];
-                    const elg = elgMatch[2];
-                    const value = elgMatch[3];
+                    let field = elgMatch[1]!;
+                    const elg = elgMatch[2]!;
+                    const value = elgMatch[3]!;
                     // replace alias for less and greater symbol
                     for (const [alias, substitute] of this.validAliases) {
                         if (elg === alias) {
@@ -298,8 +302,8 @@ export default class Filtering<T> {
         const queryDict: Record<string, T> = {};
         const filters = this.getFilters(filterText);
         for (const [key, value] of filters) {
-            const query = this.validFilters[key].query;
-            const converter = this.validFilters[key].converter;
+            const query = this.validFilters[key]!.query;
+            const converter = this.validFilters[key]!.converter;
             queryDict[query] = converter ? converter(value) : value;
         }
         return queryDict;
@@ -336,10 +340,13 @@ export default class Filtering<T> {
      * */
     testFilters(filters: [string, T][], item: Record<string, T>): boolean {
         for (const [key, filterValue] of filters) {
-            const filterAttribute = this.validFilters[key].attribute;
-            const filterHandler = this.validFilters[key].handler;
+            if (!(key in this.validFilters)) {
+                throw `Invalid filter ${key}`;
+            }
+            const filterAttribute = this.validFilters[key]!.attribute;
+            const filterHandler = this.validFilters[key]!.handler;
             const itemValue = item[filterAttribute];
-            if (!filterHandler(itemValue, filterValue)) {
+            if (!itemValue || !filterHandler(itemValue, filterValue)) {
                 return false;
             }
         }
