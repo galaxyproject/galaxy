@@ -3,6 +3,7 @@ import { defineStore } from "pinia";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { Connection } from "@/stores/workflowConnectionStore";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { assertDefined } from "@/utils/assertions";
 
 interface State {
     steps: { [index: string]: Step };
@@ -140,12 +141,8 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
     }),
     getters: {
         getStep(state: State) {
-            return (stepId: number): Step => {
-                if (stepId.toString() in state.steps) {
-                    return state.steps[stepId.toString()] as Step;
-                } else {
-                    throw `Failed to find step with id ${stepId} in Workflow Step Store`;
-                }
+            return (stepId: number): Step | undefined => {
+                return state.steps[stepId.toString()];
             };
         },
         getStepIndex(state: State) {
@@ -192,6 +189,10 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         addConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            assertDefined(
+                inputStep,
+                `Failed to add connection, because step with id ${connection.input.stepId} is undefined`
+            );
             const updatedStep = {
                 ...inputStep,
                 input_connections: {
@@ -203,6 +204,10 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         removeConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            assertDefined(
+                inputStep,
+                `Failed to remove connection, because step with id ${connection.input.stepId} is undefined`
+            );
             Vue.delete(inputStep.input_connections, connection.input.name);
             this.updateStep(inputStep);
         },

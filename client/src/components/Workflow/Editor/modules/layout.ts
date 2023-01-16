@@ -70,8 +70,8 @@ export async function autoLayout(steps: { [index: string]: Step }) {
         const position = stateStore.stepPosition[step.id];
         return {
             id: stepId,
-            height: position.height + 20,
-            width: position.width + 60,
+            height: (position?.height ?? 0) + 20,
+            width: (position?.width ?? 0) + 60,
             ports: inputs.concat(outputs),
         };
     });

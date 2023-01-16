@@ -207,11 +207,15 @@ class BaseInputTerminal extends Terminal {
         }
         Array.from(new Set(outputStepIds)).forEach((stepId) => {
             const step = this.stepStore.getStep(stepId);
-            // step must have an output, since it is or was connected to this step
-            const terminalSource = step.outputs[0];
-            if (terminalSource) {
-                const terminal = terminalFactory(step.id, terminalSource, this.datatypesMapper);
-                terminal.resetMappingIfNeeded();
+            if (step) {
+                // step must have an output, since it is or was connected to this step
+                const terminalSource = step.outputs[0];
+                if (terminalSource) {
+                    const terminal = terminalFactory(step.id, terminalSource, this.datatypesMapper);
+                    terminal.resetMappingIfNeeded();
+                }
+            } else {
+                console.error(`Invalid step. Could not fine step with id ${stepId} in store.`);
             }
         });
     }
@@ -246,9 +250,14 @@ class BaseInputTerminal extends Terminal {
     _collectionAttached() {
         const outputTerminals = this._getOutputTerminals();
         return outputTerminals.some((outputTerminal) => {
-            const output = this.stepStore
-                .getStep(outputTerminal.stepId)
-                .outputs.find((output) => output.name == outputTerminal.name);
+            const step = this.stepStore.getStep(outputTerminal.stepId);
+
+            if (!step) {
+                console.error(`Invalid step. Could not fine step with id ${outputTerminal.stepId} in store.`);
+                return false;
+            }
+
+            const output = step.outputs.find((output) => output.name == outputTerminal.name);
 
             if (
                 output &&
@@ -296,6 +305,8 @@ class BaseInputTerminal extends Terminal {
     getConnectedTerminals() {
         return this.connections.map((connection) => {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
+            assertDefined(outputStep, `No such step with id ${connection.output.stepId}`);
+
             let terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name);
 
             /*
@@ -545,10 +556,13 @@ class BaseOutputTerminal extends Terminal {
     getConnectedTerminals() {
         return this.connections.map((connection) => {
             const inputStep = this.stepStore.getStep(connection.input.stepId);
+            assertDefined(inputStep, `No such step with id ${connection.output.stepId}`);
             const terminalSource = inputStep.inputs.find((input) => input.name === connection.input.name);
-            if (!terminalSource) {
-                throw `Could not find input ${connection.input.name} on step ${connection.input.stepId}`;
-            }
+            assertDefined(
+                terminalSource,
+                `Could not find input ${connection.input.name} on step ${connection.input.stepId}`
+            );
+
             return terminalFactory(inputStep.id, terminalSource, this.datatypesMapper);
         });
     }

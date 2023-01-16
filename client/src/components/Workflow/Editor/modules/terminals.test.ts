@@ -13,7 +13,7 @@ import {
 } from "./terminals";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { DataOutput, Steps } from "@/stores/workflowStepStore";
+import type { DataOutput, Steps, Step } from "@/stores/workflowStepStore";
 import { NULL_COLLECTION_TYPE_DESCRIPTION } from "./collectionTypeDescription";
 import { simpleSteps, advancedSteps } from "../test_fixtures";
 
@@ -387,7 +387,7 @@ describe("canAccept", () => {
         const dataOut = terminals["simple data"]!["out_file1"] as OutputTerminal;
         const dataIn = terminals["simple data 2"]!["input"] as InputTerminal;
         dataIn.connect(dataOut);
-        const oldStep = stepStore.getStep(dataOut.stepId);
+        const oldStep = stepStore.getStep(dataOut.stepId) as Step;
         const stepOutput = oldStep.outputs[0] as DataOutput;
         stepOutput["extensions"] = ["ab1"];
         dataOut.datatypes = ["ab1"];

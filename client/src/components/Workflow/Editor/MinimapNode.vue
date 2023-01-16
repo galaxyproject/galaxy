@@ -20,8 +20,8 @@ const nodeClass = computed(() => {
 <template>
     <rect
         :class="nodeClass"
-        :x="step.position.left"
-        :y="step.position.top"
-        :width="nodePosition.width"
-        :height="nodePosition.height" />
+        :x="step.position?.left"
+        :y="step.position?.top"
+        :width="nodePosition?.width"
+        :height="nodePosition?.height" />
 </template>

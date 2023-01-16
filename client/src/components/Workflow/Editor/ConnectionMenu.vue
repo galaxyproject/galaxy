@@ -19,6 +19,7 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
 import { type OutputTerminals, type InputTerminals, terminalFactory } from "./modules/terminals";
 import { useFocusWithin } from "@/composables/useActiveElement";
+import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{
     terminal: OutputTerminals;
@@ -28,11 +29,12 @@ const menu = ref();
 const { focused } = useFocusWithin(menu);
 
 const activeElement = ref(0);
-const menuItem = ref<HTMLLIElement[]>();
+const menuItem = ref<HTMLLIElement[]>([]);
 const emit = defineEmits<{ (e: "closeMenu", value: boolean): void }>();
 
 onMounted(() => {
-    menuItem.value![0].focus();
+    const firstItem = menuItem.value[0];
+    firstItem?.focus();
 });
 
 watch(focused, (focused) => {
@@ -53,24 +55,25 @@ interface InputObject {
 function increment() {
     activeElement.value += 1;
     activeElement.value = Math.min(activeElement.value, menuItem.value!.length - 1);
-    menuItem.value![activeElement.value].focus();
+    menuItem.value[activeElement.value]?.focus();
 }
 
 function decrement() {
     activeElement.value = Math.max(activeElement.value - 1, 0);
-    menuItem.value![activeElement.value].focus();
+    menuItem.value[activeElement.value]?.focus();
 }
 
 function terminalToInputObject(terminal: InputTerminals, connected: boolean): InputObject {
     const step = stepStore.getStep(terminal.stepId);
+    assertDefined(step);
     const inputLabel = `${terminal.name} in step ${step.id + 1}: ${step.label}`;
     return { stepId: step.id, inputName: terminal.name, inputLabel, connected };
 }
 
 function inputObjectToTerminal(inputObject: InputObject): InputTerminals {
-    const inputSource = stepStore
-        .getStep(inputObject.stepId)
-        .inputs.find((input) => input.name == inputObject.inputName)!;
+    const step = stepStore.getStep(inputObject.stepId);
+    assertDefined(step);
+    const inputSource = step.inputs.find((input) => input.name == inputObject.inputName)!;
     return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper);
 }
 
