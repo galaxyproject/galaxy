@@ -58,10 +58,8 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema.schema import (
-    InvocationCancellationUserRequest,
-    WorkflowIndexQueryPayload,
-)
+from galaxy.schema.invocation import InvocationCancellationUserRequest
+from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
     params_to_incoming,

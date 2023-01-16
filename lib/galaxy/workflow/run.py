@@ -18,7 +18,7 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
-from galaxy.schema.schema import (
+from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
     InvocationCancellationHistoryDeleted,

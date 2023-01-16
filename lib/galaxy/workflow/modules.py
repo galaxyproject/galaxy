@@ -38,7 +38,7 @@ from galaxy.model import (
     WorkflowStepConnection,
 )
 from galaxy.model.dataset_collections import matching
-from galaxy.schema.schema import (
+from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
     InvocationCancellationReviewFailed,
