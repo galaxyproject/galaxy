@@ -1337,7 +1337,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "annotation": annotation_str,
             }
             if step.type == "tool":
-                step_dict["tool_id"] = step.tool_id
+                step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
             # Add tool shed repository information and post-job actions to step dict.
             if module.type == "tool":
                 if module.tool and module.tool.tool_shed:
