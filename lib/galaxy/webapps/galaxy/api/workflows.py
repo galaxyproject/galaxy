@@ -237,6 +237,7 @@ class WorkflowsAPIController(
 
         """
         ways_to_create = {
+            "archive_file",
             "archive_source",
             "from_history_id",
             "from_path",
@@ -255,8 +256,8 @@ class WorkflowsAPIController(
             message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterInvalidException(message)
 
-        if "archive_source" in payload:
-            archive_source = payload["archive_source"]
+        if "archive_source" in payload or "archive_file" in payload:
+            archive_source = payload.get("archive_source")
             archive_file = payload.get("archive_file")
             archive_data = None
             if archive_source:
