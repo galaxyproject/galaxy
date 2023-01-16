@@ -1,8 +1,5 @@
-<!-- <tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.16.2">
--->
 <tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="1.1.1">
     <requirements>
-	<!-- <container type="docker">quay.io/biocontainers/cellxgene:0.16.2py_0</container> -->
 	<container type="docker">quay.io/biocontainers/cellxgene:1.1.1--pyhdfd78af_0</container>
     </requirements>
     <entry_points>
