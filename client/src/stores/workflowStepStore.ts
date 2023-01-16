@@ -141,7 +141,11 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
     getters: {
         getStep(state: State) {
             return (stepId: number): Step => {
-                return state.steps[stepId.toString()];
+                if (stepId.toString() in state.steps) {
+                    return state.steps[stepId.toString()] as Step;
+                } else {
+                    throw `Failed to find step with id ${stepId} in Workflow Step Store`;
+                }
             };
         },
         getStepIndex(state: State) {
