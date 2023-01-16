@@ -400,25 +400,29 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             else:
                 dataset.set_size(no_extra_files=True)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def tag_handler(self):
         """Return a galaxy.model.tags.TagHandler-like object for persisting tags."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def user(self):
         """If bound to a database, return the user the datasets should be created for.
 
         Return None otherwise.
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def sa_session(self) -> Optional[ScopedSession]:
         """If bound to a database, return the SQL Alchemy session.
 
         Return None otherwise.
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def permission_provider(self) -> "PermissionProvider":
         """If bound to a database, return the SQL Alchemy session.
 
@@ -429,19 +433,23 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         """No-op, no job context."""
         return None
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def job(self) -> Optional[galaxy.model.Job]:
         """Return associated job object if bound to a job finish context connected to a database."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def metadata_source_provider(self) -> "MetadataSourceProvider":
         """Return associated MetadataSourceProvider object."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def object_store(self) -> ObjectStore:
         """Return object store to use for populating discovered dataset contents."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def flush_per_n_datasets(self) -> Optional[int]:
         pass
 

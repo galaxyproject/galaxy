@@ -298,7 +298,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def implicit_collection_jobs_properties(self) -> List[Dict[str, Any]]:
         ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def object_key(self) -> str:
         """Key used to connect objects in metadata.
 
