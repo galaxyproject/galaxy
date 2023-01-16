@@ -141,6 +141,7 @@ class GenericInvocationEvaluationWarningWorkflowOutputNotFound(
     GenericInvocationWarning[DatabaseIdT], Generic[DatabaseIdT]
 ):
     reason: Literal[WarningReason.workflow_output_not_found]
+    workflow_step_id: int = Field(..., title="Workflow step id of step that caused a warning.")
     output_name: str = Field(
         ..., description="Output that was designated as workflow output but that has not been found"
     )
