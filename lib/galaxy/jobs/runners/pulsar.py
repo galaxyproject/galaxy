@@ -938,7 +938,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             job_state = self._job_state(job, job_wrapper)
             self._update_job_state_for_status(job_state, full_status["status"], full_status=full_status)
         except Exception:
-            log.exception("Failed to update Pulsar job status for job_id (%s/%s)" % (galaxy_job_id, remote_job_id))
+            log.exception(f"Failed to update Pulsar job status for job_id ({galaxy_job_id}/{remote_job_id})")
             raise
             # Nothing else to do? - Attempt to fail the job?
 

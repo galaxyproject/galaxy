@@ -315,7 +315,7 @@ class LDAP3(LDAP):
         # Check if server URL has scheme
         # If no scheme is provided, assume it to be ldap
         if "ldap" not in server_url:
-            server_url = "ldaps://{server_url}".format(server_url=server_url)
+            server_url = f"ldaps://{server_url}"
         # Check if TLS is available
         if server_url.startswith("ldaps://"):
             self.ldap_tls = True

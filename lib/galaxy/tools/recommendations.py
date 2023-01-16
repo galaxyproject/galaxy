@@ -60,7 +60,7 @@ class ToolRecommendations:
 
         class TransformerBlock(Layer):
             def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
-                super(TransformerBlock, self).__init__()
+                super().__init__()
                 self.att = MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim, dropout=rate)
                 self.ffn = Sequential([Dense(ff_dim, activation="relu"), Dense(embed_dim)])
                 self.layernorm1 = LayerNormalization(epsilon=1e-6)
@@ -80,7 +80,7 @@ class ToolRecommendations:
 
         class TokenAndPositionEmbedding(Layer):
             def __init__(self, maxlen, vocab_size, embed_dim):
-                super(TokenAndPositionEmbedding, self).__init__()
+                super().__init__()
                 self.token_emb = Embedding(input_dim=vocab_size, output_dim=embed_dim, mask_zero=True)
                 self.pos_emb = Embedding(input_dim=maxlen, output_dim=embed_dim, mask_zero=True)
 
@@ -134,7 +134,7 @@ class ToolRecommendations:
         self.loaded_model = self.create_transformer_model(len(self.reverse_dictionary) + 1)
         self.loaded_model.load_weights(self.tool_recommendation_model_path)
 
-        self.model_data_dictionary = dict((v, k) for k, v in self.reverse_dictionary.items())
+        self.model_data_dictionary = {v: k for k, v in self.reverse_dictionary.items()}
         # set the list of compatible tools
         self.compatible_tools = json.loads(model_file["compatible_tools"][()].decode("utf-8"))
         tool_weights = json.loads(model_file["class_weights"][()].decode("utf-8"))
