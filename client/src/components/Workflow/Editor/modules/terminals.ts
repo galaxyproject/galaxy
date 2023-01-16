@@ -316,11 +316,10 @@ class BaseInputTerminal extends Terminal {
                 postJobActionKey in outputStep.post_job_actions
             ) {
                 const extensionType = outputStep.post_job_actions![postJobActionKey]!.action_arguments.newtype;
-                assertDefined(extensionType);
 
                 (terminalSource as DataOutput | CollectionOutput) = {
                     ...terminalSource,
-                    extensions: [extensionType],
+                    extensions: extensionType ? [extensionType] : [],
                 };
             }
 
