@@ -1,6 +1,9 @@
+<!-- <tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.16.2">
+-->
 <tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="1.1.1">
     <requirements>
-        <container type="docker">quay.io/biocontainers/cellxgene:1.1.1--pyhdfd78af_0</container>
+	<!-- <container type="docker">quay.io/biocontainers/cellxgene:0.16.2py_0</container> -->
+	<container type="docker">quay.io/biocontainers/cellxgene:1.1.1--pyhdfd78af_0</container>
     </requirements>
     <entry_points>
         <entry_point name="Cellxgene Single Cell Visualisation on $infile.display_name" requires_domain="True">
@@ -10,16 +13,54 @@
     <command><![CDATA[
         #import re
         #set $fancy_name = '/tmp/galaxy_cellxgene_' + re.sub('[^\w\-_]', '_', $infile.element_identifier) + '.h5ad'
+	
+	#if $var_name
+	python '${anndata_unique_var_gene_symbols}' '${infile}' '${fancy_name}' '${var_name}'
+        #else  
         cp '${infile}' '${fancy_name}'
-        &&
-        cellxgene launch --host 0.0.0.0 --port 80 '${fancy_name}'
+        #end if
+	&&
+	mkdir annotation_files
+	&&
+	cellxgene launch --host 0.0.0.0 --port 80 
+        --user-generated-data-dir annotation_files
+	'${fancy_name}'
     ]]>
     </command>
+    <configfiles>
+	    <configfile name="anndata_unique_var_gene_symbols"><![CDATA[
+import anndata as ad
+import sys
+
+def rn(df, field, suffix = '-duplicate-'):
+    appendents = (suffix + df.groupby(field).cumcount().astype(str).replace('0','')).replace(suffix, '')
+    df[f"{field}_u"] = df[field].astype(str) + appendents.astype(str)
+    return df
+
+adata = ad.read_h5ad(sys.argv[1])
+output = sys.argv[2]
+gene_symbol_field = sys.argv[3]
+if gene_symbol_field not in adata.var.keys():
+   sys.exit(f"Field {gene_symbol_field} set as var_name does not exist in the var object. AnnData object will be used as it was given")
+
+adata.var = rn(adata.var, gene_symbol_field, suffix = "_d")
+
+adata.var["extra_gene_id"] = adata.var.index
+adata.var = adata.var.set_index(f"{gene_symbol_field}_u")
+
+
+adata.write_h5ad(output, compression="gzip")
+]]></configfile>
+    </configfiles>
     <inputs>
-        <param name="infile" type="data" format="h5ad" label="Concatenate Dataset"/>
+	<param name="infile" type="data" format="h5ad" label="Concatenate Dataset"/>
+        <param name="var_name" type="text" optional="true" label="Var field for gene symbols" help="Optionaly specify the var field from the AnnData file provided where gene symbols are available. Usually the AnnData file var slot will be indexed with gene symbols and this is not required. Using this option will delay the startup of the cellxgene tool, as the AnnData needs to be modified and re-written to disk."/>
     </inputs>
     <outputs>
-        <data name="out_file1" format="txt" />
+	<data name="out_file1" format="txt" />
+	<collection name="user_generated" type="list" label="Cellxgene user annotations and gene sets">
+            <discover_datasets pattern="__name_and_ext__" directory="annotation_files" />
+        </collection>
     </outputs>
     <tests>
     </tests>
