@@ -9,27 +9,8 @@ set -ex
 cd "$(dirname "$0")"
 
 # ensure ordered by dependency dag
-PACKAGE_DIRS=(
-    util
-    objectstore
-    job_metrics
-    config
-    files
-    tool_util
-    data
-    job_execution
-    auth
-    web_stack
-    web_framework
-    app
-    webapps
-    test_base
-    test_driver
-    test_api
-)
-for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
-    printf "\n========= RELEASING PACKAGE ${PACKAGE_DIRS[$i]} =========\n\n"
-    package_dir=${PACKAGE_DIRS[$i]}
+while read -r package_dir; do
+    printf "\n========= RELEASING PACKAGE ${package_dir} =========\n\n"
 
     cd "$package_dir"
 
@@ -39,4 +20,4 @@ for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
     make new-version
 
     cd ..
-done
+done < packages_by_dep_dag.txt

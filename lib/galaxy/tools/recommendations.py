@@ -18,6 +18,12 @@ log = logging.getLogger(__name__)
 
 
 class ToolRecommendations:
+    max_seq_len = 25
+    ff_dim = 128
+    embed_dim = 128
+    num_heads = 4
+    dropout = 0.1
+
     def __init__(self):
         self.tool_recommendation_model_path = None
         self.admin_tool_recommendations_path = None
@@ -27,12 +33,85 @@ class ToolRecommendations:
         self.reverse_dictionary = dict()
         self.all_tools = dict()
         self.tool_weights_sorted = dict()
-        self.session = None
-        self.graph = None
         self.loaded_model = None
         self.compatible_tools = None
         self.standard_connections = None
-        self.max_seq_len = 25
+        self.model_ok = None
+
+    def create_transformer_model(self, vocab_size):
+        try:
+            from tensorflow.keras.layers import (
+                Dense,
+                Dropout,
+                Embedding,
+                GlobalAveragePooling1D,
+                Input,
+                Layer,
+                LayerNormalization,
+                MultiHeadAttention,
+            )
+            from tensorflow.keras.models import (
+                Model,
+                Sequential,
+            )
+        except Exception as e:
+            log.exception(e)
+            return None
+
+        class TransformerBlock(Layer):
+            def __init__(self, embed_dim, num_heads, ff_dim, rate=0.1):
+                super().__init__()
+                self.att = MultiHeadAttention(num_heads=num_heads, key_dim=embed_dim, dropout=rate)
+                self.ffn = Sequential([Dense(ff_dim, activation="relu"), Dense(embed_dim)])
+                self.layernorm1 = LayerNormalization(epsilon=1e-6)
+                self.layernorm2 = LayerNormalization(epsilon=1e-6)
+                self.dropout1 = Dropout(rate)
+                self.dropout2 = Dropout(rate)
+
+            def call(self, inputs, training):
+                attn_output, attention_scores = self.att(
+                    inputs, inputs, inputs, return_attention_scores=True, training=training
+                )
+                attn_output = self.dropout1(attn_output, training=training)
+                out1 = self.layernorm1(inputs + attn_output)
+                ffn_output = self.ffn(out1)
+                ffn_output = self.dropout2(ffn_output, training=training)
+                return self.layernorm2(out1 + ffn_output), attention_scores
+
+        class TokenAndPositionEmbedding(Layer):
+            def __init__(self, maxlen, vocab_size, embed_dim):
+                super().__init__()
+                self.token_emb = Embedding(input_dim=vocab_size, output_dim=embed_dim, mask_zero=True)
+                self.pos_emb = Embedding(input_dim=maxlen, output_dim=embed_dim, mask_zero=True)
+
+            def call(self, x):
+                try:
+                    import tensorflow as tf
+
+                    maxlen = tf.shape(x)[-1]
+                    positions = tf.range(start=0, limit=maxlen, delta=1)
+                    positions = self.pos_emb(positions)
+                    x = self.token_emb(x)
+                    return x + positions
+                except Exception as e:
+                    log.exception(e)
+                    return None
+
+        inputs = Input(shape=(ToolRecommendations.max_seq_len,))
+        embedding_layer = TokenAndPositionEmbedding(
+            ToolRecommendations.max_seq_len, vocab_size, ToolRecommendations.embed_dim
+        )
+        x = embedding_layer(inputs)
+        transformer_block = TransformerBlock(
+            ToolRecommendations.embed_dim, ToolRecommendations.num_heads, ToolRecommendations.ff_dim
+        )
+        x, weights = transformer_block(x)
+        x = GlobalAveragePooling1D()(x)
+        x = Dropout(ToolRecommendations.dropout)(x)
+        x = Dense(ToolRecommendations.ff_dim, activation="relu")(x)
+        x = Dropout(ToolRecommendations.dropout)(x)
+        outputs = Dense(vocab_size, activation="sigmoid")(x)
+        return Model(inputs=inputs, outputs=[outputs, weights])
 
     def get_predictions(self, trans, tool_sequence, remote_model_url):
         """
@@ -40,73 +119,37 @@ class ToolRecommendations:
         """
         recommended_tools = dict()
         self.__collect_admin_preferences(trans.app.config.admin_tool_recommendations_path)
-        is_set = self.__set_model(trans, remote_model_url)
-        if is_set is True:
-            # get the recommended tools for a tool sequence
-            recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
-        else:
-            tool_sequence = ""
+        if self.model_ok is None:
+            self.__set_model(trans, remote_model_url)
+        recommended_tools = self.__compute_tool_prediction(trans, tool_sequence)
         return tool_sequence, recommended_tools
 
     def __set_model(self, trans, remote_model_url):
         """
         Create model and associated dictionaries for recommendations
         """
-        if not self.graph:
-            # import moves from the top of file: in case the tool recommendation feature is disabled,
-            # keras is not downloaded because of conditional requirement and Galaxy does not build
-            try:
-                import tensorflow as tf
+        self.tool_recommendation_model_path = self.__download_model(remote_model_url)
+        model_file = h5py.File(self.tool_recommendation_model_path, "r")
+        self.reverse_dictionary = json.loads(model_file["reverse_dict"][()].decode("utf-8"))
+        self.loaded_model = self.create_transformer_model(len(self.reverse_dictionary) + 1)
+        self.loaded_model.load_weights(self.tool_recommendation_model_path)
 
-                tf.compat.v1.disable_v2_behavior()
-            except Exception:
-                trans.response.status = 400
-                return False
-            # set graph and session only once
-            if self.graph is None:
-                self.graph = tf.Graph()
-                self.session = tf.compat.v1.Session(graph=self.graph)
-            model_weights = list()
-            counter_layer_weights = 0
-            self.tool_recommendation_model_path = self.__download_model(remote_model_url)
-            # read the hdf5 attributes
-            trained_model = h5py.File(self.tool_recommendation_model_path, "r")
-            model_config = json.loads(trained_model["model_config"][()])
-            # set tensorflow's graph and session to maintain
-            # consistency between model load and predict methods
-            with self.graph.as_default():
-                with self.session.as_default():
-                    try:
-                        # iterate through all the attributes of the model to find weights of neural network layers
-                        for item in trained_model.keys():
-                            if "weight_" in item:
-                                weight = trained_model[f"weight_{str(counter_layer_weights)}"][()]
-                                model_weights.append(weight)
-                                counter_layer_weights += 1
-                        self.loaded_model = tf.keras.models.model_from_json(model_config)
-                        self.loaded_model.set_weights(model_weights)
-                    except Exception as e:
-                        log.exception(e)
-                        trans.response.status = 400
-                        return False
-            # set the dictionary of tools
-            self.model_data_dictionary = json.loads(trained_model["data_dictionary"][()])
-            self.reverse_dictionary = {v: k for k, v in self.model_data_dictionary.items()}
-            # set the list of compatible tools
-            self.compatible_tools = json.loads(trained_model["compatible_tools"][()])
-            tool_weights = json.loads(trained_model["class_weights"][()])
-            self.standard_connections = json.loads(trained_model["standard_connections"][()])
-            # sort the tools' usage dictionary
-            tool_pos_sorted = [int(key) for key in tool_weights.keys()]
-            for k in tool_pos_sorted:
-                self.tool_weights_sorted[k] = tool_weights[str(k)]
-            # collect ids and names of all the installed tools
-            for tool_id, tool in trans.app.toolbox.tools():
-                t_id_renamed = tool_id
-                if t_id_renamed.find("/") > -1:
-                    t_id_renamed = t_id_renamed.split("/")[-2]
-                self.all_tools[t_id_renamed] = (tool_id, tool.name)
-        return True
+        self.model_data_dictionary = {v: k for k, v in self.reverse_dictionary.items()}
+        # set the list of compatible tools
+        self.compatible_tools = json.loads(model_file["compatible_tools"][()].decode("utf-8"))
+        tool_weights = json.loads(model_file["class_weights"][()].decode("utf-8"))
+        self.standard_connections = json.loads(model_file["standard_connections"][()].decode("utf-8"))
+        # sort the tools' usage dictionary
+        tool_pos_sorted = [int(key) for key in tool_weights.keys()]
+        for k in tool_pos_sorted:
+            self.tool_weights_sorted[k] = tool_weights[str(k)]
+        # collect ids and names of all the installed tools
+        for tool_id, tool in trans.app.toolbox.tools():
+            t_id_renamed = tool_id
+            if t_id_renamed.find("/") > -1:
+                t_id_renamed = t_id_renamed.split("/")[-2]
+            self.all_tools[t_id_renamed] = (tool_id, tool.name)
+        self.model_ok = True
 
     def __collect_admin_preferences(self, admin_path):
         """
@@ -168,8 +211,13 @@ class ToolRecommendations:
         Add admin preferences to recommendations.
         """
         last_compatible_tools = list()
-        if last_tool_name in self.compatible_tools:
-            last_compatible_tools = self.compatible_tools[last_tool_name].split(",")
+        if last_tool_name in self.model_data_dictionary:
+            last_tool_name_id = self.model_data_dictionary[last_tool_name]
+            if last_tool_name_id in self.compatible_tools:
+                last_compatible_tools = [
+                    self.reverse_dictionary[t_id] for t_id in self.compatible_tools[last_tool_name_id]
+                ]
+
         prediction_data["is_deprecated"] = False
         # get the list of datatype extensions of the last tool of the tool sequence
         _, last_output_extensions = self.__get_tool_extensions(trans, self.all_tools[last_tool_name][0])
@@ -182,8 +230,8 @@ class ToolRecommendations:
                 # select the name and tool id if it is installed in Galaxy
                 if (
                     t_id == child
-                    and score > 0.0
-                    and child in last_compatible_tools
+                    and score >= 0.0
+                    and t_id in last_compatible_tools
                     and child not in self.deprecated_tools
                 ):
                     full_tool_id = self.all_tools[t_id][0]
@@ -223,8 +271,15 @@ class ToolRecommendations:
         """
         Get predicted tools. If predicted tools are less in number, combine them with published tools
         """
-        intersection = list(set(predictions).intersection(set(base_tools)))
-        return intersection[:topk]
+        t_intersect = list(set(predictions).intersection(set(base_tools)))
+        t_diff = list(set(predictions).difference(set(base_tools)))
+        t_intersect, u_intersect = self.__sort_by_usage(
+            t_intersect, self.tool_weights_sorted, self.model_data_dictionary
+        )
+        t_diff, u_diff = self.__sort_by_usage(t_diff, self.tool_weights_sorted, self.model_data_dictionary)
+        t_intersect.extend(t_diff)
+        u_intersect.extend(u_diff)
+        return t_intersect, u_intersect
 
     def __sort_by_usage(self, t_list, class_weights, d_dict):
         """
@@ -233,7 +288,7 @@ class ToolRecommendations:
         tool_dict = dict()
         for tool in t_list:
             t_id = d_dict[tool]
-            tool_dict[tool] = class_weights[t_id]
+            tool_dict[tool] = class_weights[int(t_id)]
         tool_dict = dict(sorted(tool_dict.items(), key=lambda kv: kv[1], reverse=True))
         return list(tool_dict.keys()), list(tool_dict.values())
 
@@ -242,19 +297,17 @@ class ToolRecommendations:
         Get predictions from published and normal workflows
         """
         last_base_tools = list()
-        predictions = predictions * weight_values
         prediction_pos = np.argsort(predictions, axis=-1)
         topk_prediction_pos = prediction_pos[-topk:]
         # get tool ids
-        pred_tool_ids = [self.reverse_dictionary[int(tool_pos)] for tool_pos in topk_prediction_pos]
+        pred_tool_names = [self.reverse_dictionary[str(tool_pos)] for tool_pos in topk_prediction_pos]
         if last_tool_name in base_tools:
             last_base_tools = base_tools[last_tool_name]
             if type(last_base_tools).__name__ == "str":
                 # get published or compatible tools for the last tool in a sequence of tools
                 last_base_tools = last_base_tools.split(",")
         # get predicted tools
-        p_tools = self.__get_predicted_tools(last_base_tools, pred_tool_ids, topk)
-        sorted_c_t, sorted_c_v = self.__sort_by_usage(p_tools, self.tool_weights_sorted, self.model_data_dictionary)
+        sorted_c_t, sorted_c_v = self.__get_predicted_tools(last_base_tools, pred_tool_names, topk)
         return sorted_c_t, sorted_c_v
 
     def __compute_tool_prediction(self, trans, tool_sequence):
@@ -286,30 +339,20 @@ class ToolRecommendations:
             weight_values = list(self.tool_weights_sorted.values())
             # predict next tools for a test path
             try:
-                # use the same graph and session to predict
-                with self.graph.as_default():
-                    with self.session.as_default():
-                        prediction = self.loaded_model.predict(sample)
+                import tensorflow as tf
+
+                sample = tf.convert_to_tensor(sample, dtype=tf.int64)
+                prediction, _ = self.loaded_model(sample, training=False)
             except Exception as e:
                 log.exception(e)
                 return prediction_data
             # get dimensions
             nw_dimension = prediction.shape[1]
             prediction = np.reshape(prediction, (nw_dimension,))
-            half_len = int(nw_dimension / 2)
             # get recommended tools from published workflows
             pub_t, pub_v = self.__separate_predictions(
-                self.standard_connections, prediction[:half_len], last_tool_name, weight_values, topk
+                self.standard_connections, prediction, last_tool_name, weight_values, topk
             )
-            # get recommended tools from normal workflows
-            c_t, c_v = self.__separate_predictions(
-                self.compatible_tools, prediction[half_len:], last_tool_name, weight_values, topk
-            )
-            # combine predictions coming from different workflows
-            # promote recommended tools coming from published workflows
-            # to the top and then show other recommendations
-            pub_t.extend(c_t)
-            pub_v.extend(c_v)
             # remove duplicates if any
             pub_t = list(dict.fromkeys(pub_t))
             pub_v = list(dict.fromkeys(pub_v))

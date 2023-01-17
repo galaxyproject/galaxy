@@ -1,5 +1,5 @@
 from galaxy.model import DatasetCollectionElement
-from ..types import BaseDatasetCollectionType
+from . import BaseDatasetCollectionType
 
 
 class ListDatasetCollectionType(BaseDatasetCollectionType):

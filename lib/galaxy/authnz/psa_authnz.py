@@ -15,15 +15,15 @@ from social_core.utils import (
 from sqlalchemy.exc import IntegrityError
 
 from galaxy.exceptions import MalformedContents
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT
-from ..authnz import IdentityProvider
-from ..model import (
+from galaxy.model import (
     PSAAssociation,
     PSACode,
     PSANonce,
     PSAPartial,
     UserAuthnzToken,
 )
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
+from . import IdentityProvider
 
 # key: a component name which PSA requests.
 # value: is the name of a class associated with that key.

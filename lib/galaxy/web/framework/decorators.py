@@ -381,7 +381,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     return json
 
 
-def validation_error_to_message_exception(e):
+def validation_error_to_message_exception(e: ValidationError) -> MessageException:
     invalid_found = False
     missing_found = False
     for error in e.errors():

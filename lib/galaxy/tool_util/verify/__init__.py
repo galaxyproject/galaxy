@@ -370,6 +370,7 @@ def files_re_match(file1, file2, attributes=None):
     )
     if attributes.get("sort", False):
         history_data.sort()
+        local_file.sort()
     lines_diff = int(attributes.get("lines_diff", 0))
     line_diff_count = 0
     diffs = []

@@ -7,7 +7,6 @@ extend-exclude = '''
   | packages
 )/
 '''
-force-exclude = 'lib/galaxy/util/jstree.py'
 
 [tool.darker]
 isort = true
@@ -50,12 +49,12 @@ dictobj = "*"
 dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
 edam-ontology = "*"
-fastapi = ">=0.71.0"  # https://github.com/tiangolo/fastapi/issues/4041
+fastapi = ">=0.71.0, !=0.89.0"  # https://github.com/tiangolo/fastapi/issues/4041 https://github.com/tiangolo/fastapi/issues/5861
 fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
-gravity = ">=0.10.0"
+gravity = {git = "https://github.com/galaxyproject/gravity.git", branch = "release_1.x"}  # https://github.com/galaxyproject/gravity/issues/92
 gunicorn = "*"
 gxformat2 = "*"
 h5py = "*"
@@ -83,7 +82,7 @@ PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
 pyparsing = "*"
-pysam = "*"
+pysam = ">=0.20"
 python = ">=3.7,<3.11"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"
 python-magic = "*"
@@ -115,7 +114,8 @@ zipstream-new = "*"
 [tool.poetry.group.dev.dependencies]
 ase = ">=3.18.1"
 black = "^22.1.0"
-cwltest = "2.2.20210901154959"
+codespell = "*"
+cwltest = "*"
 darker = "*"
 fluent-logger = "*"
 httpx = "*"
@@ -137,6 +137,7 @@ pytest-shard = "*"
 recommonmark = "*"
 responses = "*"
 selenium = "*"
+seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
 sphinx_markdown_tables = "*"
 sphinx_rtd_theme = ">=1.0.0"
@@ -145,3 +146,27 @@ testfixtures = "*"
 tuspy = "*"
 twill = "*"
 watchdog = "*"
+
+[tool.ruff]
+select = ["E", "F", "B", "UP"]
+target-version = "py37"
+# Exceptions:
+# B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
+# B9 flake8-bugbear opinionated warnings
+# E402 module level import not at top of file # TODO, we would like to improve this.
+# E501 is line length (delegated to black)
+ignore = ["B008", "B9", "E402", "E501"]
+
+[tool.ruff.isort]
+# We are not selecting "I" rules in ruff yet because support for all the isort
+# options we need is not complete, but these are the one currently implemented.
+combine-as-imports = true
+relative-imports-order = "closest-to-furthest"
+
+[tool.ruff.per-file-ignores]
+# Don't check pyupgrade rules on tool scripts, which may use different Python versions
+"test/functional/tools/*" = ["UP"]
+"tools/*" = ["UP"]
+
+[tool.ruff.pyupgrade]
+keep-runtime-typing = true  # https://github.com/charliermarsh/ruff/issues/1617

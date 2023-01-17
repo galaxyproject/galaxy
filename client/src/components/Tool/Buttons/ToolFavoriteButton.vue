@@ -12,10 +12,10 @@ const props = defineProps({
 
 const emit = defineEmits(["onSetError", "onUpdateFavorites"]);
 
-const { currentUser: user, addFavoriteTool, removeFavoriteTool } = useCurrentUser();
+const { currentUser: user, currentFavorites, addFavoriteTool, removeFavoriteTool } = useCurrentUser();
 
 const hasUser = computed(() => !user.value.isAnonymous);
-const isFavorite = computed(() => getFavorites().tools.includes(props.id));
+const isFavorite = computed(() => currentFavorites.value.tools.includes(props.id));
 const showAddFavorite = computed(() => hasUser.value && !isFavorite.value);
 const showRemoveFavorite = computed(() => hasUser.value && isFavorite.value);
 
@@ -56,16 +56,6 @@ async function onRemoveFavorite() {
     } catch {
         emit("onSetError", `Failed to remove '${props.id}' from favorites.`);
         ariaAlert("failed to remove from favorites");
-    }
-}
-
-function getFavorites() {
-    const preferences = user.value.preferences;
-
-    if (preferences?.favorites) {
-        return JSON.parse(preferences.favorites);
-    } else {
-        return { tools: [] };
     }
 }
 </script>

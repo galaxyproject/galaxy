@@ -1,0 +1,88 @@
+<script setup>
+import { useCurrentTheme } from "@/composables/user";
+import { useConfig } from "@/composables/config";
+import { computed, watch, ref } from "vue";
+import { withPrefix } from "@/utils/redirect";
+const { currentTheme, setCurrentTheme } = useCurrentTheme();
+const { config, isLoaded } = useConfig();
+
+const show = ref(false);
+const currentValue = computed({
+    get: () => {
+        return currentTheme;
+    },
+    set: (theme) => {
+        setCurrentTheme(theme);
+    },
+});
+
+function getLogo(themeDetails) {
+    return themeDetails["--masthead-logo-img"] ?? config.value.logo_src;
+}
+
+watch(
+    () => isLoaded.value,
+    () => {
+        const themes = Object.keys(config.value.themes);
+        show.value = themes?.length > 1 ?? false;
+        if (!themes.includes(currentTheme.value)) {
+            setCurrentTheme(themes[0]);
+        }
+    }
+);
+</script>
+
+<template>
+    <b-card :show="show" class="overflow-auto">
+        <b-form-radio-group v-model="currentValue">
+            <b-form-radio
+                v-for="(themeDetails, theme, index) in config.themes"
+                :key="theme"
+                :value="theme"
+                class="mb-2">
+                <span v-if="index === 0" class="font-weight-bold mb-1"> Default Theme ({{ theme }}). </span>
+                <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
+                <div :style="themeDetails" class="theme-masthead">
+                    <img :src="withPrefix(getLogo(themeDetails))" alt="image" />
+                    <span v-localize class="theme-color">Text</span>
+                    <span v-localize class="theme-hover">Hover</span>
+                    <span v-localize class="theme-active">Active</span>
+                </div>
+            </b-form-radio>
+        </b-form-radio-group>
+    </b-card>
+</template>
+
+<style lang="scss" scoped>
+@import "~bootstrap/scss/bootstrap.scss";
+@import "custom_theme_variables.scss";
+.theme-element {
+    @extend .rounded;
+    @extend .p-1;
+}
+.theme-masthead {
+    @extend .theme-element;
+    background: var(--masthead-color);
+}
+.theme-color {
+    @extend .theme-element;
+    color: var(--masthead-text-color);
+    background: var(--masthead-link-color);
+}
+.theme-hover {
+    @extend .theme-element;
+    color: var(--masthead-text-hover);
+    background: var(--masthead-link-hover);
+}
+.theme-active {
+    @extend .theme-element;
+    color: var(--masthead-text-active);
+    background: var(--masthead-link-active);
+}
+img {
+    cursor: pointer;
+    display: inline;
+    border: none;
+    height: 2rem;
+}
+</style>

@@ -57,7 +57,9 @@
                  Options and values should match those from the python-ldap
                  documentation.
                  The following example allows connecting to ldaps:// (SSL/TLS)
-                 when self-signed certificates are used -->
+                 when self-signed certificates are used 
+                 These options are valid only if ldap provider is used. 
+                 For ldap3 none of these options are used-->
 <!--        <ldap-options>OPT_X_TLS_REQUIRE_CERT=OPT_X_TLS_ALLOW</ldap-options>
 -->
             <!-- Whether unregistered users should use their LDAP username

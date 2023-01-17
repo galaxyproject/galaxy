@@ -2,12 +2,15 @@
     <b-card v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
             <span v-localize class="footer-section-name">Citations</span>
-            <font-awesome-icon
+            <b-button
                 v-b-tooltip.hover
                 title="Copy all citations as BibTeX"
-                icon="copy"
                 style="cursor: pointer"
-                @click="copyBibtex" />
+                variant="link"
+                size="sm"
+                @click="copyBibtex">
+                <font-awesome-icon icon="copy" />
+            </b-button>
             <Citation
                 v-for="(citation, index) in citations"
                 :key="index"
@@ -17,8 +20,12 @@
         </div>
         <div v-if="hasRequirements" class="mb-1">
             <span v-localize class="footer-section-name">Requirements</span>
-            <a href="https://galaxyproject.org/tools/requirements/" target="_blank">
-                <font-awesome-icon v-b-tooltip.hover title="Learn more about Galaxy Requirements" icon="question" />
+            <a
+                v-b-tooltip.hover
+                title="Learn more about Galaxy Requirements"
+                href="https://galaxyproject.org/tools/requirements/"
+                target="_blank">
+                See details <font-awesome-icon icon="external-link-alt" />
             </a>
             <div v-for="(requirement, index) in requirements" :key="index">
                 - {{ requirement.name }}
@@ -90,7 +97,7 @@ export default {
         },
         hasCitations: {
             type: Boolean,
-            default: true,
+            default: false,
         },
         xrefs: {
             type: Array,

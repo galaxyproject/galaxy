@@ -107,6 +107,7 @@ from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisteTracker,
 )
+from .ro_crate_utils import WorkflowRunCrateProfileBuilder
 from ..custom_types import json_encoder
 from ..item_attrs import (
     add_item_annotation,
@@ -297,7 +298,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
     def implicit_collection_jobs_properties(self) -> List[Dict[str, Any]]:
         ...
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def object_key(self) -> str:
         """Key used to connect objects in metadata.
 
@@ -2395,8 +2397,12 @@ class WriteCrates:
         return len(self.included_invocations) == 1
 
     def _init_crate(self) -> ROCrate:
-        ro_crate = ROCrate()
+        is_invocation_export = self._is_single_invocation_export()
+        if is_invocation_export:
+            invocation_crate_builder = WorkflowRunCrateProfileBuilder(self)
+            return invocation_crate_builder.build_crate()
 
+        ro_crate = ROCrate()
         markdown_path = os.path.join(self.export_directory, "README.md")
         with open(markdown_path, "w") as f:
             f.write(self._generate_markdown_readme())
@@ -2430,13 +2436,15 @@ class WriteCrates:
         workflows_directory = self.workflows_directory
         if os.path.exists(workflows_directory):
             for filename in os.listdir(workflows_directory):
-                workflow_cls = ComputationalWorkflow if not filename.endswith(".cwl") else WorkflowDescription
+                is_computational_wf = not filename.endswith(".cwl")
+                workflow_cls = ComputationalWorkflow if is_computational_wf else WorkflowDescription
                 lang = "galaxy" if not filename.endswith(".cwl") else "cwl"
                 dest_path = os.path.join("workflows", filename)
+                is_main_entity = is_invocation_export and is_computational_wf
                 ro_crate.add_workflow(
                     source=os.path.join(workflows_directory, filename),
                     dest_path=dest_path,
-                    main=False,
+                    main=is_main_entity,
                     cls=workflow_cls,
                     lang=lang,
                 )
@@ -2941,6 +2949,7 @@ def source_to_import_store(
                     target_path, import_options=import_options, app=app, user=galaxy_user
                 )
             else:
+                # TODO: rocrate.zip is not supported here...
                 raise Exception(f"Unknown model_store_format type encountered {model_store_format}")
 
     return model_import_store

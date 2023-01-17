@@ -1,5 +1,5 @@
 import Default from "./Default.vue";
-import { mountWithApp } from "./testHelpers";
+import { mountWithDetails } from "./testHelpers";
 import Backbone from "backbone";
 
 jest.mock("app");
@@ -10,7 +10,7 @@ UploadRow.mockImplementation(Backbone.View);
 
 describe("Default.vue", () => {
     it("loads with correct initial state", async () => {
-        const { wrapper } = mountWithApp(Default);
+        const { wrapper } = mountWithDetails(Default);
         expect(wrapper.vm.counterAnnounce).toBe(0);
         expect(wrapper.vm.showHelper).toBe(true);
         expect(wrapper.vm.extensions[0].id).toBe("ab1");
@@ -20,23 +20,21 @@ describe("Default.vue", () => {
     });
 
     it("does render FTP is site set", async () => {
-        const { wrapper } = mountWithApp(Default);
+        const { wrapper } = mountWithDetails(Default);
         expect(wrapper.find("#btn-ftp").element).toBeVisible();
         await wrapper.find("#btn-ftp").trigger("click");
         // TODO: test popover appears... not sure best way to do this...
     });
 
     it("doesn't render FTP is no site set", async () => {
-        const { wrapper } = mountWithApp(Default, {
-            currentFtp: () => {
-                return null;
-            },
+        const { wrapper } = mountWithDetails(Default, {
+            currentFtp: null,
         });
         expect(wrapper.findAll("#btn-ftp").length).toBe(0);
     });
 
     it("resets properly", async () => {
-        const { wrapper, localVue } = mountWithApp(Default);
+        const { wrapper, localVue } = mountWithDetails(Default);
         expect(wrapper.vm.showHelper).toBe(true);
         await localVue.nextTick();
         await wrapper.find("#btn-new").trigger("click");
@@ -47,7 +45,7 @@ describe("Default.vue", () => {
     });
 
     it("renders a limitloader element if lazyLoadMax set", async () => {
-        const { wrapper } = mountWithApp(Default, {}, { lazyLoadMax: 2 });
+        const { wrapper } = mountWithDetails(Default, {}, { lazyLoadMax: 2 });
         expect(wrapper.findAll(".ui-limitloader").length).toBe(1);
         // hard to actually test the functionality like in Collection.test.js
         // because we're stubbing out all of UploadRow.

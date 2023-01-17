@@ -15,11 +15,11 @@
 
 <script>
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { errorMessageAsString } from "utils/simple-error";
+import { withPrefix } from "utils/redirect";
 
 Vue.use(BootstrapVue);
 
@@ -54,7 +54,7 @@ export default {
     methods: {
         onClick() {
             axios
-                .post(`${getAppRoot()}api/histories`, { history_id: this.args.history_id })
+                .post(withPrefix("/api/histories"), { history_id: this.args.history_id })
                 .then(() => {
                     this.imported = true;
                 })

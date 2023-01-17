@@ -27,11 +27,11 @@ from typing import (
 
 from galaxy import util
 from galaxy.util import plugin_config
+from . import formatting
 from .safety import (
     DEFAULT_SAFETY,
     Safety,
 )
-from ..job_metrics import formatting
 
 log = logging.getLogger(__name__)
 
@@ -211,6 +211,8 @@ class JobInstrumenter(JobInstrumenterI):
                 properties = plugin.job_properties(job_id, job_directory)
                 if properties:
                     per_plugin_properties[plugin.plugin_type] = properties
+            except FileNotFoundError as e:
+                log.warning("Failed to collect job properties for plugin %s: %s", plugin, e)
             except Exception:
                 log.exception("Failed to collect job properties for plugin %s", plugin)
         return per_plugin_properties

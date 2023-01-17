@@ -17,7 +17,9 @@ def _extract_from_tar(bytes, fn):
             # so make this consistent for tar
             if ti.isdir():
                 return ""
-            with tar_temp.extractfile(fn) as member_fh:
+            tar_file = tar_temp.extractfile(fn)
+            assert tar_file is not None
+            with tar_file as member_fh:
                 return member_fh.read()
 
 

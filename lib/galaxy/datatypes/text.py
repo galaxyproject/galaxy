@@ -1155,7 +1155,7 @@ class BCSLts(Json):
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
-            ts = json.load(open(dataset.file_name, "r"))
+            ts = json.load(open(dataset.file_name))
             dataset.peek = lines.format(len(ts["nodes"]), len(ts["edges"]), len(ts["ordering"]), ts["initial"])
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -1163,7 +1163,7 @@ class BCSLts(Json):
             dataset.blurb = "file purged from disk"
 
     def _looks_like_bcsl_ts(self, file_prefix: FilePrefix) -> bool:
-        content = open(file_prefix.filename, "r").read()
+        content = open(file_prefix.filename).read()
         keywords = ['"edges":', '"nodes":', '"ordering":', '"initial":']
         if all(keyword in content for keyword in keywords):
             return self._looks_like_json(file_prefix)
@@ -1213,13 +1213,13 @@ class StormCheck(Text):
 
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
-            with open(dataset.file_name, "r") as result:
+            with open(dataset.file_name) as result:
                 answer = ""
                 for line in result:
                     if "Result (for initial states):" in line:
                         answer = line.split()[-1]
                         break
-            dataset.peek = "Model checking result: {}".format(answer)
+            dataset.peek = f"Model checking result: {answer}"
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -1241,12 +1241,12 @@ class CTLresult(Text):
 
     def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
-            with open(dataset.file_name, "r") as result:
+            with open(dataset.file_name) as result:
                 answer = ""
                 for line in result:
                     if "Result:" in line:
                         answer = line.split()[-1]
-            dataset.peek = "Model checking result: {}".format(answer)
+            dataset.peek = f"Model checking result: {answer}"
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -1296,7 +1296,7 @@ class PithyaResult(Json):
         return is_pithya_result
 
     def _looks_like_pithya_result(self, file_prefix: FilePrefix) -> bool:
-        content = open(file_prefix.filename, "r").read()
+        content = open(file_prefix.filename).read()
         keywords = ['"variables":', '"states":', '"parameter_values":', '"results":']
         if all(keyword in content for keyword in keywords):
             return self._looks_like_json(file_prefix)

@@ -45,6 +45,10 @@ from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
+from galaxy.managers.tasks import (
+    AsyncTasksManager,
+    CeleryAsyncTasksManager,
+)
 from galaxy.managers.tools import DynamicToolManager
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import (
@@ -537,6 +541,10 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
+
+        self.task_manager = self._register_abstract_singleton(
+            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]
+        )  # Ignored because of https://github.com/python/mypy/issues/4717
 
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(

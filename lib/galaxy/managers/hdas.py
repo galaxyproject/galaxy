@@ -387,6 +387,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "created_from_basename",
                 "hashes",
                 "sources",
+                "drs_id",
             ],
             include_keys_from="summary",
         )
@@ -461,6 +462,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
             "created_from_basename": lambda item, key, **context: item.created_from_basename,
             "hashes": lambda item, key, **context: [h.to_dict() for h in item.hashes],
             "sources": lambda item, key, **context: [s.to_dict() for s in item.sources],
+            "drs_id": lambda item, key, **context: f"hda-{self.app.security.encode_id(item.id, kind='drs')}",
         }
         self.serializers.update(serializers)
 

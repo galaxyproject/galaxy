@@ -25,7 +25,7 @@
 </template>
 
 <script>
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { submitData } from "./services";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { visitInputs } from "components/Form/utilities";
@@ -99,7 +99,7 @@ export default {
             this.formData = formData;
         },
         onCancel() {
-            window.location = safePath(this.cancelRedirect);
+            window.location = withPrefix(this.cancelRedirect);
         },
         onSubmit() {
             submitData(this.url, this.formData).then((response) => {
@@ -115,7 +115,7 @@ export default {
                 }
                 if (this.redirect) {
                     const urlParams = new URLSearchParams(params);
-                    window.location = safePath(`${this.redirect}?${urlParams.toString()}`);
+                    window.location = withPrefix(`${this.redirect}?${urlParams.toString()}`);
                 } else {
                     const replaceParams = {};
                     visitInputs(response.inputs, (input, name) => {

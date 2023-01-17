@@ -1,13 +1,22 @@
-<script setup>
+<script setup lang="ts">
 import axios from "axios";
-import TrsTool from "./TrsTool";
+import TrsTool from "./TrsTool.vue";
 import { Services } from "../services";
-import { safePath } from "utils/redirect";
-import { computed, ref, watch } from "vue";
-import { redirectOnImport } from "../utils";
-import LoadingSpan from "components/LoadingSpan";
-import TrsServerSelection from "./TrsServerSelection";
-import DebouncedInput from "components/DebouncedInput";
+import { withPrefix } from "@/utils/redirect";
+import { computed, ref, watch, type Ref } from "vue";
+import { getRedirectOnImportPath } from "../redirectPath";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import TrsServerSelection from "./TrsServerSelection.vue";
+import { useRouter } from "vue-router/composables";
+import { BCard } from "bootstrap-vue";
+import type { TrsSelection } from "./types";
+
+type TrsSearchData = {
+    id: string;
+    name: string;
+    description: string;
+    [key: string]: unknown;
+};
 
 const fields = [
     { key: "name", label: "Name" },
@@ -16,60 +25,63 @@ const fields = [
 ];
 
 const query = ref("");
-const results = ref([]);
+const results: Ref<TrsSearchData[]> = ref([]);
 const trsServer = ref("");
 const loading = ref(false);
 const importing = ref(false);
-const trsSelection = ref(null);
-const errorMessage = ref(null);
+const trsSelection: Ref<TrsSelection | null> = ref(null);
+const errorMessage: Ref<string | null> = ref(null);
 
 const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
 });
+
 const itemsComputed = computed(() => {
     return computeItems(results.value);
 });
+
 const searchHelp = computed(() => {
     return "Search by workflow description. Tags (key:value) can be used to also search by metadata - for instance name:example. Available tags include organization and name.";
 });
 
 const services = new Services();
 
-watch(query, () => {
+watch(query, async () => {
     if (query.value == "") {
         results.value = [];
     } else {
         loading.value = true;
-        axios
-            .get(safePath(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`))
-            .then((response) => {
-                results.value = response.data;
-            })
-            .catch((e) => {
-                errorMessage.value = e;
-            })
-            .finally(() => {
-                loading.value = false;
-            });
+
+        try {
+            const response = await axios.get(
+                withPrefix(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`)
+            );
+            results.value = response.data;
+        } catch (e) {
+            errorMessage.value = e as string;
+        }
+
+        loading.value = false;
     }
 });
 
-const onTrsSelection = (selection) => {
+function onTrsSelection(selection: TrsSelection) {
     trsSelection.value = selection;
     trsServer.value = selection.id;
     query.value = "";
-};
+}
 
-const onTrsSelectionError = (message) => {
+function onTrsSelectionError(message: string) {
     errorMessage.value = message;
-};
-const showRowDetails = (row, index, e) => {
-    if (e.target.nodeName != "A") {
+}
+
+function showRowDetails(row: BCard, index: number, e: MouseEvent) {
+    if ((e.target as Node | undefined)?.nodeName !== "A") {
         row._showDetails = !row._showDetails;
     }
-};
+}
 
-const computeItems = (items) => {
+function computeItems(items: TrsSearchData[]) {
     return items.map((item) => {
         return {
             id: item.id,
@@ -79,23 +91,30 @@ const computeItems = (items) => {
             _showDetails: false,
         };
     });
-};
+}
 
-const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect = false) => {
+const router = useRouter();
+
+async function importVersion(trsId?: string, toolIdToImport?: string, version?: string, isRunFormRedirect = false) {
+    if (!trsId || !toolIdToImport) {
+        errorMessage.value = "Import Failed. Unknown Id";
+        return;
+    }
+
     importing.value = true;
     errorMessage.value = null;
-    services
-        .importTrsTool(trsId, toolIdToImport, version)
-        .then((response) => {
-            redirectOnImport(safePath("/"), response, isRunFormRedirect);
-        })
-        .catch((e) => {
-            errorMessage.value = e || "Import failed for an unknown reason.";
-        })
-        .finally(() => {
-            importing.value = false;
-        });
-};
+
+    try {
+        const response = await services.importTrsTool(trsId, toolIdToImport, version);
+        const path = getRedirectOnImportPath(response, isRunFormRedirect);
+
+        router.push(path);
+    } catch (e) {
+        errorMessage.value = (e as string) || "Import failed for an unknown reason.";
+    }
+
+    importing.value = false;
+}
 </script>
 
 <template>
@@ -112,15 +131,13 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
 
         <div>
             <b-input-group class="mb-3">
-                <DebouncedInput v-slot="{ value, input }" v-model="query">
-                    <b-form-input
-                        id="trs-search-query"
-                        :value="value"
-                        placeholder="search query"
-                        data-description="filter text input"
-                        @input="input"
-                        @keyup.esc="query = ''" />
-                </DebouncedInput>
+                <b-form-input
+                    id="trs-search-query"
+                    v-model="query"
+                    debounce="500"
+                    placeholder="search query"
+                    data-description="filter text input"
+                    @keyup.esc="query = ''" />
                 <b-input-group-append>
                     <b-button
                         v-b-tooltip
@@ -160,7 +177,7 @@ const importVersion = (trsId, toolIdToImport, version = null, isRunFormRedirect 
                         </b-alert>
                         <TrsTool
                             :trs-tool="row.item.data"
-                            @onImport="importVersion(trsSelection.id, row.item.data.id, $event)" />
+                            @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
                     </b-card>
                 </template>
             </b-table>

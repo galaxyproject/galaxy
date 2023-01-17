@@ -764,18 +764,6 @@ def populate_api_routes(webapp, app):
         "update_step", "/steps/{step_id}", action="update_invocation_step", conditions=dict(method=["PUT"])
     )
 
-    # ============================
-    # ===== AUTHENTICATE API =====
-    # ============================
-
-    webapp.mapper.connect(
-        "api_key_retrieval",
-        "/api/authenticate/baseauth/",
-        controller="authenticate",
-        action="get_api_key",
-        conditions=dict(method=["GET"]),
-    )
-
     # ======================================
     # ====== DISPLAY APPLICATIONS API ======
     # ======================================
@@ -902,6 +890,14 @@ def populate_api_routes(webapp, app):
         controller="users",
         action="remove_favorite",
         conditions=dict(method=["DELETE"]),
+    )
+
+    webapp.mapper.connect(
+        "set_theme",
+        "/api/users/{id}/theme/{theme}",
+        controller="users",
+        action="set_theme",
+        conditions=dict(method=["PUT"]),
     )
 
     # ========================

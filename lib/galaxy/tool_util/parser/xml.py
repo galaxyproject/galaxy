@@ -16,6 +16,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
 )
 from galaxy.util import (
+    Element,
     ElementTree,
     string_as_bool,
     xml_text,
@@ -56,6 +57,7 @@ class XmlToolSource(ToolSource):
     """Responsible for parsing a tool from classic Galaxy representation."""
 
     language = "xml"
+    root: Element
 
     def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree

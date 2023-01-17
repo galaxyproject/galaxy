@@ -98,7 +98,7 @@ def __check_format(node, lint_ctx, allow_ext=False):
     if fmt is None:
         fmt = node.attrib.get("format")
     if fmt == "input":
-        lint_ctx.warn(
+        lint_ctx.error(
             f"Using format='input' on {node.tag}, format_source attribute is less ambiguous and should be used instead.",
             node=node,
         )

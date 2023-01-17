@@ -55,7 +55,8 @@ For users who manage their own DNS, you can set the appropriate A records to red
 `gravity` will automatically start the needed proxy server.
 
 The following configuration is only recommended for local testing, as users will directly connect to the InteractiveTool Proxy.
-In a production setup an upstream proxy should route requests to the proxy via the ``*.interactivetool.yourdomain`` subdomain.
+In a production setup an upstream proxy should route requests to the proxy via the ``*.interactivetool.yourdomain`` subdomain,
+or use path-based proxying for interactive tools that support it (``requires_domain=False``, see below for more details).
 
 Set these values in `galaxy.yml`:
 
@@ -82,23 +83,23 @@ the InteractiveTool proxy:
 
 .. code-block:: nginx
 
-        server {
-            # Listen on port 443
-            listen       *:443 ssl;
-            # Match all requests for the interactive tools subdomain
-            server_name  *.interactivetool.localhost;
+    server {
+        # Listen on port 443
+        listen       *:443 ssl;
+        # Match all requests for the interactive tools subdomain
+        server_name  *.interactivetool.localhost;
 
-            # Route all domain-based interactive tool requests to the InteractiveTool proxy application
-            location / {
-                proxy_redirect off;
-                proxy_http_version 1.1;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header Upgrade $http_upgrade;
-                proxy_set_header Connection "upgrade";
-                proxy_pass http://localhost:4002;
-            }
+        # Route all domain-based interactive tool requests to the InteractiveTool proxy application
+        location / {
+            proxy_redirect off;
+            proxy_http_version 1.1;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection "upgrade";
+            proxy_pass http://localhost:4002;
         }
+    }
 
 
 Note that this nginx example uses https, so you need to have a wildcard certificate for your domain,
@@ -106,29 +107,31 @@ and you need to adjust ``galaxy_infrastructure_url`` as appropriate.
 
 It is also possible to set up nginx to route path-based interactive tool URLs to the InteractiveTool proxy.
 Path-based interactive tool URLs will only be created for tools that have defined ``requires_domain=False`` in the tool
-XML file (which signals that the web server running on the container does not require a domain name to serve pages
-correctly). To support path-based interactive tools through nginx proxy, add the following to the main Galaxy "server"
+XML file (which signals that the web server running on the container makes use of relative links and can serve
+content starting from any path). A tool config variable will be added in the next version to simplify this for
+tools that need to know the path to where it is served.
+
+To support path-based interactive tools through nginx proxy, add the following to the main Galaxy "server"
 section (serving port 443):
 
 .. code-block:: nginx
 
         # Route all path-based interactive tool requests to the InteractiveTool proxy application
-	    location ~* ^/(interactivetool)/access/(.+)/([0-9a-f]+)/([0-9a-f]+)/(.*)$ {
+        location ~* ^/(interactivetool/access/.+)$ {
             proxy_redirect off;
             proxy_http_version 1.1;
-            proxy_set_header Host $3-$4.$1.$host;
             proxy_set_header X-Real-IP $remote_addr;
             proxy_set_header Upgrade $http_upgrade;
-	        proxy_set_header Connection "upgrade";
-            proxy_pass http://localhost:4002/$5$is_args$args;
-	}
+            proxy_set_header Connection "upgrade";
+            proxy_pass http://localhost:4002;
+        }
 
-This example config works for default values of `interactivetools_base_path` and `interactivetools_prefix` as defined in
-`galaxy.yml`. For other values, you will need to adjust the regex and rename patterns accordingly. This solution also
-requires `interactivetools_shorten_url` to be set to `false` (not default).
+This example config works for default values of ``interactivetools_base_path`` and ``interactivetools_prefix`` as defined in
+``galaxy.yml``. For other values, you will need to adjust the location patterns accordingly. This solution also
+requires ``interactivetools_shorten_url`` to be set to ``false`` (default).
 
-In both nginx config examples, you will most likely also want to replace localhost with your server domain (or possibly
-``127.0.0.1``).
+In both nginx config examples, you might want to replace localhost with your server domain (or possibly
+``127.0.0.1``), depending on your server setup.
 
 You will also need to enable a docker destination in the job_conf.xml file.
 An example ``job_conf.xml`` file as seen in ``config/job_conf.xml.interactivetools``:

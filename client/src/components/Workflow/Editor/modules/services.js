@@ -1,7 +1,7 @@
 import axios from "axios";
-import { rethrowSimple } from "utils/simple-error";
+import { rethrowSimple, errorMessageAsString } from "utils/simple-error";
 import { getAppRoot } from "onload/loadConfig";
-import { fromSimple, toSimple } from "./model";
+import { toSimple } from "./model";
 
 /** Workflow data request helper **/
 export async function getVersions(id) {
@@ -13,11 +13,14 @@ export async function getVersions(id) {
     }
 }
 
-export async function getModule(request_data) {
+export async function getModule(request_data, stepId, setLoadingState) {
+    setLoadingState(stepId, true);
     try {
         const { data } = await axios.post(`${getAppRoot()}api/workflows/build_module`, request_data);
+        setLoadingState(stepId, false);
         return data;
     } catch (e) {
+        setLoadingState(stepId, false, errorMessageAsString(e));
         rethrowSimple(e);
     }
 }
@@ -36,11 +39,10 @@ export async function refactor(id, actions, dryRun = false) {
     }
 }
 
-export async function loadWorkflow({ workflow, id, version = null, appendData = false }) {
+export async function loadWorkflow({ id, version = null }) {
     try {
         const versionQuery = Number.isInteger(version) ? `version=${version}` : "";
         const { data } = await axios.get(`${getAppRoot()}workflow/load_workflow?_=true&id=${id}&${versionQuery}`);
-        fromSimple(workflow, data, appendData);
         return data;
     } catch (e) {
         console.debug(e);
@@ -64,15 +66,6 @@ export async function saveWorkflow(workflow) {
         }
     }
     return {};
-}
-
-export async function getDatatypeMapping() {
-    try {
-        const { data } = await axios.get(`${getAppRoot()}api/datatypes/mapping`);
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
 }
 
 export async function getToolPredictions(requestData) {

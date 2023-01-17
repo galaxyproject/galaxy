@@ -1,6 +1,9 @@
 <template>
     <div>
         <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-alert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
+            {{ importMessage }}
+        </b-alert>
         <b-row class="mb-3">
             <b-col cols="6" class="m-1">
                 <index-filter
@@ -150,6 +153,14 @@ export default {
         inputDebounceDelay: {
             type: Number,
             default: 500,
+        },
+        importMessage: {
+            type: String,
+            default: null,
+        },
+        importStatus: {
+            type: String,
+            default: "success",
         },
     },
     data() {

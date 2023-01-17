@@ -420,6 +420,28 @@ history_export:
     export_button: '.export-button'
     success_message: '.history-export-component .alert-success'
 
+history_export_tasks:
+  selectors:
+    direct_download: '.direct-download-btn'
+    file_source_tab: '.tab-export-to-file'
+    remote_file_name_input: '#file-source-tab #name'
+    toggle_options_link: '#toggle-options-link'
+    export_format_selector: '#format-selector'
+    select_format:
+        type: xpath
+        selector: '//select[@id="format-selector"]/option[@value="${format}"]'
+
+last_export_record:
+  selectors:
+    details: '.export-record-details'
+    preparing_export: '.export-record-details .loading-icon'
+    export_format: '.record-archive-format'
+    up_to_date_icon: '.record-up-to-date-icon'
+    outdated_icon: '.record-outdated-icon'
+    expiration_warning_icon: '.record-expiration-warning-icon'
+    download_btn: '.record-download-btn'
+    reimport_btn: '.record-reimport-btn'
+
 history_import:
   selectors:
     radio_button_remote_files: '.history-import-component .fa-folder-open'
@@ -464,7 +486,7 @@ tool_form:
     options: '.tool-dropdown'
     execute: 'button#execute'
     parameter_div: 'div.ui-form-element[id="form-element-${parameter}"]'
-    parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch div'
+    parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
     reference: '.formatted-reference'
@@ -525,6 +547,8 @@ trs_import:
     select_server:
       type: xpath
       selector: "//a[contains(@class, 'dropdown-item') and text() = '${server}']"
+    url_input: "#trs-import-url-input"
+    url_import_button: "#trs-url-import-button"
 
 workflow_run:
   selectors:
@@ -567,6 +591,10 @@ workflow_editor:
     workflow_link:
       type: xpath
       selector: '//a[contains(., "${workflow_title}")]'
+    insert_steps:
+      type: xpath
+      selector: >
+        //a/span[text()='${workflow_title}']/following-sibling::span[@title='Insert individual steps.']
     connect_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-connected-icon'
     collapse_icon: 'div.ui-form-element[id="form-element-${name}"] .ui-form-collapsible-icon'
     edit_subworkflow: 'button[title="Edit this Subworkflow. You will need to upgrade this Workflow Step afterwards."]'
@@ -576,11 +604,11 @@ workflow_editor:
     label_input:
       type: xpath
       selector: >
-        //div[@id='form-element-__label' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@id='form-element-__label']//input
     annotation_input:
       type: xpath
       selector: >
-        //div[@id='form-element-__annotation' and not(ancestor::div[contains(@style,'display: none')])]//textarea
+        //div[@id='form-element-__annotation']//textarea
     configure_output:
       type: xpath
       selector: >
@@ -588,7 +616,7 @@ workflow_editor:
     label_output:
       type: xpath
       selector: >
-        //div[@id='form-element-__label__${output}' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@id='form-element-__label__${output}']//input
     rename_output:
       type: xpath
       selector: >
@@ -597,7 +625,7 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@data-label='Change datatype' and not(ancestor::div[contains(@style,'display: none')])]//span[contains(@class, 'select2-chosen')]
-    select_dataype_text_search:
+    select_datatype_text_search:
       type: xpath
       selector: >
         //div[@class="select2-search" and not(ancestor::div[contains(@style,'display: none')])]//input
@@ -608,13 +636,13 @@ workflow_editor:
     add_tags:
       type: xpath
       selector: >
-        //div[@data-label='Add Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@data-label='Add Tags']//input
     remove_tags:
       type: xpath
       selector: >
-        //div[@data-label='Remove Tags' and not(ancestor::div[contains(@style,'display: none')])]//input
+        //div[@data-label='Remove Tags']//input
     tool_version_button: ".tool-versions"
-    connector_for: "div[output-handle-id='${source_id}'][input-handle-id='${sink_id}']"
+    connector_for: "#connection-${sink_id}-${source_id}"
     connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     state_modal_body: '.state-upgrade-modal'
@@ -918,4 +946,3 @@ job_details:
       type: xpath
       selector: '//td[@id="galaxy-tool-id"][normalize-space(text()) = "${tool_id}"]'
     tool_exit_code: '#exit-code'
-

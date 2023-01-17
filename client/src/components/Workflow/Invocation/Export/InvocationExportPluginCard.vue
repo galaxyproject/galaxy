@@ -26,11 +26,12 @@ provide("invocationId", props.invocationId);
 const descriptionRendered = computed(() => renderMarkdown(props.exportPlugin.markdownDescription));
 const invocationDownloadUrl = computed(() => `/api/invocations/${props.invocationId}/prepare_store_download`);
 const downloadParams = computed(() => {
+    const exportParams = props.exportPlugin.exportParams;
     return {
-        model_store_format: props.exportPlugin.downloadFormat,
-        include_files: false,
-        include_deleted: false,
-        include_hidden: false,
+        model_store_format: exportParams.modelStoreFormat,
+        include_files: exportParams.includeFiles,
+        include_deleted: exportParams.includeDeleted,
+        include_hidden: exportParams.includeHidden,
     };
 });
 
@@ -39,7 +40,8 @@ function openRemoteExportDialog() {
 }
 
 function exportToFileSource(exportDirectory, fileName) {
-    const exportDirectoryUri = `${exportDirectory}/${fileName}.${props.exportPlugin.downloadFormat}`;
+    const exportFormat = props.exportPlugin.exportParams.modelStoreFormat;
+    const exportDirectoryUri = `${exportDirectory}/${fileName}.${exportFormat}`;
     const writeStoreParams = {
         target_uri: exportDirectoryUri,
         ...downloadParams.value,

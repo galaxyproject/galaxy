@@ -123,8 +123,8 @@ export default {
             topInfo: "",
             highlightBox: false,
             showHelper: true,
-            extension: this.app.defaultExtension,
-            genome: this.app.defaultDbKey,
+            extension: this.details.defaultExtension,
+            genome: this.details.defaultDbKey,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -151,7 +151,7 @@ export default {
             return result;
         },
         appModel() {
-            return this.app.model;
+            return this.details.model;
         },
     },
     watch: {
@@ -205,7 +205,7 @@ export default {
             ondragleave: () => {
                 this.highlightBox = false;
             },
-            chunkSize: this.app.chunkUploadSize,
+            chunkSize: this.details.chunkUploadSize,
         });
         this.collection.on("remove", (model) => {
             this._eventRemove(model);
@@ -241,8 +241,8 @@ export default {
                 this.counterError = 0;
                 this.counterRunning = 0;
                 this.uploadbox.reset();
-                this.extension = this.app.defaultExtension;
-                this.genome = this.app.defaultDbKey;
+                this.extension = this.details.defaultExtension;
+                this.genome = this.details.defaultDbKey;
                 this.appModel.set("percentage", 0);
                 this._updateStateForCounters();
             }

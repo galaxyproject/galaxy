@@ -1479,7 +1479,7 @@ mapping:
 
       logo_src:
         type: str
-        default: /static/favicon.png
+        default: /static/favicon.svg
         required: false
         per_host: true
         desc: |
@@ -2785,6 +2785,58 @@ mapping:
           a real admin user account via API.
           You should probably not set this on a production server.
 
+      ga4gh_service_id:
+        type: str
+        required: false
+        desc: |
+          Service ID for GA4GH services (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using the URL the target API requests are made against.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+          This value should likely reflect your service's URL. For instance for usegalaxy.org
+          this value should be org.usegalaxy. Particular Galaxy implementations will treat this
+          value as a prefix and append the service type to this ID. For instance for the DRS
+          service "id" (available via the DRS API) for the above configuration value would be
+          org.usegalaxy.drs.
+
+      ga4gh_service_organization_name:
+        type: str
+        required: false
+        desc: |
+          Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using ga4gh_service_id.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      ga4gh_service_organization_url:
+        type: str
+        required: False
+        desc: |
+          Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
+          If unset, one will be generated using the URL the target API requests are made against.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
+      ga4gh_service_environment:
+        type: str
+        required: False
+        desc: |
+          Service environment (exposed via the service-info endpoint for the Galaxy DRS API) for
+          implemented GA4GH services.
+
+          Suggested values are prod, test, dev, staging.
+
+          For more information on GA4GH service definitions - check out
+          https://github.com/ga4gh-discovery/ga4gh-service-registry
+          and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
+
       enable_tool_tags:
         type: bool
         default: false
@@ -3562,14 +3614,14 @@ mapping:
 
       tool_recommendation_model_path:
         type: str
-        default: 'https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model.hdf5'
+        default: 'https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5'
         required: false
         desc: |
           Set remote path of the trained model (HDF5 file) for tool recommendation.
 
       topk_recommendations:
         type: int
-        default: 10
+        default: 20
         required: false
         desc: |
           Set the number of predictions/recommendations to be made by the model
@@ -3631,3 +3683,14 @@ mapping:
         default: true
         required: false
         desc: Display built-in converters in the tool panel.
+
+      themes_config_file:
+        type: str
+        default: themes_conf.yml
+        path_resolves_to: config_dir
+        resolves_to: themes
+        per_host: true
+        required: false
+        desc: |
+          Optional file containing one or more themes for galaxy. If several themes
+          are defined, users can choose their preferred theme in the client.

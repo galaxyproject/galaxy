@@ -8,10 +8,12 @@ import MockConfigProvider from "../providers/MockConfigProvider";
 import MockCurrentHistory from "components/providers/MockCurrentHistory";
 import Vue from "vue";
 import Vuex from "vuex";
+import { createPinia } from "pinia";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 
 const localVue = getLocalVue();
+const pinia = createPinia();
 
 describe("ToolForm", () => {
     let wrapper;
@@ -52,6 +54,7 @@ describe("ToolForm", () => {
                 FormDisplay: true,
             },
             provide: { store },
+            pinia,
         });
     });
 

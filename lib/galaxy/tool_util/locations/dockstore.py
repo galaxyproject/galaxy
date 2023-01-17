@@ -4,7 +4,7 @@ import requests
 import yaml
 
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
-from ..locations import ToolLocationResolver
+from . import ToolLocationResolver
 
 
 class DockStoreResolver(ToolLocationResolver):

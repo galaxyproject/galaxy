@@ -1,9 +1,9 @@
 import Collection from "./Collection.vue";
-import { mountWithApp } from "./testHelpers";
+import { mountWithDetails } from "./testHelpers";
 
 describe("Collection.vue", () => {
     it("loads with correct initial state", async () => {
-        const { wrapper } = mountWithApp(Collection);
+        const { wrapper } = mountWithDetails(Collection);
         expect(wrapper.vm.counterAnnounce).toBe(0);
         expect(wrapper.vm.showHelper).toBe(true);
         expect(wrapper.vm.extensions[0].id).toBe("ab1");
@@ -14,21 +14,19 @@ describe("Collection.vue", () => {
     });
 
     it("does render FTP is site set", async () => {
-        const { wrapper } = mountWithApp(Collection);
+        const { wrapper } = mountWithDetails(Collection);
         expect(wrapper.find("#btn-ftp").element).toBeVisible();
     });
 
     it("doesn't render FTP is no site set", async () => {
-        const { wrapper } = mountWithApp(Collection, {
-            currentFtp: () => {
-                return null;
-            },
+        const { wrapper } = mountWithDetails(Collection, {
+            currentFtp: null,
         });
         expect(wrapper.findAll("#btn-ftp").length).toBe(0);
     });
 
     it("resets properly", async () => {
-        const { wrapper, localVue } = mountWithApp(Collection);
+        const { wrapper, localVue } = mountWithDetails(Collection);
         expect(wrapper.vm.showHelper).toBe(true);
         await localVue.nextTick();
         await wrapper.find("#btn-new").trigger("click");
@@ -43,7 +41,7 @@ describe("Collection.vue", () => {
     });
 
     it("respects lazyLoadMax limit", async () => {
-        const { wrapper, localVue } = mountWithApp(Collection, {}, { lazyLoadMax: 2 });
+        const { wrapper, localVue } = mountWithDetails(Collection, {}, { lazyLoadMax: 2 });
         expect(wrapper.findAll(".ui-limitloader").length).toBe(1);
         await localVue.nextTick();
         await wrapper.find("#btn-new").trigger("click");

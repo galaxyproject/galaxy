@@ -14,6 +14,7 @@ import WorkflowEditorModule from "entry/analysis/modules/WorkflowEditor";
 // routes
 import AdminRoutes from "entry/analysis/routes/admin-routes";
 import LibraryRoutes from "entry/analysis/routes/library-routes";
+import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
 
 // child components
 import Citations from "components/Citation/Citations";
@@ -62,7 +63,7 @@ import { APIKey } from "components/User/APIKey";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
-import { StorageDashboardRouter } from "components/User/DiskUsage";
+import HistoryExportTasks from "components/History/Export/HistoryExport";
 
 Vue.use(VueRouter);
 
@@ -85,6 +86,7 @@ export function getRouter(Galaxy) {
         routes: [
             ...AdminRoutes,
             ...LibraryRoutes,
+            ...StorageDashboardRoutes,
             /** Login entry route */
             { path: "/login/start", component: Login },
             /** Page editor */
@@ -235,7 +237,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "histories/:historyId/export",
-                        component: HistoryExport,
+                        get component() {
+                            return Galaxy.config.enable_celery_tasks ? HistoryExportTasks : HistoryExport;
+                        },
                         props: true,
                     },
                     {
@@ -302,11 +306,6 @@ export function getRouter(Galaxy) {
                             item: "page",
                             plural: "Pages",
                         }),
-                    },
-                    {
-                        path: "storage",
-                        component: StorageDashboardRouter,
-                        redirect: redirectAnon(),
                     },
                     {
                         path: "tours",
@@ -444,6 +443,10 @@ export function getRouter(Galaxy) {
                         path: "workflows/list",
                         component: WorkflowList,
                         redirect: redirectAnon(),
+                        props: (route) => ({
+                            importMessage: route.query["message"],
+                            importStatus: route.query["status"],
+                        }),
                     },
                     {
                         path: "workflows/run",
@@ -469,6 +472,7 @@ export function getRouter(Galaxy) {
                             queryTrsServer: route.query.trs_server,
                             queryTrsId: route.query.trs_id,
                             queryTrsVersionId: route.query.trs_version,
+                            queryTrsUrl: route.query.trs_url,
                             isRun: route.query.run_form == "true",
                         }),
                     },

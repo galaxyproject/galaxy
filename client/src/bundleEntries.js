@@ -20,7 +20,6 @@ export { SweepsterVisualization, SweepsterVisualizationView } from "viz/sweepste
 export { createTabularDatasetChunkedView } from "mvc/dataset/data";
 export { default as LegacyGridView } from "legacy/grid/grid-view";
 export { create_chart, create_histogram } from "reports/run_stats";
-export { openGlobalUploadModal } from "components/Upload";
 export { runTour } from "components/Tour/runTour";
 export { Toast } from "ui/toast"; // TODO: remove when external consumers are updated/gone (IES right now)
 

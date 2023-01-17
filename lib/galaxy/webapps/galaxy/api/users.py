@@ -471,7 +471,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         "type": "text",
                         "label": "Public name",
                         "value": username,
-                        "help": 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character.',
+                        "help": 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes (".", "_", "-").',
                     }
                 )
             info_form_models = self.get_all_forms(
@@ -547,7 +547,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         label="Public name:",
                         type="text",
                         value=username,
-                        help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, and the "-" character. You cannot change your public name after you have created a repository in this tool shed.',
+                        help='Your public name provides a means of identifying you publicly within this tool shed. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes (".", "_", "-"). You cannot change your public name after you have created a repository in this tool shed.',
                     )
                 )
         user_info["inputs"] = inputs
@@ -746,6 +746,22 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             raise exceptions.ObjectAttributeInvalidException(
                 f"This type is not supported. Given object_type: {object_type}"
             )
+
+    @expose_api
+    def set_theme(self, trans, id: str, theme: str, payload=None, **kwd) -> str:
+        """Sets the user's theme choice.
+        PUT /api/users/{id}/theme/{theme}
+
+        :param id: the encoded id of the user
+        :type  id: str
+        :param theme: the theme identifier/name that the user has selected as preference
+        :type  theme: str
+        """
+        payload = payload or {}
+        user = self._get_user(trans, id)
+        user.preferences["theme"] = theme
+        trans.sa_session.flush()
+        return theme
 
     @expose_api
     def get_password(self, trans, id, payload=None, **kwd):

@@ -27,7 +27,7 @@ library.add(faDownload, faSpinner);
 import ConfigProvider from "components/providers/ConfigProvider";
 import { Toast } from "composables/toast";
 import axios from "axios";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 export default {
     components: {
         ConfigProvider,
@@ -76,12 +76,14 @@ export default {
         },
         onDownload(config) {
             if (!config.enable_celery_tasks) {
-                console.log("celery tasks not enabled - setting href to fallback URL.");
-                window.location.assign(safePath(this.fallbackUrl));
-                return;
+                window.location.assign(withPrefix(this.fallbackUrl));
+            } else {
+                this.waiting = true;
+                axios
+                    .post(this.downloadEndpoint, this.postParameters)
+                    .then(this.handleInitialize)
+                    .catch(this.handleError);
             }
-            this.waiting = true;
-            axios.post(this.downloadEndpoint, this.postParameters).then(this.handleInitialize).catch(this.handleError);
         },
         handleInitialize(response) {
             const storageRequestId = response.data.storage_request_id;

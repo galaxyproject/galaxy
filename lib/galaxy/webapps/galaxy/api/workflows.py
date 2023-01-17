@@ -265,11 +265,27 @@ class WorkflowsAPIController(
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
                 elif archive_source == "trs_tool":
-                    trs_server = payload.get("trs_server")
-                    trs_tool_id = payload.get("trs_tool_id")
-                    trs_version_id = payload.get("trs_version_id")
+                    server = None
+                    trs_tool_id = None
+                    trs_version_id = None
                     import_source = None
-                    archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
+                    if "trs_url" in payload:
+                        parts = self.app.trs_proxy.match_url(payload["trs_url"])
+                        if parts:
+                            server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
+                            trs_tool_id = parts["tool_id"]
+                            trs_version_id = parts["version_id"]
+                            payload["trs_tool_id"] = trs_tool_id
+                            payload["trs_version_id"] = trs_version_id
+                        else:
+                            raise exceptions.MessageException("Invalid TRS URL.")
+                    else:
+                        trs_server = payload.get("trs_server")
+                        server = self.app.trs_proxy.get_server(trs_server)
+                        trs_tool_id = payload.get("trs_tool_id")
+                        trs_version_id = payload.get("trs_version_id")
+
+                    archive_data = server.get_version_descriptor(trs_tool_id, trs_version_id)
                 else:
                     try:
                         archive_data = stream_url_to_str(

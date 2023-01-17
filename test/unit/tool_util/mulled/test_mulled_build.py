@@ -1,3 +1,5 @@
+import os.path
+
 import pytest
 
 from galaxy.tool_util.deps.mulled.mulled_build import (
@@ -6,6 +8,7 @@ from galaxy.tool_util.deps.mulled.mulled_build import (
     CondaInDockerContext,
     DEFAULT_BASE_IMAGE,
     DEFAULT_EXTENDED_BASE_IMAGE,
+    InvolucroContext,
     mull_targets,
     target_str_to_targets,
 )
@@ -32,8 +35,10 @@ def test_base_image_for_targets(target, version, base_image):
 def test_mulled_build_files_cli(use_mamba, tmpdir):
     singularity_image_dir = tmpdir.mkdir("singularity image dir")
     target = build_target("zlib")
+    involucro_context = InvolucroContext(involucro_bin=os.path.join(tmpdir, "involucro"))
     mull_targets(
         [target],
+        involucro_context=involucro_context,
         command="build-and-test",
         singularity=True,
         use_mamba=use_mamba,

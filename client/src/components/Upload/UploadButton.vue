@@ -28,7 +28,8 @@ import { VBTooltip } from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { openGlobalUploadModal } from "./mount";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
+
 library.add(faUpload);
 
 export default {
@@ -38,6 +39,10 @@ export default {
     },
     props: {
         title: { type: String, default: "Download from URL or upload files from disk" },
+    },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
     },
     data() {
         return {
@@ -58,7 +63,7 @@ export default {
     },
     methods: {
         showUploadDialog() {
-            openGlobalUploadModal();
+            this.openGlobalUploadModal();
         },
         setStatus(val) {
             this.status = val;

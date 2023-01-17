@@ -1,4 +1,4 @@
-import { fetcher } from "schema/fetcher";
+import { fetcher } from "@/schema/fetcher";
 
 const getTypesAndMappings = fetcher.path("/api/datatypes/types_and_mapping").method("get").create();
 

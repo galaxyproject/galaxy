@@ -4,6 +4,7 @@ import pytest
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+from seletools.actions import drag_and_drop
 
 from galaxy_test.base.workflow_fixtures import (
     WORKFLOW_NESTED_SIMPLE,
@@ -101,11 +102,8 @@ class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
         node = editor.node._(label="select_from_dataset_optional")
         node.title.wait_for_and_click()
         self.components.tool_form.parameter_checkbox(parameter="select_single").wait_for_and_click()
-        # External (selenium-side) debounce hack for old backbone input
-        # TODO: remove when form elements are all converted.
-        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter valu")
-        self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("e")
+        self.components.tool_form.parameter_input(parameter="select_single").wait_for_and_send_keys("parameter value")
+        # onSetData does an extra POST to build_modules, so we need to wait for that ...
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
@@ -254,8 +252,7 @@ steps:
 
         tool_node = editor.node._(label="tool_exec")
         tool_input = tool_node.input_terminal(name="inttest")
-        tool_input.wait_for_and_click()
-
+        self.hover_over(tool_input.wait_for_visible())
         editor.connector_destroy_callout.wait_for_and_click()
         self.assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
@@ -338,7 +335,7 @@ steps:
 
         cat_node = editor.node._(label="first_cat")
         cat_input = cat_node.input_terminal(name="input1")
-        cat_input.wait_for_and_click()
+        self.hover_over(cat_input.wait_for_visible())
         editor.connector_destroy_callout.wait_for_visible()
         self.screenshot("workflow_editor_connection_callout")
         editor.connector_destroy_callout.wait_for_and_click()
@@ -557,7 +554,7 @@ steps:
         node.wait_for_and_click()
         editor.configure_output(output="out_file1").wait_for_and_click()
         editor.change_datatype.wait_for_and_click()
-        editor.select_dataype_text_search.wait_for_and_send_keys("bam")
+        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
         editor.select_datatype(datatype="bam").wait_for_and_click()
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
         self.assert_not_connected("create_2#out_file1", "checksum#input")
@@ -662,7 +659,7 @@ steps:
         self.set_text_element(output_label, "workflow output label")
         self.set_text_element(editor.rename_output, "renamed_output")
         editor.change_datatype.wait_for_and_click()
-        editor.select_dataype_text_search.wait_for_and_send_keys("bam")
+        editor.select_datatype_text_search.wait_for_and_send_keys("bam")
         editor.select_datatype(datatype="bam").wait_for_and_click()
         self.set_text_element(editor.add_tags, "#crazynewtag")
         self.set_text_element(editor.remove_tags, "#oldboringtag")
@@ -712,6 +709,23 @@ steps:
         assert subworkflow_step["name"] == child_workflow_name
         assert subworkflow_step["type"] == "subworkflow"
         assert subworkflow_step["subworkflow"]["a_galaxy_workflow"] == "true"
+
+    @selenium_test
+    def test_editor_insert_steps(self):
+        steps_to_insert = self.workflow_upload_yaml_with_random_name(WORKFLOW_SIMPLE_CAT_TWICE)
+        annotation = "insert step test"
+        self.workflow_create_new(annotation=annotation)
+        self.workflow_editor_add_input(item_name="data_input")
+        editor = self.components.workflow_editor
+        editor.canvas_body.wait_for_visible()
+        editor.tool_menu.wait_for_visible()
+        editor.tool_menu_section_link(section_name="workflows").wait_for_and_click()
+        editor.insert_steps(workflow_title=steps_to_insert).wait_for_and_click()
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.assert_workflow_has_changes_and_save()
+        workflow_id = self.driver.current_url.split("id=")[1]
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert len(workflow["steps"]) == 3
 
     @selenium_test
     def test_editor_invalid_tool_state(self):
@@ -770,6 +784,60 @@ steps:
         self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         assert_workflow_bookmarked_status(True)
 
+    def tab_to(self, accessible_name, direction="forward"):
+        for _ in range(100):
+            ac = self.action_chains()
+            if direction == "backwards":
+                ac.key_down(Keys.SHIFT)
+            ac.send_keys(Keys.TAB)
+            if direction == "backwards":
+                ac.key_down(Keys.SHIFT)
+            ac.perform()
+            if accessible_name in self.driver.switch_to.active_element.accessible_name:
+                return self.driver.switch_to.active_element
+        else:
+            raise Exception(f"Could not tab to element containing '{accessible_name}' in aria-label")
+
+    @selenium_test
+    def test_aria_connections_menu(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  first_cat:
+    position:
+      # Step should be positioned off-screen, tabbing should scroll to node
+      top: 2000
+      left: 2000
+    tool_id: cat
+    in:
+      input1: input1
+      queries_0|input2: input1
+""",
+            auto_layout=False,
+        )
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.screenshot("workflow_editor_connection_simple")
+        self.components.workflow_editor.canvas_body.wait_for_and_click()
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector.send_keys(Keys.SPACE)
+        assert self.driver.switch_to.active_element.text == "Disconnect from input1 in step 2: first_cat"
+        self.driver.switch_to.active_element.send_keys(Keys.ENTER)
+        self.assert_not_connected("input1#output", "first_cat#input1")
+        self.action_chains().move_to_element(self.components.workflow_editor.canvas_body.wait_for_and_click()).perform()
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector.send_keys(Keys.SPACE)
+        assert self.driver.switch_to.active_element.text == "Connect to input1 in step 2: first_cat"
+        self.driver.switch_to.active_element.send_keys(Keys.ENTER)
+        self.assert_connected("input1#output", "first_cat#input1")
+        self.action_chains().move_to_element(self.components.workflow_editor.canvas_body.wait_for_and_click()).perform()
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector = self.tab_to("Press space to see a list of available inputs")
+        output_connector.send_keys(Keys.SPACE)
+        assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
+
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
             self.components._.left_panel_collapse.wait_for_and_click()
@@ -781,17 +849,14 @@ steps:
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         source_element = self.find_element_by_selector(f"#{source_id}")
         sink_element = self.find_element_by_selector(f"#{sink_id}")
-
         ac = self.action_chains()
         ac = ac.move_to_element(source_element).click_and_hold()
         if screenshot_partial:
-            ac = ac.move_to_element_with_offset(sink_element, -5, 0)
+            ac = ac.move_by_offset(10, 10)
             ac.perform()
             self.sleep_for(self.wait_types.UX_RENDER)
             self.screenshot(screenshot_partial)
-            ac = self.action_chains()
-
-        ac = ac.move_to_element(sink_element).release().perform()
+        drag_and_drop(self.driver, source_element, sink_element)
 
     def assert_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
@@ -807,6 +872,7 @@ steps:
         self.workflow_index_open_with_name(name)
         if auto_layout:
             self.workflow_editor_click_option("Auto Layout")
+            self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def workflow_editor_source_sink_terminal_ids(self, source, sink):
@@ -818,14 +884,14 @@ steps:
         source_node = editor.node._(label=source_node_label)
         sink_node = editor.node._(label=sink_node_label)
 
-        source_node.wait_for_visible()
-        sink_node.wait_for_visible()
+        source_node.wait_for_present()
+        sink_node.wait_for_present()
 
         output_terminal = source_node.output_terminal(name=source_output)
         input_terminal = sink_node.input_terminal(name=sink_input)
 
-        output_element = output_terminal.wait_for_visible()
-        input_element = input_terminal.wait_for_visible()
+        output_element = output_terminal.wait_for_present()
+        input_element = input_terminal.wait_for_present()
 
         source_id = output_element.get_attribute("id")
         sink_id = input_element.get_attribute("id")
@@ -847,8 +913,8 @@ steps:
 
         sink_node_label, sink_input_name = sink.split("#", 1)
         sink_node = editor.node._(label=sink_node_label)
-        sink_input = sink_node.input_terminal(name=sink_input_name)
-        sink_input.wait_for_and_click()
+        sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
+        self.hover_over(sink_input)
         editor.connector_destroy_callout.wait_for_and_click()
 
     def assert_input_mapped(self, sink):

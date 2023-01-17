@@ -31,7 +31,7 @@ RoleIDParam: DecodedDatabaseIdField = Path(..., title="RoleID", description="The
 def group_role_to_model(trans, group_id: int, role) -> GroupRoleModel:
     encoded_group_id = DecodedDatabaseIdField.encode(group_id)
     encoded_role_id = DecodedDatabaseIdField.encode(role.id)
-    url = trans.url_builder("group_role", group_id=encoded_group_id, id=encoded_role_id)
+    url = trans.url_builder("group_role", group_id=encoded_group_id, role_id=encoded_role_id)
     return GroupRoleModel.construct(id=encoded_role_id, name=role.name, url=url)
 
 
@@ -49,7 +49,7 @@ class FastAPIGroupRoles:
         )
 
     @router.get(
-        "/api/groups/{group_id}/roles/{id}",
+        "/api/groups/{group_id}/roles/{role_id}",
         name="group_role",
         require_admin=True,
         summary="Displays information about a group role.",
@@ -58,9 +58,9 @@ class FastAPIGroupRoles:
         self,
         trans: ProvidesAppContext = DependsOnTrans,
         group_id: DecodedDatabaseIdField = GroupIDParam,
-        id: DecodedDatabaseIdField = RoleIDParam,
+        role_id: DecodedDatabaseIdField = RoleIDParam,
     ) -> GroupRoleModel:
-        role = self.manager.show(trans, id, group_id)
+        role = self.manager.show(trans, role_id, group_id)
         return group_role_to_model(trans, group_id, role)
 
     @router.put("/api/groups/{group_id}/roles/{role_id}", require_admin=True, summary="Adds a role to a group")

@@ -76,6 +76,48 @@ class Wiff(Binary):
         return "\n".join(rval)
 
 
+class Wiff2(Binary):
+    """Class for wiff2 files."""
+
+    edam_data = "data_2536"
+    edam_format = "format_3710"
+    file_ext = "wiff2"
+    composite_type = "auto_primary_file"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+        self.add_composite_file(
+            "wiff2",
+            description="AB SCIEX files in .wiff2 format. This can contain all needed information or only metadata.",
+            is_binary=True,
+        )
+
+        self.add_composite_file(
+            "wiff_scan",
+            description="AB SCIEX spectra file (wiff.scan), if the corresponding .wiff2 file only contains metadata.",
+            optional="True",
+            is_binary=True,
+        )
+
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+        rval = ["<html><head><title>Wiff2 Composite Dataset </title></head><p/>"]
+        rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            fn = composite_name
+            opt_text = ""
+            if composite_file.optional:
+                opt_text = " (optional)"
+            if composite_file.get("description"):
+                rval.append(
+                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                )
+            else:
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
+        rval.append("</ul></div></html>")
+        return "\n".join(rval)
+
+
 @build_sniff_from_prefix
 class MzTab(Text):
     """
@@ -131,7 +173,7 @@ class MzTab(Text):
                     mandatory_field = self._man_mtd[columns[1]]
                     if mandatory_field is None or columns[2].lower() in mandatory_field:
                         found_man_mtd.add(columns[1])
-            elif not columns[0] in self._sections:
+            elif columns[0] not in self._sections:
                 return False
         return has_version and found_man_mtd == set(self._man_mtd.keys())
 

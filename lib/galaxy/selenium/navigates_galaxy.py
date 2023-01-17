@@ -658,6 +658,10 @@ class NavigatesGalaxy(HasDriver):
         center_element = self.driver.find_element(By.CSS_SELECTOR, "#center")
         action_chains.move_to_element(center_element).click().perform()
 
+    def hover_over(self, target):
+        action_chains = self.action_chains()
+        action_chains.move_to_element(target).perform()
+
     def perform_upload(self, test_path, **kwd):
         self._perform_upload(test_path=test_path, **kwd)
 
@@ -1938,7 +1942,7 @@ class NavigatesGalaxy(HasDriver):
                     break
             else:
                 # Pick first match. We're replacing select2 anyway ...
-                select_elem = elem
+                select_elem = candidate_elements[0]
             action_chains = self.action_chains()
             action_chains.move_to_element(select_elem).click().perform()
         self.wait_for_selector_absent_or_hidden("#select2-drop")
