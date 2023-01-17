@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "jest/helpers";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
 import ToolCard from "./ToolCard";
 import Vuex from "vuex";
 import { userStore } from "store/userStore";
@@ -39,8 +39,7 @@ describe("ToolCard", () => {
                     versions: [],
                     sharable_url: "options.sharable_url",
                     help: "options.help",
-                    citations: null,
-                    hasCitations: false,
+                    citations: false,
                 },
                 messageText: "messageText",
                 messageVariant: "warning",

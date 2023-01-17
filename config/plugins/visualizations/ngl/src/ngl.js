@@ -19,8 +19,9 @@ window.bundleEntries.load = function (options) {
         opacity: settings.get("opacity"),
     };
     stage_parameters = { ext: dataset.extension, defaultRepresentation: true };
+    const safe_download_url = `${options.root}${dataset.download_url}`;
     try {
-        stage.loadFile(dataset.download_url, stage_parameters).then(function (component) {
+        stage.loadFile(safe_download_url, stage_parameters).then(function (component) {
             component.addRepresentation(settings.get("mode"), representation_parameters);
             options.chart.state("ok", "Chart drawn.");
             options.process.resolve();

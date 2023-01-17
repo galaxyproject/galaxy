@@ -736,39 +736,6 @@ div.toolSectionTitle {
     }
 }
 
-#loading_indicator {
-    position: fixed;
-    right: 10px;
-    top: 10px;
-    height: 32px;
-    width: 32px;
-    display: none;
-    background: url(../../assets/images/largespinner.gif);
-}
-
-#content_table td {
-    text-align: right;
-    white-space: nowrap;
-    padding: 2px 10px;
-}
-
-#content_table th {
-    white-space: nowrap;
-    padding: 2px 10px;
-}
-
-#content_table td.stringalign {
-    text-align: left;
-}
-
-#content_table .dark_row {
-    background-color: #ddd;
-}
-
-#content_table th {
-    background-color: #aaa;
-}
-
 // ==== Integrated tool form styles
 
 .toolMenuAndView .toolForm {
@@ -991,15 +958,4 @@ body.reports {
     .toolMenu {
         margin-left: 10px;
     }
-}
-
-/* Used in Galaxy IE for spinner loading TODO: Remove in IE entrypoint refactoring */
-#ie-loading-spinner {
-    position: absolute;
-    margin: auto;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: url(../../assets/images/largespinner.gif) no-repeat center center fixed;
 }

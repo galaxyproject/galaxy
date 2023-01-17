@@ -1,12 +1,15 @@
 import Vuex from "vuex";
 import { default as Masthead } from "./Masthead.vue";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
 import { WindowManager } from "layout/window-manager";
 import { loadWebhookMenuItems } from "./_webhooks";
-import { userStore } from "store/userStore";
+import { userStore, userFlagsStore } from "store/userStore";
 import { configStore } from "store/configStore";
 import { getActiveTab } from "./utilities";
+import { createTestingPinia } from "@pinia/testing";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { useEntryPointStore } from "stores/entryPointStore";
 
 jest.mock("app");
 jest.mock("./_webhooks");
@@ -20,8 +23,7 @@ describe("Masthead.vue", () => {
     let windowManager;
     let tabs;
     let store;
-    let state;
-    let actions;
+    let testPinia;
 
     function stubLoadWebhooks(items) {
         items.push({
@@ -36,23 +38,13 @@ describe("Masthead.vue", () => {
 
     beforeEach(() => {
         localVue = getLocalVue();
-
+        localVue.use(PiniaVuePlugin);
+        testPinia = createTestingPinia();
         store = new Vuex.Store({
             modules: {
-                user: {
-                    state,
-                    actions: {
-                        loadUser: jest.fn(),
-                    },
-                    getters: userStore.getters,
-                    namespaced: true,
-                },
-                config: {
-                    state,
-                    actions,
-                    getters: configStore.getters,
-                    namespaced: true,
-                },
+                user: mockModule(userStore),
+                config: mockModule(configStore),
+                userFlags: mockModule(userFlagsStore),
             },
         });
 
@@ -89,7 +81,9 @@ describe("Masthead.vue", () => {
                 initialActiveTab,
             },
             store,
+            provide: { store },
             localVue,
+            pinia: testPinia,
         });
     });
 
@@ -99,7 +93,7 @@ describe("Masthead.vue", () => {
     });
 
     it("should render simple tab item links", () => {
-        expect(wrapper.findAll("li.nav-item").length).toBe(5);
+        expect(wrapper.findAll("li.nav-item").length).toBe(6);
         // Ensure specified link title respected.
         expect(wrapper.find("#analysis a").text()).toBe("Analyze");
         expect(wrapper.find("#analysis a").attributes("href")).toBe("root");
@@ -119,6 +113,7 @@ describe("Masthead.vue", () => {
     it("should make hidden tabs hidden", () => {
         expect(wrapper.find("#analysis").attributes().style).not.toEqual(expect.stringContaining("display: none"));
         expect(wrapper.find("#hiddentab").attributes().style).toEqual(expect.stringContaining("display: none"));
+        expect(wrapper.get("#interactive").isVisible()).toBeFalsy();
     });
 
     it("should highlight the active tab", () => {
@@ -135,5 +130,25 @@ describe("Masthead.vue", () => {
 
     it("should load webhooks on creation", async () => {
         expect(wrapper.find("#extension a").text()).toBe("Extension Point");
+    });
+
+    it("shows link to interactive tools if any is active", async () => {
+        setActivePinia(testPinia);
+        const entryPointStore = useEntryPointStore();
+        entryPointStore.entryPoints = [
+            {
+                model_class: "InteractiveToolEntryPoint",
+                id: "52e496b945151ee8",
+                job_id: "52e496b945151ee8",
+                name: "Jupyter Interactive Tool",
+                active: true,
+                created_time: "2020-02-24T15:59:18.122103",
+                modified_time: "2020-02-24T15:59:20.428594",
+                target: "http://52e496b945151ee8-be8a5bee5d5849a5b4e035b51305256e.interactivetoolentrypoint.interactivetool.localhost:8080/ipython/lab",
+            },
+        ];
+        // avoid race condition with store's reactivity
+        await new Promise((_) => setTimeout(_, 10));
+        expect(wrapper.get("#interactive").isVisible()).toBeTruthy();
     });
 });

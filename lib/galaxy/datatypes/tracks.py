@@ -2,9 +2,14 @@
 Datatype classes for tracks/track views within galaxy.
 """
 import logging
+from typing import TYPE_CHECKING
 
+from galaxy.datatypes.data import GeneratePrimaryFileDataset
 from galaxy.datatypes.text import Html
 from . import binary
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -25,7 +30,7 @@ class UCSCTrackHub(Html):
     file_ext = "trackhub"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -43,18 +48,18 @@ class UCSCTrackHub(Html):
         rval.append("</ul></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Track Hub structure: Visualization in UCSC Track Hub"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         try:
             return dataset.peek
         except Exception:
             return "Track Hub structure: Visualization in UCSC Track Hub"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         return False

@@ -60,7 +60,11 @@ class AppSchema(Schema):
             if data.get("reloadable"):
                 self._reloadable_options.add(key)
             if data.get("per_host"):
-                self._per_host_options.add(key)
+                resolves_to = data.get("resolves_to")
+                if resolves_to:
+                    self._per_host_options.add(resolves_to)
+                else:
+                    self._per_host_options.add(key)
             if data.get("path_resolves_to"):
                 self._paths_to_resolve[key] = data.get("path_resolves_to")
 

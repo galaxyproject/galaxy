@@ -1,6 +1,6 @@
 # Location of virtualenv used for development.
 VENV?=.venv
-# Source virtualenv to execute command (flake8, sphinx, twine, etc...)
+# Source virtualenv to execute command (darker, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
 RELEASE_CURR:=23.0
 RELEASE_UPSTREAM:=upstream
@@ -170,8 +170,20 @@ else
 endif
 
 
-update-client-api-schema: node-deps
-	$(IN_VENV) cd client && python ../scripts/dump_openapi_schema.py | yarn run openapi-typescript --output src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+build-api-schema:
+	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
+
+remove-api-schema:
+	rm _schema.yaml
+
+update-client-api-schema: node-deps build-api-schema
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(MAKE) remove-api-schema
+
+lint-api-schema: build-api-schema
+	$(IN_VENV) npx --yes @redocly/cli lint _schema.yaml
+	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
+	$(MAKE) remove-api-schema
 
 client: node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build

@@ -80,7 +80,7 @@
 </template>
 <script>
 import { Services } from "./services";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -98,22 +98,22 @@ export default {
             return `/workflows/edit?id=${this.workflow.id}`;
         },
         urlDownload() {
-            return safePath(`/api/workflows/${this.workflow.id}/download?format=json-download`);
+            return withPrefix(`/api/workflows/${this.workflow.id}/download?format=json-download`);
         },
         urlShare() {
             return `/workflows/sharing?id=${this.workflow.id}`;
         },
         urlExport() {
-            return safePath(`/workflows/export?id=${this.workflow.id}`);
+            return withPrefix(`/workflows/export?id=${this.workflow.id}`);
         },
         urlView() {
-            return safePath(`/published/workflow?id=${this.workflow.id}`);
+            return withPrefix(`/published/workflow?id=${this.workflow.id}`);
         },
         urlInvocations() {
             return `/workflows/${this.workflow.id}/invocations`;
         },
         urlViewShared() {
-            return safePath(
+            return withPrefix(
                 `/workflow/display_by_username_and_slug?username=${this.workflow.owner}&slug=${encodeURIComponent(
                     this.workflow.slug
                 )}`

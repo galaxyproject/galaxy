@@ -11,7 +11,7 @@
         @load="onLoad" />
 </template>
 <script>
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 export default {
     props: {
         id: {
@@ -25,7 +25,7 @@ export default {
     },
     computed: {
         srcWithRoot() {
-            return safePath(this.src);
+            return withPrefix(this.src);
         },
     },
     methods: {

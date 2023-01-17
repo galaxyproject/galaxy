@@ -1,13 +1,20 @@
 <script setup>
 import UtcDate from "components/UtcDate";
 import Tags from "components/Common/Tags";
-import { safePath } from "utils/redirect";
 import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
 import LoadingSpan from "components/LoadingSpan";
 import DebouncedInput from "components/DebouncedInput";
 import { getPublishedHistories, updateTags } from "./services";
-import { getFilters, getFilterText, toAlias } from "utils/filterConversion";
+import Filtering, { contains, expandNameTag } from "utils/filtering";
+
+const validFilters = {
+    name: contains("name"),
+    annotation: contains("annotation"),
+    tag: contains("tags", "tag", expandNameTag),
+};
+
+const filters = new Filtering(validFilters, false);
 
 const limit = ref(50);
 const offset = ref(0);
@@ -43,7 +50,7 @@ const localFilter = computed({
     },
 });
 
-const filterSettings = computed(() => toAlias(getFilters(filterText.value, false)));
+const filterSettings = computed(() => filters.toAlias(filters.getFilters(filterText.value)));
 
 const updateFilter = (newVal, append = false) => {
     let oldValue = filterText.value;
@@ -69,13 +76,17 @@ const onTagClick = (tag) => {
 
 const load = async () => {
     loading.value = true;
-    getPublishedHistories({
-        limit: limit.value,
-        offset: offset.value,
-        sortBy: sortBy.value,
-        sortDesc: sortDesc.value,
-        filterText: filterText.value,
-    })
+
+    getPublishedHistories(
+        {
+            limit: limit.value,
+            offset: offset.value,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+            filterText: filterText.value,
+        },
+        filters
+    )
         .then((data) => {
             items.value = data;
         })
@@ -98,7 +109,7 @@ const onToggle = () => {
 
 const onSearch = () => {
     onToggle();
-    updateFilter(getFilterText(filterSettings.value));
+    updateFilter(filters.getFilterText(filterSettings.value));
 };
 
 load();
@@ -204,7 +215,7 @@ watch([filterText, sortBy, sortDesc], () => {
                 :sort-by.sync="sortBy"
                 :sort-desc.sync="sortDesc">
                 <template v-slot:cell(name)="row">
-                    <router-link :to="safePath(`/published/history?id=${row.item.id}`)">
+                    <router-link :to="`/published/history?id=${row.item.id}`">
                         {{ row.item.name }}
                     </router-link>
                 </template>

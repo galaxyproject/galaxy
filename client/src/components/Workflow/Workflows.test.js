@@ -2,7 +2,7 @@ import Workflows from "../Workflow/WorkflowList";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import flushPromises from "flush-promises";
 import { parseISO, formatDistanceToNow } from "date-fns";
 

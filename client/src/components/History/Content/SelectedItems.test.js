@@ -1,6 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import SelectedItems from "./SelectedItems";
 
 const localVue = getLocalVue();

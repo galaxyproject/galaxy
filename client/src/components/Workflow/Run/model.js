@@ -100,7 +100,7 @@ export class WorkflowRunModel {
                 name: wp_name,
                 type: "text",
                 color: `hsl( ${++wp_count * 100}, 70%, 30% )`,
-                style: "ui-form-wp-source",
+                cls: "ui-input-linked",
                 links: [],
                 optional: true,
             });
@@ -122,8 +122,7 @@ export class WorkflowRunModel {
                     wp_input.links.push(step);
                     input.wp_linked = true;
                     input.type = "text";
-                    input.backdrop = true;
-                    input.style = "ui-form-wp-target";
+                    input.cls = "ui-input-linked";
                 });
             });
             _.each(step.replacement_parameters, (wp_name) => {

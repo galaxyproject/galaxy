@@ -1,17 +1,19 @@
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "jest/helpers";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
 import ToolForm from "./ToolForm";
 import MockCurrentUser from "../providers/MockCurrentUser";
 import MockConfigProvider from "../providers/MockConfigProvider";
 import MockCurrentHistory from "components/providers/MockCurrentHistory";
 import Vue from "vue";
 import Vuex from "vuex";
+import { createPinia } from "pinia";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 
 const localVue = getLocalVue();
+const pinia = createPinia();
 
 describe("ToolForm", () => {
     let wrapper;
@@ -52,6 +54,7 @@ describe("ToolForm", () => {
                 FormDisplay: true,
             },
             provide: { store },
+            pinia,
         });
     });
 

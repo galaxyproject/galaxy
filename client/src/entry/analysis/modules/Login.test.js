@@ -1,5 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { getGalaxyInstance } from "app/singleton";
 import MountTarget from "./Login";
 

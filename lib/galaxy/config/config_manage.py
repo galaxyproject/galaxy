@@ -358,7 +358,7 @@ def _validate(args: Namespace, app_desc: App) -> None:
         ordered_dump(raw_config, config_p)
 
     def _clean(p: Tuple[str, ...], k: str, v: Any) -> bool:
-        return k not in ["reloadable", "path_resolves_to", "per_host", "deprecated_alias"]
+        return k not in ["reloadable", "path_resolves_to", "per_host", "deprecated_alias", "resolves_to"]
 
     clean_schema = remap(app_desc.schema.raw_schema, _clean)
     with tempfile.NamedTemporaryFile("w", suffix=".yml") as fp:

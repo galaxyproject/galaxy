@@ -192,5 +192,4 @@ export const StoreProvider = (storeAction, storeGetter, storeCountGetter = undef
 
 export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
 export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
-export const HistoryItemsProvider = StoreProvider("fetchHistoryItems", "getHistoryItems", "getTotalMatchesCount");
 export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");

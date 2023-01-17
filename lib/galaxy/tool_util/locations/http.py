@@ -1,5 +1,5 @@
 from galaxy.util import download_to_file
-from ..locations import ToolLocationResolver
+from . import ToolLocationResolver
 
 
 class HttpToolResolver(ToolLocationResolver):

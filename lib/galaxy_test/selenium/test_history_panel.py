@@ -106,7 +106,7 @@ class TestHistoryPanel(SeleniumTestCase):
         assert_no_tags()
 
         # add new tags to empty tags area
-        tags_size = 5
+        tags_size = 6
         tags = add_tags(tags_size)
         assert_current_tags(tags)
 

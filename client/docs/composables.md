@@ -87,7 +87,7 @@ While simpler in this example, you may need to manually mock more return values 
 
 ## Using Composables for more than Stores
 
-Composables can be of great use to extract any reactive code from your components. For an example of this, take a look at [userFilterObjectArray](https://github.com/galaxyproject/galaxy/blob/dev/client/src/composables/utils/filter.js).
+Composables can be of great use to extract any reactive code from your components. For an example of this, take a look at [useFilterObjectArray](https://github.com/galaxyproject/galaxy/blob/dev/client/src/composables/utils/filter.js).
 
 Usage:
 

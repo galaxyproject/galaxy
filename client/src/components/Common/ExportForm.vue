@@ -1,5 +1,5 @@
 <template>
-    <div>
+    <div class="export-to-remote-file">
         <b-form-group
             id="fieldset-directory"
             label-for="directory"
@@ -32,6 +32,10 @@ export default {
             type: String,
             default: "archive",
         },
+        clearInputAfterExport: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -59,6 +63,10 @@ export default {
     methods: {
         doExport() {
             this.$emit("export", this.directory, this.name);
+            if (this.clearInputAfterExport) {
+                this.directory = null;
+                this.name = null;
+            }
         },
     },
 };

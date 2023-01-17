@@ -495,9 +495,9 @@ class TestHDASerializer(HDATestCase):
         self.log("file_name should be skipped for non-admin when not exposed by config")
         self.app.config.expose_dataset_path = False
         serialized = self.hda_serializer.serialize(hda, keys, user=None)
-        assert not ("file_name" in serialized)
+        assert "file_name" not in serialized
         serialized = self.hda_serializer.serialize(hda, keys, user=owner)
-        assert not ("file_name" in serialized)
+        assert "file_name" not in serialized
 
         self.log("file_name should be sent for admin in either case")
         serialized = self.hda_serializer.serialize(hda, keys, user=self.admin_user)

@@ -1,0 +1,115 @@
+<tool id="interactive_tool_mgnify_notebook" tool_type="interactive" name="Interactive MGnify Notebook" version="0.0.1" profile="22.01">
+    <requirements>
+        <container type="docker">quay.io/microbiome-informatics/emg-notebooks.dev:v1.0.1</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="MGnify Interactive Tool" requires_domain="True">
+            <port>8888</port>
+            <url>lab</url>
+        </entry_point>
+    </entry_points>
+    <environment_variables>
+        <environment_variable name="HISTORY_ID">$__history_id__</environment_variable>
+        <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
+        <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
+        <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
+    </environment_variables>
+    <command><![CDATA[
+        #import re
+        export GALAXY_WORKING_DIR=`pwd` &&
+        mkdir -p ./jupyter/outputs/ &&
+        mkdir -p ./jupyter/data &&
+        mkdir -p ./jupyter/notebooks &&
+
+        ## change into the directory where the notebooks are located
+        cd ./jupyter/ &&
+        export HOME=/home/jovyan/ &&
+        export PATH=/home/jovyan/.local/bin:\$PATH &&
+
+        #if $mode.mode == 'scratch'
+            ## copy all notebooks, workflows and data
+            cp /home/jovyan/mgnify-examples/home.ipynb ./ &&
+            cp -r /home/jovyan/mgnify-examples/* ./notebooks/ &&
+            ## provide all rights to copied files
+            jupyter trust ./home.ipynb &&
+            jupyter trust ./notebooks/*/*.ipynb &&
+            jupyter lab --allow-root --no-browser --LabApp.token=''
+        #else
+            #set $noteboook_name = re.sub('[^\w\-\.\s]', '_', str($mode.ipynb.element_identifier))
+            cp '$mode.ipynb' './${noteboook_name}.ipynb' &&
+            jupyter trust './${noteboook_name}.ipynb' &&
+            #if $mode.run_it
+                jupyter nbconvert --to notebook --execute --output ./ipython_galaxy_notebook.ipynb --allow-errors  ./*.ipynb &&
+                #set $noteboook_name = 'ipython_galaxy_notebook'
+            #else
+                jupyter lab --allow-root --no-browser --LabApp.token='' &&
+            #end if
+            cp './${noteboook_name}.ipynb' '$jupyter_notebook'
+        #end if
+    ]]>
+    </command>
+    <inputs>
+        <conditional name="mode">
+            <param name="mode" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
+                <option value="scratch">Start with a fresh notebook</option>
+                <option value="previous">Load a previous notebook</option>
+            </param>
+            <when value="scratch">
+                <!--<conditional name="lang">
+                    <param name="lang" type="select" label="Programming language to use">
+                        <option value="R Examples">R</option>
+                        <option value="Python Examples">Python</option>
+                    </param>
+                    <when value="R Examples">
+                        <param name="notebook" type="select" label="Notebook to use">
+                            <option value="Comparative Metagenomics">Comparative Metagenomics</option>
+                            <option value="Fetch Analyses metadata for a Study">Fetch Analyses metadata for a Study</option>
+                            <option value="Search for Samples or Studies">Search for Samples or Studies</option>
+                        </param>
+                    </when>
+                    <when value="Python Examples">
+                        <param name="notebook" type="select" label="Notebook to use">
+                            <option value="Download paginated API data to a CSV">Download paginated API data to a CSV</option>
+                            <option value="Load Analyses for a MGnify Study">Load Analyses for a MGnify Study</option>
+                        </param>
+                    </when>
+                </conditional>-->
+            </when>
+            <when value="previous">
+                <param name="ipynb" type="data" format="ipynb" label="IPython Notebook"/>
+                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
+                    help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
+            </when>
+        </conditional>
+    </inputs>
+    <outputs>
+        <data name="jupyter_notebook" format="ipynb" label="Executed Mgnify Notebook"></data>
+    </outputs>
+    <tests>
+        <test expect_num_outputs="1">
+            <param name="mode" value="previous" />
+            <param name="ipynb" value="test.ipynb" />
+            <param name="run_it" value="true" />
+            <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
+        </test>
+    </tests>
+    <help><![CDATA[
+
+The notebooks in this Jupyter Lab environment allows to explore programmatic access to `MGnify <https://www.ebi.ac.uk/metagenomics/>`_'s datasets using Python or with R using the `MGnifyR <https://github.com/beadyallen/MGnifyR>`_ package.
+
+Why such notebooks?
+-------------------
+
+The quantity and richness of `metagenomics-derived data <https://www.ebi.ac.uk/metagenomics/search>`_ in MGnify grows every day. The `MGnify website <https://www.ebi.ac.uk/metagenomics/>`_ is the best place to start exploring and searching the MGnify database, and allows users to download modest query results as CSV tables.
+
+For larger queries, or more complex requirements like fetching metadata from samples across multiple studies, a programmatic access approach is far better.
+
+Programmatic access - fetching data from MGnify using a terminal command or code script - uses the `MGnify API <https://docs.mgnify.org/en/latest/api.html>`_ (`Application Programming Interface <https://en.wikipedia.org/wiki/API>`_). The API provides access to every data type in MGnify: `Studies <https://www.ebi.ac.uk/metagenomics/api/v1/studies>`_, `Samples <https://www.ebi.ac.uk/metagenomics/api/v1/samples>`_, `Analyses <https://www.ebi.ac.uk/metagenomics/api/v1/analyses>`_, `Annotations <https://www.ebi.ac.uk/metagenomics/api/v1/annotations/interpro-identifiers>`_, `MAGs <https://www.ebi.ac.uk/metagenomics/api/v1/genome-catalogues>`_ etc: it is what lies behind the MGnify website. Using the API means you can fetch more data than is possible via the website, and can help you write reproducible analysis scripts.
+
+The API can be explored interactively online, using the `API Browser <https://www.ebi.ac.uk/metagenomics/api/v1/>`_. But actually using the API first requires knowledge and/or installation of tools on your computer. This might range from a command line tool like `cURL <https://curl.se/>`_, to learning R and setting up the `R Studio <https://www.rstudio.com/>`_ application, to setting up a `Python <https://www.python.org/>`_ environment and installing a suite of `packages used for data analysis <https://pandas.pydata.org/>`_. Second, the API returns most data in `JSON format <https://developer.mozilla.org/en-US/docs/Learn/JavaScript/Objects/JSON>`_: this is standard on the web, but less familiar for bioinformaticians used to TSVs and dataframes.
+
+The `MGnify Notebook Server <http://notebooks.mgnify.org/>`_ and `MGnifyR package <https://github.com/beadyallen/MGnifyR>`_ are designed to bridge these gaps. Users can launch an online R and Python coding environment in their browser, without installing anything. The environment is hosted by EMBL's `Cell Biology and Biophysics Computational Support team <https://www.embl.org/research/units/cell-biology-biophysics/cbbcs/>`_, who support computational projects across EMBL. It already includes the main libraries needed for communicating with the MGnify API, analysing data, and making plots. It uses the popular `Jupyter Lab <https://jupyter.org/>`_ software, which means you can code inside `Notebooks <https://jupyter-notebook.readthedocs.io/en/latest/>`_: interactive code documents.
+
+There are example Notebooks written in both R and Python, so users can pick whichever they're more familiar with.
+   ]]></help>
+</tool>

@@ -72,7 +72,7 @@ export default {
     data() {
         return {
             extension: "_select_",
-            genome: this.app.defaultDbKey,
+            genome: this.details.defaultDbKey,
             listExtensions: [],
             listGenomes: [],
             running: false,
@@ -160,7 +160,7 @@ export default {
                 });
             });
             submitUpload({
-                url: this.app.uploadPath,
+                url: this.details.uploadPath,
                 data: uploadModelsToPayload(this.collection.filter(), this.history_id, true),
                 success: (message) => {
                     this._eventSuccess(message);
@@ -178,8 +178,8 @@ export default {
         _eventReset: function () {
             if (this.collection.where({ status: "running" }).length == 0) {
                 this.collection.reset();
-                this.extension = this.app.defaultExtension;
-                this.genome = this.app.defaultDbKey;
+                this.extension = this.details.defaultExtension;
+                this.genome = this.details.defaultDbKey;
                 this.renderNonReactiveComponents();
             }
         },

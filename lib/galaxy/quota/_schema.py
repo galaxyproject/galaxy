@@ -5,10 +5,7 @@ from typing import (
 )
 
 from pydantic import Field
-from typing_extensions import (
-    Annotated,
-    Literal,
-)
+from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -70,7 +67,7 @@ QuotaOperationField = Field(
 
 
 class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.DefaultQuotaAssociation at some point?
-    model_class: Annotated[DEFAULT_QUOTA_ASSOCIATION, ModelClassField()]
+    model_class: DEFAULT_QUOTA_ASSOCIATION = ModelClassField(DEFAULT_QUOTA_ASSOCIATION)
     type: DefaultQuotaTypes = Field(
         ...,
         title="Type",
@@ -83,7 +80,7 @@ class DefaultQuota(Model):  # TODO: should this replace lib.galaxy.model.Default
 
 
 class UserQuota(Model):
-    model_class: Annotated[USER_QUOTA_ASSOCIATION, ModelClassField()]
+    model_class: USER_QUOTA_ASSOCIATION = ModelClassField(USER_QUOTA_ASSOCIATION)
     user: UserModel = Field(
         ...,
         title="User",
@@ -92,7 +89,7 @@ class UserQuota(Model):
 
 
 class GroupQuota(Model):
-    model_class: Annotated[GROUP_QUOTA_ASSOCIATION, ModelClassField()]
+    model_class: GROUP_QUOTA_ASSOCIATION = ModelClassField(GROUP_QUOTA_ASSOCIATION)
     group: GroupModel = Field(
         ...,
         title="Group",
@@ -103,7 +100,7 @@ class GroupQuota(Model):
 class QuotaBase(Model):
     """Base model containing common fields for Quotas."""
 
-    model_class: Annotated[QUOTA, ModelClassField()]
+    model_class: QUOTA = ModelClassField(QUOTA)
     id: DecodedDatabaseIdField = Field(
         ...,
         title="ID",

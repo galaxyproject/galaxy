@@ -1,5 +1,5 @@
 <template>
-    <FormCard :title="nodeName" :icon="nodeIcon">
+    <FormCard :title="stepTitle" :icon="nodeIcon">
         <template v-slot:operations>
             <b-button
                 v-if="isSubworkflow"
@@ -27,135 +27,79 @@
         <template v-slot:body>
             <FormElement
                 id="__label"
-                :value="nodeLabel"
+                :value="label"
                 title="Label"
                 help="Add a step label."
-                :error="errorLabel"
+                :error="uniqueErrorLabel"
                 @input="onLabel" />
             <FormElement
                 id="__annotation"
-                :value="nodeAnnotation"
+                :value="annotation"
                 title="Step Annotation"
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormDisplay :id="id" :inputs="inputs" @onChange="onChange" />
+            <FormDisplay
+                v-if="configForm?.inputs"
+                :id="formDisplayId"
+                :inputs="configForm.inputs"
+                @onChange="onChange" />
             <div v-if="isSubworkflow">
                 <FormOutputLabel
-                    v-for="(output, index) in nodeOutputs"
+                    v-for="(output, index) in step.outputs"
                     :key="index"
                     :name="output.name"
-                    :active-outputs="nodeActiveOutputs"
+                    :step="step"
                     :show-details="true" />
             </div>
         </template>
     </FormCard>
 </template>
 
-<script>
-import FormDisplay from "components/Form/FormDisplay";
-import FormCard from "components/Form/FormCard";
-import FormElement from "components/Form/FormElement";
-import FormOutputLabel from "./FormOutputLabel";
-import { checkLabels } from "components/Workflow/Editor/modules/utilities";
-import WorkflowIcons from "components/Workflow/icons";
+<script lang="ts" setup>
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormCard from "@/components/Form/FormCard.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
+import WorkflowIcons from "@/components/Workflow/icons";
+import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
+import { computed, toRef } from "vue";
+import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useStepProps } from "../composables/useStepProps";
 
-export default {
-    components: {
-        FormDisplay,
-        FormCard,
-        FormElement,
-        FormOutputLabel,
-    },
-    props: {
-        nodeName: {
-            type: String,
-            required: true,
-        },
-        nodeId: {
-            type: String,
-            required: true,
-        },
-        nodeContentId: {
-            type: String,
-            required: true,
-        },
-        nodeAnnotation: {
-            type: String,
-            required: false,
-        },
-        nodeLabel: {
-            type: String,
-            required: true,
-        },
-        nodeType: {
-            type: String,
-            required: true,
-        },
-        nodeActiveOutputs: {
-            type: Object,
-            required: true,
-        },
-        nodeOutputs: {
-            type: Array,
-            required: true,
-        },
-        configForm: {
-            type: Object,
-            required: true,
-        },
-        datatypes: {
-            type: Array,
-            required: true,
-        },
-        getManager: {
-            type: Function,
-            required: true,
-        },
-    },
-    computed: {
-        nodeIcon() {
-            return WorkflowIcons[this.nodeType];
-        },
-        workflow() {
-            return this.getManager();
-        },
-        id() {
-            return this.nodeId;
-        },
-        inputs() {
-            return this.configForm.inputs;
-        },
-        isSubworkflow() {
-            return this.nodeType == "subworkflow";
-        },
-        errorLabel() {
-            return checkLabels(this.nodeId, this.nodeLabel, this.workflow.nodes);
-        },
-    },
-    methods: {
-        onAnnotation(newAnnotation) {
-            this.$emit("onAnnotation", this.nodeId, newAnnotation);
-        },
-        onLabel(newLabel) {
-            this.$emit("onLabel", this.nodeId, newLabel);
-        },
-        onEditSubworkflow() {
-            this.$emit("onEditSubworkflow", this.nodeContentId);
-        },
-        onUpgradeSubworkflow() {
-            this.$emit("onAttemptRefactor", [
-                { action_type: "upgrade_subworkflow", step: { order_index: parseInt(this.nodeId) } },
-            ]);
-        },
-        onChange(values) {
-            this.$emit("onSetData", this.nodeId, {
-                id: this.nodeId,
-                type: this.nodeType,
-                content_id: this.nodeContentId,
-                inputs: values,
-            });
-        },
-    },
-};
+const props = defineProps<{
+    step: Step;
+    datatypes: DatatypesMapperModel["datatypes"];
+}>();
+const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEditSubworkflow", "onSetData"]);
+const stepRef = toRef(props, "step");
+const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
+const stepStore = useWorkflowStepStore();
+const uniqueErrorLabel = useUniqueLabelError(stepStore, label?.value);
+const stepTitle = computed(() => (label?.value || contentId?.value || name.value)!);
+const nodeIcon = computed(() => WorkflowIcons[type.value]);
+const formDisplayId = computed(() => stepId.value.toString());
+const isSubworkflow = computed(() => type.value === "subworkflow");
+
+function onAnnotation(newAnnotation: string) {
+    emit("onAnnotation", stepId.value, newAnnotation);
+}
+function onLabel(newLabel: string) {
+    emit("onLabel", stepId.value, newLabel);
+}
+function onEditSubworkflow() {
+    emit("onEditSubworkflow", contentId!.value);
+}
+function onUpgradeSubworkflow() {
+    emit("onAttemptRefactor", [{ action_type: "upgrade_subworkflow", step: { order_index: stepId.value } }]);
+}
+function onChange(values: any) {
+    emit("onSetData", stepId.value, {
+        id: stepId.value,
+        type: type.value,
+        content_id: contentId!.value,
+        inputs: values,
+    });
+}
 </script>

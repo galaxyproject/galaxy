@@ -269,7 +269,8 @@ class StagingInterface(metaclass=abc.ABCMeta):
     def _log(self, message):
         log.debug(message)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def use_fetch_api(self):
         """Return true is this should use (modern) data fetch API."""
 

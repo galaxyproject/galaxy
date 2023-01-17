@@ -67,7 +67,7 @@
 <script>
 import { mapGetters } from "vuex";
 import short from "components/directives/v-short";
-import { StatelessTags } from "components/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 
 export default {
     components: {

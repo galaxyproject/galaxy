@@ -1,6 +1,6 @@
 import WorkflowIndexActions from "./WorkflowIndexActions";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
 import VueRouter from "vue-router";
 

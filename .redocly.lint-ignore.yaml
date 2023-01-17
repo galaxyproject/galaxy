@@ -1,0 +1,16 @@
+# This file instructs Redocly's linter to ignore the rules contained for specific parts of your API.
+# See https://redoc.ly/docs/cli/ for more information.
+_schema.yaml:
+  no-empty-servers:
+    - '#/openapi'
+  no-ambiguous-paths:
+    - >-
+      #/paths/~1api~1histories~1{history_id}~1contents~1{dataset_id}~1permissions
+    - >-
+      #/paths/~1api~1histories~1{history_id}~1contents~1{history_content_id}~1display
+    - >-
+      #/paths/~1api~1histories~1{history_id}~1contents~1{history_content_id}~1extra_files
+    - >-
+      #/paths/~1api~1histories~1{history_id}~1contents~1{history_content_id}~1metadata_file
+    - '#/paths/~1api~1histories~1{history_id}~1contents~1{id}~1validate'
+    - '#/paths/~1api~1histories~1{history_id}~1contents~1{type}s~1{id}'

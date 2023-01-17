@@ -1,7 +1,7 @@
 import Vuex from "vuex";
 import QuotaMeter from "./QuotaMeter.vue";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 

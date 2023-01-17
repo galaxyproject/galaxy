@@ -4,36 +4,34 @@
         :filter-settings="filterSettings"
         :toolbox="toolbox"
         :panel-view="panelView">
-        <section class="overflow-auto h-100" @scroll="onScroll">
+        <section class="tools-list">
             <div class="mb-2">
-                <span class="row mb-2">
-                    <span class="col">
-                        <h1 v-if="hasFilters" class="d-inline-block h-lg">Advanced Tool Search Results</h1>
-                        <h1 v-else class="d-inline-block h-lg">
-                            Consolidated view of {{ itemsLoaded.length }} available tools.
-                        </h1>
-                    </span>
-                </span>
+                <h1 class="h-lg">Search Results</h1>
                 <span v-if="itemsLoaded.length !== 0" class="row">
-                    <span v-if="hasFilters" class="col d-inline-block">
+                    <span v-if="filterCount" class="col d-inline-block d-flex align-items-baseline flex-gapx-1">
                         Found {{ itemsLoaded.length }} tools for
-                        <a id="popover-filters" href="javascript:void(0)">filters</a>.
-                        <b-popover target="popover-filters" triggers="hover" placement="top">
+                        <b-button id="popover-filters" class="ui-link">
+                            {{ filterCount }}
+                            {{ filterCount === 1 ? "filter" : "filters" }}.
+                        </b-button>
+                        <b-popover target="popover-filters" triggers="hover focus" placement="bottom">
                             <template v-slot:title>Filters</template>
                             <div v-for="(value, filter) in filterSettings" :key="filter">
                                 <b>{{ filter }}</b
                                 >: {{ value }}
                             </div>
                         </b-popover>
-                        Click <a href="javascript:void(0)" @click.stop="showAllTools">here</a> for a consolidated view
-                        of all tools in this Galaxy instance.
+                        <b-button variant="link" size="sm" @click.stop="showAllTools">
+                            <FontAwesomeIcon icon="fa-times" />
+                            Clear filters
+                        </b-button>
                     </span>
                     <span v-else class="col d-inline-block">
-                        No filters applied. Please add filters to the menu in the Tool Panel.
+                        No filters applied. Please add filters to the Advanced Tool Search in the Tool Panel.
                     </span>
                 </span>
             </div>
-            <div>
+            <div ref="scrollContainer" class="overflow-auto">
                 <b-alert v-if="loading" class="m-2" variant="info" show>
                     <LoadingSpan message="Loading Advanced Search Results" />
                 </b-alert>
@@ -44,7 +42,7 @@
                     <ToolsListTable :tools="itemsLoaded" />
                 </div>
             </div>
-            <ScrollToTopButton :offset="offset" @click="scrollToTop" />
+            <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </section>
     </ToolsProvider>
 </template>
@@ -54,6 +52,13 @@ import LoadingSpan from "components/LoadingSpan";
 import { ToolsProvider } from "components/providers/storeProviders";
 import ToolsListTable from "./ToolsListTable";
 import ScrollToTopButton from "./ScrollToTopButton";
+import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
+import { ref } from "vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faTimes } from "@fortawesome/free-solid-svg-icons";
+
+library.add(faTimes);
 
 export default {
     components: {
@@ -61,6 +66,7 @@ export default {
         ToolsListTable,
         ToolsProvider,
         ScrollToTopButton,
+        FontAwesomeIcon,
     },
     props: {
         name: {
@@ -80,9 +86,13 @@ export default {
             default: "",
         },
     },
-    data() {
+    setup() {
+        const scrollContainer = ref(null);
+        const { scrollTop } = useAnimationFrameScroll(scrollContainer);
+
         return {
-            offset: 0,
+            scrollContainer,
+            scrollTop,
         };
     },
     computed: {
@@ -101,16 +111,13 @@ export default {
             });
             return newFilterSettings;
         },
-        hasFilters() {
+        filterCount() {
             return Object.keys(this.filterSettings).length;
         },
     },
     methods: {
-        onScroll(e) {
-            this.offset = e.target.scrollTop;
-        },
         scrollToTop() {
-            this.$el.scrollTop = 0;
+            this.$refs.scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
         },
         showAllTools() {
             this.$router.push({ path: "/tools/list" });
@@ -118,3 +125,12 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+.tools-list {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+</style>

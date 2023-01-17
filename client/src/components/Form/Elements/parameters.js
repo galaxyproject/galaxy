@@ -8,7 +8,6 @@ import Ui from "mvc/ui/ui-misc";
 import SelectContent from "mvc/ui/ui-select-content";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import SelectFtp from "mvc/ui/ui-select-ftp";
-import RulesEdit from "mvc/ui/ui-rules-edit";
 import DataPicker from "mvc/ui/ui-data-picker";
 
 // create form view
@@ -29,6 +28,11 @@ export default Backbone.View.extend({
         upload: "_fieldUpload",
         rules: "_fieldRulesEdit",
         data_dialog: "_fieldDialog",
+    },
+
+    remove: function () {
+        this.field.remove();
+        Backbone.View.prototype.remove.call(this);
     },
 
     /** Returns an input field for a given field type */
@@ -194,14 +198,6 @@ export default Backbone.View.extend({
             optional: input_def.optional,
             multiple: input_def.multiple,
             onchange: input_def.onchange,
-        });
-    },
-
-    _fieldRulesEdit: function (input_def) {
-        return new RulesEdit.View({
-            id: input_def.id,
-            onchange: input_def.onchange,
-            target: input_def.target,
         });
     },
 

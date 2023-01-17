@@ -95,6 +95,8 @@ def execute(
             "internals.galaxy.tools.execute.job_single", SINGLE_EXECUTION_SUCCESS_MESSAGE
         )
         params = execution_slice.param_combination
+        if "__data_manager_mode" in mapping_params.param_template:
+            params["__data_manager_mode"] = mapping_params.param_template["__data_manager_mode"]
         if workflow_invocation_uuid:
             params["__workflow_invocation_uuid__"] = workflow_invocation_uuid
         elif "__workflow_invocation_uuid__" in params:

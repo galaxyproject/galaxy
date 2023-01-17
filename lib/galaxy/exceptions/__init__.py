@@ -16,7 +16,7 @@ have nothing to do with the web - keep this in mind when defining exception name
 and messages.
 """
 
-from ..exceptions.error_codes import (
+from .error_codes import (
     error_codes_by_name,
     ErrorCode,
 )
@@ -57,6 +57,16 @@ class ObjectInvalid(Exception):
 
 
 # Please keep the exceptions ordered by status code
+
+
+class AcceptedRetryLater(MessageException):
+    status_code = 202
+    err_code = error_codes_by_name["ACCEPTED_RETRY_LATER"]
+    retry_after: int
+
+    def __init__(self, msg, retry_after=60):
+        super().__init__(msg)
+        self.retry_after = retry_after
 
 
 class NoContentException(MessageException):

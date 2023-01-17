@@ -2308,6 +2308,18 @@ class JobImportHistoryArchive(Base, RepresentById):
     history = relationship("History")
 
 
+class StoreExportAssociation(Base, RepresentById):
+    __tablename__ = "store_export_association"
+    __table_args__ = (Index("ix_store_export_object", "object_id", "object_type"),)
+
+    id = Column(Integer, primary_key=True)
+    task_uuid = Column(UUIDType(), index=True, unique=True)
+    create_time = Column(DateTime, default=now)
+    object_type = Column(TrimmedString(32))
+    object_id = Column(Integer)
+    export_metadata = Column(JSONType)
+
+
 class JobContainerAssociation(Base, RepresentById):
     __tablename__ = "job_container_association"
 
@@ -2347,15 +2359,34 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
     modified_time = Column(DateTime, default=now, onupdate=now)
     job = relationship("Job", back_populates="interactivetool_entry_points", uselist=False)
 
-    dict_collection_visible_keys = ["id", "name", "active", "created_time", "modified_time"]
-    dict_element_visible_keys = ["id", "name", "active", "created_time", "modified_time"]
+    dict_collection_visible_keys = [
+        "id",
+        "job_id",
+        "name",
+        "active",
+        "created_time",
+        "modified_time",
+        "output_datasets_ids",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "job_id",
+        "name",
+        "active",
+        "created_time",
+        "modified_time",
+        "output_datasets_ids",
+    ]
 
-    def __init__(self, requires_domain=True, configured=False, deleted=False, **kwd):
+    def __init__(self, requires_domain=True, configured=False, deleted=False, short_token=False, **kwd):
         super().__init__(**kwd)
         self.requires_domain = requires_domain
         self.configured = configured
         self.deleted = deleted
-        self.token = self.token or uuid4().hex
+        if short_token:
+            self.token = (self.token or uuid4().hex)[:10]
+        else:
+            self.token = self.token or uuid4().hex
         self.info = self.info or {}
 
     @property
@@ -2364,6 +2395,10 @@ class InteractiveToolEntryPoint(Base, Dictifiable, RepresentById):
             # FIXME: don't included queued?
             return not self.job.finished
         return False
+
+    @property
+    def output_datasets_ids(self):
+        return [da.dataset.id for da in self.job.output_datasets]
 
 
 class GenomeIndexToolData(Base, RepresentById):  # TODO: params arg is lost
@@ -4319,9 +4354,6 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
 
     def get_display_applications(self, trans):
         return self.datatype.get_display_applications_by_dataset(self, trans)
-
-    def get_visualizations(self):
-        return self.datatype.get_visualizations(self)
 
     def get_datasources(self, trans):
         """

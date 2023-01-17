@@ -15,11 +15,13 @@ from logging import getLogger
 from typing import (
     Any,
     Callable,
+    cast,
     Dict,
     Generator,
     List,
     NamedTuple,
     Optional,
+    Union,
 )
 
 import requests
@@ -29,10 +31,16 @@ from packaging.version import (
 )
 from requests import Response
 from requests.cookies import RequestsCookieJar
-from typing_extensions import Protocol
+from typing_extensions import (
+    Literal,
+    NotRequired,
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import (
+    AssertionList,
     TestCollectionDef,
     TestCollectionOutputDef,
 )
@@ -78,8 +86,42 @@ class OutputsDict(dict):
 
 JobDataT = Dict[str, Any]
 JobDataCallbackT = Callable[[JobDataT], None]
-ToolTestDictT = Dict[str, Any]
-ToolTestDictsT = List[ToolTestDictT]
+
+
+class ValidToolTestDict(TypedDict):
+    inputs: Any
+    outputs: Any
+    output_collections: List[Dict[str, Any]]
+    stdout: NotRequired[AssertionList]
+    stderr: NotRequired[AssertionList]
+    expect_exit_code: NotRequired[int]
+    expect_failure: NotRequired[bool]
+    expect_test_failure: NotRequired[bool]
+    maxseconds: NotRequired[int]
+    num_outputs: NotRequired[int]
+    command_line: NotRequired[AssertionList]
+    command_version: NotRequired[AssertionList]
+    required_files: NotRequired[List[Any]]
+    required_data_tables: NotRequired[List[Any]]
+    required_loc_files: NotRequired[List[str]]
+    error: Literal[False]
+    tool_id: str
+    tool_version: str
+    test_index: int
+
+
+class InvalidToolTestDict(TypedDict):
+    error: Literal[True]
+    tool_id: str
+    tool_version: str
+    test_index: int
+    inputs: Any
+    exception: str
+    maxseconds: Optional[int]
+
+
+ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
+ToolTestDictsT = List[ToolTestDict]
 
 
 def stage_data_in_history(
@@ -1228,16 +1270,16 @@ def verify_tool(
     publish_history: bool = False,
     force_path_paste: bool = False,
     maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
-    tool_test_dicts: Optional[ToolTestDictsT] = None,
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
+    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
     if client_test_config is None:
         client_test_config = NullClientTestConfig()
-    tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+    tool_test_dicts = _tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     if "test_index" not in tool_test_dict:
         tool_test_dict["test_index"] = test_index
@@ -1272,7 +1314,7 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
-    testdef = ToolTestDescription(tool_test_dict)
+    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
     _handle_def_errors(testdef)
 
     created_history = False
@@ -1553,15 +1595,21 @@ class ToolTestDescription:
     doing dynamic tests in this way allows better integration)
     """
 
-    def __init__(self, processed_test_dict):
+    def __init__(self, processed_test_dict: ToolTestDict):
         assert (
             "test_index" in processed_test_dict
         ), "Invalid processed test description, must have a 'test_index' for naming, etc.."
         test_index = processed_test_dict["test_index"]
         name = processed_test_dict.get("name", f"Test-{test_index + 1}")
-        maxseconds = processed_test_dict.get("maxseconds", DEFAULT_TOOL_TEST_WAIT)
-        if maxseconds is not None:
-            maxseconds = int(maxseconds)
+        error_in_test_definition = processed_test_dict["error"]
+        if not error_in_test_definition:
+            processed_test_dict = cast(ValidToolTestDict, processed_test_dict)
+            maxseconds = int(processed_test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400)
+            output_collections = processed_test_dict.get("output_collections", [])
+        else:
+            processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
+            maxseconds = DEFAULT_TOOL_TEST_WAIT
+            output_collections = []
 
         self.test_index = test_index
         assert (
@@ -1590,9 +1638,7 @@ class ToolTestDescription:
         self.error = processed_test_dict.get("error", False)
         self.exception = processed_test_dict.get("exception", None)
 
-        self.output_collections = [
-            TestCollectionOutputDef.from_dict(d) for d in processed_test_dict.get("output_collections", [])
-        ]
+        self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in output_collections]
         self.command_line = processed_test_dict.get("command_line", None)
         self.command_version = processed_test_dict.get("command_version", None)
         self.stdout = processed_test_dict.get("stdout", None)

@@ -1,5 +1,5 @@
-import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { mount } from "@vue/test-utils";
+import { getLocalVue, wait } from "tests/jest/helpers";
 import HistoryImport from "./HistoryImport.vue";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
@@ -21,7 +21,7 @@ describe("HistoryImport.vue", () => {
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(TEST_PLUGINS_URL).reply(200, [{ id: "foo", writable: false }]);
-        wrapper = shallowMount(HistoryImport, {
+        wrapper = mount(HistoryImport, {
             propsData: {},
             localVue,
         });
@@ -74,6 +74,23 @@ describe("HistoryImport.vue", () => {
         await flushPromises();
         expect(wrapper.vm.waitingOnJob).toBeFalsy();
         expect(wrapper.vm.complete).toBeTruthy();
+    });
+
+    it("warns about shared history imports", async () => {
+        const input = wrapper.find("input[type=url]");
+        await input.setValue("https://usegalaxy.org/u/some_user/h/exported_history");
+
+        await wait(210);
+
+        const alert = wrapper.find(".alert");
+        expect(alert.classes()).toContain("alert-warning");
+        expect(alert.text()).toContain(
+            "It looks like you are trying to import a published history from another galaxy instance"
+        );
+
+        // Link to the GTN
+        const link = alert.find("a");
+        expect(link.text()).toContain("GTN");
     });
 
     afterEach(() => {

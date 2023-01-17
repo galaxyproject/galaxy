@@ -1,6 +1,6 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services";
 import LibraryDataset from "./LibraryDataset";

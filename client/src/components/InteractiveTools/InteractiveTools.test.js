@@ -1,45 +1,48 @@
+import { createTestingPinia } from "@pinia/testing";
+import { setActivePinia, PiniaVuePlugin } from "pinia";
 import InteractiveTools from "./InteractiveTools";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
-import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
 import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
+import { useEntryPointStore } from "stores/entryPointStore";
 
+import flushPromises from "flush-promises";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
     const localVue = getLocalVue();
+    localVue.use(PiniaVuePlugin);
     let wrapper;
+    let testPinia;
     let axiosMock;
 
     beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/entry_points?running=true").reply(200, testInteractiveToolsResponse);
-        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
-        wrapper = mount(InteractiveTools, {
-            computed: {
-                currentHistory() {
-                    return {
-                        loadCurrentHistory() {},
-                    };
+        testPinia = createTestingPinia({
+            initialState: {
+                entryPointStore: {
+                    entryPoints: testInteractiveToolsResponse,
                 },
             },
-            localVue,
         });
-
-        await flushPromises();
+        setActivePinia(testPinia);
+        wrapper = mount(InteractiveTools, {
+            localVue,
+            pinia: testPinia,
+        });
+        axiosMock = new MockAdapter(axios);
     });
 
     afterEach(() => {
         axiosMock.restore();
     });
 
-    it("Interactive Tool Table renders", async () => {
-        const table = wrapper.find("#interactive-tool-table");
-        expect(table.exists() === true).toBeTruthy();
+    it("renders table with interactive tools", async () => {
+        expect(wrapper.get("#interactive-tool-table").exists() === true).toBeTruthy();
+        expect(wrapper.findAll("td > a").length).toBe(2);
     });
 
-    it("Interactive Tool should disappear after stop button pressed", async () => {
+    it("removes the interactive tool when it is gone from store", async () => {
         function checkIfExists(tag, toolId) {
             return wrapper.find(tag + toolId).exists();
         }
@@ -47,18 +50,33 @@ describe("InteractiveTools/InteractiveTools.vue", () => {
         const tool = wrapper.vm.activeInteractiveTools.find((tool) => tool.id === toolId);
         expect(checkIfExists("#link-", toolId) === true).toBeTruthy();
         expect(tool.marked === undefined || false).toBeTruthy();
-
-        const checkbox = wrapper.find("#checkbox-" + toolId);
-        checkbox.setChecked();
-        await flushPromises();
+        const checkbox = wrapper.get("#checkbox-" + toolId);
+        await checkbox.setChecked();
         expect(tool.marked === true).toBeTruthy();
 
-        const stopBtn = wrapper.find("#stopInteractiveTool");
-        stopBtn.trigger("click");
-        await flushPromises();
+        // drop the tested tool from store
+        const store = useEntryPointStore();
+        await store.entryPoints.splice(0, 1);
 
-        const toolExists = wrapper.vm.activeInteractiveTools.includes((tool) => tool.id === toolId);
-        expect(toolExists === false).toBeTruthy();
+        const deletedTool = wrapper.vm.activeInteractiveTools.filter((tool) => tool.id === toolId);
+        expect(deletedTool.length).toBe(0);
         expect(checkIfExists("#link-", toolId) === false).toBeTruthy();
+    });
+
+    it("sends a delete request after the stop button is pressed", async () => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onDelete(new RegExp("/api/entry_points/*")).reply(200, { status: "ok", message: "ok" });
+        await wrapper.get("#checkbox-" + testInteractiveToolsResponse[0].id).setChecked();
+        await wrapper.get("#stopInteractiveTool").trigger("click");
+        expect(axiosMock.history.delete.length).toBe(1);
+        expect(axiosMock.history.delete[0].url === "/api/entry_points/b887d74393f85b6d").toBeTruthy();
+    });
+
+    it("shows an error message if the tool deletion fails", async () => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onDelete(new RegExp("/api/entry_points/*")).networkError();
+        wrapper.get("#stopInteractiveTool").trigger("click");
+        await flushPromises();
+        expect(wrapper.get(".alert-danger").text()).toMatch(/Network Error/);
     });
 });

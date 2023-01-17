@@ -15,12 +15,14 @@ import os.path
 import re
 import string
 import time
+from dataclasses import dataclass
 from glob import glob
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     BinaryIO,
     Callable,
+    cast,
     Dict,
     List,
     Optional,
@@ -32,6 +34,10 @@ from typing import (
 )
 
 import requests
+from typing_extensions import (
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.exceptions import MessageException
@@ -39,27 +45,44 @@ from galaxy.util import (
     Element,
     RW_R__R__,
 )
+from galaxy.util.compression_utils import decompress_path_to_directory
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.filelock import FileLock
 from galaxy.util.path import StrPath
 from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
+from galaxy.util.template import fill_template
 from ._schema import (
     ToolDataEntry,
     ToolDataEntryList,
 )
+from .bundles.models import (
+    DataTableBundle,
+    DataTableBundleProcessorDescription,
+    RepoInfo,
+)
 
 if TYPE_CHECKING:
-    from galaxy.config import GalaxyAppConfiguration
     from galaxy.tools.data_manager.manager import DataManager
+
 
 log = logging.getLogger(__name__)
 
+BUNDLE_INDEX_FILE_NAME = "_gx_data_bundle_index.json"
 DEFAULT_TABLE_TYPE = "tabular"
 
 TOOL_DATA_TABLE_CONF_XML = """<?xml version="1.0"?>
 <tables>
 </tables>
 """
+
+# Internally just the first two - but tool shed code (data_manager_manual) will still
+# pass DataManager in.
+EntrySource = Optional[Union[dict, RepoInfo, "DataManager"]]
+
+
+class StoresConfigFilePaths(Protocol):
+    def get(self, key: Any, default: Optional[Any]) -> Optional[Any]:
+        ...
 
 
 class ToolDataPathFiles:
@@ -102,9 +125,30 @@ class ToolDataPathFiles:
             return os.path.exists(path)
 
 
+ErrorListT = List[str]
+
+
+class FileNameInfoT(TypedDict):
+    found: bool
+    filename: str
+    from_shed_config: bool
+    tool_data_path: Optional[StrPath]
+    config_element: Optional[Element]
+    tool_shed_repository: Optional[Dict[str, Any]]
+    errors: ErrorListT
+
+
+LoadInfoT = Tuple[Tuple[Element, Optional[StrPath]], Dict[str, Any]]
+
+
 class ToolDataTable(Dictifiable):
     type_key: str
     data: List[List[str]]
+    empty_field_value: str
+    empty_field_values: Dict[Optional[str], str]
+    filenames: Dict[str, FileNameInfoT]
+    _load_info: LoadInfoT
+    _merged_load_info: List[Tuple[Type["ToolDataTable"], LoadInfoT]]
 
     @classmethod
     def from_dict(cls, d):
@@ -123,7 +167,7 @@ class ToolDataTable(Dictifiable):
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
         filename: Optional[StrPath] = None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         self.name = config_element.get("name")
         self.comment_char = config_element.get("comment_char")
@@ -131,7 +175,7 @@ class ToolDataTable(Dictifiable):
         self.empty_field_values: Dict[str, str] = {}
         self.allow_duplicate_entries = util.asbool(config_element.get("allow_duplicate_entries", True))
         self.here = os.path.dirname(filename) if filename else None
-        self.filenames: Dict[str, Dict[str, Any]] = {}
+        self.filenames: Dict[str, FileNameInfoT] = {}
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
@@ -157,7 +201,7 @@ class ToolDataTable(Dictifiable):
             self._loaded_content_version += 1
         return self._loaded_content_version
 
-    def get_empty_field_by_name(self, name):
+    def get_empty_field_by_name(self, name: Optional[str]) -> str:
         return self.empty_field_values.get(name, self.empty_field_value)
 
     def _add_entry(
@@ -165,7 +209,7 @@ class ToolDataTable(Dictifiable):
         entry: Union[List[str], Dict[str, str]],
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source=None,
+        entry_source: EntrySource = None,
         **kwd,
     ) -> None:
         raise NotImplementedError("Abstract method")
@@ -175,14 +219,19 @@ class ToolDataTable(Dictifiable):
         entry: Union[List[str], Dict[str, str]],
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source=None,
+        entry_source: EntrySource = None,
         **kwd,
     ) -> int:
         self._add_entry(entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd)
         return self._update_version()
 
     def add_entries(
-        self, entries: List[List[str]], allow_duplicates: bool = True, persist: bool = False, entry_source=None, **kwd
+        self,
+        entries: List[List[str]],
+        allow_duplicates: bool = True,
+        persist: bool = False,
+        entry_source: EntrySource = None,
+        **kwd,
     ) -> int:
         for entry in entries:
             try:
@@ -208,7 +257,6 @@ class ToolDataTable(Dictifiable):
         other_table: "ToolDataTable",
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source=None,
         **kwd,
     ) -> int:
         raise NotImplementedError("Abstract method")
@@ -251,7 +299,7 @@ class TabularToolDataTable(ToolDataTable):
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
         filename: Optional[StrPath] = None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         super().__init__(
             config_element,
@@ -355,7 +403,7 @@ class TabularToolDataTable(ToolDataTable):
                         filename = f"{corrected_filename}.sample"
                         found = True
 
-            errors: List[str] = []
+            errors: ErrorListT = []
             if found:
                 self.extend_data_with(filename, errors=errors)
                 self._update_version()
@@ -387,7 +435,7 @@ class TabularToolDataTable(ToolDataTable):
             if tmp_file is not None:
                 tmp_file.close()
 
-    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, entry_source=None, **kwd):
+    def merge_tool_data_table(self, other_table, allow_duplicates=True, persist=False, **kwd):
         assert (
             self.columns == other_table.columns
         ), f"Merging tabular data tables with non matching columns is not allowed: {self.name}:{self.columns} != {other_table.name}:{other_table.columns}"
@@ -406,9 +454,7 @@ class TabularToolDataTable(ToolDataTable):
             self.allow_duplicate_entries = False
             self._deduplicate_data()
         # add data entries and return current data table version
-        return self.add_entries(
-            other_table.data, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd
-        )
+        return self.add_entries(other_table.data, allow_duplicates=allow_duplicates, persist=persist, **kwd)
 
     def handle_found_index_file(self, filename):
         self.missing_index_file = None
@@ -478,14 +524,14 @@ class TabularToolDataTable(ToolDataTable):
         if "name" not in self.columns:
             self.columns["name"] = self.columns["value"]
 
-    def extend_data_with(self, filename: str, errors: Optional[List[str]] = None) -> None:
+    def extend_data_with(self, filename: str, errors: Optional[ErrorListT] = None) -> None:
         here = os.path.dirname(os.path.abspath(filename))
         self.data.extend(self.parse_file_fields(filename, errors=errors, here=here))
         if not self.allow_duplicate_entries:
             self._deduplicate_data()
 
     def parse_file_fields(
-        self, filename: str, errors: Optional[List[str]] = None, here: str = "__HERE__"
+        self, filename: str, errors: Optional[ErrorListT] = None, here: str = "__HERE__"
     ) -> List[List[str]]:
         """
         Parse separated lines from file and return a list of tuples.
@@ -569,17 +615,22 @@ class TabularToolDataTable(ToolDataTable):
         return rval
 
     # This method is used in tools, so need to keep its API stable
-    def get_filename_for_source(
-        self, source: Optional[Union[Dict, "DataManager"]], default: Optional[str] = None
-    ) -> Optional[str]:
+    def get_filename_for_source(self, source: EntrySource, default: Optional[str] = None) -> Optional[str]:
+        source_repo_info: Optional[dict] = None
         if source:
             # if dict, assume is compatible info dict, otherwise call method
+
             if isinstance(source, dict):
                 source_repo_info = source
             else:
-                source_repo_info = source.get_tool_shed_repository_info_dict()
-        else:
-            source_repo_info = None
+                source_repo_info_model: Optional[RepoInfo]
+                if source is None or isinstance(source, RepoInfo):
+                    source_repo_info_model = source
+                else:
+                    # we have a data manager, use its repo_info method
+                    source_data_manager = cast("DataManager", source)
+                    source_repo_info_model = source_data_manager.repo_info
+                source_repo_info = source_repo_info_model.dict() if source_repo_info_model else None
         filename = default
         for name, value in self.filenames.items():
             repo_info = value.get("tool_shed_repository")
@@ -595,7 +646,7 @@ class TabularToolDataTable(ToolDataTable):
         entry: Union[List[str], Dict[str, str]],
         allow_duplicates: bool = True,
         persist: bool = False,
-        entry_source=None,
+        entry_source: EntrySource = None,
         **kwd,
     ) -> None:
         # accepts dict or list of columns
@@ -802,6 +853,26 @@ def _expand_here_template(content: str, here: Optional[str]) -> str:
 tool_data_table_types_list: List[Type[ToolDataTable]] = [TabularToolDataTable]
 
 
+class HasExtraFiles(Protocol):
+    extra_files_path: str
+
+    def extra_files_path_exists(self) -> bool:
+        ...
+
+
+class DirectoryAsExtraFiles(HasExtraFiles):
+    def __init__(self, directory):
+        self.extra_files_path = directory
+
+    def extra_files_path_exists(self) -> bool:
+        return True
+
+
+class OutputDataset(HasExtraFiles):
+    ext: str
+    file_name: str
+
+
 class ToolDataTableManager(Dictifiable):
     """Manages a collection of tool data tables"""
 
@@ -813,7 +884,7 @@ class ToolDataTableManager(Dictifiable):
         tool_data_path: str,
         config_filename: Optional[Union[StrPath, List[StrPath]]] = None,
         tool_data_table_config_path_set=None,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> None:
         self.tool_data_path = tool_data_path
         # This stores all defined data table entries from both the tool_data_table_conf.xml file and the shed_tool_data_table_conf.xml file
@@ -911,7 +982,7 @@ class ToolDataTableManager(Dictifiable):
         from_shed_config: bool,
         filename: StrPath,
         tool_data_path_files: ToolDataPathFiles,
-        other_config_dict: Optional[Union["GalaxyAppConfiguration", Dict[str, Any]]] = None,
+        other_config_dict: Optional[StoresConfigFilePaths] = None,
     ) -> ToolDataTable:
         table_type = table_elem.get("type", "tabular")
         assert table_type in self.tool_data_table_types, f"Unknown data table type '{table_type}'"
@@ -1045,3 +1116,291 @@ class ToolDataTableManager(Dictifiable):
             if path in data_table.filenames:
                 table_names.add(name)
         return list(table_names)
+
+    def process_bundle(
+        self,
+        out_data: Dict[str, OutputDataset],
+        bundle_description: DataTableBundleProcessorDescription,
+        repo_info: Optional[RepoInfo],
+        options: "BundleProcessingOptions",
+    ) -> List[str]:
+        data_manager_dict: Dict[str, Any] = _data_manager_dict(out_data)
+        bundle = DataTableBundle(
+            processor_description=bundle_description,
+            data_tables=data_manager_dict.get("data_tables", {}),
+            repo_info=repo_info,
+        )
+        return _process_bundle(out_data, bundle, options, self)
+
+    def import_bundle(
+        self,
+        target: str,
+        options: "BundleProcessingOptions",
+    ) -> List[str]:
+        if not os.path.isdir(target):
+            target_directory = decompress_path_to_directory(target)
+        else:
+            target_directory = target
+        index_json = os.path.join(target_directory, BUNDLE_INDEX_FILE_NAME)
+        with open(index_json) as f:
+            index = json.load(f)
+        bundle = DataTableBundle(**index)
+        assert bundle.output_name
+        out_data = {bundle.output_name: DirectoryAsExtraFiles(target_directory)}
+        return _process_bundle(out_data, bundle, options, self)
+
+    def write_bundle(
+        self,
+        out_data: Dict[str, OutputDataset],
+        bundle_description: DataTableBundleProcessorDescription,
+        repo_info: Optional[RepoInfo],
+    ) -> None:
+        data_manager_dict = _data_manager_dict(out_data, ensure_single_output=True)
+        for output_name, dataset in out_data.items():
+            if dataset.ext != "data_manager_json":
+                continue
+
+            bundle = DataTableBundle(
+                data_tables=data_manager_dict.get("data_tables", {}),
+                output_name=output_name,
+                processor_description=bundle_description,
+                repo_info=repo_info,
+            )
+            extra_files_path = dataset.extra_files_path
+            bundle_path = os.path.join(extra_files_path, BUNDLE_INDEX_FILE_NAME)
+            with open(bundle_path, "w") as fw:
+                json.dump(bundle.dict(), fw)
+
+
+SUPPORTED_DATA_TABLE_TYPES = TabularToolDataTable
+
+
+@dataclass
+class BundleProcessingOptions:
+    what: str
+    data_manager_path: str
+    target_config_file: str
+
+
+def _data_manager_dict(out_data: Dict[str, OutputDataset], ensure_single_output: bool = False) -> Dict[str, Any]:
+    data_manager_dict: Dict[str, Any] = {}
+    found_output = False
+
+    for output_name, output_dataset in out_data.items():
+        if output_dataset.ext != "data_manager_json":
+            continue
+        if found_output and ensure_single_output:
+            raise Exception("Galaxy can only write bundles for data managers with a single output data_manager_json.")
+        found_output = True
+
+        try:
+            output_dict = json.loads(open(output_dataset.file_name).read())
+        except Exception as e:
+            log.warning(f'Error reading DataManagerTool json for "{output_name}": {e}')
+            continue
+        for key, value in output_dict.items():
+            if key not in data_manager_dict:
+                data_manager_dict[key] = {}
+            data_manager_dict[key].update(value)
+        data_manager_dict.update(output_dict)
+    return data_manager_dict
+
+
+from typing import Mapping
+
+
+def _process_bundle(
+    out_data: Mapping[str, HasExtraFiles],
+    bundle: DataTableBundle,
+    options: BundleProcessingOptions,
+    tool_data_tables: ToolDataTableManager,
+):
+    updated_data_tables = []
+    data_tables_dict = bundle.data_tables
+    bundle_description = bundle.processor_description
+    for data_table_name in bundle_description.data_table_names:
+        data_table_values = data_tables_dict.pop(data_table_name, None)
+        if not data_table_values:
+            log.warning(f'No values for data table "{data_table_name}" were returned by "{options.what}".')
+            continue  # next data table
+        data_table_remove_values = None
+        if isinstance(data_table_values, dict):
+            values_to_add = data_table_values.get("add")
+            data_table_remove_values = data_table_values.get("remove")
+            if values_to_add or data_table_remove_values:
+                # We don't have an old style data table definition
+                data_table_values = values_to_add
+
+        data_table = tool_data_tables.get(data_table_name, None)
+        if data_table is None:
+            log.error(
+                f'Processing by {options.what} returned an unknown data table "{data_table_name}" with new entries "{data_table_values}". These entries will not be created. Please confirm that an entry for "{data_table_name}" exists in your "tool_data_table_conf.xml" file.'
+            )
+            continue  # next table name
+        if not isinstance(data_table, SUPPORTED_DATA_TABLE_TYPES):
+            log.error(
+                f'Processing by {options.what} returned an unsupported data table "{data_table_name}" with type "{type(data_table)}" with new entries "{data_table_values}". These entries will not be created. Please confirm that the data table is of a supported type ({SUPPORTED_DATA_TABLE_TYPES}).'
+            )
+            continue  # next table name
+        output_ref_values = {}
+        output_ref_by_data_table = bundle_description.output_ref_by_data_table
+        if data_table_name in output_ref_by_data_table:
+            for data_table_column, output_ref in output_ref_by_data_table[data_table_name].items():
+                output_ref_dataset = out_data.get(output_ref, None)
+                assert output_ref_dataset is not None, "Referenced output was not found."
+                output_ref_values[data_table_column] = output_ref_dataset
+
+        if not isinstance(data_table_values, list):
+            data_table_values = [data_table_values] if data_table_values else []
+        if not isinstance(data_table_remove_values, list):
+            data_table_remove_values = [data_table_remove_values] if data_table_remove_values else []
+        for data_table_row in data_table_values:
+            data_table_value = dict(**data_table_row)  # keep original values here
+            for (
+                name
+            ) in (
+                data_table_row.keys()
+            ):  # FIXME: need to loop through here based upon order listed in data_manager config
+                if name in output_ref_values:
+                    _process_move(
+                        data_table_name,
+                        name,
+                        output_ref_values[name].extra_files_path,
+                        bundle_description,
+                        options,
+                        **data_table_value,
+                    )
+                    data_table_value[name] = _process_value_translations(
+                        data_table_name, name, bundle_description, options, **data_table_value
+                    )
+            data_table.add_entry(data_table_value, persist=True, entry_source=bundle.repo_info)
+        # Removes data table entries
+        for data_table_row in data_table_remove_values:
+            data_table_value = dict(**data_table_row)  # keep original values here
+            data_table.remove_entry(list(data_table_value.values()))
+
+        updated_data_tables.append(data_table_name)
+    if bundle_description.undeclared_tables and data_tables_dict:
+        # We handle the data move, by just moving all the data out of the extra files path
+        # moving a directory and the target already exists, we move the contents instead
+        log.debug("Attempting to add entries for undeclared tables: %s.", ", ".join(data_tables_dict.keys()))
+        for ref_file in out_data.values():
+            if ref_file.extra_files_path_exists():
+                util.move_merge(ref_file.extra_files_path, options.data_manager_path)
+        path_column_names = ["path"]
+        for data_table_name, data_table_values in data_tables_dict.items():
+            data_table = tool_data_tables.get(data_table_name, None)
+            if not isinstance(data_table_values, list):
+                data_table_values = [data_table_values]
+            for data_table_row in data_table_values:
+                data_table_value = dict(**data_table_row)  # keep original values here
+                for name, value in data_table_row.items():
+                    if name in path_column_names:
+                        data_table_value[name] = os.path.abspath(os.path.join(options.data_manager_path, value))
+                data_table.add_entry(data_table_value, persist=True, entry_source=bundle.repo_info)
+            updated_data_tables.append(data_table_name)
+    else:
+        for data_table_name, data_table_values in data_tables_dict.items():
+            # tool returned extra data table entries, but data table was not declared in data manager
+            # do not add these values, but do provide messages
+            log.warning(
+                f'Processing by {options.what} returned an undeclared data table "{data_table_name}" with new entries "{data_table_values}". These entries will not be created. Please confirm that an entry for "{data_table_name}" exists in your "{options.target_config_file}" file.'
+            )
+    return updated_data_tables
+
+
+def _process_move(
+    data_table_name: str,
+    column_name: str,
+    source_base_path: str,
+    bundle_description: DataTableBundleProcessorDescription,
+    options: BundleProcessingOptions,
+    **kwd,
+):
+    move_by_data_table_column = bundle_description.move_by_data_table_column
+    if data_table_name in move_by_data_table_column and column_name in move_by_data_table_column[data_table_name]:
+        move = move_by_data_table_column[data_table_name][column_name]
+        source = move.source_base
+        if source is None:
+            source = source_base_path
+        else:
+            source = fill_template(
+                source,
+                GALAXY_DATA_MANAGER_DATA_PATH=options.data_manager_path,
+                **kwd,
+            ).strip()
+        assert source
+
+        if move.source_value:
+            source = os.path.join(
+                source,
+                fill_template(
+                    move.source_value,
+                    GALAXY_DATA_MANAGER_DATA_PATH=options.data_manager_path,
+                    **kwd,
+                ).strip(),
+            )
+
+        target = move.target_base
+        if target is None:
+            target = options.data_manager_path
+        else:
+            target = fill_template(
+                target,
+                GALAXY_DATA_MANAGER_DATA_PATH=options.data_manager_path,
+                **kwd,
+            ).strip()
+        assert target
+
+        if move.target_value:
+            target = os.path.join(
+                target,
+                fill_template(
+                    move.target_value,
+                    GALAXY_DATA_MANAGER_DATA_PATH=options.data_manager_path,
+                    **kwd,
+                ).strip(),
+            )
+
+        if move.type == "file":
+            dirs = os.path.split(target)[0]
+            try:
+                os.makedirs(dirs)
+            except OSError as e:
+                if e.errno != errno.EEXIST:
+                    raise e
+        # moving a directory and the target already exists, we move the contents instead
+        if os.path.exists(source):
+            util.move_merge(source, target)
+
+        if move.relativize_symlinks:
+            util.relativize_symlinks(target)
+
+        return True
+    return False
+
+
+def _process_value_translations(
+    data_table_name: str,
+    column_name: str,
+    bundle_description: DataTableBundleProcessorDescription,
+    options: BundleProcessingOptions,
+    **kwd,
+) -> str:
+    value_translation_by_data_table_column = bundle_description.value_translation_by_data_table_column
+    value = kwd.get(column_name)
+    if (
+        data_table_name in value_translation_by_data_table_column
+        and column_name in value_translation_by_data_table_column[data_table_name]
+    ):
+        for value_translation in value_translation_by_data_table_column[data_table_name][column_name]:
+            if isinstance(value_translation, str):
+                value = fill_template(
+                    value_translation,
+                    GALAXY_DATA_MANAGER_DATA_PATH=options.data_manager_path,
+                    **kwd,
+                ).strip()
+            else:
+                value = value_translation(value)
+    assert value
+    return value

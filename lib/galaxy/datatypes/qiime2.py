@@ -3,13 +3,25 @@ import html
 import io
 import uuid as _uuid
 import zipfile
+from typing import (
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
 import yaml
 
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
-from galaxy.datatypes.sniff import build_sniff_from_prefix
+from galaxy.datatypes.sniff import (
+    build_sniff_from_prefix,
+    FilePrefix,
+)
 from galaxy.datatypes.tabular import Tabular
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 
 class _QIIME2ResultBase(CompressedZipArchive):
@@ -21,7 +33,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
     MetadataElement(name="format", optional=True, no_value="", readonly=True)
     MetadataElement(name="version", readonly=True)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         metadata = _get_metadata_from_archive(dataset.file_name)
         for key, value in metadata.items():
             if value:
@@ -29,7 +41,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset, is_multi_byte=False):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:
@@ -37,7 +49,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         def make_row(item):
             return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
 
@@ -47,7 +59,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         return "".join(table)
 
-    def _peek(self, dataset, simple=False):
+    def _peek(self, dataset: "DatasetInstance", simple: bool = False) -> List:
         peek = [("Type", dataset.metadata.semantic_type), ("UUID", dataset.metadata.uuid)]
         if not simple:
             if dataset.metadata.semantic_type != "Visualization":
@@ -55,30 +67,30 @@ class _QIIME2ResultBase(CompressedZipArchive):
             peek.append(("Version", dataset.metadata.version))
         return peek
 
-    def _sniff(self, filename):
+    def _sniff(self, filename: str) -> Optional[Dict]:
         """Helper method for use in inherited datatypes"""
         try:
             if not zipfile.is_zipfile(filename):
                 raise Exception()
             return _get_metadata_from_archive(filename)
         except Exception:
-            return False
+            return None
 
 
 class QIIME2Artifact(_QIIME2ResultBase):
     file_ext = "qza"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         metadata = self._sniff(filename)
-        return metadata and metadata["semantic_type"] != "Visualization"
+        return bool(metadata) and metadata["semantic_type"] != "Visualization"  # type: ignore[index]
 
 
 class QIIME2Visualization(_QIIME2ResultBase):
     file_ext = "qzv"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         metadata = self._sniff(filename)
-        return metadata and metadata["semantic_type"] == "Visualization"
+        return bool(metadata) and metadata["semantic_type"] == "Visualization"  # type: ignore[index]
 
 
 @build_sniff_from_prefix
@@ -100,17 +112,15 @@ class QIIME2Metadata(Tabular):
     _TYPES_DIRECTIVE = "#q2:types"
     _search_lines = 2
 
-    def get_column_names(self, first_line=None):
-        if first_line is None:
-            return None
+    def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
-    def set_meta(self, dataset, **kwargs):
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
         """
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.
         """
-        super().set_meta(dataset, **kwargs)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         if dataset.has_data():
             with open(dataset.file_name) as dataset_fh:
@@ -139,7 +149,7 @@ class QIIME2Metadata(Tabular):
                     if q2_type == "categorical" and col_type in ("float", "int", "list"):
                         dataset.metadata.column_types[idx] = "str"
 
-    def sniff_prefix(self, file_prefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         for _, line in zip(range(self._search_lines), file_prefix.line_iterator()):
             if line.startswith(self._TYPES_DIRECTIVE):
                 return True

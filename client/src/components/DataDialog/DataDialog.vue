@@ -46,7 +46,7 @@ import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
-import { mountUploadModal } from "components/Upload";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 Vue.use(BootstrapVue);
 
@@ -77,6 +77,10 @@ export default {
             type: Boolean,
             default: true,
         },
+    },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
     },
     data() {
         return {
@@ -133,7 +137,7 @@ export default {
                 modalShow: true,
                 selectable: true,
             };
-            mountUploadModal(propsData);
+            this.openGlobalUploadModal(propsData);
             this.modalShow = false;
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/

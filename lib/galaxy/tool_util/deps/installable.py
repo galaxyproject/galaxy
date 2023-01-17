@@ -1,12 +1,8 @@
 """Abstractions for installing local software managed and required by Galaxy/galaxy-lib."""
 
+import abc
 import logging
 import os
-from abc import (
-    ABCMeta,
-    abstractmethod,
-    abstractproperty,
-)
 
 from galaxy.util.filelock import (
     FileLock,
@@ -16,22 +12,24 @@ from galaxy.util.filelock import (
 log = logging.getLogger(__name__)
 
 
-class InstallableContext(metaclass=ABCMeta):
+class InstallableContext(metaclass=abc.ABCMeta):
     """Represent a directory/configuration of something that can be installed."""
 
-    @abstractmethod
+    @abc.abstractmethod
     def is_installed(self):
         """Return bool indicating if the configured software is installed."""
 
-    @abstractmethod
+    @abc.abstractmethod
     def can_install(self):
         """Check preconditions for installation."""
 
-    @abstractproperty
+    @property
+    @abc.abstractmethod
     def installable_description(self):
         """Short description of thing being installed for log statements."""
 
-    @abstractproperty
+    @property
+    @abc.abstractmethod
     def parent_path(self):
         """Return parent path of the location the installable will be created within."""
 

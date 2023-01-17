@@ -1,5 +1,5 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import DelayedInput from "components/Common/DelayedInput";
 import ToolSearch from "./ToolSearch";
 const localVue = getLocalVue();

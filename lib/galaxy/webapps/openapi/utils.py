@@ -185,7 +185,7 @@ def generate_operation_summary(*, route: routing.APIRoute, method: str) -> str:
 def get_openapi_operation_metadata(*, route: routing.APIRoute, method: str, operation_ids: Set[str]) -> Dict[str, Any]:
     operation: Dict[str, Any] = {}
     if route.tags:
-        operation["tags"] = route.tags
+        operation["tags"] = list(set(route.tags))
     operation["summary"] = generate_operation_summary(route=route, method=method)
     if route.description:
         operation["description"] = route.description
@@ -222,8 +222,10 @@ def get_openapi_path(
             parameters: List[Dict[str, Any]] = []
             flat_dependant = get_flat_dependant(route.dependant, skip_repeats=True)
             security_definitions, operation_security = get_openapi_security_definitions(flat_dependant=flat_dependant)
-            if operation_security:
-                operation.setdefault("security", []).extend(operation_security)
+            # https://redocly.com/docs/cli/rules/security-defined/#api-design-principles
+            # be explicit that this is an unsecured endpoint, no API token is needed
+            # (unless required by proxy)
+            operation.setdefault("security", []).extend(operation_security)
             if security_definitions:
                 security_schemes.update(security_definitions)
             all_route_params = get_flat_params(route.dependant)
@@ -370,7 +372,7 @@ def get_openapi(
     *,
     title: str,
     version: str,
-    openapi_version: str = "3.0.2",
+    openapi_version: str = "3.0.3",
     description: Optional[str] = None,
     routes: Sequence[BaseRoute],
     tags: Optional[List[Dict[str, Any]]] = None,

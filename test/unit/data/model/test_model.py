@@ -13,3 +13,8 @@ def test_get_uuid():
 
     rval = model.get_uuid()
     assert isinstance(rval, UUID)
+
+
+def test_permitted_actions():
+    actions = model.Dataset.permitted_actions
+    assert actions and len(actions.values()) == 2

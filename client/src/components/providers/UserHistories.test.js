@@ -1,6 +1,6 @@
 import Vuex from "vuex";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import { historyStore } from "store/historyStore/historyStore";
 import UserHistories from "./UserHistories";
 import {

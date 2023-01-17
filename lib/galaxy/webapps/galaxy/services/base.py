@@ -59,13 +59,13 @@ class ServiceBase:
     def __init__(self, security: IdEncodingHelper):
         self.security = security
 
-    def decode_id(self, id: EncodedDatabaseIdField) -> int:
+    def decode_id(self, id: EncodedDatabaseIdField, kind: Optional[str] = None) -> int:
         """Decodes a previously encoded database ID."""
-        return decode_with_security(self.security, id)
+        return decode_with_security(self.security, id, kind=kind)
 
-    def encode_id(self, id: int) -> EncodedDatabaseIdField:
+    def encode_id(self, id: int, kind: Optional[str] = None) -> EncodedDatabaseIdField:
         """Encodes a raw database ID."""
-        return encode_with_security(self.security, id)
+        return encode_with_security(self.security, id, kind=kind)
 
     def decode_ids(self, ids: List[EncodedDatabaseIdField]) -> List[int]:
         """

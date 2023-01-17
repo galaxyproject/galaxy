@@ -1,3 +1,44 @@
+<script setup lang="ts">
+import { computed, ref } from "vue";
+import localize from "@/utils/localization";
+import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
+
+interface QuotaUsageBarProps {
+    quotaUsage: QuotaUsage;
+}
+
+const props = defineProps<QuotaUsageBarProps>();
+
+const storageSourceText = ref(localize("storage source"));
+const percentOfDiskQuotaUsedText = ref(localize("% of disk quota used"));
+
+const isDefaultQuota = computed(() => {
+    return props.quotaUsage.sourceLabel === DEFAULT_QUOTA_SOURCE_LABEL;
+});
+const quotaHasLimit = computed(() => {
+    return !props.quotaUsage.isUnlimited;
+});
+const progressVariant = computed(() => {
+    const percent = props.quotaUsage.quotaPercent;
+    if (percent === undefined) {
+        return "secondary";
+    }
+    if (percent < 50) {
+        return "success";
+    } else if (percent >= 50 && percent < 80) {
+        return "primary";
+    } else if (percent >= 80 && percent < 95) {
+        return "warning";
+    }
+    return "danger";
+});
+
+defineExpose({
+    isDefaultQuota,
+    quotaHasLimit,
+});
+</script>
+
 <template>
     <div class="quota-usage-bar w-75 mx-auto my-5">
         <h2 v-if="!isDefaultQuota" class="quota-storage-source">
@@ -16,45 +57,3 @@
         <b-progress :value="quotaUsage.quotaPercent" :variant="progressVariant" max="100" />
     </div>
 </template>
-
-<script>
-import _l from "utils/localization";
-import { DEFAULT_QUOTA_SOURCE_LABEL } from "./model/QuotaUsage";
-
-export default {
-    props: {
-        quotaUsage: {
-            type: Object,
-            required: true,
-        },
-    },
-    data() {
-        return {
-            storageSourceText: _l("storage source"),
-            percentOfDiskQuotaUsedText: _l("% of disk quota used"),
-        };
-    },
-    computed: {
-        /** @returns {Boolean} */
-        isDefaultQuota() {
-            return this.quotaUsage.sourceLabel === DEFAULT_QUOTA_SOURCE_LABEL;
-        },
-        /** @returns {Boolean} */
-        quotaHasLimit() {
-            return !this.quotaUsage.isUnlimited;
-        },
-        /** @returns {String} */
-        progressVariant() {
-            const percent = this.quotaUsage.quotaPercent;
-            if (percent < 50) {
-                return "success";
-            } else if (percent >= 50 && percent < 80) {
-                return "primary";
-            } else if (percent >= 80 && percent < 95) {
-                return "warning";
-            }
-            return "danger";
-        },
-    },
-};
-</script>

@@ -92,6 +92,9 @@ import {
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { storeToRefs } from "pinia";
 
 Vue.use(BootstrapVue);
 
@@ -106,9 +109,10 @@ export default {
     props: {
         untypedParameters: {
             type: UntypedParameters,
+            required: true,
         },
-        getManager: {
-            type: Function,
+        steps: {
+            type: Object,
             required: true,
         },
         annotation: {
@@ -120,27 +124,19 @@ export default {
             default: null,
         },
         creator: {
+            type: Array,
             default: null,
         },
+        datatypesMapper: {
+            type: DatatypesMapperModel,
+            required: true,
+        },
     },
-    data() {
-        return {
-            forceRefresh: 0,
-        };
+    setup() {
+        const { hasActiveOutputs } = storeToRefs(useWorkflowStepStore());
+        return { hasActiveOutputs };
     },
     computed: {
-        nodes() {
-            return this.getManager().nodes;
-        },
-        hasActiveOutputs() {
-            this.forceRefresh;
-            for (const node of Object.values(this.nodes)) {
-                if (node.activeOutputs.getAll().length > 0) {
-                    return true;
-                }
-            }
-            return false;
-        },
         showRefactor() {
             // we could be even more precise here and check the inputs and such, because
             // some of these extractions may not be possible.
@@ -172,25 +168,16 @@ export default {
             return getUntypedParameters(this.untypedParameters);
         },
         warningDisconnectedInputs() {
-            this.forceRefresh;
-            return getDisconnectedInputs(this.nodes);
+            return getDisconnectedInputs(this.steps, this.datatypesMapper);
         },
         warningMissingMetadata() {
-            this.forceRefresh;
-            return getMissingMetadata(this.nodes);
+            return getMissingMetadata(this.steps);
         },
         warningUnlabeledOutputs() {
-            this.forceRefresh;
-            return getUnlabeledOutputs(this.nodes);
+            return getUnlabeledOutputs(this.steps);
         },
     },
     methods: {
-        refresh() {
-            // I tried to make these purely reactive but I guess it is not surprising that the
-            // entirity of the nodes object and children aren't all purely reactive.
-            // https://logaretm.com/blog/2019-10-11-forcing-recomputation-of-computed-properties/
-            this.forceRefresh += 1;
-        },
         onAttributes() {
             this.$emit("onAttributes");
         },
@@ -237,7 +224,7 @@ export default {
             this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {
-            const actions = fixAllIssues(this.nodes, this.untypedParameters);
+            const actions = fixAllIssues(this.steps, this.untypedParameters);
             this.$emit("onRefactor", actions);
         },
     },

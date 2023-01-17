@@ -2,14 +2,16 @@ import os
 
 from .framework import SeleniumIntegrationTestCase
 
-TRS_CONFIG = """
-- api_url: https://dockstore.org/api
+TRS_API_URL_DOCKSTORE = "https://dockstore.org/api"
+TRS_API_URL_WORKFLOWHUB = "https://workflowhub.eu"
+TRS_CONFIG = f"""
+- api_url: {TRS_API_URL_DOCKSTORE}
   doc: 'Dockstore is an open platform used by the GA4GH for sharing Docker-based tools
     and workflows.'
   id: dockstore
   label: dockstore
   link_url: https://dockstore.org
-- api_url: https://workflowhub.eu
+- api_url: {TRS_API_URL_WORKFLOWHUB}
   doc: 'WorkflowHub is a registry of scientific workflows.'
   id: workflowhub
   label: workflowhub
@@ -23,6 +25,10 @@ TRS_VERSION_DOCKSTORE = "v0.4"
 TRS_ID_WORKFLOWHUB = "110"
 TRS_VERSION_WORKFLOWHUB = "4"
 WORKFLOW_NAME = "COVID-19: variation analysis on ARTIC PE data"
+TRS_URL_DOCKSTORE = f"{TRS_API_URL_DOCKSTORE}/ga4gh/trs/v2/tools/%23{TRS_ID_DOCKSTORE}/versions/{TRS_VERSION_DOCKSTORE}"
+TRS_URL_WORKFLOWHUB = (
+    f"{TRS_API_URL_WORKFLOWHUB}/ga4gh/trs/v2/tools/{TRS_ID_WORKFLOWHUB}/versions/{TRS_VERSION_WORKFLOWHUB}"
+)
 
 
 class TestTrsImport(SeleniumIntegrationTestCase):
@@ -99,12 +105,34 @@ class TestTrsImport(SeleniumIntegrationTestCase):
     def test_import_by_id_workflowhub(self):
         self._import_by_id(TRS_ID_WORKFLOWHUB, server="workflowhub")
 
+    def test_import_by_trs_url_dockstore(self):
+        self._import_by_trs_url(TRS_URL_DOCKSTORE)
+
+    def test_import_by_trs_url_workflowhub(self):
+        self._import_by_trs_url(TRS_URL_WORKFLOWHUB)
+
+    def test_auto_import_by_trs_url_dockstore(self):
+        import_url = f"workflows/trs_import?trs_url={TRS_URL_DOCKSTORE}"
+        self._import_workflow_by_url(import_url)
+
+    def test_auto_import_by_trs_url_workflowhub(self):
+        import_url = f"workflows/trs_import?trs_url={TRS_URL_WORKFLOWHUB}"
+        self._import_workflow_by_url(import_url)
+
     def _import_by_id(self, trs_id, server):
         self.go_to_trs_by_id()
         self.components.trs_import.select_server_button.wait_for_and_click()
         self.components.trs_import.select_server(server=server).wait_for_and_click()
         self.components.trs_import.input.wait_for_and_send_keys(trs_id)
         self.components.trs_import.import_version(version="v0.4").wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.workflow_index_open()
+        self.assert_workflow_imported(WORKFLOW_NAME)
+
+    def _import_by_trs_url(self, trs_url):
+        self.go_to_trs_by_id()
+        self.components.trs_import.url_input.wait_for_and_send_keys(trs_url)
+        self.components.trs_import.url_import_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.workflow_index_open()
         self.assert_workflow_imported(WORKFLOW_NAME)

@@ -18,18 +18,18 @@ class ParametricDomainItem(BaseModel):
         extra = Extra.forbid
 
     param: str = Field(
-        ..., description="Specific variables for the computational workflow", examples=["seed"], title="param"
+        ..., description="Specific variables for the computational workflow", example=["seed"], title="param"
     )
     value: str = Field(
         ...,
         description="Specific (non-default) parameter values for the computational workflow",
-        examples=["14"],
+        example=["14"],
         title="value",
     )
     step: str = Field(
         ...,
         description="Refers to the specific step of the workflow relevant to the parameters specified in 'param' and 'value'",
-        examples=["1"],
+        example=["1"],
         regex="^(.*)$",
         title="step",
     )

@@ -97,8 +97,7 @@ class Tree(BaseTree):
                 yield dict_map(get_element, collection_dict)
             else:
                 sub_collections = dict_map(lambda collection: get_element(collection).child_collection, collection_dict)
-                for element in substructure._walk_collections(sub_collections):
-                    yield element
+                yield from substructure._walk_collections(sub_collections)
 
     @property
     def is_leaf(self):

@@ -15,7 +15,7 @@ export const getUserPreferencesModel = (user_id) => {
             url: `/api/users/${user_id}/information/inputs`,
             icon: "fa-user",
             redirect: "/user",
-            shouldRender: !config.use_remote_user,
+            disabled: config.use_remote_user,
         },
         password: {
             title: _l("Change Password"),
@@ -25,16 +25,7 @@ export const getUserPreferencesModel = (user_id) => {
             url: `/api/users/${user_id}/password/inputs`,
             submit_title: "Save Password",
             redirect: "/user",
-            shouldRender: !config.use_remote_user && config.enable_account_interface,
-        },
-        external_ids: {
-            title: _l("Manage Third-Party Identities"),
-            id: "manage-third-party-identities",
-            description: _l("Connect or disconnect access to your third-party identities."),
-            icon: "fa-id-card-o",
-            submitTitle: "Disconnect identity",
-            submitIcon: "fa-trash",
-            shouldRender: config.enable_oidc,
+            disabled: config.use_remote_user || !config.enable_account_interface,
         },
         permissions: {
             title: _l("Set Dataset Permissions for New Histories"),
@@ -46,29 +37,7 @@ export const getUserPreferencesModel = (user_id) => {
             icon: "fa-users",
             submitTitle: "Save Permissions",
             redirect: "/user",
-            shouldRender: !config.single_user,
-        },
-        make_data_private: {
-            title: _l("Make All Data Private"),
-            id: "edit-preferences-make-data-private",
-            description: _l("Click here to make all data private."),
-            icon: "fa-lock",
-            shouldRender: !config.single_user,
-        },
-        api_key: {
-            id: "edit-preferences-api-key",
-            title: _l("Manage API Key"),
-            description: _l("Access your current API key or create a new one."),
-            icon: "fa-key",
-        },
-        cloud_auth: {
-            id: "edit-preferences-cloud-auth",
-            title: _l("Manage Cloud Authorization"),
-            description: _l("Add or modify the configuration that grants Galaxy to access your cloud-based resources."),
-            icon: "fa-cloud",
-            submitTitle: "Create a new Key",
-            submitIcon: "fa-check",
-            shouldRender: true,
+            disabled: config.single_user,
         },
         toolbox_filters: {
             title: _l("Manage Toolbox Filters"),
@@ -78,19 +47,7 @@ export const getUserPreferencesModel = (user_id) => {
             icon: "fa-filter",
             submitTitle: "Save Filters",
             redirect: "/user",
-            shouldRender: !!config.has_user_tool_filters,
-        },
-        custom_builds: {
-            title: _l("Manage Custom Builds"),
-            description: _l("Add or remove custom builds using history datasets."),
-            icon: "fa-cubes",
-        },
-        logout: {
-            title: _l("Sign out"),
-            id: "edit-preferences-sign-out",
-            description: _l("Click here to sign out of all sessions."),
-            icon: "fa-sign-out",
-            shouldRender: !!Galaxy.session_csrf_token && !config.single_user,
+            disabled: !config.has_user_tool_filters,
         },
     };
 };

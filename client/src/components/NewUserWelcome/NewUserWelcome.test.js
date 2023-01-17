@@ -1,5 +1,5 @@
 import { shallowMount, mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import testData from "./testData.json";
 import NewUserWelcome from "./NewUserWelcome.vue";
 import { getResource } from "./getResource";

@@ -4,6 +4,7 @@ Manager and Serializer for Users.
 import hashlib
 import logging
 import random
+import re
 import socket
 import time
 from datetime import datetime
@@ -414,7 +415,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
         tags = [(f"{name}:{val}" if val else name) for name, val in tags]
-        return sorted(tags)
+        # consider named tags while sorting
+        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """

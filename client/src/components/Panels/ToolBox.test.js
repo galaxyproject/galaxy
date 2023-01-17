@@ -1,6 +1,6 @@
 import Vuex from "vuex";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import { filterToolSections, filterTools } from "./utilities";

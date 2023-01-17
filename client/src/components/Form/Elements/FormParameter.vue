@@ -56,5 +56,8 @@ export default {
             this.$emit("input", this.parameter.field.value());
         });
     },
+    beforeDestroy() {
+        this.parameter.remove();
+    },
 };
 </script>

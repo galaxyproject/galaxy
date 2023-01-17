@@ -28,6 +28,7 @@
                                     :name="item.element_identifier"
                                     :expand-dataset="isExpanded(item)"
                                     :is-dataset="item.element_type == 'hda'"
+                                    :filterable="filterable"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @view-collection="onViewSubCollection" />
                             </template>
@@ -63,6 +64,7 @@ export default {
         history: { type: Object, required: true },
         selectedCollections: { type: Array, required: true },
         showControls: { type: Boolean, default: true },
+        filterable: { type: Boolean, default: false },
     },
     data() {
         return {

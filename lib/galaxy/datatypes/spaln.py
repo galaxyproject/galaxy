@@ -4,10 +4,26 @@ spaln Composite Dataset
 
 import logging
 import os.path
+from typing import (
+    Callable,
+    Dict,
+    List,
+    Optional,
+    TYPE_CHECKING,
+)
 
-from galaxy.datatypes.data import Data
+from galaxy.datatypes.data import (
+    Data,
+    GeneratePrimaryFileDataset,
+)
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.util import smart_str
+
+if TYPE_CHECKING:
+    from galaxy.model import (
+        DatasetInstance,
+        HistoryDatasetAssociation,
+    )
 
 log = logging.getLogger(__name__)
 verbose = True
@@ -52,7 +68,7 @@ class _SpalnDb(Data):
             substitute_name_with_metadata="spalndb_name",
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
         rval = ["<html><head><title>Spaln Database</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -68,7 +84,7 @@ class _SpalnDb(Data):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def regenerate_primary_file(self, dataset):
+    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -87,7 +103,7 @@ class _SpalnDb(Data):
             f.write("\n".join(rval))
             f.write("\n")
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "spaln database (multiple files)"
@@ -96,14 +112,24 @@ class _SpalnDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: "DatasetInstance") -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
         except Exception:
             return "spaln database (multiple files)"
 
-    def display_data(self, trans, data, preview=False, filename=None, to_ext=None, size=None, offset=None, **kwd):
+    def display_data(
+        self,
+        trans,
+        dataset: "HistoryDatasetAssociation",
+        preview: bool = False,
+        filename: Optional[str] = None,
+        to_ext: Optional[str] = None,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
+        **kwd,
+    ):
         """
         If preview is `True` allows us to format the data shown in the central pane via the "eye" icon.
         If preview is `False` triggers download.
@@ -112,12 +138,12 @@ class _SpalnDb(Data):
         if not preview:
             return super().display_data(
                 trans,
-                data=data,
+                dataset=dataset,
                 preview=preview,
                 filename=filename,
                 to_ext=to_ext,
-                size=size,
                 offset=offset,
+                ck_size=ck_size,
                 headers=headers,
                 **kwd,
             )
@@ -133,7 +159,7 @@ class _SpalnDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(data.file_name, encoding="utf-8") as handle:
+            with open(dataset.file_name, encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass
@@ -145,18 +171,20 @@ class _SpalnDb(Data):
             headers,
         )
 
-    def merge(split_files, output_file):
+    @staticmethod
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merge spaln databases (not implemented)."""
         raise NotImplementedError("Merging spaln databases is not possible")
 
-    def split(cls, input_datasets, subdir_generator_function, split_params):
+    @classmethod
+    def split(cls, input_datasets: List, subdir_generator_function: Callable, split_params: Dict) -> None:
         """Split a spaln database (not implemented)."""
         if split_params is None:
             return None
         raise NotImplementedError("Can't split spaln database")
 
-    def set_meta(self, dataset, **kwd):
-        super().set_meta(dataset, **kwd)
+    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         efp = dataset.extra_files_path
         for filename in os.listdir(efp):
             if filename.endswith(".ent"):

@@ -1,5 +1,5 @@
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { getLocalVue } from "tests/jest/helpers";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
 import flushPromises from "flush-promises";
@@ -12,7 +12,12 @@ const FAKE_INVOCATION_ID = "fake-invocation-id";
 const FAKE_EXPORT_PLUGIN = new InvocationExportPlugin({
     title: "Plugin Title",
     markdownDescription: `some **markdown** description`,
-    downloadFormat: "tgz",
+    exportParams: {
+        modelStoreFormat: "tgz",
+        includeFiles: false,
+        includeDeleted: false,
+        includeHidden: false,
+    },
     additionalActions: [
         new InvocationExportPluginAction({
             id: "fake-action-1",

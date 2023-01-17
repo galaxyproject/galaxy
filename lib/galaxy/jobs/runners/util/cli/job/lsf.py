@@ -3,7 +3,7 @@
 from logging import getLogger
 from os import path
 
-from ..job import (
+from . import (
     BaseJobExec,
     job_states,
 )
@@ -95,6 +95,8 @@ class LSF(BaseJobExec):
         for line in reason.splitlines():
             if "TERM_MEMLIMIT" in line:
                 return runner_states.MEMORY_LIMIT_REACHED
+            if "TERM_RUNLIMIT" in line:
+                return runner_states.WALLTIME_REACHED
         return None
 
     def _get_job_state(self, state):

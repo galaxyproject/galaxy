@@ -23,7 +23,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.model.orm.util import add_object_to_object_session
-from ..authnz import IdentityProvider
+from . import IdentityProvider
 
 try:
     import pkce

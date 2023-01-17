@@ -27,6 +27,12 @@ class Container(LagomContainer):
         self[dep_type] = instance
         return self[dep_type]
 
+    def _register_abstract_singleton(
+        self, abstract_type: Type[T], concrete_type: Type[T], instance: Optional[T] = None
+    ) -> T:
+        self[abstract_type] = instance if instance is not None else concrete_type
+        return self[abstract_type]
+
     def resolve_or_none(self, dep_type: Type[T]) -> Optional[T]:
         """Resolve the dependent type or just return None.
 

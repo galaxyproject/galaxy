@@ -46,6 +46,20 @@ FilterValueQueryParam: Optional[List[str]] = Query(
     example="2015-01-29",
 )
 
+OffsetQueryParam: Optional[int] = Query(
+    default=0,
+    ge=0,
+    title="Offset",
+    description="Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item",
+)
+
+LimitQueryParam: Optional[int] = Query(
+    default=None,
+    ge=1,
+    title="Limit",
+    description="The maximum number of items to return.",
+)
+
 
 def parse_serialization_params(
     view: Optional[str] = None,
@@ -83,18 +97,8 @@ def get_value_filter_query_params(
 def get_filter_query_params(
     q: Optional[List[str]] = FilterQueryQueryParam,
     qv: Optional[List[str]] = FilterValueQueryParam,
-    offset: Optional[int] = Query(
-        default=0,
-        ge=0,
-        title="Offset",
-        description="Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item",
-    ),
-    limit: Optional[int] = Query(
-        default=None,
-        ge=1,
-        title="Limit",
-        description="The maximum number of items to return.",
-    ),
+    offset: Optional[int] = OffsetQueryParam,
+    limit: Optional[int] = LimitQueryParam,
     order: Optional[str] = Query(
         default=None,
         title="Order",

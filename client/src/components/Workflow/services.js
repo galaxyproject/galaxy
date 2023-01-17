@@ -1,13 +1,13 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
 /** Workflow data request helper **/
 export class Services {
     async copyWorkflow(workflow) {
         const Galaxy = getGalaxyInstance();
-        const url = safePath(`/api/workflows/${workflow.id}/download`);
+        const url = withPrefix(`/api/workflows/${workflow.id}/download`);
         try {
             const response = await axios.get(url);
             const newWorkflow = response.data;
@@ -17,7 +17,7 @@ export class Services {
                 newName += ` shared by user ${currentOwner}`;
             }
             newWorkflow.name = newName;
-            const createUrl = safePath("/api/workflows");
+            const createUrl = withPrefix("/api/workflows");
             const createResponse = await axios.post(createUrl, { workflow: newWorkflow });
             const createWorkflow = createResponse.data;
             this._addAttributes(createWorkflow);
@@ -28,7 +28,7 @@ export class Services {
     }
 
     async deleteWorkflow(id) {
-        const url = safePath(`/api/workflows/${id}`);
+        const url = withPrefix(`/api/workflows/${id}`);
         try {
             const response = await axios.delete(url);
             return response.data;
@@ -38,7 +38,7 @@ export class Services {
     }
 
     async undeleteWorkflow(id) {
-        const url = safePath(`/api/workflows/${id}/undelete`);
+        const url = withPrefix(`/api/workflows/${id}/undelete`);
         try {
             const response = await axios.post(url);
             return response.data;
@@ -48,7 +48,7 @@ export class Services {
     }
 
     async updateWorkflow(id, data) {
-        const url = safePath(`/api/workflows/${id}`);
+        const url = withPrefix(`/api/workflows/${id}`);
         try {
             const response = await axios.put(url, data);
             return response.data;
@@ -70,7 +70,7 @@ export class Services {
     }
 
     async getTrsServers() {
-        const url = safePath("/api/trs_consume/servers");
+        const url = withPrefix("/api/trs_consume/servers");
         try {
             const response = await axios.get(url);
             return response.data;
@@ -86,7 +86,7 @@ export class Services {
         // better than the alternatives IMO. -John
         // https://github.com/pallets/flask/issues/900
         toolId = btoa(toolId);
-        const url = safePath(`/api/trs_consume/${trsServer}/tools/${toolId}?tool_id_b64_encoded=true`);
+        const url = withPrefix(`/api/trs_consume/${trsServer}/tools/${toolId}?tool_id_b64_encoded=true`);
         try {
             const response = await axios.get(url);
             return response.data;
@@ -102,7 +102,21 @@ export class Services {
             trs_tool_id: toolId,
             trs_version_id: versionId,
         };
-        const url = safePath("/api/workflows");
+        const url = withPrefix("/api/workflows");
+        try {
+            const response = await axios.post(url, data);
+            return response.data;
+        } catch (e) {
+            rethrowSimple(e);
+        }
+    }
+
+    async importTrsToolFromUrl(trsUrl) {
+        const data = {
+            archive_source: "trs_tool",
+            trs_url: trsUrl,
+        };
+        const url = withPrefix("/api/workflows");
         try {
             const response = await axios.post(url, data);
             return response.data;

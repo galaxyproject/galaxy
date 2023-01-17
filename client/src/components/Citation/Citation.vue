@@ -2,9 +2,7 @@
     <div>
         {{ prefix }}
         <span v-html="citationHtml" />
-        <a v-if="link" :href="link" target="_blank">
-            <font-awesome-icon v-b-tooltip.hover title="View Citation" icon="external-link-alt" />
-        </a>
+        <a v-if="link" :href="link" target="_blank">Visit Citation <font-awesome-icon icon="external-link-alt" /> </a>
     </div>
 </template>
 

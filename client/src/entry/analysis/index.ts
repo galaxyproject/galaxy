@@ -1,11 +1,10 @@
-import { standardInit, addInitialization } from "onload";
-
 import Vue, { provide } from "vue";
-import App from "./App.vue";
-import store from "store";
-import { getRouter } from "./router";
-import { createPinia, PiniaVuePlugin } from "pinia";
+import { PiniaVuePlugin, createPinia } from "pinia";
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
+import App from "./App.vue";
+import { getRouter } from "./router";
+import { addInitialization, standardInit } from "@/onload";
+import store from "@/store";
 
 Vue.use(PiniaVuePlugin);
 const pinia = createPinia();
