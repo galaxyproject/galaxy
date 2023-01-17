@@ -34,6 +34,7 @@
             @stop="onStopDragging"
             @move="onMove">
             <div
+                ref="icon"
                 class="icon prevent-zoom"
                 tabindex="0"
                 :aria-label="`Connect output ${output.name} to input. Press space to see a list of available inputs`"
@@ -94,8 +95,12 @@ export default {
             type: Object,
             required: true,
         },
-        parentOffset: {
+        scroll: {
             type: Object,
+            required: true,
+        },
+        scale: {
+            type: Number,
             required: true,
         },
         datatypesMapper: {
@@ -107,8 +112,8 @@ export default {
         const stateStore = useWorkflowStateStore();
         const stepStore = useWorkflowStepStore();
         const el = ref(null);
-        const { rootOffset, parentOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
-        const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
+        const { rootOffset, stepPosition, output, stepId, datatypesMapper } = toRefs(props);
+        const position = useCoordinatePosition(el, rootOffset, stepPosition);
         const extensions = computed(() => {
             const changeDatatype =
                 props.postJobActions[`ChangeDatatypeAction${props.output.label}`] ||
@@ -151,6 +156,7 @@ export default {
         });
 
         const menu = ref(null);
+        const icon = ref(null);
         const showChildComponent = ref(false);
 
         function closeMenu() {
@@ -162,6 +168,8 @@ export default {
             if (showChildComponent.value) {
                 await nextTick();
                 menu.value.$el.focus();
+            } else {
+                icon.value.focus();
             }
         }
 
@@ -199,6 +207,7 @@ export default {
 
         return {
             el,
+            icon,
             position,
             activeClass,
             visibleClass,
@@ -229,16 +238,16 @@ export default {
             return Object.freeze({ startX: this.startX, startY: this.startY });
         },
         startX() {
-            return this.position.left + this.position.width / 2;
+            return this.position.left + this.scroll.x.value / this.scale + this.position.width / 2;
         },
         startY() {
-            return this.position.top + this.position.height / 2;
+            return this.position.top + this.scroll.y.value / this.scale + this.position.height / 2;
         },
         endX() {
-            return this.dragX || this.startX;
+            return (this.dragX || this.startX) + this.scroll.x.value / this.scale;
         },
         endY() {
-            return this.dragY || this.startY;
+            return (this.dragY || this.startY) + this.scroll.y.value / this.scale;
         },
         dragPosition() {
             return {

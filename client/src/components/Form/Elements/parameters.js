@@ -30,6 +30,11 @@ export default Backbone.View.extend({
         data_dialog: "_fieldDialog",
     },
 
+    remove: function () {
+        this.field.remove();
+        Backbone.View.prototype.remove.call(this);
+    },
+
     /** Returns an input field for a given field type */
     create: function (input_def) {
         const Galaxy = getGalaxyInstance();

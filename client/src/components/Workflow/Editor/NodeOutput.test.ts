@@ -20,6 +20,8 @@ function propsForStep(step: Step) {
         stepPosition: step.position,
         rootOffset: mockOffset,
         parentOffset: mockOffset,
+        scroll: { x: ref(0), y: ref(0) },
+        scale: 1,
         datatypesMapper: testDatatypesMapper,
     };
 }

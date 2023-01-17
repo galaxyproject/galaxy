@@ -297,7 +297,7 @@ export default {
             saveAsAnnotation: null,
             showSaveAsModal: false,
             transform: { x: 0, y: 0, k: 1 },
-            graphOffset: { left: 0, top: 0, width: 0 },
+            graphOffset: { left: 0, top: 0, width: 0, height: 0 },
         };
     },
     computed: {
@@ -400,7 +400,7 @@ export default {
             hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
-            await fromSimple(this, response.workflow);
+            await fromSimple(response.workflow);
             this._loadEditorData(response.workflow);
         },
         onUpdate(step) {
@@ -461,10 +461,11 @@ export default {
         onInsertWorkflow(workflow_id, workflow_name) {
             this._insertStep(workflow_id, workflow_name, "subworkflow");
         },
-        copyIntoWorkflow(id = null) {
+        copyIntoWorkflow(id) {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
-            loadWorkflow({ workflow: this, id, appendData: true }).then((data) => {
+            loadWorkflow({ id }).then((data) => {
+                fromSimple(data, true, defaultPosition(this.graphOffset, this.transform));
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
                 this.onInsertedStateMessages(insertedStateMessages);
@@ -652,6 +653,16 @@ export default {
             });
         },
         async _loadEditorData(data) {
+            if (data.name !== undefined) {
+                this.name = data.name;
+            }
+            if (data.annotation !== undefined) {
+                this.annotation = data.annotation;
+            }
+            if (data.version !== undefined) {
+                this.version = data.version;
+            }
+
             const report = data.report || {};
             const markdown = report.markdown || reportDefault;
             this.markdownText = markdown;
@@ -671,8 +682,9 @@ export default {
             this.resetStores();
             this.onWorkflowMessage("Loading workflow...", "progress");
             this.lastQueue
-                .enqueue(loadWorkflow, { id, version, workflow: this })
+                .enqueue(loadWorkflow, { id, version })
                 .then((data) => {
+                    fromSimple(data);
                     this._loadEditorData(data);
                 })
                 .catch((response) => {

@@ -24,6 +24,7 @@ import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { computed } from "vue";
 import { inject, ref, toRefs, watchEffect } from "vue";
+import { UseElementBoundingReturn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -49,18 +50,22 @@ export default {
             required: true,
         },
         rootOffset: {
-            type: Object,
+            type: UseElementBoundingReturn,
             required: true,
         },
-        parentOffset: {
+        scale: {
+            type: Number,
+            required: true,
+        },
+        scroll: {
             type: Object,
             required: true,
         },
     },
     setup(props) {
         const el = ref(null);
-        const { rootOffset, parentOffset, stepPosition, stepId, input, datatypesMapper } = toRefs(props);
-        const position = useCoordinatePosition(el, rootOffset, parentOffset, stepPosition);
+        const { rootOffset, stepPosition, stepId, input, datatypesMapper } = toRefs(props);
+        const position = useCoordinatePosition(el, rootOffset, stepPosition);
         const isDragging = inject("isDragging");
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);
@@ -99,10 +104,10 @@ export default {
             return Object.freeze({ endX: this.startX, endY: this.startY });
         },
         startX() {
-            return this.position.left + this.position.width / 2;
+            return this.position.left + this.scroll.x.value / this.scale + this.position.width / 2;
         },
         startY() {
-            return this.position.top + this.position.height / 2;
+            return this.position.top + this.scroll.y.value / this.scale + this.position.height / 2;
         },
         label() {
             return this.input.label || this.input.name;

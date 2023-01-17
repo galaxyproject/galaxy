@@ -190,6 +190,11 @@ export var TextSelect = Backbone.View.extend({
         this.setElement($("<div/>").append(this.select.$el).append(this.text.$el));
         this.update(options);
     },
+    remove: function () {
+        this.select.remove();
+        this.text.remove();
+        Backbone.View.prototype.remove.call(this);
+    },
     wait: function () {
         this.select.wait();
     },

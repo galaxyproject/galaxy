@@ -3,7 +3,7 @@ import { useElementBounding, type MaybeComputedElementRef, type UseElementBoundi
 import type { Step } from "@/stores/workflowStepStore";
 import type { ZoomTransform } from "d3-zoom";
 
-type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
+export type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 
 /**
  * Return the element position relative to the child of the element that determines rootOffset
@@ -14,11 +14,11 @@ type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
 export function useCoordinatePosition(
     target: MaybeComputedElementRef,
     rootOffset: Ref<ElementBounding>,
-    parentOffset: Ref<ElementBounding>,
     stepPosition: Ref<NonNullable<Step["position"]>>
 ) {
-    const position = reactive(useElementBounding(target, { windowResize: false }));
+    const elementBounding = useElementBounding(target, { windowResize: false });
     const transform = inject("transform") as Ref<ZoomTransform>;
+    let position: ElementBounding = reactive(elementBounding);
 
     watchEffect(() => {
         /*
@@ -29,7 +29,7 @@ export function useCoordinatePosition(
          * Maybe this can be simplified ? I think the way I'm using reactive I'm dismissing updated values from useCoordinatePosition run
          * before I hit watchEffect
          */
-        parentOffset.value.height;
+        position = reactive(elementBounding);
         stepPosition.value.left;
         stepPosition.value.top;
         const offset = reactive(rootOffset.value);
