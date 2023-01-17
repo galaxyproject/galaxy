@@ -35,6 +35,7 @@ async function submit(ev: SubmitEvent) {
     const formData = new FormData();
 
     if (sourceFile.value) {
+        formData.append("archive_source", "");
         formData.append("archive_file", sourceFile.value);
     }
 
