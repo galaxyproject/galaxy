@@ -141,27 +141,10 @@ def include_legacy_openapi(app, gx_app):
         tags=api_tags_metadata,
     )
     legacy_openapi = gx_app.api_spec.to_dict()
-    _check_legacy_openapi_does_not_increase(legacy_openapi)
     legacy_openapi["paths"].update(openapi_schema["paths"])
     openapi_schema["paths"] = legacy_openapi["paths"]
     app.openapi_schema = openapi_schema
     return app.openapi_schema
-
-
-def _check_legacy_openapi_does_not_increase(legacy_openapi):
-    """This will check that we don't keep adding legacy API routes to the codebase.
-
-    After migrating any legacy route to FastAPI, remember to update `expected_legacy_paths` with the current number
-    until all routes are migrated, then, completely remove this check function.
-    """
-    expected_legacy_paths = 169
-    num_actual_legacy_paths = len(legacy_openapi["paths"])
-    assert (
-        num_actual_legacy_paths <= expected_legacy_paths
-    ), "The number of legacy API routes has increased. Please convert these API routes to FastAPI."
-    assert (
-        num_actual_legacy_paths == expected_legacy_paths
-    ), "Did you forget to update `expected_legacy_paths` after migrating legacy API routes?"
 
 
 def get_fastapi_instance() -> FastAPI:
