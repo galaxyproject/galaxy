@@ -341,13 +341,14 @@ export default class Filtering<T> {
     testFilters(filters: [string, T][], item: Record<string, T>): boolean {
         for (const [key, filterValue] of filters) {
             if (!(key in this.validFilters)) {
-                throw `Invalid filter ${key}`;
-            }
-            const filterAttribute = this.validFilters[key]!.attribute;
-            const filterHandler = this.validFilters[key]!.handler;
-            const itemValue = item[filterAttribute];
-            if (!itemValue || !filterHandler(itemValue, filterValue)) {
-                return false;
+                console.error(`Invalid filter ${key}`);
+            } else {
+                const filterAttribute = this.validFilters[key]!.attribute;
+                const filterHandler = this.validFilters[key]!.handler;
+                const itemValue = item[filterAttribute];
+                if (itemValue === undefined || !filterHandler(itemValue, filterValue)) {
+                    return false;
+                }
             }
         }
         return true;
