@@ -7,9 +7,9 @@
       >
       <div v-localize class="form-text text-muted">Contribute variants to Beacon</div>
       <b-modal
-          size="xl"
           id="modal-beacon"
           ref="modal"
+          size="xl"
           ok-only
           title="Manage Beacon"
           title-tag="h1"
@@ -43,7 +43,7 @@
             </div>
             <div class="fill"></div>
             <div class="no-shrink">
-              <b-button @click="optOut" variant="danger">Disable</b-button>
+              <b-button variant="danger" @click="optOut">Disable</b-button>
             </div>
           </div>
         </b-alert>
@@ -57,7 +57,7 @@
             </div>
             <div class="fill"></div>
             <div>
-              <b-button @click="optIn" variant="success">Enable</b-button>
+              <b-button variant="success" @click="optIn">Enable</b-button>
             </div>
           </div>
         </b-alert>
@@ -90,7 +90,7 @@
           <!-- Case: History exists -->
           <div v-for="beaconHistory in beaconHistories" :key="beaconHistory.id" class="flex-row history-entry"
                :class="{'gray-border-bottom': beaconHistory.id !== beaconHistories[beaconHistories.length-1].id}">
-            <div class="no-shrink" v-if="beaconHistory.contents">
+            <div v-if="beaconHistory.contents" class="no-shrink">
               History with {{ beaconHistory.contents.length }} datasets
             </div>
             <div class="fill"></div>
@@ -123,15 +123,12 @@ import store from "store"
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import { withPrefix } from "utils/redirect";
 
 Vue.use(BootstrapVue);
 
 export default {
   props: {
-    root: {
-      type: String,
-      required: true,
-    },
     userId: {
       type: String,
       required: true,
@@ -150,7 +147,7 @@ export default {
     },
     getBeaconHistories: function () {
       axios
-          .get(this.root + "api/histories?&keys=id,contents&q=name&qv=" + encodeURI(this.beaconHistoryName))
+          .get(withPrefix("api/histories?&keys=id,contents&q=name&qv=" + encodeURI(this.beaconHistoryName)))
           .then((response) => {
             this.beaconHistories = this.removeDeletedContents(response.data)
           })
@@ -173,9 +170,9 @@ export default {
     createBeaconHistory: function () {
       const annotation = "Variants will be collected from VCF datasets in this history if beacon sharing is activated"
       axios
-          .post(this.root + "api/histories", {name: this.beaconHistoryName})
+          .post(withPrefix("api/histories"), {name: this.beaconHistoryName})
           .then((response) => {
-            axios.put(`${this.root}api/histories/${response.data.id}`, {"annotation": annotation}).then(
+            axios.put(withPrefix(`api/histories/${response.data.id}`), {"annotation": annotation}).then(
                 () => {
                   this.getBeaconHistories()
                 }
@@ -187,7 +184,7 @@ export default {
     },
     optIn() {
       try {
-        axios.post(`${this.root}api/users/${this.userId}/beacon`, {"enabled": true}).then(
+        axios.post(withPrefix(`api/users/${this.userId}/beacon`), {"enabled": true}).then(
             response => {
               // TODO check response
               this.loadSettings();
@@ -203,7 +200,7 @@ export default {
     },
     optOut() {
       try {
-        axios.post(`${this.root}api/users/${this.userId}/beacon`, {"enabled": false}).then(
+        axios.post(withPrefix(`api/users/${this.userId}/beacon`), {"enabled": false}).then(
             response => {
               // TODO check response
               this.loadSettings();
@@ -219,7 +216,7 @@ export default {
     },
     async loadSettings() {
       try {
-        await axios.get(`${this.root}api/users/${this.userId}/beacon`).then(
+        await axios.get(withPrefix(`api/users/${this.userId}/beacon`)).then(
             response => {
               this.enabled = response.data.enabled;
             }

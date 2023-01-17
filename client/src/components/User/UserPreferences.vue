@@ -85,7 +85,6 @@
         <ConfigProvider v-slot="{ config }">
         <UserBeaconSettings
             v-if="config && config.enable_beacon_integration"
-            :root="root"
             :user-id="userId">>
         </UserBeaconSettings>
       </ConfigProvider>
