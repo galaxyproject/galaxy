@@ -1,14 +1,24 @@
 <script setup lang="ts">
 import Vue from "vue";
+import type { PropType } from "vue";
 import ContentItem from "./ContentItem.vue";
 import { ref } from "vue";
 
-defineProps({
-    dsc: {
-        type: Object,
-        required: true,
-    },
-});
+interface DatasetCollectionElement {
+    id: string;
+    element_index: number;
+    element_identifier: string;
+    element_type: string;
+    object: Record<string, any>;
+}
+
+interface DatasetCollection {
+    elements: DatasetCollectionElement[];
+}
+
+defineProps<{
+    dsc: DatasetCollection;
+}>();
 
 const expandCollections = ref({});
 const expandDatasets = ref({});
