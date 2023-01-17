@@ -1,37 +1,3 @@
-<template>
-    <span class="zoom-control float-right btn-group-horizontal">
-        <b-button
-            v-b-tooltip.hover
-            :disabled="isMin"
-            role="button"
-            class="fa fa-minus"
-            title="Zoom Out"
-            size="sm"
-            aria-label="Zoom Out"
-            @click="onZoomOut" />
-        <b-button
-            v-b-tooltip.hover
-            role="button"
-            class="zoom-reset"
-            variant="light"
-            title="Reset Zoom Level"
-            size="sm"
-            aria-label="Reset Zoom Level"
-            @click="onZoomReset">
-            {{ zoomPercentage }}%
-        </b-button>
-        <b-button
-            v-b-tooltip.hover
-            :disabled="isMax"
-            role="button"
-            class="fa fa-plus"
-            title="Zoom In"
-            size="sm"
-            aria-label="Zoom In"
-            @click="onZoomIn" />
-    </span>
-</template>
-
 <script lang="ts" setup>
 import Vue, { computed } from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -79,6 +45,40 @@ function onZoomReset() {
     emit("onZoom", zoomDefault);
 }
 </script>
+
+<template>
+    <span class="zoom-control float-right btn-group-horizontal">
+        <b-button
+            v-b-tooltip.hover
+            :disabled="isMin"
+            role="button"
+            class="fa fa-minus"
+            title="Zoom Out"
+            size="sm"
+            aria-label="Zoom Out"
+            @click="onZoomOut" />
+        <b-button
+            v-b-tooltip.hover
+            role="button"
+            class="zoom-reset"
+            variant="light"
+            title="Reset Zoom Level"
+            size="sm"
+            aria-label="Reset Zoom Level"
+            @click="onZoomReset">
+            {{ zoomPercentage }}%
+        </b-button>
+        <b-button
+            v-b-tooltip.hover
+            :disabled="isMax"
+            role="button"
+            class="fa fa-plus"
+            title="Zoom In"
+            size="sm"
+            aria-label="Zoom In"
+            @click="onZoomIn" />
+    </span>
+</template>
 
 <style scoped>
 .zoom-reset {
