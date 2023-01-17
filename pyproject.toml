@@ -7,7 +7,6 @@ extend-exclude = '''
   | packages
 )/
 '''
-force-exclude = 'lib/galaxy/util/jstree.py'
 
 [tool.darker]
 isort = true
@@ -147,3 +146,27 @@ testfixtures = "*"
 tuspy = "*"
 twill = "*"
 watchdog = "*"
+
+[tool.ruff]
+select = ["E", "F", "B", "UP"]
+target-version = "py37"
+# Exceptions:
+# B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
+# B9 flake8-bugbear opinionated warnings
+# E402 module level import not at top of file # TODO, we would like to improve this.
+# E501 is line length (delegated to black)
+ignore = ["B008", "B9", "E402", "E501"]
+
+[tool.ruff.isort]
+# We are not selecting "I" rules in ruff yet because support for all the isort
+# options we need is not complete, but these are the one currently implemented.
+combine-as-imports = true
+relative-imports-order = "closest-to-furthest"
+
+[tool.ruff.per-file-ignores]
+# Don't check pyupgrade rules on tool scripts, which may use different Python versions
+"test/functional/tools/*" = ["UP"]
+"tools/*" = ["UP"]
+
+[tool.ruff.pyupgrade]
+keep-runtime-typing = true  # https://github.com/charliermarsh/ruff/issues/1617

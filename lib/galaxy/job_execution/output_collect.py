@@ -614,10 +614,9 @@ def walk_over_extra_files(target_dir, extra_file_collector, job_working_director
                     if match:
                         yield match
 
-    for match in extra_file_collector.sort(
+    yield from extra_file_collector.sort(
         _walk(target_dir, extra_file_collector, job_working_directory, matchable, parent_paths)
-    ):
-        yield match
+    )
 
 
 def dataset_collector(dataset_collection_description):
