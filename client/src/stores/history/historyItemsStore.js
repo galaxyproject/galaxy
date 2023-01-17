@@ -4,7 +4,7 @@
  */
 
 import { defineStore } from "pinia";
-
+import Vue from "vue";
 import { reverse } from "lodash";
 import { LastQueue } from "utils/promise-queue";
 import { urlData } from "utils/url";
@@ -21,18 +21,24 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         latestCreateTime: new Date(),
         totalMatchesCount: undefined,
         lastCheckedTime: new Date(),
+        relatedItems: {},
         isWatching: false,
     }),
     getters: {
         getHistoryItems: (state) => {
             return (historyId, filterText) => {
                 const itemArray = state.items[historyId] || [];
-                const filters = HistoryFilters.getFilters(filterText);
+                const filters = HistoryFilters.getFilters(filterText).filter((filter) => !filter.includes("related"));
+                const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
                 const filtered = itemArray.filter((item) => {
                     if (!item) {
                         return false;
                     }
                     if (!HistoryFilters.testFilters(filters, item)) {
+                        return false;
+                    }
+                    const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
+                    if (relatedHid && !state.relatedItems[relationKey]) {
                         return false;
                     }
                     return true;
@@ -63,11 +69,12 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                 const stats = data.stats;
                 this.totalMatchesCount = stats.total_matches;
                 const payload = data.contents;
-                this.saveHistoryItems(historyId, payload);
+                const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
+                this.saveHistoryItems(historyId, payload, relatedHid);
             });
         },
         // Setters
-        saveHistoryItems(historyId, payload) {
+        saveHistoryItems(historyId, payload, relatedHid = null) {
             this.$patch((state) => {
                 // merges incoming payload into existing state
                 mergeArray(historyId, payload, state.items, state.itemKey);
@@ -78,6 +85,10 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
                         if (itemCreateTime > state.latestCreateTime) {
                             state.latestCreateTime = itemCreateTime;
                         }
+                    }
+                    if (relatedHid) {
+                        const relationKey = `${historyId}-${relatedHid}-${item.hid}`;
+                        Vue.set(state.relatedItems, relationKey, true);
                     }
                 });
             });
