@@ -149,6 +149,9 @@ class FastAPIHistories:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: DecodedDatabaseIdField = UserIdPathParam,
     ) -> UserBeaconSetting:
+        """
+        **Warning**: This endpoint is experimental and might change or disappear in future versions.
+        """
         user = self.service._get_user(trans, user_id)
 
         enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
@@ -165,6 +168,9 @@ class FastAPIHistories:
         user_id: DecodedDatabaseIdField = UserIdPathParam,
         payload: UserBeaconSetting = Body(...),
     ) -> UserBeaconSetting:
+        """
+        **Warning**: This endpoint is experimental and might change or disappear in future versions.
+        """
         user = self.service._get_user(trans, user_id)
 
         user.preferences["beacon_enabled"] = payload.enabled
