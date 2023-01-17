@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 import { Toast } from "composables/toast";
 import ConfigProvider from "components/providers/ConfigProvider";
@@ -58,7 +58,7 @@ export default {
     },
     methods: {
         onEdit() {
-            window.location = safePath(`/pages/create?invocation_id=${this.invocationId}`);
+            window.location = withPrefix(`/pages/create?invocation_id=${this.invocationId}`);
         },
     },
 };

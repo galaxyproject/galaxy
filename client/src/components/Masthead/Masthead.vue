@@ -3,7 +3,7 @@ import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import MastheadItem from "./MastheadItem";
 import { loadWebhookMenuItems } from "./_webhooks";
 import QuotaMeter from "./QuotaMeter";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { getActiveTab } from "./utilities";
 import { watch, ref, reactive } from "vue";
 import { onMounted, onBeforeMount } from "vue";
@@ -98,9 +98,9 @@ onMounted(() => {
                 class="ml-2 mr-1"
                 title="Home"
                 aria-label="homepage"
-                :href="safePath(logoUrl)">
-                <img alt="logo" :src="safePath(logoSrc)" />
-                <img v-if="logoSrcSecondary" alt="logo" :src="safePath(logoSrcSecondary)" />
+                :href="withPrefix(logoUrl)">
+                <img alt="logo" :src="withPrefix(logoSrc)" />
+                <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
             </b-navbar-brand>
             <span v-if="brand" class="navbar-text">
                 {{ brand }}

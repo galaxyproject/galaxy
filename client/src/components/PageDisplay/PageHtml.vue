@@ -7,7 +7,7 @@
 </template>
 
 <script>
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 export default {
     props: {
         page: {
@@ -50,16 +50,16 @@ export default {
         processItem(modelClass, modelId) {
             let html = null;
             if (modelClass == "StoredWorkflow") {
-                const url = safePath(`/published/workflow?id=${modelId}`);
+                const url = withPrefix(`/published/workflow?id=${modelId}`);
                 html = `<a href='${url}'>View Workflow<a>`;
             } else if (modelClass == "History") {
-                const url = safePath(`/published/history?id=${modelId}`);
+                const url = withPrefix(`/published/history?id=${modelId}`);
                 html = `<a href='${url}'>View History<a>`;
             } else if (modelClass == "HistoryDatasetAssociation") {
-                const url = safePath(`/datasets/${modelId}/preview`);
+                const url = withPrefix(`/datasets/${modelId}/preview`);
                 html = `<a href='${url}'>View Dataset<a>`;
             } else if (modelClass == "Visualization") {
-                const url = safePath(`/published/history?id=${modelId}`);
+                const url = withPrefix(`/published/history?id=${modelId}`);
                 html = `<a href='${url}'>View Visualization<a>`;
             } else {
                 html = `Item of type '${modelClass}' cannot be embedded.`;

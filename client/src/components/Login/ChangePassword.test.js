@@ -2,13 +2,13 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import MountTarget from "./ChangePassword";
 
 // mock routes
 jest.mock("utils/redirect");
 const mockSafePath = jest.fn();
-safePath.mockImplementation(() => mockSafePath);
+withPrefix.mockImplementation(() => mockSafePath);
 
 const localVue = getLocalVue(true);
 

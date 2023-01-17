@@ -2,7 +2,7 @@
 import axios from "axios";
 import TrsTool from "./TrsTool.vue";
 import { Services } from "../services";
-import { safePath } from "@/utils/redirect";
+import { withPrefix } from "@/utils/redirect";
 import { computed, ref, watch, type Ref } from "vue";
 import { getRedirectOnImportPath } from "../redirectPath";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -54,7 +54,7 @@ watch(query, async () => {
 
         try {
             const response = await axios.get(
-                safePath(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`)
+                withPrefix(`/api/trs_search?query=${query.value}&trs_server=${trsServer.value}`)
             );
             results.value = response.data;
         } catch (e) {

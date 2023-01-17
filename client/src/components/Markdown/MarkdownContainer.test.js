@@ -3,12 +3,12 @@ import flushPromises from "flush-promises";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import MockAdapter from "axios-mock-adapter";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import MountTarget from "./MarkdownContainer.vue";
 
 // mock routes
 jest.mock("utils/redirect");
-safePath.mockImplementation((url) => url);
+withPrefix.mockImplementation((url) => url);
 
 const localVue = getLocalVue();
 const axiosMock = new MockAdapter(axios);

@@ -1,6 +1,6 @@
 import { ref, readonly } from "vue";
 import axios from "axios";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { rethrowSimple } from "utils/simple-error";
 
 export const DEFAULT_EXPORT_PARAMS = {
@@ -31,7 +31,7 @@ export function useShortTermStorage() {
     }
 
     function downloadObjectByRequestId(storageRequestId) {
-        const url = safePath(`/api/short_term_storage/${storageRequestId}`);
+        const url = withPrefix(`/api/short_term_storage/${storageRequestId}`);
         window.location.assign(url);
     }
 
@@ -40,7 +40,7 @@ export function useShortTermStorage() {
         resetTimeout();
         isPreparing.value = true;
         pollDelay = finalOptions.pollDelayInMs;
-        const url = safePath(`/api/${object_api}/${object_id}/prepare_store_download`);
+        const url = withPrefix(`/api/${object_api}/${object_id}/prepare_store_download`);
         const exportParams = {
             model_store_format: finalOptions.exportParams.modelStoreFormat,
             include_files: finalOptions.exportParams.includeFiles,
@@ -58,7 +58,7 @@ export function useShortTermStorage() {
     }
 
     function pollStorageRequestId(storageRequestId) {
-        const url = safePath(`/api/short_term_storage/${storageRequestId}/ready`);
+        const url = withPrefix(`/api/short_term_storage/${storageRequestId}/ready`);
         axios
             .get(url)
             .then((r) => {
