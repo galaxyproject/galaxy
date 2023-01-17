@@ -25,7 +25,8 @@
             exit 1;
         fi 
         &&
-        mv input.bgz.tbi '$output1'
+        cp input.bgz.tbi '$output1' &&
+        tabix -l input.bgz
     ]]></command>
     <inputs>
         <!-- gff because gff and vcf are not a subclass of interval -->
@@ -49,6 +50,9 @@
             <assert_command>
                 <has_text text="-p bed"/>
             </assert_command>
+            <assert_stdout>
+                <has_line line="super_1"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
@@ -60,6 +64,9 @@
             <assert_command>
                 <has_text text="-p" negate="true"/>
             </assert_command>
+            <assert_stdout>
+                <has_line line="chr1"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
@@ -71,6 +78,9 @@
             <assert_command>
                 <has_text text="-p gff"/>
             </assert_command>
+            <assert_stdout>
+                <has_line line="ctgA"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
@@ -82,6 +92,9 @@
             <assert_command>
                 <has_text text="-p" negate="true"/>
             </assert_command>
+            <assert_stdout>
+                <has_line line="chrX"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
@@ -93,6 +106,9 @@
             <assert_command>
                 <has_text text="-p vcf"/>
             </assert_command>
+            <assert_stdout>
+                <has_line line="20"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="gtf" value="cufflinks_out1.gtf"/>
