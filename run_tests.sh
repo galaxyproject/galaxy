@@ -506,12 +506,8 @@ do
           no_create_venv='--no-create-venv'
           shift
           ;;
-      --no-replace-pip)
-          no_replace_pip='--no-replace-pip'
-          shift
-          ;;
-      --replace-pip)
-          replace_pip='--replace-pip'
+      --no-replace-pip|--replace-pip)
+          # Deprecated options
           shift
           ;;
       --skip-common-startup)
@@ -548,7 +544,7 @@ if [ -z "$skip_common_startup" ]; then
             GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
             export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
     fi
-    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip $skip_client_build --dev-wheels || exit 1
+    ./scripts/common_startup.sh $skip_venv $no_create_venv $skip_client_build --dev-wheels || exit 1
     unset GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
 fi
 

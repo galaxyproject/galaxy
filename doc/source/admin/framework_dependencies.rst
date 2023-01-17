@@ -43,7 +43,6 @@ A variety of options to ``run.sh`` are available to control the above behavior:
 - ``--skip-wheels``: Do not install wheels.
 - ``--no-create-venv``: Do not create a virtualenv, but use one if it exists at ``.venv`` or if ``$VIRTUAL_ENV`` is set
   (this variable is set by virtualenv's ``activate``).
-- ``--replace-pip/--no-replace-pip``: Do/do not upgrade pip if necessary.
 
 Managing dependencies manually
 ------------------------------
