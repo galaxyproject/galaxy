@@ -118,6 +118,7 @@ import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorS
 import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
 Vue.use(BootstrapVue);
 
@@ -161,6 +162,7 @@ function remove() {
 const el: Ref<HTMLElement | null> = ref(null);
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
+const connectionStore = useConnectionStore();
 const stateStore = useWorkflowStateStore();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(el, props.id, stateStore);
@@ -184,8 +186,32 @@ const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
-const inputs = computed(() => props.step.inputs);
-const outputs = computed(() => props.step.outputs);
+const invalidInputs = computed(() => {
+    const connections = connectionStore.getConnectionsForStep(props.id);
+    const invalidConnections = connections.filter(
+        (connection) =>
+            connection.input.stepId == props.id &&
+            !props.step.inputs.find((input) => input.name === connection.input.name)
+    );
+    const invalidInputNames = [...new Set(invalidConnections.map((connection) => connection.input.name))];
+    return invalidInputNames.map((name) => {
+        return { name, optional: false, extensions: [], valid: false, input_type: "dataset" };
+    });
+});
+const inputs = computed(() => [...props.step.inputs, ...invalidInputs.value]);
+const invalidOutputs = computed(() => {
+    const connections = connectionStore.getConnectionsForStep(props.id);
+    const invalidConnections = connections.filter(
+        (connection) =>
+            connection.output.stepId == props.id &&
+            !props.step.outputs.find((output) => output.name === connection.output.name)
+    );
+    const invalidOutputNames = [...new Set(invalidConnections.map((connection) => connection.output.name))];
+    return invalidOutputNames.map((name) => {
+        return { name, optional: false, datatypes: [], valid: false };
+    });
+});
+const outputs = computed(() => [...props.step.outputs, ...invalidOutputs.value]);
 
 function onMoveTo(position: XYPosition) {
     emit("onUpdateStepPosition", props.id, {

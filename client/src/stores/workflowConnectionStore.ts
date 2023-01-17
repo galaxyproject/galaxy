@@ -1,8 +1,15 @@
 import { defineStore } from "pinia";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { state } from "@/store/tagStore";
+import Vue from "vue";
+
+interface InvalidConnections {
+    [index: string]: string;
+}
 
 export interface State {
     connections: Connection[];
+    invalidConnections: InvalidConnections;
 }
 
 export class Connection {
@@ -44,6 +51,7 @@ interface TerminalToInputTerminals {
 export const useConnectionStore = defineStore("workflowConnectionStore", {
     state: (): State => ({
         connections: [] as Connection[],
+        invalidConnections: {} as InvalidConnections,
     }),
     getters: {
         getOutputTerminalsForInputTerminal(state: State) {
@@ -112,12 +120,16 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
             const stepStore = useWorkflowStepStore();
             stepStore.addConnection(connection);
         },
+        addInvalidConnection(this: State, connectionId: string, reason: string) {
+            Vue.set(this.invalidConnections, connectionId, reason);
+        },
         removeConnection(this: State, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
             const stepStore = useWorkflowStepStore();
             this.connections = this.connections.filter((connection) => {
                 if (typeof terminal === "string") {
                     if (connection.id == terminal) {
                         stepStore.removeConnection(connection);
+                        Vue.delete(this.invalidConnections, connection.id);
                         return false;
                     } else {
                         return true;
@@ -125,6 +137,7 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
                 } else if (terminal.connectorType === "input") {
                     if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
                         stepStore.removeConnection(connection);
+                        Vue.delete(this.invalidConnections, connection.id);
                         return false;
                     } else {
                         return true;
@@ -132,6 +145,7 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
                 } else {
                     if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
                         stepStore.removeConnection(connection);
+                        Vue.delete(this.invalidConnections, connection.id);
                         return false;
                     } else {
                         return true;

@@ -13,7 +13,7 @@ export function useTerminal(
     watchEffect(() => {
         // rebuild terminal if any of the tracked dependencies change
         const newTerminal = terminalFactory(stepId.value, terminalSource.value, datatypesMapper.value);
-        newTerminal.destroyInvalidConnections();
+        newTerminal.getInvalidConnectedTerminals();
         terminal.value = newTerminal;
         isMappedOver.value = newTerminal.isMappedOver();
     });

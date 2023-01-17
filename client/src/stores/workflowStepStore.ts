@@ -78,8 +78,8 @@ export interface ParameterStepInput extends Omit<BaseStepInput, "input_type"> {
     type: typeof ParameterTypes;
 }
 
-type InputTerminalSource = DataStepInput | DataCollectionStepInput | ParameterStepInput;
-type OutputTerminalSource = DataOutput | CollectionOutput | ParameterOutput;
+export type InputTerminalSource = DataStepInput | DataCollectionStepInput | ParameterStepInput;
+export type OutputTerminalSource = DataOutput | CollectionOutput | ParameterOutput;
 export type TerminalSource = InputTerminalSource | OutputTerminalSource;
 
 interface WorkflowOutput {

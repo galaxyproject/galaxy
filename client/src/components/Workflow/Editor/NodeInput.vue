@@ -1,10 +1,5 @@
 <template>
-    <div
-        class="form-row dataRow input-data-row"
-        @mouseleave="leave"
-        @mouseenter="enter"
-        @focusin="enter"
-        @focusout="leave">
+    <div :class="rowClass" @mouseleave="leave" @mouseenter="enter" @focusin="enter" @focusout="leave">
         <div
             :id="id"
             :input-name="input.name"
@@ -75,8 +70,34 @@ export default {
         watchEffect(() => {
             hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
         });
+
+        const rowClass = computed(() => {
+            const classes = ["form-row", "dataRow", "input-data-row"];
+            if (props.input?.valid === false) {
+                classes.push("form-row-error");
+            }
+            return classes;
+        });
+
         const stateStore = useWorkflowStateStore();
         const { draggingTerminal } = storeToRefs(stateStore);
+
+        const terminalIsHovered = ref(false);
+        const connections = computed(() => {
+            return connectionStore.getConnectionsForTerminal(id.value);
+        });
+        const invalidConnections = computed(() =>
+            connections.value.filter((connection) => connectionStore.invalidConnections[connection.id])
+        );
+
+        const showRemove = computed(() => {
+            if (invalidConnections.value.length > 0) {
+                return true;
+            } else {
+                return terminalIsHovered.value && connections.value.length > 0;
+            }
+        });
+
         return {
             el,
             position,
@@ -85,15 +106,13 @@ export default {
             connectionStore,
             id,
             iconId,
+            rowClass,
             hasTerminals,
             terminal,
             stateStore,
             isMultiple,
-        };
-    },
-    data() {
-        return {
-            showRemove: false,
+            showRemove,
+            terminalIsHovered,
         };
     },
     computed: {
@@ -165,13 +184,13 @@ export default {
         onRemove() {
             const connections = this.connectionStore.getConnectionsForTerminal(this.id);
             connections.forEach((connection) => this.terminal.disconnect(connection));
-            this.showRemove = false;
+            this.terminalIsHovered = false;
         },
         enter() {
-            this.showRemove = this.hasTerminals;
+            this.terminalIsHovered = true;
         },
         leave() {
-            this.showRemove = false;
+            this.terminalIsHovered = false;
         },
         onDrop(e) {
             const stepOut = JSON.parse(e.dataTransfer.getData("text/plain"));

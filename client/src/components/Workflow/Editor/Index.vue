@@ -91,6 +91,7 @@
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
                                     :has-changes="hasChanges"
+                                    :has-invalid-connections="hasInvalidConnections"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -185,7 +186,7 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
-import Vue, { onUnmounted, computed } from "vue";
+import Vue, { onUnmounted, computed, ref } from "vue";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -247,6 +248,9 @@ export default {
             return null;
         });
 
+        const hasChanges = ref(false);
+        const hasInvalidConnections = computed(() => Object.keys(connectionsStore.invalidConnections).length > 0);
+
         function resetStores() {
             connectionsStore.$reset();
             stepStore.$reset();
@@ -257,6 +261,8 @@ export default {
         });
         return {
             connectionsStore,
+            hasChanges,
+            hasInvalidConnections,
             stepStore,
             steps,
             nodeIndex: getStepIndex,
@@ -276,7 +282,6 @@ export default {
             markdownText: null,
             versions: [],
             parameters: null,
-            hasChanges: false,
             report: {},
             labels: {},
             license: null,

@@ -10,6 +10,7 @@ import {
     OutputTerminal,
     OutputParameterTerminal,
     producesAcceptableDatatype,
+    InvalidOutputTerminal,
 } from "./terminals";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
@@ -472,6 +473,14 @@ describe("Input terminal", () => {
         expect(dataInputOutputTerminal.validInputTerminals().length).toBe(1);
         connectionStore.addConnection(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);
+    });
+    it("will maintain invalid connections", () => {
+        const connection = connectionStore.connections[0];
+        connection.output.name = "I don't exist";
+        const firstInputTerminal = terminals[1]["input"] as InputTerminal;
+        const invalidTerminals = firstInputTerminal.getConnectedTerminals();
+        expect(invalidTerminals.length).toBe(1);
+        expect(invalidTerminals[0]).toBeInstanceOf(InvalidOutputTerminal);
     });
 });
 

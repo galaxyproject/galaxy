@@ -11,14 +11,14 @@
             @click="$emit('onAttributes')">
             <span class="fa fa-pencil-alt" />
         </b-button>
-        <b-button-group v-b-tooltip class="editor-button-save-group" title="Save Workflow">
+        <b-button-group v-b-tooltip class="editor-button-save-group" :title="saveHover">
             <b-button
                 id="workflow-save-button"
                 role="button"
                 variant="link"
                 aria-label="Save Workflow"
                 class="editor-button-save"
-                :disabled="!hasChanges"
+                :disabled="!hasChanges || hasInvalidConnections"
                 @click="$emit('onSave')">
                 <span class="fa fa-floppy-o" />
             </b-button>
@@ -77,22 +77,23 @@
     </div>
 </template>
 
-<script>
+<script setup lang="ts">
+import { computed } from "vue";
 import { BDropdown, BDropdownItem, BButton } from "bootstrap-vue";
 
-export default {
-    components: {
-        BDropdown,
-        BDropdownItem,
-        BButton,
-    },
-    props: {
-        hasChanges: {
-            type: Boolean,
-        },
-        requiredReindex: {
-            type: Boolean,
-        },
-    },
-};
+const props = defineProps<{
+    hasChanges?: boolean;
+    hasInvalidConnections?: boolean;
+    requiredReindex?: boolean;
+}>();
+
+const saveHover = computed(() => {
+    if (!props.hasChanges) {
+        return "Workflow has no changes";
+    } else if (props.hasInvalidConnections) {
+        return "Workflow has invalid connections, review and remove invalid connections";
+    } else {
+        return "Save Workflow";
+    }
+});
 </script>
