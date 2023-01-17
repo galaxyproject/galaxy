@@ -83,11 +83,10 @@
                 @click="makeDataPrivate" />
         </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
-        <UserBeaconSettings
-            v-if="config && config.enable_beacon_integration"
-            :user-id="userId">>
-        </UserBeaconSettings>
-      </ConfigProvider>
+            <UserBeaconSettings v-if="config && config.enable_beacon_integration" :user-id="userId"
+                >>
+            </UserBeaconSettings>
+        </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
@@ -131,7 +130,7 @@ export default {
         UserDeletion,
         UserPreferencesElement,
         ThemeSelector,
-        UserBeaconSettings
+        UserBeaconSettings,
     },
     props: {
         userId: {
