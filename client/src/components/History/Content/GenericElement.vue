@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import Vue from "vue";
-import type { PropType } from "vue";
 import ContentItem from "./ContentItem.vue";
 import { ref } from "vue";
 
