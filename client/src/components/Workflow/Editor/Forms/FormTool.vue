@@ -62,7 +62,7 @@ import FormSection from "./FormSection";
 import FormElement from "components/Form/FormElement";
 import Utils from "utils/utils";
 import Heading from "components/Common/Heading";
-import { useWorkflowStepStore, Step } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 import { useStepProps } from "../composables/useStepProps";
 import { toRef } from "vue";
@@ -78,7 +78,8 @@ export default {
     },
     props: {
         step: {
-            type: Step,
+            // type Step from @/stores/workflowStepStore
+            type: Object,
             required: true,
         },
         datatypes: {

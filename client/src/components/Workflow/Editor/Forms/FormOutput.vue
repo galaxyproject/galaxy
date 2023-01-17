@@ -84,7 +84,6 @@
 import FormCard from "@/components/Form/FormCard";
 import FormElement from "@/components/Form/FormElement";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel";
-import { Step } from "@/stores/workflowStepStore";
 
 const actions = [
     "RenameDatasetAction__newname",
@@ -129,7 +128,8 @@ export default {
             required: true,
         },
         step: {
-            type: Step,
+            // type Step from @/stores/workflowStepStore
+            type: Object,
             required: true,
         },
     },

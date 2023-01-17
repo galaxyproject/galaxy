@@ -30,7 +30,6 @@
 <script>
 import FormElement from "@/components/Form/FormElement";
 import FormOutput from "@/components/Workflow/Editor/Forms/FormOutput";
-import { Step } from "@/stores/workflowStepStore";
 
 export default {
     components: {
@@ -51,7 +50,8 @@ export default {
             required: true,
         },
         step: {
-            type: Step,
+            // type Step from @/stores/workflowStepStore
+            type: Object,
             required: true,
         },
         datatypes: {
