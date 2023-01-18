@@ -2,21 +2,10 @@
 import Vue from "vue";
 import ContentItem from "./ContentItem.vue";
 import { ref } from "vue";
-
-interface DatasetCollectionElement {
-    id: string;
-    element_index: number;
-    element_identifier: string;
-    element_type: string;
-    object: Record<string, any>;
-}
-
-interface DatasetCollection {
-    elements: DatasetCollectionElement[];
-}
+import type { components } from "@/schema";
 
 defineProps<{
-    dsc: DatasetCollection;
+    dsc: components.DCObject;
 }>();
 
 const expandCollections = ref({});
