@@ -106,7 +106,6 @@ export default {
         },
     },
     setup() {
-        const { openGlobalUploadModal } = useGlobalUploadModal();
         return { openGlobalUploadModal };
     },
     data() {
