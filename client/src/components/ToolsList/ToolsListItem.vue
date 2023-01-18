@@ -34,7 +34,7 @@ const formattedToolHelp = computed(() => {
 import { library } from "@fortawesome/fontawesome-svg-core";
 import {
     faWrench,
-    faGlobe,
+    faExternalLinkAlt,
     faCheck,
     faTimes,
     faAngleDown,
@@ -42,7 +42,7 @@ import {
     faExclamationTriangle,
 } from "@fortawesome/free-solid-svg-icons";
 
-library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle);
+library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle);
 </script>
 
 <template>
@@ -51,7 +51,7 @@ library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp, faExcla
             <div class="py-1 d-flex flex-wrap flex-gapx-1">
                 <span>
                     <FontAwesomeIcon v-if="props.local" icon="fa-wrench" fixed-width />
-                    <FontAwesomeIcon v-else icon="fa-globe" fixed-width />
+                    <FontAwesomeIcon v-else icon="fa-external-link-alt" fixed-width />
 
                     <b-button v-if="props.local" class="ui-link text-dark" @click="() => emit('open')">
                         <b>{{ props.name }}</b>
@@ -64,16 +64,23 @@ library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp, faExcla
                 <span>(Galaxy Version {{ props.version }})</span>
             </div>
             <div>
-                <ToolFavoriteButton :id="props.id" />
+                <b-button-group>
+                    <ToolFavoriteButton :id="props.id" />
 
-                <b-button v-if="props.local" variant="primary" size="sm" @click="() => emit('open')">
-                    <FontAwesomeIcon icon="fa-wrench" fixed-width />
-                    Open
-                </b-button>
-                <b-button v-else variant="primary" size="sm" :href="props.link">
-                    <FontAwesomeIcon icon="fa-globe" fixed-width />
-                    Open
-                </b-button>
+                    <b-button
+                        v-if="props.local"
+                        class="text-nowrap"
+                        variant="primary"
+                        size="sm"
+                        @click="() => emit('open')">
+                        <FontAwesomeIcon icon="fa-wrench" fixed-width />
+                        Open
+                    </b-button>
+                    <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
+                        <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
+                        Open
+                    </b-button>
+                </b-button-group>
             </div>
         </div>
 
@@ -84,7 +91,7 @@ library.add(faWrench, faGlobe, faCheck, faTimes, faAngleDown, faAngleUp, faExcla
                 </span>
 
                 <span v-if="!props.local" class="info px-1 rounded">
-                    <FontAwesomeIcon icon="fa-globe" fixed-width />
+                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
                     External
                 </span>
 
