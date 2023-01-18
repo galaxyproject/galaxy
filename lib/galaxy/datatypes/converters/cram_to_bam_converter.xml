@@ -3,7 +3,7 @@
         <requirement type="package" version="1.16.1">samtools</requirement>
     </requirements>
     <command><![CDATA[
-        samtools sort '$input' -o '$output' --output-fmt BAM
+        samtools sort -@\${GALAXY_SLOTS:-1} -T "\${TMPDIR:-.}" -o '$output' --output-fmt BAM '$input'
     ]]></command>
     <inputs>
         <param format="cram" name="input" type="data" label="Choose CRAM file"/>
