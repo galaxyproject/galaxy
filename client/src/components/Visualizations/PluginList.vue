@@ -10,7 +10,7 @@
                 @change="onSearch" />
             <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
-                    <tr class="plugin-list-item" @click="select(plugin)">
+                    <tr class="plugin-list-item" :data-plugin-name="plugin.name" @click="select(plugin)">
                         <td>
                             <img v-if="plugin.logo" alt="ui thumbnails" class="plugin-list-image" :src="plugin.logo" />
                             <div v-else class="plugin-list-icon fa fa-eye" />
