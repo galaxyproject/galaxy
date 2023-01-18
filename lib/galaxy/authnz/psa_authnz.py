@@ -150,7 +150,7 @@ class PSAAuthnz(IdentityProvider):
         from msal import ConfidentialClientApplication
 
         logging.getLogger("msal").setLevel(logging.WARN)
-        old_extra_data = trans.user.social_auth[0].extra_data
+        old_extra_data = social.extra_data
         app = ConfidentialClientApplication(
             self.config["KEY"],
             self.config["SECRET"],
@@ -167,7 +167,9 @@ class PSAAuthnz(IdentityProvider):
         social.set_extra_data(extra_data)
 
     def refresh(self, trans):
-        social = trans.user.social_auth[0]
+        social = trans.user.get_active_social_auth()
+        if not social:
+            return False
         if int(social.extra_data["auth_time"]) + int(social.extra_data["expires"]) / 2 <= int(time.time()):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":

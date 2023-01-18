@@ -199,13 +199,15 @@ class AuthnzManager:
         return None
 
     def _get_provider_name(self, user):
-        if len(user.social_auth) == 1:
+        auth = user.get_active_social_auth()
+        if auth:
             for k, v in BACKENDS_NAME.items():
-                if v == user.social_auth[0].provider:
+                if v == auth.provider:
                     return k.lower()
-        if len(user.custos_auth) == 1:
-            if user.custos_auth[0].provider in KEYCLOAK_BACKENDS:
-                return user.custos_auth[0].provider
+        auth = user.get_active_custos_auth()
+        if auth:
+            if auth.provider in KEYCLOAK_BACKENDS:
+                return auth.provider
         return None
 
     def _get_authnz_backend(self, provider, idphint=None):
@@ -321,10 +323,10 @@ class AuthnzManager:
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
-    def refresh(self, trans, idphint=None):
+    def refresh(self, trans):
         try:
             provider = self._get_provider_name(trans.user)
-            success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
+            success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 msg = f"An error occurred when refreshing user token on `{provider}` identity provider: {message}"
                 log.error(msg)
@@ -376,13 +378,25 @@ class AuthnzManager:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, (None, None)
-            return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
+            url, user = backend.callback(state_token, authz_code, trans, login_redirect_url)
+            self._invalidate_other_user_tokens(provider, user)
+            return success, message, (url, user)
         except exceptions.AuthenticationFailed:
             raise
         except Exception:
             msg = f"An error occurred when handling callback from `{provider}` identity provider.  Please contact an administrator for assistance."
             log.exception(msg)
             return False, msg, (None, None)
+
+    def _invalidate_other_user_tokens(self, provider, user):
+        for auth in user.social_auth:
+            if auth.provider != BACKENDS_NAME[provider]:
+                auth.extra_data = None
+        for auth in user.custos_auth:
+            if auth.provider not in KEYCLOAK_BACKENDS:
+                auth.access_token = None
+                auth.id_token = None
+                auth.refresh_token = None
 
     def create_user(self, provider, token, trans, login_redirect_url):
         try:

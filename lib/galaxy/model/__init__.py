@@ -749,22 +749,40 @@ class User(Base, Dictifiable, RepresentById):
         if amount != 0:
             self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
 
+    def get_active_social_auth(self):
+        if not self.social_auth:
+            return None
+        for auth in self.social_auth:
+            if auth.extra_data:
+                return auth
+        return None
+
+    def get_active_custos_auth(self):
+        if not self.custos_auth:
+            return None
+        for auth in self.custos_auth:
+            if auth.refresh_token:
+                return auth
+        return None
+
     def _oidc_tokens(self):
-        id_token = None
-        refresh_token = None
         access_token = None
-        if self.social_auth:
-            if "access_token" in self.social_auth[0].extra_data:
-                access_token = self.social_auth[0].extra_data["access_token"]
-            if "refresh_token" in self.social_auth[0].extra_data:
-                refresh_token = self.social_auth[0].extra_data["refresh_token"]
-            if "id_token" in self.social_auth[0].extra_data:
-                id_token = self.social_auth[0].extra_data["id_token"]
-        if self.custos_auth:
-            access_token = self.custos_auth[0].access_token
-            refresh_token = self.custos_auth[0].refresh_token
-            id_token = self.custos_auth[0].id_token
-        return (id_token, access_token, refresh_token)
+        refresh_token = None
+        id_token = None
+        auth = self.get_active_social_auth()
+        if auth:
+            access_token = auth.extra_data.get("access_token", None)
+            refresh_token = auth.extra_data.get("refresh_token", None)
+            id_token = auth.extra_data.get("id_token", None)
+            return id_token, access_token, refresh_token
+
+        # no active social auth found, check custos auth
+        auth = self.custos_auth
+        if auth:
+            access_token = auth.access_token
+            refresh_token = auth.refresh_token
+            id_token = auth.id_token
+        return id_token, access_token, refresh_token
 
     @property
     def oidc_id_token(self):
