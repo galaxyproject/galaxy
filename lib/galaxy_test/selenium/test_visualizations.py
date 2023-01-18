@@ -15,4 +15,6 @@ class TestVisualizations(SeleniumTestCase):
 
         self.components.visualization.plugin_item(id="nvd3_bar").wait_for_and_click()
 
-        # wait for the chart to render and look for something.
+        with self.main_panel():
+            self.wait_for_selector("g.nvd3")
+            self.screenshot("test_charts_framework -- nvd3_bar")
