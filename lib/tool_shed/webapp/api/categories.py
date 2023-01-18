@@ -18,10 +18,7 @@ from galaxy.web import (
     require_admin,
 )
 from galaxy.webapps.galaxy.api import depends
-from tool_shed.managers.categories import (
-    CategoryManager,
-    get_value_mapper,
-)
+from tool_shed.managers.categories import CategoryManager
 from tool_shed.managers.repositories import repositories_by_category
 from tool_shed.webapp.model import Category
 from . import BaseShedAPIController
@@ -117,8 +114,5 @@ class CategoriesController(BaseShedAPIController):
         if category is None:
             category_dict = dict(message=f"Unable to locate category record for id {str(id)}.", status="error")
             return category_dict
-        category_dict = category.to_dict(view="element", value_mapper=get_value_mapper(trans.app))
-        category_dict["url"] = web.url_for(
-            controller="categories", action="show", id=trans.security.encode_id(category.id)
-        )
+        category_dict = self.category_manager.to_dict(category)
         return category_dict

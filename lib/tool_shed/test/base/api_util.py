@@ -3,13 +3,14 @@ import re
 from functools import wraps
 from typing import (
     Any,
-    Dict,
     Callable,
+    Dict,
     Optional,
 )
 from urllib.parse import urljoin
 
 import requests
+from typing_extensions import Literal
 
 from galaxy_test.base.api_asserts import (
     assert_has_keys,
@@ -85,6 +86,18 @@ class ShedApiInteractor:
     get = decorate_method(requests.get)
     post = decorate_method(requests.post)
     put = decorate_method(requests.put)
+    delete = decorate_method(requests.delete)
+
+    @property
+    def api_version(self) -> Literal["v1", "v2"]:
+        config = self.version()
+        api_version = config.get("api_version", "v1")
+        return api_version
+
+    def version(self) -> Dict[str, Any]:
+        response = self.get("version")
+        response.raise_for_status()
+        return response.json()
 
 
 def create_user(admin_interactor: ShedApiInteractor, user_dict: Dict[str, Any], assert_ok=True) -> Dict[str, Any]:

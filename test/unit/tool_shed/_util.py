@@ -12,6 +12,7 @@ from typing import Optional
 import tool_shed.repository_registry
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import safe_makedirs
+from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.managers.repositories import upload_tar_and_set_metadata
 from tool_shed.managers.users import create_user
 from tool_shed.repository_types import util as rt_util
@@ -88,7 +89,32 @@ def user_fixture(
     )
 
 
-def repository_fixture(app: TestToolShedApp, user: User, name: str) -> Repository:
+class ProvidesRepositoriesImpl(ProvidesRepositoriesContext):
+    def __init__(self, app: TestToolShedApp, user: User):
+        self._app = app
+        self._user = user
+
+    @property
+    def app(self) -> ToolShedApp:
+        return self._app
+
+    @property
+    def user(self) -> User:
+        return self._user
+
+    @property
+    def repositories_hostname(self) -> str:
+        return "shed_unit_test://localhost"
+
+
+def provides_repositories_fixture(
+    app: TestToolShedApp,
+    user: User,
+):
+    return ProvidesRepositoriesImpl(app, user)
+
+
+def repository_fixture(app: ToolShedApp, user: User, name: str) -> Repository:
     type = rt_util.UNRESTRICTED
     description = f"test repo named {name}"
     long_description = f"test repo named {name} a longer description"
@@ -116,7 +142,12 @@ from unittest import mock
 patch_url_for = mock.patch("galaxy.util.tool_shed.common_util.url_for", _mock_url_for)
 
 
-def upload(app: TestToolShedApp, repository: Repository, path: Path, arcname: Optional[str] = None):
+def upload(
+    provides_repositories: ProvidesRepositoriesContext,
+    repository: Repository,
+    path: Path,
+    arcname: Optional[str] = None,
+):
     if path.is_dir():
         tf = NamedTemporaryFile(delete=False)
         with tarfile.open(tf.name, "w:gz") as tar:
@@ -127,19 +158,20 @@ def upload(app: TestToolShedApp, repository: Repository, path: Path, arcname: Op
     else:
         tar_path = str(path)
     return upload_tar_and_set_metadata(
-        app,
+        provides_repositories,
         TEST_HOST,
-        repository.user,
         repository,
         tar_path,
         commit_message=TEST_COMMIT_MESSAGE,
     )
 
 
-def upload_directories_to_repository(app: TestToolShedApp, repository: Repository, test_data_path: str):
+def upload_directories_to_repository(
+    provides_repositories: ProvidesRepositoriesContext, repository: Repository, test_data_path: str
+):
     paths = repo_tars(test_data_path)
     for path in paths:
-        upload(app, repository, Path(path), arcname=test_data_path)
+        upload(provides_repositories, repository, Path(path), arcname=test_data_path)
 
 
 def random_name(len: int = 10) -> str:

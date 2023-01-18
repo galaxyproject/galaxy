@@ -22,6 +22,7 @@ jobs:
       matrix:
         python-version: ['3.7']
         test-install-client: ['standalone', 'galaxy_api']
+        shed-api: ['v1', 'v2']
     services:
       postgres:
         image: postgres:13
@@ -57,6 +58,7 @@ jobs:
         run: './run_tests.sh -toolshed'
         env:
           TOOL_SHED_TEST_INSTALL_CLIENT: ${{ matrix.test-install-client }}
+          TOOL_SHED_API_VERSION: ${{ matrix.shed-api }}
         working-directory: 'galaxy root'
       - uses: actions/upload-artifact@v3
         if: failure()

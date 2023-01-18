@@ -33,6 +33,17 @@ class Repository(BaseModel):
     times_downloaded: int
     deprecated: bool
     create_time: str
+    update_time: str
+
+
+class DetailedRepository(Repository):
+    long_description: Optional[str]
+
+
+class RepositoryPermissions(BaseModel):
+    allow_push: List[str]
+    can_manage: bool  # can the requesting user manage the repository
+    can_push: bool
 
 
 class RepositoryRevisionReadmes(BaseModel):
@@ -53,6 +64,8 @@ class User(BaseModel):
 class Category(BaseModel):
     id: str
     name: str
+    description: str
+    repositories: int
 
 
 class CreateCategoryRequest(BaseModel):
@@ -117,10 +130,6 @@ class RepositoryUpdate(BaseModel):
         return isinstance(self.__root__, ValidRepostiroyUpdateMessage)
 
 
-class RepositoryDependency(BaseModel):
-    pass
-
-
 class RepositoryTool(BaseModel):
     pass
 
@@ -128,8 +137,8 @@ class RepositoryTool(BaseModel):
 class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
-    repository_dependencies: List[RepositoryDependency]
-    tools: Optional[List[RepositoryTool]]
+    repository_dependencies: List["RepositoryDependency"]
+    tools: Optional[List["RepositoryTool"]]
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -143,6 +152,15 @@ class RepositoryRevisionMetadata(BaseModel):
     includes_tool_dependencies: Optional[bool]
     includes_datatypes: Optional[bool]
     includes_workflows: Optional[bool]
+
+
+class RepositoryDependency(RepositoryRevisionMetadata):
+    # This only needs properties for tests it seems?
+    # e.g. test_0550_metadata_updated_dependencies.py
+    pass
+
+
+RepositoryRevisionMetadata.update_forward_refs()
 
 
 class RepositoryMetadata(BaseModel):
@@ -438,3 +456,9 @@ def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> Ins
 class BuildSearchIndexResponse(BaseModel):
     repositories_indexed: int
     tools_indexed: int
+
+
+class Version(BaseModel):
+    version_major: str
+    version: str
+    api_version: str = "v1"

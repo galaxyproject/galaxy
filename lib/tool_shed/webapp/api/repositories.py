@@ -202,7 +202,7 @@ class RepositoriesController(BaseShedAPIController):
             }
 
         """
-        return get_install_info(self.app, name, owner, changeset_revision)
+        return get_install_info(trans, name, owner, changeset_revision)
 
     @web.legacy_expose_api_anonymous
     def get_installable_revisions(self, trans, **kwd):
@@ -378,8 +378,7 @@ class RepositoriesController(BaseShedAPIController):
             log.debug(f"Resetting metadata on repository {repository.name}")
             try:
                 rmm = repository_metadata_manager.RepositoryMetadataManager(
-                    app=self.app,
-                    user=trans.user,
+                    trans,
                     resetting_all_metadata_on_repository=True,
                     updating_installed_repository=False,
                     repository=repository,
@@ -423,8 +422,7 @@ class RepositoriesController(BaseShedAPIController):
         else:
             my_writable = True
         rmm = repository_metadata_manager.RepositoryMetadataManager(
-            app=self.app,
-            user=trans.user,
+            trans,
             resetting_all_metadata_on_repository=True,
             updating_installed_repository=False,
             persist=False,
@@ -725,9 +723,8 @@ class RepositoriesController(BaseShedAPIController):
         uploaded_file_name = file_data["local_filename"]
         try:
             message = upload_tar_and_set_metadata(
-                self.app,
+                trans,
                 trans.request.host,
-                trans.user,
                 repository,
                 uploaded_file_name,
                 commit_message,

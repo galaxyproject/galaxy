@@ -435,10 +435,11 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
     return folder_contents
 
 
-def tool_shed_is_this_tool_shed(toolshed_base_url):
+def tool_shed_is_this_tool_shed(toolshed_base_url, trans=None):
     """Determine if a tool shed is the current tool shed."""
     cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
-    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(str(url_for("/", qualified=True)))
+    hostname = trans.repositories_hostname if trans else str(url_for("/", qualified=True))
+    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(hostname)
     return cleaned_toolshed_base_url == cleaned_tool_shed
 
 

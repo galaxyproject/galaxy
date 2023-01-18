@@ -1,7 +1,10 @@
 import logging
 import sys
 import time
-from typing import Any
+from typing import (
+    Any,
+    Optional,
+)
 
 from sqlalchemy.orm.scoping import scoped_session
 
@@ -108,3 +111,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         #  used for cachebusting -- refactor this into a *SINGLE* UniverseApplication base.
         self.server_starttime = int(time.time())
         log.debug("Tool shed hgweb.config file is: %s", self.hgweb_config_manager.hgweb_config)
+
+
+# Global instance of the universe app.
+app: Optional[ToolShedApp] = None

@@ -40,6 +40,7 @@ from tool_shed_client.schema import (
     ResetMetadataOnRepositoryResponse,
     ToolSearchRequest,
     ToolSearchResults,
+    Version,
 )
 from .api_util import (
     ensure_user_with_email,
@@ -155,6 +156,11 @@ class ToolShedPopulator:
     def setup_column_maker_and_get_metadata(self, prefix=DEFAULT_PREFIX) -> RepositoryMetadata:
         repository = self.setup_column_maker_repo(prefix=prefix)
         return self.get_metadata(repository)
+
+    def get_install_info_for_repository(self, has_repository_id: HasRepositoryId) -> InstallInfo:
+        repository_id = self._repository_id(has_repository_id)
+        metadata = self.get_metadata(repository_id, True)
+        return self.get_install_info(metadata)
 
     def get_install_info(self, repository_metadata: RepositoryMetadata) -> InstallInfo:
         revision_metadata = repository_metadata.latest_revision
@@ -303,6 +309,41 @@ class ToolShedPopulator:
         delete_response = self._api_interactor.delete(f"repositories/{repository_id}/allow_push/{username}")
         delete_response.raise_for_status()
 
+    def set_malicious(self, repository: HasRepositoryId, changeset_revision: str):
+        repository_id = self._repository_id(repository)
+        put_response = self._api_interactor.put(
+            f"repositories/{repository_id}/revisions/{changeset_revision}/malicious"
+        )
+        put_response.raise_for_status()
+
+    def unset_malicious(self, repository: HasRepositoryId, changeset_revision: str):
+        repository_id = self._repository_id(repository)
+        delete_response = self._api_interactor.delete(
+            f"repositories/{repository_id}/revisions/{changeset_revision}/malicious"
+        )
+        delete_response.raise_for_status()
+
+    def tip_is_malicious(self, repository: HasRepositoryId) -> bool:
+        repository_metadata = self.get_metadata(repository)
+        revision = repository_metadata.latest_revision
+        return revision.malicious
+
+    def set_deprecated(self, repository: HasRepositoryId):
+        repository_id = self._repository_id(repository)
+        put_response = self._api_interactor.put(f"repositories/{repository_id}/deprecated")
+        put_response.raise_for_status()
+
+    def unset_deprecated(self, repository: HasRepositoryId):
+        repository_id = self._repository_id(repository)
+        delete_response = self._api_interactor.delete(f"repositories/{repository_id}/deprecated")
+        delete_response.raise_for_status()
+
+    def is_deprecated(self, repository: HasRepositoryId) -> bool:
+        repository_id = self._repository_id(repository)
+        repository_response = self._api_interactor.get(f"repositories/{repository_id}")
+        repository_response.raise_for_status()
+        return Repository(**repository_response.json()).deprecated
+
     def get_metadata(self, repository: HasRepositoryId, downloadable_only=True) -> RepositoryMetadata:
         repository_id = self._repository_id(repository)
         metadata_response = self._api_interactor.get(
@@ -317,6 +358,11 @@ class ToolShedPopulator:
         reset_response = self._api_interactor.post("repositories/reset_metadata_on_repository", json=request.dict())
         api_asserts.assert_status_code_is_ok(reset_response)
         return ResetMetadataOnRepositoryResponse(**reset_response.json())
+
+    def version(self) -> Version:
+        version_response = self._admin_api_interactor.get("version")
+        api_asserts.assert_status_code_is_ok(version_response)
+        return Version(**version_response.json())
 
     def tool_search_query(self, query: str) -> ToolSearchResults:
         return self.tool_search(ToolSearchRequest(q=query))
@@ -349,6 +395,15 @@ class ToolShedPopulator:
         search_response = self._api_interactor.get("repositories", params=repo_search_request.dict())
         api_asserts.assert_status_code_is_ok(search_response)
         return RepositorySearchResults(**search_response.json())
+
+    def delete_api_key(self) -> None:
+        response = self._api_interactor.delete("users/current/api_key")
+        response.raise_for_status()
+
+    def create_new_api_key(self) -> str:
+        response = self._api_interactor.post("users/current/api_key")
+        response.raise_for_status()
+        return response.json()
 
     def guid(self, repository: Repository, tool_id: str, tool_version: str) -> str:
         url = self._api_interactor.url

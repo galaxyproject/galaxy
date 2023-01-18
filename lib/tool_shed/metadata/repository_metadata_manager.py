@@ -21,8 +21,8 @@ from galaxy.tool_shed.metadata.metadata_generator import (
     InvalidFileT,
 )
 from galaxy.util import inflector
-from galaxy.web import url_for
 from galaxy.web.form_builder import SelectField
+from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.repository_types import util as rt_util
 from tool_shed.repository_types.metadata import TipOnly
 from tool_shed.structured_app import ToolShedApp
@@ -54,7 +54,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
 
     def __init__(
         self,
-        app: ToolShedApp,
+        trans: ProvidesRepositoriesContext,
         repository: Optional[Repository] = None,
         changeset_revision: Optional[str] = None,
         repository_clone_url: Optional[str] = None,
@@ -67,7 +67,8 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         metadata_dict=None,
         user=None,
     ):
-        self.app = app
+        self.trans = trans
+        self.app = trans.app
         self.user = user
         self.repository = repository
         if changeset_revision is None and self.repository is not None:
@@ -75,9 +76,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         else:
             self.changeset_revision = changeset_revision
         if repository_clone_url is None and self.repository is not None:
-            self.repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(
-                self.user, self.repository
-            )
+            self.repository_clone_url = common_util.generate_clone_url_for(self.trans, self.repository)
         else:
             self.repository_clone_url = repository_clone_url
         if shed_config_dict is None:
@@ -98,7 +97,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         self.updating_installed_repository = updating_installed_repository
         self.persist = persist
         self.invalid_file_tups = []
-        self.sa_session = app.model.session
+        self.sa_session = trans.app.model.session
 
     def initial_metadata_dict(self) -> Dict[str, Any]:
         return {}
@@ -141,11 +140,15 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
         ]
         if not toolshed:
             # Default to the current tool shed.
-            toolshed = str(url_for("/", qualified=True)).rstrip("/")
+            toolshed = self.trans.repositories_hostname
+            log.warning(f"\n\n\n\n\n\nin not toolshed with {toolshed}\n\n\n\n")
+            # toolshed = str(url_for("/", qualified=True)).rstrip("/")
             repository_dependency_tup[0] = toolshed
+        else:
+            log.warning(f"moooocww.....{toolshed}\n\n\n\n\n")
         toolshed = common_util.remove_protocol_from_tool_shed_url(toolshed)
 
-        if suc.tool_shed_is_this_tool_shed(toolshed):
+        if suc.tool_shed_is_this_tool_shed(toolshed, trans=self.trans):
             try:
                 user = (
                     self.sa_session.query(self.app.model.User)
@@ -225,8 +228,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
 class RepositoryMetadataManager(ToolShedMetadataGenerator):
     def __init__(
         self,
-        app: ToolShedApp,
-        user,
+        trans: ProvidesRepositoriesContext,
         repository=None,
         changeset_revision=None,
         repository_clone_url=None,
@@ -239,7 +241,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         metadata_dict=None,
     ):
         super().__init__(
-            app,
+            trans,
             repository,
             changeset_revision,
             repository_clone_url,
@@ -250,8 +252,10 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             updating_installed_repository,
             persist,
             metadata_dict=metadata_dict,
-            user=user,
+            user=trans.user,
         )
+        app = trans.app
+        user = trans.user
         self.sa_session = app.model.context
         self.app = app
         self.user = user
@@ -997,9 +1001,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
 
     def set_repository(self, repository, repository_clone_url=None):
         super().set_repository(repository)
-        self.repository_clone_url = repository_clone_url or common_util.generate_clone_url_for_repository_in_tool_shed(
-            self.user, repository
-        )
+        self.repository_clone_url = repository_clone_url or common_util.generate_clone_url_for(self.trans, repository)
 
     def set_repository_metadata(self, host, content_alert_str="", **kwd):
         """

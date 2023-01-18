@@ -5,6 +5,7 @@ from tool_shed.webapp.model import (
     User,
 )
 from ._util import (
+    provides_repositories_fixture,
     random_name,
     repository_fixture,
     TestToolShedApp,
@@ -26,3 +27,8 @@ def new_user(shed_app: TestToolShedApp) -> User:
 @pytest.fixture
 def new_repository(shed_app: TestToolShedApp, new_user: User) -> Repository:
     return repository_fixture(shed_app, new_user, random_name())
+
+
+@pytest.fixture
+def provides_repositories(shed_app: TestToolShedApp, new_user: User) -> User:
+    return provides_repositories_fixture(shed_app, new_user)

@@ -22,7 +22,7 @@ from tool_shed.util.commit_util import (
 )
 
 if TYPE_CHECKING:
-    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.context import ProvidesRepositoriesContext
     from tool_shed.webapp.model import Repository
 
 
@@ -41,8 +41,7 @@ def tar_open(uploaded_file):
 
 
 def upload_tar(
-    app: "ToolShedApp",
-    host: str,
+    trans: "ProvidesRepositoriesContext",
     username: str,
     repository: "Repository",
     uploaded_file,
@@ -54,10 +53,12 @@ def upload_tar(
     rdah: Optional[RepositoryDependencyAttributeHandler] = None,
     tdah: Optional[ToolDependencyAttributeHandler] = None,
 ) -> ChangeResponseT:
+    host = trans.repositories_hostname
+    app = trans.app
     if tar is None:
         tar = tar_open(uploaded_file)
-    rdah = rdah or RepositoryDependencyAttributeHandler(app, unpopulate=False)
-    tdah = tdah or ToolDependencyAttributeHandler(app, unpopulate=False)
+    rdah = rdah or RepositoryDependencyAttributeHandler(trans, unpopulate=False)
+    tdah = tdah or ToolDependencyAttributeHandler(trans, unpopulate=False)
     # Upload a tar archive of files.
     undesirable_dirs_removed = 0
     undesirable_files_removed = 0

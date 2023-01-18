@@ -24,6 +24,7 @@ from sqlalchemy import (
 from galaxy import web
 from galaxy.exceptions import (
     ConfigDoesNotAllowException,
+    InsufficientPermissionsException,
     InternalServerError,
     MalformedContents,
     ObjectNotFound,
@@ -31,7 +32,10 @@ from galaxy.exceptions import (
 )
 from galaxy.tool_shed.util import dependency_display
 from galaxy.util import listify
-from tool_shed.context import ProvidesUserContext
+from tool_shed.context import (
+    ProvidesRepositoriesContext,
+    ProvidesUserContext,
+)
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
 from tool_shed.structured_app import ToolShedApp
@@ -57,17 +61,18 @@ from tool_shed.util.repository_util import (
     validate_repository_name,
 )
 from tool_shed.util.shed_util_common import (
-    get_category,
     count_repositories_in_category,
+    get_category,
 )
 from tool_shed.util.tool_util import generate_message_for_invalid_tools
 from tool_shed.webapp.model import (
     Repository,
-    User,
+    RepositoryMetadata,
 )
 from tool_shed.webapp.search.repo_search import RepoSearch
 from tool_shed_client.schema import (
     CreateRepositoryRequest,
+    DetailedRepository,
     ExtraRepoInfo,
     LegacyInstallInfoTuple,
     Repository as SchemaRepository,
@@ -296,7 +301,27 @@ def can_manage_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
     return trans.user_is_admin or security_agent.user_can_administer_repository(trans.user, repository)
 
 
-def get_install_info(app: ToolShedApp, name, owner, changeset_revision) -> LegacyInstallInfoTuple:
+def can_update_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
+    app = trans.app
+    security_agent = app.security_agent
+    return can_manage_repo(trans, repository) or security_agent.can_push(app, trans.user, repository)
+
+
+def get_repository_metadata_for_management(
+    trans: ProvidesUserContext, encoded_repository_id: str, changeset_revision: str
+) -> RepositoryMetadata:
+    repository = get_repository_in_tool_shed(trans.app, encoded_repository_id)
+    if not can_manage_repo(trans, repository):
+        raise InsufficientPermissionsException("Cannot manage target repository")
+    revisions = [r for r in repository.metadata_revisions if r.changeset_revision == changeset_revision]
+    if len(revisions) != 1:
+        raise ObjectNotFound()
+    repository_metadata = revisions[0]
+    return repository_metadata
+
+
+def get_install_info(trans: ProvidesRepositoriesContext, name, owner, changeset_revision) -> LegacyInstallInfoTuple:
+    app = trans.app
     value_mapper = get_value_mapper(app)
     # Example URL:
     # http://<xyz>/api/repositories/get_repository_revision_install_info?name=<n>&owner=<o>&changeset_revision=<cr>
@@ -343,7 +368,7 @@ def get_install_info(app: ToolShedApp, name, owner, changeset_revision) -> Legac
                 includes_tools_for_display_in_tool_panel,
                 has_repository_dependencies,
                 has_repository_dependencies_only_if_compiling_contained_td,
-            ) = get_repo_info_dict(app, None, encoded_repository_id, changeset_revision)
+            ) = get_repo_info_dict(trans, encoded_repository_id, changeset_revision)
             return repository_dict, repository_metadata_dict, repo_info_dict
         else:
             log.debug(
@@ -429,8 +454,7 @@ def reset_metadata_on_repository(trans: ProvidesUserContext, repository_id) -> R
         results = dict(start_time=start_time, repository_status=[])
         try:
             rmm = repository_metadata_manager.RepositoryMetadataManager(
-                app=app,
-                user=trans.user,
+                trans,
                 repository=repository,
                 resetting_all_metadata_on_repository=True,
                 updating_installed_repository=False,
@@ -525,20 +549,25 @@ def to_model(app, repository: Repository) -> SchemaRepository:
     return SchemaRepository(**to_element_dict(app, repository))
 
 
+def to_detailed_model(app, repository: Repository) -> DetailedRepository:
+    return DetailedRepository(**to_element_dict(app, repository))
+
+
 def upload_tar_and_set_metadata(
-    app: ToolShedApp,
+    trans: ProvidesRepositoriesContext,
     host: str,
-    user: User,
     repository: Repository,
     uploaded_file,
     commit_message: str,
     dry_run: bool = False,
 ):
+    app = trans.app
+    user = trans.user
+    assert user
     repo_dir = repository.repo_path(app)
     tip = repository.tip()
     (ok, message, _, content_alert_str, _, _,) = upload_tar(
-        app,
-        host,
+        trans,
         user.username,
         repository,
         uploaded_file,
@@ -551,7 +580,7 @@ def upload_tar_and_set_metadata(
         if tip == repository.tip():
             raise MalformedContents("No changes to repository.")
         else:
-            rmm = repository_metadata_manager.RepositoryMetadataManager(app=app, user=user, repository=repository)
+            rmm = repository_metadata_manager.RepositoryMetadataManager(trans, repository=repository)
             _, error_message = rmm.set_repository_metadata_due_to_new_tip(host, content_alert_str=content_alert_str)
             if error_message:
                 raise InternalServerError(error_message)

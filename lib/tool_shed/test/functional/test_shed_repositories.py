@@ -6,12 +6,21 @@ from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.resources import resource_path
 from galaxy_test.base import api_asserts
 from tool_shed.test.base.api_util import create_user
-from tool_shed.test.base.populators import repo_tars
-from ..base.api import ShedApiTestCase
+from tool_shed.test.base.populators import (
+    HasRepositoryId,
+    repo_tars,
+)
+from tool_shed_client.schema import RepositoryRevisionMetadata
+from ..base.api import (
+    ShedApiTestCase,
+    skip_if_api_v1,
+    skip_if_api_v2,
+)
 
 COLUMN_MAKER_PATH = resource_path(__package__, "../test_data/column_maker/column_maker.tar")
 
 
+# test_0000 tests commit_message  - find a way to test it here
 class TestShedRepositoriesApi(ShedApiTestCase):
     def test_create(self):
         populator = self.populator
@@ -69,6 +78,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository.owner == repo.owner
         assert repository.name == repo.name
 
+    @skip_if_api_v1
     def test_allow_push(self):
         populator = self.populator
         request = {
@@ -99,6 +109,32 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         populator.disallow_user_to_push(repo, "sharewith")
         assert "sharewith" not in populator.get_usernames_allowed_to_push(repo)
         assert "alsosharewith" in populator.get_usernames_allowed_to_push(repo)
+
+    @skip_if_api_v1
+    def test_set_malicious(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="repoformalicious")
+
+        only_revision = self._get_only_revision(repository)
+        assert only_revision.downloadable
+        assert not only_revision.malicious
+
+        assert not populator.tip_is_malicious(repository)
+        populator.set_malicious(repository, only_revision.changeset_revision)
+        assert populator.tip_is_malicious(repository)
+        populator.unset_malicious(repository, only_revision.changeset_revision)
+        assert not populator.tip_is_malicious(repository)
+
+    @skip_if_api_v1
+    def test_set_deprecated(self):
+        populator = self.populator
+        repository = populator.setup_column_maker_repo(prefix="repofordeprecated")
+        assert not repository.deprecated
+        assert not populator.is_deprecated(repository)
+        populator.set_deprecated(repository)
+        assert populator.is_deprecated(repository)
+        populator.unset_deprecated(repository)
+        assert not populator.is_deprecated(repository)
 
     def test_install_info(self):
         # actually installing requires a whole Galaxy setup and the install manager but
@@ -157,6 +193,19 @@ class TestShedRepositoriesApi(ShedApiTestCase):
             else:
                 raise AssertionError("Wrong number of repo tars returned...")
 
+    @skip_if_api_v1
+    def test_readmes(self):
+        populator = self.populator
+        repository = populator.setup_test_data_repo("column_maker_with_readme")
+        only_revision = self._get_only_revision(repository)
+        populator.assert_has_n_installable_revisions(repository, 1)
+        response = self.api_interactor.get(
+            f"repositories/{repository.id}/revisions/{only_revision.changeset_revision}/readmes"
+        )
+        api_asserts.assert_status_code_is_ok(response)
+        readme_dicts = response.json()
+        assert "readme.txt" in readme_dicts
+
     def test_reset_on_simple_repository(self):
         populator = self.populator
         repository = populator.setup_test_data_repo("column_maker")
@@ -178,6 +227,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         api_asserts.assert_status_code_is_ok(response)
         populator.assert_has_n_installable_revisions(repository, 3)
 
+    @skip_if_api_v2
     def test_reset_all(self):
         populator = self.populator
         repository = populator.setup_test_data_repo("column_maker_with_download_gaps")
@@ -190,3 +240,14 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         )
         api_asserts.assert_status_code_is_ok(response)
         populator.assert_has_n_installable_revisions(repository, 3)
+
+    def _get_only_revision(self, repository: HasRepositoryId) -> RepositoryRevisionMetadata:
+        populator = self.populator
+        repository_metadata = populator.get_metadata(repository)
+        metadata_for_revisions = repository_metadata.__root__
+        assert len(metadata_for_revisions) == 1
+        only_key = list(metadata_for_revisions.keys())[0]
+        assert only_key.startswith("0:")
+        only_revision = list(metadata_for_revisions.values())[0]
+        assert only_revision
+        return only_revision

@@ -2,6 +2,7 @@ import abc
 from typing import Optional
 
 from sqlalchemy.orm import scoped_session
+from typing_extensions import Protocol
 
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.work.context import (
@@ -16,7 +17,7 @@ from tool_shed.webapp.model import (
 from tool_shed.webapp.model.mapping import ToolShedModelMapping
 
 
-class ProvidesAppContext:
+class ProvidesAppContext(Protocol):
     """For transaction-like objects to provide the shed convenience layer for
     database and event handling.
 
@@ -45,7 +46,7 @@ class ProvidesAppContext:
         return self.app.model
 
 
-class ProvidesUserContext(ProvidesAppContext):
+class ProvidesUserContext(ProvidesAppContext, Protocol):
     """For transaction-like objects to provide Galaxy convenience layer for
     reasoning about users.
 
@@ -72,7 +73,13 @@ class ProvidesUserContext(ProvidesAppContext):
         return not self.anonymous and user is not None and user.bootstrap_admin_user
 
 
-class SessionRequestContext(ProvidesUserContext):
+class ProvidesRepositoriesContext(ProvidesUserContext, Protocol):
+    @abc.abstractproperty
+    def repositories_hostname(self) -> str:
+        """Provide access to hostname used by target mercurial server."""
+
+
+class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
     @abc.abstractmethod
     def get_galaxy_session(self) -> Optional[GalaxySession]:
         ...
@@ -84,3 +91,60 @@ class SessionRequestContext(ProvidesUserContext):
     @abc.abstractproperty
     def response(self) -> GalaxyAbstractResponse:
         ...
+
+    @abc.abstractmethod
+    def url_builder(self):
+        ...
+
+
+class SessionRequestContextImpl(SessionRequestContext):
+    _app: ToolShedApp
+    _user: Optional[User]
+    _galaxy_session: Optional[GalaxySession]
+
+    def __init__(
+        self,
+        app: ToolShedApp,
+        request: GalaxyAbstractRequest,
+        response: GalaxyAbstractResponse,
+        user: Optional[User] = None,
+        galaxy_session: Optional[GalaxySession] = None,
+        url_builder=None,
+    ):
+        self._app = app
+        self._user = user
+        self._galaxy_session = galaxy_session
+        self._url_builder = url_builder
+        self.__request = request
+        self.__response = response
+
+    @property
+    def app(self) -> ToolShedApp:
+        return self._app
+
+    @property
+    def url_builder(self):
+        return self._url_builder
+
+    @property
+    def user(self) -> Optional[User]:
+        return self._user
+
+    def get_galaxy_session(self) -> Optional[GalaxySession]:
+        return self._galaxy_session
+
+    @property
+    def repositories_hostname(self) -> str:
+        return str(self.request.base).rstrip("/")
+
+    @property
+    def host(self):
+        return self.__request.host
+
+    @property
+    def request(self) -> GalaxyAbstractRequest:
+        return self.__request
+
+    @property
+    def response(self) -> GalaxyAbstractResponse:
+        return self.__response

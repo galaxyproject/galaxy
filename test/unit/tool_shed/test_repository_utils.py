@@ -1,3 +1,4 @@
+from tool_shed.context import ProvidesRepositoriesContext
 from tool_shed.util.repository_content_util import upload_tar
 from tool_shed.webapp.model import (
     Repository,
@@ -25,12 +26,11 @@ def test_create_repository(shed_app: TestToolShedApp, new_user: User):
     assert entry
 
 
-def test_upload_tar(shed_app: TestToolShedApp, new_repository: Repository):
+def test_upload_tar(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
     old_tip = new_repository.tip()
     upload_ok, _, _, alert, dirs_removed, files_removed = upload_tar(
-        shed_app,
-        "localhost",
+        provides_repositories,
         new_repository.user.username,
         new_repository,
         tar_resource,
@@ -42,18 +42,19 @@ def test_upload_tar(shed_app: TestToolShedApp, new_repository: Repository):
     assert files_removed == 0
     new_tip = new_repository.tip()
     assert old_tip != new_tip
-    changesets = new_repository.get_changesets_for_setting_metadata(shed_app)
+    changesets = new_repository.get_changesets_for_setting_metadata(provides_repositories.app)
     assert len(changesets) == 1
     for change in changesets:
         ctx = new_repository.hg_repo[change]
         assert str(ctx) == new_tip
 
 
-def test_upload_fails_if_contains_symlink(shed_app: TestToolShedApp, new_repository: Repository):
+def test_upload_fails_if_contains_symlink(
+    provides_repositories: ProvidesRepositoriesContext, new_repository: Repository
+):
     tar_resource = TEST_DATA_FILES.joinpath("safetar_with_symlink.tar")
     upload_ok, message, _, _, _, _ = upload_tar(
-        shed_app,
-        "localhost",
+        provides_repositories,
         new_repository.user.username,
         new_repository,
         tar_resource,
@@ -63,12 +64,11 @@ def test_upload_fails_if_contains_symlink(shed_app: TestToolShedApp, new_reposit
     assert "Invalid paths" in message
 
 
-def test_upload_dry_run_ok(shed_app: TestToolShedApp, new_repository: Repository):
+def test_upload_dry_run_ok(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     tar_resource = TEST_DATA_FILES.joinpath("column_maker/column_maker.tar")
     old_tip = new_repository.tip()
     upload_ok, _, _, alert, dirs_removed, files_removed = upload_tar(
-        shed_app,
-        "localhost",
+        provides_repositories,
         new_repository.user.username,
         new_repository,
         tar_resource,
@@ -83,11 +83,10 @@ def test_upload_dry_run_ok(shed_app: TestToolShedApp, new_repository: Repository
     assert old_tip == new_tip
 
 
-def test_upload_dry_run_failed(shed_app: TestToolShedApp, new_repository: Repository):
+def test_upload_dry_run_failed(provides_repositories: ProvidesRepositoriesContext, new_repository: Repository):
     tar_resource = TEST_DATA_FILES.joinpath("safetar_with_symlink.tar")
     upload_ok, message, _, _, _, _ = upload_tar(
-        shed_app,
-        "localhost",
+        provides_repositories,
         new_repository.user.username,
         new_repository,
         tar_resource,

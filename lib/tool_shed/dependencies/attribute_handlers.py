@@ -5,13 +5,13 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
 )
 
 from galaxy.util import (
     asbool,
     etree,
 )
-from galaxy.web import url_for
 from tool_shed.dependencies.tool import tag_attribute_handler
 from tool_shed.repository_types.util import (
     REPOSITORY_DEPENDENCY_DEFINITION_FILENAME,
@@ -24,12 +24,21 @@ from tool_shed.util import (
     xml_util,
 )
 
+if TYPE_CHECKING:
+    from tool_shed.context import ProvidesRepositoriesContext
+    from tool_shed.structured_app import ToolShedApp
+
+
 log = logging.getLogger(__name__)
 
 
 class RepositoryDependencyAttributeHandler:
-    def __init__(self, app, unpopulate):
-        self.app = app
+    trans: "ProvidesRepositoriesContext"
+    app: "ToolShedApp"
+
+    def __init__(self, trans: "ProvidesRepositoriesContext", unpopulate):
+        self.trans = trans
+        self.app = trans.app
         self.file_name = REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
         self.unpopulate = unpopulate
 
@@ -111,7 +120,7 @@ class RepositoryDependencyAttributeHandler:
         # From here on we're populating the toolshed and changeset_revision attributes if necessary.
         if not toolshed:
             # Default the setting to the current tool shed.
-            toolshed = str(url_for("/", qualified=True)).rstrip("/")
+            toolshed = str(self.trans.url_builder("/", qualified=True)).rstrip("/")
             elem.attrib["toolshed"] = toolshed
             altered = True
         if not changeset_revision:
@@ -188,8 +197,12 @@ class RepositoryDependencyAttributeHandler:
 
 
 class ToolDependencyAttributeHandler:
-    def __init__(self, app, unpopulate):
-        self.app = app
+    trans: "ProvidesRepositoriesContext"
+    app: "ToolShedApp"
+
+    def __init__(self, trans: "ProvidesRepositoriesContext", unpopulate):
+        self.trans = trans
+        self.app = trans.app
         self.file_name = TOOL_DEPENDENCY_DEFINITION_FILENAME
         self.unpopulate = unpopulate
 
@@ -198,7 +211,7 @@ class ToolDependencyAttributeHandler:
         Populate or unpopulate the tooshed and changeset_revision attributes of each <repository>
         tag defined within a tool_dependencies.xml file.
         """
-        rdah = RepositoryDependencyAttributeHandler(self.app, self.unpopulate)
+        rdah = RepositoryDependencyAttributeHandler(self.trans, self.unpopulate)
         tah = tag_attribute_handler.TagAttributeHandler(self.app, rdah, self.unpopulate)
         altered = False
         error_message = ""

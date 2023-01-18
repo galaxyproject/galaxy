@@ -1,3 +1,8 @@
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
+
 from routes import url_for
 
 from galaxy.util.tool_shed.common_util import (
@@ -19,16 +24,24 @@ from galaxy.util.tool_shed.common_util import (
     remove_protocol_from_tool_shed_url,
 )
 
+if TYPE_CHECKING:
+    from tool_shed.context import ProvidesRepositoriesContext
+    from tool_shed.webapp.model import (
+        Repository,
+        User,
+    )
 
-def generate_clone_url_for_repository_in_tool_shed(user, repository) -> str:
+
+def generate_clone_url_for(trans: "ProvidesRepositoriesContext", repository: "Repository") -> str:
+    return generate_clone_url_for_repository_in_tool_shed(trans.user, repository, trans.repositories_hostname)
+
+
+def generate_clone_url_for_repository_in_tool_shed(
+    user: Optional["User"], repository: "Repository", hostname: Optional[str] = None
+) -> str:
     """Generate the URL for cloning a repository that is in the tool shed."""
-    base_url = url_for("/", qualified=True).rstrip("/")
-    if user:
-        protocol, base = base_url.split("://")
-        username = f"{user.username}@"
-        return f"{protocol}://{username}{base}/repos/{repository.user.username}/{repository.name}"
-    else:
-        return f"{base_url}/repos/{repository.user.username}/{repository.name}"
+    base_url = hostname or url_for("/", qualified=True).rstrip("/")
+    return f"{base_url}/repos/{repository.user.username}/{repository.name}"
 
 
 __all__ = (

@@ -23,7 +23,6 @@ for deletion instead of writing new tests and modernizing the API.
 
 - reset_metadata_on_repositories
 - remove_repository_registry_entry
-- get_repository_revision_install_info
 - get_installable_revisions
 - The whole Groups API.
 - The whole Repository Revisions API.

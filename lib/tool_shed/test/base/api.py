@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 from typing import (
     Any,
     Dict,
@@ -38,6 +39,12 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
     def admin_api_interactor(self) -> ShedApiInteractor:
         return ShedApiInteractor(self.url, get_admin_api_key())
 
+    def _api_interactor_for_key(self, key: str) -> ShedApiInteractor:
+        return self._api_interactor(key)
+
+    def populator_for_key(self, key: str) -> ToolShedPopulator:
+        return self._get_populator(self._api_interactor_for_key(key))
+
     @property
     def api_interactor(self) -> ShedApiInteractor:
         user_api_key = get_user_api_key()
@@ -46,7 +53,7 @@ class ShedBaseTestCase(DrivenFunctionalTestCase):
             password = "testpassword"
             ensure_user_with_email(self.admin_api_interactor, email, password)
             user_api_key = self.admin_api_interactor.create_api_key(email, password)
-        return self._api_interactor(user_api_key)
+        return self._api_interactor_for_key(user_api_key)
 
     def _api_interactor_by_credentials(self, email: str, password: str) -> ShedApiInteractor:
         ensure_user_with_email(self.admin_api_interactor, email, password)
@@ -94,6 +101,25 @@ class ShedGalaxyInteractorApi(GalaxyInteractorApi):
         interactor_kwds["master_api_key"] = get_galaxy_admin_api_key()
         interactor_kwds["api_key"] = get_galaxy_user_key()
         super().__init__(**interactor_kwds)
+
+
+def make_skip_if_api_version_wrapper(version):
+    def wrapper(method):
+        @wraps(method)
+        def wrapped_method(api_test_case, *args, **kwd):
+            interactor: ShedApiInteractor = api_test_case.api_interactor
+            api_version = interactor.api_version
+            if api_version == version:
+                raise pytest.skip(f"{version} tool shed API found, skipping test")
+            return method(api_test_case, *args, **kwd)
+
+        return wrapped_method
+
+    return wrapper
+
+
+skip_if_api_v1 = make_skip_if_api_version_wrapper("v1")
+skip_if_api_v2 = make_skip_if_api_version_wrapper("v2")
 
 
 class ShedApiTestCase(ShedBaseTestCase, UsesShedApi):

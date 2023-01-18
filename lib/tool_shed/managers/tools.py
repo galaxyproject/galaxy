@@ -40,5 +40,5 @@ def search(trans: SessionRequestContext, q: str, page: int = 1, page_size: int =
     )
 
     results = tool_search.search(trans.app, search_term, page, page_size, boosts)
-    results["hostname"] = trans.url_builder("/", qualified=True)
+    results["hostname"] = trans.repositories_hostname
     return results

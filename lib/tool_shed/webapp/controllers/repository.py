@@ -1235,7 +1235,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 cur_includes_tools_for_display_in_tool_panel,
                 cur_has_repository_dependencies,
                 cur_has_repository_dependencies_only_if_compiling_contained_td,
-            ) = repository_util.get_repo_info_dict(trans.app, trans.user, repository_id, changeset_revision)
+            ) = repository_util.get_repo_info_dict(trans, repository_id, changeset_revision)
             if cur_has_repository_dependencies and not has_repository_dependencies:
                 has_repository_dependencies = True
             if (
@@ -2119,7 +2119,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
         rmm = repository_metadata_manager.RepositoryMetadataManager(
-            app=trans.app, user=trans.user, repository=repository, resetting_all_metadata_on_repository=True
+            trans, repository=repository, resetting_all_metadata_on_repository=True
         )
         rmm.reset_all_metadata_on_repository_in_tool_shed()
         rmm_metadata_dict = rmm.get_metadata_dict()
@@ -2138,9 +2138,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def reset_metadata_on_my_writable_repositories_in_tool_shed(self, trans, **kwd):
-        rmm = repository_metadata_manager.RepositoryMetadataManager(
-            trans.app, trans.user, resetting_all_metadata_on_repository=True
-        )
+        rmm = repository_metadata_manager.RepositoryMetadataManager(trans, resetting_all_metadata_on_repository=True)
         if "reset_metadata_on_selected_repositories_button" in kwd:
             message, status = rmm.reset_metadata_on_selected_repositories(**kwd)
         else:
