@@ -597,7 +597,7 @@ if [ -n "$marker" ]; then
 else
     marker_args=()
 fi
-args=(-v $debug $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
+args=(--ignore=packages -v $debug $structured_data_args --html "$report_file" --self-contained-html $coverage_arg $xunit_args $extra_args "${marker_args[@]}" "$@")
 "$test_script" "${args[@]}"
 exit_status=$?
 echo "Testing complete. HTML report is in \"$report_file\"." 1>&2
