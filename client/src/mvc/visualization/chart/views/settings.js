@@ -27,7 +27,7 @@ export default Backbone.View.extend({
                     self.chart.settings.set(name, input.value);
                 }
             });
-            const instance = appendVueComponent(this.$el, FormDisplay, {
+            const instance = appendVueComponent(this.el, FormDisplay, {
                 inputs: inputs,
             });
             instance.$on("onChange", (data) => {

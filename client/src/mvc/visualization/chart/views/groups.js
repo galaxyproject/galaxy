@@ -75,7 +75,7 @@ var GroupView = Backbone.View.extend({
                             params[name] = input.value;
                         });
                         self.redraw(params);
-                        const instance = appendVueComponent(self.$el, FormDisplay, {
+                        const instance = appendVueComponent(self.el, FormDisplay, {
                             inputs: inputs,
                         });
                         instance.$on("onChange", (data) => {
