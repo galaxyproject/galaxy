@@ -1,6 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import UtcDate from "./UtcDate.vue";
+import { format, parseISO } from "date-fns";
 
 describe("UTCDate component", () => {
     const localVue = getLocalVue();
@@ -16,6 +17,6 @@ describe("UTCDate component", () => {
         expect(wrapper.text()).toContain("years ago");
 
         await wrapper.setProps({ mode: "pretty" });
-        expect(wrapper.text()).toBe("Wednesday Oct 21st 16:29:00 2015 UTC");
+        expect(wrapper.text()).toBe(format(parseISO("2015-10-21T16:29:00.000Z"), "eeee MMM do H:mm:ss yyyy zz"));
     });
 });
