@@ -32,8 +32,7 @@ export const mountVueComponent = (ComponentDefinition) => {
     return (propsData, el) => new component({ store, propsData, el });
 };
 
-export const appendVueComponent = (el, ComponentDefinition, propsData = {}) => {
-    // TODO:  this doesn't append, it wipes out the element and replaces contents?
+export const replaceChildrenWithComponent = (el, ComponentDefinition, propsData = {}) => {
     const container = document.createElement("div");
     el.replaceChildren(container);
     const component = Vue.extend(ComponentDefinition);
