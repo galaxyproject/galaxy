@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import Vue from "vue";
-import ContentItem from "./ContentItem.vue";
-import { ref } from "vue";
+import type { PropType } from "vue";
 import type { components } from "@/schema";
+import { ref } from "vue";
+import ContentItem from "./ContentItem.vue";
 
-defineProps<{
-    dsc: components.DCObject;
-}>();
+defineProps({
+    dsc: {
+        type: Object as PropType<components["schemas"]["DCObject"]>,
+        required: true,
+    },
+});
 
 const expandCollections = ref({});
 const expandDatasets = ref({});
