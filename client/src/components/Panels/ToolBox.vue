@@ -8,6 +8,7 @@
 
                     <div class="panel-header-buttons">
                         <b-button-group>
+                            <filters-button />
                             <favorites-button v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />
                             <panel-view-button
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
@@ -73,9 +74,9 @@ import ToolSearch from "./Common/ToolSearch";
 import { UploadButton } from "components/Upload";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import FavoritesButton from "./Buttons/FavoritesButton";
+import FiltersButton from "./Buttons/FiltersButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import { filterToolSections, filterTools, hasResults } from "./utilities";
-import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
 
@@ -83,6 +84,7 @@ export default {
     components: {
         UploadButton,
         FavoritesButton,
+        FiltersButton,
         PanelViewButton,
         ToolSection,
         ToolSearch,
@@ -137,10 +139,6 @@ export default {
             } else {
                 return hasResults(this.results) ? filterTools(this.toolbox, this.results) : this.toolbox;
             }
-        },
-        isUser() {
-            const Galaxy = getGalaxyInstance();
-            return !!(Galaxy.user && Galaxy.user.id);
         },
         workflows() {
             return [
