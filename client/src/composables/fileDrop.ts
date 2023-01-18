@@ -1,5 +1,6 @@
 import { ref, unref } from "vue";
-import { useEventListener } from "@vueuse/core";
+import { useEventListener, type MaybeComputedRef } from "@vueuse/core";
+import { wait } from "@/utils/wait";
 
 /**
  * Custom File-Drop composable
@@ -7,18 +8,26 @@ import { useEventListener } from "@vueuse/core";
  * @param onDrop callback function called when drop occurs
  * @param solo when true, only reacts if no modal is open
  */
-export function useFileDrop(dropZone, onDrop, solo) {
+export function useFileDrop(
+    dropZone: MaybeComputedRef<EventTarget | null | undefined>,
+    onDrop: (event: DragEvent) => void,
+    solo: MaybeComputedRef<boolean>
+) {
     const isFileOverDocument = ref(false);
     const isFileOverDropZone = ref(false);
 
-    const dragBlocked = ref(false);
+    // blocks drag events in this composable, to avoid drag events in unwanted situations
+    let dragBlocked = false;
+
+    // keeps track if the drag has exited, to avoid premature drag canceling
+    let hasExited = true;
 
     // Don't react to page-internal drag events
     useEventListener(
         document.body,
         "dragstart",
         () => {
-            dragBlocked.value = true;
+            dragBlocked = true;
         },
         true
     );
@@ -27,9 +36,10 @@ export function useFileDrop(dropZone, onDrop, solo) {
         document.body,
         "dragover",
         (event) => {
-            if (!dragBlocked.value) {
+            if (!dragBlocked) {
                 // prevent the browser from opening the file
                 event.preventDefault();
+                hasExited = false;
             }
         },
         true
@@ -39,40 +49,53 @@ export function useFileDrop(dropZone, onDrop, solo) {
         document.body,
         "drop",
         (event) => {
-            if (!dragBlocked.value) {
+            if (!dragBlocked) {
                 // prevent the browser from opening the file
                 event.preventDefault();
 
                 if (isFileOverDropZone.value && isFileOverDocument.value) {
-                    unref(onDrop)(event);
+                    unref(onDrop)(event as DragEvent);
                 }
             }
             isFileOverDocument.value = false;
-            dragBlocked.value = false;
+            dragBlocked = false;
+            hasExited = true;
         },
         true
     );
 
-    useEventListener(
-        document.body,
-        "dragend",
-        () => {
-            // reset on drag end
-            isFileOverDocument.value = false;
-            isFileOverDropZone.value = false;
-            dragBlocked.value = false;
-        },
-        true
-    );
+    /** Reset all variables */
+    const reset = () => {
+        isFileOverDocument.value = false;
+        isFileOverDropZone.value = false;
+        dragBlocked = false;
+        hasExited = true;
+    };
+
+    useEventListener(document.body, "dragend", reset, true);
+
+    useEventListener(document.body, "dragleave", async () => {
+        hasExited = true;
+
+        // This event may have been triggered by components
+        // which have not been properly childed to the body yet.
+        // Wait a bit, and check if hasExited is still true.
+        await wait(100);
+
+        if (hasExited) {
+            reset();
+        }
+    });
 
     useEventListener(
         document.body,
         "dragenter",
         (event) => {
             // init values if drag is possible
-            if (!dragBlocked.value && !(unref(solo) && isAnyModalOpen())) {
+            if (!dragBlocked && !(unref(solo) && isAnyModalOpen())) {
                 isFileOverDocument.value = true;
                 isFileOverDropZone.value = false;
+                hasExited = false;
 
                 event.preventDefault();
             }
@@ -90,6 +113,7 @@ export function useFileDrop(dropZone, onDrop, solo) {
         "dragenter",
         () => {
             isFileOverDropZone.value = true;
+            hasExited = false;
         },
         true
     );
@@ -99,6 +123,7 @@ export function useFileDrop(dropZone, onDrop, solo) {
         "dragleave",
         () => {
             isFileOverDropZone.value = false;
+            hasExited = false;
         },
         true
     );
