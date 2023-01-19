@@ -105,6 +105,7 @@ export interface NewStep {
     tooltip?: string;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
+    when?: string;
     workflow_outputs?: WorkflowOutput[];
 }
 

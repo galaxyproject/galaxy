@@ -1,12 +1,7 @@
 <template>
-    <g :id="id" class="ribbon">
+    <g :id="id" :class="ribbonClasses">
         <g v-for="svgLine in paths" :key="svgLine">
-            <path
-                v-b-tooltip:hover="`my message`"
-                class="ribbon-outer"
-                :d="svgLine"
-                :stroke-width="stroke.outerStroke"
-                fill="none"></path>
+            <path class="ribbon-outer" :d="svgLine" :stroke-width="stroke.outerStroke" fill="none"></path>
             <path :class="innerClass" :d="svgLine" :stroke-width="stroke.innerStroke" fill="none"></path>
         </g>
     </g>
@@ -23,12 +18,14 @@ const props = withDefaults(
         inputIsMappedOver: boolean;
         outputIsMappedOver: boolean;
         connectionIsValid?: boolean;
+        nullable?: boolean;
     }>(),
     {
         id: undefined,
         inputIsMappedOver: false,
         outputIsMappedOver: false,
         connectionIsValid: true,
+        nullable: false,
     }
 );
 
@@ -47,6 +44,7 @@ const stroke = computed(() => {
     return { innerStroke, outerStroke };
 });
 
+const ribbonClasses = computed(() => (props.nullable ? "ribbon dashed" : "ribbon"));
 const innerClass = computed(() => (props.connectionIsValid ? "ribbon-inner" : "ribbon-inner ribbon-inner-invalid"));
 
 const offsets = computed(() => {

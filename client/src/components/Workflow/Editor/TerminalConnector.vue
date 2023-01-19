@@ -5,7 +5,8 @@
         :position="position"
         :output-is-mapped-over="outputIsMappedOver"
         :input-is-mapped-over="inputIsMappedOver"
-        :connection-is-valid="connectionIsValid"></raw-connector>
+        :connection-is-valid="connectionIsValid"
+        :nullable="outputIsOptional"></raw-connector>
 </template>
 
 <script lang="ts" setup>
@@ -23,6 +24,14 @@ const stepStore = useWorkflowStepStore();
 const connectionStore = useConnectionStore();
 const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.output.stepId]?.isCollection);
 const inputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.input.stepId]?.isCollection);
+const outputIsOptional = computed(() => {
+    return Boolean(
+        stepStore.getStep(props.connection.output.stepId)?.when ||
+            stepStore
+                .getStep(props.connection.output.stepId)
+                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional)
+    );
+});
 
 // move into connection store ?
 // move all of terminal logic into connection store ?
