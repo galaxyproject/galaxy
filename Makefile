@@ -163,6 +163,14 @@ skip-client: ## Run only the server, skipping the client build.
 
 node-deps: ## Install NodeJS dependencies.
 ifndef YARN
+	@echo "Could not find yarn, which is required to install the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
+	false;
+else
+	yarn install $(YARN_INSTALL_OPTS)
+endif
+
+client-node-deps: ## Install NodeJS dependencies for the client.
+ifndef YARN
 	@echo "Could not find yarn, which is required to build the Galaxy client.\nTo install yarn, please visit \033[0;34mhttps://yarnpkg.com/en/docs/install\033[0m for instructions, and package information for all platforms.\n"
 	false;
 else
@@ -176,7 +184,7 @@ build-api-schema:
 remove-api-schema:
 	rm _schema.yaml
 
-update-client-api-schema: node-deps build-api-schema
+update-client-api-schema: client-node-deps build-api-schema
 	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
@@ -185,34 +193,37 @@ lint-api-schema: build-api-schema
 	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
 	$(MAKE) remove-api-schema
 
-client: node-deps ## Rebuild client-side artifacts for local development.
+installed-client: node-deps ## Install prebuilt client as defined in root package.json
+	yarn install && yarn run stage
+
+client: client-node-deps ## Rebuild client-side artifacts for local development.
 	cd client && yarn run build
 
-client-production: node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
+client-production: client-node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
 	cd client && yarn run build-production
 
-client-production-maps: node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
+client-production-maps: client-node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
 	cd client && yarn run build-production-maps
 
-client-format: node-deps ## Reformat client code
+client-format: client-node-deps ## Reformat client code
 	cd client && yarn run format
 
-client-watch: node-deps ## A useful target for parallel development building.  See also client-dev-server.
+client-watch: client-node-deps ## A useful target for parallel development building.  See also client-dev-server.
 	cd client && yarn run watch
 
-client-dev-server: node-deps ## Starts a webpack dev server for client development (HMR enabled)
+client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
 	cd client && yarn run serve
 
-client-test: node-deps  ## Run JS unit tests
+client-test: client-node-deps  ## Run JS unit tests
 	cd client && yarn run test
 
-client-eslint-precommit: node-deps # Client linting for pre-commit hook; skips glob input and takes specific paths
+client-eslint-precommit: client-node-deps # Client linting for pre-commit hook; skips glob input and takes specific paths
 	cd client && yarn run eslint-precommit
 
-client-eslint: node-deps # Run client linting
+client-eslint: client-node-deps # Run client linting
 	cd client && yarn run eslint
 
-client-format-check: node-deps # Run client formatting check
+client-format-check: client-node-deps # Run client formatting check
 	cd client && yarn run format-check
 
 client-lint: client-eslint client-format-check ## ES lint and check format of client
