@@ -111,7 +111,7 @@
   },
   "scripts": {
     "watch": "gulp && yarn run save-build-hash && yarn run webpack-watch",
-    "serve": "NODE_ENV=development gulp && webpack serve",
+    "serve": "NODE_OPTIONS=--max-old-space-size=4096 && NODE_ENV=development gulp && webpack serve",
     "build": "NODE_ENV=development gulp && webpack && yarn run save-build-hash",
     "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run save-build-hash",
     "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run save-build-hash",
