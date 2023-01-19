@@ -4,7 +4,7 @@
         <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
     <command><![CDATA[
-        mkdir '$dbnsfp.extra_files_path' &&
+        mkdir -p '$dbnsfp.extra_files_path' &&
         bgzip -c '$input' > '$dbnsfp.extra_files_path/dbNSFP.gz' &&
         tabix -s 1 -b 2 -e 2 '$dbnsfp.extra_files_path/dbNSFP.gz'
     ]]></command>
