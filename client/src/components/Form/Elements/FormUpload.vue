@@ -1,5 +1,4 @@
 <script setup>
-
 const props = defineProps({
     value: {
         type: Object,
@@ -11,15 +10,12 @@ const props = defineProps({
 });
 
 function readFile() {
-
+    this.console.log("uploaded file!");
 }
-
-
 </script>
 
-<script></script>
-
 <template>
-    <div> HERE I AM! I'M FORMUPLOAD
+    <div>
+        <input type="file" @change="readFile" ref="file" />
     </div>
 </template>
