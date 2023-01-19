@@ -39,7 +39,7 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
-            <FormConditional v-if="isSubworkflow" :step="step" v-on="$listeners"/>
+            <FormConditional v-if="isSubworkflow" :step="step" v-on="$listeners" />
             <FormDisplay
                 v-if="configForm?.inputs"
                 :id="formDisplayId"
@@ -62,7 +62,7 @@ import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
-import FormConditional from "./FormConditional.vue"
+import FormConditional from "./FormConditional.vue";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
@@ -79,7 +79,16 @@ const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
 const stepStore = useWorkflowStepStore();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label?.value);
-const stepTitle = computed(() => (label?.value || contentId?.value || name.value)!);
+const stepTitle = computed(() => {
+    if (label?.value) {
+        return label.value;
+    }
+    if (isSubworkflow.value) {
+        return name.value;
+    } else {
+        return contentId?.value || name.value;
+    }
+});
 const nodeIcon = computed(() => WorkflowIcons[type.value]);
 const formDisplayId = computed(() => stepId.value.toString());
 const isSubworkflow = computed(() => type.value === "subworkflow");

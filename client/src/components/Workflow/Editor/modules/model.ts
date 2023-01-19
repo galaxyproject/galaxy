@@ -28,7 +28,7 @@ export async function fromSimple(data: Workflow, appendData = false, defaultPosi
             step.position.top += defaultPosition.top;
             Object.values(step.input_connections).forEach((link) => {
                 if (link === undefined) {
-                    console.error("input connections invalid", step.input_connections)
+                    console.error("input connections invalid", step.input_connections);
                 } else {
                     let linkArray: ConnectionOutputLink[];
                     if (!Array.isArray(link)) {
@@ -40,7 +40,7 @@ export async function fromSimple(data: Workflow, appendData = false, defaultPosi
                         link.id += stepIdOffset;
                     });
                 }
-           });
+            });
         }
     });
     Object.values(data.steps).map((step) => {

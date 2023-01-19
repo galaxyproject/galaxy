@@ -1,14 +1,13 @@
 <script setup lang="ts">
-
 import FormElement from "@/components/Form/FormElement.vue";
-import { computed } from 'vue';
-import type { Step } from '@/stores/workflowStepStore';
+import { computed } from "vue";
+import type { Step } from "@/stores/workflowStepStore";
 
 const emit = defineEmits<{
     (e: "onUpdateStep", value: Step): void;
 }>();
 const props = defineProps<{
-    step: Step
+    step: Step;
 }>();
 
 const conditionalDefined = computed(() => {
@@ -28,17 +27,16 @@ function onSkipBoolean(value: boolean) {
         emit("onUpdateStep", newStep);
     }
 }
-
 </script>
 
 <template>
     <FormElement
-    id="__conditional"
-    :value="conditionalDefined"
-    title="Conditionally skip step?"
-    help="Set to true and connect a boolean parameter that determines whether step will be skipped"
-    type="boolean"
-    @input="onSkipBoolean"></FormElement>
+        id="__conditional"
+        :value="conditionalDefined"
+        title="Conditionally skip step?"
+        help="Set to true and connect a boolean parameter that determines whether step will be skipped"
+        type="boolean"
+        @input="onSkipBoolean"></FormElement>
     <!-- We don't seem to have a disabled text field
         <FormElement
             v-if="setConditional"

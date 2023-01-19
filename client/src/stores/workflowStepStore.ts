@@ -244,7 +244,7 @@ export function stepToConnections(step: Step): Connection[] {
     if (step.input_connections) {
         Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
             if (outputArray === undefined) {
-                return
+                return;
             }
             if (!Array.isArray(outputArray)) {
                 outputArray = [outputArray];
