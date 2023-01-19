@@ -25,7 +25,6 @@
             exit 1;
         fi 
         &&
-        cp input.bgz.tbi '$output1' &&
         tabix -l input.bgz
     ]]></command>
     <inputs>
@@ -37,7 +36,7 @@
         <param format="bgzip" name="bgzip" type="data" label="BGZIP file"/>
     </inputs>
     <outputs>
-        <data format="tabix" name="output1"/>
+        <data format="tabix" name="output1" from_work_dir="input.bgz.tbi"/>
     </outputs>
     <tests>
         <test>
