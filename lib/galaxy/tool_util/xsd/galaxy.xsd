@@ -1498,6 +1498,14 @@ select an option for a test.
       <xs:element name="composite_data" type="TestCompositeData" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="metadata" type="TestParamMetadata" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
+    <xs:attribute name="location" type="xs:anyURI">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">URL that points to a remote input file that will be directly uploaded to Galaxy.
+Please use this option only when is not possible to include the files in the `test-data` folder, since
+this is more error prone due to external factors like remote availability.
+You don't need to specify the `value` attribute in this case.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">This value must match the name of the
