@@ -52,16 +52,16 @@ export const useWorkflowStateStore = defineStore("workflowStateStore", {
     actions: {
         setInputTerminalPosition(stepId: number, inputName: string, position: TerminalPosition) {
             if (this.inputTerminals[stepId]) {
-                Vue.set(this.inputTerminals, stepId, { [inputName]: position });
-            } else {
                 Vue.set(this.inputTerminals[stepId]!, inputName, position);
+            } else {
+                Vue.set(this.inputTerminals, stepId, { [inputName]: position });
             }
         },
         setOutputTerminalPosition(stepId: number, outputName: string, position: TerminalPosition) {
-            if (!this.outputTerminals[stepId]) {
-                Vue.set(this.outputTerminals, stepId, { [outputName]: position });
-            } else {
+            if (this.outputTerminals[stepId]) {
                 Vue.set(this.outputTerminals[stepId]!, outputName, position);
+            } else {
+                Vue.set(this.outputTerminals, stepId, { [outputName]: position });
             }
         },
         deleteInputTerminalPosition(stepId: number, inputName: string) {
