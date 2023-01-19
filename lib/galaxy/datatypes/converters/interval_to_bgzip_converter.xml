@@ -12,7 +12,8 @@
         <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
     <command><![CDATA[
-        grep -e '^"#"' -e '^track' -v '$input1' 
+        ## Skip any lines starting with '#' and 'track'
+        grep -e '^#' -e '^track' -v '$input1' 
         |
         sort 
         #if $input1.is_of_type('vcf')
@@ -80,6 +81,7 @@
             </output>
             <assert_command>
                 <has_text text="-k1,1 -k2,2n"/>
+                <has_text_matching expression="^#" negate="true"/>
             </assert_command>
         </test>
         <test>
