@@ -1,6 +1,8 @@
-import { ref, unref } from "vue";
+import { ref, unref, type Ref } from "vue";
 import { useEventListener, type MaybeComputedRef } from "@vueuse/core";
 import { wait } from "@/utils/wait";
+
+export type FileDropHandler = (event: DragEvent) => void;
 
 /**
  * Custom File-Drop composable
@@ -10,7 +12,7 @@ import { wait } from "@/utils/wait";
  */
 export function useFileDrop(
     dropZone: MaybeComputedRef<EventTarget | null | undefined>,
-    onDrop: (event: DragEvent) => void,
+    onDrop: Ref<FileDropHandler> | FileDropHandler,
     solo: MaybeComputedRef<boolean>
 ) {
     const isFileOverDocument = ref(false);
@@ -54,7 +56,8 @@ export function useFileDrop(
                 event.preventDefault();
 
                 if (isFileOverDropZone.value && isFileOverDocument.value) {
-                    unref(onDrop)(event as DragEvent);
+                    const dropHandler = unref(onDrop);
+                    dropHandler(event as DragEvent);
                 }
             }
             isFileOverDocument.value = false;
