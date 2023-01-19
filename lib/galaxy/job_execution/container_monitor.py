@@ -53,7 +53,7 @@ def main():
 
     _get_ip: GetIpCallable
     if get_ip_method is not None:
-        method, arg = [e.strip() for e in get_ip_method.split(":", 1)]
+        method, arg = (e.strip() for e in get_ip_method.split(":", 1))
         if method == "command":
             _get_ip = partial(get_ip_command, arg)
         else:

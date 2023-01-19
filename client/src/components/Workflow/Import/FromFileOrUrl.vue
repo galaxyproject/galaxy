@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import axios, { type AxiosError } from "axios";
 import { computed, ref, type Ref } from "vue";
-import { safePath } from "@/utils/redirect";
+import { withPrefix } from "@/utils/redirect";
 import { getRedirectOnImportPath } from "../redirectPath";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import { useRouter } from "vue-router/composables";
@@ -45,7 +45,7 @@ async function submit(ev: SubmitEvent) {
     loading.value = true;
 
     try {
-        const response = await axios.post(safePath("/api/workflows"), formData);
+        const response = await axios.post(withPrefix("/api/workflows"), formData);
         const path = getRedirectOnImportPath(response.data);
 
         router.push(path);

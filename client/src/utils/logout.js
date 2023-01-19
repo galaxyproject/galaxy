@@ -1,6 +1,6 @@
 import axios from "axios";
 import { getGalaxyInstance } from "app";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 
 /**
  * Handles user logout.  Invalidates the current session, checks to see if we
@@ -12,7 +12,7 @@ export function userLogout(logoutAll = false) {
     const session_csrf_token = Galaxy.session_csrf_token;
     const url = `/user/logout?session_csrf_token=${session_csrf_token}&logout_all=${logoutAll}`;
     axios
-        .get(safePath(url))
+        .get(withPrefix(url))
         .then((response) => {
             if (Galaxy.user) {
                 Galaxy.user.clearSessionStorage();
@@ -22,9 +22,9 @@ export function userLogout(logoutAll = false) {
                 const provider = localStorage.getItem("galaxy-provider");
                 if (provider) {
                     localStorage.removeItem("galaxy-provider");
-                    return axios.get(safePath(`/authnz/logout?provider=${provider}`));
+                    return axios.get(withPrefix(`/authnz/logout?provider=${provider}`));
                 }
-                return axios.get(safePath("/authnz/logout"));
+                return axios.get(withPrefix("/authnz/logout"));
             } else {
                 // Otherwise pass through the initial logout response
                 return response;
@@ -34,7 +34,7 @@ export function userLogout(logoutAll = false) {
             if (response.data?.redirect_uri) {
                 window.top.location.href = response.data.redirect_uri;
             } else {
-                window.top.location.href = safePath(post_user_logout_href);
+                window.top.location.href = withPrefix(post_user_logout_href);
             }
         });
 }
@@ -52,5 +52,5 @@ export function userLogoutClient() {
     const Galaxy = getGalaxyInstance();
     Galaxy.user?.clearSessionStorage();
     const post_user_logout_href = Galaxy.config.post_user_logout_href;
-    window.top.location.href = safePath(post_user_logout_href);
+    window.top.location.href = withPrefix(post_user_logout_href);
 }

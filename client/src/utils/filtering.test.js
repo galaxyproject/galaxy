@@ -28,12 +28,32 @@ describe("filtering", () => {
         const queryDict = HistoryFilters.getQueryDict("name of item");
         expect(queryDict["name-contains"]).toBe("name of item");
     });
+    test("parse any for default parameters", () => {
+        const filters = HistoryFilters.getFilters("deleted:any");
+        expect(filters.length).toBe(0);
+        const queryDict = HistoryFilters.getQueryDict("deleted:any");
+        expect(Object.keys(queryDict).length).toBe(0);
+        const filtersAny = HistoryFilters.getFilters("name:any");
+        expect(filtersAny[0][0]).toBe("name");
+        expect(filtersAny[0][1]).toBe("any");
+    });
     test("parse check filter", () => {
+        expect(HistoryFilters.checkFilter(filterTexts[0], "name", "name of item")).toBe(true);
         expect(HistoryFilters.checkFilter(filterTexts[0], "tag", "first")).toBe(true);
         expect(HistoryFilters.checkFilter(filterTexts[0], "tag", "second")).toBe(false);
         expect(HistoryFilters.checkFilter(filterTexts[0], "deleted", "false")).toBe(true);
         expect(HistoryFilters.checkFilter(filterTexts[0], "visible", true)).toBe(true);
         expect(HistoryFilters.checkFilter(filterTexts[0], "visible", "false")).toBe(false);
+    });
+    test("parse get filter value", () => {
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "name")).toBe("name of item");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid", "gt")).toBe("10");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "hid", "lt")).toBe("100");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "tag")).toBe("first");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "deleted")).toBe("False");
+        expect(HistoryFilters.getFilterValue(filterTexts[0], "visible")).toBe("TRUE");
+        expect(HistoryFilters.getFilterValue(filterTexts[1], "hid", "gt")).toBe("10");
+        expect(HistoryFilters.getFilterValue(filterTexts[1], "create_time", "gt")).toBe("2021-01-01");
     });
     test("parse filter text as entries", () => {
         filterTexts.forEach((filterText) => {

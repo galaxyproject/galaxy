@@ -1108,7 +1108,7 @@ class MarkerMap(LinkageStudies):
                 try:
                     int(chrm)
                 except ValueError:
-                    if not chrm.lower()[0] in ("x", "y", "m"):
+                    if chrm.lower()[0] not in ("x", "y", "m"):
                         return False
 
             except ValueError:

@@ -157,8 +157,8 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 - Galaxy follows [PEP-8](https://www.python.org/dev/peps/pep-0008/), with
   particular emphasis on readability being the ultimate goal:
   - 4 spaces (not tabs!) per indentation level
-  - divergences from PEP-8 are listed in the `[flake8]` section of the
-    `.flake8` file
+  - divergences from PEP-8 are listed in the `[flake8]` section of the `.flake8`
+    file and in the `[tool.ruff]` section of the `pyproject.toml` file.
   - The Python code base is automatically formatted using
     [isort](https://pycqa.github.io/isort/) (for imports) and
     [black](https://black.readthedocs.io). To easily format your Python code

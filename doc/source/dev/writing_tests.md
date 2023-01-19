@@ -196,7 +196,7 @@ or simply "Framework Tests".
 Adding a tool test is as simple as finding a related tool in the sample
 tools (``test/functional/tools``) and adding a test block to that file
 or adding a new tool to this directory and referencing it in the
-sample tool configuration XML (``test/functional/tools/samples_tool_conf.xml``).
+sample tool configuration XML (``test/functional/tools/sample_tool_conf.xml``).
 
 General information on writing Galaxy Tool Tests can be found in Planemo's
 documentation - for instance in the [Test-Driven Development](https://planemo.readthedocs.io/en/latest/writing_advanced.html#test-driven-development)

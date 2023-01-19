@@ -19,7 +19,7 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { errorMessageAsString } from "utils/simple-error";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 
 Vue.use(BootstrapVue);
 
@@ -54,7 +54,7 @@ export default {
     methods: {
         onClick() {
             axios
-                .post(safePath("/api/histories"), { history_id: this.args.history_id })
+                .post(withPrefix("/api/histories"), { history_id: this.args.history_id })
                 .then(() => {
                     this.imported = true;
                 })

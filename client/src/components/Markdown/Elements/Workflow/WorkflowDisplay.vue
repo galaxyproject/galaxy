@@ -44,7 +44,7 @@
 </template>
 
 <script>
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 import LoadingSpan from "components/LoadingSpan";
 import WorkflowTree from "./WorkflowTree";
@@ -78,10 +78,10 @@ export default {
             return this.itemContent ? this.itemContent.name : "...";
         },
         downloadUrl() {
-            return safePath(`/api/workflows/${this.args.workflow_id}/download?format=json-download`);
+            return withPrefix(`/api/workflows/${this.args.workflow_id}/download?format=json-download`);
         },
         importUrl() {
-            return safePath(`/workflow/imp?id=${this.args.workflow_id}`);
+            return withPrefix(`/workflow/imp?id=${this.args.workflow_id}`);
         },
         itemUrl() {
             return `/api/workflows/${this.args.workflow_id}/download?style=preview`;

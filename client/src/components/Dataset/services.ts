@@ -1,6 +1,6 @@
 import type { FetchArgType } from "openapi-typescript-fetch";
 import { fetcher } from "@/schema";
-import { safePath } from "@/utils/redirect";
+import { withPrefix } from "@/utils/redirect";
 
 const _getDatasets = fetcher.path("/api/datasets").method("get").create();
 type GetDatasetsApiOptions = FetchArgType<typeof _getDatasets>;
@@ -67,7 +67,7 @@ export async function updateTags(
 
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
     // TODO: historyDatasetId is wrong here, we should expose the route without forcing to provide a history id
-    return safePath(`/api/histories/${historyDatasetId}/contents/${historyDatasetId}/display?filename=${path}`);
+    return withPrefix(`/api/histories/${historyDatasetId}/contents/${historyDatasetId}/display?filename=${path}`);
 }
 
 const getDataset = fetcher.path("/api/histories/{history_id}/contents/{id}").method("get").create();

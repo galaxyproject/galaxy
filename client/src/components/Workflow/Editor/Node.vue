@@ -12,48 +12,50 @@
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
             <loading-span v-if="isLoading" message="Loading details" />
-            <b-button
-                v-b-tooltip.hover
-                class="node-destroy py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="destroy node"
-                title="Remove"
-                @click.prevent.stop="remove">
-                <i class="fa fa-times" />
-            </b-button>
-            <b-button
-                v-if="isEnabled"
-                :id="popoverId"
-                class="node-recommendations py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="tool recommendations">
-                <i class="fa fa-arrow-right" />
-            </b-button>
-            <b-popover
-                v-if="isEnabled"
-                :target="popoverId"
-                triggers="hover"
-                placement="bottom"
-                :show.sync="popoverShow">
-                <Recommendations
-                    v-if="popoverShow"
-                    :step-id="id"
-                    :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate" />
-            </b-popover>
-            <b-button
-                v-if="canClone"
-                v-b-tooltip.hover
-                class="node-clone py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="clone node"
-                title="Duplicate"
-                @click.prevent.stop="onClone">
-                <i class="fa fa-files-o" />
-            </b-button>
+            <b-button-group class="float-right">
+                <b-button
+                    v-if="canClone"
+                    v-b-tooltip.hover
+                    class="node-clone py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="clone node"
+                    title="Duplicate"
+                    @click.prevent.stop="onClone">
+                    <i class="fa fa-files-o" />
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    class="node-destroy py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="destroy node"
+                    title="Remove"
+                    @click.prevent.stop="remove">
+                    <i class="fa fa-times" />
+                </b-button>
+                <b-button
+                    v-if="isEnabled"
+                    :id="popoverId"
+                    class="node-recommendations py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="tool recommendations">
+                    <i class="fa fa-arrow-right" />
+                </b-button>
+                <b-popover
+                    v-if="isEnabled"
+                    :target="popoverId"
+                    triggers="hover"
+                    placement="bottom"
+                    :show.sync="popoverShow">
+                    <Recommendations
+                        v-if="popoverShow"
+                        :step-id="id"
+                        :datatypes-mapper="datatypesMapper"
+                        @onCreate="onCreate" />
+                </b-popover>
+            </b-button-group>
             <i :class="iconClass" />
             <span
                 v-b-tooltip.hover
@@ -74,7 +76,8 @@
                 :datatypes-mapper="datatypesMapper"
                 :step-position="step.position ?? { top: 0, left: 0 }"
                 :root-offset="rootOffset"
-                :parent-offset="position"
+                :scroll="scroll"
+                :scale="scale"
                 v-on="$listeners"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
@@ -88,7 +91,8 @@
                 :step-type="step.type"
                 :step-position="step.position ?? { top: 0, left: 0 }"
                 :root-offset="rootOffset"
-                :parent-offset="position"
+                :scroll="scroll"
+                :scale="scale"
                 :datatypes-mapper="datatypesMapper"
                 v-on="$listeners"
                 @stopDragging="onStopDragging"
@@ -113,7 +117,7 @@ import { useNodePosition } from "@/components/Workflow/Editor/composables/useNod
 import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import type { UseElementBoundingReturn } from "@vueuse/core";
+import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 
 Vue.use(BootstrapVue);
 
@@ -129,6 +133,7 @@ const props = defineProps({
         validator: (v: any) => typeof v === "number" || v === null,
     },
     rootOffset: { type: Object as PropType<UseElementBoundingReturn>, required: true },
+    scroll: { type: Object as PropType<UseScrollReturn>, required: true },
     scale: { type: Number, default: 1 },
     highlight: { type: Boolean, default: false },
 });
@@ -158,7 +163,7 @@ const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const stateStore = useWorkflowStateStore();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
-const position = useNodePosition(el, props.id, stateStore);
+useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
 const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
@@ -184,8 +189,8 @@ const outputs = computed(() => props.step.outputs);
 
 function onMoveTo(position: XYPosition) {
     emit("onUpdateStepPosition", props.id, {
-        top: position.y,
-        left: position.x,
+        top: position.y + props.scroll.y.value / props.scale,
+        left: position.x + props.scroll.x.value / props.scale,
     });
 }
 

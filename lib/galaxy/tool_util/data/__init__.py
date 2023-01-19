@@ -126,18 +126,18 @@ class ToolDataPathFiles:
 
 
 ErrorListT = List[str]
-FileNameInfoT = TypedDict(
-    "FileNameInfoT",
-    {
-        "found": bool,
-        "filename": str,
-        "from_shed_config": bool,
-        "tool_data_path": Optional[StrPath],
-        "config_element": Optional[Element],
-        "tool_shed_repository": Optional[Dict[str, Any]],
-        "errors": ErrorListT,
-    },
-)
+
+
+class FileNameInfoT(TypedDict):
+    found: bool
+    filename: str
+    from_shed_config: bool
+    tool_data_path: Optional[StrPath]
+    config_element: Optional[Element]
+    tool_shed_repository: Optional[Dict[str, Any]]
+    errors: ErrorListT
+
+
 LoadInfoT = Tuple[Tuple[Element, Optional[StrPath]], Dict[str, Any]]
 
 
@@ -1142,7 +1142,7 @@ class ToolDataTableManager(Dictifiable):
         else:
             target_directory = target
         index_json = os.path.join(target_directory, BUNDLE_INDEX_FILE_NAME)
-        with open(index_json, "r") as f:
+        with open(index_json) as f:
             index = json.load(f)
         bundle = DataTableBundle(**index)
         assert bundle.output_name

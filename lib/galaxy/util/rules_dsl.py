@@ -61,7 +61,8 @@ def apply_regex(regex, target, data, replacement=None, group_count=None):
 
 
 class BaseRuleDefinition(metaclass=abc.ABCMeta):
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def rule_type(self):
         """Short string describing type of rule (plugin class) to use."""
 

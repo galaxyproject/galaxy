@@ -15,7 +15,6 @@ done
 DEV_WHEELS=0
 FETCH_WHEELS=1
 CREATE_VENV=1
-REPLACE_PIP=$SET_VENV
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
 NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
@@ -26,8 +25,6 @@ for arg in "$@"; do
     [ "$arg" = "--skip-wheels" ] && FETCH_WHEELS=0
     [ "$arg" = "--dev-wheels" ] && DEV_WHEELS=1
     [ "$arg" = "--no-create-venv" ] && CREATE_VENV=0
-    [ "$arg" = "--no-replace-pip" ] && REPLACE_PIP=0
-    [ "$arg" = "--replace-pip" ] && REPLACE_PIP=1
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
     [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
@@ -43,6 +40,9 @@ SAMPLES="
 RMFILES="
     lib/pkg_resources.pyc
 "
+
+MIN_PYTHON_VERSION=3.7
+MIN_PIP_VERSION=20.3
 
 # return true if $1 is in $2 else false
 in_dir() {
@@ -116,7 +116,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     echo "Creating Conda environment for Galaxy: $GALAXY_CONDA_ENV"
                     echo "To avoid this, use the --no-create-venv flag or set \$GALAXY_CONDA_ENV to an"
                     echo "existing environment before starting Galaxy."
-                    $CONDA_EXE create --yes --override-channels --channel conda-forge --channel defaults --name "$GALAXY_CONDA_ENV" 'python=3.7' 'pip>=19.3'
+                    $CONDA_EXE create --yes --override-channels --channel conda-forge --name "$GALAXY_CONDA_ENV" "python=${MIN_PYTHON_VERSION}" "pip>=${MIN_PIP_VERSION}"
                     unset __CONDA_INFO
                 fi
                 conda_activate
@@ -141,8 +141,7 @@ if [ $SET_VENV -eq 1 ] && [ $CREATE_VENV -eq 1 ]; then
                     virtualenv -p "$GALAXY_PYTHON" "$GALAXY_VIRTUAL_ENV"
                 else
                     # Download virtualenv zipapp
-                    min_python_version=3.7
-                    vurl="https://bootstrap.pypa.io/virtualenv/${min_python_version}/virtualenv.pyz"
+                    vurl="https://bootstrap.pypa.io/virtualenv/${MIN_PYTHON_VERSION}/virtualenv.pyz"
                     vtmp=$(mktemp -d -t galaxy-virtualenv-XXXXXX)
                     vsrc="$vtmp/$(basename $vurl)"
                     echo "Fetching $vurl"
@@ -173,12 +172,9 @@ if [ $SET_VENV -eq 1 ] && [ -z "$VIRTUAL_ENV" ]; then
     exit 1
 fi
 
-: ${GALAXY_WHEELS_INDEX_URL:="https://wheels.galaxyproject.org/simple"}
-: ${PYPI_INDEX_URL:="https://pypi.python.org/simple"}
-: ${GALAXY_DEV_REQUIREMENTS:="./lib/galaxy/dependencies/dev-requirements.txt"}
-if [ $REPLACE_PIP -eq 1 ]; then
-    python -m pip install 'pip>=19.3'
-fi
+: "${GALAXY_WHEELS_INDEX_URL:=https://wheels.galaxyproject.org/simple}"
+: "${PYPI_INDEX_URL:=https://pypi.python.org/simple}"
+: "${GALAXY_DEV_REQUIREMENTS:=./lib/galaxy/dependencies/dev-requirements.txt}"
 
 requirement_args="-r requirements.txt"
 if [ $DEV_WHEELS -eq 1 ]; then
@@ -188,6 +184,7 @@ fi
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
 
 if [ $FETCH_WHEELS -eq 1 ]; then
+    python -m pip install "pip>=$MIN_PIP_VERSION" wheel
     pip install $requirement_args --index-url "${GALAXY_WHEELS_INDEX_URL}" --extra-index-url "${PYPI_INDEX_URL}"
     GALAXY_CONDITIONAL_DEPENDENCIES=$(PYTHONPATH=lib python -c "from __future__ import print_function; import galaxy.dependencies; print('\n'.join(galaxy.dependencies.optional('$GALAXY_CONFIG_FILE')))")
     if [ -n "$GALAXY_CONDITIONAL_DEPENDENCIES" ]; then
@@ -212,7 +209,7 @@ if [ -n "$VIRTUAL_ENV" ]; then
 elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
     if ! in_conda_env "$(command -v node)"; then
         echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-        $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
+        $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
     fi
 fi
 
@@ -251,7 +248,7 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
         if ! in_conda_env "$(command -v yarn)"; then
             echo "Installing yarn into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-            $CONDA_EXE install --yes --override-channels --channel conda-forge --channel defaults --name "$CONDA_DEFAULT_ENV" yarn
+            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" yarn
         fi
     else
         echo "WARNING: Galaxy client build needed but there is no virtualenv enabled. Build may fail."

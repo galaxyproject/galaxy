@@ -60,7 +60,7 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 
 Vue.use(BootstrapVue);
 
@@ -84,25 +84,25 @@ export default {
     },
     computed: {
         termsUrlwithRoot() {
-            return safePath(this.termsUrl);
+            return withPrefix(this.termsUrl);
         },
     },
     methods: {
         login() {
             // set url to redirect user to 3rd party management after login
             this.$emit("setRedirect", "/user/external_ids");
-            window.location = safePath("/login");
+            window.location = withPrefix("/login");
         },
         submit() {
             const urlParams = new URLSearchParams(window.location.search);
             const token = urlParams.get("custos_token");
             axios
-                .post(safePath(`/authnz/custos/create_user?token=${token}`))
+                .post(withPrefix(`/authnz/custos/create_user?token=${token}`))
                 .then((response) => {
                     if (response.data.redirect_uri) {
                         window.location = response.data.redirect_uri;
                     } else {
-                        window.location = safePath("/");
+                        window.location = withPrefix("/");
                     }
                 })
                 .catch((error) => {

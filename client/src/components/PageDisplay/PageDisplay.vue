@@ -20,7 +20,7 @@
 
 <script>
 import { urlData } from "utils/url";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import ConfigProvider from "components/providers/ConfigProvider";
 import Markdown from "components/Markdown/Markdown";
 import Published from "components/Common/Published";
@@ -62,7 +62,7 @@ export default {
     },
     methods: {
         onEdit() {
-            window.location = safePath(this.editUrl);
+            window.location = withPrefix(this.editUrl);
         },
         stsUrl(config) {
             return `${this.dataUrl}/prepare_download`;

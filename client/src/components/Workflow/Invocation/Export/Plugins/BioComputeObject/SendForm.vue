@@ -3,7 +3,7 @@ import { ref, reactive, inject } from "vue";
 import { BModal } from "bootstrap-vue";
 import axios from "axios";
 import { Toast } from "composables/toast";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ExternalLink from "components/ExternalLink";
 
@@ -48,10 +48,10 @@ async function generateBcoContent() {
             include_deleted: false,
             include_hidden: false,
         };
-        const response = await axios.post(safePath(`/api/invocations/${invocationId}/prepare_store_download`), data);
+        const response = await axios.post(withPrefix(`/api/invocations/${invocationId}/prepare_store_download`), data);
         const storage_request_id = response.data.storage_request_id;
-        const pollUrl = safePath(`/api/short_term_storage/${storage_request_id}/ready`);
-        const resultUrl = safePath(`/api/short_term_storage/${storage_request_id}`);
+        const pollUrl = withPrefix(`/api/short_term_storage/${storage_request_id}/ready`);
+        const resultUrl = withPrefix(`/api/short_term_storage/${storage_request_id}`);
         let pollingResponse = await axios.get(pollUrl);
         let maxRetries = 120;
         while (!pollingResponse.data && maxRetries) {

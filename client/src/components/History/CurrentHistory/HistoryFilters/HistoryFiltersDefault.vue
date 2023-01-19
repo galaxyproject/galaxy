@@ -19,7 +19,7 @@ export default {
     data() {
         return {
             options: [
-                { text: "Any", value: null },
+                { text: "Any", value: "any" },
                 { text: "Yes", value: true },
                 { text: "No", value: false },
             ],
@@ -46,7 +46,7 @@ export default {
     methods: {
         getValue(name) {
             const value = this.settings[`${name}:`];
-            return value !== undefined ? value : null;
+            return value !== undefined ? value : "any";
         },
         onChange(name, value) {
             value = value !== null ? value : undefined;

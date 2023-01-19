@@ -173,7 +173,7 @@ class MzTab(Text):
                     mandatory_field = self._man_mtd[columns[1]]
                     if mandatory_field is None or columns[2].lower() in mandatory_field:
                         found_man_mtd.add(columns[1])
-            elif not columns[0] in self._sections:
+            elif columns[0] not in self._sections:
                 return False
         return has_version and found_man_mtd == set(self._man_mtd.keys())
 

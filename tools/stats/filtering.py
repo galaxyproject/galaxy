@@ -288,7 +288,7 @@ first_invalid_line = 0
 invalid_line = None
 lines_kept = 0
 total_lines = 0
-out = open(out_fname, "wt")
+out = open(out_fname, "w")
 
 # Read and filter input file, skipping invalid lines
 code = """

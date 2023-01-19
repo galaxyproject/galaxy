@@ -55,7 +55,7 @@
 <script>
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 import LoadingSpan from "components/LoadingSpan";
 Vue.use(BootstrapVue);
@@ -78,18 +78,18 @@ export default {
     },
     computed: {
         downloadUrl() {
-            return safePath(`/api/workflows/${this.workflow.id}/download?format=json-download`);
+            return withPrefix(`/api/workflows/${this.workflow.id}/download?format=json-download`);
         },
         importUrl() {
             const location = window.location;
-            const url = safePath(`/u/${this.workflow.owner}/w/${this.workflow.slug}/json`);
+            const url = withPrefix(`/u/${this.workflow.owner}/w/${this.workflow.slug}/json`);
             return `${location.protocol}//${location.host}${url}`;
         },
         myExperimentUrl() {
-            return safePath(`/workflow/export_to_myexp?id=${this.workflow.id}`);
+            return withPrefix(`/workflow/export_to_myexp?id=${this.workflow.id}`);
         },
         svgUrl() {
-            return safePath(`/workflow/gen_image?id=${this.workflow.id}`);
+            return withPrefix(`/workflow/gen_image?id=${this.workflow.id}`);
         },
     },
     watch: {

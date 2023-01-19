@@ -15,7 +15,8 @@
                     :step="step"
                     :datatypes-mapper="datatypesMapper"
                     :active-node-id="activeNodeId"
-                    :root-offset="position"
+                    :root-offset="elementBounding"
+                    :scroll="scroll"
                     :scale="scale"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
@@ -26,9 +27,9 @@
             </div>
         </div>
         <workflow-minimap
-            v-if="position"
+            v-if="elementBounding"
             :steps="steps"
-            :root-offset="position"
+            :root-offset="elementBounding"
             :scale="scale"
             :pan="transform"
             @pan-by="panBy"
@@ -40,8 +41,8 @@ import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
-import { computed, provide, reactive, ref, watch, type Ref, type PropType } from "vue";
-import { useElementBounding } from "@vueuse/core";
+import { computed, provide, reactive, ref, watch, type Ref, type PropType, watchEffect } from "vue";
+import { useElementBounding, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
@@ -52,6 +53,7 @@ import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
 import { assertDefined } from "@/utils/assertions";
 
+const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
@@ -63,9 +65,10 @@ const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
 const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
 const canvas: Ref<HTMLElement | null> = ref(null);
-const { transform, panBy, setZoom, moveTo } = useZoom(1, 0.2, 5, canvas);
 
-const position = reactive(useElementBounding(canvas, { windowResize: false, windowScroll: false }));
+const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
+const scroll = useScroll(canvas);
+const { transform, panBy, setZoom, moveTo } = useZoom(1, 0.2, 5, canvas, scroll);
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);
@@ -84,7 +87,7 @@ watch(
             const { width: stepWidth, height: stepHeight } = scrollToPosition;
             const { position: stepPosition } = step;
             if (stepPosition) {
-                const { width, height } = position;
+                const { width, height } = reactive(elementBounding);
                 const centerScreenX = width / 2;
                 const centerScreenY = height / 2;
                 const offsetX = centerScreenX - (stepPosition.left + stepWidth / 2);
@@ -129,11 +132,12 @@ watch(
     () => stateStore.setScale(transform.value.k)
 );
 
+watch(transform, () => emit("transform", transform.value));
+watchEffect(() => {
+    emit("graph-offset", reactive(elementBounding));
+});
+
 const canvasStyle = computed(() => {
     return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
-
-const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
-emit("transform", transform);
-emit("graph-offset", position);
 </script>

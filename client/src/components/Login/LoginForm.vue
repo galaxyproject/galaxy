@@ -83,7 +83,7 @@
 import axios from "axios";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
 import NewUserConfirmation from "./NewUserConfirmation";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
@@ -147,7 +147,7 @@ export default {
             return urlParams.has("confirm") && urlParams.get("confirm") == "true";
         },
         welcomeUrlWithRoot() {
-            return safePath(this.welcomeUrl);
+            return withPrefix(this.welcomeUrl);
         },
     },
     methods: {
@@ -160,7 +160,7 @@ export default {
                 redirect = localStorage.getItem("redirect_url");
             }
             axios
-                .post(safePath("/user/login"), {
+                .post(withPrefix("/user/login"), {
                     login: this.login,
                     password: this.password,
                     redirect: redirect,
@@ -171,11 +171,11 @@ export default {
                         alert(data.message);
                     }
                     if (data.expired_user) {
-                        window.location = safePath(`/root/login?expired_user=${data.expired_user}`);
+                        window.location = withPrefix(`/root/login?expired_user=${data.expired_user}`);
                     } else if (data.redirect) {
                         window.location = encodeURI(data.redirect);
                     } else {
-                        window.location = safePath("/");
+                        window.location = withPrefix("/");
                     }
                 })
                 .catch((error) => {
@@ -189,7 +189,7 @@ export default {
         },
         resetLogin() {
             axios
-                .post(safePath("/user/reset_password"), { email: this.login })
+                .post(withPrefix("/user/reset_password"), { email: this.login })
                 .then((response) => {
                     this.messageVariant = "info";
                     this.messageText = response.data.message;

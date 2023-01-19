@@ -18,6 +18,14 @@ const defaultValidAliases: Array<[string, string]> = [
     ["<", "_lt"],
 ];
 
+const operatorForAlias: Record<string, string> = {
+    lt: "<",
+    le: "<=",
+    ge: ">=",
+    gt: ">",
+    eq: ":",
+};
+
 /** Converts user input to backend compatible date
  * @param value
  * @returns seconds since epoch
@@ -59,6 +67,14 @@ export function expandNameTag(value: string | object): string {
         value = value.replace(/^#/, "name:");
     }
     return toLower(value);
+}
+
+/** Converts string alias to string operator, e.g.: 'gt' to '>'
+ * @param alias
+ * @returns Arithmetic operator, e.g.: '>'
+ * */
+export function getOperatorForAlias(alias: string): string {
+    return operatorForAlias[alias];
 }
 
 type HandlerReturn<T> = {
@@ -254,12 +270,15 @@ export default class Filtering<T> {
         }
         // check if any default filter keys have been used
         let hasDefaults = false;
-        for (const defaultKey in this.defaultFilters) {
-            if (result[defaultKey]) {
+        Object.keys(this.defaultFilters).forEach((defaultKey) => {
+            const value = result[defaultKey];
+            if (value !== undefined) {
+                if (value == "any") {
+                    delete result[defaultKey];
+                }
                 hasDefaults = true;
-                break;
             }
-        }
+        });
         // use default filters if none of the default filters has been explicitly specified
         if (!hasDefaults && this.useDefaultFilters) {
             result = { ...result, ...this.defaultFilters };
@@ -327,10 +346,26 @@ export default class Filtering<T> {
      * @returns True if the filter is set to the given value
      * */
     checkFilter(filterText: string, filterName: string, filterValue: string | object | boolean): boolean {
-        const re = new RegExp(`${filterName}:(\\S+)`);
-        const reMatch = re.exec(filterText);
-        const testValue = reMatch ? reMatch[1] : this.defaultFilters[filterName];
+        const testValue = this.getFilterValue(filterText, filterName);
         return toLowerNoQuotes(testValue) === toLowerNoQuotes(filterValue);
+    }
+
+    /** Get the value of a particular filter from filterText.
+     * @param filterText Raw filter text string
+     * @param filterName Filter key to check
+     * @param [alias="eq"] String alias for filter operator, e.g.:"lt"
+     * @returns The filterValue for the filter
+     * */
+    getFilterValue(filterText: string, filterName: string, alias = "eq"): string | boolean {
+        const op = getOperatorForAlias(alias);
+        const reString = `${filterName}(?:${op}|[-|_]${alias}:)(?:'([^']*[^\\s']*)'|(\\S+))`;
+        const re = new RegExp(reString);
+        const reMatch = re.exec(filterText);
+        let filterVal = null;
+        if (reMatch) {
+            filterVal = reMatch[1] || reMatch[2];
+        }
+        return filterVal || this.defaultFilters[filterName];
     }
 
     /** Test if an item passes all filters.

@@ -163,7 +163,7 @@ def test_write_bundle(tdt_manager, tmp_path):
     extra = tmp_path / "extra"
     bundle_index_json_path = extra / BUNDLE_INDEX_FILE_NAME
     assert bundle_index_json_path.exists()
-    with open(bundle_index_json_path, "r") as f:
+    with open(bundle_index_json_path) as f:
         bundle_index = json.load(f)
     assert "processor_description" in bundle_index
     assert "data_tables" in bundle_index
@@ -241,7 +241,7 @@ def test_undeclared_tables(tdt_manager, tmp_path):
 
 
 def _last_row(loc_file):
-    with open(loc_file, "r") as file:
+    with open(loc_file) as file:
         rows = csv.reader(file, delimiter="\t")
         for row in rows:
             last_row = row

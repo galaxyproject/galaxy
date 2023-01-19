@@ -110,18 +110,15 @@ class ValidToolTestDict(TypedDict):
     test_index: int
 
 
-InvalidToolTestDict = TypedDict(
-    "InvalidToolTestDict",
-    {
-        "error": Literal[True],
-        "tool_id": str,
-        "tool_version": str,
-        "test_index": int,
-        "inputs": Any,
-        "exception": str,
-        "maxseconds": Optional[int],
-    },
-)
+class InvalidToolTestDict(TypedDict):
+    error: Literal[True]
+    tool_id: str
+    tool_version: str
+    test_index: int
+    inputs: Any
+    exception: str
+    maxseconds: Optional[int]
+
 
 ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
 ToolTestDictsT = List[ToolTestDict]

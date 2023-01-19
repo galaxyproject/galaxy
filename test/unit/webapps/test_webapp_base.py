@@ -48,7 +48,7 @@ class TestGalaxyWebTransactionHeaders:
         assert headers.get("access-control-allow-origin", None) == should_be
 
     def assert_cors_header_missing(self, headers):
-        assert not ("access-control-allow-origin" in headers)
+        assert "access-control-allow-origin" not in headers
 
     def test_parse_allowed_origin_hostnames(self) -> None:
         """Should return a list of (possibly) mixed strings and regexps"""

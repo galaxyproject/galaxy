@@ -44,6 +44,11 @@ var View = Backbone.View.extend({
         this.render();
     },
 
+    remove: function () {
+        this.$select.select2("destroy");
+        Backbone.View.prototype.remove.call(this);
+    },
+
     render: function () {
         if (this.model.get("searchable")) {
             this._renderSearchable();

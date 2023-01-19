@@ -539,7 +539,11 @@ class ToolVersionListGrid(grids.Grid):
 
 
 # TODO: Convert admin UI to use the API and drop this.
-DatatypesEntryT = TypedDict("DatatypesEntryT", {"status": str, "keys": list, "data": list, "message": str})
+class DatatypesEntryT(TypedDict):
+    status: str
+    keys: list
+    data: list
+    message: str
 
 
 class AdminGalaxy(controller.JSAppLauncher):

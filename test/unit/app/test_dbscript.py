@@ -59,7 +59,7 @@ def alembic_env_dir(migrations_dir) -> str:
 def alembic_config_text(migrations_dir) -> List[str]:
     """Contents of production alembic.ini as list of lines"""
     current_config_path = migrations_dir / "alembic.ini"
-    with open(current_config_path, "r") as f:
+    with open(current_config_path) as f:
         return f.readlines()
 
 
