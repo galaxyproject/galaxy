@@ -242,21 +242,22 @@ class WorkflowsAPIController(
             "shared_workflow_id",
             "workflow",
         }
-
         if trans.user_is_bootstrap_admin:
             raise exceptions.RealUserRequiredException("Only real users can create or run workflows.")
-
-        if payload is None or len(ways_to_create.intersection(payload)) == 0:
+        archive_source = None
+        archive_file = None
+        if "archive_source" in payload:
+            archive_source = payload.get("archive_source")
+        if  "archive_file" in payload:
+            archive_file = payload.get("archive_file")
+        n_create_ways = len(ways_to_create.intersection(payload))
+        if payload is None or (n_create_ways == 0 and archive_file == None):
             message = f"One parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterMissingException(message)
-
-        if len(ways_to_create.intersection(payload)) > 1:
+        if n_create_ways > 1:
             message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterInvalidException(message)
-
-        if "archive_source" in payload:
-            archive_source = payload["archive_source"]
-            archive_file = payload.get("archive_file")
+        if archive_source != None or archive_file != None:
             archive_data = None
             if archive_source:
                 validate_uri_access(archive_source, trans.user_is_admin, trans.app.config.fetch_url_allowlist_ips)
@@ -294,7 +295,7 @@ class WorkflowsAPIController(
                         import_source = "URL"
                     except Exception:
                         raise exceptions.MessageException(f"Failed to open URL '{escape(archive_source)}'.")
-            elif hasattr(archive_file, "file"):
+            elif archive_file != None and hasattr(archive_file, "file"):
                 uploaded_file = archive_file.file
                 uploaded_file_name = uploaded_file.name
                 if os.path.getsize(os.path.abspath(uploaded_file_name)) > 0:
@@ -305,7 +306,6 @@ class WorkflowsAPIController(
             else:
                 raise exceptions.MessageException("Please provide a URL or file.")
             return self.__api_import_from_archive(trans, archive_data, import_source, payload=payload)
-
         if "from_history_id" in payload:
             from_history_id = payload.get("from_history_id")
             from_history_id = self.decode_id(from_history_id)
