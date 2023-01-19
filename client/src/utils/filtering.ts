@@ -18,13 +18,17 @@ const defaultValidAliases: Array<[string, string]> = [
     ["<", "_lt"],
 ];
 
-const operatorForAlias: Record<string, string> = {
+const operatorForAlias = {
     lt: "<",
     le: "<=",
     ge: ">=",
     gt: ">",
     eq: ":",
-};
+} as const satisfies Record<string, string>;
+
+type OperatorForAlias = typeof operatorForAlias;
+type Alias = keyof OperatorForAlias;
+type Operator = OperatorForAlias[Alias];
 
 /** Converts user input to backend compatible date
  * @param value
@@ -73,7 +77,7 @@ export function expandNameTag(value: string | object): string {
  * @param alias
  * @returns Arithmetic operator, e.g.: '>'
  * */
-export function getOperatorForAlias(alias: string): string {
+export function getOperatorForAlias(alias: Alias): Operator {
     return operatorForAlias[alias];
 }
 
@@ -353,10 +357,10 @@ export default class Filtering<T> {
     /** Get the value of a particular filter from filterText.
      * @param filterText Raw filter text string
      * @param filterName Filter key to check
-     * @param [alias="eq"] String alias for filter operator, e.g.:"lt"
+     * @param alias default: `eq` String alias for filter operator, e.g.:"lt"
      * @returns The filterValue for the filter
      * */
-    getFilterValue(filterText: string, filterName: string, alias = "eq"): string | boolean {
+    getFilterValue(filterText: string, filterName: string, alias: Alias = "eq"): string | boolean | undefined {
         const op = getOperatorForAlias(alias);
         const reString = `${filterName}(?:${op}|[-|_]${alias}:)(?:'([^']*[^\\s']*)'|(\\S+))`;
         const re = new RegExp(reString);
