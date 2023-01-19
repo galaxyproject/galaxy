@@ -39,6 +39,7 @@
                 :area="true"
                 help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                 @input="onAnnotation" />
+            <FormConditional v-if="isSubworkflow" :step="step" v-on="$listeners"/>
             <FormDisplay
                 v-if="configForm?.inputs"
                 :id="formDisplayId"
@@ -61,6 +62,7 @@ import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElement from "@/components/Form/FormElement.vue";
 import FormOutputLabel from "@/components/Workflow/Editor/Forms/FormOutputLabel.vue";
+import FormConditional from "./FormConditional.vue"
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";

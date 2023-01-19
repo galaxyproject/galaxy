@@ -36,7 +36,7 @@ const outputIsOptional = computed(() => {
 // move into connection store ?
 // move all of terminal logic into connection store ?
 const connectionIsValid = computed(() => {
-    return !Boolean(connectionStore.invalidConnections[props.connection.id]);
+    return !connectionStore.invalidConnections[props.connection.id];
 });
 
 const stateStore = useWorkflowStateStore();

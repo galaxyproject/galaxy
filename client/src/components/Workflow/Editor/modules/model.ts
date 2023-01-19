@@ -27,16 +27,20 @@ export async function fromSimple(data: Workflow, appendData = false, defaultPosi
             step.position.left += defaultPosition.left;
             step.position.top += defaultPosition.top;
             Object.values(step.input_connections).forEach((link) => {
-                let linkArray: ConnectionOutputLink[];
-                if (!Array.isArray(link)) {
-                    linkArray = [link];
+                if (link === undefined) {
+                    console.error("input connections invalid", step.input_connections)
                 } else {
-                    linkArray = link;
+                    let linkArray: ConnectionOutputLink[];
+                    if (!Array.isArray(link)) {
+                        linkArray = [link];
+                    } else {
+                        linkArray = link;
+                    }
+                    linkArray.forEach((link) => {
+                        link.id += stepIdOffset;
+                    });
                 }
-                linkArray.forEach((link) => {
-                    link.id += stepIdOffset;
-                });
-            });
+           });
         }
     });
     Object.values(data.steps).map((step) => {

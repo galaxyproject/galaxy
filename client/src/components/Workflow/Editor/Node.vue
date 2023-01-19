@@ -122,6 +122,7 @@ import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -173,6 +174,7 @@ const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const connectionStore = useConnectionStore();
 const stateStore = useWorkflowStateStore();
+const stepStore = useWorkflowStepStore();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
@@ -195,19 +197,22 @@ const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
-const invalidInputs = computed(() => {
+const inputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
-    const invalidConnections = connections.filter(
-        (connection) =>
-            connection.input.stepId == props.id &&
-            !props.step.inputs.find((input) => input.name === connection.input.name)
-    );
-    const invalidInputNames = [...new Set(invalidConnections.map((connection) => connection.input.name))];
-    return invalidInputNames.map((name) => {
+    const extraStepInputs = stepStore.getStepExtraInputs(props.id);
+    const stepInputs = [...extraStepInputs, ...(props.step.inputs || [])];
+    const unknownInputs: string[] = [];
+    connections.forEach((connection) => {
+        if (connection.input.stepId == props.id && !stepInputs.find((input) => input.name === connection.input.name)) {
+            unknownInputs.push(connection.input.name);
+        }
+    });
+    const invalidInputNames = [...new Set(unknownInputs)];
+    const invalidInputTerminalSource = invalidInputNames.map((name) => {
         return { name, optional: false, extensions: [], valid: false, input_type: "dataset" };
     });
+    return [...stepInputs, ...invalidInputTerminalSource];
 });
-const inputs = computed(() => [...props.step.inputs, ...invalidInputs.value]);
 const invalidOutputs = computed(() => {
     const connections = connectionStore.getConnectionsForStep(props.id);
     const invalidConnections = connections.filter(
@@ -220,7 +225,15 @@ const invalidOutputs = computed(() => {
         return { name, optional: false, datatypes: [], valid: false };
     });
 });
-const outputs = computed(() => [...props.step.outputs, ...invalidOutputs.value]);
+const outputs = computed(() => {
+    let stepOutputs = props.step.outputs;
+    if (props.step.when) {
+        stepOutputs = stepOutputs.map((output) => {
+            return { ...output, optional: true };
+        });
+    }
+    return [...stepOutputs, ...invalidOutputs.value];
+});
 
 function onMoveTo(position: XYPosition) {
     emit("onUpdateStepPosition", props.id, {

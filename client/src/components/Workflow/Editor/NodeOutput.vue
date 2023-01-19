@@ -183,7 +183,6 @@ export default {
         function onToggleActive() {
             const step = stepStore.getStep(stepId.value);
             if (workflowOutput.value) {
-                console.log("wfo", workflowOutput.value);
                 step.workflow_outputs = step.workflow_outputs.filter(
                     (workflowOutput) => workflowOutput.output_name !== output.value.name
                 );

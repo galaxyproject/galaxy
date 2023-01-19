@@ -113,6 +113,7 @@
                                     @onChangePostJobActions="onChangePostJobActions"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
+                                    @onUpdateStep="onUpdateStep"
                                     @onSetData="onSetData" />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
@@ -122,6 +123,7 @@
                                     @onLabel="onLabel"
                                     @onEditSubworkflow="onEditSubworkflow"
                                     @onAttemptRefactor="onAttemptRefactor"
+                                    @onUpdateStep="onUpdateStep"
                                     @onSetData="onSetData" />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
@@ -642,6 +644,7 @@ export default {
                 name: name,
                 content_id: contentId,
                 type: type,
+                outputs: [],
                 position: defaultPosition(this.graphOffset, this.transform),
                 post_job_actions: {},
             };

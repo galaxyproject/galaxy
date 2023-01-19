@@ -118,7 +118,7 @@ export interface Steps {
 }
 
 export interface StepInputConnection {
-    [index: string]: ConnectionOutputLink | ConnectionOutputLink[];
+    [index: string]: ConnectionOutputLink | ConnectionOutputLink[] | undefined;
 }
 
 export interface ConnectionOutputLink {
@@ -144,6 +144,32 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             return (stepId: number): Step => {
                 return state.steps[stepId.toString()];
             };
+        },
+        getStepExtraInputs(state: State) {
+            const extraInputs: { [index: number]: InputTerminalSource[] } = {};
+            Object.values(state.steps).forEach((step) => {
+                if (step?.when !== undefined) {
+                    Object.keys(step.input_connections).forEach((inputName) => {
+                        if (!step.inputs.find((input) => input.name === inputName) && step.when?.includes(inputName)) {
+                            const terminalSource = {
+                                name: inputName,
+                                optional: false,
+                                input_type: "parameter" as const,
+                                type: "boolean" as const,
+                                multiple: false,
+                                label: inputName,
+                                extensions: [],
+                            };
+                            if (extraInputs[step.id]) {
+                                extraInputs[step.id].push(terminalSource);
+                            } else {
+                                extraInputs[step.id] = [terminalSource];
+                            }
+                        }
+                    });
+                }
+            });
+            return (stepId: number) => extraInputs[stepId] || [];
         },
         getStepIndex(state: State) {
             return Math.max(...Object.values(state.steps).map((step) => step.id), state.stepIndex);
@@ -217,6 +243,9 @@ export function stepToConnections(step: Step): Connection[] {
     const connections: Connection[] = [];
     if (step.input_connections) {
         Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
+            if (outputArray === undefined) {
+                return
+            }
             if (!Array.isArray(outputArray)) {
                 outputArray = [outputArray];
             }

@@ -576,7 +576,10 @@ class BaseOutputTerminal extends Terminal {
     getConnectedTerminals(): InputTerminalsAndInvalid[] {
         return this.connections.map((connection) => {
             const inputStep = this.stepStore.getStep(connection.input.stepId);
-            const terminalSource = inputStep.inputs.find((input) => input.name === connection.input.name);
+            const extraStepInput = this.stepStore.getStepExtraInputs(inputStep.id);
+            const terminalSource = [...extraStepInput, ...inputStep.inputs].find(
+                (input) => input.name === connection.input.name
+            );
             if (!terminalSource) {
                 return new InvalidInputTerminal({
                     valid: false,
