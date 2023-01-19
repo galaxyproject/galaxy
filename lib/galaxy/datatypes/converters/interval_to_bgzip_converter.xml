@@ -8,8 +8,8 @@
         </xml>
     </macros>
     <requirements>
-        <requirement type="package" version="9.0">coreutils</requirement>
-        <requirement type="package" version="1.14">htslib</requirement>
+        <requirement type="package" version="9.1">coreutils</requirement>
+        <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
     <command><![CDATA[
         grep -e '^"#"' -e '^track' -v '$input1' 

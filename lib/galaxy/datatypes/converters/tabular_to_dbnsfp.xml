@@ -1,7 +1,7 @@
 <tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.2" profile="16.04">
     <description></description>
     <requirements>
-        <requirement type="package" version="1.14">htslib</requirement>
+        <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
     <command><![CDATA[
         mkdir '$dbnsfp.extra_files_path' &&
