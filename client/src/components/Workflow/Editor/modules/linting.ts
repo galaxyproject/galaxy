@@ -93,7 +93,7 @@ export function getUntypedParameters(untypedParameters: UntypedParameters) {
         untypedParameters.parameters.forEach((parameter) => {
             try {
                 const parameterReference = parameter.references[0];
-                assertDefined(parameterReference, `Error: parameter references for ${parameter.name} are empty.`);
+                assertDefined(parameterReference, `Parameter references for ${parameter.name} are empty.`);
 
                 // TODO: Not sure this is right, but I think this may have been broken previously?
                 const stepLabel =
