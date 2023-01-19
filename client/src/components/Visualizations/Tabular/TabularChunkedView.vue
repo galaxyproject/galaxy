@@ -116,17 +116,17 @@ function processRow(row: string[]) {
         return row.slice(0, num_columns - 1).concat([row.slice(num_columns - 1).join("\t")]);
     } else if (row.length === 1) {
         // Try to split by comma first
-        let rowDataSplit = row[0].split(",");
+        let rowDataSplit = row[0]!.split(",");
         if (rowDataSplit.length === num_columns) {
             return rowDataSplit;
         }
         // Try to split by tab
-        rowDataSplit = row[0].split("\t");
+        rowDataSplit = row[0]!.split("\t");
         if (rowDataSplit.length === num_columns) {
             return rowDataSplit;
         }
         // Try to split by space
-        rowDataSplit = row[0].split(" ");
+        rowDataSplit = row[0]!.split(" ");
         if (rowDataSplit.length === num_columns) {
             return rowDataSplit;
         }
