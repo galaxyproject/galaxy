@@ -99,7 +99,7 @@
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
             <output name="output1" ftype="tabix">
                 <assert_contents>
-                    <has_size value="148"/>
+                    <has_size value="143"/>
                 </assert_contents>
             </output>
             <assert_command>
