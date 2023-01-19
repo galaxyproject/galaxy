@@ -42,7 +42,7 @@ const emit = defineEmits<{ (e: "closeMenu", value: boolean): void }>();
 onMounted(() => {
     if (menuItem.value) {
         if ("length" in menuItem.value) {
-            menuItem.value[0].focus();
+            menuItem.value[0]?.focus();
         } else {
             menuItem.value.focus();
         }
@@ -68,14 +68,14 @@ function increment() {
     if (menuItem.value && "length" in menuItem.value) {
         activeElement.value += 1;
         activeElement.value = Math.min(activeElement.value, menuItem.value!.length - 1);
-        menuItem.value![activeElement.value].focus();
+        menuItem.value![activeElement.value]?.focus();
     }
 }
 
 function decrement() {
     if (menuItem.value && "length" in menuItem.value) {
         activeElement.value = Math.max(activeElement.value - 1, 0);
-        menuItem.value![activeElement.value].focus();
+        menuItem.value![activeElement.value]?.focus();
     }
 }
 
