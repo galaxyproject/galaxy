@@ -937,6 +937,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 inputs = step.module.get_runtime_inputs(connections=step.output_connections)
                 step_model = {"inputs": [input.to_dict(trans) for input in inputs.values()]}
+            step_model["when"] = step.when_expression
             step_model["replacement_parameters"] = step.module.get_replacement_parameters(step)
             step_model["step_type"] = step.type
             step_model["step_label"] = step.label
@@ -1131,6 +1132,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "annotation": annotation_str,
                 "post_job_actions": module.get_post_job_actions({}),
                 "uuid": str(step.uuid) if step.uuid else None,
+                "when": step.when_expression,
                 "workflow_outputs": [],
             }
             if tooltip:
@@ -1363,6 +1365,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "uuid": str(step.uuid),
                 "label": step.label or None,
                 "annotation": annotation_str,
+                "when": step.when_expression,
             }
             if step.type == "tool":
                 step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
@@ -1550,6 +1553,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "annotation": self.get_item_annotation_str(sa_session, stored.user, step),
                 "tool_inputs": step.tool_inputs,
                 "input_steps": {},
+                "when": step.when_expression,
             }
 
             if step_type == "subworkflow":
