@@ -57,6 +57,9 @@
                 </b-popover>
             </b-button-group>
             <i :class="iconClass" />
+            <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
+                <font-awesome-icon icon="fa-code-branch" />
+            </span>
             <span
                 v-b-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
@@ -119,8 +122,14 @@ import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
+
+// @ts-ignore
+library.add(faCodeBranch);
 
 const props = defineProps({
     id: { type: Number, required: true },
