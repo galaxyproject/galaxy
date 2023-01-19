@@ -3,7 +3,7 @@ import { computed, ref } from "vue";
 
 export interface FormCheckProps {
     value?: string | string[];
-    options: string[];
+    options: Array<[string, string]>;
 }
 
 const props = defineProps<FormCheckProps>();
@@ -42,7 +42,7 @@ const selectAll = ref(false);
 
 function onSelectAll() {
     if (selectAll.value) {
-        const allValues = props.options.map((option) => option[1] ?? "");
+        const allValues = props.options.map((option) => option[1]);
         emit("input", allValues);
     } else {
         emit("input", []);
