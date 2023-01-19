@@ -2,6 +2,7 @@ import ELK from "elkjs/lib/elk.bundled.js";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { assertDefined } from "@/utils/assertions";
 
 const elk = new ELK();
 
@@ -67,11 +68,14 @@ export async function autoLayout(steps: { [index: string]: Step }) {
                 },
             };
         });
+
         const position = stateStore.stepPosition[step.id];
+        assertDefined(position, `No StepPosition with step id ${step.id} found in workflowStateStore`);
+
         return {
             id: stepId,
-            height: (position?.height ?? 0) + 20,
-            width: (position?.width ?? 0) + 60,
+            height: position.height + 20,
+            width: position.width + 60,
             ports: inputs.concat(outputs),
         };
     });
