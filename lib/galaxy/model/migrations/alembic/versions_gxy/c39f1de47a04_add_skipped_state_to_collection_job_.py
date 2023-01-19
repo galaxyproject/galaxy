@@ -1,20 +1,22 @@
+"""Add skipped state to collection_job_state_summary_view
+
+Revision ID: c39f1de47a04
+Revises: 3100452fa030
+Create Date: 2023-01-16 11:53:59.783836
+
 """
-Galaxy sql view models
-"""
-from sqlalchemy import Integer
-from sqlalchemy.orm import registry
-from sqlalchemy.sql import (
-    column,
-    text,
-)
+from alembic import op
+from alembic_utils.pg_view import PGView
 
-from galaxy.model.view.utils import View
+from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 
+# revision identifiers, used by Alembic.
+revision = "c39f1de47a04"
+down_revision = "3100452fa030"
+branch_labels = None
+depends_on = None
 
-class HistoryDatasetCollectionJobStateSummary(View):
-    name = "collection_job_state_summary_view"
-
-    aggregate_state_query = """
+PREVIOUS_AGGREGATE_QUERY = """
 SELECT
     hdca_id,
     SUM(CASE WHEN state = 'new' THEN 1 ELSE 0 END) AS new,
@@ -26,7 +28,6 @@ SELECT
     SUM(CASE WHEN state = 'error' THEN 1 ELSE 0 END) AS error,
     SUM(CASE WHEN state = 'failed' THEN 1 ELSE 0 END) AS failed,
     SUM(CASE WHEN state = 'paused' THEN 1 ELSE 0 END) AS paused,
-    SUM(CASE WHEN state = 'skipped' THEN 1 ELSE 0 END) AS skipped,
     SUM(CASE WHEN state = 'deleted' THEN 1 ELSE 0 END) AS deleted,
     SUM(CASE WHEN state = 'deleted_new' THEN 1 ELSE 0 END) AS deleted_new,
     SUM(CASE WHEN state = 'upload' THEN 1 ELSE 0 END) AS upload,
@@ -51,28 +52,19 @@ FROM (
 GROUP BY jobstates.hdca_id
 """
 
-    __view__ = text(aggregate_state_query).columns(
-        column("hdca_id", Integer),
-        column("new", Integer),
-        column("resubmitted", Integer),
-        column("waiting", Integer),
-        column("queued", Integer),
-        column("running", Integer),
-        column("ok", Integer),
-        column("error", Integer),
-        column("failed", Integer),
-        column("paused", Integer),
-        column("skipped", Integer),
-        column("deleted", Integer),
-        column("deleted_new", Integer),
-        column("upload", Integer),
-        column("all_jobs", Integer),
+
+def upgrade():
+    public_collection_job_state_summary_view = PGView(
+        schema="public",
+        signature="collection_job_state_summary_view",
+        definition=HistoryDatasetCollectionJobStateSummary.aggregate_state_query,
     )
-    pkeys = {"hdca_id"}
-    __table__ = View._make_table(name, __view__, pkeys)
+    # op.replace_entity comes from alembic_utils plugin
+    op.replace_entity(public_collection_job_state_summary_view)  # type: ignore[attr-defined]
 
 
-mapper_registry = registry()
-mapper_registry.map_imperatively(
-    HistoryDatasetCollectionJobStateSummary, HistoryDatasetCollectionJobStateSummary.__table__
-)
+def downgrade():
+    public_collection_job_state_summary_view = PGView(
+        schema="public", signature="collection_job_state_summary_view", definition=PREVIOUS_AGGREGATE_QUERY
+    )
+    op.replace_entity(public_collection_job_state_summary_view)  # type: ignore[attr-defined]

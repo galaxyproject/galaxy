@@ -152,6 +152,9 @@ from galaxy.util.hash_util import (
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
 
+if TYPE_CHECKING:
+    from galaxy.schema.invocation import InvocationMessageUnion
+
 log = logging.getLogger(__name__)
 
 _datatypes_registry = None
@@ -1072,6 +1075,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         DELETED_NEW = "deleted_new"  # now DELETING, remove after 21.0
         STOPPING = "stop"
         STOPPED = "stopped"
+        SKIPPED = "skipped"
 
     terminal_states = [states.OK, states.ERROR, states.DELETED]
     #: job states where the job hasn't finished and the model may still change
@@ -7040,6 +7044,7 @@ class WorkflowStep(Base, RepresentById):
     position = Column(MutableJSONType)
     config = Column(JSONType)
     order_index: int = Column(Integer)
+    when_expression = Column(JSONType)
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]
@@ -7084,10 +7089,12 @@ class WorkflowStep(Base, RepresentById):
     def __init__(self):
         self.uuid = uuid4()
         self._input_connections_by_name = None
+        self._inputs_by_name = None
 
     @reconstructor
     def init_on_load(self):
         self._input_connections_by_name = None
+        self._inputs_by_name = None
 
     @property
     def tool_uuid(self):
@@ -7112,6 +7119,23 @@ class WorkflowStep(Base, RepresentById):
     def input_optional(self):
         tool_state = self.tool_inputs
         return tool_state.get("optional") or False
+
+    def setup_inputs_by_name(self):
+        # Ensure input_connections has already been set.
+
+        # Make connection information available on each step by input name.
+        inputs_by_name = {}
+        for step_input in self.inputs:
+            input_name = step_input.name
+            assert input_name not in inputs_by_name
+            inputs_by_name[input_name] = step_input
+        self._inputs_by_name = inputs_by_name
+
+    @property
+    def inputs_by_name(self):
+        if self._inputs_by_name is None:
+            self.setup_inputs_by_name()
+        return self._inputs_by_name
 
     def get_input(self, input_name):
         for step_input in self.inputs:
@@ -7482,9 +7506,26 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     )
     output_datasets = relationship("WorkflowInvocationOutputDatasetAssociation", back_populates="workflow_invocation")
     output_values = relationship("WorkflowInvocationOutputValue", back_populates="workflow_invocation")
+    messages = relationship("WorkflowInvocationMessage", back_populates="workflow_invocation")
 
-    dict_collection_visible_keys = ["id", "update_time", "create_time", "workflow_id", "history_id", "uuid", "state"]
-    dict_element_visible_keys = ["id", "update_time", "create_time", "workflow_id", "history_id", "uuid", "state"]
+    dict_collection_visible_keys = [
+        "id",
+        "update_time",
+        "create_time",
+        "workflow_id",
+        "history_id",
+        "uuid",
+        "state",
+    ]
+    dict_element_visible_keys = [
+        "id",
+        "update_time",
+        "create_time",
+        "workflow_id",
+        "history_id",
+        "uuid",
+        "state",
+    ]
 
     class states(str, Enum):
         NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
@@ -7560,7 +7601,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             step_invocations[step_id] = invocation_step
         return step_invocations
 
-    def step_invocation_for_step_id(self, step_id):
+    def step_invocation_for_step_id(self, step_id: int) -> Optional["WorkflowInvocationStep"]:
         target_invocation_step = None
         for invocation_step in self.steps:
             if step_id == invocation_step.workflow_step_id:
@@ -7857,6 +7898,19 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             attach_step(request_to_content)
             self.input_step_parameters.append(request_to_content)
 
+    def add_message(self, message: "InvocationMessageUnion"):
+        self.messages.append(
+            WorkflowInvocationMessage(
+                workflow_invocation_id=self.id,
+                **message.dict(
+                    exclude_unset=True,
+                    exclude={
+                        "history_id"
+                    },  # history_id comes in through workflow_invocation and isn't persisted in database
+                ),
+            )
+        )
+
     @property
     def resource_parameters(self):
         resource_type = WorkflowRequestInputParameter.types.RESOURCE_PARAMETERS
@@ -7916,6 +7970,36 @@ class WorkflowInvocationToSubworkflowInvocationAssociation(Base, Dictifiable, Re
     )
     dict_collection_visible_keys = ["id", "workflow_step_id", "workflow_invocation_id", "subworkflow_invocation_id"]
     dict_element_visible_keys = ["id", "workflow_step_id", "workflow_invocation_id", "subworkflow_invocation_id"]
+
+
+class WorkflowInvocationMessage(Base, Dictifiable, Serializable):
+    __tablename__ = "workflow_invocation_message"
+    id = Column(Integer, primary_key=True)
+    workflow_invocation_id = Column(Integer, ForeignKey("workflow_invocation.id"), index=True, nullable=False)
+    reason = Column(String(32))
+    details = Column(TrimmedString(255), nullable=True)
+    output_name = Column(String(255), nullable=True)
+    workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"), nullable=True)
+    dependent_workflow_step_id = Column(Integer, ForeignKey("workflow_step.id"), nullable=True)
+    job_id = Column(Integer, ForeignKey("job.id"), nullable=True)
+    hda_id = Column(Integer, ForeignKey("history_dataset_association.id"), nullable=True)
+    hdca_id = Column(Integer, ForeignKey("history_dataset_collection_association.id"), nullable=True)
+
+    workflow_invocation = relationship("WorkflowInvocation", back_populates="messages", lazy=True)
+    workflow_step = relationship("WorkflowStep", foreign_keys=workflow_step_id, lazy=True)
+    dependent_workflow_step = relationship("WorkflowStep", foreign_keys=dependent_workflow_step_id, lazy=True)
+
+    @property
+    def workflow_step_index(self):
+        return self.workflow_step and self.workflow_step.order_index
+
+    @property
+    def dependent_workflow_step_index(self):
+        return self.dependent_workflow_step and self.dependent_workflow_step.order_index
+
+    @property
+    def history_id(self):
+        return self.workflow_invocation.history_id
 
 
 class WorkflowInvocationStep(Base, Dictifiable, Serializable):

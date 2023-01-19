@@ -48,6 +48,7 @@ class MatchingCollections:
         self.collections = {}
         self.subcollection_types = {}
         self.action_tuples = {}
+        self.when_values = None
 
     def __attempt_add_to_linked_match(self, input_name, hdca, collection_type_description, subcollection_type):
         structure = get_structure(hdca, collection_type_description, leaf_subcollection_type=subcollection_type)
@@ -62,6 +63,7 @@ class MatchingCollections:
             self.subcollection_types[input_name] = subcollection_type
 
     def slice_collections(self):
+        self.linked_structure.when_values = self.when_values
         return self.linked_structure.walk_collections(self.collections)
 
     def subcollection_mapping_type(self, input_name):
@@ -77,6 +79,7 @@ class MatchingCollections:
         if linked_structure is None:
             linked_structure = leaf
         effective_structure = effective_structure.multiply(linked_structure)
+        effective_structure.when_values = self.when_values
         return None if effective_structure.is_leaf else effective_structure
 
     def map_over_action_tuples(self, input_name):

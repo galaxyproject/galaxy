@@ -1899,6 +1899,7 @@ class Tool(Dictifiable):
         collection_info=None,
         job_callback=None,
         flush_job=True,
+        skip=False,
     ):
         """
         Return a pair with whether execution is successful as well as either
@@ -1916,6 +1917,7 @@ class Tool(Dictifiable):
                 collection_info=collection_info,
                 job_callback=job_callback,
                 flush_job=flush_job,
+                skip=skip,
             )
             job = rval[0]
             out_data = rval[1]

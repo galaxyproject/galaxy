@@ -733,6 +733,11 @@ class HDCJobStateSummary(Model):
         title="Paused jobs",
         description="Number of jobs in the `paused` state.",
     )
+    skipped: int = Field(
+        0,
+        title="Skipped jobs",
+        description="Number of jobs that were skipped due to conditional workflow step execution.",
+    )
     deleted_new: int = Field(
         0,
         title="Deleted new jobs",

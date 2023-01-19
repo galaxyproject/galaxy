@@ -10,6 +10,7 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
+    Union,
 )
 
 from gxformat2 import (
@@ -57,6 +58,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
@@ -359,11 +361,11 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         return True
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False):
-        q = trans.sa_session.query(self.app.model.WorkflowInvocation)
+    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> model.WorkflowInvocation:
+        q = trans.sa_session.query(model.WorkflowInvocation)
         if eager:
             q = q.options(
-                subqueryload(self.app.model.WorkflowInvocation.steps)
+                subqueryload(model.WorkflowInvocation.steps)
                 .joinedload("implicit_collection_jobs")
                 .joinedload("jobs")
                 .joinedload("job")
@@ -401,6 +403,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         cancelled = workflow_invocation.cancel()
 
         if cancelled:
+            workflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             trans.sa_session.add(workflow_invocation)
             trans.sa_session.flush()
         else:
@@ -1668,7 +1671,11 @@ class WorkflowContentsManager(UsesAnnotations):
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
-        step.temp_input_connections = step_dict.get("input_connections", {})
+        DictConnection = Dict[str, Union[int, str]]
+        temp_input_connections: Dict[str, Union[List[DictConnection], DictConnection]] = step_dict.get(
+            "input_connections", {}
+        )
+        step.temp_input_connections = temp_input_connections
 
         # Create the model class for the step
         steps.append(step)
@@ -1709,8 +1716,11 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_input.default_value = default
                     step_input.default_value_set = True
 
+        if "when" in step_dict:
+            step.when_expression = step_dict["when"]
         if dry_run and step in trans.sa_session:
             trans.sa_session.expunge(step)
+
         return module, step
 
     def __load_subworkflow_from_step_dict(
