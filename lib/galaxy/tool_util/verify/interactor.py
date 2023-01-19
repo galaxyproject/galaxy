@@ -549,7 +549,15 @@ class GalaxyInteractorApi:
                 )
             name = test_data["name"]
         else:
-            name = os.path.basename(fname)
+            file_name = None
+            file_name_exists = False
+            location: Optional[str] = test_data.get("location")
+            has_valid_location = location and self.is_valid_url(location)
+            if fname and has_valid_location:
+                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                file_name_exists = os.path.exists(f"{file_name}")
+            upload_from_location = has_valid_location and not file_name_exists
+            name = os.path.basename(location if upload_from_location else fname)
             tool_input.update(
                 {
                     "files_0|NAME": name,
@@ -557,8 +565,11 @@ class GalaxyInteractorApi:
                 }
             )
             files = {}
-            if force_path_paste:
-                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+
+            if upload_from_location:
+                tool_input.update({"files_0|url_paste": location})
+            elif force_path_paste:
+                file_name = file_name or self.test_data_path(tool_id, fname, tool_version=tool_version)
                 tool_input.update({"files_0|url_paste": f"file://{file_name}"})
             else:
                 file_content = self.test_data_download(tool_id, fname, is_output=False, tool_version=tool_version)
@@ -581,6 +592,12 @@ class GalaxyInteractorApi:
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
+
+    def is_valid_url(self, url: str) -> bool:
+        parsed_url = urllib.parse.urlparse(url)
+        if parsed_url.scheme not in ["https", "http"] or not parsed_url.netloc:
+            raise AssertionError(f"Invalid 'location' URL: `{url}`")
+        return True
 
     def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
@@ -1692,6 +1709,8 @@ def test_data_iter(required_files):
             composite_data=extra.get("composite_data", []),
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
+            location=extra.get("location", None),
+            md5=extra.get("md5", None),
         )
         edit_attributes = extra.get("edit_attributes", [])
 

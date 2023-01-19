@@ -182,6 +182,10 @@ def _process_raw_inputs(
                 name = raw_input_dict["name"]
                 param_value = raw_input_dict["value"]
                 param_extra = raw_input_dict["attributes"]
+                location = param_extra.get("location")
+                if param_value is None and location:
+                    # TODO: I bet there is a better way of signaling that we are going to use the location and not the value...
+                    param_value = location
                 if not value.type == "text":
                     param_value = _split_if_str(param_value)
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
