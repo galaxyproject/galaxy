@@ -143,7 +143,7 @@ describe("canAccept", () => {
         const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
         const dataIn = terminals["simple data"]["input"] as InputTerminal;
         expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
-        expect(dataIn.canAccept(dataOut).reason).toBe("Cannot connection output to input of same step.");
+        expect(dataIn.canAccept(dataOut).reason).toBe("Cannot connect output to input of same step.");
     });
     it("rejects paired input on multi-data input", () => {
         const multiDataIn = terminals["multi data"]["f1"] as InputTerminal;

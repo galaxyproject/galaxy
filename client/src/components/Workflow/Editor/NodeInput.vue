@@ -9,7 +9,13 @@
             @dragleave.prevent="dragLeave">
             <div :id="iconId" ref="el" v-b-tooltip.manual class="icon" :title="reason" />
         </div>
-        <div v-if="showRemove" class="delete-terminal" @click="onRemove" @keyup.delete="onRemove" />
+        <div
+            v-if="showRemove"
+            v-b-tooltip.hover
+            :title="reason"
+            class="delete-terminal"
+            @click="onRemove"
+            @keyup.delete="onRemove" />
         {{ label }}
     </div>
 </template>
@@ -24,7 +30,7 @@ import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { terminalFactory } from "@/components/Workflow/Editor/modules/terminals";
+import { terminalFactory, ConnectionAcceptable } from "@/components/Workflow/Editor/modules/terminals";
 
 export default {
     props: {
@@ -86,12 +92,23 @@ export default {
         const connections = computed(() => {
             return connectionStore.getConnectionsForTerminal(id.value);
         });
-        const invalidConnections = computed(() =>
-            connections.value.filter((connection) => connectionStore.invalidConnections[connection.id])
+        const invalidConnectionReasons = computed(() =>
+            connections.value
+                .map((connection) => connectionStore.invalidConnections[connection.id])
+                .filter((reason) => reason)
         );
 
+        const canAccept = computed(() => {
+            if (draggingTerminal.value) {
+                return terminal.value.canAccept(draggingTerminal.value);
+            } else if (invalidConnectionReasons.value.length) {
+                return new ConnectionAcceptable(false, invalidConnectionReasons.value[0]);
+            }
+            return null;
+        });
+
         const showRemove = computed(() => {
-            if (invalidConnections.value.length > 0) {
+            if (invalidConnectionReasons.value.length > 0) {
                 return true;
             } else {
                 return terminalIsHovered.value && connections.value.length > 0;
@@ -102,11 +119,11 @@ export default {
             el,
             position,
             isDragging,
-            draggingTerminal,
             connectionStore,
             id,
             iconId,
             rowClass,
+            canAccept,
             hasTerminals,
             terminal,
             stateStore,
@@ -130,12 +147,6 @@ export default {
         },
         label() {
             return this.input.label || this.input.name;
-        },
-        canAccept() {
-            if (this.draggingTerminal) {
-                return this.terminal.canAccept(this.draggingTerminal);
-            }
-            return null;
         },
         reason() {
             const reason = this.canAccept?.reason;

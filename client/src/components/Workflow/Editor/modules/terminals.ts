@@ -19,7 +19,7 @@ import type {
 } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 
-class ConnectionAcceptable {
+export class ConnectionAcceptable {
     reason: string | null;
     canAccept: boolean;
     constructor(canAccept: boolean, reason: string | null) {
@@ -179,7 +179,7 @@ class BaseInputTerminal extends Terminal {
     }
     canAccept(outputTerminal: BaseOutputTerminal) {
         if (this.stepId == outputTerminal.stepId) {
-            return new ConnectionAcceptable(false, "Cannot connection output to input of same step.");
+            return new ConnectionAcceptable(false, "Cannot connect output to input of same step.");
         }
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
