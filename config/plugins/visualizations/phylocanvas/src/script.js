@@ -1,12 +1,18 @@
 import * as Phylocanvas from "phylocanvas";
+
+/* This will be part of the charts/viz standard lib in 23.1 */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
+
 _.extend(window.bundleEntries || {}, {
     load: function(options) {
         var chart = options.chart;
         var dataset = options.dataset;
         var settings = options.chart.settings;
-        const safe_download_url = `${options.root}${dataset.download_url}`;
         $.ajax( {
-            url     : safe_download_url,
+            url     : prefixedDownloadUrl(options.root, dataset.download_url),
             success : function( content ) {
                 try {
                     var tree = Phylocanvas.default.createTree( options.target ),
