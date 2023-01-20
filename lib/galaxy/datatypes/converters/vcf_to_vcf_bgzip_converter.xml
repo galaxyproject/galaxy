@@ -1,10 +1,11 @@
-<tool id="CONVERTER_vcf_to_vcf_bgzip_0" name="Convert VCF to VCF_BGZIP" version="1.0.2" hidden="true" profile="16.04">
+<tool id="CONVERTER_vcf_to_vcf_bgzip_0" name="Convert VCF to VCF_BGZIP" version="1.0.3" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
-        <requirement type="package" version="8.25">coreutils</requirement>
+        <requirement type="package" version="1.14">htslib</requirement>
     </requirements>
-    <command>python '$__tool_directory__/vcf_to_vcf_bgzip.py' '$input1' '$output1'</command>
+    <command><![CDATA[
+        bgzip -c '$input1' > '$output1'
+    ]]></command>
     <inputs>
         <param format="vcf" name="input1" type="data" label="Choose Vcf file"/>
     </inputs>
@@ -14,7 +15,11 @@
     <tests>
         <test>
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
-            <output name="output1" ftype="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip"/>
+            <output name="output1" ftype="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip" decompress="true">
+                <assert_contents>
+                    <has_size value="717" delta="10"/>
+                </assert_contents>
+            </output>
         </test>
     </tests>
     <help>
