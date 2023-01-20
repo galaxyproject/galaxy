@@ -72,8 +72,8 @@
         </b-alert>
         <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <node-input
-                v-for="input in inputs"
-                :key="input.name"
+                v-for="(input, index) in inputs"
+                :key="`${index}-${input.name}`"
                 :input="input"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
@@ -85,8 +85,8 @@
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
-                v-for="output in outputs"
-                :key="output.name"
+                v-for="(output, index) in outputs"
+                :key="`${index + inputs.length}-${output.name}`"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
