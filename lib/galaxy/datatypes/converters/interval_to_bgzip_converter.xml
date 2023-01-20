@@ -81,8 +81,9 @@
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
             <output name="output1" ftype="bgzip" decompress="true">
                 <expand macro="assert_size" value="322">
-                    <has_n_lines n="3"/>
-                    <has_text_matching expression="^#" negate="true"/>
+                    <!-- will only work with https://github.com/galaxyproject/galaxy/pull/15085
+                        <has_n_lines n="3"/>
+                        <has_text_matching expression="^#" negate="true"/> -->
                 </expand>
             </output>
             <assert_command>
