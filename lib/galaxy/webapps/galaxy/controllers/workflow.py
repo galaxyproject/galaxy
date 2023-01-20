@@ -163,12 +163,12 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
         # of its steps to be eagerly loaded.
         return (
             trans.sa_session.query(self.model_class)
-            .join("user")
+            .join(self.model_class.user)
             .options(
-                lazyload("latest_workflow"),
-                joinedload("user").load_only("username"),
-                joinedload("annotations"),
-                undefer("average_rating"),
+                lazyload(self.model_class.latest_workflow),
+                joinedload(self.model_class.user).load_only(model.User.username),
+                joinedload(self.model_class.annotations),
+                undefer(self.model_class.average_rating),
             )
         )
 
@@ -487,7 +487,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             trans.sa_session.query(model.StoredWorkflow)
             .filter_by(user=trans.user, deleted=False, hidden=False)
             .order_by(desc(model.StoredWorkflow.table.c.update_time))
-            .options(joinedload("latest_workflow").joinedload("steps"))
+            .options(joinedload(model.StoredWorkflow.latest_workflow).joinedload(model.Workflow.steps))
             .all()
         )
         if version is None:
