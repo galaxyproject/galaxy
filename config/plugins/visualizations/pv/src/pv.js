@@ -10,7 +10,7 @@ window.bundleEntries.load = function (options) {
         antialias: true,
         outline: true,
     });
-    const safe_download_url = `${options.root}${dataset.download_url}`;
+    const safe_download_url = `${options.root}${options.dataset.download_url}`;
     var xhr = new XMLHttpRequest();
     xhr.open("GET", safe_download_url);
     xhr.onload = function () {
