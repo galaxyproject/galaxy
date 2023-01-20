@@ -208,11 +208,8 @@ client-production-maps: client-node-deps ## Rebuild client-side artifacts for a 
 client-format: client-node-deps ## Reformat client code
 	cd client && yarn run format
 
-client-watch: client-node-deps ## A useful target for parallel development building.  See also client-dev-server.
-	cd client && yarn run watch
-
 client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && yarn run serve
+	cd client && yarn run develop
 
 client-test: client-node-deps  ## Run JS unit tests
 	cd client && yarn run test
