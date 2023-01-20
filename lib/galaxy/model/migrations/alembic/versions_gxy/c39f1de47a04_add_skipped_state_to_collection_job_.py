@@ -5,8 +5,16 @@ Revises: 3100452fa030
 Create Date: 2023-01-16 11:53:59.783836
 
 """
-from alembic import op
+from typing import Generator
+
+from alembic import (
+    context,
+    op,
+)
 from alembic_utils.pg_view import PGView
+from sqlalchemy import text as sql_text
+from sqlalchemy.engine.url import make_url
+from sqlalchemy.sql.elements import TextClause
 
 from galaxy.model.view import HistoryDatasetCollectionJobStateSummary
 
@@ -53,18 +61,39 @@ GROUP BY jobstates.hdca_id
 """
 
 
+class SqlitePGView(PGView):
+    def to_sql_statement_create_or_replace(self) -> Generator[TextClause, None, None]:
+        """Generates a SQL "create or replace view" statement"""
+
+        yield sql_text(f"""DROP VIEW IF EXISTS {self.literal_schema}."{self.signature}";""")
+        yield sql_text(f"""CREATE VIEW {self.literal_schema}."{self.signature}" AS {self.definition};""")
+
+
+def get_view_instance(definition: str):
+
+    try:
+        url = make_url(context.config.get_main_option("sqlalchemy.url"))
+        dialect = url.get_dialect().name
+    except Exception:
+        # If someone's doing offline migrations they're probably using PostgreSQL
+        dialect = "postgresql"
+    if dialect == "postgresql":
+        ViewClass = PGView
+        schema = "public"
+    elif dialect == "sqlite":
+        ViewClass = SqlitePGView
+        schema = "main"
+    else:
+        raise Exception(f"Don't know how to generate view for dialect '{dialect}'")
+    return ViewClass(schema=schema, signature="collection_job_state_summary_view", definition=definition)
+
+
 def upgrade():
-    public_collection_job_state_summary_view = PGView(
-        schema="public",
-        signature="collection_job_state_summary_view",
-        definition=HistoryDatasetCollectionJobStateSummary.aggregate_state_query,
-    )
+    view = get_view_instance(HistoryDatasetCollectionJobStateSummary.aggregate_state_query)
     # op.replace_entity comes from alembic_utils plugin
-    op.replace_entity(public_collection_job_state_summary_view)  # type: ignore[attr-defined]
+    op.replace_entity(view)  # type: ignore[attr-defined]
 
 
 def downgrade():
-    public_collection_job_state_summary_view = PGView(
-        schema="public", signature="collection_job_state_summary_view", definition=PREVIOUS_AGGREGATE_QUERY
-    )
-    op.replace_entity(public_collection_job_state_summary_view)  # type: ignore[attr-defined]
+    view = get_view_instance(PREVIOUS_AGGREGATE_QUERY)
+    op.replace_entity(view)  # type: ignore[attr-defined]
