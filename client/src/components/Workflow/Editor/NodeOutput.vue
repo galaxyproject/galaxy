@@ -1,5 +1,5 @@
 <template>
-    <div class="form-row dataRow output-data-row">
+    <div :class="rowClass">
         <div
             v-if="showCalloutActiveOutput"
             v-b-tooltip
@@ -154,6 +154,13 @@ export default {
             const activeLabel = workflowOutput.value?.label || props.output.name;
             return `${activeLabel} (${extensions.value.join(", ")})`;
         });
+        const rowClass = computed(() => {
+            const classes = ["form-row", "dataRow", "output-data-row"];
+            if (props.output?.valid === false) {
+                classes.push("form-row-error");
+            }
+            return classes;
+        });
 
         const menu = ref(null);
         const icon = ref(null);
@@ -176,7 +183,6 @@ export default {
         function onToggleActive() {
             const step = stepStore.getStep(stepId.value);
             if (workflowOutput.value) {
-                console.log("wfo", workflowOutput.value);
                 step.workflow_outputs = step.workflow_outputs.filter(
                     (workflowOutput) => workflowOutput.output_name !== output.value.name
                 );
@@ -212,6 +218,7 @@ export default {
             activeClass,
             visibleClass,
             visibleHint,
+            rowClass,
             isVisible,
             terminal,
             isMultiple,

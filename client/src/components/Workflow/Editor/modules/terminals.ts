@@ -19,7 +19,7 @@ import type {
 } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 
-class ConnectionAcceptable {
+export class ConnectionAcceptable {
     reason: string | null;
     canAccept: boolean;
     constructor(canAccept: boolean, reason: string | null) {
@@ -42,6 +42,7 @@ interface InputTerminalInputs {
 
 interface InputTerminalArgs extends BaseTerminalArgs {
     input: InputTerminalInputs;
+    input_type: "dataset" | "dataset_collection" | "parameter";
 }
 
 class Terminal extends EventEmitter {
@@ -178,7 +179,7 @@ class BaseInputTerminal extends Terminal {
     }
     canAccept(outputTerminal: BaseOutputTerminal) {
         if (this.stepId == outputTerminal.stepId) {
-            return new ConnectionAcceptable(false, "Cannot connection output to input of same step.");
+            return new ConnectionAcceptable(false, "Cannot connect output to input of same step.");
         }
         if (this._inputFilled()) {
             return new ConnectionAcceptable(
@@ -295,16 +296,31 @@ class BaseInputTerminal extends Terminal {
     getConnectedTerminals() {
         return this.connections.map((connection) => {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
+            if (!outputStep) {
+                return new InvalidOutputTerminal({
+                    stepId: -1,
+                    optional: false,
+                    datatypes: [],
+                    name: connection.output.name,
+                    valid: false,
+                    datatypesMapper: this.datatypesMapper,
+                });
+            }
             let terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name);
             if (!terminalSource) {
-                /*
-                / This can't happen, I think, because we'd drop the connection.
-                / We (probably) want to eventually display invalid connections,
-                / so maybe generate a NullTerminal when there is no terminalSource ?
-                */
-                throw `Could not find output ${connection.output.name} on step ${connection.output.stepId}`;
+                return new InvalidOutputTerminal({
+                    stepId: -1,
+                    optional: false,
+                    datatypes: [],
+                    name: connection.output.name,
+                    valid: false,
+                    datatypesMapper: this.datatypesMapper,
+                });
             }
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
+            if (outputStep.when) {
+                terminalSource = { ...terminalSource, optional: true };
+            }
             if (
                 "extensions" in terminalSource &&
                 outputStep.post_job_actions &&
@@ -318,12 +334,40 @@ class BaseInputTerminal extends Terminal {
             return terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
         });
     }
-    destroyInvalidConnections() {
-        this.getConnectedTerminals().forEach((terminal) => {
-            if (!this.attachable(terminal).canAccept) {
-                this.disconnect(terminal);
+
+    getInvalidConnectedTerminals() {
+        return this.getConnectedTerminals().filter((terminal) => {
+            const canAccept = this.attachable(terminal);
+            const connectionId = `${this.stepId}-${this.name}-${terminal.stepId}-${terminal.name}`;
+            if (!canAccept.canAccept) {
+                this.connectionStore.markInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
+                return true;
+            } else if (this.connectionStore.invalidConnections[connectionId]) {
+                this.connectionStore.dropFromInvalidConnections(connectionId);
             }
+            return false;
         });
+    }
+
+    destroyInvalidConnections() {
+        this.getInvalidConnectedTerminals().forEach((terminal) => this.disconnect(terminal));
+    }
+}
+
+interface InvalidInputTerminalArgs extends InputTerminalArgs {
+    valid: false;
+}
+
+export class InvalidInputTerminal extends BaseInputTerminal {
+    valid: false;
+
+    constructor(attr: InvalidInputTerminalArgs) {
+        super(attr);
+        this.valid = false;
+    }
+
+    attachable(terminal: BaseOutputTerminal) {
+        return new ConnectionAcceptable(false, "Cannot attach to invalid input.");
     }
 }
 
@@ -519,6 +563,8 @@ interface BaseOutputTerminalArgs extends BaseTerminalArgs {
     optional: boolean;
 }
 
+export type InputTerminalsAndInvalid = InputTerminals | InvalidInputTerminal;
+
 class BaseOutputTerminal extends Terminal {
     datatypes: BaseOutputTerminalArgs["datatypes"];
     optional: BaseOutputTerminalArgs["optional"];
@@ -532,16 +578,45 @@ class BaseOutputTerminal extends Terminal {
         this.optional = attr.optional;
         this.terminalType = "output";
     }
-    getConnectedTerminals() {
+    getConnectedTerminals(): InputTerminalsAndInvalid[] {
         return this.connections.map((connection) => {
             const inputStep = this.stepStore.getStep(connection.input.stepId);
-            const terminalSource = inputStep.inputs.find((input) => input.name === connection.input.name);
+            const extraStepInput = this.stepStore.getStepExtraInputs(inputStep.id);
+            const terminalSource = [...extraStepInput, ...inputStep.inputs].find(
+                (input) => input.name === connection.input.name
+            );
             if (!terminalSource) {
-                throw `Could not find input ${connection.input.name} on step ${connection.input.stepId}`;
+                return new InvalidInputTerminal({
+                    valid: false,
+                    name: connection.input.name,
+                    stepId: connection.input.stepId,
+                    datatypesMapper: this.datatypesMapper,
+                    input_type: "dataset",
+                    input: {
+                        datatypes: [],
+                        optional: false,
+                        multiple: false,
+                    },
+                });
             }
             return terminalFactory(inputStep.id, terminalSource, this.datatypesMapper);
         });
     }
+
+    getInvalidConnectedTerminals() {
+        return this.getConnectedTerminals().filter((terminal: any) => {
+            const canAccept = terminal.attachable(this);
+            const connectionId = `${terminal.stepId}-${terminal.name}-${this.stepId}-${this.name}`;
+            if (!canAccept.canAccept) {
+                this.connectionStore.markInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
+                return true;
+            } else if (this.connectionStore.invalidConnections[connectionId]) {
+                this.connectionStore.dropFromInvalidConnections(connectionId);
+            }
+            return false;
+        });
+    }
+
     destroyInvalidConnections() {
         this.getConnectedTerminals().forEach((terminal) => {
             if (!terminal.attachable(this).canAccept) {
@@ -597,6 +672,27 @@ export class OutputParameterTerminal extends BaseOutputTerminal {
     }
 }
 
+interface InvalidOutputTerminalArgs extends BaseOutputTerminalArgs {
+    valid: false;
+}
+
+export class InvalidOutputTerminal extends BaseOutputTerminal {
+    valid: false;
+
+    constructor(attr: InvalidOutputTerminalArgs) {
+        super(attr);
+        this.valid = false;
+    }
+
+    validInputTerminals() {
+        return [];
+    }
+
+    canAccept() {
+        return new ConnectionAcceptable(false, "Can't connect to invalid terminal.");
+    }
+}
+
 export type OutputTerminals = OutputTerminal | OutputCollectionTerminal | OutputParameterTerminal;
 export type InputTerminals = InputTerminal | InputCollectionTerminal | InputParameterTerminal;
 
@@ -639,7 +735,27 @@ export function producesAcceptableDatatype(
     );
 }
 
-type TerminalOf<T extends TerminalSource> = T extends DataStepInput
+type TerminalSourceAndInvalid = TerminalSource | InvalidOutputTerminalArgs | InvalidInputTerminalArgs;
+
+function isInvalidOutputArg(arg: TerminalSourceAndInvalid): arg is InvalidOutputTerminalArgs {
+    return "name" in arg && "valid" in arg && arg.valid === false;
+}
+
+function isOutputParameterArg(arg: TerminalSourceAndInvalid): arg is ParameterOutput {
+    return "name" in arg && "parameter" in arg && arg.parameter === true;
+}
+
+function isOutputCollectionArg(arg: TerminalSourceAndInvalid): arg is CollectionOutput {
+    return "name" in arg && "collection" in arg && arg.collection;
+}
+
+function isOutputArg(arg: TerminalSourceAndInvalid): arg is DataOutput {
+    return "name" in arg && "extensions" in arg;
+}
+
+type TerminalOf<T extends TerminalSourceAndInvalid> = T extends InvalidInputTerminalArgs
+    ? InvalidInputTerminal
+    : T extends DataStepInput
     ? InputTerminal
     : T extends DataCollectionStepInput
     ? InputCollectionTerminal
@@ -651,9 +767,11 @@ type TerminalOf<T extends TerminalSource> = T extends DataStepInput
     ? OutputCollectionTerminal
     : T extends ParameterOutput
     ? OutputParameterTerminal
+    : T extends BaseOutputTerminalArgs
+    ? InvalidOutputTerminal
     : never;
 
-export function terminalFactory<T extends TerminalSource>(
+export function terminalFactory<T extends TerminalSourceAndInvalid>(
     stepId: number,
     terminalSource: T,
     datatypesMapper: DatatypesMapperModel
@@ -661,36 +779,49 @@ export function terminalFactory<T extends TerminalSource>(
     if ("input_type" in terminalSource) {
         const terminalArgs = {
             datatypesMapper: datatypesMapper,
+            input_type: terminalSource.input_type,
             name: terminalSource.name,
             stepId: stepId,
         };
-        const inputArgs = {
-            datatypes: terminalSource.extensions,
-            multiple: terminalSource.multiple,
-            optional: terminalSource.optional,
-        };
-        if (terminalSource.input_type == "dataset") {
-            // type cast appears to be necessary: https://github.com/Microsoft/TypeScript/issues/13995
-            return new InputTerminal({
+        if ("valid" in terminalSource) {
+            return new InvalidInputTerminal({
                 ...terminalArgs,
-                input: inputArgs,
-            }) as TerminalOf<T>;
-        } else if (terminalSource.input_type === "dataset_collection") {
-            return new InputCollectionTerminal({
-                ...terminalArgs,
-                collection_types: terminalSource.collection_types,
                 input: {
-                    ...inputArgs,
+                    datatypes: [],
+                    multiple: false,
+                    optional: false,
                 },
+                valid: terminalSource.valid,
             }) as TerminalOf<T>;
-        } else if (terminalSource.input_type === "parameter") {
-            return new InputParameterTerminal({
-                ...terminalArgs,
-                type: terminalSource.type,
-                input: {
-                    ...inputArgs,
-                },
-            }) as TerminalOf<T>;
+        } else {
+            const inputArgs = {
+                datatypes: terminalSource.extensions,
+                multiple: terminalSource.multiple,
+                optional: terminalSource.optional,
+            };
+            if (terminalSource.input_type == "dataset") {
+                // type cast appears to be necessary: https://github.com/Microsoft/TypeScript/issues/13995
+                return new InputTerminal({
+                    ...terminalArgs,
+                    input: inputArgs,
+                }) as TerminalOf<T>;
+            } else if (terminalSource.input_type === "dataset_collection") {
+                return new InputCollectionTerminal({
+                    ...terminalArgs,
+                    collection_types: terminalSource.collection_types,
+                    input: {
+                        ...inputArgs,
+                    },
+                }) as TerminalOf<T>;
+            } else if (terminalSource.input_type === "parameter") {
+                return new InputParameterTerminal({
+                    ...terminalArgs,
+                    type: terminalSource.type,
+                    input: {
+                        ...inputArgs,
+                    },
+                }) as TerminalOf<T>;
+            }
         }
     } else if (terminalSource.name) {
         const outputArgs = {
@@ -699,24 +830,27 @@ export function terminalFactory<T extends TerminalSource>(
             stepId: stepId,
             datatypesMapper: datatypesMapper,
         };
-        if ("parameter" in terminalSource) {
+        if (isOutputParameterArg(terminalSource)) {
             return new OutputParameterTerminal({
                 ...outputArgs,
                 type: terminalSource.type,
             }) as TerminalOf<T>;
-        } else if ("collection" in terminalSource && terminalSource.collection) {
+        } else if (isOutputCollectionArg(terminalSource)) {
             return new OutputCollectionTerminal({
                 ...outputArgs,
                 datatypes: terminalSource.extensions,
                 collection_type: terminalSource.collection_type,
                 collection_type_source: terminalSource.collection_type_source,
             }) as TerminalOf<T>;
-        } else {
+        } else if (isOutputArg(terminalSource)) {
             return new OutputTerminal({
                 ...outputArgs,
                 datatypes: terminalSource.extensions,
             }) as TerminalOf<T>;
         }
+    }
+    if (isInvalidOutputArg(terminalSource)) {
+        return new InvalidOutputTerminal(terminalSource) as TerminalOf<T>;
     }
     throw `Could not build terminal for ${terminalSource}`;
 }
