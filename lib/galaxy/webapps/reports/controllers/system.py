@@ -115,7 +115,7 @@ class System(BaseUIController):
                         model.History.update_time < cutoff_time,
                     )
                 )
-                .options(joinedload("datasets"))
+                .options(joinedload(model.History.datasets))
             )
 
             for history in histories:
