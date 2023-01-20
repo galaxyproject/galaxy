@@ -829,7 +829,9 @@ class DatasetCollectionManager:
         DCE = model.DatasetCollectionElement
         qry = Query(DCE).filter(DCE.dataset_collection_id == parent_id)
         qry = qry.order_by(DCE.element_index)
-        qry = qry.options(joinedload("child_collection"), joinedload("hda"))
+        qry = qry.options(
+            joinedload(model.DatasetCollectionElement.child_collection), joinedload(model.DatasetCollectionElement.hda)
+        )
         if limit is not None:
             qry = qry.limit(int(limit))
         if offset is not None:
