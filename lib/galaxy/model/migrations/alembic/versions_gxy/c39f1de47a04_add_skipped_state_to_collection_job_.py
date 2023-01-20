@@ -75,7 +75,7 @@ def get_view_instance(definition: str):
         url = make_url(context.config.get_main_option("sqlalchemy.url"))
         dialect = url.get_dialect().name
     except Exception:
-        # If someone's doing offline migrations they're probably using postgrea
+        # If someone's doing offline migrations they're probably using PostgreSQL
         dialect = "postgresql"
     if dialect == "postgresql":
         ViewClass = PGView
