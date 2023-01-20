@@ -4,7 +4,7 @@ import { state } from "@/store/tagStore";
 import Vue from "vue";
 
 interface InvalidConnections {
-    [index: string]: string;
+    [index: string]: string | undefined;
 }
 
 export interface State {
@@ -120,8 +120,11 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
             const stepStore = useWorkflowStepStore();
             stepStore.addConnection(connection);
         },
-        addInvalidConnection(this: State, connectionId: string, reason: string) {
+        markInvalidConnection(this: State, connectionId: string, reason: string) {
             Vue.set(this.invalidConnections, connectionId, reason);
+        },
+        dropFromInvalidConnections(this: State, connectionId: string) {
+            this.invalidConnections[connectionId] = undefined;
         },
         removeConnection(this: State, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
             const stepStore = useWorkflowStepStore();

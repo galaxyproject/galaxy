@@ -318,6 +318,9 @@ class BaseInputTerminal extends Terminal {
                 });
             }
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
+            if (outputStep.when) {
+                terminalSource = { ...terminalSource, optional: true };
+            }
             if (
                 "extensions" in terminalSource &&
                 outputStep.post_job_actions &&
@@ -335,10 +338,12 @@ class BaseInputTerminal extends Terminal {
     getInvalidConnectedTerminals() {
         return this.getConnectedTerminals().filter((terminal) => {
             const canAccept = this.attachable(terminal);
+            const connectionId = `${this.stepId}-${this.name}-${terminal.stepId}-${terminal.name}`;
             if (!canAccept.canAccept) {
-                const connectionId = `${this.stepId}-${this.name}-${terminal.stepId}-${terminal.name}`;
-                this.connectionStore.addInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
+                this.connectionStore.markInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
                 return true;
+            } else if (this.connectionStore.invalidConnections[connectionId]) {
+                this.connectionStore.dropFromInvalidConnections(connectionId);
             }
             return false;
         });
@@ -601,10 +606,12 @@ class BaseOutputTerminal extends Terminal {
     getInvalidConnectedTerminals() {
         return this.getConnectedTerminals().filter((terminal: any) => {
             const canAccept = terminal.attachable(this);
+            const connectionId = `${terminal.stepId}-${terminal.name}-${this.stepId}-${this.name}`;
             if (!canAccept.canAccept) {
-                const connectionId = `${terminal.stepId}-${terminal.name}-${this.stepId}-${this.name}`;
-                this.connectionStore.addInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
+                this.connectionStore.markInvalidConnection(connectionId, canAccept.reason ?? "Unknown");
                 return true;
+            } else if (this.connectionStore.invalidConnections[connectionId]) {
+                this.connectionStore.dropFromInvalidConnections(connectionId);
             }
             return false;
         });
