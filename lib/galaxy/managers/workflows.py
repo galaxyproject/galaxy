@@ -1016,13 +1016,16 @@ class WorkflowContentsManager(UsesAnnotations):
                             nested_input_dict = {}
                             index = repeat_values[i]["__index__"]
                             nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
-                            nested_input_dict["inputs"] = do_inputs(
-                                input.inputs,
-                                repeat_values[i],
-                                f"{prefix + input.name}_{str(index)}|",
-                                step,
-                                other_values,
-                            )
+                            try:
+                                nested_input_dict["inputs"] = do_inputs(
+                                    input.inputs,
+                                    repeat_values[i],
+                                    f"{prefix + input.name}_{str(index)}|",
+                                    step,
+                                    other_values,
+                                )
+                            except KeyError:
+                                continue
                             nested_input_dicts.append(nested_input_dict)
                         input_dict["inputs"] = nested_input_dicts
                 elif input.type == "conditional":
@@ -1032,14 +1035,20 @@ class WorkflowContentsManager(UsesAnnotations):
                     row_for_param(
                         input_dict, input.test_param, group_values[input.test_param.name], other_values, prefix, step
                     )
-                    input_dict["inputs"] = do_inputs(
-                        input.cases[current_case].inputs, group_values, new_prefix, step, other_values
-                    )
+                    try:
+                        input_dict["inputs"] = do_inputs(
+                            input.cases[current_case].inputs, group_values, new_prefix, step, other_values
+                        )
+                    except KeyError:
+                        continue
                 elif input.type == "section":
                     new_prefix = f"{prefix + input.name}|"
                     group_values = values[input.name]
                     input_dict["title"] = input.title
-                    input_dict["inputs"] = do_inputs(input.inputs, group_values, new_prefix, step, other_values)
+                    try:
+                        input_dict["inputs"] = do_inputs(input.inputs, group_values, new_prefix, step, other_values)
+                    except KeyError:
+                        continue
                 else:
                     row_for_param(input_dict, input, values[input.name], other_values, prefix, step)
                 input_dicts.append(input_dict)
