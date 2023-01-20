@@ -2704,3 +2704,7 @@ galaxy:
   # <config_dir>.
   #themes_config_file: themes_conf.yml
 
+  # Enables user preferences and api endpoint for the beacon
+  # integration.
+  #enable_beacon_integration: false
+

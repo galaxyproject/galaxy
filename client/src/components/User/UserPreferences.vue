@@ -83,6 +83,11 @@
                 @click="makeDataPrivate" />
         </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
+            <UserBeaconSettings v-if="config && config.enable_beacon_integration" :user-id="userId"
+                >>
+            </UserBeaconSettings>
+        </ConfigProvider>
+        <ConfigProvider v-slot="{ config }">
             <UserDeletion
                 v-if="config && !config.single_user && config.enable_account_interface"
                 :email="email"
@@ -115,6 +120,7 @@ import UserDeletion from "./UserDeletion";
 import UserPreferencesElement from "./UserPreferencesElement";
 
 import "@fortawesome/fontawesome-svg-core";
+import UserBeaconSettings from "./UserBeaconSettings";
 
 Vue.use(BootstrapVue);
 
@@ -124,6 +130,7 @@ export default {
         UserDeletion,
         UserPreferencesElement,
         ThemeSelector,
+        UserBeaconSettings,
     },
     props: {
         userId: {

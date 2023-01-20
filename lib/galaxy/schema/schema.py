@@ -3048,6 +3048,14 @@ class UserEmail(Model):
     )
 
 
+class UserBeaconSetting(Model):
+    enabled: bool = Field(
+        ...,
+        title="Enabled",
+        description="True if beacon sharing is enabled",
+    )
+
+
 class SharingStatus(Model):
     id: DecodedDatabaseIdField = Field(
         ...,
