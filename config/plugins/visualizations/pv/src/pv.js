@@ -1,5 +1,11 @@
 import * as pv from "bio-pv";
 
+/* This should be part of the charts/viz standard lib */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
+
 window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     var settings = options.chart.settings;
@@ -10,9 +16,8 @@ window.bundleEntries.load = function (options) {
         antialias: true,
         outline: true,
     });
-    const safe_download_url = `${options.root}${options.dataset.download_url}`;
     var xhr = new XMLHttpRequest();
-    xhr.open("GET", safe_download_url);
+    xhr.open("GET", prefixedDownloadUrl(options.root, options.dataset.download_url));
     xhr.onload = function () {
         if (xhr.status === 200) {
             var structure = pv.io.pdb(xhr.response);
