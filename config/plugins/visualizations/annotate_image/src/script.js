@@ -443,7 +443,7 @@ window.bundleEntries.load = function (opt) {
         });
     };
 
-    const downloadUrl = prefixedDownloadUrl(options.root, dataset.download_url);
+    const downloadUrl = prefixedDownloadUrl(opt.root, dataset.download_url);
     $.ajax({
         url: downloadUrl,
         success: function(content) {
