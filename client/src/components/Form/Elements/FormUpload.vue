@@ -1,21 +1,33 @@
 <script setup>
+import { ref, defineEmits } from "vue";
+
 const props = defineProps({
     value: {
         type: Object,
     },
-    target: {
-        type: Object,
-        default: null,
-    },
 });
 
+const file = ref(null);
+const emit = defineEmits(["input"]);
+
 function readFile() {
-    this.console.log("uploaded file!");
+    let fileContent = file && file.value.files[0];
+    var reader = new FileReader();
+    if (fileContent) {
+        reader.onload = () => {
+            let result = reader.result
+            emit(result);
+            console.log("FILE CONTENTS: ", result);
+        }
+        reader.readAsText(fileContent);
+        
+        
+    }
 }
 </script>
 
 <template>
     <div>
-        <input type="file" @change="readFile" ref="file" />
+        <input ref="file" type="file" @change="readFile" />
     </div>
 </template>
