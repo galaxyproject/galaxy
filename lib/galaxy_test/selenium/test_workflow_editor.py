@@ -557,7 +557,7 @@ steps:
         editor.select_datatype_text_search.wait_for_and_send_keys("bam")
         editor.select_datatype(datatype="bam").wait_for_and_click()
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
-        self.assert_not_connected("create_2#out_file1", "checksum#input")
+        self.assert_connection_invalid("create_2#out_file1", "checksum#input")
 
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
@@ -861,6 +861,10 @@ steps:
     def assert_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
+
+    def assert_connection_invalid(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_invalid_for(source_id=source_id, sink_id=sink_id).wait_for_present()
 
     def assert_not_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
