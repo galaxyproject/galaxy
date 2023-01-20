@@ -1,0 +1,40 @@
+<tool id="remote_test_data_location" name="Remote test data location" version="1.0.0" profile="22.01">
+    <command><![CDATA[
+        cat '$input' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="input" type="data" format="txt" label="Input"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <test>
+            <!-- When only the `location` is defined, it will be directly URL pasted to Galaxy -->
+            <param name="input" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="Hello World!"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- When the `value` and the `location` are defined, if the local file is not present, the location will be used as a fallback and directly URL pasted to Galaxy. -->
+            <param name="input" value="does_not_exists.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="Hello World!"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- When the `value` and the `location` are defined, if the local file is present, the location will be ignored. -->
+            <param name="input" value="simple_line.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="This is a line of text."/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+</tool>
