@@ -38,6 +38,7 @@ from galaxy.webapps.base.controller import (
     BaseAPIController,
     HTTPBadRequest,
 )
+from tool_shed.webapp import model
 from tool_shed.dependencies import attribute_handlers
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.repository_types import util as rt_util
@@ -118,7 +119,7 @@ class RepositoriesController(BaseAPIController):
         if owner is None:
             owner = kwd.get("owner", None)
         tsr_id = kwd.get("tsr_id", None)
-        eagerload_columns = ["downloadable_revisions"]
+        eagerload_columns = [model.Repository.downloadable_revisions]
         if None not in [name, owner]:
             # Get the repository information.
             repository = repository_util.get_repository_by_name_and_owner(
@@ -217,7 +218,7 @@ class RepositoriesController(BaseAPIController):
         if name and owner and changeset_revision:
             # Get the repository information.
             repository = repository_util.get_repository_by_name_and_owner(
-                self.app, name, owner, eagerload_columns=["downloadable_revisions"]
+                self.app, name, owner, eagerload_columns=[model.Repository.downloadable_revisions]
             )
             if repository is None:
                 log.debug(f"Cannot locate repository {name} owned by {owner}")
@@ -284,7 +285,7 @@ class RepositoriesController(BaseAPIController):
         tsr_id = kwd.get("tsr_id", None)
         if tsr_id is not None:
             repository = repository_util.get_repository_in_tool_shed(
-                self.app, tsr_id, eagerload_columns=["downloadable_revisions"]
+                self.app, tsr_id, eagerload_columns=[model.Repository.downloadable_revisions]
             )
         else:
             error_message = "Error in the Tool Shed repositories API in get_ordered_installable_revisions: "
@@ -737,7 +738,7 @@ class RepositoriesController(BaseAPIController):
         changeset_revision = kwd.get("changeset_revision", None)
         hexlify_this = util.asbool(kwd.get("hexlify", True))
         repository = repository_util.get_repository_by_name_and_owner(
-            trans.app, name, owner, eagerload_columns=["downloadable_revisions"]
+            trans.app, name, owner, eagerload_columns=[model.Repository.downloadable_revisions]
         )
         if repository and repository.downloadable_revisions:
             repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
@@ -837,7 +838,7 @@ class RepositoriesController(BaseAPIController):
         downloadable_only = util.asbool(kwd.get("downloadable_only", "True"))
         all_metadata = {}
         repository = repository_util.get_repository_in_tool_shed(
-            self.app, id, eagerload_columns=["downloadable_revisions"]
+            self.app, id, eagerload_columns=[model.Repository.downloadable_revisions]
         )
         for changeset, changehash in metadata_util.get_metadata_revisions(
             self.app, repository, sort_revisions=True, downloadable=downloadable_only
