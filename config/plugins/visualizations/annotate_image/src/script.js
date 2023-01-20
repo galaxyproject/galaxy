@@ -5,6 +5,12 @@ import _ from "underscore";
 // Use lighter weight 'core' version of paper since we don't need paperscript
 import paper from "../node_modules/paper/dist/paper-core.js";
 
+/* This will be part of the charts/viz standard lib in 23.1 */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
+
 const CommandManager = (function() {
     function CommandManager() {}
 
@@ -437,12 +443,12 @@ window.bundleEntries.load = function (opt) {
         });
     };
 
-    const safe_download_url = `${options.root}${dataset.download_url}`;
+    const downloadUrl = prefixedDownloadUrl(options.root, dataset.download_url);
     $.ajax({
-        url: safe_download_url,
+        url: downloadUrl,
         success: function(content) {
             const $chartViewer = $("#" + opt.target);
-            $chartViewer.html("<img id='image-annotate' src='" + safe_download_url + "' />");
+            $chartViewer.html("<img id='image-annotate' src='" + downloadUrl + "' />");
             $chartViewer.css("overflow", "auto");
             $chartViewer.css("position", "relative");
             const $image = $chartViewer.find("img");

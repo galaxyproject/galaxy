@@ -5,7 +5,7 @@ function asBoolean(value) {
     return String(value).toLowerCase() == "true";
 }
 
-/* This should be part of the charts/viz standard lib */
+/* This will be part of the charts/viz standard lib in 23.1 */
 const slashCleanup = /(\/)+/g;
 function prefixedDownloadUrl(root, path) {
     return `${root}/${path}`.replace(slashCleanup, "/");
