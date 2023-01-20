@@ -287,8 +287,12 @@ class VisualizationAllPublishedGrid(grids.Grid):
         # See optimization description comments and TODO for tags in matching public histories query.
         return (
             trans.sa_session.query(self.model_class)
-            .join("user")
-            .options(joinedload("user").load_only("username"), joinedload("annotations"), undefer("average_rating"))
+            .join(self.model_class.user)
+            .options(
+                joinedload(self.model_class.user).load_only("username"),
+                joinedload(self.model_class.annotations),
+                undefer("average_rating"),
+            )
         )
 
     def apply_query_filter(self, trans, query, **kwargs):
