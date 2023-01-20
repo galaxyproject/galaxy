@@ -163,10 +163,10 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             query = query.outerjoin(model.StoredWorkflow.users_shared_with)
         query = query.outerjoin(model.StoredWorkflow.tags)
 
-        latest_workflow_load = joinedload("latest_workflow")
+        latest_workflow_load = joinedload(model.StoredWorkflow.latest_workflow)
         if not payload.skip_step_counts:
             latest_workflow_load = latest_workflow_load.undefer("step_count")
-        latest_workflow_load = latest_workflow_load.lazyload("steps")
+        latest_workflow_load = latest_workflow_load.lazyload(model.Workflow.steps)
 
         query = query.options(joinedload(model.StoredWorkflow.annotations))
         query = query.options(latest_workflow_load)
@@ -268,9 +268,11 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                     )
                 )
         stored_workflow = workflow_query.options(
-            joinedload("annotations"),
-            joinedload("tags"),
-            subqueryload("latest_workflow").joinedload("steps").joinedload("*"),
+            joinedload(trans.app.model.StoredWorkflow.annotations),
+            joinedload(trans.app.model.StoredWorkflow.tags),
+            subqueryload(trans.app.model.StoredWorkflow.latest_workflow)
+            .joinedload(trans.app.model.Workflow.steps)
+            .joinedload("*"),
         ).first()
         if stored_workflow is None:
             if not by_stored_id:
@@ -366,10 +368,10 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         if eager:
             q = q.options(
                 subqueryload(model.WorkflowInvocation.steps)
-                .joinedload("implicit_collection_jobs")
-                .joinedload("jobs")
-                .joinedload("job")
-                .joinedload("input_datasets")
+                .joinedload(model.WorkflowInvocationStep.implicit_collection_jobs)
+                .joinedload(model.ImplicitCollectionJobs.jobs)
+                .joinedload(model.ImplicitCollectionJobsJobAssociation.job)
+                .joinedload(model.Job.input_datasets)
             )
         workflow_invocation = q.get(decoded_invocation_id)
         if not workflow_invocation:
