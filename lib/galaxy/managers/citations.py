@@ -38,9 +38,12 @@ class CitationsManager:
 class DoiCache:
     def __init__(self, config):
         cache_opts = {
-            "cache.type": getattr(config, "citation_cache_type", "file"),
+            "cache.type": getattr(config, "citation_cache_type", "ext:database"),
             "cache.data_dir": getattr(config, "citation_cache_data_dir", None),
             "cache.lock_dir": getattr(config, "citation_cache_lock_dir", None),
+            "cache.url": getattr(config, "citation_cache_url", None),
+            "cache.table_name": getattr(config, "citation_cache_table_name", "citation_beaker_cache"),
+            "cache.schema_name": getattr(config, "citation_cache_schema_name", None),
         }
         self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("doi")
 

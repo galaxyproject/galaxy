@@ -141,6 +141,8 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 
 DEPENDENT_CONFIG_DEFAULTS: Dict[str, str] = {
     "mulled_resolution_cache_url": "database_connection",
+    "citation_cache_url": "database_connection",
+    "biotools_service_cache_url": "database_connection",
 }
 """Config parameters whose default is the value of another config parameter
 This should be moved to a .yml config file.

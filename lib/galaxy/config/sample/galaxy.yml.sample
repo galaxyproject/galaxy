@@ -924,7 +924,7 @@ galaxy:
 
   # bio.tools web service request related caching. The type of beaker
   # cache used.
-  #biotools_service_cache_type: file
+  #biotools_service_cache_type: ext:database
 
   # bio.tools web service request related caching. The data directory to
   # point beaker cache at.
@@ -938,11 +938,28 @@ galaxy:
   # <cache_dir>.
   #biotools_service_cache_lock_dir: biotools/locks
 
+  # When biotools_service_cache_type = ext:database, this is
+  # the url of the database used by beaker
+  # for bio.tools web service request caching.
+  # The application config code will set it to the 
+  # value of database_connection if this is not set.
+  #biotools_service_cache_url: null
+
+  # When biotools_service_cache_type = ext:database, this is
+  # the database schema name of the table used by beaker
+  # for bio.tools web service request caching.
+  #biotools_service_cache_schema_name: null
+
+  # When biotools_service_cache_type = ext:database, this is
+  # the database table name used by beaker
+  # for bio.tools web service request caching.
+  #biotools_service_cache_table_name: null
+
   # Citation related caching.  Tool citations information maybe fetched
   # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
   # store this information.
-  #citation_cache_type: file
+  #citation_cache_type: ext:database
 
   # Citation related caching.  Tool citations information maybe fetched
   # from external sources such as https://doi.org/ by Galaxy - the
@@ -959,6 +976,23 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <cache_dir>.
   #citation_cache_lock_dir: citations/locks
+
+  # When citation_cache_type = ext:database, this is
+  # the url of the database used by beaker for citation
+  # related caching.
+  # The application config code will set it to the 
+  # value of database_connection if this is not set.
+  #citation_cache_url: null
+
+  # When citation_cache_type = ext:database, this is
+  # the database schema name of the table used by beaker
+  # for citation related caching.
+  #citation_cache_schema_name: null
+
+  # When citation_cache_type = ext:database, this is
+  # the database table name used by beaker
+  # for citation related caching.
+  #citation_cache_table_name: null
 
   # Mulled resolution caching. Mulled resolution uses external APIs of
   # quay.io, these requests are caching using this and the following

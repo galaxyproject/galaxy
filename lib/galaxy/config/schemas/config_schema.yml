@@ -882,7 +882,7 @@ mapping:
 
       biotools_service_cache_type:
         type: str
-        default: file
+        default: ext:database
         required: false
         desc: |
           bio.tools web service request related caching. The type of beaker cache used.
@@ -905,9 +905,31 @@ mapping:
           bio.tools web service request related caching. The lock directory to point
           beaker cache at.
 
+      biotools_service_cache_url:
+        type: str
+        required: false
+        desc: |
+          Url to database used by beaker for bio.tools web service request 
+          related caching.
+
+      biotools_service_cache_table_name:
+        type: str
+        default: biotools_service_beaker_cache
+        required: false
+        desc: |
+          Database table used by beaker for bio.tools web service request 
+          related caching.
+
+      biotools_service_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          Schema of database table used by beaker for bio.tools web service request 
+          related caching.
+
       citation_cache_type:
         type: str
-        default: file
+        default: ext:database
         required: false
         desc: |
           Citation related caching.  Tool citations information maybe fetched from
@@ -933,6 +955,25 @@ mapping:
           Citation related caching.  Tool citations information maybe fetched from
           external sources such as https://doi.org/ by Galaxy - the following
           parameters can be used to control the caching used to store this information.
+
+      citation_cache_url:
+        type: str
+        required: false
+        desc: |
+          Url to database used by beaker for citation related caching.
+
+      citation_cache_table_name:
+        type: str
+        default: citation_beaker_cache
+        required: false
+        desc: |
+          Database table used by beaker for citation related caching.
+
+      citation_cache_schema_name:
+        type: str
+        required: false
+        desc: |
+          Schema of database table used by beaker for citation related caching.
 
       mulled_resolution_cache_type:
         type: str

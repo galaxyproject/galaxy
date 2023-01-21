@@ -1225,7 +1225,7 @@
 :Description:
     bio.tools web service request related caching. The type of beaker
     cache used.
-:Default: ``file``
+:Default: ``ext:database``
 :Type: str
 
 
@@ -1255,6 +1255,44 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is
+    the url of the database used by beaker for
+    bio.tools web service request related caching.
+    The application config code will set it to the 
+    value of database_connection if this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is
+    the database schema name of the table used by beaker for
+    bio.tools web service request related caching.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is
+    the database table name used by beaker for
+    bio.tools web service request related caching.
+:Default: ``biotools_service_beaker_cache``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1264,7 +1302,7 @@
     fetched from external sources such as https://doi.org/ by Galaxy -
     the following parameters can be used to control the caching used
     to store this information.
-:Default: ``file``
+:Default: ``ext:database``
 :Type: str
 
 
@@ -1298,6 +1336,43 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is
+    the url of the database used by beaker for citation
+    caching. The application config code will set it to the 
+    value of database_connection if this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is
+    the database schema name of the table used by beaker for
+    citation related caching.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is
+    the database table name used by beaker for
+    citation related caching.
+:Default: ``citation_beaker_cache``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``mulled_resolution_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1306,7 +1381,7 @@
     Mulled resolution caching. Mulled resolution uses external APIs of
     quay.io, these requests are caching using this and the following
     parameters
-:Default: ``file``
+:Default: ``ext:database``
 :Type: str
 
 
