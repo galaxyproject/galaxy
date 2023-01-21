@@ -418,7 +418,6 @@
     </datatype>
     <datatype extension="scf" type="galaxy.datatypes.binary:Scf" mimetype="application/octet-stream" display_in_upload="true" description="A binary sequence file in 'scf' format with a '.scf' file extension.  You must manually select this 'File Format' when uploading the file." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Scf"/>
     <datatype extension="sequences" type="galaxy.datatypes.assembly:Sequences" display_in_upload="false"/>
-    <datatype extension="shp" type="galaxy.datatypes.gis:Shapefile" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="snpeffdb" type="galaxy.datatypes.text:SnpEffDb" display_in_upload="true"/>
     <datatype extension="snpsiftdbnsfp" type="galaxy.datatypes.text:SnpSiftDbNSFP" display_in_upload="true"/>
     <datatype extension="dbnsfp.tabular" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true">
@@ -445,6 +444,7 @@
     <datatype extension="memexml" type="galaxy.datatypes.xml:MEMEXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="cisml" type="galaxy.datatypes.xml:CisML" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="xml" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" display_in_upload="true"/>
+    <datatype extension="xsd" type="galaxy.datatypes.xml:GenericXml" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="dzi" type="galaxy.datatypes.xml:Dzi" mimetype="application/xml" display_in_upload="true"/>
     <datatype extension="vcf" type="galaxy.datatypes.tabular:Vcf" display_in_upload="true">
       <converter file="interval_to_bgzip_converter.xml" target_datatype="bgzip"/>
@@ -946,6 +946,10 @@
     <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
     <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
     <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true"/>
+    <!-- ECOLOGY types -->
+    <datatype extension="bil" type="galaxy.datatypes.binary:Binary" mimetype="application/octet-stream" display_in_upload="true" subclass="true" description="ENVI file with band interleave by line (BIL) format"/>
+    <datatype extension="hdr" type="galaxy.datatypes.data:Text" mimetype="text/plain" display_in_upload="true" subclass="true" description="ENVI metadata header file"/>
+    <datatype extension="shp" type="galaxy.datatypes.gis:Shapefile" mimetype="application/octet-stream" display_in_upload="true" description="geospatial vector data format for geographic information system"/>
   </registration>
   <sniffers>
     <!--
