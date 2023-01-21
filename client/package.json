@@ -1,5 +1,5 @@
 {
-  "name": "galaxy-client",
+  "name": "@galaxyproject/galaxy-client",
   "version": "0.1.0",
   "description": "Galaxy client application build system",
   "keywords": [
@@ -9,7 +9,10 @@
     "type": "git",
     "url": "https://github.com/galaxyproject/galaxy.git"
   },
-  "license": "AFL-3.0",
+  "license": "MIT",
+  "files": [
+    "dist"
+  ],
   "browserslist": [
     "defaults",
     "not ie <= 11",
@@ -110,18 +113,16 @@
     "xml-beautifier": "^0.5.0"
   },
   "scripts": {
-    "watch": "gulp && yarn run save-build-hash && yarn run webpack-watch",
-    "serve": "NODE_OPTIONS=--max-old-space-size=4096 && NODE_ENV=development gulp && webpack serve",
-    "build": "NODE_ENV=development gulp && webpack && yarn run save-build-hash",
-    "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run save-build-hash",
-    "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run save-build-hash",
+    "develop": "NODE_OPTIONS=--max-old-space-size=4096 NODE_ENV=development gulp && webpack-dev-server",
+    "build": "NODE_ENV=development gulp && webpack && yarn run stage-build",
+    "build-production": "NODE_ENV=production gulp && yarn run webpack-production && yarn run stage-build",
+    "build-production-maps": "NODE_ENV=production gulp && yarn run webpack-production-maps && yarn run stage-build",
     "build-stats": "NODE_ENV=production webpack --profile --json=webpack-stats.json",
     "view-stats": "webpack-bundle-analyzer webpack-stats.json ../static/dist/",
-    "webpack-watch": "webpack --watch",
     "webpack-production": "NODE_ENV=production webpack",
     "webpack-production-maps": "GXY_BUILD_SOURCEMAPS=1 NODE_ENV=production webpack",
     "gulp": "gulp",
-    "save-build-hash": "(git rev-parse HEAD 2>/dev/null || echo '') >../static/client_build_hash.txt",
+    "stage-build": "cpy 'dist/*' '../static/dist' && (git rev-parse HEAD 2>/dev/null || echo '') >../static/client_build_hash.txt",
     "format": "prettier --write 'src/style/scss/**/*.scss' 'src/**/{*.ts,*.js,*.vue}' 'tests/jest/standalone/{*.ts,*.js}' '!src/libs/**'",
     "format-check": "prettier --check 'src/style/scss/**/*.scss' 'src/**/{*.js,*.vue}' 'tests/jest/standalone/{*.ts,*.js}' '!src/libs/**'",
     "prettier": "yarn run format",
@@ -151,6 +152,7 @@
     "axios-mock-adapter": "^1.20.0",
     "babel-jest": "^29.3.1",
     "buffer": "^6.0.3",
+    "cpy-cli": "^4.2.0",
     "css-loader": "^6.7.1",
     "css-minimizer-webpack-plugin": "^4.0.0",
     "del": "^6.0.0",
