@@ -8,7 +8,10 @@ from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
 
 
-class PurgeDatasetsIntegrationTestCase(integration_util.IntegrationTestCase):
+class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
+
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
