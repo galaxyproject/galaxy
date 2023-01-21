@@ -333,7 +333,7 @@ class ColumnSetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return f"Set the following metadata values:<br/>{'<br/>'.join('{} : {}'.format(escape(k), escape(v)) for k, v in pja.action_arguments.items())}"
+        return f"Set the following metadata values:<br/>{'<br/>'.join(f'{escape(k)} : {escape(v)}' for k, v in pja.action_arguments.items())}"
 
 
 class SetMetadataAction(DefaultJobAction):
