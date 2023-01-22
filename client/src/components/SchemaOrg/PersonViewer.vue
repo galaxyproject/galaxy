@@ -21,13 +21,13 @@
         <span v-else itemprop="email" :content="person.email">
             {{ email }}
         </span>
-        <a v-if="orcidLink" :href="orcidLink" target="_blank">
+        <a v-if="orcidLink" v-b-tooltip.hover title="View orcid.org profile" :href="orcidLink" target="_blank">
             <link itemprop="identifier" :href="orcidLink" />
-            <font-awesome-icon v-b-tooltip.hover title="View orcid.org profile" :icon="['fab', 'orcid']" />
+            <font-awesome-icon :icon="['fab', 'orcid']" />
         </a>
-        <a v-if="url" :href="url" target="_blank">
+        <a v-if="url" v-b-tooltip.hover title="URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
-            <font-awesome-icon v-b-tooltip.hover title="URL" icon="external-link-alt" />
+            <font-awesome-icon icon="external-link-alt" />
         </a>
         <meta
             v-for="attribute in explicitMetaAttributes"
