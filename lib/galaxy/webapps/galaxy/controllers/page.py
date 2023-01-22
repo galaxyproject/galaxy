@@ -161,7 +161,11 @@ class PageAllPublishedGrid(grids.Grid):
             trans.sa_session.query(self.model_class)
             .join("user")
             .filter(model.User.deleted == false())
-            .options(joinedload("user").load_only("username"), joinedload("annotations"), undefer("average_rating"))
+            .options(
+                joinedload(self.model_class.user).load_only("username"),
+                joinedload(self.model_class.annotations),
+                undefer("average_rating"),
+            )
         )
 
     def apply_query_filter(self, trans, query, **kwargs):

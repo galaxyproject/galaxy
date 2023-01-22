@@ -422,10 +422,11 @@ def active_folders(trans, folder):
     # Stolen from galaxy.web.controllers.library_common (importing from which causes a circular issues).
     # Much faster way of retrieving all active sub-folders within a given folder than the
     # performance of the mapper.  This query also eagerloads the permissions on each folder.
+    raise
     return (
         trans.sa_session.query(LibraryFolder)
         .filter_by(parent=folder, deleted=False)
-        .options(joinedload("actions"))
+        .options(joinedload(LibraryFolder.actions))
         .order_by(LibraryFolder.table.c.name)
         .all()
     )

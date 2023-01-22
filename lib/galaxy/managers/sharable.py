@@ -222,7 +222,7 @@ class SharableModelManager(
         Return a query for this model already filtered to models shared
         with a particular user.
         """
-        query = self.session().query(self.model_class).join("users_shared_with")
+        query = self.session().query(self.model_class).join(self.model_class.users_shared_with)
         if eagerloads is False:
             query = query.enable_eagerloads(False)
         # TODO: as filter in FilterParser also
