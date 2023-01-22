@@ -102,37 +102,6 @@ $ui-margin-horizontal-large: $margin-v * 2;
     cursor: pointer;
 }
 
-// thumbnails
-.ui-thumbnails {
-    .ui-thumbnails-item {
-        cursor: pointer;
-        .ui-thumbnails-image {
-            padding: 1rem;
-            width: 5rem;
-            height: 4.3rem;
-        }
-        .ui-thumbnails-icon {
-            padding: 1rem;
-            width: 5rem;
-            height: 4.3rem;
-            font-size: 2em;
-            text-align: center;
-            color: $text-color;
-        }
-        .ui-thumbnails-text {
-            word-wrap: break-word;
-        }
-    }
-    .ui-thumbnails-item:hover {
-        .ui-thumbnails-title {
-            text-decoration: underline;
-        }
-        .ui-thumbnails-text {
-            text-decoration: underline;
-        }
-    }
-}
-
 .ui-form-composite {
     height: 100%;
     flex-direction: column;
