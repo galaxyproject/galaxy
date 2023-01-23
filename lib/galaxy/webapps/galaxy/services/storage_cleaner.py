@@ -6,7 +6,7 @@ from typing import (
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAStorageCleanerManager
-from galaxy.managers.histories import HistoryManager
+from galaxy.managers.histories import HistoryStorageCleanerManager
 from galaxy.managers.users import UserManager
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -19,26 +19,26 @@ class StorageCleanerService(ServiceBase):
     def __init__(
         self,
         user_manager: UserManager,
-        history_manager: HistoryManager,
+        history_cleaner: HistoryStorageCleanerManager,
         hda_cleaner: HDAStorageCleanerManager,
     ):
         self.user_manager = user_manager
-        self.history_manager = history_manager
+        self.history_cleaner = history_cleaner
         self.hda_cleaner = hda_cleaner
 
     def get_discarded_histories_summary(self, trans: ProvidesHistoryContext):
         user = self.get_authenticated_user(trans)
-        return self.history_manager.get_discarded_summary(user)
+        return self.history_cleaner.get_discarded_summary(user)
 
     def get_discarded_histories(
         self, trans: ProvidesHistoryContext, offset: Optional[int] = None, limit: Optional[int] = None
     ):
         user = self.get_authenticated_user(trans)
-        return self.history_manager.get_discarded(user, offset, limit)
+        return self.history_cleaner.get_discarded(user, offset, limit)
 
     def cleanup_histories(self, trans: ProvidesHistoryContext, item_ids: Set[int]):
         user = self.get_authenticated_user(trans)
-        return self.history_manager.cleanup_items(user, item_ids)
+        return self.history_cleaner.cleanup_items(user, item_ids)
 
     def get_discarded_datasets_summary(self, trans: ProvidesHistoryContext):
         user = self.get_authenticated_user(trans)
