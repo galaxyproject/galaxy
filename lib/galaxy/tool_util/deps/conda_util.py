@@ -24,6 +24,7 @@ import packaging.version
 
 from galaxy.util import (
     commands,
+    download_to_file,
     listify,
     shlex_join,
     smart_str,
@@ -483,16 +484,13 @@ def hash_conda_packages(conda_packages: Iterable[CondaTarget]) -> str:
 def install_conda(conda_context: CondaContext, force_conda_build: bool = False) -> int:
     with tempfile.NamedTemporaryFile(suffix=".sh", prefix="conda_install", delete=False) as temp:
         script_path = temp.name
-    download_cmd = commands.download_command(conda_link(), to=script_path)
     install_cmd = ["bash", script_path, "-b", "-p", conda_context.conda_prefix]
     package_targets = list(CONDA_PACKAGE_SPECS)
     if force_conda_build or conda_context.use_local:
         package_targets.extend(CONDA_BUILD_SPECS)
     log.info("Installing conda, this may take several minutes.")
     try:
-        exit_code = conda_context.shell_exec(download_cmd)
-        if exit_code:
-            return exit_code
+        download_to_file(conda_link(), script_path)
         exit_code = conda_context.shell_exec(install_cmd)
     except Exception:
         log.exception("Failed to install conda")
