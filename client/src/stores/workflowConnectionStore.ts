@@ -124,7 +124,7 @@ export const useConnectionStore = defineStore("workflowConnectionStore", {
             Vue.set(this.invalidConnections, connectionId, reason);
         },
         dropFromInvalidConnections(this: State, connectionId: string) {
-            this.invalidConnections[connectionId] = undefined;
+            Vue.delete(this.invalidConnections, connectionId);
         },
         removeConnection(this: State, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
             const stepStore = useWorkflowStepStore();
