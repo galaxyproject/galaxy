@@ -252,7 +252,11 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         removeConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
-            Vue.delete(inputStep.input_connections, connection.input.name);
+            if (this.getStepExtraInputs(inputStep.id).find((input) => connection.input.name === input.name)) {
+                inputStep.input_connections[connection.input.name] = undefined;
+            } else {
+                Vue.delete(inputStep.input_connections, connection.input.name);
+            }
             this.updateStep(inputStep);
         },
         removeStep(this: State, stepId: number) {
