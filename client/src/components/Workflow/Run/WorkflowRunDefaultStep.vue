@@ -15,17 +15,21 @@
                     collapsed-disable-icon="fa fa-undo"
                     @onChange="onChange"
                     @onValidation="onValidation" />
+                <span v-if="model.post_job_actions?.length">This action will:</span>
+                <ul v-for="(action, i) in model.post_job_actions" :key="i">
+                    <li>{{ action.short_str }}</li>
+                </ul>
             </template>
         </FormCard>
     </div>
 </template>
 
 <script>
-import WorkflowIcons from "components/Workflow/icons";
-import FormDisplay from "components/Form/FormDisplay";
-import FormMessage from "components/Form/FormMessage";
-import FormCard from "components/Form/FormCard";
-import { visitInputs } from "components/Form/utilities";
+import WorkflowIcons from "@/components/Workflow/icons";
+import FormDisplay from "@/components/Form/FormDisplay";
+import FormMessage from "@/components/Form/FormMessage";
+import FormCard from "@/components/Form/FormCard";
+import { visitInputs } from "@/components/Form/utilities";
 import { getTool } from "./services";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faUndo } from "@fortawesome/free-solid-svg-icons";
