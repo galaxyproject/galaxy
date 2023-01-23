@@ -1,3 +1,4 @@
-Beaker
+beaker
+sqlalchemy
 pytest
 pytest-mock

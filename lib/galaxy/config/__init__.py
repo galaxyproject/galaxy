@@ -747,15 +747,13 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         for dependent_config_param, config_param in DEPENDENT_CONFIG_DEFAULTS.items():
             try:
                 if getattr(self, dependent_config_param) is None:
-                    db_connect = getattr(self, config_param)
                     setattr(self, dependent_config_param, getattr(self, config_param))
             except AttributeError:
-                log.warning(
+                raise Exception(
                     "One or more invalid config parameter names specified in "
                     "DEPENDENT_CONFIG_DEFAULTS, "
                     f"{dependent_config_param}, {config_param}"
                 )
-
 
     def _configure_sqlalchemy20_warnings(self, kwargs):
         """
