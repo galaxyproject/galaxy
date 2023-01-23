@@ -83,3 +83,53 @@ class TestStorageCleanerApi(ApiTestCase):
             for history_id in history_name_id_map.values():
                 self.dataset_populator.wait_for_history(history_id)
         return history_name_id_map
+
+    @requires_new_history
+    def test_discarded_datasets_monitoring_and_cleanup(self):
+        # Prepare history with some datasets
+        history_id = self.dataset_populator.new_history(f"History for discarded datasets {uuid4()}")
+        num_datasets = 3
+        dataset_size = 30
+        dataset_ids = []
+        for _ in range(num_datasets):
+            dataset = self.dataset_populator.new_dataset(history_id, content=f"{'0'*(dataset_size-1)}\n")
+            dataset_ids.append(dataset["id"])
+        self.dataset_populator.wait_for_history(history_id)
+
+        # Initially, there shouldn't be any deleted and not purged (discarded) datasets
+        summary_response = self._get("storage/datasets/discarded/summary")
+        self._assert_status_code_is_ok(summary_response)
+        summary = summary_response.json()
+        assert summary["total_items"] == 0
+        assert summary["total_size"] == 0
+
+        # Delete the datasets
+        for dataset_id in dataset_ids:
+            self.dataset_populator.delete_dataset(history_id, dataset_id)
+
+        # All datasets should be in the summary
+        expected_num_discarded_datasets = len(dataset_ids)
+        expected_total_size = expected_num_discarded_datasets * dataset_size
+        summary_response = self._get("storage/datasets/discarded/summary")
+        self._assert_status_code_is_ok(summary_response)
+        summary = summary_response.json()
+        assert summary["total_items"] == expected_num_discarded_datasets
+        assert summary["total_size"] == expected_total_size
+
+        # Check listing all the discarded datasets
+        discarded_datasets_response = self._get("storage/datasets/discarded")
+        self._assert_status_code_is_ok(discarded_datasets_response)
+        discarded_datasets = discarded_datasets_response.json()
+        assert len(discarded_datasets) == expected_num_discarded_datasets
+        for dataset in discarded_datasets:
+            assert dataset["size"] == dataset_size
+
+        # Cleanup all the datasets
+        payload = {"item_ids": dataset_ids}
+        cleanup_response = self._delete("storage/datasets", data=payload, json=True)
+        self._assert_status_code_is_ok(cleanup_response)
+        cleanup_result = cleanup_response.json()
+        assert cleanup_result["total_item_count"] == expected_num_discarded_datasets
+        assert cleanup_result["success_item_count"] == expected_num_discarded_datasets
+        assert cleanup_result["total_free_bytes"] == expected_total_size
+        assert not cleanup_result["errors"]
