@@ -33,6 +33,7 @@ export const STATES = {
     /** metadata discovery/setting failed or errored (but otherwise ok) */
     failed_metadata: {
         status: "danger",
+        text: "Metadata generation failed.",
         icon: "exclamation-triangle",
     },
     /** was created without a tool */
