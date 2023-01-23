@@ -12,6 +12,8 @@ const modulesToTransform = [
     "pretty-bytes",
     "@fortawesome",
     "openapi-typescript-fetch",
+    "frappe-gantt",
+    "vuejs-datetimepicker",
 ].join("|");
 
 module.exports = {
