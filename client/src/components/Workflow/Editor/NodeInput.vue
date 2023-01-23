@@ -17,6 +17,13 @@
             @click="onRemove"
             @keyup.delete="onRemove" />
         {{ label }}
+        <span
+            v-if="!input.optional && !hasTerminals"
+            v-b-tooltip.hover
+            class="input-required"
+            title="Input is required">
+            *
+        </span>
     </div>
 </template>
 
@@ -214,3 +221,16 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
+.input-required {
+    margin-top: $margin-v * 0.25;
+    margin-bottom: $margin-v * 0.25;
+    color: $brand-danger;
+    font-weight: 300;
+    cursor: default;
+}
+</style>
