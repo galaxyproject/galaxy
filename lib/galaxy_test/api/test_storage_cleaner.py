@@ -5,25 +5,29 @@ from typing import (
 )
 from uuid import uuid4
 
+from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 
-class TestHistoryData(NamedTuple):
+class HistoryDataForTests(NamedTuple):
     name: str
     size: int
 
 
 class TestStorageCleanerApi(ApiTestCase):
+    dataset_populator: DatasetPopulator
+
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
+    @requires_new_history
     def test_discarded_histories_monitoring_and_cleanup(self):
         # Create some histories for testing
-        history_data_01 = TestHistoryData(name=f"TestHistory01_{uuid4()}", size=10)
-        history_data_02 = TestHistoryData(name=f"TestHistory02_{uuid4()}", size=25)
-        history_data_03 = TestHistoryData(name=f"TestHistory03_{uuid4()}", size=50)
+        history_data_01 = HistoryDataForTests(name=f"TestHistory01_{uuid4()}", size=10)
+        history_data_02 = HistoryDataForTests(name=f"TestHistory02_{uuid4()}", size=25)
+        history_data_03 = HistoryDataForTests(name=f"TestHistory03_{uuid4()}", size=50)
         test_histories = [history_data_01, history_data_02, history_data_03]
         history_name_id_map = self._create_histories(test_histories)
 
@@ -64,7 +68,7 @@ class TestStorageCleanerApi(ApiTestCase):
         assert cleanup_result["total_free_bytes"] == expected_total_size
         assert not cleanup_result["errors"]
 
-    def _create_histories(self, test_histories: List[TestHistoryData], wait_for_histories=True) -> Dict[str, str]:
+    def _create_histories(self, test_histories: List[HistoryDataForTests], wait_for_histories=True) -> Dict[str, str]:
         history_name_id_map = {}
         for history_data in test_histories:
             post_data = dict(name=history_data.name)
