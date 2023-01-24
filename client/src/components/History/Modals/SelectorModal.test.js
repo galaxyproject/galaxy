@@ -27,8 +27,7 @@ const PROPS_WITH_10_HISTORY_MULTIPLE_SELECT = {
     multiple: true,
 };
 
-const CURRENT_HISTORY_HIGHLIGHT_CLASS = ".table-info";
-const SELECTED_HISTORY_HIGHLIGHT_CLASS = ".table-success";
+const CURRENT_HISTORY_INDICATION_TEXT = "(Current)";
 
 describe("History SelectorModal.vue", () => {
     let wrapper;
@@ -41,12 +40,11 @@ describe("History SelectorModal.vue", () => {
         await flushPromises();
     }
 
-    it("should highlight the currently selected history", async () => {
+    it("should indicate the currently selected history", async () => {
         await mountWith(PROPS_WITH_10_HISTORIES);
 
-        const selectedRows = wrapper.findAll(CURRENT_HISTORY_HIGHLIGHT_CLASS);
-        expect(selectedRows.length).toBe(1);
-        expect(selectedRows.at(0).attributes("data-pk")).toBe(CURRENT_HISTORY_ID);
+        const currentHistoryRow = wrapper.find(`[data-pk="${CURRENT_HISTORY_ID}"]`);
+        expect(currentHistoryRow.html()).toContain(CURRENT_HISTORY_INDICATION_TEXT);
     });
 
     it("paginates the histories", async () => {
@@ -93,25 +91,6 @@ describe("History SelectorModal.vue", () => {
             expect(wrapper.emitted()["selectHistories"][0][0][0].id).toBe(targetHistoryId1);
 
             console.debug(wrapper.html());
-        });
-
-        it("should highlight the current history differently by default but equally when selected", async () => {
-            await mountWith(PROPS_WITH_10_HISTORY_MULTIPLE_SELECT);
-
-            let selectedRows = wrapper.findAll(CURRENT_HISTORY_HIGHLIGHT_CLASS);
-            expect(selectedRows.length).toBe(1);
-            expect(selectedRows.at(0).attributes("data-pk")).toBe(CURRENT_HISTORY_ID);
-
-            const targetRow = wrapper.find(`[data-pk="${CURRENT_HISTORY_ID}"]`);
-            await targetRow.trigger("click");
-
-            // No longer highlighted as current
-            selectedRows = wrapper.findAll(CURRENT_HISTORY_HIGHLIGHT_CLASS);
-            expect(selectedRows.length).toBe(0);
-
-            // Highlighted as normal selection
-            selectedRows = wrapper.findAll(SELECTED_HISTORY_HIGHLIGHT_CLASS);
-            expect(selectedRows.length).toBe(1);
         });
     });
 });
