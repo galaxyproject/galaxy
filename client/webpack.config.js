@@ -28,9 +28,6 @@ const modulesExcludedFromLibs = [
 
 const buildDate = new Date();
 
-const dns = require('node:dns');
-dns.setDefaultResultOrder('ipv4first');
-
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
@@ -262,7 +259,10 @@ module.exports = (env = {}, argv = {}) => {
             // can be a more limited set -- e.g. `/api`, `/auth`
             proxy: {
                 "**": {
-                    target: process.env.GALAXY_URL || "http://localhost:8080",
+                    // We explicitly use ipv4 loopback instead of localhost to
+                    // avoid ipv6/ipv4 resolution order issues; this should
+                    // align with Galaxy's default.
+                    target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
                     secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
                     changeOrigin: !!process.env.CHANGE_ORIGIN,
                     logLevel: "debug",
