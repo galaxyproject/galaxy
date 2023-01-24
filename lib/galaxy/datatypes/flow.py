@@ -4,7 +4,7 @@ Flow analysis datatypes.
 
 import logging
 
-from galaxy.datatypes._protocols import DatasetProtocol
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,

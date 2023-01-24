@@ -8,7 +8,7 @@ from typing import (
     Tuple,
 )
 
-from galaxy.datatypes._protocols import DatasetProtocol
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
     ListParameter,

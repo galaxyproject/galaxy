@@ -26,7 +26,7 @@ from isatools import (
 from markupsafe import escape
 
 from galaxy import util
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,

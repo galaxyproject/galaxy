@@ -8,7 +8,7 @@ from typing import (
 )
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import DatasetProtocol
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
     get_file_peek,

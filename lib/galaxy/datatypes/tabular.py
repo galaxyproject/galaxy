@@ -29,7 +29,7 @@ from galaxy.datatypes import (
     data,
     metadata,
 )
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
     HasFileName,
