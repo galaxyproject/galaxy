@@ -28,6 +28,9 @@ const modulesExcludedFromLibs = [
 
 const buildDate = new Date();
 
+const dns = require('node:dns');
+dns.setDefaultResultOrder('ipv4first');
+
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
