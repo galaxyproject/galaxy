@@ -711,8 +711,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 'You can <a href="%s" target="_parent">edit</a> or <a href="%s" target="_parent">run</a> the workflow.'
                 % (
                     escape(workflow_name),
-                    url_for(controller="workflow", action="editor", id=workflow_id),
-                    url_for(controller="workflows", action="run", id=workflow_id),
+                    url_for("/workflows/edit?id=%s" % workflow_id),
+                    url_for("/workflows/run?id=%s" % workflow_id),
                 )
             )
 
