@@ -31,7 +31,9 @@
         </b-table>
         <template v-slot:modal-footer>
             <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
-            <b-button v-if="multiple" variant="primary" @click="addSelected">Add Selected</b-button>
+            <b-button v-if="multiple" :disabled="isEmptySelection" variant="primary" @click="addSelected">
+                Add Selected
+            </b-button>
         </template>
     </b-modal>
 </template>
@@ -76,6 +78,9 @@ export default {
                 }
                 return item;
             });
+        },
+        isEmptySelection() {
+            return this.selectedHistories.length === 0;
         },
     },
     watch: {
