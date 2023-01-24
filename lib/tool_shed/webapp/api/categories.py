@@ -11,7 +11,6 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.model.base import transaction
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
@@ -52,11 +51,8 @@ class CategoriesController(BaseShedAPIController):
             description=payload.get("description", ""),
         )
         category: Category = self.category_manager.create(trans, request)
-        category_dict = category.to_dict(view="element", value_mapper=get_value_mapper(trans.app))
+        category_dict = self.category_manager.to_dict(category)
         category_dict["message"] = f"Category '{str(category.name)}' has been created"
-        category_dict["url"] = web.url_for(
-            controller="categories", action="show", id=trans.security.encode_id(category.id)
-        )
         return category_dict
 
     @expose_api_anonymous_and_sessionless
