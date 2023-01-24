@@ -53,23 +53,11 @@ and these should not be committed.
 When you're actively developing, it is convenient to have the client
 automatically rebuild every time you save a file. You can do this using:
 
-    make client-watch
-
-This will first stage client dependencies, initiate a build, and then will
-watch for changes in any of the galaxy client source files.  When a file is
-changed, the client will automatically rebuild, after which you can refresh
-your browser to see changes.
-
-For even more rapid development you can use the webpack development server,
-which takes advantage of hot module replacement (HMR). This technique allows
-swapping out of javascript modules while the application is running without
-requiring a full page reload most of the time, at least in the more modern
-parts of the application.
-
-The command below starts a special webpack dev server after a client
-build.
-
     make client-dev-server
+
+Or, with the package scripts from this `client` directory:
+    
+    yarn run develop
 
 This will start up an extra client development server running on port 8081.
 Open your browser to http://localhost:8081 (instead of the default 8080 that
@@ -86,6 +74,10 @@ Sometimes you want to run your local UI against a remote Galaxy server. This is 
 
     CHANGE_ORIGIN=true GALAXY_URL="https://usegalaxy.org/" make client-dev-server
 
+You can also specify a particular port to bind the dev server to:
+
+    WEBPACK_PORT=8083 yarn run develop
+
 ## Running a Separate Server
 
 When developing the client it can be helpful to run a local server for the
@@ -93,6 +85,11 @@ client to connect to, and run the client separately with one of the above
 commands. This command will run galaxy without building the client:
 
     make skip-client
+
+Or by setting the following environment variable and running Galaxy however you
+prefer:
+
+    GALAXY_SKIP_CLIENT_BUILD=1 ./run.sh
 
 ## Changing Styles/CSS
 
