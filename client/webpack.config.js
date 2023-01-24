@@ -252,7 +252,7 @@ module.exports = (env = {}, argv = {}) => {
                 publicPath: "/static/dist",
             },
             hot: true,
-            port: 8081,
+            port: process.env.WEBPACK_PORT || 8081,
             host: "0.0.0.0",
             // proxy *everything* to the galaxy server.
             // someday, when we have a fully API-driven independent client, this
