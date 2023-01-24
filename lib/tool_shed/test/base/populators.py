@@ -92,8 +92,16 @@ class ToolShedPopulator:
         self._admin_api_interactor = admin_api_interactor
         self._api_interactor = api_interactor
 
-    def setup_bismark_repo(self, repository_id: HasRepositoryId, end: Optional[int] = None):
-        self.setup_test_data_repo_by_id("bismark", repository_id, assert_ok=False, end=end)
+    def setup_bismark_repo(
+        self,
+        repository_id: Optional[HasRepositoryId] = None,
+        end: Optional[int] = None,
+        category_id: Optional[str] = None,
+    ) -> HasRepositoryId:
+        if repository_id is None:
+            category_id = category_id or self.new_category(prefix="testbismark").id
+            repository_id = self.new_repository(category_id, prefix="testbismark")
+        return self.setup_test_data_repo_by_id("bismark", repository_id, assert_ok=False, end=end)
 
     def setup_test_data_repo_by_id(
         self,
