@@ -236,7 +236,7 @@ export default {
             required: true,
         },
     },
-    setup() {
+    setup(props, { emit }) {
         const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
         const connectionsStore = useConnectionStore();
         const stepStore = useWorkflowStepStore();
@@ -260,6 +260,7 @@ export default {
         }
         onUnmounted(() => {
             resetStores();
+            emit("update:confirmation", false);
         });
         return {
             connectionsStore,
