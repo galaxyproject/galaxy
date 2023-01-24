@@ -986,13 +986,12 @@ class ShedTwillTestCase(ShedApiTestCase):
         raise
 
     def create_category(self, **kwd) -> Category:
-        category = self.populator.get_category_with_name(kwd["name"])
+        category_name = kwd["name"]
+        category = self.populator.get_category_with_name(category_name)
         if category is None:
-            params = {"operation": "create"}
-            self.visit_url("/admin/manage_categories", params=params)
-            self.submit_form(button="create_category_button", **kwd)
-            category = self.populator.get_category_with_name(kwd["name"])
-            assert category
+            # not recreating this functionality in the UI I don't think?
+            category = self.populator.new_category(category_name)
+            return category
         return category
 
     def create_repository_dependency(

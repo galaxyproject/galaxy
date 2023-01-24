@@ -68,6 +68,8 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
+        assert repository
+        assert repository.id
         self.commit_tar_to_repository(
             repository,
             "column_maker/column_maker.tar",
