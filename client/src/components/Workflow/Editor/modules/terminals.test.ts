@@ -102,6 +102,7 @@ describe("canAccept", () => {
         dataIn.connect(collectionOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe("Input already filled with another connection, delete it before connecting another output.");
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
