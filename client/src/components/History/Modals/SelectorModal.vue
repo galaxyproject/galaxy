@@ -74,7 +74,10 @@ export default {
         formattedItems() {
             return this.histories.map((item) => {
                 if (item.id === this.currentHistoryId) {
-                    item._rowVariant = "info";
+                    const isCurrentSelected = this.selectedHistories.some(
+                        (history) => history.id === this.currentHistoryId
+                    );
+                    item._rowVariant = isCurrentSelected ? "success" : "info";
                 }
                 return item;
             });
