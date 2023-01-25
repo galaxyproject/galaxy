@@ -36,7 +36,6 @@ from h5grove.content import (
     ResolvedEntityContent,
 )
 from h5grove.encoders import encode
-from h5grove.models import LinkResolution
 
 from galaxy import util
 from galaxy.datatypes import metadata
