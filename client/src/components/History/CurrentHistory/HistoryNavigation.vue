@@ -12,7 +12,8 @@
                     data-description="create new history"
                     size="sm"
                     variant="link"
-                    title="Create new history"
+                    :disabled="currentUser.isAnonymous"
+                    :title="userTitle('Create new history')"
                     @click="$emit('createNewHistory')">
                     <Icon fixed-width icon="plus" />
                 </b-button>
