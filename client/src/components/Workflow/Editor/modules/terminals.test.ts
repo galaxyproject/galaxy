@@ -102,7 +102,9 @@ describe("canAccept", () => {
         dataIn.connect(collectionOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
-        expect(dataIn.canAccept(collectionOut).reason).toBe("Input already filled with another connection, delete it before connecting another output.");
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output."
+        );
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
@@ -262,14 +264,16 @@ describe("canAccept", () => {
         dataIn.connect(collectionOut);
         dataInTwo.connect(dataOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.localMapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         //
         dataIn.disconnect(collectionOut);
         // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
         // TODO: avoid this if possible ...
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.localMapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(simpleDataOut).reason).toBe(
-            "Cannot attach non-collection outputs to mapped over inputs, consider disconnecting inputs and outputs to reset this input's mapping."
+            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
         );
     });
     // TODO: test mapOver reset when constraint removed

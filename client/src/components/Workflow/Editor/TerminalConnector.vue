@@ -23,7 +23,11 @@ const props = defineProps<{
 const stepStore = useWorkflowStepStore();
 const connectionStore = useConnectionStore();
 const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.output.stepId]?.isCollection);
-const inputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.input.stepId]?.isCollection);
+const inputIsMappedOver = computed(
+    () =>
+        stepStore.stepInputMapOver[props.connection.input.stepId] &&
+        stepStore.stepInputMapOver[props.connection.input.stepId][props.connection.input.name]?.isCollection
+);
 const outputIsOptional = computed(() => {
     return Boolean(
         stepStore.getStep(props.connection.output.stepId)?.when ||

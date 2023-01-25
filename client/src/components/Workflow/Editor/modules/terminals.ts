@@ -18,6 +18,7 @@ import type {
     TerminalSource,
 } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
+import Vue from "vue";
 
 export class ConnectionAcceptable {
     reason: string | null;
@@ -53,6 +54,7 @@ class Terminal extends EventEmitter {
     stepId: number;
     terminalType: "input" | "output";
     datatypesMapper: DatatypesMapperModel;
+    localMapOver: CollectionTypeDescriptor;
 
     constructor(attr: BaseTerminalArgs) {
         super();
@@ -63,6 +65,7 @@ class Terminal extends EventEmitter {
         this.multiple = false;
         this.terminalType = "input";
         this.datatypesMapper = attr.datatypesMapper;
+        this.localMapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
     }
     public get id() {
         return `node-${this.stepId}-${this.terminalType}-${this.name}`;
@@ -105,10 +108,12 @@ class Terminal extends EventEmitter {
             outputVal = val.effectiveMapOver(description);
         }
         const effectiveMapOver = this._effectiveMapOver(outputVal);
+        if (!this.localMapOver.equal(effectiveMapOver)) {
+            this.stepStore.changeStepInputMapOver(this.stepId, this.name, effectiveMapOver);
+            this.localMapOver = effectiveMapOver;
+        }
         if (!this.mapOver.equal(effectiveMapOver)) {
             this.stepStore.changeStepMapOver(this.stepId, effectiveMapOver);
-            // TODO: do we even need to listen for this?
-            this.emit("changeMapOver", outputVal);
         }
     }
     _effectiveMapOver(otherCollectionType: CollectionTypeDescriptor) {
@@ -119,8 +124,7 @@ class Terminal extends EventEmitter {
     }
     resetMapping(connection?: Connection) {
         this.stepStore.changeStepMapOver(this.stepId, NULL_COLLECTION_TYPE_DESCRIPTION);
-        // necessary ?
-        this.emit("changeMapOver", this.mapOver);
+        this.stepStore.resetStepInputMapOver(this.stepId);
     }
     hasConnectedMappedInputTerminals() {
         // check if step has connected and mapped input terminals ... should maybe be on step/node ?
@@ -150,7 +154,7 @@ class Terminal extends EventEmitter {
         // No output terminals are counting on this being mapped
         // over if connected inputs are still mapped over or if none
         // of the outputs are connected...
-        const reset = this.hasConnectedMappedInputTerminals() || !this.hasConnectedOutputTerminals();
+        const reset = !this.hasConnectedOutputTerminals();
         if (reset) {
             this.resetMapping(connection);
         }
@@ -160,12 +164,18 @@ class Terminal extends EventEmitter {
 class BaseInputTerminal extends Terminal {
     datatypes: InputTerminalInputs["datatypes"];
     optional: InputTerminalInputs["optional"];
+    localMapOver: CollectionTypeDescriptor;
 
     constructor(attr: InputTerminalArgs) {
         super(attr);
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
+        if (this.stepStore.stepInputMapOver[this.stepId] && this.stepStore.stepInputMapOver[this.stepId][this.name]) {
+            this.localMapOver = this.stepStore.stepInputMapOver[this.stepId][this.name];
+        } else {
+            this.localMapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
+        }
     }
     connect(other: BaseOutputTerminal): void {
         super.connect(other);
@@ -174,9 +184,15 @@ class BaseInputTerminal extends Terminal {
     setDefaultMapOver(other: BaseOutputTerminal) {
         const otherCollectionType = this._otherCollectionType(other);
         if (otherCollectionType.isCollection) {
-            this.setMapOver(otherCollectionType);
+            return this.setMapOver(otherCollectionType);
         }
     }
+    getStepMapOver() {
+        this.getConnectedTerminals().forEach((other) => {
+            this.setDefaultMapOver(other);
+        });
+    }
+
     canAccept(outputTerminal: BaseOutputTerminal) {
         if (this.stepId == outputTerminal.stepId) {
             return new ConnectionAcceptable(false, "Cannot connect output to input of same step.");
@@ -201,6 +217,7 @@ class BaseInputTerminal extends Terminal {
     }
     resetMapping(connection?: Connection) {
         super.resetMapping(connection);
+        this.stepStore.changeStepInputMapOver(this.stepId, this.name, NULL_COLLECTION_TYPE_DESCRIPTION);
         const outputStepIds = this._getOutputTerminals().map((outputTerminal) => outputTerminal.stepId);
         if (connection) {
             outputStepIds.push(connection.output.stepId);
@@ -360,10 +377,12 @@ interface InvalidInputTerminalArgs extends InputTerminalArgs {
 
 export class InvalidInputTerminal extends BaseInputTerminal {
     valid: false;
+    localMapOver: CollectionTypeDescriptor;
 
     constructor(attr: InvalidInputTerminalArgs) {
         super(attr);
         this.valid = false;
+        this.localMapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
     }
 
     attachable(terminal: BaseOutputTerminal) {
@@ -378,7 +397,11 @@ export class InputTerminal extends BaseInputTerminal {
     constructor(attr: InputTerminalArgs) {
         super(attr);
         this.collection = false;
-        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
+        this.getStepMapOver();
+    }
+
+    isMappedOver(): boolean {
+        return Boolean(this.localMapOver.isCollection);
     }
 
     attachable(other: BaseOutputTerminal) {
@@ -435,11 +458,13 @@ export class InputTerminal extends BaseInputTerminal {
                     }
                 }
             }
-        } else if (mapOver.isCollection) {
-            return new ConnectionAcceptable(
-                false,
-                "Cannot attach non-collection outputs to mapped over inputs, consider disconnecting inputs and outputs to reset this input's mapping."
-            );
+        } else {
+            if (this.localMapOver.isCollection) {
+                return new ConnectionAcceptable(
+                    false,
+                    "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+                );
+            }
         }
         return this._producesAcceptableDatatypeAndOptionalness(other);
     }
@@ -455,7 +480,7 @@ export class InputParameterTerminal extends BaseInputTerminal {
     constructor(attr: InputParameterTerminalArgs) {
         super(attr);
         this.type = attr.type;
-        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
+        this.getStepMapOver();
     }
 
     effectiveType(parameterType: string) {
@@ -490,7 +515,7 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         if (!this.collectionTypes.length) {
             this.collectionTypes.push(ANY_COLLECTION_TYPE_DESCRIPTION);
         }
-        this.getConnectedTerminals().map((other) => this.setDefaultMapOver(other));
+        this.getStepMapOver();
     }
     _effectiveMapOver(otherCollectionType: CollectionTypeDescriptor) {
         const collectionTypes = this.collectionTypes;
