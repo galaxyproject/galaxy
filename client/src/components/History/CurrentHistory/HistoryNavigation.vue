@@ -23,7 +23,8 @@
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    title="Switch to history">
+                    :disabled="currentUser.isAnonymous"
+                    :title="userTitle('Switch to history')">
                     <Icon fixed-width icon="exchange-alt" />
                 </b-button>
 
