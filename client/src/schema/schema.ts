@@ -108,6 +108,10 @@ export interface paths {
          */
         get: operations["show_api_datasets__dataset_id__get"];
     };
+    "/api/datasets/{dataset_id}/content/{content_type}": {
+        /** Retrieve information about the content of a dataset. */
+        get: operations["get_structured_content_api_datasets__dataset_id__content__content_type__get"];
+    };
     "/api/datasets/{dataset_id}/converted": {
         /**
          * Return a a map with all the existing converted datasets associated with this instance.
@@ -2468,6 +2472,12 @@ export interface components {
          * @description Represents a collection of elements contained in the dataset collection.
          */
         DatasetCollectionContentElements: components["schemas"]["DCESummary"][];
+        /**
+         * DatasetContentType
+         * @description For retrieving content from a structured dataset (e.g. HDF5)
+         * @enum {string}
+         */
+        DatasetContentType: "meta" | "attr" | "stats" | "data";
         /**
          * DatasetErrorMessage
          * @description Base model definition with common configuration used by all derived models.
@@ -8177,6 +8187,34 @@ export interface operations {
             /** @description The encoded database identifier of the dataset. */
             path: {
                 dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_structured_content_api_datasets__dataset_id__content__content_type__get: {
+        /** Retrieve information about the content of a dataset. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                dataset_id: string;
+                content_type: components["schemas"]["DatasetContentType"];
             };
         };
         responses: {
