@@ -23,8 +23,8 @@ from galaxy import (
     web,
 )
 from galaxy.celery.tasks import compute_dataset_hash
-from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.datasets import DatasetAssociationManager
@@ -99,8 +99,10 @@ class RequestDataType(str, Enum):
     genome_data = "genome_data"
     in_use_state = "in_use_state"
 
+
 class DatasetContentType(str, Enum):
     """For retrieving content from a structured dataset (e.g. HDF5)"""
+
     meta = "meta"
     attr = "attr"
     stats = "stats"
@@ -710,7 +712,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         trans: ProvidesHistoryContext,
         dataset_id: DecodedDatabaseIdField,
         content_type: DatasetContentType,
-        **params
+        **params,
     ):
         """
         Retrieves contents of a dataset. It is left to the datatype to decide how

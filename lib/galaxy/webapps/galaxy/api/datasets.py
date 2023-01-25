@@ -22,8 +22,8 @@ from fastapi import (
     Request,
 )
 from starlette.responses import (
-    StreamingResponse,
     Response,
+    StreamingResponse,
 )
 
 from galaxy.schema import (
@@ -55,6 +55,7 @@ from galaxy.webapps.galaxy.api.common import (
 from galaxy.webapps.galaxy.services.datasets import (
     ComputeDatasetHashPayload,
     ConvertedDatasetsMap,
+    DatasetContentType,
     DatasetInheritanceChain,
     DatasetsService,
     DatasetStorageDetails,
@@ -62,7 +63,6 @@ from galaxy.webapps.galaxy.services.datasets import (
     DeleteDatasetBatchPayload,
     DeleteDatasetBatchResult,
     RequestDataType,
-    DatasetContentType,
 )
 
 log = logging.getLogger(__name__)
@@ -401,7 +401,7 @@ class FastAPIDatasets:
         request: Request,
         trans=DependsOnTrans,
         dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
-        content_type: DatasetContentType = DatasetContentType.data
+        content_type: DatasetContentType = DatasetContentType.data,
     ):
         content, headers = self.service.get_structured_content(trans, dataset_id, content_type, **request.query_params)
         return Response(content=content, headers=headers)
