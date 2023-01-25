@@ -70,7 +70,7 @@ example, port 8000) using the GALAXY_URL environment variable:
     GALAXY_URL="http://localhost:8000" make client-dev-server
 
 Sometimes you want to run your local UI against a remote Galaxy server. This is
-also possible if you enable `CHANGE_ORIGIN` flag:
+also possible if you set the `CHANGE_ORIGIN` environment variable:
 
     CHANGE_ORIGIN=true GALAXY_URL="https://usegalaxy.org/" make client-dev-server
 
@@ -95,7 +95,7 @@ prefer:
 
 Galaxy uses Sass for globally applied styling, which is a superset of CSS that compiles down
 to regular CSS. Most Galaxy styling source (.scss) files are kept in
-`client/src/style/scss`. There are additionaly style blocks alongside some Vue
+`client/src/style/scss`. There are additional style blocks alongside some Vue
 components -- styles that are particular to that individual component and do not
 apply site-wide.
 
