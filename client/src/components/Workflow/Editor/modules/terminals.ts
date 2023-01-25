@@ -367,7 +367,7 @@ export class InvalidInputTerminal extends BaseInputTerminal {
     }
 
     attachable(terminal: BaseOutputTerminal) {
-        return new ConnectionAcceptable(false, "Cannot attach to invalid input.");
+        return new ConnectionAcceptable(false, "Cannot attach to invalid input. Disconnect this input.");
     }
 }
 
