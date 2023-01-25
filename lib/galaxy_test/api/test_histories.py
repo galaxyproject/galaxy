@@ -11,6 +11,10 @@ from galaxy.model.unittest_utils.store_fixtures import (
 )
 from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.decorators import (
+    requires_admin,
+    requires_new_user,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -249,6 +253,7 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         create_response = self._post("histories", data=post_data, anon=True)
         self._assert_status_code_is(create_response, 403)
 
+    @requires_admin
     def test_create_without_session_fails(self):
         post_data = dict(name="SessionNeeded")
         # Using admin=True will boostrap an Admin user without session
@@ -581,6 +586,7 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
+    @requires_new_user
     def test_sharing_with_private_datasets(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id)
@@ -607,6 +613,8 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
         assert sharing_response["users_shared_with"]
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
 
+    @requires_admin
+    @requires_new_user
     def test_sharing_without_manage_permissions(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id)
@@ -649,6 +657,7 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
         assert sharing_response["users_shared_with"]
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
 
+    @requires_new_user
     def test_sharing_empty_not_allowed(self):
         history_id = self.dataset_populator.new_history()
 
@@ -661,6 +670,7 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
         assert sharing_response["errors"]
         assert "empty" in sharing_response["errors"][0]
 
+    @requires_new_user
     def test_sharing_with_duplicated_users(self):
         history_id = self.create("HistoryToShareWithDuplicatedUser")
 
@@ -674,6 +684,7 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
         assert len(sharing_response["users_shared_with"]) == 1
         assert sharing_response["users_shared_with"][0]["id"] == target_user_id
 
+    @requires_new_user
     def test_sharing_private_history_makes_datasets_public(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id)
