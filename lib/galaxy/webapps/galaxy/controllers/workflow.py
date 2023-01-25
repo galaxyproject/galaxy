@@ -706,14 +706,11 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             )
             # Index page with message
             workflow_id = trans.security.encode_id(stored_workflow.id)
+            edit_url = url_for(f"/workflows/edit?id={workflow_id}")
+            run_url = url_for(f"/workflows/run?id={workflow_id}")
             return trans.show_message(
-                'Workflow "%s" created from current history. '
-                'You can <a href="%s" target="_parent">edit</a> or <a href="%s" target="_parent">run</a> the workflow.'
-                % (
-                    escape(workflow_name),
-                    url_for(controller="workflow", action="editor", id=workflow_id),
-                    url_for(controller="workflows", action="run", id=workflow_id),
-                )
+                f'Workflow "{escape(workflow_name)}" created from current history. '
+                f'You can <a href="{edit_url}" target="_parent">edit</a> or <a href="{run_url}" target="_parent">run</a> the workflow.'
             )
 
     def get_item(self, trans, id):
