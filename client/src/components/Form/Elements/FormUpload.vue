@@ -37,7 +37,7 @@ function readFile() {
         <input ref="file" type="file" class="mb-1" @change="readFile" />
         <div v-if="waiting">
             <font-awesome-icon icon="spinner" spin />
-            Uploading File ... 
+            Uploading File ...
         </div>
         <textarea v-show="currentValue.value" v-model="currentValue.value" class="ui-textarea" disabled></textarea>
     </div>
