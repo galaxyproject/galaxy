@@ -315,23 +315,23 @@ describe("canAccept", () => {
         expect(multiSimpleInputOne.canAccept(simpleDataOut).reason).toBe(
             "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
         );
-    }),
-        it("resets mapOver when constraint is lifted", () => {
-            const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
-            const dataIn = terminals["simple data"]["input"] as InputTerminal;
-            const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
-            const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
-            dataIn.connect(collectionOut);
-            dataInTwo.connect(dataOut);
-            expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
-            //
-            dataIn.disconnect(collectionOut);
-            // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
-            // TODO: avoid this if possible ...
-            expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
-            dataInTwo.disconnect(dataOut);
-            expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
-        });
+    });
+    it("resets mapOver when constraint is lifted", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
+        dataIn.connect(collectionOut);
+        dataInTwo.connect(dataOut);
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        //
+        dataIn.disconnect(collectionOut);
+        // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
+        // TODO: avoid this if possible ...
+        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        dataInTwo.disconnect(dataOut);
+        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+    });
     it("rejects connecting incompatible connection types", () => {
         const pairedOut = terminals["paired input"]["output"] as OutputCollectionTerminal;
         const collectionIn = terminals["list collection input"]["input1"] as InputCollectionTerminal;
