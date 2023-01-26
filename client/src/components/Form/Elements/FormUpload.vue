@@ -1,18 +1,20 @@
 <script setup>
-import { ref, defineEmits, reactive } from "vue";
+import { ref, defineEmits, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const props = defineProps({
-    value: {
-        type: String,
-        default: "",
-    },
+    value: ""
 });
 
 const file = ref(null);
 const emit = defineEmits(["input"]);
-const currentValue = reactive({
-    value: props.value,
+const currentValue = computed({
+    get() {
+        return props.value;
+    },
+    set(newValue) {
+        emit("input", newValue);
+    },
 });
 const waiting = ref(false);
 
@@ -22,9 +24,7 @@ function readFile() {
     if (fileContent) {
         waiting.value = true;
         reader.onload = () => {
-            const result = reader.result;
-            emit("input", result);
-            currentValue.value = result;
+            currentValue.value = reader.result;
             waiting.value = false;
         };
         reader.readAsText(fileContent);
@@ -37,8 +37,8 @@ function readFile() {
         <input ref="file" type="file" class="mb-1" @change="readFile" />
         <div v-if="waiting">
             <font-awesome-icon icon="spinner" spin />
-            Uploading File ...
+            Uploading File...
         </div>
-        <textarea v-show="currentValue.value" v-model="currentValue.value" class="ui-textarea" disabled></textarea>
+        <textarea v-show="currentValue" v-model="currentValue" class="ui-textarea" disabled></textarea>
     </div>
 </template>
