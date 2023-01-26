@@ -490,10 +490,10 @@ export class InputParameterTerminal extends BaseInputTerminal {
         const effectiveThisType = this.effectiveType(this.type);
         const otherType = ("type" in other && other.type) || "data";
         const effectiveOtherType = this.effectiveType(otherType);
-        const canAccept = effectiveThisType === effectiveOtherType
+        const canAccept = effectiveThisType === effectiveOtherType;
         return new ConnectionAcceptable(
             canAccept,
-            canAccept ? null: `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
+            canAccept ? null : `Cannot attach a ${effectiveOtherType} parameter to a ${effectiveThisType} input`
         );
     }
 }

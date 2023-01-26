@@ -25,7 +25,11 @@
                             </b-button>
                         </div>
                     </b-tab>
-                    <b-tab v-if="(!result['conversion_disable'] || !result['datatype_disable']) && !result['metadata_disable']">
+                    <b-tab
+                        v-if="
+                            (!result['conversion_disable'] || !result['datatype_disable']) &&
+                            !result['metadata_disable']
+                        ">
                         <template v-slot:title>
                             <span v-if="!result['conversion_disable']">
                                 <font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}
