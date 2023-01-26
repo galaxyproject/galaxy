@@ -749,55 +749,41 @@ class User(Base, Dictifiable, RepresentById):
         if amount != 0:
             self.disk_usage = func.coalesce(self.table.c.disk_usage, 0) + amount
 
-    def get_active_social_auth(self):
+    def _get_social_auth(self, provider_backend):
         if not self.social_auth:
             return None
         for auth in self.social_auth:
-            if auth.extra_data:
+            if auth.provider == provider_backend and auth.extra_data:
                 return auth
         return None
 
-    def get_active_custos_auth(self):
+    def _get_custos_auth(self, provider_backend):
         if not self.custos_auth:
             return None
         for auth in self.custos_auth:
-            if auth.refresh_token:
+            if auth.provider == provider_backend and auth.refresh_token:
                 return auth
         return None
 
-    def _oidc_tokens(self):
+    def get_oidc_tokens(self, provider_backend):
         access_token = None
         refresh_token = None
         id_token = None
-        auth = self.get_active_social_auth()
+        auth = self._get_social_auth(provider_backend)
         if auth:
             access_token = auth.extra_data.get("access_token", None)
             refresh_token = auth.extra_data.get("refresh_token", None)
             id_token = auth.extra_data.get("id_token", None)
             return id_token, access_token, refresh_token
 
-        # no active social auth found, check custos auth
-        auth = self.custos_auth
+        # no social auth found, check custos auth
+        auth = self._get_custos_auth(provider_backend)
         if auth:
             access_token = auth.access_token
             refresh_token = auth.refresh_token
             id_token = auth.id_token
+
         return id_token, access_token, refresh_token
-
-    @property
-    def oidc_id_token(self):
-        id, _, _ = self._oidc_tokens()
-        return id
-
-    @property
-    def oidc_access_token(self):
-        _, access, _ = self._oidc_tokens()
-        return access
-
-    @property
-    def oidc_refresh_token(self):
-        _, _, refresh = self._oidc_tokens()
-        return refresh
 
     @property
     def nice_total_disk_usage(self):

@@ -324,11 +324,8 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
             assert session_cookie
             self._ensure_valid_session(session_cookie)
 
-        if isinstance(self.user, User) and (self.user.get_active_social_auth() or self.user.get_active_custos_auth()):
-            success = self.app.authnz_manager.refresh(self)
-            if not success:
-                log.debug("logout user due to token refresh failure")
-                self.handle_user_logout()
+        if isinstance(self.user, User):
+            self.app.authnz_manager.refresh_expiring_oidc_tokens(self)
 
         if self.galaxy_session:
             # When we've authenticated by session, we have to check the

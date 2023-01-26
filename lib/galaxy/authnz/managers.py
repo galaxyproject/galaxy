@@ -198,18 +198,6 @@ class AuthnzManager:
                 return k.lower()
         return None
 
-    def _get_provider_name(self, user):
-        auth = user.get_active_social_auth()
-        if auth:
-            for k, v in BACKENDS_NAME.items():
-                if v == auth.provider:
-                    return k.lower()
-        auth = user.get_active_custos_auth()
-        if auth:
-            if auth.provider in KEYCLOAK_BACKENDS:
-                return auth.provider
-        return None
-
     def _get_authnz_backend(self, provider, idphint=None):
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
@@ -323,22 +311,27 @@ class AuthnzManager:
             raise exceptions.ItemAccessibilityException(msg)
         return qres
 
-    def refresh(self, trans):
+    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth):
         try:
-            provider = self._get_provider_name(trans.user)
-            success, message, backend = self._get_authnz_backend(provider)
+            success, message, backend = self._get_authnz_backend(auth.provider)
             if success is False:
-                msg = f"An error occurred when refreshing user token on `{provider}` identity provider: {message}"
+                msg = f"An error occurred when refreshing user token on `{auth.provider}` identity provider: {message}"
                 log.error(msg)
                 return False
-            refreshed = backend.refresh(trans)
+            refreshed = backend.refresh(trans, auth)
             if refreshed:
-                log.debug(f"Refreshed user token via `{provider}` identity provider")
+                log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
             return True
         except Exception as e:
             msg = f"An error occurred when refreshing user token: {e}"
-            log.exception(msg)
+            log.error(msg)
             return False
+
+    def refresh_expiring_oidc_tokens(self, trans):
+        for auth in (trans.user.custos_auth or []):
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+        for auth in (trans.user.social_auth or []):
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
 
     def authenticate(self, provider, trans, idphint=None):
         """
@@ -378,25 +371,13 @@ class AuthnzManager:
             success, message, backend = self._get_authnz_backend(provider, idphint=idphint)
             if success is False:
                 return False, message, (None, None)
-            url, user = backend.callback(state_token, authz_code, trans, login_redirect_url)
-            self._invalidate_other_user_tokens(provider, user)
-            return success, message, (url, user)
+            return success, message, backend.callback(state_token, authz_code, trans, login_redirect_url)
         except exceptions.AuthenticationFailed:
             raise
         except Exception:
             msg = f"An error occurred when handling callback from `{provider}` identity provider.  Please contact an administrator for assistance."
             log.exception(msg)
             return False, msg, (None, None)
-
-    def _invalidate_other_user_tokens(self, provider, user):
-        for auth in user.social_auth:
-            if auth.provider != BACKENDS_NAME[provider]:
-                auth.extra_data = None
-        for auth in user.custos_auth:
-            if auth.provider not in KEYCLOAK_BACKENDS:
-                auth.access_token = None
-                auth.id_token = None
-                auth.refresh_token = None
 
     def create_user(self, provider, token, trans, login_redirect_url):
         try:

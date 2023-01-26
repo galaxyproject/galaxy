@@ -3,6 +3,9 @@ import logging
 import time
 
 import jwt
+
+from msal import ConfidentialClientApplication
+
 import requests
 from social_core.actions import (
     do_auth,
@@ -146,11 +149,10 @@ class PSAAuthnz(IdentityProvider):
     def _login_user(self, backend, user, social_user):
         self.config["user"] = user
 
-    def refresh_azure(self, social, trans):
-        from msal import ConfidentialClientApplication
+    def refresh_azure(self, user_authnz_token):
 
         logging.getLogger("msal").setLevel(logging.WARN)
-        old_extra_data = social.extra_data
+        old_extra_data = user_authnz_token.extra_data
         app = ConfidentialClientApplication(
             self.config["KEY"],
             self.config["SECRET"],
@@ -164,19 +166,19 @@ class PSAAuthnz(IdentityProvider):
             extra_data["auth_time"] = decoded_token["iat"]
         expires = decoded_token["exp"]
         extra_data["expires"] = int(expires - time.time())
-        social.set_extra_data(extra_data)
+        user_authnz_token.set_extra_data(extra_data)
 
-    def refresh(self, trans):
-        social = trans.user.get_active_social_auth()
-        if not social:
+    def refresh(self, trans, user_authnz_token):
+        if not user_authnz_token or not user_authnz_token.extra_data:
             return False
-        if int(social.extra_data["auth_time"]) + int(social.extra_data["expires"]) / 2 <= int(time.time()):
+        # refresh tokens if they reached their half lifetime
+        if int(user_authnz_token.extra_data["auth_time"]) + int(user_authnz_token.extra_data["expires"]) / 2 <= int(time.time()):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":
-                self.refresh_azure(social, trans)
+                self.refresh_azure(user_authnz_token)
             else:
                 strategy = Strategy(trans.request, trans.session, Storage, self.config)
-                social.refresh_token(strategy)
+                user_authnz_token.refresh_token(strategy)
             return True
         return False
 

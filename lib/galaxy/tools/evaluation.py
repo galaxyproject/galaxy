@@ -15,6 +15,7 @@ from typing import (
 )
 
 from galaxy import model
+from galaxy.authnz.util import provider_name_to_backend
 from galaxy.job_execution.compute_environment import ComputeEnvironment
 from galaxy.job_execution.setup import ensure_configs_directory
 from galaxy.model.deferred import (
@@ -639,23 +640,8 @@ class ToolEvaluator:
                 else:
                     environment_variable_template = ""
                 is_template = False
-            elif inject == "oidc_refresh_token":
-                if self._user:
-                    environment_variable_template = self._user.oidc_refresh_token
-                else:
-                    environment_variable_template = "token-unavailable"
-                is_template = False
-            elif inject == "oidc_access_token":
-                if self._user:
-                    environment_variable_template = self._user.oidc_access_token
-                else:
-                    environment_variable_template = "token-unavailable"
-                is_template = False
-            elif inject == "oidc_id_token":
-                if self._user:
-                    environment_variable_template = self._user.oidc_id_token
-                else:
-                    environment_variable_template = "token-unavailable"
+            elif inject.startswith("oidc_"):
+                environment_variable_template = self.get_oidc_token(inject)
                 is_template = False
             else:
                 is_template = True
@@ -686,6 +672,22 @@ class ToolEvaluator:
             for tmp_directory_var in self.tool.tmp_directory_vars:
                 environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
+
+    def get_oidc_token(self, inject):
+        if not self._user:
+            return "token-unavailable"
+
+        provider = inject.rsplit('_', 1)[-1]
+        provider_backend = provider_name_to_backend(provider)
+        id_token, access_token, refresh_token = self._user.get_oidc_tokens(provider_backend)
+        if inject.startswith("oidc_id"):
+            environment_variable_template = id_token or "token-unavailable"
+        elif inject.startswith("oidc_access"):
+            environment_variable_template = access_token or "token-unavailable"
+        elif inject.startswith("oidc_refresh"):
+            environment_variable_template = refresh_token or "token-unavailable"
+
+        return environment_variable_template
 
     def _build_param_file(self):
         """

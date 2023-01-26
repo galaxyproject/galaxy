@@ -14,6 +14,8 @@ import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
 
+import time
+
 from galaxy import (
     exceptions,
     util,
@@ -67,11 +69,12 @@ class CustosAuthnz(IdentityProvider):
     def _decode_token_no_signature(self, token):
         return jwt.decode(token, audience=self.config["client_id"], options={"verify_signature": False})
 
-    def refresh(self, trans):
-        custos_authnz_token = trans.user.get_active_custos_auth()
+    def refresh(self, trans, custos_authnz_token):
         if custos_authnz_token is None:
             raise exceptions.AuthenticationFailed("cannot find authorized user while refreshing token")
-        if (custos_authnz_token.expiration_time - datetime.now()).total_seconds() > 60:
+        id_token_decoded = self._decode_token_no_signature(custos_authnz_token.id_token)
+        # do not refresh tokens if they didn't reach their half lifetime
+        if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2*int(time.time()):
             return False
         log.info(custos_authnz_token.access_token)
         oauth2_session = self._create_oauth2_session()

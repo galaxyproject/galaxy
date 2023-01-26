@@ -15,6 +15,10 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
 )
+
+from galaxy.authnz.util import provider_name_to_backend
+
+
 from galaxy.util import (
     Element,
     ElementTree,
@@ -51,6 +55,17 @@ from .stdio import (
 )
 
 log = logging.getLogger(__name__)
+
+
+def inject_validates(inject):
+    if inject == "api_key":
+        return True
+    p = re.compile("^oidc_(id|access|refresh)_token_(.*)$")
+    match = p.match(inject)
+    if match and provider_name_to_backend(match.group(2)):
+        return True
+
+    return False
 
 
 class XmlToolSource(ToolSource):
@@ -162,7 +177,7 @@ class XmlToolSource(ToolSource):
             inject = environment_variable_el.get("inject")
             if inject:
                 assert not template, "Cannot specify inject and environment variable template."
-                assert inject in ["api_key", "oidc_id_token", "oidc_access_token", "oidc_refresh_token"]
+                assert inject_validates(inject)
             if template:
                 assert not inject, "Cannot specify inject and environment variable template."
             definition = {

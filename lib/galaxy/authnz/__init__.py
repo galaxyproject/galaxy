@@ -40,7 +40,7 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
-    def refresh(self, trans):
+    def refresh(self, trans, token):
         raise NotImplementedError()
 
     def authenticate(self, provider, trans):

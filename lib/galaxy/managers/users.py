@@ -631,7 +631,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "tags_used",
                 # all annotations
                 # 'annotations',
-                "oidc_token",
             ],
             include_keys_from="summary",
         )
@@ -652,7 +651,6 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "quota": lambda i, k, **c: self.user_manager.quota(i, total=True),
                 "quota_bytes": lambda i, k, **c: self.user_manager.quota_bytes(i),
                 "tags_used": lambda i, k, **c: self.user_manager.tags_used(i),
-                "oidc_token": lambda i, k, **c: i.oidc_id_token or i.oidc_access_token,
             }
         )
 
