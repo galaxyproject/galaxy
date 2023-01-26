@@ -57,7 +57,7 @@ from galaxy.model import tool_shed_install
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.storage_cleaner import (
-    DiscardedItemsSummary,
+    CleanableItemsSummary,
     StorageItemsCleanupResult,
     StoredItem,
 )
@@ -1310,7 +1310,7 @@ class StorageCleanerManager(Protocol):
     Interface for monitoring storage usage and managing deletion/purging of objects that consume user's storage space.
     """
 
-    def get_discarded_summary(self, user: model.User) -> DiscardedItemsSummary:
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         """Returns information with the total storage space taken by discarded items for the given user.
 
         Discarded items are those that are deleted but not purged yet.

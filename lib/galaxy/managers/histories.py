@@ -51,7 +51,7 @@ from galaxy.schema.schema import (
     ShareHistoryExtra,
 )
 from galaxy.schema.storage_cleaner import (
-    DiscardedItemsSummary,
+    CleanableItemsSummary,
     StorageItemCleanupError,
     StorageItemsCleanupResult,
     StoredItem,
@@ -371,7 +371,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
     def __init__(self, history_manager: HistoryManager):
         self.history_manager = history_manager
 
-    def get_discarded_summary(self, user: model.User) -> DiscardedItemsSummary:
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         stmt = select([func.sum(model.History.disk_size), func.count(model.History.id)]).where(
             model.History.user_id == user.id,
             model.History.deleted == true(),
@@ -379,7 +379,7 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         )
         result = self.history_manager.session().execute(stmt).fetchone()
         total_size = 0 if result[0] is None else result[0]
-        return DiscardedItemsSummary(total_size=total_size, total_items=result[1])
+        return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
     def get_discarded(self, user: model.User, offset: Optional[int], limit: Optional[int]) -> List[StoredItem]:
         stmt = select(model.History).where(

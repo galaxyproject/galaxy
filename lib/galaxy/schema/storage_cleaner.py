@@ -17,7 +17,7 @@ from galaxy.schema.schema import (
 )
 
 
-class DiscardedItemsSummary(Model):
+class CleanableItemsSummary(Model):
     total_size: int = Field(
         ...,
         title="Total Size",

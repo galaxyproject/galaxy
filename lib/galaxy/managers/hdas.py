@@ -42,7 +42,7 @@ from galaxy.model.deferred import materializer_factory
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import DatasetSourceType
 from galaxy.schema.storage_cleaner import (
-    DiscardedItemsSummary,
+    CleanableItemsSummary,
     StorageItemCleanupError,
     StorageItemsCleanupResult,
     StoredItem,
@@ -333,7 +333,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
     def __init__(self, hda_manager: HDAManager):
         self.hda_manager = hda_manager
 
-    def get_discarded_summary(self, user: model.User) -> DiscardedItemsSummary:
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         stmt = (
             select([func.sum(model.Dataset.total_size), func.count(model.HistoryDatasetAssociation.id)])
             .select_from(model.HistoryDatasetAssociation)
@@ -349,7 +349,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         )
         result = self.hda_manager.session().execute(stmt).fetchone()
         total_size = 0 if result[0] is None else result[0]
-        return DiscardedItemsSummary(total_size=total_size, total_items=result[1])
+        return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
     def get_discarded(self, user: model.User, offset: Optional[int], limit: Optional[int]) -> List[StoredItem]:
         stmt = (

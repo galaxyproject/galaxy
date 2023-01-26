@@ -11,8 +11,8 @@ from fastapi import Body
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.storage_cleaner import (
+    CleanableItemsSummary,
     CleanupStorageItemsRequest,
-    DiscardedItemsSummary,
     StorageItemsCleanupResult,
     StoredItem,
 )
@@ -44,7 +44,7 @@ class FastAPIStorageCleaner:
     def discarded_histories_summary(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> DiscardedItemsSummary:
+    ) -> CleanableItemsSummary:
         return self.service.get_discarded_histories_summary(trans)
 
     @router.get(
@@ -78,7 +78,7 @@ class FastAPIStorageCleaner:
     def discarded_datasets_summary(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ) -> DiscardedItemsSummary:
+    ) -> CleanableItemsSummary:
         return self.service.get_discarded_datasets_summary(trans)
 
     @router.get(

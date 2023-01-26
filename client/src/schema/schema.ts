@@ -1619,6 +1619,22 @@ export interface components {
             type: string;
         };
         /**
+         * CleanableItemsSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CleanableItemsSummary: {
+            /**
+             * Total Items
+             * @description The total number of items that could be purged.
+             */
+            total_items: number;
+            /**
+             * Total Size
+             * @description The total size in bytes that can be recovered by purging all the items.
+             */
+            total_size: number;
+        };
+        /**
          * CleanupStorageItemsRequest
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -2861,22 +2877,6 @@ export interface components {
              * @default false
              */
             purge?: boolean;
-        };
-        /**
-         * DiscardedItemsSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        DiscardedItemsSummary: {
-            /**
-             * Total Items
-             * @description The total number of items that could be purged.
-             */
-            total_items: number;
-            /**
-             * Total Size
-             * @description The total size in bytes that can be recovered by purging all the items.
-             */
-            total_size: number;
         };
         /**
          * DisplayApp
@@ -13549,7 +13549,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["DiscardedItemsSummary"];
+                    "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
             /** @description Validation Error */
@@ -13632,7 +13632,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["DiscardedItemsSummary"];
+                    "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
             /** @description Validation Error */
