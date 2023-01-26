@@ -93,16 +93,16 @@ prefer:
 
 ## Changing Styles/CSS
 
-Galaxy uses Sass for globally applied styling, which is a superset of CSS that compiles down
-to regular CSS. Most Galaxy styling source (.scss) files are kept in
-`client/src/style/scss`. There are additional style blocks alongside some Vue
-components -- styles that are particular to that individual component and do not
+Galaxy uses Sass for globally applied styling, which is a superset of CSS that
+compiles down to regular CSS. Most Galaxy styling source (.scss) files are kept
+in `client/src/style/scss`. Many components will also have local style blocks
+containing styles that are particular to that individual component and do not
 apply site-wide.
 
 On build, the compiled css bundle is served at `/static/style/base.css`.
 
-As mentioned above, `make client` will rebuild styles, as a part of the webpack
-build. For iterative development, "Watch Mode" rebuilds as described above do
+As mentioned above, `make client` will rebuild styles as a part of the webpack
+build. For iterative development "Watch Mode" rebuilds as described above do
 include style changes.
 
 ## Client-Side Unit Testing
