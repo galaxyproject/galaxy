@@ -295,7 +295,6 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 trans.model.Dataset.states.OK,
                 trans.model.Dataset.states.FAILED_METADATA,
             ]
-            metadata_disable = data.state not in [trans.model.Dataset.states.OK, trans.model.Dataset.states.FAILED_METADATA]
             # datatype conversion
             conversion_options = [
                 (f"{convert_id} (using '{convert_name}')", convert_id)
