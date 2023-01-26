@@ -108,6 +108,7 @@
                             <div>
                                 <FormTool
                                     v-if="hasActiveNodeTool"
+                                    :key="activeStep.id"
                                     :step="activeStep"
                                     :datatypes="datatypes"
                                     @onChangePostJobActions="onChangePostJobActions"

@@ -163,9 +163,16 @@ export default {
         onLabel(newLabel) {
             this.$emit("onLabel", this.stepId, newLabel);
         },
+        /**
+         * Change event is triggered on component creation and input changes.
+         * @param { Object } values contains flat key-value pairs `prefixed-name=value`
+         */
         onChange(values) {
+            const initialRequest = Object.keys(this.mainValues).length === 0;
             this.mainValues = values;
-            this.postChanges();
+            if (!initialRequest) {
+                this.postChanges();
+            }
         },
         onChangePostJobActions(postJobActions) {
             this.$emit("onChangePostJobActions", this.stepId, postJobActions);
