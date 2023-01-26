@@ -35,6 +35,7 @@ from galaxy.managers.collections import DatasetCollectionManager
 from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
     text_column_filter,
@@ -241,7 +242,9 @@ class JobManager:
     def stop(self, job, message=None):
         if not job.finished:
             job.mark_deleted(self.app.config.track_jobs_in_database)
-            self.app.model.session.flush()
+            session = self.app.model.session
+            with transaction(session):
+                session.commit()
             self.app.job_manager.stop(job, message=message)
             return True
         else:
