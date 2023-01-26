@@ -250,6 +250,7 @@ module.exports = (env = {}, argv = {}) => {
             allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
             devMiddleware: {
                 publicPath: "/static/dist",
+                writeToDisk: true,
             },
             hot: true,
             port: process.env.WEBPACK_PORT || 8081,
