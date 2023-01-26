@@ -271,28 +271,67 @@ describe("canAccept", () => {
         // TODO: avoid this if possible ...
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.localMapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.localMapOver.isCollection).toBe(true);
         expect(dataIn.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(simpleDataOut).reason).toBe(
             "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
         );
-    });
-    // TODO: test mapOver reset when constraint removed
-    it("resets mapOver when constraint is lifted", () => {
-        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
-        const dataIn = terminals["simple data"]["input"] as InputTerminal;
-        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
-        const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
-        dataIn.connect(collectionOut);
-        dataInTwo.connect(dataOut);
-        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
-        //
-        dataIn.disconnect(collectionOut);
-        // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
-        // TODO: avoid this if possible ...
-        expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         dataInTwo.disconnect(dataOut);
-        expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+        // terminal isn't a reactive class in any way (worth a thought doing, but difficult!), the following happens when a new terminal is built
+        // in useTerminal.ts
+        const rebuiltDataIn = terminalFactory(
+            dataIn.stepId,
+            advancedSteps[dataIn.stepId].inputs[0],
+            testDatatypesMapper
+        );
+        expect(rebuiltDataIn.localMapOver.isCollection).toBe(false);
+        expect(rebuiltDataIn.canAccept(simpleDataOut).canAccept).toBe(true);
     });
+    it("accepts attaching dataset to non-mapped over input for a mapped over step", () => {
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const simpleDataOut = terminals["data input"]["output"] as OutputTerminal;
+        const otherDataIn = terminals["simple data"]["input"] as InputTerminal;
+        const multiSimpleInputOne = terminals["multiple simple data"]["input1"] as InputTerminal;
+        const multiSimpleInputTwo = terminals["multiple simple data"]["queries_0|input2"] as InputTerminal;
+        const multiSimpleOut = terminals["multiple simple data"]["out_file1"] as OutputTerminal;
+        // map over simple input
+        multiSimpleInputOne.connect(collectionOut);
+        // constrain input by connecting an output to same step
+        otherDataIn.connect(multiSimpleOut);
+        // can connect a simple input to the non mapped-over input of the mapped-over step
+        expect(multiSimpleInputTwo.canAccept(simpleDataOut).canAccept).toBe(true);
+        // can also connect a connection of the same map over state
+        expect(multiSimpleInputTwo.canAccept(collectionOut).canAccept).toBe(true);
+        // cannot connect connection of deeper nesting
+        const listListOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
+        expect(multiSimpleInputTwo.canAccept(listListOut).canAccept).toBe(false);
+        expect(multiSimpleInputTwo.canAccept(listListOut).reason).toBe(
+            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
+        );
+        // disconnect, map over should be maintained
+        multiSimpleInputOne.disconnect(collectionOut);
+        expect(multiSimpleInputOne.localMapOver.isCollection).toBe(true);
+        expect(multiSimpleInputOne.canAccept(simpleDataOut).canAccept).toBe(false);
+        expect(multiSimpleInputOne.canAccept(simpleDataOut).reason).toBe(
+            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
+        );
+    }),
+        it("resets mapOver when constraint is lifted", () => {
+            const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+            const dataIn = terminals["simple data"]["input"] as InputTerminal;
+            const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+            const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
+            dataIn.connect(collectionOut);
+            dataInTwo.connect(dataOut);
+            expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+            //
+            dataIn.disconnect(collectionOut);
+            // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
+            // TODO: avoid this if possible ...
+            expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+            dataInTwo.disconnect(dataOut);
+            expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
+        });
     it("rejects connecting incompatible connection types", () => {
         const pairedOut = terminals["paired input"]["output"] as OutputCollectionTerminal;
         const collectionIn = terminals["list collection input"]["input1"] as InputCollectionTerminal;
