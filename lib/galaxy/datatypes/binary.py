@@ -130,7 +130,7 @@ class Binary(data.Data):
         """Returns the mime type of the datatype"""
         return "application/octet-stream"
 
-    def get_structured_content(self, dataset, **kwargs):
+    def get_structured_content(self, dataset, content_type, **kwargs):
         raise Exception("get_structured_content is not implemented for this datatype.")
 
 
@@ -1151,7 +1151,7 @@ class H5(Binary):
             return f"Binary HDF5 file ({nice_size(dataset.get_size())})"
 
     def get_structured_content(
-        self, dataset, type=None, path="/", dtype="origin", format="json", flatten=False, selection=None, **kwargs
+        self, dataset, content_type=None, path="/", dtype="origin", format="json", flatten=False, selection=None, **kwargs
     ):
         """
         Implements h5grove protocol (https://silx-kit.github.io/h5grove/).
@@ -1159,12 +1159,12 @@ class H5(Binary):
         to be used directly with Galaxy datasets.
         """
         with get_content_from_file(dataset.file_name, path, self._create_error) as content:
-            if type == "attr":
+            if content_type == "attr":
                 assert isinstance(content, ResolvedEntityContent)
                 resp = encode(content.attributes(), "json")
-            elif type == "meta":
+            elif content_type == "meta":
                 resp = encode(content.metadata(), "json")
-            elif type == "stats":
+            elif content_type == "stats":
                 assert isinstance(content, DatasetContent)
                 resp = encode(content.data_stats(selection), "json")
             else:  # default 'data'
