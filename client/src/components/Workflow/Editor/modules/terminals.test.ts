@@ -205,6 +205,8 @@ describe("canAccept", () => {
         const integerInputParam = terminals["multi data"]["advanced|advanced_threshold"] as InputParameterTerminal;
         const integerOutputParam = terminals["integer parameter input"]["output"] as OutputParameterTerminal;
         expect(integerInputParam.canAccept(integerOutputParam).canAccept).toBe(true);
+        // regression test for https://github.com/galaxyproject/galaxy/issues/15417
+        expect(integerInputParam.canAccept(integerOutputParam).reason).toBe(null);
     });
     it("rejects text to integer parameter connection", () => {
         const integerInputParam = terminals["multi data"]["advanced|advanced_threshold"] as InputParameterTerminal;
