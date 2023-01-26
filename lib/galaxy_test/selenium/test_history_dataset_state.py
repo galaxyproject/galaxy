@@ -4,6 +4,7 @@ from galaxy.model.unittest_utils.store_fixtures import (
     TEST_SOURCE_URI,
 )
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -26,6 +27,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
     ensure_registered = True
 
     @selenium_test
+    @managed_history
     def test_dataset_state(self):
         self._prepare_dataset()
         self.history_panel_item_body_component(FIRST_HID, wait=True)
@@ -40,6 +42,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("dataset_details_ok")
 
     @selenium_test
+    @managed_history
     def test_dataset_change_dbkey(self):
         item = self._prepare_dataset()
         self.assert_item_dbkey_displayed_as(FIRST_HID, "?")
@@ -57,6 +60,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")
 
     @selenium_test
+    @managed_history
     def test_dataset_state_discarded(self):
         self.history_panel_create_new()
         history_id = self.current_history_id()
@@ -77,6 +81,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("dataset_details_discarded")
 
     @selenium_test
+    @managed_history
     def test_dataset_state_deferred(self):
         self.history_panel_create_new()
         history_id = self.current_history_id()
