@@ -1,5 +1,11 @@
 import Cytoscape from 'cytoscape';
 
+/* This will be part of the charts/viz standard lib in 23.1 */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
+
 // Public method. Return graph data as JSON
 var parse_sif = function( text ) {
     // Private variables and methods
@@ -166,9 +172,8 @@ window.bundleEntries.load = function (options) {
     cytoscape = null,
     sif_file_ext = "sif",
     highlighted_color = settings.get( 'color_picker_highlighted' );
-    const safe_download_url = `${options.root}${dataset.download_url}`;
     $.ajax({
-        url     : safe_download_url,
+        url     : prefixedDownloadUrl(options.root, dataset.download_url),
         success : function( content ) {
             // Select data for the graph
             if( dataset.file_ext === sif_file_ext ) {

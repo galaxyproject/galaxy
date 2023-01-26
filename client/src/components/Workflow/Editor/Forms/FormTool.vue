@@ -27,6 +27,7 @@
                     :area="true"
                     help="Add an annotation or notes to this step. Annotations are available when a workflow is viewed."
                     @input="onAnnotation" />
+                <FormConditional :step="step" v-on="$listeners" />
                 <div class="mt-2 mb-4">
                     <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                     <FormDisplay
@@ -55,14 +56,15 @@
 </template>
 
 <script>
-import CurrentUser from "components/providers/CurrentUser";
-import FormDisplay from "components/Form/FormDisplay";
-import ToolCard from "components/Tool/ToolCard";
-import FormSection from "./FormSection";
-import FormElement from "components/Form/FormElement";
+import CurrentUser from "@/components/providers/CurrentUser";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import ToolCard from "@/components/Tool/ToolCard.vue";
+import FormSection from "./FormSection.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import FormConditional from "./FormConditional.vue";
 import Utils from "utils/utils";
-import Heading from "components/Common/Heading";
-import { useWorkflowStepStore, Step } from "@/stores/workflowStepStore";
+import Heading from "@/components/Common/Heading.vue";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
 import { useStepProps } from "../composables/useStepProps";
 import { toRef } from "vue";
@@ -73,12 +75,13 @@ export default {
         FormDisplay,
         ToolCard,
         FormElement,
+        FormConditional,
         FormSection,
         Heading,
     },
     props: {
         step: {
-            type: Step,
+            type: Object,
             required: true,
         },
         datatypes: {
@@ -86,13 +89,24 @@ export default {
             required: true,
         },
     },
-    setup(props) {
+    emits: ["onSetData", "onUpdateStep", "onChangePostJobActions", "onAnnotation", "onLabel"],
+    setup(props, { emit }) {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
             toRef(props, "step")
         );
         const stepStore = useWorkflowStepStore();
         const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
-        return { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions, uniqueErrorLabel };
+
+        return {
+            stepId,
+            annotation,
+            label,
+            stepInputs,
+            stepOutputs,
+            configForm,
+            postJobActions,
+            uniqueErrorLabel,
+        };
     },
     data() {
         return {

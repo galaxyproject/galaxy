@@ -10,6 +10,7 @@ from typing import (
     NamedTuple,
     Optional,
     Tuple,
+    Union,
 )
 
 from gxformat2 import (
@@ -57,6 +58,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import WorkflowIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tools.parameters import (
@@ -161,10 +163,10 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             query = query.outerjoin(model.StoredWorkflow.users_shared_with)
         query = query.outerjoin(model.StoredWorkflow.tags)
 
-        latest_workflow_load = joinedload("latest_workflow")
+        latest_workflow_load = joinedload(model.StoredWorkflow.latest_workflow)
         if not payload.skip_step_counts:
             latest_workflow_load = latest_workflow_load.undefer("step_count")
-        latest_workflow_load = latest_workflow_load.lazyload("steps")
+        latest_workflow_load = latest_workflow_load.lazyload(model.Workflow.steps)
 
         query = query.options(joinedload(model.StoredWorkflow.annotations))
         query = query.options(latest_workflow_load)
@@ -266,9 +268,11 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                     )
                 )
         stored_workflow = workflow_query.options(
-            joinedload("annotations"),
-            joinedload("tags"),
-            subqueryload("latest_workflow").joinedload("steps").joinedload("*"),
+            joinedload(trans.app.model.StoredWorkflow.annotations),
+            joinedload(trans.app.model.StoredWorkflow.tags),
+            subqueryload(trans.app.model.StoredWorkflow.latest_workflow)
+            .joinedload(trans.app.model.Workflow.steps)
+            .joinedload("*"),
         ).first()
         if stored_workflow is None:
             if not by_stored_id:
@@ -359,15 +363,15 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         return True
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False):
-        q = trans.sa_session.query(self.app.model.WorkflowInvocation)
+    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> model.WorkflowInvocation:
+        q = trans.sa_session.query(model.WorkflowInvocation)
         if eager:
             q = q.options(
-                subqueryload(self.app.model.WorkflowInvocation.steps)
-                .joinedload("implicit_collection_jobs")
-                .joinedload("jobs")
-                .joinedload("job")
-                .joinedload("input_datasets")
+                subqueryload(model.WorkflowInvocation.steps)
+                .joinedload(model.WorkflowInvocationStep.implicit_collection_jobs)
+                .joinedload(model.ImplicitCollectionJobs.jobs)
+                .joinedload(model.ImplicitCollectionJobsJobAssociation.job)
+                .joinedload(model.Job.input_datasets)
             )
         workflow_invocation = q.get(decoded_invocation_id)
         if not workflow_invocation:
@@ -401,6 +405,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         cancelled = workflow_invocation.cancel()
 
         if cancelled:
+            workflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             trans.sa_session.add(workflow_invocation)
             trans.sa_session.flush()
         else:
@@ -934,6 +939,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 inputs = step.module.get_runtime_inputs(connections=step.output_connections)
                 step_model = {"inputs": [input.to_dict(trans) for input in inputs.values()]}
+            step_model["when"] = step.when_expression
             step_model["replacement_parameters"] = step.module.get_replacement_parameters(step)
             step_model["step_type"] = step.type
             step_model["step_label"] = step.label
@@ -1012,13 +1018,16 @@ class WorkflowContentsManager(UsesAnnotations):
                             nested_input_dict = {}
                             index = repeat_values[i]["__index__"]
                             nested_input_dict["title"] = "%i. %s" % (i + 1, input.title)
-                            nested_input_dict["inputs"] = do_inputs(
-                                input.inputs,
-                                repeat_values[i],
-                                f"{prefix + input.name}_{str(index)}|",
-                                step,
-                                other_values,
-                            )
+                            try:
+                                nested_input_dict["inputs"] = do_inputs(
+                                    input.inputs,
+                                    repeat_values[i],
+                                    f"{prefix + input.name}_{str(index)}|",
+                                    step,
+                                    other_values,
+                                )
+                            except KeyError:
+                                continue
                             nested_input_dicts.append(nested_input_dict)
                         input_dict["inputs"] = nested_input_dicts
                 elif input.type == "conditional":
@@ -1028,14 +1037,20 @@ class WorkflowContentsManager(UsesAnnotations):
                     row_for_param(
                         input_dict, input.test_param, group_values[input.test_param.name], other_values, prefix, step
                     )
-                    input_dict["inputs"] = do_inputs(
-                        input.cases[current_case].inputs, group_values, new_prefix, step, other_values
-                    )
+                    try:
+                        input_dict["inputs"] = do_inputs(
+                            input.cases[current_case].inputs, group_values, new_prefix, step, other_values
+                        )
+                    except KeyError:
+                        continue
                 elif input.type == "section":
                     new_prefix = f"{prefix + input.name}|"
                     group_values = values[input.name]
                     input_dict["title"] = input.title
-                    input_dict["inputs"] = do_inputs(input.inputs, group_values, new_prefix, step, other_values)
+                    try:
+                        input_dict["inputs"] = do_inputs(input.inputs, group_values, new_prefix, step, other_values)
+                    except KeyError:
+                        continue
                 else:
                     row_for_param(input_dict, input, values[input.name], other_values, prefix, step)
                 input_dicts.append(input_dict)
@@ -1128,6 +1143,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "annotation": annotation_str,
                 "post_job_actions": module.get_post_job_actions({}),
                 "uuid": str(step.uuid) if step.uuid else None,
+                "when": step.when_expression,
                 "workflow_outputs": [],
             }
             if tooltip:
@@ -1360,6 +1376,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "uuid": str(step.uuid),
                 "label": step.label or None,
                 "annotation": annotation_str,
+                "when": step.when_expression,
             }
             if step.type == "tool":
                 step_dict["tool_id"] = content_id if allow_upgrade else step.tool_id
@@ -1547,6 +1564,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 "annotation": self.get_item_annotation_str(sa_session, stored.user, step),
                 "tool_inputs": step.tool_inputs,
                 "input_steps": {},
+                "when": step.when_expression,
             }
 
             if step_type == "subworkflow":
@@ -1668,7 +1686,11 @@ class WorkflowContentsManager(UsesAnnotations):
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)
 
         # Stick this in the step temporarily
-        step.temp_input_connections = step_dict.get("input_connections", {})
+        DictConnection = Dict[str, Union[int, str]]
+        temp_input_connections: Dict[str, Union[List[DictConnection], DictConnection]] = step_dict.get(
+            "input_connections", {}
+        )
+        step.temp_input_connections = temp_input_connections
 
         # Create the model class for the step
         steps.append(step)
@@ -1709,8 +1731,11 @@ class WorkflowContentsManager(UsesAnnotations):
                     step_input.default_value = default
                     step_input.default_value_set = True
 
+        if "when" in step_dict:
+            step.when_expression = step_dict["when"]
         if dry_run and step in trans.sa_session:
             trans.sa_session.expunge(step)
+
         return module, step
 
     def __load_subworkflow_from_step_dict(

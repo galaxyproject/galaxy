@@ -109,6 +109,9 @@ class ChangeDatatypeAction(DefaultJobAction):
 
     @classmethod
     def execute(cls, app, sa_session, action, job, replacement_dict, final_job_state=None):
+        if job.state == job.states.SKIPPED:
+            # Don't change datatype, must remain expression.json
+            return
         for dataset_assoc in job.output_datasets:
             if action.output_name == "" or dataset_assoc.name == action.output_name:
                 app.datatypes_registry.change_datatype(dataset_assoc.dataset, action.action_arguments["newtype"])
@@ -330,7 +333,7 @@ class ColumnSetAction(DefaultJobAction):
 
     @classmethod
     def get_short_str(cls, pja):
-        return f"Set the following metadata values:<br/>{'<br/>'.join('{} : {}'.format(escape(k), escape(v)) for k, v in pja.action_arguments.items())}"
+        return f"Set the following metadata values:<br/>{'<br/>'.join(f'{escape(k)} : {escape(v)}' for k, v in pja.action_arguments.items())}"
 
 
 class SetMetadataAction(DefaultJobAction):

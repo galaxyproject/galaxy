@@ -1,4 +1,5 @@
 import pytest
+from pyparsing.exceptions import ParseException
 
 from galaxy.util.bool_expressions import (
     BooleanExpressionEvaluator,
@@ -61,7 +62,7 @@ def test_expression_evaluates_as_expected(expr: str, expected: bool, contained_e
 
 @pytest.mark.parametrize("expr", INVALID_EXPRESSIONS_TESTS)
 def test_invalid_expression_raises_exception(expr: str, contained_evaluator: BooleanExpressionEvaluator):
-    with pytest.raises(Exception):
+    with pytest.raises(ParseException):
         contained_evaluator.evaluate_expression(expr)
 
 

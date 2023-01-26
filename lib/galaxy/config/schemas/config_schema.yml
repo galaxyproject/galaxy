@@ -3694,3 +3694,11 @@ mapping:
         desc: |
           Optional file containing one or more themes for galaxy. If several themes
           are defined, users can choose their preferred theme in the client.
+
+      enable_beacon_integration:
+        type: bool
+        default: false
+        required: false
+        desc: |
+          Enables user preferences and api endpoint for the beacon integration.
+

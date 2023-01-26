@@ -7,6 +7,7 @@ import { getAppRoot } from "onload";
 import { useCurrentUser } from "composables/user";
 import { useUserHistories } from "composables/userHistories";
 import { useConfig } from "composables/config";
+import { wait } from "@/utils/wait";
 
 const { currentUser } = useCurrentUser();
 const { currentHistoryId } = useUserHistories(currentUser);
@@ -49,12 +50,6 @@ function dismiss(result) {
     }
 
     showModal.value = false;
-}
-
-function wait(milliseconds) {
-    return new Promise((resolve) => {
-        setTimeout(() => resolve(), milliseconds);
-    });
 }
 
 async function open(overrideOptions) {

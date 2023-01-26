@@ -91,6 +91,7 @@
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
                                     :has-changes="hasChanges"
+                                    :has-invalid-connections="hasInvalidConnections"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -112,6 +113,7 @@
                                     @onChangePostJobActions="onChangePostJobActions"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
+                                    @onUpdateStep="onUpdateStep"
                                     @onSetData="onSetData" />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
@@ -121,6 +123,7 @@
                                     @onLabel="onLabel"
                                     @onEditSubworkflow="onEditSubworkflow"
                                     @onAttemptRefactor="onAttemptRefactor"
+                                    @onUpdateStep="onUpdateStep"
                                     @onSetData="onSetData" />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
@@ -185,7 +188,7 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
-import Vue, { onUnmounted, computed } from "vue";
+import Vue, { onUnmounted, computed, ref } from "vue";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -247,6 +250,9 @@ export default {
             return null;
         });
 
+        const hasChanges = ref(false);
+        const hasInvalidConnections = computed(() => Object.keys(connectionsStore.invalidConnections).length > 0);
+
         function resetStores() {
             connectionsStore.$reset();
             stepStore.$reset();
@@ -257,6 +263,8 @@ export default {
         });
         return {
             connectionsStore,
+            hasChanges,
+            hasInvalidConnections,
             stepStore,
             steps,
             nodeIndex: getStepIndex,
@@ -276,7 +284,6 @@ export default {
             markdownText: null,
             versions: [],
             parameters: null,
-            hasChanges: false,
             report: {},
             labels: {},
             license: null,
@@ -637,6 +644,7 @@ export default {
                 name: name,
                 content_id: contentId,
                 type: type,
+                outputs: [],
                 position: defaultPosition(this.graphOffset, this.transform),
                 post_job_actions: {},
             };

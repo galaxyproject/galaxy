@@ -7,11 +7,14 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
 import yaml
 
+from galaxy.datatypes._protocols import (
+    DatasetProtocol,
+    HasMetadata,
+)
 from galaxy.datatypes.binary import CompressedZipArchive
 from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
@@ -19,9 +22,6 @@ from galaxy.datatypes.sniff import (
     FilePrefix,
 )
 from galaxy.datatypes.tabular import Tabular
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 
 class _QIIME2ResultBase(CompressedZipArchive):
@@ -33,7 +33,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
     MetadataElement(name="format", optional=True, no_value="", readonly=True)
     MetadataElement(name="version", readonly=True)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         metadata = _get_metadata_from_archive(dataset.file_name)
         for key, value in metadata.items():
             if value:
@@ -41,7 +41,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.metadata.semantic_type_simple = _strip_properties(dataset.metadata.semantic_type)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if dataset.metadata.semantic_type == "Visualization":
             dataset.blurb = "QIIME 2 Visualization"
         else:
@@ -49,7 +49,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         dataset.peek = "\n".join(map(": ".join, self._peek(dataset)))
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         def make_row(item):
             return "<tr><th>%s</th><td>%s</td></td>" % tuple(html.escape(x) for x in item)
 
@@ -59,7 +59,7 @@ class _QIIME2ResultBase(CompressedZipArchive):
 
         return "".join(table)
 
-    def _peek(self, dataset: "DatasetInstance", simple: bool = False) -> List:
+    def _peek(self, dataset: HasMetadata, simple: bool = False) -> List:
         peek = [("Type", dataset.metadata.semantic_type), ("UUID", dataset.metadata.uuid)]
         if not simple:
             if dataset.metadata.semantic_type != "Visualization":
@@ -115,7 +115,7 @@ class QIIME2Metadata(Tabular):
     def get_column_names(self, first_line: str) -> Optional[List[str]]:
         return first_line.strip().split("\t")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Let Galaxy's Tabular format handle most of this. We will just jump
         in at the last minute to (potentially) override some column types.

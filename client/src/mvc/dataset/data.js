@@ -3,7 +3,7 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 
 //temporary
-import { appendVueComponent } from "utils/mountVueComponent";
+import { replaceChildrenWithComponent } from "utils/mountVueComponent";
 import TabularChunkedView from "components/Visualizations/Tabular/TabularChunkedView.vue";
 
 /**
@@ -72,5 +72,5 @@ export var DatasetCollection = Backbone.Collection.extend({
 
 export const createTabularDatasetChunkedView = (options) => {
     // We'll always have a parent_elt in options, so create a div and insert it into that.
-    return appendVueComponent(options.parent_elt, TabularChunkedView, { options });
+    return replaceChildrenWithComponent(options.parent_elt, TabularChunkedView, { options });
 };

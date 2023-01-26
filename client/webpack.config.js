@@ -40,8 +40,9 @@ module.exports = (env = {}, argv = {}) => {
             toolshed: ["polyfills", "bundleToolshed", "entry/generic"],
         },
         output: {
-            path: path.join(__dirname, "../", "/static/dist"),
+            path: path.join(__dirname, "dist"),
             filename: "[name].bundled.js",
+            clean: true,
         },
         resolve: {
             plugins: [new TsconfigPathsPlugin({ extensions: [".ts", ".js", ".json", ".vue", ".scss"] })],

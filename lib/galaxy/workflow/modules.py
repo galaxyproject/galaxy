@@ -13,10 +13,12 @@ from typing import (
     List,
     Optional,
     Type,
+    TYPE_CHECKING,
     Union,
 )
 
 import packaging.version
+from cwl_utils.expression import do_eval
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -36,6 +38,15 @@ from galaxy.model import (
     WorkflowStepConnection,
 )
 from galaxy.model.dataset_collections import matching
+from galaxy.schema.invocation import (
+    CancelReason,
+    FailureReason,
+    InvocationCancellationReviewFailed,
+    InvocationFailureDatasetFailed,
+    InvocationFailureExpressionEvaluationFailed,
+    InvocationFailureWhenNotBoolean,
+)
+from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
 from galaxy.tools import (
     DatabaseOperationTool,
@@ -86,6 +97,9 @@ from galaxy.util.rules_dsl import RuleSet
 from galaxy.util.template import fill_template
 from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_registry
 
+if TYPE_CHECKING:
+    from galaxy.schema.invocation import InvocationMessageUnion
+
 log = logging.getLogger(__name__)
 
 # Key into Tool state to describe invocation-specific runtime properties.
@@ -102,6 +116,126 @@ class NoReplacement:
 
 
 NO_REPLACEMENT = NoReplacement()
+
+
+class ConditionalStepWhen(BooleanToolParameter):
+    pass
+
+
+def evaluate_value_from_expressions(progress, step, execution_state, extra_step_state):
+    when_expression = step.when_expression
+    value_from_expressions = {}
+
+    if execution_state:
+        for key in execution_state.inputs.keys():
+            step_input = step.inputs_by_name.get(key)
+            if step_input and step_input.value_from is not None:
+                value_from_expressions[key] = step_input.value_from
+
+    if not value_from_expressions and when_expression is None:
+        return {}
+
+    hda_references = []
+
+    def to_cwl(value):
+        element_identifier = None
+        if isinstance(value, model.DatasetCollectionElement) and value.hda:
+            element_identifier = value.element_identifier
+            value = value.hda
+        if isinstance(value, model.HistoryDatasetAssociation):
+            # I think the following two checks are needed but they may
+            # not be needed.
+            if not value.dataset.in_ready_state():
+                why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
+                raise DelayedWorkflowEvaluation(why=why)
+            if not value.is_ok:
+                raise FailWorkflowEvaluation(
+                    why=InvocationFailureDatasetFailed(
+                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                    )
+                )
+            if value.ext == "expression.json":
+                with open(value.file_name) as f:
+                    # OUR safe_loads won't work, will not load numbers, etc...
+                    return json.load(f)
+            else:
+                hda_references.append(value)
+                properties = {
+                    "class": "File",
+                    "location": "step_input://%d" % len(hda_references),
+                }
+                set_basename_and_derived_properties(
+                    properties, value.dataset.created_from_basename or element_identifier or value.name
+                )
+                return properties
+        elif hasattr(value, "collection"):
+            collection = value.collection
+            if collection.collection_type == "list":
+                return [to_cwl(dce) for dce in collection.dataset_elements]
+            else:
+                # Could be record or nested lists
+                rval = {}
+                for element in collection.elements:
+                    rval[element.element_identifier] = to_cwl(element.element_object)
+                return rval
+        else:
+            return value
+
+    def from_cwl(value):
+        # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
+        # file:// locations for instance.
+        if isinstance(value, dict) and "class" in value and "location" in value:
+            if value["class"] == "File":
+                # This is going to re-file -> HDA this each iteration I think, not a good
+                # implementation.
+                return progress.raw_to_galaxy(value)
+            assert value["location"].startswith("step_input://"), "Invalid location %s" % value
+            return hda_references[int(value["location"][len("step_input://") :]) - 1]
+        elif isinstance(value, dict):
+            raise NotImplementedError()
+        else:
+            return value
+
+    step_state = {}
+    for key, value in extra_step_state.items():
+        step_state[key] = to_cwl(value)
+    if execution_state:
+        for key, value in execution_state.inputs.items():
+            step_state[key] = to_cwl(value)
+
+    if when_expression is not None:
+        try:
+            as_cwl_value = do_eval(
+                when_expression,
+                step_state,
+                [{"class": "InlineJavascriptRequirement"}],
+                None,
+                None,
+                {},
+            )
+        except Exception:
+            # Exception contains script and traceback, which could be helpful for debugging workflows,
+            # but both could conceivably contain secrets.
+            # CWL has a secret hint that should cause values to be sanitized,
+            # but Galaxy does not, so we can't really display anything here at this point.
+            # In any case I believe the CWL secret hint can be bypassed if the value is passed on
+            # to another step input that doesn't have the secret set.
+            # Complicated stuff, ignore for now.
+            raise FailWorkflowEvaluation(
+                InvocationFailureExpressionEvaluationFailed(
+                    reason=FailureReason.expression_evaluation_failed, workflow_step_id=step.id
+                )
+            )
+        when_value = from_cwl(as_cwl_value)
+        if not isinstance(when_value, bool):
+            raise FailWorkflowEvaluation(
+                InvocationFailureWhenNotBoolean(
+                    reason=FailureReason.when_not_boolean,
+                    workflow_step_id=step.id,
+                    details=f"Type is: {when_value.__class__.__name__}",
+                )
+            )
+        return when_value
 
 
 class WorkflowModule:
@@ -361,19 +495,15 @@ class WorkflowModule:
         return []
 
     def compute_collection_info(self, progress, step, all_inputs):
-        """Use get_all_inputs (if implemented) to determine collection mapping for execution.
-
-        Hopefully this can be reused for Tool and Subworkflow modules.
         """
-
+        Use get_all_inputs (if implemented) to determine collection mapping for execution.
+        """
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
         # Have implicit collections...
-        if collections_to_match.has_collections():
-            collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
-        else:
-            collection_info = None
-
-        return collection_info
+        collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
+        if collection_info and progress.subworkflow_collection_info:
+            collection_info.when_values = progress.subworkflow_collection_info.when_values
+        return collection_info or progress.subworkflow_collection_info
 
     def _find_collections_to_match(self, progress, step, all_inputs):
         collections_to_match = matching.CollectionsToMatch()
@@ -439,6 +569,20 @@ class WorkflowModule:
             if data is not NO_REPLACEMENT:
                 collections_to_match.add(name, data)
                 continue
+
+        known_input_names = {input_dict["name"] for input_dict in all_inputs}
+
+        if step.when_expression:
+            for step_input in step.inputs:
+                step_input_name = step_input.name
+                input_in_execution_state = step_input_name not in known_input_names
+                if input_in_execution_state:
+                    maybe_collection = progress.replacement_for_connection(
+                        step.input_connections_by_name[step_input_name][0]
+                    )
+                    if hasattr(maybe_collection, "collection"):
+                        # Is that always right ?
+                        collections_to_match.add(step_input_name, maybe_collection)
 
         return collections_to_match
 
@@ -596,10 +740,47 @@ class SubWorkflowModule(WorkflowModule):
         inputs, etc...
         """
         step = invocation_step.workflow_step
-        collection_info = self.compute_collection_info(progress, step, self.get_all_inputs())
-        structure = collection_info.structure if collection_info else None
+        all_inputs = self.get_all_inputs()
+        collection_info = self.compute_collection_info(progress, step, all_inputs)
+
+        if collection_info:
+            iteration_elements_iter = collection_info.slice_collections()
+        else:
+            if progress.when_values:
+                # If we have more than one item in when_values it must have come from an expression.json
+                # collection, so we'd have a collection_info instance ... I think.
+                assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
+            iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
+
+        when_values = []
+        if step.when_expression:
+            for (iteration_elements, when_value) in iteration_elements_iter:
+                if when_value is False:
+                    when_values.append(when_value)
+                    continue
+                extra_step_state = {}
+                for step_input in step.inputs:
+                    step_input_name = step_input.name
+                    if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                        value = iteration_elements[step_input_name]  # noqa: B023
+                    else:
+                        value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
+                    extra_step_state[step_input_name] = value
+
+                when_values.append(
+                    evaluate_value_from_expressions(
+                        progress, step, execution_state={}, extra_step_state=extra_step_state
+                    )
+                )
+            if collection_info:
+                collection_info.when_values = when_values
+
         subworkflow_invoker = progress.subworkflow_invoker(
-            trans, step, use_cached_job=use_cached_job, subworkflow_structure=structure
+            trans,
+            step,
+            use_cached_job=use_cached_job,
+            subworkflow_collection_info=collection_info,
+            when_values=when_values,
         )
         subworkflow_invoker.invoke()
         subworkflow = subworkflow_invoker.workflow
@@ -1457,7 +1638,11 @@ class PauseModule(WorkflowModule):
                 progress.set_step_outputs(invocation_step, {"output": replacement})
                 return
             elif action is False:
-                raise CancelWorkflowEvaluation()
+                raise CancelWorkflowEvaluation(
+                    why=InvocationCancellationReviewFailed(
+                        reason=CancelReason.cancelled_on_review, workflow_step_id=step.id
+                    )
+                )
         delayed_why = "workflow paused at this step waiting for review"
         raise DelayedWorkflowEvaluation(why=delayed_why)
 
@@ -1919,15 +2104,18 @@ class ToolModule(WorkflowModule):
         step = invocation_step.workflow_step
         tool = trans.app.toolbox.get_tool(step.tool_id, tool_version=step.tool_version, tool_uuid=step.tool_uuid)
         if not tool.is_workflow_compatible:
-            message = f"Specified tool [{tool.id}] in workflow is not workflow-compatible."
-            raise Exception(message)
+            # TODO: why do we even create an invocation, seems like something we could check on submit?
+            message = f"Specified tool [{tool.id}] in step {step.order_index + 1} is not workflow-compatible."
+            raise exceptions.MessageException(message)
         tool_state = step.state
+        tool_inputs = tool.inputs.copy()
         # Not strictly needed - but keep Tool state clean by stripping runtime
         # metadata parameters from it.
         if RUNTIME_STEP_META_STATE_KEY in tool_state.inputs:
             del tool_state.inputs[RUNTIME_STEP_META_STATE_KEY]
 
         all_inputs = self.get_all_inputs()
+
         all_inputs_by_name = {}
         for input_dict in all_inputs:
             all_inputs_by_name[input_dict["name"]] = input_dict
@@ -1937,10 +2125,12 @@ class ToolModule(WorkflowModule):
         if collection_info:
             iteration_elements_iter = collection_info.slice_collections()
         else:
-            iteration_elements_iter = [None]
+            if progress.when_values:
+                assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
+            iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
         resource_parameters = invocation.resource_parameters
-        for iteration_elements in iteration_elements_iter:
+        for (iteration_elements, when_value) in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
             execution_state.inputs = make_dict_copy(execution_state.inputs)
@@ -1971,21 +2161,57 @@ class ToolModule(WorkflowModule):
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 
+                    # bool cast should be fine, can only have true/false on ConditionalStepWhen
+                    # also terrible of course and it's not needed for API requests
+                    if isinstance(input, ConditionalStepWhen) and bool(replacement) is False:
+                        raise SkipWorkflowStepEvaluation
+
                 return replacement
 
             try:
                 # Replace DummyDatasets with historydatasetassociations
                 visit_input_values(
-                    tool.inputs,
+                    tool_inputs,
                     execution_state.inputs,
                     callback,
                     no_replacement_value=NO_REPLACEMENT,
                     replace_optional_connections=True,
                 )
             except KeyError as k:
-                message_template = "Error due to input mapping of '%s' in '%s'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review your workflow."
-                message = message_template % (tool.name, unicodify(k))
+                message = f"Error due to input mapping of '{unicodify(k)}' in tool '{tool.id}'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review workflow step {step.order_index + 1}."
                 raise exceptions.MessageException(message)
+
+            if step.when_expression and when_value is not False:
+                extra_step_state = {}
+                for step_input in step.inputs:
+                    step_input_name = step_input.name
+                    input_in_execution_state = step_input_name not in execution_state.inputs
+                    if input_in_execution_state:
+                        if step_input_name in all_inputs_by_name:
+                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                                value = iteration_elements[step_input_name]  # noqa: B023
+                            else:
+                                value = progress.replacement_for_input(step, all_inputs_by_name[step_input_name])
+                            # TODO: only do this for values... is everything with a default
+                            # this way a field parameter? I guess not?
+                            extra_step_state[step_input_name] = value
+                        # Might be needed someday...
+                        # elif step_input.default_value_set:
+                        #    extra_step_state[step_input_name] = step_input.default_value
+                        else:
+                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+                                value = iteration_elements[step_input_name]  # noqa: B023
+                            else:
+                                value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
+                            extra_step_state[step_input_name] = value
+
+                if when_value is not False:
+                    when_value = evaluate_value_from_expressions(
+                        progress, step, execution_state=execution_state, extra_step_state=extra_step_state
+                    )
+            if when_value is not None:
+                # Track this more formally ?
+                execution_state.inputs["__when_value__"] = when_value
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys
             if unmatched_input_connections:
@@ -2052,8 +2278,9 @@ class ToolModule(WorkflowModule):
 
             self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, progress.replacement_dict)
         if execution_tracker.execution_errors:
-            message = "Failed to create one or more job(s) for workflow step."
-            raise Exception(message)
+            # TODO: formalize into InvocationFailure ?
+            message = f"Failed to create {len(execution_tracker.execution_errors)} job(s) for workflow step {step.order_index + 1}: {str(execution_tracker.execution_errors[0])}"
+            raise exceptions.MessageException(message)
 
         return complete
 
@@ -2196,6 +2423,16 @@ class DelayedWorkflowEvaluation(Exception):
 
 
 class CancelWorkflowEvaluation(Exception):
+    def __init__(self, why: "InvocationMessageUnion"):
+        self.why = why
+
+
+class FailWorkflowEvaluation(Exception):
+    def __init__(self, why: "InvocationMessageUnion"):
+        self.why = why
+
+
+class SkipWorkflowStepEvaluation(Exception):
     pass
 
 

@@ -1,13 +1,15 @@
 <template>
     <li class="dataset-source">
-        <a v-if="browserCompatUri" :href="sourceUri" target="_blank">
+        <a v-if="browserCompatUri" v-b-tooltip.hover title="Dataset Source URL" :href="sourceUri" target="_blank">
             {{ source.source_uri }}
-            <font-awesome-icon v-b-tooltip.hover title="Dataset Source URL" icon="external-link-alt" />
+            <font-awesome-icon icon="external-link-alt" />
         </a>
         <span v-else>
             {{ source.source_uri }}
         </span>
-        <font-awesome-icon v-b-tooltip.hover title="Copy URI" icon="copy" style="cursor: pointer" @click="copyLink" />
+        <span v-b-tooltip.hover title="Copy URI"
+            ><font-awesome-icon icon="copy" style="cursor: pointer" @click="copyLink"
+        /></span>
         <br />
         <DatasetSourceTransform :transform="source.transform" />
     </li>

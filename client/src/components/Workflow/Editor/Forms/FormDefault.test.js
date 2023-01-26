@@ -40,7 +40,7 @@ describe("FormDefault", () => {
         const title = wrapper.find(".portlet-title-text").text();
         expect(title).toBe("label");
         const inputCount = wrapper.findAll("input").length;
-        expect(inputCount).toBe(3);
+        expect(inputCount).toBe(4);
         const outputLabelCount = wrapper.findAll("#__label__output-name").length;
         expect(outputLabelCount).toBe(1);
         const otherLabelCount = wrapper.findAll("#__label__other-name").length;

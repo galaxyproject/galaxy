@@ -1169,6 +1169,18 @@ export interface paths {
         /** Return the user's API key with extra information. */
         get: operations["get_api_key_detailed_api_users__user_id__api_key_detailed_get"];
     };
+    "/api/users/{user_id}/beacon": {
+        /**
+         * Returns information about beacon share settings
+         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         */
+        get: operations["get_beacon_api_users__user_id__beacon_get"];
+        /**
+         * Changes beacon setting
+         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         */
+        post: operations["set_beacon_api_users__user_id__beacon_post"];
+    };
     "/api/version": {
         /**
          * Return Galaxy version information: major/minor version, optional extra info
@@ -4087,6 +4099,12 @@ export interface components {
              * @default 0
              */
             running?: number;
+            /**
+             * Skipped jobs
+             * @description Number of jobs that were skipped due to conditional workflow step execution.
+             * @default 0
+             */
+            skipped?: number;
             /**
              * Upload jobs
              * @description Number of jobs in the `upload` state.
@@ -7189,6 +7207,17 @@ export interface components {
             url: string;
         };
         /**
+         * UserBeaconSetting
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        UserBeaconSetting: {
+            /**
+             * Enabled
+             * @description True if beacon sharing is enabled
+             */
+            enabled: boolean;
+        };
+        /**
          * UserEmail
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -7493,7 +7522,8 @@ export interface components {
             | "deleted"
             | "deleted_new"
             | "stop"
-            | "stopped";
+            | "stopped"
+            | "skipped";
         /**
          * populated_states
          * @description An enumeration.
@@ -13908,6 +13938,71 @@ export interface operations {
             };
             /** @description The user doesn't have an API key. */
             204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_beacon_api_users__user_id__beacon_get: {
+        /**
+         * Returns information about beacon share settings
+         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_beacon_api_users__user_id__beacon_post: {
+        /**
+         * Changes beacon setting
+         * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserBeaconSetting"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {

@@ -24,7 +24,7 @@
 <script lang="ts" setup>
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
-import { type OutputTerminals, type InputTerminals, terminalFactory } from "./modules/terminals";
+import { type OutputTerminals, type InputTerminalsAndInvalid, terminalFactory } from "./modules/terminals";
 import { useFocusWithin } from "@/composables/useActiveElement";
 
 const props = defineProps<{
@@ -78,13 +78,15 @@ function decrement() {
     }
 }
 
-function terminalToInputObject(terminal: InputTerminals, connected: boolean): InputObject {
+function terminalToInputObject(terminal: InputTerminalsAndInvalid, connected: boolean): InputObject {
     const step = stepStore.getStep(terminal.stepId);
     const inputLabel = `${terminal.name} in step ${step.id + 1}: ${step.label}`;
     return { stepId: step.id, inputName: terminal.name, inputLabel, connected };
 }
 
-function inputObjectToTerminal(inputObject: InputObject): InputTerminals {
+function inputObjectToTerminal(inputObject: InputObject): InputTerminalsAndInvalid {
+    // TODO: this isn't ideal, we may not actually have a step .. except we do.
+    // Generalize connection.<input | output> to terminalSource ?
     const inputSource = stepStore
         .getStep(inputObject.stepId)
         .inputs.find((input) => input.name == inputObject.inputName)!;

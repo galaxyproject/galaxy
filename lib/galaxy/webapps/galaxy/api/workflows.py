@@ -48,6 +48,7 @@ from galaxy.managers.workflows import (
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.invocation import InvocationMessageResponseModel
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -236,6 +237,7 @@ class WorkflowsAPIController(
 
         """
         ways_to_create = {
+            "archive_file",
             "archive_source",
             "from_history_id",
             "from_path",
@@ -254,8 +256,8 @@ class WorkflowsAPIController(
             message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterInvalidException(message)
 
-        if "archive_source" in payload:
-            archive_source = payload["archive_source"]
+        if "archive_source" in payload or "archive_file" in payload:
+            archive_source = payload.get("archive_source")
             archive_file = payload.get("archive_file")
             archive_data = None
             if archive_source:
@@ -764,12 +766,19 @@ class WorkflowsAPIController(
             invocations.append(workflow_invocation)
 
         trans.sa_session.flush()
-        invocations = [self.encode_all_ids(trans, invocation.to_dict(), recursive=True) for invocation in invocations]
+        encoded_invocations = []
+        for invocation in invocations:
+            as_dict = workflow_invocation.to_dict()
+            as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
+            as_dict["messages"] = [
+                InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
+            ]
+            encoded_invocations.append(as_dict)
 
         if is_batch:
-            return invocations
+            return encoded_invocations
         else:
-            return invocations[0]
+            return encoded_invocations[0]
 
     @expose_api
     def index_invocations(self, trans: GalaxyWebTransaction, **kwd):

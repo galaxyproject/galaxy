@@ -117,6 +117,9 @@
                 .ribbon-inner-invalid {
                     stroke: $brand-warning;
                 }
+                &.dashed {
+                    stroke-dasharray: 5, 3;
+                }
                 &:hover .ribbon-outer {
                     stroke: $brand-success;
                 }
