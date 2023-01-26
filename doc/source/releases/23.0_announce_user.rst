@@ -155,7 +155,13 @@ Release Testing Team
 
 A special thanks to the release testing team for testing many of the new features and reporting many bugs:
 
-<team members go here>
+Alireza Heidari <https://github.com/itisAliRH>
+Bryan Raubenolt <https://github.com/thepineapplepirate>
+Cameron Hyde <https://github.com/neoformit>
+Jennifer Hillman-Jackson <https://github.com/jennaj>
+John Chilton <https://github.com/jmchilton>
+John Davis <https://github.com/jdavcs>
+Laila Los <https://github.com/ElectronicBlueberry>
 
 Release Notes
 ===========================================================
