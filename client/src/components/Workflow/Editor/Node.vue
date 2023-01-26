@@ -11,8 +11,8 @@
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
-            <loading-span v-if="isLoading" message="Loading details" />
             <b-button-group class="float-right">
+                <loading-span v-if="isLoading" spinner-only />
                 <b-button
                     v-if="canClone"
                     v-b-tooltip.hover
@@ -175,7 +175,9 @@ const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const connectionStore = useConnectionStore();
 const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
-const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
+const isLoading = computed(() =>
+    Boolean(stateStore.getStepLoadingState(props.id)?.loading && props.step.outputs.length === 0)
+);
 useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
