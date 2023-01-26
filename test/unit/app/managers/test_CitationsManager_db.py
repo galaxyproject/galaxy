@@ -3,7 +3,7 @@ from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
 from galaxy.managers.citations import DoiCache
-from galaxy import config
+import galaxy.config
 
 
 class TestDoiCache(DoiCache):
@@ -18,9 +18,10 @@ class TestDoiCache(DoiCache):
         }
         self._cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("doi")
 
+
 @pytest.fixture()
 def doi_cache():
-    return TestDoiCache(config.GalaxyAppConfiguration(override_tempdir=False))
+    return TestDoiCache(galaxy.config.GalaxyAppConfiguration(override_tempdir=False))
 
 
 def test_DoiCache(doi_cache):

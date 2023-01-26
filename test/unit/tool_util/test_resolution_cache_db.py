@@ -4,6 +4,8 @@ import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
+#from galaxy import config
+import galaxy.config
 from galaxy.tool_util.deps.container_resolvers import ResolutionCache
 from galaxy.tool_util.deps.mulled.util import (
     _namespace_has_repo_name,
@@ -12,11 +14,11 @@ from galaxy.tool_util.deps.mulled.util import (
     TAG_CACHE_KEY,
 )
 
-from galaxy import config
 
 @pytest.fixture()
 def appconfig():
-    return config.GalaxyAppConfiguration(override_tempdir=False)
+    return galaxy.config.GalaxyAppConfiguration(override_tempdir=False)
+
 
 @pytest.fixture()
 def resolution_cache(tmpdir, appconfig):
