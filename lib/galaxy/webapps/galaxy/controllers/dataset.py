@@ -291,6 +291,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if data.missing_meta():
                 message = 'Required metadata values are missing. Some of these values may not be editable by the user. Selecting "Auto-detect" will attempt to fix these values.'
                 status = "warning"
+            metadata_disable = data.state not in [trans.model.Dataset.states.OK, trans.model.Dataset.states.FAILED_METADATA]
             # datatype conversion
             conversion_options = [
                 (f"{convert_id} (using '{convert_name}')", convert_id)
@@ -369,6 +370,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                 "message": message,
                 "status": status,
                 "dataset_id": dataset_id,
+                "metadata_disable": metadata_disable,
                 "attribute_inputs": attribute_inputs,
                 "conversion_inputs": conversion_inputs,
                 "conversion_disable": conversion_disable,
