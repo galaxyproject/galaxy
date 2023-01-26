@@ -29,6 +29,7 @@ from galaxy.managers.hdas import (
 from galaxy.managers.hdcas import write_dataset_collection
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.registry import DATASET_COLLECTION_TYPES_REGISTRY
@@ -426,7 +427,8 @@ class DatasetCollectionManager:
                 if purge and not dataset.purged:
                     async_result = self.hda_manager.purge(dataset)
 
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return async_result
 
     def update(self, trans, instance_type, id, payload):
@@ -461,7 +463,8 @@ class DatasetCollectionManager:
         new_hdca.copy_tags_from(target_user=trans.get_user(), source=source_hdca)
         if not copy_elements:
             parent.add_dataset_collection(new_hdca)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return new_hdca
 
     def _set_from_dict(self, trans, dataset_collection_instance, new_data):
@@ -485,7 +488,8 @@ class DatasetCollectionManager:
             )
 
         if changed.keys():
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         # set client tag field response after the flush
         if new_tags is not None:
@@ -516,7 +520,8 @@ class DatasetCollectionManager:
         context = self.model.context
         context.add(dataset_collection_instance)
         if flush:
-            context.flush()
+            with transaction(context):
+                context.commit()
         return dataset_collection_instance
 
     def __recursively_create_collections_for_identifiers(
