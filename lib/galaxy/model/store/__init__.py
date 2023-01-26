@@ -198,6 +198,9 @@ class SessionlessContext:
     def __init__(self) -> None:
         self.objects: Dict[Type, Dict] = defaultdict(dict)
 
+    def commit(self) -> None:
+        pass
+
     def flush(self) -> None:
         pass
 
