@@ -13,7 +13,7 @@ SCRIPT_DIR = os.path.normpath(os.path.dirname(__file__))
 TEST_DATA_DIRECTORY = os.path.join(SCRIPT_DIR, os.pardir, os.pardir, "test-data")
 
 
-class StructuredDatasetTestCase(integration_util.IntegrationTestCase):
+class TestStructuredDataset(integration_util.IntegrationTestCase):
     require_admin_user = True
 
     def setUp(self):
