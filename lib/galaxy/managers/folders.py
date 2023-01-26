@@ -36,6 +36,7 @@ from galaxy.exceptions import (
     MalformedId,
     RequestParameterInvalidException,
 )
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
@@ -216,7 +217,8 @@ class FolderManager:
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return new_folder
@@ -250,7 +252,8 @@ class FolderManager:
             changed = True
         if changed:
             trans.sa_session.add(folder)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return folder
 
     def delete(self, trans, folder, undelete=False):
@@ -274,7 +277,8 @@ class FolderManager:
         else:
             folder.deleted = True
         trans.sa_session.add(folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return folder
 
     def get_current_roles(self, trans, folder):
