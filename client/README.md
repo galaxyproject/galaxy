@@ -102,7 +102,7 @@ apply site-wide.
 On build, the compiled css bundle is served at `/static/style/base.css`.
 
 As mentioned above, `make client` will rebuild styles as a part of the webpack
-build. For iterative development "Watch Mode" rebuilds as described above do
+build. For iterative development, "Watch Mode" rebuilds as described above do
 include style changes.
 
 ## Client-Side Unit Testing
@@ -139,7 +139,7 @@ directory. This is what happens during a complete client build.
 
 During client-side development, it is more convenient to have granular testing
 options. The various testing scripts are defined inside package.json within the
-client folder, and are called with `yarn` as demonstrated in the following
+client folder and are called with `yarn` as demonstrated in the following
 commands.
 
 This is what CI is going to run, and also what 'make client-test' invokes,
