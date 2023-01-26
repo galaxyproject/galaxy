@@ -2,10 +2,15 @@
 import { ref, defineEmits, computed } from "vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 const props = defineProps({
-    value: ""
+    value: {
+        required: true,
+    },
 });
 const file = ref(null);
+const waiting = ref(false);
+
 const emit = defineEmits(["input"]);
+
 const currentValue = computed({
     get() {
         return props.value;
@@ -14,28 +19,27 @@ const currentValue = computed({
         emit("input", newValue);
     },
 });
-const waiting = ref(false);
+
 function readFile() {
-    const fileContent = file.value && file.value.files[0];
     var reader = new FileReader();
-    if (fileContent) {
+    if (file.value) {
         waiting.value = true;
         reader.onload = () => {
             currentValue.value = reader.result;
             waiting.value = false;
         };
-        reader.readAsText(fileContent);
+        reader.readAsText(file.value);
     }
 }
 </script>
 
 <template>
     <div>
-        <input ref="file" type="file" class="mb-1" @change="readFile" />
+        <b-form-file v-model="file" class="mb-1" @input="readFile" />
         <div v-if="waiting">
             <font-awesome-icon icon="spinner" spin />
             Uploading File...
         </div>
-        <textarea v-show="currentValue" v-model="currentValue" class="ui-textarea" disabled></textarea>
+        <textarea v-show="currentValue" v-model="currentValue" class="ui-textarea" disabled />
     </div>
 </template>
