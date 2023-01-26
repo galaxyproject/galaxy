@@ -13,6 +13,7 @@ from sqlalchemy.sql import select
 from sqlalchemy.sql.expression import func
 
 import galaxy.model
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.util import (
     strip_control_characters,
@@ -74,7 +75,8 @@ class TagHandler:
         new_tags_str = ",".join(new_tags_list)
         self.apply_item_tags(user, item, unicodify(new_tags_str, "utf-8"), flush=flush)
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         return item.tags
 
     def get_tag_assoc_class(self, item_class):
@@ -195,7 +197,8 @@ class TagHandler:
         item_tag_assoc.user_value = value
         item_tag_assoc.value = lc_value
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         return item_tag_assoc
 
     def apply_item_tags(self, user, item, tags_str, flush=True):
@@ -264,7 +267,8 @@ class TagHandler:
             separate_session.add(tag)
             try:
                 separate_session.commit()
-                separate_session.flush()
+                with transaction(separate_session):
+                    separate_session.commit()
             except IntegrityError:
                 # tag already exists, get from database
                 separate_session.rollback()
