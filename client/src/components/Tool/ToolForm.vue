@@ -163,6 +163,7 @@ export default {
     data() {
         return {
             disabled: false,
+            initialized: false,
             showLoading: true,
             showForm: false,
             showEntryPoints: false,
@@ -225,7 +226,7 @@ export default {
     watch: {
         getLatestCreateTime() {
             const Galaxy = getGalaxyInstance();
-            if (Galaxy && Galaxy.currHistoryPanel) {
+            if (this.initialized && Galaxy && Galaxy.currHistoryPanel) {
                 console.debug("History change watcher detected a change.");
                 this.onHistoryChange();
             }
@@ -233,6 +234,7 @@ export default {
     },
     created() {
         this.requestTool().then(() => {
+            this.initialized = true;
             console.debug(`ToolForm::created - Started listening to history changes. [${this.id}]`);
         });
     },
