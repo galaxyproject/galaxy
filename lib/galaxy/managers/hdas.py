@@ -40,6 +40,7 @@ from galaxy.managers import (
     taggable,
     users,
 )
+from galaxy.model.base import transaction
 from galaxy.model.deferred import materializer_factory
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import DatasetSourceType
@@ -161,7 +162,9 @@ class HDAManager(
 
         self.session().add(hda)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return hda
 
     def materialize(self, request: MaterializeDatasetInstanceTaskRequest) -> None:
@@ -180,7 +183,9 @@ class HDAManager(
         history = self.app.history_manager.by_id(request.history_id)
         new_hda = materializer.ensure_materialized(dataset_instance, target_history=history)
         history.add_dataset(new_hda, set_hid=True)
-        self.session().flush()
+        session = self.session()
+        with transaction(session):
+            session.commit()
 
     def copy(
         self, item: Any, history=None, hide_copy: bool = False, flush: bool = True, **kwargs: Any
@@ -204,7 +209,9 @@ class HDAManager(
         if flush:
             if history:
                 history.add_pending_items()
-            object_session(copy).flush()
+            session = object_session(copy)
+            with transaction(session):
+                session.commit()
 
         return copy
 
@@ -237,7 +244,9 @@ class HDAManager(
         if quota_amount_reduction and quota_source_info.use:
             user.adjust_total_disk_usage(-quota_amount_reduction, quota_source_info.label)
             # TODO: don't flush above if we're going to re-flush here
-            object_session(user).flush()
+            session = object_session(user)
+            with transaction(session):
+                session.commit()
 
     # .... states
     def error_if_uploading(self, hda):
