@@ -18,7 +18,6 @@ describe("FormUpload", () => {
         expect(el.element.value).toEqual(v);
         const isDisabled = el.element.disabled === true;
         expect(isDisabled).toBe(true);
-
     });
 
     it("should not display text box if file has not been selected", async () => {
