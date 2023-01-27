@@ -266,7 +266,6 @@ class TagHandler:
         with Session() as separate_session:
             separate_session.add(tag)
             try:
-                separate_session.commit()
                 with transaction(separate_session):
                     separate_session.commit()
             except IntegrityError:
