@@ -10,6 +10,7 @@ import FormNumber from "./Elements/FormNumber.vue";
 import FormText from "./Elements/FormText.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
+import FormUpload from "./Elements/FormUpload.vue";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { ref, computed, useAttrs } from "vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
@@ -265,6 +266,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :multiple="attrs.multiple" />
             <FormColor v-else-if="props.type === 'color'" :id="props.id" v-model="currentValue" />
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
+            <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
             <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
             <FormParameter
                 v-else-if="backbonejs"
