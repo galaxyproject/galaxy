@@ -248,6 +248,11 @@ class BaseInputTerminal extends Terminal {
         }
         return null;
     }
+
+    isMappedOver(): boolean {
+        return Boolean(this.localMapOver.isCollection);
+    }
+
     connected() {
         return Boolean(this._getFirstOutputTerminal());
     }
@@ -404,10 +409,6 @@ export class InputTerminal extends BaseInputTerminal {
         super(attr);
         this.collection = false;
         this.getStepMapOver();
-    }
-
-    isMappedOver(): boolean {
-        return Boolean(this.localMapOver.isCollection);
     }
 
     attachable(other: BaseOutputTerminal) {

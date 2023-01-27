@@ -402,7 +402,9 @@ describe("canAccept", () => {
         const collectionOut = terminals["list:list input"]["output"] as OutputCollectionTerminal;
         const collectionIn = terminals["list collection input"]["input1"] as InputCollectionTerminal;
         expect(collectionIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(collectionIn.isMappedOver()).toBe(false);
         collectionIn.connect(collectionOut);
+        expect(collectionIn.isMappedOver()).toBe(true);
         expect(collectionIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         const intermediateOut = terminals["list collection input"]["out_file1"] as OutputCollectionTerminal;
         const otherListIn = terminals["list collection input 2"]["input1"] as InputCollectionTerminal;
