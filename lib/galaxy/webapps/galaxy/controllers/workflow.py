@@ -20,6 +20,7 @@ from galaxy.managers.workflows import (
     MissingToolsException,
     WorkflowUpdateOptions,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import FILENAME_VALID_CHARS
@@ -314,7 +315,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             san_new_name = sanitize_html(new_name)
             stored.name = san_new_name
             stored.latest_workflow.name = san_new_name
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return stored.name
 
     @web.expose
@@ -325,7 +327,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored, new_annotation)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return new_annotation
 
     @web.expose
@@ -405,7 +408,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Persist
             session = trans.sa_session
             session.add(stored_workflow)
-            session.flush()
+            with transaction(session):
+                session.commit()
             return {
                 "id": trans.security.encode_id(stored_workflow.id),
                 "message": f"Workflow {workflow_name} has been created.",
@@ -435,7 +439,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Persist
             session = trans.sa_session
             session.add(stored_workflow)
-            session.flush()
+            with transaction(session):
+                session.commit()
             workflow_update_options = WorkflowUpdateOptions(
                 update_stored_workflow_attributes=False,  # taken care of above
                 from_tool_form=from_tool_form,
