@@ -41,6 +41,7 @@ from galaxy.model import (
     UserAddress,
     UserQuotaUsage,
 )
+from galaxy.model.base import transaction
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -253,7 +254,8 @@ class FastAPIUsers:
         user = self.service._get_user(trans, user_id)
 
         user.preferences["beacon_enabled"] = payload.enabled
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         return payload
 
@@ -673,7 +675,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 user.email = email
                 trans.sa_session.add(user)
                 trans.sa_session.add(private_role)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 if trans.app.config.user_activation_on:
                     # Deactivate the user if email was changed and activation is on.
                     user.active = False
@@ -765,7 +768,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             user.addresses.append(user_address)
             trans.sa_session.add(user_address)
         trans.sa_session.add(user)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         trans.log_event("User information added")
         return {"message": "User information has been saved."}
 
@@ -800,7 +804,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 favorite_tools.append(tool_id)
                 favorites["tools"] = favorite_tools
                 user.preferences["favorites"] = json.dumps(favorites)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
         return favorites
 
     @expose_api
@@ -826,7 +831,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     del favorite_tools[favorite_tools.index(object_id)]
                     favorites["tools"] = favorite_tools
                     user.preferences["favorites"] = json.dumps(favorites)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 else:
                     raise exceptions.ObjectNotFound("Given object is not in the list of favorites")
         return favorites
@@ -852,7 +858,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         payload = payload or {}
         user = self._get_user(trans, id)
         user.preferences["theme"] = theme
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return theme
 
     @expose_api
@@ -968,7 +975,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         new_filters.append(prefixed_name[len(prefix) :])
             user.preferences[filter_type] = ",".join(new_filters)
         trans.sa_session.add(user)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return {"message": "Toolbox filters have been saved."}
 
     def _add_filter_inputs(self, factory, filter_types, inputs, errors, filter_type, saved_values):
@@ -1102,7 +1110,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     trans.app.object_store.create(new_len.dataset)
                 except ObjectInvalid:
                     raise exceptions.InternalServerError("Unable to create output dataset: object store is full.")
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 counter = 0
                 lines_skipped = 0
                 with open(new_len.file_name, "w") as f:
@@ -1140,7 +1149,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     raise exceptions.ToolExecutionError("Failed to convert dataset.")
             dbkeys[key] = build_dict
             user.preferences["dbkeys"] = json.dumps(dbkeys)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return build_dict
 
     @expose_api
@@ -1161,7 +1171,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         if key and key in dbkeys:
             del dbkeys[key]
             user.preferences["dbkeys"] = json.dumps(dbkeys)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return {"message": f"Deleted {key}."}
         else:
             raise exceptions.ObjectNotFound(f"Could not find and delete build ({key}).")
