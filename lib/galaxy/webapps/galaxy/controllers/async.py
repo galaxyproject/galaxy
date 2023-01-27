@@ -8,6 +8,7 @@ from urllib.parse import urlencode
 import requests
 
 from galaxy import web
+from galaxy.model.base import transaction
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     Params,
@@ -98,7 +99,8 @@ class ASync(BaseUIController):
                 data.state = data.blurb = "error"
                 data.info = f"Error -> {STATUS}"
 
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
             return f"Data {data_id} with status {STATUS} received. OK"
         else:
@@ -156,7 +158,8 @@ class ASync(BaseUIController):
             data.state = data.states.NEW
             trans.history.add_dataset(data, genome_build=GALAXY_BUILD)
             trans.sa_session.add(trans.history)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             # Need to explicitly create the file
             data.dataset.object_store.create(data.dataset)
             trans.log_event("Added dataset %d to history %d" % (data.id, trans.history.id), tool_id=tool_id)
@@ -185,6 +188,7 @@ class ASync(BaseUIController):
                 data.info = unicodify(e)
                 data.state = data.blurb = data.states.ERROR
 
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         return trans.fill_template("root/tool_runner.mako", out_data={}, num_jobs=1, job_errors=[])
