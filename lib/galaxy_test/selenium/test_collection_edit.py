@@ -1,4 +1,5 @@
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
 )
@@ -9,6 +10,7 @@ class TestCollectionEdit(SeleniumTestCase):
     ensure_registered = True
 
     @selenium_test
+    @managed_history
     def test_change_dbkey_simple_list(self):
         self.create_simple_list_collection()
         self.open_collection_edit_view()
@@ -23,6 +25,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.check_current_data_value(dataNew)
 
     @selenium_test
+    @managed_history
     def test_change_datatype_simple_list(self):
         self.create_simple_list_collection_txt()
         self.open_collection_edit_view()
