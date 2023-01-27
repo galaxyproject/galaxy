@@ -6797,6 +6797,12 @@ export interface components {
             update_time: string;
         };
         /**
+         * StoredItemOrderBy
+         * @description Available options for sorting Stored Items results.
+         * @enum {string}
+         */
+        StoredItemOrderBy: "name-asc" | "name-dsc" | "size-asc" | "size-dsc" | "update_time-asc" | "update_time-dsc";
+        /**
          * SuitableConverter
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -13517,6 +13523,14 @@ export interface operations {
     discarded_datasets_api_storage_datasets_discarded_get: {
         /** Returns discarded datasets owned by the given user. The results can be paginated. */
         parameters?: {
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+            query?: {
+                offset?: number;
+                limit?: number;
+                order?: components["schemas"]["StoredItemOrderBy"];
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
@@ -13596,9 +13610,11 @@ export interface operations {
         parameters?: {
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
             query?: {
                 offset?: number;
                 limit?: number;
+                order?: components["schemas"]["StoredItemOrderBy"];
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
