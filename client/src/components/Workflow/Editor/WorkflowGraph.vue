@@ -48,9 +48,10 @@ import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStepStore, type Step } from "@/stores/workflowStepStore";
-import { useZoom } from "./composables/useZoom";
+import { useD3Zoom } from "./composables/d3Zoom";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { OutputTerminals } from "./modules/terminals";
+import { minZoom, maxZoom } from "./modules/zoomLevels";
 
 const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({
@@ -67,7 +68,7 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useZoom(1, 0.2, 5, canvas, scroll);
+const { transform, panBy, setZoom, moveTo } = useD3Zoom(1, minZoom, maxZoom, canvas, scroll);
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);

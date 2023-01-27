@@ -29,7 +29,7 @@ export function useDetailedDatatypes() {
 
     async function getDatatypes() {
         try {
-            const datatypesPromise = datatypesFetcher({ extension_only: true });
+            const datatypesPromise = datatypesFetcher({ extension_only: false });
             const datatypeEDAMFormatsPromise = edamFormatsFetcher({});
             const datatypeEDAMDataPromise = edamDataFetcher({});
 

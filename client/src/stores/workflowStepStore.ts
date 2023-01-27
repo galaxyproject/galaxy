@@ -8,6 +8,7 @@ interface State {
     steps: { [index: string]: Step };
     stepIndex: number;
     stepMapOver: { [index: number]: CollectionTypeDescriptor };
+    stepInputMapOver: StepInputMapOver;
 }
 
 interface StepPosition {
@@ -133,10 +134,15 @@ interface WorkflowOutputs {
     };
 }
 
+interface StepInputMapOver {
+    [index: number]: { [index: string]: CollectionTypeDescriptor };
+}
+
 export const useWorkflowStepStore = defineStore("workflowStepStore", {
     state: (): State => ({
         steps: {} as Steps,
         stepMapOver: {} as { [index: number]: CollectionTypeDescriptor },
+        stepInputMapOver: {} as StepInputMapOver,
         stepIndex: -1,
     }),
     getters: {
@@ -211,7 +217,17 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             this.steps[step.id.toString()] = step;
         },
         changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {
-            this.stepMapOver[stepId] = mapOver;
+            Vue.set(this.stepMapOver, stepId, mapOver);
+        },
+        resetStepInputMapOver(stepId: number) {
+            Vue.set(this.stepInputMapOver, stepId, {});
+        },
+        changeStepInputMapOver(stepId: number, inputName: string, mapOver: CollectionTypeDescriptor) {
+            if (this.stepInputMapOver[stepId]) {
+                Vue.set(this.stepInputMapOver[stepId], inputName, mapOver);
+            } else {
+                Vue.set(this.stepInputMapOver, stepId, { [inputName]: mapOver });
+            }
         },
         addConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
