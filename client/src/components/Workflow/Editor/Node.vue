@@ -175,9 +175,7 @@ const workflowOutputs = computed(() => props.step.workflow_outputs || []);
 const connectionStore = useConnectionStore();
 const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
-const isLoading = computed(() =>
-    Boolean(stateStore.getStepLoadingState(props.id)?.loading)
-);
+const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
