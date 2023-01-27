@@ -83,6 +83,15 @@ class TestStorageCleanerApi(ApiTestCase):
         assert len(paginated_items) == expected_discarded_item_count
         assert sum([item["size"] for item in paginated_items]) == expected_total_size
 
+        # Check pagination
+        offset = 1
+        limit = 1
+        paginated_items_response = self._get(f"{discarded_storage_items_uri}?offset={offset}&limit={limit}")
+        self._assert_status_code_is_ok(paginated_items_response)
+        paginated_items = paginated_items_response.json()
+        assert len(paginated_items) == 1
+        assert paginated_items[0]["name"] == test_items[1].name
+
         # Check listing order by
         item_names_forward_order = [test_items[0].name, test_items[1].name, test_items[2].name]
         item_names_reverse_order = list(reversed(item_names_forward_order))
