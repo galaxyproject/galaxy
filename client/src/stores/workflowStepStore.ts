@@ -85,8 +85,8 @@ export type TerminalSource = InputTerminalSource | OutputTerminalSource;
 
 interface WorkflowOutput {
     output_name: string;
-    label?: string;
-    uuid?: string;
+    label?: string | null;
+    uuid?: string | null;
 }
 
 export interface NewStep {
@@ -97,7 +97,7 @@ export interface NewStep {
     errors?: string[] | null;
     input_connections: StepInputConnection;
     inputs: Array<InputTerminalSource>;
-    label?: string;
+    label?: string | null;
     name: string;
     outputs: Array<OutputTerminalSource>;
     position?: StepPosition;
@@ -106,7 +106,7 @@ export interface NewStep {
     tooltip?: string;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
-    when?: string;
+    when?: string | null;
     workflow_outputs?: WorkflowOutput[];
 }
 

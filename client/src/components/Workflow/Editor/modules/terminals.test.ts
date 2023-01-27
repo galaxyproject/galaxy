@@ -1,6 +1,6 @@
 import { setActivePinia, createPinia } from "pinia";
 
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore, type TerminalSource } from "@/stores/workflowStepStore";
 import {
     terminalFactory,
     InputCollectionTerminal,
@@ -15,7 +15,11 @@ import {
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { DataOutput, Steps } from "@/stores/workflowStepStore";
-import { NULL_COLLECTION_TYPE_DESCRIPTION } from "./collectionTypeDescription";
+import {
+    ANY_COLLECTION_TYPE_DESCRIPTION,
+    CollectionTypeDescription,
+    NULL_COLLECTION_TYPE_DESCRIPTION,
+} from "./collectionTypeDescription";
 import { simpleSteps, advancedSteps } from "../test_fixtures";
 
 function setupAdvanced() {
@@ -33,6 +37,17 @@ function setupAdvanced() {
         }
     });
     return terminals;
+}
+
+function rebuildTerminal<T extends ReturnType<typeof terminalFactory>>(terminal: T): T {
+    let terminalSource: TerminalSource;
+    const step = terminal.stepStore.getStep(terminal.stepId);
+    if (terminal.terminalType === "input") {
+        terminalSource = step.inputs.find((input) => input.name == terminal.name)!;
+    } else {
+        terminalSource = step.outputs.find((output) => output.name == terminal.name)!;
+    }
+    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper) as T;
 }
 
 describe("terminalFactory", () => {
@@ -64,6 +79,8 @@ describe("terminalFactory", () => {
         expect(terminals["any collection"]["output"]).toBeInstanceOf(OutputCollectionTerminal);
         expect(terminals["multi data"]["advanced|advanced_threshold"]).toBeInstanceOf(InputParameterTerminal);
         expect(terminals["list collection input"]["input1"]).toBeInstanceOf(InputCollectionTerminal);
+        expect(terminals["filter_failed"]["input"]).toBeInstanceOf(InputCollectionTerminal);
+        expect(terminals["filter_failed"]["output"]).toBeInstanceOf(OutputCollectionTerminal);
     });
     it("throws error on invalid terminalSource", () => {
         const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper);
@@ -281,11 +298,7 @@ describe("canAccept", () => {
         dataInTwo.disconnect(dataOut);
         // terminal isn't a reactive class in any way (worth a thought doing, but difficult!), the following happens when a new terminal is built
         // in useTerminal.ts
-        const rebuiltDataIn = terminalFactory(
-            dataIn.stepId,
-            advancedSteps[dataIn.stepId].inputs[0],
-            testDatatypesMapper
-        );
+        const rebuiltDataIn = rebuildTerminal(dataIn);
         expect(rebuiltDataIn.localMapOver.isCollection).toBe(false);
         expect(rebuiltDataIn.canAccept(simpleDataOut).canAccept).toBe(true);
     });
@@ -457,6 +470,20 @@ describe("canAccept", () => {
         expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(dataOut).reason).toBe(
             "Effective output data type(s) [tabular] do not appear to match input type(s) [ab1]."
+        );
+    });
+    it("resolves collection type source", () => {
+        const filterFailedInput = terminals["filter_failed"]["input"] as InputCollectionTerminal;
+        const filterFailedOutput = terminals["filter_failed"]["output"] as OutputCollectionTerminal;
+        expect(filterFailedOutput.collectionType).toBe(ANY_COLLECTION_TYPE_DESCRIPTION);
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        filterFailedInput.connect(collectionOut);
+        expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(new CollectionTypeDescription("list"));
+        filterFailedInput.disconnect(collectionOut);
+        const listPairedOutput = terminals["list:paired input"]["output"] as OutputCollectionTerminal;
+        filterFailedInput.connect(listPairedOutput);
+        expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(
+            new CollectionTypeDescription("list:paired")
         );
     });
 });
