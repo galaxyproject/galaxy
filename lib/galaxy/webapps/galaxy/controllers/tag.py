@@ -11,6 +11,7 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import web
+from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesTagsMixin,
@@ -49,7 +50,8 @@ class TagsController(BaseUIController, UsesTagsMixin):
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
         self.get_tag_handler(trans).apply_item_tags(user, item, new_tag)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=new_tag)
         trans.log_action(user, "tag", context, params)
@@ -64,7 +66,8 @@ class TagsController(BaseUIController, UsesTagsMixin):
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
         self.get_tag_handler(trans).remove_item_tag(user, item, tag_name)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=tag_name)
         trans.log_action(user, "untag", context, params)
@@ -81,7 +84,8 @@ class TagsController(BaseUIController, UsesTagsMixin):
         user = trans.user
         self.get_tag_handler(trans).delete_item_tags(user, item)
         self.get_tag_handler(trans).apply_item_tags(user, item, new_tags)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     @web.expose
     @web.require_login("get autocomplete data for an item's tags")
