@@ -10,15 +10,12 @@ from typing import (
 
 import packaging.version
 
+from galaxy.authnz.util import provider_name_to_backend
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA,
     DEFAULT_DELTA_FRAC,
 )
-
-from galaxy.authnz.util import provider_name_to_backend
-
-
 from galaxy.util import (
     Element,
     ElementTree,

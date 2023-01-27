@@ -677,7 +677,7 @@ class ToolEvaluator:
         if not self._user:
             return "token-unavailable"
 
-        provider = inject.rsplit('_', 1)[-1]
+        provider = inject.rsplit("_", 1)[-1]
         provider_backend = provider_name_to_backend(provider)
         id_token, access_token, refresh_token = self._user.get_oidc_tokens(provider_backend)
         if inject.startswith("oidc_id"):

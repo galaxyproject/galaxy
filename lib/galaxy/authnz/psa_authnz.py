@@ -3,10 +3,8 @@ import logging
 import time
 
 import jwt
-
-from msal import ConfidentialClientApplication
-
 import requests
+from msal import ConfidentialClientApplication
 from social_core.actions import (
     do_auth,
     do_complete,
@@ -172,7 +170,9 @@ class PSAAuthnz(IdentityProvider):
         if not user_authnz_token or not user_authnz_token.extra_data:
             return False
         # refresh tokens if they reached their half lifetime
-        if int(user_authnz_token.extra_data["auth_time"]) + int(user_authnz_token.extra_data["expires"]) / 2 <= int(time.time()):
+        if int(user_authnz_token.extra_data["auth_time"]) + int(user_authnz_token.extra_data["expires"]) / 2 <= int(
+            time.time()
+        ):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":
                 self.refresh_azure(user_authnz_token)

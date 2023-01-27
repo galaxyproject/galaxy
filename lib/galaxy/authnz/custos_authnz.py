@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import time
 from datetime import (
     datetime,
     timedelta,
@@ -13,8 +14,6 @@ import jwt
 import requests
 from oauthlib.common import generate_nonce
 from requests_oauthlib import OAuth2Session
-
-import time
 
 from galaxy import (
     exceptions,
@@ -74,7 +73,7 @@ class CustosAuthnz(IdentityProvider):
             raise exceptions.AuthenticationFailed("cannot find authorized user while refreshing token")
         id_token_decoded = self._decode_token_no_signature(custos_authnz_token.id_token)
         # do not refresh tokens if they didn't reach their half lifetime
-        if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2*int(time.time()):
+        if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2 * int(time.time()):
             return False
         log.info(custos_authnz_token.access_token)
         oauth2_session = self._create_oauth2_session()

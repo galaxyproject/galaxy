@@ -1,10 +1,5 @@
-from .custos_authnz import (
-    KEYCLOAK_BACKENDS,
-)
-
-from .psa_authnz import (
-    BACKENDS_NAME,
-)
+from .custos_authnz import KEYCLOAK_BACKENDS
+from .psa_authnz import BACKENDS_NAME
 
 
 def provider_name_to_backend(provider):
