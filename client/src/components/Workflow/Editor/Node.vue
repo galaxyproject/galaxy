@@ -176,7 +176,7 @@ const connectionStore = useConnectionStore();
 const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
 const isLoading = computed(() =>
-    Boolean(stateStore.getStepLoadingState(props.id)?.loading && props.step.outputs.length === 0)
+    Boolean(stateStore.getStepLoadingState(props.id)?.loading)
 );
 useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
