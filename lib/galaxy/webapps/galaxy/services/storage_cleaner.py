@@ -8,6 +8,7 @@ from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdas import HDAStorageCleanerManager
 from galaxy.managers.histories import HistoryStorageCleanerManager
 from galaxy.managers.users import UserManager
+from galaxy.schema.storage_cleaner import StoredItemOrderBy
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
 log = logging.getLogger(__name__)
@@ -31,10 +32,14 @@ class StorageCleanerService(ServiceBase):
         return self.history_cleaner.get_discarded_summary(user)
 
     def get_discarded_histories(
-        self, trans: ProvidesHistoryContext, offset: Optional[int] = None, limit: Optional[int] = None
+        self,
+        trans: ProvidesHistoryContext,
+        offset: Optional[int] = None,
+        limit: Optional[int] = None,
+        order: Optional[StoredItemOrderBy] = None,
     ):
         user = self.get_authenticated_user(trans)
-        return self.history_cleaner.get_discarded(user, offset, limit)
+        return self.history_cleaner.get_discarded(user, offset, limit, order)
 
     def cleanup_histories(self, trans: ProvidesHistoryContext, item_ids: Set[int]):
         user = self.get_authenticated_user(trans)
@@ -45,10 +50,14 @@ class StorageCleanerService(ServiceBase):
         return self.hda_cleaner.get_discarded_summary(user)
 
     def get_discarded_datasets(
-        self, trans: ProvidesHistoryContext, offset: Optional[int] = None, limit: Optional[int] = None
+        self,
+        trans: ProvidesHistoryContext,
+        offset: Optional[int] = None,
+        limit: Optional[int] = None,
+        order: Optional[StoredItemOrderBy] = None,
     ):
         user = self.get_authenticated_user(trans)
-        return self.hda_cleaner.get_discarded(user, offset, limit)
+        return self.hda_cleaner.get_discarded(user, offset, limit, order)
 
     def cleanup_datasets(self, trans: ProvidesHistoryContext, item_ids: Set[int]):
         user = self.get_authenticated_user(trans)

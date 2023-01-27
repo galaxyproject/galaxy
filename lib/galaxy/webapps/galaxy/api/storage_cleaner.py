@@ -7,7 +7,10 @@ from typing import (
     Optional,
 )
 
-from fastapi import Body
+from fastapi import (
+    Body,
+    Query,
+)
 
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.storage_cleaner import (
@@ -15,6 +18,7 @@ from galaxy.schema.storage_cleaner import (
     CleanupStorageItemsRequest,
     StorageItemsCleanupResult,
     StoredItem,
+    StoredItemOrderBy,
 )
 from galaxy.webapps.galaxy.api import (
     depends,
@@ -31,6 +35,15 @@ log = logging.getLogger(__name__)
 
 
 router = Router(tags=["storage management"])
+
+OrderQueryParam: Optional[StoredItemOrderBy] = Query(
+    default=None,
+    title="Order",
+    description=(
+        "String containing one of the valid ordering attributes followed "
+        "by '-asc' or '-dsc' for ascending and descending order respectively."
+    ),
+)
 
 
 @router.cbv
@@ -56,8 +69,9 @@ class FastAPIStorageCleaner:
         trans: ProvidesHistoryContext = DependsOnTrans,
         offset: Optional[int] = OffsetQueryParam,
         limit: Optional[int] = LimitQueryParam,
+        order: Optional[StoredItemOrderBy] = OrderQueryParam,
     ) -> List[StoredItem]:
-        return self.service.get_discarded_histories(trans, offset, limit)
+        return self.service.get_discarded_histories(trans, offset, limit, order)
 
     @router.delete(
         "/api/storage/histories",
@@ -88,8 +102,11 @@ class FastAPIStorageCleaner:
     def discarded_datasets(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
+        offset: Optional[int] = OffsetQueryParam,
+        limit: Optional[int] = LimitQueryParam,
+        order: Optional[StoredItemOrderBy] = OrderQueryParam,
     ) -> List[StoredItem]:
-        return self.service.get_discarded_datasets(trans)
+        return self.service.get_discarded_datasets(trans, offset, limit, order)
 
     @router.delete(
         "/api/storage/datasets",

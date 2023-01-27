@@ -60,6 +60,7 @@ from galaxy.schema.storage_cleaner import (
     CleanableItemsSummary,
     StorageItemsCleanupResult,
     StoredItem,
+    StoredItemOrderBy,
 )
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
@@ -1310,6 +1311,8 @@ class StorageCleanerManager(Protocol):
     Interface for monitoring storage usage and managing deletion/purging of objects that consume user's storage space.
     """
 
+    sort_map: Dict[StoredItemOrderBy, Any]
+
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         """Returns information with the total storage space taken by discarded items for the given user.
 
@@ -1317,7 +1320,13 @@ class StorageCleanerManager(Protocol):
         """
         raise NotImplementedError
 
-    def get_discarded(self, user: model.User, offset: Optional[int], limit: Optional[int]) -> List[StoredItem]:
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
         """Returns a paginated list of items deleted by the given user that are not yet purged."""
         raise NotImplementedError
 

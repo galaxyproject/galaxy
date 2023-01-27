@@ -55,6 +55,7 @@ from galaxy.schema.storage_cleaner import (
     StorageItemCleanupError,
     StorageItemsCleanupResult,
     StoredItem,
+    StoredItemOrderBy,
 )
 from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
@@ -370,6 +371,14 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
 class HistoryStorageCleanerManager(StorageCleanerManager):
     def __init__(self, history_manager: HistoryManager):
         self.history_manager = history_manager
+        self.sort_map = {
+            StoredItemOrderBy.NAME_ASC: asc(model.History.name),
+            StoredItemOrderBy.NAME_DSC: desc(model.History.name),
+            StoredItemOrderBy.SIZE_ASC: asc(model.History.disk_size),
+            StoredItemOrderBy.SIZE_DSC: desc(model.History.disk_size),
+            StoredItemOrderBy.UPDATE_TIME_ASC: asc(model.History.update_time),
+            StoredItemOrderBy.UPDATE_TIME_DSC: desc(model.History.update_time),
+        }
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         stmt = select([func.sum(model.History.disk_size), func.count(model.History.id)]).where(
@@ -381,7 +390,13 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
-    def get_discarded(self, user: model.User, offset: Optional[int], limit: Optional[int]) -> List[StoredItem]:
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
         stmt = select(model.History).where(
             model.History.user_id == user.id,
             model.History.deleted == true(),
@@ -391,6 +406,8 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
             stmt = stmt.offset(offset)
         if limit:
             stmt = stmt.limit(limit)
+        if order:
+            stmt = stmt.order_by(self.sort_map[order])
         result = self.history_manager.session().execute(stmt).scalars()
         discarded = [self._history_to_stored_item(item) for item in result]
         return discarded

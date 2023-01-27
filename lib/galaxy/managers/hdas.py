@@ -17,6 +17,8 @@ from typing import (
 
 from sqlalchemy import (
     and_,
+    asc,
+    desc,
     false,
     func,
     select,
@@ -46,6 +48,7 @@ from galaxy.schema.storage_cleaner import (
     StorageItemCleanupError,
     StorageItemsCleanupResult,
     StoredItem,
+    StoredItemOrderBy,
 )
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
@@ -332,6 +335,14 @@ class HDAManager(
 class HDAStorageCleanerManager(base.StorageCleanerManager):
     def __init__(self, hda_manager: HDAManager):
         self.hda_manager = hda_manager
+        self.sort_map = {
+            StoredItemOrderBy.NAME_ASC: asc(model.HistoryDatasetAssociation.name),
+            StoredItemOrderBy.NAME_DSC: desc(model.HistoryDatasetAssociation.name),
+            StoredItemOrderBy.SIZE_ASC: asc(model.Dataset.total_size),
+            StoredItemOrderBy.SIZE_DSC: desc(model.Dataset.total_size),
+            StoredItemOrderBy.UPDATE_TIME_ASC: asc(model.HistoryDatasetAssociation.update_time),
+            StoredItemOrderBy.UPDATE_TIME_DSC: desc(model.HistoryDatasetAssociation.update_time),
+        }
 
     def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
         stmt = (
@@ -351,7 +362,13 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         total_size = 0 if result[0] is None else result[0]
         return CleanableItemsSummary(total_size=total_size, total_items=result[1])
 
-    def get_discarded(self, user: model.User, offset: Optional[int], limit: Optional[int]) -> List[StoredItem]:
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
         stmt = (
             select(
                 [
@@ -376,6 +393,8 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             stmt = stmt.offset(offset)
         if limit:
             stmt = stmt.limit(limit)
+        if order:
+            stmt = stmt.order_by(self.sort_map[order])
         result = self.hda_manager.session().execute(stmt)
         discarded = [
             StoredItem(id=row.id, name=row.name, type="dataset", size=row.total_size, update_time=row.update_time)

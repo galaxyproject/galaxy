@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import (
     List,
     Union,
@@ -39,6 +40,17 @@ class StoredItem(Model):
     type: StoredItemType
     size: int
     update_time: datetime = UpdateTimeField
+
+
+class StoredItemOrderBy(str, Enum):
+    """Available options for sorting Stored Items results."""
+
+    NAME_ASC = "name-asc"
+    NAME_DSC = "name-dsc"
+    SIZE_ASC = "size-asc"
+    SIZE_DSC = "size-dsc"
+    UPDATE_TIME_ASC = "update_time-asc"
+    UPDATE_TIME_DSC = "update_time-dsc"
 
 
 class StorageItemCleanupError(Model):
