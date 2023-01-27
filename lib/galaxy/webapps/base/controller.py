@@ -37,6 +37,7 @@ from galaxy.model import (
     LibraryDatasetDatasetAssociation,
     tags,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.sanitize_html import sanitize_html
@@ -506,7 +507,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         # If there is, refactor `ldda.visible = True` to do this only when adding HDCAs.
         ldda.visible = True
         ldda.update_parent_folder_update_times()
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         ldda_dict = ldda.to_dict()
         rval = trans.security.encode_dict_ids(ldda_dict)
         update_time = ldda.update_time.isoformat()
@@ -592,7 +594,8 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
                         flush_needed = True
 
         if flush_needed:
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         # finally, apply the new library_dataset to its associated ldda (must be the same)
         security_agent.copy_library_permissions(trans, library_dataset, ldda)
@@ -768,7 +771,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # TODO: need to handle custom db keys.
         imported_visualization = visualization.copy(user=user, title=f"imported: {visualization.title}")
         trans.sa_session.add(imported_visualization)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return imported_visualization
 
     def create_visualization(
@@ -801,7 +805,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         if save:
             session = trans.sa_session
             session.add(revision)
-            session.flush()
+            with transaction(session):
+                session.commit()
 
         return visualization
 
@@ -820,7 +825,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         visualization.latest_revision = revision
         # TODO:?? does this automatically add revision to visualzation.revisions?
         trans.sa_session.add(revision)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return revision
 
     def save_visualization(self, trans, config, type, id=None, title=None, dbkey=None, slug=None, annotation=None):
@@ -899,7 +905,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
         vis.latest_revision = vis_rev
         session.add(vis_rev)
-        session.flush()
+        with transaction(session):
+            session.commit()
         encoded_id = trans.security.encode_id(vis.id)
         return {"vis_id": encoded_id, "url": url_for(controller="visualization", action=vis.type, id=encoded_id)}
 
@@ -1128,7 +1135,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         if save:
             session = trans.sa_session
             session.add(visualization)
-            session.flush()
+            with transaction(session):
+                session.commit()
 
         return visualization
 
@@ -1207,7 +1215,8 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             # Older workflows may be missing slugs, so set them here.
             if not workflow.slug:
                 self.slug_builder.create_item_slug(trans.sa_session, workflow)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
         return workflow
 
@@ -1235,7 +1244,8 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
         # Save new workflow.
         session = trans.sa_session
         session.add(imported_stored)
-        session.flush()
+        with transaction(session):
+            session.commit()
 
         # Copy annotations.
         self.copy_item_annotation(session, stored.user, stored, imported_stored.user, imported_stored)
@@ -1243,7 +1253,8 @@ class UsesStoredWorkflowMixin(SharableItemSecurityMixin, UsesAnnotations):
             self.copy_item_annotation(
                 session, stored.user, step, imported_stored.user, imported_stored.latest_workflow.steps[order_index]
             )
-        session.flush()
+        with transaction(session):
+            session.commit()
         return imported_stored
 
     def _workflow_to_dict(self, trans, stored):
@@ -1291,7 +1302,8 @@ class UsesFormDefinitionsMixin:
             field_obj.country = util.restore_text(params.get(f"{widget_name}_country", ""))
             field_obj.phone = util.restore_text(params.get(f"{widget_name}_phone", ""))
             trans.sa_session.add(field_obj)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
     def get_form_values(self, trans, user, form_definition, **kwd):
         """
@@ -1346,7 +1358,8 @@ class SharableMixin:
             # Only update slug if slug is not already in use.
             if trans.sa_session.query(item.__class__).filter_by(user=item.user, slug=new_slug).count() == 0:
                 item.slug = new_slug
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
         return item.slug
 
@@ -1401,14 +1414,16 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         deleted = tagged_item and self.get_tag_handler(trans).remove_item_tag(trans, user, tagged_item, tag_name)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return deleted
 
     def _apply_item_tag(self, trans, item_class_name, id, tag_name, tag_value=None):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         tag_assoc = self.get_tag_handler(trans).apply_item_tag(user, tagged_item, tag_name, tag_value)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return tag_assoc
 
     def _get_item_tag_assoc(self, trans, item_class_name, id, tag_name):
@@ -1472,7 +1487,8 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 trans.get_current_user_roles(), item, trans.user
             ):
                 item.extended_metadata = extmeta_obj
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
         if item.__class__ == HistoryDatasetAssociation:
             history = None
             if check_writable:
@@ -1481,7 +1497,8 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 history = self.security_check(trans, item, check_ownership=False, check_accessible=True)
             if history:
                 item.extended_metadata = extmeta_obj
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
     def unset_item_extended_metadata_obj(self, trans, item, check_writable=False):
         if item.__class__ == LibraryDatasetDatasetAssociation:
@@ -1489,7 +1506,8 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 trans.get_current_user_roles(), item, trans.user
             ):
                 item.extended_metadata = None
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
         if item.__class__ == HistoryDatasetAssociation:
             history = None
             if check_writable:
@@ -1498,7 +1516,8 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
                 history = self.security_check(trans, item, check_ownership=False, check_accessible=True)
             if history:
                 item.extended_metadata = None
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
     def create_extended_metadata(self, trans, extmeta):
         """
@@ -1507,17 +1526,20 @@ class UsesExtendedMetadataMixin(SharableItemSecurityMixin):
         """
         ex_meta = ExtendedMetadata(extmeta)
         trans.sa_session.add(ex_meta)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         for path, value in self._scan_json_block(extmeta):
             meta_i = ExtendedMetadataIndex(ex_meta, path, value)
             trans.sa_session.add(meta_i)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return ex_meta
 
     def delete_extended_metadata(self, trans, item):
         if item.__class__ == ExtendedMetadata:
             trans.sa_session.delete(item)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
     def _scan_json_block(self, meta, prefix=""):
         """
