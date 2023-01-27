@@ -8,6 +8,10 @@ from requests import (
 
 from galaxy_test.api._framework import ApiTestCase
 from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy_test.base.decorators import (
+    requires_admin,
+    requires_new_user,
+)
 from galaxy_test.base.populators import skip_without_tool
 
 TEST_USER_EMAIL = "user_for_users_index_test@bx.psu.edu"
@@ -17,6 +21,8 @@ TEST_USER_EMAIL_UNDELETE = "user_for_undelete_test@bx.psu.edu"
 
 
 class TestUsersApi(ApiTestCase):
+    @requires_admin
+    @requires_new_user
     def test_index(self):
         self._setup_user(TEST_USER_EMAIL)
         all_users_response = self._get("users", admin=True)
@@ -28,6 +34,7 @@ class TestUsersApi(ApiTestCase):
         # new user.
         assert len(all_users) > 1
 
+    @requires_new_user
     def test_index_only_self_for_nonadmins(self):
         self._setup_user(TEST_USER_EMAIL)
         with self._different_user():
@@ -35,6 +42,7 @@ class TestUsersApi(ApiTestCase):
             # Non admin users can only see themselves
             assert len(all_users_response.json()) == 1
 
+    @requires_new_user
     def test_show(self):
         user = self._setup_user(TEST_USER_EMAIL)
         with self._different_user(email=TEST_USER_EMAIL):
@@ -42,6 +50,7 @@ class TestUsersApi(ApiTestCase):
             self._assert_status_code_is(show_response, 200)
             self.__assert_matches_user(user, show_response.json())
 
+    @requires_new_user
     def test_update(self):
         new_name = "linnaeus"
         user = self._setup_user(TEST_USER_EMAIL)
@@ -68,6 +77,8 @@ class TestUsersApi(ApiTestCase):
             update_response = put(update_url, data=json.dumps(dict(username=new_name)))
             assert_object_id_error(update_response)
 
+    @requires_admin
+    @requires_new_user
     def test_admin_update(self):
         new_name = "flexo"
         user = self._setup_user(TEST_USER_EMAIL)
@@ -77,12 +88,16 @@ class TestUsersApi(ApiTestCase):
         update_json = update_response.json()
         assert update_json["username"] == new_name
 
+    @requires_admin
+    @requires_new_user
     def test_delete_user(self):
         user = self._setup_user(TEST_USER_EMAIL_DELETE)
         self._delete(f"users/{user['id']}", admin=True)
         updated_user = self._get(f"users/deleted/{user['id']}", admin=True).json()
         assert updated_user["deleted"] is True, updated_user
 
+    @requires_admin
+    @requires_new_user
     def test_purge_user(self):
         """Delete user and then purge them."""
         user = self._setup_user(TEST_USER_EMAIL_PURGE)
@@ -96,6 +111,8 @@ class TestUsersApi(ApiTestCase):
         assert purged_user["deleted"] is True, purged_user
         assert purged_user["purged"] is True, purged_user
 
+    @requires_admin
+    @requires_new_user
     def test_undelete_user(self):
         """Delete user and then undelete them."""
         user = self._setup_user(TEST_USER_EMAIL_UNDELETE)
@@ -107,6 +124,7 @@ class TestUsersApi(ApiTestCase):
         undeleted_user = self._get(f"users/{user['id']}", admin=True).json()
         assert undeleted_user["deleted"] is False, undeleted_user
 
+    @requires_new_user
     def test_information(self):
         user = self._setup_user(TEST_USER_EMAIL)
         url = self.__url("information/inputs", user)
@@ -126,6 +144,7 @@ class TestUsersApi(ApiTestCase):
         assert len(response["addresses"]) == 1
         assert response["addresses"][0]["desc"] == "_desc"
 
+    @requires_new_user
     def test_manage_api_key(self):
         with self._different_user("manage-api-key-test@user.com"):
             user_id = self._get_current_user_id()
@@ -150,6 +169,7 @@ class TestUsersApi(ApiTestCase):
             assert new_api_key
             assert new_api_key != user_api_key
 
+    @requires_new_user
     def test_only_admin_can_manage_other_users_api_key(self):
         with self._different_user():
             other_user_id = self._get_current_user_id()
@@ -171,6 +191,8 @@ class TestUsersApi(ApiTestCase):
         response = self._delete(f"users/{other_user_id}/api_key", admin=True)
         self._assert_status_code_is_ok(response)
 
+    @requires_admin
+    @requires_new_user
     @skip_without_tool("cat1")
     def test_favorites(self):
         user = self._setup_user(TEST_USER_EMAIL)
