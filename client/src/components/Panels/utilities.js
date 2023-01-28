@@ -89,7 +89,12 @@ export function searchToolsByKeys(tools, keys, query) {
     const returnedTools = [];
     for (const tool of tools) {
         for (const key of Object.keys(keys)) {
-            const actualValue = tool[key] ? tool[key].toLowerCase() : "";
+            let actualValue = "";
+            if (key === "combined") {
+                actualValue = tool.name.toLowerCase() + " " + tool.description.toLowerCase();
+            } else {
+                actualValue = tool[key] ? tool[key].toLowerCase() : "";
+            }
             const queryLowerCase = query.toLowerCase();
             if (actualValue.match(queryLowerCase)) {
                 // do we care for exact matches && is it an exact match ?

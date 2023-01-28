@@ -109,7 +109,7 @@ export default {
                     this.$emit("onResults", this.favoritesResults);
                 } else {
                     // keys with sorting order
-                    const keys = { exact: 2, name: 1, description: 0 };
+                    const keys = { exact: 3, name: 2, description: 1, combined: 0 };
                     this.$emit("onResults", searchToolsByKeys(this.toolsList, keys, q));
                 }
             } else {

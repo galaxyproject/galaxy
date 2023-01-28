@@ -37,6 +37,12 @@ describe("test helpers in tool searching utilities", () => {
         keys = { description: 0, name: 1 };
         results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
+
+        q = "filter empty datasets";
+        expectedResults = ["__FILTER_EMPTY_DATASETS__"];
+        keys = { description: 1, name: 2, combined: 0 };
+        results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
+        expect(results).toEqual(expectedResults);
     });
 
     it("test tool filtering helpers on toolsList given list of ids", async () => {
