@@ -11,8 +11,8 @@
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
-            <loading-span v-if="isLoading" message="Loading details" />
             <b-button-group class="float-right">
+                <loading-span v-if="isLoading" spinner-only />
                 <b-button
                     v-if="canClone"
                     v-b-tooltip.hover
