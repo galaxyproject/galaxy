@@ -309,6 +309,7 @@ edit_dataset_attributes:
 
 edit_collection_attributes:
   selectors:
+    alert_info: 'div.alert-info'
     database_genome_tab:
       type: xpath
       selector: '//a[contains(text(), "Database/Build")]'

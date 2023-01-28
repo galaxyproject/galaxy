@@ -10,7 +10,7 @@
             </b-alert>
         </div>
         <b-tabs content-class="mt-3">
-            <b-tab @click="updateInfoMessage(newCollectionMessage + noQuotaIncreaseMessage)">
+            <b-tab @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
                 <template v-slot:title> <font-awesome-icon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <db-key-provider v-slot="{ item, loading }">
                     <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>

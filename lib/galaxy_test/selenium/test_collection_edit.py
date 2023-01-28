@@ -13,6 +13,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.create_simple_list_collection()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
+        assert "This will create a new collection in your History. Your quota will not increase." in self.find_element_by_selector("div.alert-info").text
         dataValue = "unspecified"
         self.check_current_data_value(dataValue)
         dataNew = "hg17"
@@ -27,6 +28,7 @@ class TestCollectionEdit(SeleniumTestCase):
         self.create_simple_list_collection_txt()
         self.open_collection_edit_view()
         self.navigate_to_datatype_tab()
+        assert "This operation might take a short while, depending on the size of your collection." in self.find_element_by_selector("div.alert-info").text
         dataValue = "txt"
         self.check_current_data_value(dataValue)
         dataNew = "tabular"
