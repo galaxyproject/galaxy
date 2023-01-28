@@ -17,7 +17,7 @@ describe("test helpers in tool searching utilities", () => {
     });
 
     it("test tool search helper that searches for tools given keys", async () => {
-        const q = "collection";
+        let q = "collection";
         let expectedResults = [
             "__FILTER_FAILED_DATASETS__",
             "__FILTER_EMPTY_DATASETS__",
