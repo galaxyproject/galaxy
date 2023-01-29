@@ -274,7 +274,7 @@ describe("canAccept", () => {
             "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
         );
     });
-    it("rejects attaching non-collection outputs to mapper over inputs", () => {
+    it("rejects attaching non-collection outputs to mapped-over inputs", () => {
         const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
         const simpleDataOut = terminals["data input"]["output"] as OutputTerminal;
         const dataIn = terminals["simple data"]["input"] as InputTerminal;
