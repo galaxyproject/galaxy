@@ -115,9 +115,8 @@ class Terminal extends EventEmitter {
         }
         if (
             !this.mapOver.equal(effectiveMapOver) &&
-            Object.values(this.stepStore.stepInputMapOver[this.stepId]).some((mapOver) =>
-                mapOver.equal(effectiveMapOver)
-            )
+            (effectiveMapOver.isCollection ||
+                !Object.values(this.stepStore.stepInputMapOver[this.stepId]).find((mapOver) => mapOver.isCollection))
         ) {
             this.stepStore.changeStepMapOver(this.stepId, effectiveMapOver);
         }
