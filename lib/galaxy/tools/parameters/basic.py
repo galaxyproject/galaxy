@@ -290,7 +290,10 @@ class ToolParameter(Dictifiable):
         if value in ["", None] and self.optional:
             return
         for validator in self.validators:
-            validator.validate(value, trans)
+            try:
+                validator.validate(value, trans)
+            except ValueError as e:
+                raise ValueError(f"{self.name}: {e}")
 
     def to_dict(self, trans, other_values=None):
         """to_dict tool parameter. This can be overridden by subclasses."""
