@@ -190,7 +190,7 @@ def looks_like_a_data_manager_xml(path):
 
 def as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes):
     """
-    get a dict from yaml file if it contains `class: CLASS`, where CLASS is
+    get a dict from yaml file if it contains a line `class: CLASS`, where CLASS is
     any string given in CLASSES. must appear in the first 5k and also load
     properly in total.
     """
@@ -199,7 +199,7 @@ def as_dict_if_looks_like_yaml_or_cwl_with_class(path, classes):
             start_contents = f.read(5 * 1024)
         except UnicodeDecodeError:
             return False, None
-        if re.search(rf"\nclass:\s+({'|'.join(classes)})\s*\n", start_contents) is None:
+        if re.search(rf"^class:\s+{'|'.join(classes)}\s*$", start_contents, re.MULTILINE) is None:
             return False, None
 
     with open(path) as f:
