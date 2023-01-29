@@ -63,6 +63,7 @@ interface BaseStepInput {
     extensions: string[];
     optional: boolean;
     input_type: string;
+    input_subworkflow_step_id?: number;
 }
 
 export interface DataStepInput extends BaseStepInput {
@@ -125,6 +126,7 @@ export interface StepInputConnection {
 export interface ConnectionOutputLink {
     output_name: string;
     id: number;
+    input_subworkflow_step_id?: number;
 }
 
 interface WorkflowOutputs {
@@ -231,11 +233,19 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         addConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            const input = inputStep.inputs.find((input) => input.name === connection.input.name);
+            const connectionLink: ConnectionOutputLink = {
+                output_name: connection.output.name,
+                id: connection.output.stepId,
+            };
+            if (input && "input_subworkflow_step_id" in input && input.input_subworkflow_step_id !== undefined) {
+                connectionLink["input_subworkflow_step_id"] = input.input_subworkflow_step_id;
+            }
             const updatedStep = {
                 ...inputStep,
                 input_connections: {
                     ...inputStep.input_connections,
-                    [connection.input.name]: { output_name: connection.output.name, id: connection.output.stepId },
+                    [connection.input.name]: connectionLink,
                 },
             };
             this.updateStep(updatedStep);
@@ -258,7 +268,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
 export function stepToConnections(step: Step): Connection[] {
     const connections: Connection[] = [];
     if (step.input_connections) {
-        Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
+        Object.entries(step?.input_connections).forEach(([inputName, outputArray]) => {
             if (outputArray === undefined) {
                 return;
             }
@@ -269,7 +279,7 @@ export function stepToConnections(step: Step): Connection[] {
                 const connection = new Connection(
                     {
                         stepId: step.id,
-                        name: input_name,
+                        name: inputName,
                         connectorType: "input",
                     },
                     {
@@ -278,6 +288,10 @@ export function stepToConnections(step: Step): Connection[] {
                         connectorType: "output",
                     }
                 );
+                const connectionInput = step.inputs.find((input) => input.name == inputName);
+                if (connectionInput && "input_subworkflow_step_id" in connectionInput) {
+                    connection.input.input_subworkflow_step_id = connectionInput.input_subworkflow_step_id;
+                }
                 connections.push(connection);
             });
         });

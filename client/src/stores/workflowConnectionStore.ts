@@ -34,6 +34,7 @@ export interface BaseTerminal {
 
 export interface InputTerminal extends BaseTerminal {
     connectorType: "input";
+    input_subworkflow_step_id?: number;
 }
 
 export interface OutputTerminal extends BaseTerminal {
