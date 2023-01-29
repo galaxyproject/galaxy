@@ -409,6 +409,7 @@ export default {
             hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
+            this.resetStores();
             await fromSimple(response.workflow);
             this._loadEditorData(response.workflow);
         },
