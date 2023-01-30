@@ -7163,8 +7163,20 @@ class WorkflowStep(Base, RepresentById):
         conn.output_name = output_name
         add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
-        if input_subworkflow_step_index is not None:
-            input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
+        if self.subworkflow:
+            if input_subworkflow_step_index is not None:
+                input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
+            else:
+                input_subworkflow_steps = [step for step in self.subworkflow.input_steps if step.label == input_name]
+                if not input_subworkflow_steps:
+                    inferred_order_index = input_name.split(":", 1)[0]
+                    if inferred_order_index.isdigit():
+                        input_subworkflow_steps = [self.subworkflow.step_by_index(int(inferred_order_index))]
+                if len(input_subworkflow_steps) != 1:
+                    raise galaxy.exceptions.MessageException(
+                        f"Invalid subworkflow connection at step index {self.order_index + 1}"
+                    )
+                input_subworkflow_step = input_subworkflow_steps[0]
             conn.input_subworkflow_step = input_subworkflow_step
         return conn
 

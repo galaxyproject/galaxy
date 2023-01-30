@@ -108,6 +108,7 @@
                             <div>
                                 <FormTool
                                     v-if="hasActiveNodeTool"
+                                    :key="activeStep.id"
                                     :step="activeStep"
                                     :datatypes="datatypes"
                                     @onChangePostJobActions="onChangePostJobActions"
@@ -253,6 +254,10 @@ export default {
         const hasChanges = ref(false);
         const hasInvalidConnections = computed(() => Object.keys(connectionsStore.invalidConnections).length > 0);
 
+        stepStore.$subscribe((mutation, state) => {
+            hasChanges.value = true;
+        });
+
         function resetStores() {
             connectionsStore.$reset();
             stepStore.$reset();
@@ -341,9 +346,6 @@ export default {
                 this.hasChanges = true;
             }
         },
-        steps(newSteps, oldSteps) {
-            this.hasChanges = true;
-        },
         hasChanges() {
             this.$emit("update:confirmation", this.hasChanges);
         },
@@ -356,7 +358,6 @@ export default {
     methods: {
         onUpdateStep(step) {
             this.stepStore.updateStep(step);
-            this.hasChanges = true;
         },
         onUpdateStepPosition(stepId, position) {
             const step = { ...this.steps[stepId], position };
@@ -408,6 +409,7 @@ export default {
             hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
+            this.resetStores();
             await fromSimple(response.workflow);
             this._loadEditorData(response.workflow);
         },

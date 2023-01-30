@@ -11,7 +11,7 @@
             primary-key="id"
             :fields="fields"
             :filter="filter"
-            :items="formattedItems"
+            :items="histories"
             :per-page="perPage"
             :current-page="currentPage"
             :selectable="true"
@@ -22,6 +22,9 @@
             selected-variant="success"
             @row-selected="rowSelected"
             @filtered="onFiltered">
+            <template v-slot:cell(name)="row">
+                {{ row.item.name }} <i v-if="row.item.id === currentHistoryId"><b>(Current)</b></i>
+            </template>
             <template v-slot:cell(tags)="row">
                 <stateless-tags :value="row.item.tags" :disabled="true" />
             </template>
@@ -31,7 +34,9 @@
         </b-table>
         <template v-slot:modal-footer>
             <b-pagination v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
-            <b-button v-if="multiple" variant="primary" @click="addSelected">Add Selected</b-button>
+            <b-button v-if="multiple" :disabled="isEmptySelection" variant="primary" @click="addSelected">
+                Add Selected
+            </b-button>
         </template>
     </b-modal>
 </template>
@@ -69,13 +74,8 @@ export default {
         };
     },
     computed: {
-        formattedItems() {
-            return this.histories.map((item) => {
-                if (item.id === this.currentHistoryId) {
-                    item._rowVariant = "info";
-                }
-                return item;
-            });
+        isEmptySelection() {
+            return this.selectedHistories.length === 0;
         },
     },
     watch: {

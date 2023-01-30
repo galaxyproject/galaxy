@@ -12,7 +12,8 @@
                     data-description="create new history"
                     size="sm"
                     variant="link"
-                    title="Create new history"
+                    :disabled="currentUser.isAnonymous"
+                    :title="userTitle('Create new history')"
                     @click="$emit('createNewHistory')">
                     <Icon fixed-width icon="plus" />
                 </b-button>
@@ -23,7 +24,8 @@
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    title="Switch to history">
+                    :disabled="currentUser.isAnonymous"
+                    :title="userTitle('Switch to history')">
                     <Icon fixed-width icon="exchange-alt" />
                 </b-button>
 

@@ -56,6 +56,11 @@ describe("History Navigation", () => {
             provide: { store },
         });
 
+        const createButton = wrapper.find("*[data-description='create new history']");
+        expect(createButton.attributes().disabled).toBeFalsy();
+        const switchButton = wrapper.find("*[data-description='switch to another history']");
+        expect(switchButton.attributes().disabled).toBeFalsy();
+
         const dropDown = wrapper.find("*[data-description='history options']");
         const optionElements = dropDown.findAll("b-dropdown-item-stub");
         const optionTexts = optionElements.wrappers.map((el) => el.text());
@@ -76,8 +81,12 @@ describe("History Navigation", () => {
             provide: { store },
         });
 
-        const dropDown = wrapper.find("*[data-description='history options']");
+        const createButton = wrapper.find("*[data-description='create new history']");
+        expect(createButton.attributes().disabled).toBeTruthy();
+        const switchButton = wrapper.find("*[data-description='switch to another history']");
+        expect(switchButton.attributes().disabled).toBeTruthy();
 
+        const dropDown = wrapper.find("*[data-description='history options']");
         const enabledOptionElements = dropDown.findAll("b-dropdown-item-stub:not([disabled])");
         const enabledOptionTexts = enabledOptionElements.wrappers.map((el) => el.text());
         expect(enabledOptionTexts).toStrictEqual(anonymousOptions);

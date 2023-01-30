@@ -59,9 +59,9 @@ export default {
     computed: {
         targetClass() {
             if (this.toolKey) {
-                return `tool-menu-item-${this.tool[this.toolKey]} title-link`;
+                return `tool-menu-item-${this.tool[this.toolKey]} title-link cursor-pointer`;
             } else {
-                return `title-link`;
+                return `title-link cursor-pointer`;
             }
         },
     },
