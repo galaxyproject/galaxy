@@ -12,5 +12,3 @@ src/libs
 # Don't reformat .json or .yml files included in the project
 *.json
 *.yml
-# Might be nice to add markdown formatting eventually?
-*.md

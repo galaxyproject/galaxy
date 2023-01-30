@@ -8,7 +8,7 @@
 
 ```js
 <div v-for="variant in [ 'success', 'info', 'warning', 'error' ]">
-	<Alert v-bind:variant="variant">A {{variant}} message</Alert>
+    <Alert v-bind:variant="variant">A {{ variant }} message</Alert>
 </div>
 ```
 

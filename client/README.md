@@ -61,7 +61,7 @@ Or, with the package scripts from this `client` directory:
 
 This will start up an extra client development server running on port 8081. Open
 your browser to `http://localhost:8081` (instead of the default 8080 that Galaxy
-would run on), and you should see Galaxy like normal.  Except now, when you
+would run on), and you should see Galaxy like normal. Except now, when you
 change client code it'll automatically rebuild _and_ reload the relevant portion
 of the application for you. Lastly, if you are running Galaxy at a location
 other than the default, you can specify a different proxy target (in this
@@ -119,7 +119,7 @@ framework.
 
 For testing Vue components, we use the [Vue testing
 utils](https://vue-test-utils.vuejs.org/) to mount individual components in a
-test bed and check them for rendered features.  Please use jest-based mocking
+test bed and check them for rendered features. Please use jest-based mocking
 for isolating test functionality.
 
 A set of older qUnit tests also exist which will be phased-out as the code they

@@ -44,7 +44,7 @@ const myFunction = (param) => {
 };
 
 // anonymous functions
-const myFunction = function(param) {
+const myFunction = function (param) {
     //do stuff
 };
 ```
@@ -84,10 +84,9 @@ When possible, use arrow functions instead.
 > export function myFunction(parameter) {
 >     const addOne = (value) => {
 >         return value + 1;
->     }
+>     };
 >     // do more stuff...
 > }
->
 > ```
 >
 > **Don't**
@@ -96,12 +95,11 @@ When possible, use arrow functions instead.
 > // in myModules.js
 >
 > export const myFunction = (parameter) => {
->     const addOne = function(value) {
+>     const addOne = function (value) {
 >         return value + 1;
->     }
+>     };
 >     // do more stuff...
-> }
->
+> };
 > ```
 
 ## HTML Multi-Line Layout
@@ -115,9 +113,7 @@ Prettier tries to respect whitespace when formatting your HTML templates, even w
 Might get turned into:
 
 ```vue
-<b-button class="danger-button mb-4" variant="danger" @click="onDangerButtonClick"
-    >A very Long Button Text</b-button
->
+<b-button class="danger-button mb-4" variant="danger" @click="onDangerButtonClick">A very Long Button Text</b-button>
 ```
 
 Notice the strange positioning of the `>` brackets.
@@ -277,7 +273,7 @@ Do not add space between elements connected by conditionals.
 >     <span v-if="conditional">
 >         condition met
 >     </span>
->
+> 
 >     <span v-else>
 >         condition not met
 >     </span>
@@ -293,7 +289,7 @@ Add space between non-connected elements.
 >     <span>
 >         First span.
 >     </span>
->
+> 
 >     <span>
 >         Second span.
 >     </span>
@@ -325,7 +321,7 @@ Add space between logical blocks of elements.
 >     <span v-else>
 >         condition 1 not met
 >     </span>
->
+> 
 >     <span v-if="otherConditional">
 >         condition 2 met
 >     </span>
