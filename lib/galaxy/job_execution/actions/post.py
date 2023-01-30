@@ -6,6 +6,7 @@ import datetime
 
 from markupsafe import escape
 
+from galaxy.model.base import transaction
 from galaxy.util import (
     send_mail,
     unicodify,
@@ -366,7 +367,8 @@ class DeleteIntermediatesAction(DefaultJobAction):
         # POTENTIAL ISSUES:  When many outputs are being finish()ed
         # concurrently, sometimes non-terminal steps won't be cleaned up
         # because of the lag in job state updates.
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         if not job.workflow_invocation_step:
             log.debug("This job is not part of a workflow invocation, delete intermediates aborted.")
             return
