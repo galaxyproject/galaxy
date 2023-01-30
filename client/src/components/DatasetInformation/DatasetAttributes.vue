@@ -20,12 +20,16 @@
                                 @click="submit('attribute', 'attributes')">
                                 <font-awesome-icon icon="save" class="mr-1" />{{ "Save" | l }}
                             </b-button>
-                            <b-button @click="submit('attribute', 'autodetect')">
+                            <b-button v-if="!result['metadata_disable']" @click="submit('attribute', 'autodetect')">
                                 <font-awesome-icon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
                             </b-button>
                         </div>
                     </b-tab>
-                    <b-tab v-if="!result['conversion_disable'] || !result['datatype_disable']">
+                    <b-tab
+                        v-if="
+                            (!result['conversion_disable'] || !result['datatype_disable']) &&
+                            !result['metadata_disable']
+                        ">
                         <template v-slot:title>
                             <span v-if="!result['conversion_disable']">
                                 <font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}
