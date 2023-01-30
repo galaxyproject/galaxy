@@ -697,7 +697,10 @@ steps:
         workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
         parent_workflow_id = workflow_populator.upload_yaml_workflow(
             """class: GalaxyWorkflow
-inputs: []
+inputs:
+  input_collection:
+    type: collection
+    collection_type: "list"
 steps:
   - tool_id: multiple_versions
     tool_version: 0.1
@@ -716,10 +719,16 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
-        subworkflow_step = workflow["steps"]["1"]
+        subworkflow_step = workflow["steps"]["2"]
         assert subworkflow_step["name"] == child_workflow_name
         assert subworkflow_step["type"] == "subworkflow"
         assert subworkflow_step["subworkflow"]["a_galaxy_workflow"] == "true"
+        self.workflow_editor_connect("input_collection#output", f"{child_workflow_name}#input1")
+        self.assert_connected("input_collection#output", f"{child_workflow_name}#input1")
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(parent_workflow_id)
+        subworkflow_step = workflow["steps"]["2"]
+        assert subworkflow_step["input_connections"]["input1"]["input_subworkflow_step_id"] == 0
 
     @selenium_test
     def test_editor_insert_steps(self):
