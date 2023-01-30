@@ -1,11 +1,10 @@
-import os
 import tempfile
 
 from galaxy.tool_util.loader_directory import is_a_yaml_with_class
 
 
 def test_is_a_yaml_with_class():
-    with tempfile.NamedTemporaryFile("w", suffix=".yaml", delete=False) as tf:
+    with tempfile.NamedTemporaryFile("w", suffix=".yaml") as tf:
         fname = tf.name
         tf.write(
             """class: GalaxyWorkflow
@@ -21,6 +20,5 @@ steps:
     in:
       input1: input1"""
         )
-
-    assert is_a_yaml_with_class(fname, ["GalaxyWorkflow"])
-    os.unlink(fname)
+        tf.flush()
+        assert is_a_yaml_with_class(fname, ["GalaxyWorkflow"])
