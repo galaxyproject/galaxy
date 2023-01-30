@@ -1069,7 +1069,7 @@ def test_inputs_data_param_options_filter_attribute(lint_ctx):
     assert not lint_ctx.error_messages
 
 
-def test_inputs_data_param_invalidoptions(lint_ctx):
+def test_inputs_data_param_invalid_options(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_INVALIDOPTIONS)
     run_lint(lint_ctx, inputs.lint_inputs, tool_source)
     assert not lint_ctx.valid_messages
