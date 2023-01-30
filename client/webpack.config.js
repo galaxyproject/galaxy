@@ -37,12 +37,21 @@ module.exports = (env = {}, argv = {}) => {
     if (targetEnv == "production") {
         minimizations = {
             minimize: true,
-            minimizer: [`...`, new TerserPlugin(), new CssMinimizerPlugin()],
-        }
+            minimizer: [
+                new TerserPlugin({
+                    terserOptions: {
+                        compress: {
+                            drop_console: true,
+                        },
+                    },
+                }),
+                new CssMinimizerPlugin(),
+            ],
+        };
     } else {
         minimizations = {
             minimize: false,
-        }
+        };
     }
 
     const buildconfig = {
@@ -284,8 +293,8 @@ module.exports = (env = {}, argv = {}) => {
         },
     };
 
-    if (process.env.GXY_BUILD_SOURCEMAPS || buildconfig.mode == "development") {
-        buildconfig.devtool = "eval-cheap-source-map";
+    if (process.env.GXY_BUILD_SOURCEMAPS) {
+        buildconfig.devtool = "source-map";
     }
 
     return buildconfig;
