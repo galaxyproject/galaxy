@@ -1323,8 +1323,8 @@ class ColumnListParameter(SelectToolParameter):
     >>> from galaxy.model.mapping import init
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> dtp =  DataToolParameter(None, XML('<param name="blah" type="data" format="interval"/>'))
     >>> print(dtp.name)

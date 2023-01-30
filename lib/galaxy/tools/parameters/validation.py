@@ -312,8 +312,8 @@ class DatasetOkValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> ok_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> ok_hda.set_dataset_state(model.Dataset.states.OK)
@@ -371,8 +371,8 @@ class DatasetEmptyValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> empty_dataset = Dataset(external_filename=get_test_fname("empty.txt"))
     >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', dataset=empty_dataset, sa_session=sa_session))
@@ -427,8 +427,8 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> has_extra_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_extra_hda.dataset.file_size = 10
@@ -485,8 +485,8 @@ class MetadataValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> fname = get_test_fname('1.bed')
     >>> bedds = Dataset(external_filename=fname)
@@ -571,8 +571,8 @@ class UnspecifiedBuildValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> has_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
