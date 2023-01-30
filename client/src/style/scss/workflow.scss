@@ -210,10 +210,9 @@
             }
             .workflow-overview {
                 border-top-left-radius: 0.3rem;
-                cursor: pointer;
+                cursor: nwse-resize;
                 position: absolute;
-                width: 150px;
-                height: 150px;
+                width: 100%;
                 right: 0px;
                 bottom: 0px;
                 border-top: solid $border-color 1px;
@@ -230,6 +229,7 @@
                     stroke: #25537b;
                 }
                 .workflow-overview-body {
+                    cursor: pointer;
                     position: relative;
                     overflow: hidden;
                     width: 100%;
