@@ -2051,6 +2051,8 @@ steps:
       inputs:
         some_file:
           type: data
+        should_run:
+          type: boolean
       steps:
         a_tool_step:
           tool_id: cat1
@@ -2154,6 +2156,7 @@ steps:
       class: GalaxyWorkflow
       inputs:
         boolean_input_file: data
+        should_run: boolean
       steps:
         consume_expression_parameter:
           tool_id: cat1
