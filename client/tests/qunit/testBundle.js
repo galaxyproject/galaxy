@@ -2,7 +2,5 @@
 //var testsContext = require.context(".", true, /_tests$/);
 //testsContext.keys().forEach(testsContext);
 
-import "./tests/galaxy_app_base_tests";
-import "./tests/jquery_plugin_tests";
 import "./tests/modal_tests";
 import "./tests/ui_tests";
