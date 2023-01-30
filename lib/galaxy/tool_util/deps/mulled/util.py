@@ -347,7 +347,15 @@ def v2_image_name(targets, image_build=None, name_override=None):
 
 
 def get_file_from_recipe_url(url):
-    """Downloads file at url and returns tarball"""
+    """
+    Downloads file at url and returns tarball
+    
+    >>> f = get_file_from_recipe_url("https://anaconda.org/conda-forge/chopin2/1.0.6/download/noarch/chopin2-1.0.6-pyhd8ed1ab_0.tar.bz2")
+    >>> assert isinstance(f, tarfile.TarFile)
+    >>> f = get_file_from_recipe_url("https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda")
+    >>> assert isinstance(f, tarfile.TarFile)
+    """
+    log.error(f"{url}")
     if url.startswith("file://"):
         return tarfile.open(mode="r:bz2", name=url[7:])
     else:
