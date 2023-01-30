@@ -4,7 +4,6 @@ import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
-#from galaxy import config
 import galaxy.config
 from galaxy.tool_util.deps.container_resolvers import ResolutionCache
 from galaxy.tool_util.deps.mulled.util import (

@@ -6,7 +6,7 @@ from galaxy.managers.citations import DoiCache
 import galaxy.config
 
 
-class TestDoiCache(DoiCache):
+class MockDoiCache(DoiCache):
     def __init__(self, config):
         cache_opts = {
             "cache.type": getattr(config, "citation_cache_type", "ext:database"),
@@ -21,7 +21,7 @@ class TestDoiCache(DoiCache):
 
 @pytest.fixture()
 def doi_cache():
-    return TestDoiCache(galaxy.config.GalaxyAppConfiguration(override_tempdir=False))
+    return MockDoiCache(galaxy.config.GalaxyAppConfiguration(override_tempdir=False))
 
 
 def test_DoiCache(doi_cache):
