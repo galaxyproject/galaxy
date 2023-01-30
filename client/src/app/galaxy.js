@@ -38,24 +38,22 @@ GalaxyApp.prototype._init = function (options, bootstrapped) {
     this.params = options.params || {};
     this.session_csrf_token = options.session_csrf_token || null;
 
-    this._initLogger(this.options.loggerOptions || {});
     // at this point, either logging or not and namespaces are enabled - chat it up
-    this.debug("GalaxyApp.options: ", this.options);
-    this.debug("GalaxyApp.config: ", this.config);
-    this.debug("GalaxyApp.logger: ", this.logger);
+    console.debug("GalaxyApp.options: ", this.options);
+    console.debug("GalaxyApp.config: ", this.config);
 
     this._initLocale();
-    this.debug("GalaxyApp.localize: ", this.localize);
+    console.debug("GalaxyApp.localize: ", this.localize);
 
     this.config = options.config || {};
-    this.debug("GalaxyApp.config: ", this.config);
+    console.debug("GalaxyApp.config: ", this.config);
 
     this._initUser(options.user || {});
-    this.debug("GalaxyApp.user: ", this.user);
+    console.debug("GalaxyApp.user: ", this.user);
 
     _setUserLocale(this.user, this.config);
     _getUserLocale();
-    this.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
+    console.debug("currentLocale: ", sessionStorage.getItem("currentLocale"));
 
     this._setUpListeners();
     this.trigger("ready", this);
@@ -102,12 +100,12 @@ GalaxyApp.prototype._initConfig = function _initConfig(config) {
 GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
     // in case req or plain script tag order has created a prev. version of the Galaxy obj...
     if (this.options.patchExisting && patchWith) {
-        // this.debug( 'found existing Galaxy object:', patchWith );
+        // console.debug( 'found existing Galaxy object:', patchWith );
         // ...(for now) monkey patch any added attributes that the previous Galaxy may have had
         //TODO: move those attributes to more formal assignment in GalaxyApp
         for (const k in patchWith) {
             if (Object.prototype.hasOwnProperty.call(patchWith, k)) {
-                // this.debug( '\t patching in ' + k + ' to Galaxy:', this[ k ] );
+                // console.debug( '\t patching in ' + k + ' to Galaxy:', this[ k ] );
                 this[k] = patchWith[k];
             }
         }
@@ -116,7 +114,7 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
 
 /** add the localize fn to this object and the window namespace (as '_l') */
 GalaxyApp.prototype._initLocale = function _initLocale(options) {
-    this.debug("_initLocale:", options);
+    console.debug("_initLocale:", options);
     this.localize = localize;
     // add to window as global shortened alias
     // TODO: temporary - remove when can require for plugins
@@ -158,7 +156,7 @@ GalaxyApp.prototype._initUserLocale = function _initUserLocale(options) {
 
 /** set up the current user as a Backbone model (mvc/user/user-model) */
 GalaxyApp.prototype._initUser = function _initUser(userJSON) {
-    this.debug("_initUser:", userJSON);
+    console.debug("_initUser:", userJSON);
     this.user = new userModel.User(userJSON);
     return this;
 };

@@ -163,7 +163,7 @@ var SearchableModelMixin = {
     /** search the attribute with key attrKey for the string searchFor; T/F if found */
     searchAttribute: function (attrKey, searchFor) {
         var attrVal = this.get(attrKey);
-        //this.debug( 'searchAttribute', attrKey, attrVal, searchFor );
+        //console.debug( 'searchAttribute', attrKey, attrVal, searchFor );
         // bail if empty searchFor or unsearchable values
         if (!searchFor || attrVal === undefined || attrVal === null) {
             return false;
@@ -177,7 +177,7 @@ var SearchableModelMixin = {
 
     /** deep(er) search for array attributes; T/F if found */
     _searchArrayAttribute: function (array, searchFor) {
-        //this.debug( '_searchArrayAttribute', array, searchFor );
+        //console.debug( '_searchArrayAttribute', array, searchFor );
         searchFor = searchFor.toLowerCase();
         //precondition: searchFor has already been validated as non-empty string
         //precondition: assumes only 1 level array
