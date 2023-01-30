@@ -14,7 +14,6 @@ QUnit.module("Galaxy client app tests", {
 QUnit.test("App base construction/initializiation defaults", function (assert) {
     var app = getGalaxyInstance();
     assert.ok(app.hasOwnProperty("options") && typeof app.options === "object");
-    assert.ok(app.hasOwnProperty("logger") && typeof app.logger === "object");
     assert.ok(app.hasOwnProperty("localize") && typeof app.localize === "function");
     assert.ok(app.hasOwnProperty("config") && typeof app.config === "object");
     assert.ok(app.hasOwnProperty("user") && typeof app.config === "object");
@@ -45,11 +44,6 @@ QUnit.test("App base will patch in attributes from existing Galaxy objects", fun
     });
 
     assert.ok(newApp.foo === 123);
-});
-
-QUnit.test("App base logger", function (assert) {
-    var app = getGalaxyInstance();
-    assert.ok(app.hasOwnProperty("logger") && typeof app.config === "object");
 });
 
 QUnit.test("App base config", function (assert) {
