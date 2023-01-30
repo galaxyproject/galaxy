@@ -29,7 +29,7 @@ export default Backbone.Model.extend({
         process.promise().always(function () {
             delete self.active[id];
             has_deferred &&
-                Galaxy.emit.debug(
+                console.debug(
                     "deferred::execute()",
                     `${this.state().charAt(0).toUpperCase() + this.state().slice(1)} ${id}`
                 );
@@ -38,7 +38,7 @@ export default Backbone.Model.extend({
         // deferred queue
         $.when(this.last).always(() => {
             if (self.active[id]) {
-                has_deferred && Galaxy.emit.debug("deferred::execute()", `Running ${id}`);
+                has_deferred && console.debug("deferred::execute()", `Running ${id}`);
                 callback(process);
                 !has_deferred && process.resolve();
             } else {
@@ -52,7 +52,7 @@ export default Backbone.Model.extend({
      */
     reset: function () {
         const Galaxy = getGalaxyInstance();
-        Galaxy.emit.debug("deferred::execute()", "Reset");
+        console.debug("deferred::execute()", "Reset");
         for (var i in this.active) {
             this.active[i] = false;
         }

@@ -35,14 +35,6 @@ QUnit.test("App base extends from Backbone.Events", function (assert) {
     });
 });
 
-QUnit.test("App base has logging methods from utils/add-logging.js", function (assert) {
-    var app = getGalaxyInstance();
-    ["debug", "info", "warn", "error", "metric"].forEach(function (fn) {
-        assert.ok(typeof app[fn] === "function");
-    });
-    assert.ok(app._logNamespace === "GalaxyApp");
-});
-
 // We no longer want this behavior
 QUnit.test("App base will patch in attributes from existing Galaxy objects", function (assert) {
     var existingApp = getGalaxyInstance();

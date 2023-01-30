@@ -153,7 +153,7 @@ var FolderContainer = Backbone.Model.extend({
                 var file_item = new Ldda(obj.folder_contents[i]);
                 this.get("folder").add(file_item);
             } else {
-                Galaxy.emit.error("Unknown folder item type encountered while parsing response.");
+                console.error("Unknown folder item type encountered while parsing response.");
             }
         }
         return obj;

@@ -3,14 +3,12 @@ import { getAppRoot } from "onload/loadConfig";
 import baseMVC from "./base-mvc";
 import _l from "utils/localization";
 
-var logNamespace = "user";
 //==============================================================================
 /** @class Model for a Galaxy user (including anonymous users).
  *  @name User
  */
-var User = Backbone.Model.extend(baseMVC.LoggableMixin).extend(
+var User = Backbone.Model.extend(
     /** @lends User.prototype */ {
-        _logNamespace: logNamespace,
 
         /** API location for this resource */
         urlRoot: function () {
@@ -141,15 +139,6 @@ User.getCurrentUserFromApi = (options) => {
     currentUser.loadFromApi(User.CURRENT_ID_STR, options);
     return currentUser;
 };
-
-// (stub) collection for users (shouldn't be common unless admin UI)
-//var UserCollection = Backbone.Collection.extend(baseMVC.LoggableMixin).extend({
-//    model: User,
-//    urlRoot: function() {
-//        return `${getAppRoot()}api/users`;
-//    }
-//    //logger  : console,
-//});
 
 //==============================================================================
 export default {

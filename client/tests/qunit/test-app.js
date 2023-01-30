@@ -18,12 +18,6 @@ export function setupTestGalaxy(galaxyOptions_ = null) {
         galaxy.currHistoryPanel = {
             model: new Backbone.Model(),
         };
-        galaxy.emit = {
-            debug: function () {},
-            error: function (v) {
-                window.console.error(v);
-            },
-        };
         return galaxy;
     });
 }

@@ -222,7 +222,7 @@ const View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function (new_value) {
-        const galaxy = getGalaxyInstance();
+        const Galaxy = getGalaxyInstance();
         if (new_value) {
             this._patchValue(new_value);
             this.model.set("value", new_value);
@@ -240,7 +240,7 @@ const View = Backbone.View.extend({
                             const unpatchedValue = this._unpatchValue(details);
                             result.values.push(unpatchedValue);
                         } else {
-                            galaxy.emit.debug(
+                            console.debug(
                                 "ui-select-content::value()",
                                 `Requested details not found for '${id_list[i]}'.`
                             );
@@ -252,7 +252,7 @@ const View = Backbone.View.extend({
                 }
             }
         } else {
-            galaxy.emit.debug("ui-select-content::value()", `Invalid value/source '${new_value}'.`);
+            console.debug("ui-select-content::value()", `Invalid value/source '${new_value}'.`);
         }
         return null;
     },
@@ -303,7 +303,7 @@ const View = Backbone.View.extend({
             this.config = Configurations[config_id];
         } else {
             this.config = Configurations["data"];
-            galaxy.emit.debug("ui-select-content::_changeType()", `Invalid configuration/type id '${config_id}'.`);
+            console.debug("ui-select-content::_changeType()", `Invalid configuration/type id '${config_id}'.`);
         }
 
         // prepare extension component of error message

@@ -42,7 +42,7 @@ export default Backbone.View.extend({
         this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!this.field) {
             this.field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
-            Galaxy.emit.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
+            console.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
         }
         if (input_def.value === undefined) {
             input_def.value = null;

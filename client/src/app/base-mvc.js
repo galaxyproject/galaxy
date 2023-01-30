@@ -1,41 +1,8 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import addLogging from "utils/add-logging";
 import _l from "utils/localization";
 
-//==============================================================================
-/** @class Mixin to add logging capabilities to an object.
- *      Designed to allow switching an objects log output off/on at one central
- *      statement. Can be used with plain browser console (or something more
- *      complex like an AJAX logger).
- *  <br />NOTE: currently only uses the console.debug log function
- *  (as opposed to debug, error, warn, etc.)
- *  @name LoggableMixin
- *
- *  @example
- *  // Add to your models/views at the definition using chaining:
- *      var MyModel = Backbone.Model.extend( LoggableMixin ).extend({ // ... });
- *
- *  // or - more explicitly AFTER the definition:
- *      var MyModel = Backbone.Model.extend({
- *          logger  : console
- *          // ...
- *          this.log( '$#%& it! - broken already...' );
- *      })
- *      _.extend( MyModel.prototype, LoggableMixin )
- *
- */
-var LoggableMixin = /** @lends LoggableMixin# */ {
-    // replace null with console (if available) to see all logs for a particular view/model
-    /** The logging object whose log function will be used to output
-     *      messages. Null will supress all logging. Commonly set to console.
-     */
-    logger: null,
-    /** @type {String} a namespace for filtering/focusing log output */
-    _logNamespace: ".",
-};
-addLogging(LoggableMixin);
 
 //==============================================================================
 /** Backbone model that syncs to the browser's sessionStorage API.
@@ -575,7 +542,6 @@ function buildComparator(attribute_name, options) {
 
 //==============================================================================
 export default {
-    LoggableMixin: LoggableMixin,
     SessionStorageModel: SessionStorageModel,
     mixin: mixin,
     SearchableModelMixin: SearchableModelMixin,
