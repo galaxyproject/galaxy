@@ -254,6 +254,10 @@ export default {
         const hasChanges = ref(false);
         const hasInvalidConnections = computed(() => Object.keys(connectionsStore.invalidConnections).length > 0);
 
+        stepStore.$subscribe((mutation, state) => {
+            hasChanges.value = true;
+        });
+
         function resetStores() {
             connectionsStore.$reset();
             stepStore.$reset();
@@ -342,9 +346,6 @@ export default {
                 this.hasChanges = true;
             }
         },
-        steps(newSteps, oldSteps) {
-            this.hasChanges = true;
-        },
         hasChanges() {
             this.$emit("update:confirmation", this.hasChanges);
         },
@@ -357,7 +358,6 @@ export default {
     methods: {
         onUpdateStep(step) {
             this.stepStore.updateStep(step);
-            this.hasChanges = true;
         },
         onUpdateStepPosition(stepId, position) {
             const step = { ...this.steps[stepId], position };
