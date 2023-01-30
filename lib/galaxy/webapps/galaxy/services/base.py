@@ -8,7 +8,6 @@ from typing import (
 )
 
 from celery.result import AsyncResult
-from deprecated import deprecated
 
 from galaxy.exceptions import (
     AuthenticationRequired,
@@ -49,11 +48,6 @@ class SecurityNotProvidedError(Exception):
     pass
 
 
-MANUAL_ENCODING_DEPRECATION_MESSAGE = (
-    "Use model decoding/encoding instead with DecodedDatabaseIdField or EncodedDatabaseIdField."
-)
-
-
 class ServiceBase:
     """Base class with common logic and utils reused by other services.
 
@@ -70,7 +64,6 @@ class ServiceBase:
         self._security = security
 
     @property
-    @deprecated(reason=MANUAL_ENCODING_DEPRECATION_MESSAGE)
     def security(self) -> IdEncodingHelper:
         if self._security is None:
             raise SecurityNotProvidedError(
@@ -78,24 +71,20 @@ class ServiceBase:
             )
         return self._security
 
-    @deprecated(reason=MANUAL_ENCODING_DEPRECATION_MESSAGE)
     def decode_id(self, id: EncodedDatabaseIdField, kind: Optional[str] = None) -> int:
         """Decodes a previously encoded database ID."""
         return decode_with_security(self.security, id, kind=kind)
 
-    @deprecated(reason=MANUAL_ENCODING_DEPRECATION_MESSAGE)
     def encode_id(self, id: int, kind: Optional[str] = None) -> EncodedDatabaseIdField:
         """Encodes a raw database ID."""
         return encode_with_security(self.security, id, kind=kind)
 
-    @deprecated(reason=MANUAL_ENCODING_DEPRECATION_MESSAGE)
     def decode_ids(self, ids: List[EncodedDatabaseIdField]) -> List[int]:
         """
         Decodes all encoded IDs in the given list.
         """
         return [self.decode_id(id) for id in ids]
 
-    @deprecated(reason=MANUAL_ENCODING_DEPRECATION_MESSAGE)
     def encode_all_ids(self, rval, recursive: bool = False):
         """
         Encodes all integer values in the dict rval whose keys are 'id' or end with '_id'
