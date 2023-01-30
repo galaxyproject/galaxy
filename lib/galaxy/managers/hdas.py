@@ -397,7 +397,7 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             stmt = stmt.order_by(self.sort_map[order])
         result = self.hda_manager.session().execute(stmt)
         discarded = [
-            StoredItem(id=row.id, name=row.name, type="dataset", size=row.total_size, update_time=row.update_time)
+            StoredItem(id=row.id, name=row.name, type="dataset", size=row.total_size or 0, update_time=row.update_time)
             for row in result
         ]
         return discarded
