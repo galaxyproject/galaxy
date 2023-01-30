@@ -2,12 +2,17 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "@tests/jest/helpers";
 import CleanupOperationSummary from "./CleanupOperationSummary.vue";
-import { CleanableSummary, type CleanupOperation, CleanupResult } from "./model";
+import { CleanableSummary, type CleanupOperation, CleanupResult, type CleanableItem } from "./model";
 
 const localVue = getLocalVue();
 
 const REVIEW_ITEMS_LINK = '[data-test-id="review-link"]';
 const NO_ITEMS_INDICATOR = '[data-test-id="no-items-indicator"]';
+
+const EXPECTED_ITEMS: CleanableItem[] = [
+    { id: "1", name: "Item 1", size: 512, type: "dataset", update_time: new Date().toISOString() },
+    { id: "2", name: "Item 2", size: 512, type: "dataset", update_time: new Date().toISOString() },
+];
 
 /** Operation that can clean some items */
 const CLEANUP_OPERATION: CleanupOperation = {
@@ -16,16 +21,20 @@ const CLEANUP_OPERATION: CleanupOperation = {
     description: "operation description",
     fetchSummary: async () =>
         new CleanableSummary({
-            totalSize: 1024,
-            totalItems: 2,
+            total_size: 1024,
+            total_items: 2,
         }),
     fetchItems: async () => [],
     cleanupItems: async () =>
-        new CleanupResult({
-            totalItemCount: 2,
-            totalFreeBytes: 1024,
-            errors: [],
-        }),
+        new CleanupResult(
+            {
+                total_item_count: 2,
+                success_item_count: 2,
+                total_free_bytes: 1024,
+                errors: [],
+            },
+            EXPECTED_ITEMS
+        ),
 };
 /** Operation without items to clean*/
 const EMPTY_CLEANUP_OPERATION: CleanupOperation = {
@@ -34,8 +43,8 @@ const EMPTY_CLEANUP_OPERATION: CleanupOperation = {
     description: "operation that has no items to clean",
     fetchSummary: async () =>
         new CleanableSummary({
-            totalSize: 0,
-            totalItems: 0,
+            total_size: 0,
+            total_items: 0,
         }),
     fetchItems: async () => [],
     cleanupItems: async () => new CleanupResult(),

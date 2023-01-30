@@ -1,17 +1,27 @@
 import type { CleanableSummary } from "./CleanableSummary";
 import type { CleanupResult } from "./CleanupResult";
+import type { components } from "@/schema";
 
-export interface PaginationOptions {
+export type CleanableItem = components["schemas"]["StoredItem"];
+export type SortableKey = "name" | "size" | "update_time";
+type StoredItemOrderBy = components["schemas"]["StoredItemOrderBy"];
+
+export class PaginationOptions {
     limit?: number;
     offset?: number;
-    sortBy?: string;
+    sortBy?: SortableKey;
     sortDesc?: boolean;
-}
 
-export interface CleanableItem {
-    id: string;
-    name: string;
-    size: number;
+    constructor(props?: { limit?: number; offset?: number; sortBy?: SortableKey; sortDesc?: boolean }) {
+        this.limit = props?.limit;
+        this.offset = props?.offset;
+        this.sortBy = props?.sortBy;
+        this.sortDesc = props?.sortDesc;
+    }
+
+    get order(): StoredItemOrderBy | undefined {
+        return this.sortBy ? `${this.sortBy}${this.sortDesc ? "-dsc" : "-asc"}` : undefined;
+    }
 }
 
 /**
@@ -46,7 +56,7 @@ export interface CleanupOperation {
      * @param options The filter options for sorting and pagination of the items.
      * @returns An array of items that can be potentially `cleaned` and match the filtering params.
      */
-    fetchItems: (options: PaginationOptions) => Promise<CleanableItem[]>;
+    fetchItems: (options?: PaginationOptions) => Promise<CleanableItem[]>;
 
     /**
      * Processes the given items to free up some user storage space and provides a result

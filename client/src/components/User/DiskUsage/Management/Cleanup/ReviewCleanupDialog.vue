@@ -3,7 +3,7 @@ import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 import { BModal, BTable, BFormCheckbox, BLink, BPagination, BButton } from "bootstrap-vue";
 import UtcDate from "@/components/UtcDate.vue";
-import type { CleanableItem, CleanupOperation } from "./model";
+import { type CleanableItem, type CleanupOperation, type SortableKey, PaginationOptions } from "./model";
 import { computed, ref, watch } from "vue";
 
 interface ReviewCleanupDialogProps {
@@ -46,9 +46,7 @@ const fields = [
     },
 ];
 
-type SortableKey = "name" | "size" | "update_time";
-
-const sortBy = ref(<SortableKey>"size");
+const sortBy = ref<SortableKey>("size");
 const sortDesc = ref(true);
 const perPage = ref(50);
 const currentPage = ref(1);
@@ -164,12 +162,12 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
     try {
         const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
         const offset = page * ctx.perPage;
-        const options = {
+        const options = new PaginationOptions({
             offset: offset,
             limit: ctx.perPage,
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,
-        };
+        });
         const result = await props.operation.fetchItems(options);
         return result;
     } catch (error) {
@@ -179,12 +177,14 @@ async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
 
 async function onSelectAllItems() {
     isBusy.value = true;
-    const allItems = await props.operation.fetchItems({
-        offset: 0,
-        limit: totalRows.value,
-        sortBy: sortBy.value,
-        sortDesc: sortDesc.value,
-    });
+    const allItems = await props.operation.fetchItems(
+        new PaginationOptions({
+            offset: 0,
+            limit: totalRows.value,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+        })
+    );
     selectedItems.value = allItems;
     isBusy.value = false;
 }
