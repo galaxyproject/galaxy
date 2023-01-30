@@ -812,5 +812,99 @@
       "left": 70.45245361328125,
       "top": 316.3525695800781
     }
+  },
+  "17": {
+    "id": 17,
+    "type": "tool",
+    "label": "filter_failed",
+    "content_id": "__FILTER_FAILED_DATASETS__",
+    "name": "Filter failed datasets",
+    "tool_state": {
+      "input": "{\"__class__\": \"RuntimeValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input",
+        "label": "Input Collection",
+        "multiple": false,
+        "input_type": "dataset_collection",
+        "collection_types": [
+          "list",
+          "list:paired"
+        ],
+        "optional": false,
+        "extensions": [
+          "data"
+        ]
+      }
+    ],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "type": "collection",
+        "optional": false,
+        "collection": true,
+        "collection_type": null,
+        "collection_type_source": "input",
+        "label": "input dataset(s) (filtered failed datasets)"
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "f5de18b9-b08e-4160-b71b-54768a4e5208",
+    "when": null,
+    "workflow_outputs": [
+      {
+        "output_name": "output",
+        "uuid": "3774e554-b7d1-41ba-9acd-ee82ba9fbf54",
+        "label": null
+      }
+    ],
+    "input_connections": {},
+    "position": {
+      "left": 0,
+      "top": 0
+    }
+  },
+  "18": {
+    "id": 18,
+    "type": "data_collection_input",
+    "label": "list:paired input",
+    "content_id": null,
+    "name": "Input dataset collection",
+    "tool_state": {
+      "collection_type": "\"list:paired\"",
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "collection": true,
+        "collection_type": "list:paired",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 12.8729248046875,
+      "top": 501.7839660644531
+    }
   }
 }

@@ -1012,6 +1012,7 @@ steps:
       class: GalaxyWorkflow
       inputs:
         boolean_input_file: data
+        should_run: boolean
       steps:
         create_more_inputs:
           tool_id: collection_creates_dynamic_nested
