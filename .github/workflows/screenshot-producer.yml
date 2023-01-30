@@ -4,9 +4,8 @@ on:
   workflow_dispatch:
   # Generate screenshots per release branch whenever they're updated
   push:
-    branches:
-      - dev
-      - 'release_2*'
+    tags:
+      - 'v2*'
 
 jobs:
   screenshooter:
