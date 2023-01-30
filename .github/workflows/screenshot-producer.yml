@@ -6,6 +6,13 @@ on:
   push:
     tags:
       - 'v2*'
+  workflow_call:
+    inputs:
+      tag_name:
+        description: 'The release tag'
+        default: 'v23.0'
+        required: false
+        type: string
 
 jobs:
   screenshooter:
@@ -13,7 +20,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # Shallow should be fine here.
-      - uses: actions/checkout@v2
+      #
+      - if: github.event_name == 'push' && contains(github.ref, 'refs/tags/') # https://github.com/orgs/community/discussions/25692
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 500
+
+      - if: github.event_name == 'workflow_dispatch'
+        uses: actions/checkout@v2
+        ref: ${{ inputs.tag_name }}
         with:
           fetch-depth: 500
 
