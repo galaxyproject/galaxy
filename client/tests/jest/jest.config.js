@@ -39,6 +39,7 @@ module.exports = {
     roots: ["<rootDir>/src/", "<rootDir>/tests/jest/standalone/"],
     setupFilesAfterEnv: ["<rootDir>/tests/jest/jest.setup.js"],
     testEnvironment: "jsdom",
+    testPathIgnorePatterns: ["/node_modules/", "/dist/"],
     transform: {
         "^.+\\.js$": "babel-jest",
         "^.*\\.(vue)$": "@vue/vue2-jest",
