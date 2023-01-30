@@ -1,10 +1,21 @@
-on: [push, pull_request]
-name: tests
+name: Autogenerate UI screenshots for GTN Tutorials
+
+on:
+  schedule:
+    # Run mondays at noon.
+    - cron:  '0 12 * * 1'
+  workflow_dispatch:
+
 jobs:
   screenshooter:
+    if: github.repository_owner == 'galaxyproject'
     runs-on: ubuntu-latest
     steps:
+      # Shallow should be fine here.
       - uses: actions/checkout@v2
+        with:
+          fetch-depth: 500
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
