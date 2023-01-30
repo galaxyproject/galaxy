@@ -7,7 +7,7 @@ from uuid import uuid4
 
 from galaxy_test.base.decorators import requires_new_history
 from galaxy_test.base.populators import DatasetPopulator
-from ._framework import ApiTestCase
+from galaxy_test.driver import integration_util
 
 
 class StoredItemDataForTests(NamedTuple):
@@ -15,7 +15,7 @@ class StoredItemDataForTests(NamedTuple):
     size: int
 
 
-class TestStorageCleanerApi(ApiTestCase):
+class TestStorageCleaner(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
 
     def setUp(self):
@@ -56,6 +56,7 @@ class TestStorageCleanerApi(ApiTestCase):
         """Tests the storage cleaner API for a particular resource (histories or datasets)"""
         delete_resource_uri = delete_resource_uri if delete_resource_uri else resource
         discarded_storage_items_uri = f"storage/{resource}/discarded"
+
         # Initially, there shouldn't be any deleted and not purged (discarded) items
         summary_response = self._get(f"{discarded_storage_items_uri}/summary")
         self._assert_status_code_is_ok(summary_response)
