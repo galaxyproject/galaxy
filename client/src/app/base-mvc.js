@@ -3,7 +3,6 @@ import _ from "underscore";
 import Backbone from "backbone";
 import _l from "utils/localization";
 
-
 //==============================================================================
 /** Backbone model that syncs to the browser's sessionStorage API.
  *      This all largely happens behind the scenes and no special calls are required.

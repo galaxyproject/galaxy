@@ -4,7 +4,7 @@ describe("test utils", () => {
     it("test isEmpty", async () => {
         expect(Utils.isEmpty([])).toBe(true); //  "Empty array");
         expect(Utils.isEmpty(["data", undefined])).toBe(true); // , "Array contains `undefined`");
-        expect(Utils.isEmpty(["data", null])).toBe(true);//, "Array contains `null`");
+        expect(Utils.isEmpty(["data", null])).toBe(true); //, "Array contains `null`");
         expect(Utils.isEmpty(["data", "__null__"])).toBe(true); // , "Array contains `__null__`");
         expect(Utils.isEmpty(["data", "__undefined__"])).toBe(true); // , "Array contains `__undefined__`");
         expect(Utils.isEmpty(null)).toBe(true); //, "Array is null");

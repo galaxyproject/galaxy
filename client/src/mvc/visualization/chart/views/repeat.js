@@ -3,7 +3,6 @@ import _l from "utils/localization";
 import _ from "underscore";
 import $ from "jquery";
 import Backbone from "backbone";
-import { getGalaxyInstance } from "app";
 import Utils from "utils/utils";
 import Portlet from "./portlet";
 import Ui from "mvc/ui/ui-misc";
@@ -42,7 +41,6 @@ export var View = Backbone.View.extend({
 
     /** Add new repeat block */
     add: function (options) {
-        const Galaxy = getGalaxyInstance();
         if (!options.id || this.list[options.id]) {
             console.debug("form-repeat::add()", "Duplicate or invalid repeat block id.");
             return;
@@ -75,7 +73,6 @@ export var View = Backbone.View.extend({
 
     /** Delete repeat block */
     del: function (id) {
-        const Galaxy = getGalaxyInstance();
         if (!this.list[id]) {
             console.debug("form-repeat::del()", "Invalid repeat block id.");
             return;

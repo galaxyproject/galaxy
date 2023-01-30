@@ -1,6 +1,5 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -140,7 +139,6 @@ var FolderContainer = Backbone.Model.extend({
     },
 
     parse: function (obj) {
-        const Galaxy = getGalaxyInstance();
         // empty the collection
         this.get("folder").reset();
         // response is not a simple array, it contains metadata

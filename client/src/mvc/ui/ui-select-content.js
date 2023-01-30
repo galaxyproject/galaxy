@@ -222,7 +222,6 @@ const View = Backbone.View.extend({
 
     /** Return the currently selected dataset values */
     value: function (new_value) {
-        const Galaxy = getGalaxyInstance();
         if (new_value) {
             this._patchValue(new_value);
             this.model.set("value", new_value);

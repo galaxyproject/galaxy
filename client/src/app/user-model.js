@@ -1,6 +1,5 @@
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
-import baseMVC from "./base-mvc";
 import _l from "utils/localization";
 
 //==============================================================================
@@ -9,7 +8,6 @@ import _l from "utils/localization";
  */
 var User = Backbone.Model.extend(
     /** @lends User.prototype */ {
-
         /** API location for this resource */
         urlRoot: function () {
             return `${getAppRoot()}api/users`;

@@ -183,7 +183,6 @@ GalaxyApp.prototype._setUpListeners = function _setUpListeners() {
     return this;
 };
 
-
 /** string rep */
 GalaxyApp.prototype.toString = function toString() {
     const userEmail = this.user ? this.user.get("email") || "(anonymous)" : "uninitialized";
