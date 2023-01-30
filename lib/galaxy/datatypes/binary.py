@@ -1151,7 +1151,15 @@ class H5(Binary):
             return f"Binary HDF5 file ({nice_size(dataset.get_size())})"
 
     def get_structured_content(
-        self, dataset, content_type=None, path="/", dtype="origin", format="json", flatten=False, selection=None, **kwargs
+        self,
+        dataset,
+        content_type=None,
+        path="/",
+        dtype="origin",
+        format="json",
+        flatten=False,
+        selection=None,
+        **kwargs,
     ):
         """
         Implements h5grove protocol (https://silx-kit.github.io/h5grove/).
