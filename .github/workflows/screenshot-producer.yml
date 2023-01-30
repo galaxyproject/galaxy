@@ -1,12 +1,10 @@
 name: Autogenerate UI screenshots for GTN Tutorials
 
 on:
+  schedule:
+    # Run mondays at noon.
+    - cron:  '0 12 * * 1'
   workflow_dispatch:
-  # Generate screenshots per release branch whenever they're updated
-  push:
-    branches:
-      - dev
-      - 'release_2*'
 
 jobs:
   screenshooter:
