@@ -1,0 +1,45 @@
+name: Autogenerate UI screenshots for GTN Tutorials
+
+on:
+  workflow_dispatch:
+  # Generate screenshots per release branch whenever they're updated
+  push:
+    branches:
+      - dev
+      - 'release_2*'
+
+jobs:
+  screenshooter:
+    if: github.repository_owner == 'galaxyproject'
+    runs-on: ubuntu-latest
+    steps:
+      # Shallow should be fine here.
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 500
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: create screenshots from current version
+        run: |
+          # Setup environment
+          export GALAXY_VERSION=$(cat lib/galaxy/version.py | grep '^VERSION_MAJOR' | cut -d'"' -f 2)
+          export SCREENSHOTS_DIR=/tmp/screenshots
+          echo "SCREENSHOTS_DIR=$SCREENSHOTS_DIR" >> $GITHUB_ENV
+          echo "GALAXY_VERSION=$GALAXY_VERSION" >> $GITHUB_ENV
+
+          # Take our screenshots
+          mkdir -p "$SCREENSHOTS_DIR"
+          GALAXY_TEST_SCREENSHOTS_DIRECTORY=$SCREENSHOTS_DIR ./run_tests.sh -selenium lib/galaxy_test/selenium -- -m gtn_screenshot -m local
+
+      - name: Upload screenshots to S3
+        run: |
+          echo $SCREENSHOTS_DIR
+          aws configure set aws_access_key_id ${{ secrets.TESTS_AWS_ACCESS_KEY_ID }}
+          aws configure set aws_secret_access_key ${{ secrets.TESTS_AWS_SECRET_KEY_ID }}
+          aws configure set default.region us-east-2
+          aws s3 cp --recursive $SCREENSHOTS_DIR s3://galaxy-tests/galaxy-gtn-screenshots/${GALAXY_VERSION}/ --acl public-read
+          aws s3 ls s3://galaxy-tests
