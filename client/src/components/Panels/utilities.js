@@ -109,6 +109,22 @@ export function normalizeTools(tools) {
     return tools;
 }
 
+export function removeDisabledTools(tools) {
+    return tools.filter((section) => {
+        if (section.model_class === "ToolSectionLabel") {
+            return true;
+        } else if (!section.elems && section.disabled) {
+            return false;
+        } else if (section.elems) {
+            section.elems = section.elems.filter((el) => !el.disabled);
+            if (!section.elems.length) {
+                return false;
+            }
+        }
+        return true;
+    });
+}
+
 function flattenToolsSection(section) {
     const flattenTools = [];
     if (section.elems) {
