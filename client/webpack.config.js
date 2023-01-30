@@ -7,6 +7,7 @@ const CssMinimizerPlugin = require("css-minimizer-webpack-plugin");
 const DuplicatePackageCheckerPlugin = require("@cerner/duplicate-package-checker-webpack-plugin");
 const { DumpMetaPlugin } = require("dumpmeta-webpack-plugin");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
+const TerserPlugin = require("terser-webpack-plugin");
 
 const scriptsBase = path.join(__dirname, "src");
 const testsBase = path.join(__dirname, "tests");
@@ -31,6 +32,18 @@ const buildDate = new Date();
 module.exports = (env = {}, argv = {}) => {
     // environment name based on -d, -p, webpack flag
     const targetEnv = process.env.NODE_ENV == "production" || argv.mode == "production" ? "production" : "development";
+
+    let minimizations = {};
+    if (targetEnv == "production") {
+        minimizations = {
+            minimize: true,
+            minimizer: [`...`, new TerserPlugin(), new CssMinimizerPlugin()],
+        }
+    } else {
+        minimizations = {
+            minimize: false,
+        }
+    }
 
     const buildconfig = {
         mode: targetEnv,
@@ -84,8 +97,7 @@ module.exports = (env = {}, argv = {}) => {
                     },
                 },
             },
-            minimize: true,
-            minimizer: [`...`, new CssMinimizerPlugin()],
+            ...minimizations,
         },
         module: {
             rules: [
