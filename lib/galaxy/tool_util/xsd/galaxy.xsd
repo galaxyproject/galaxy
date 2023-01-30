@@ -3973,8 +3973,7 @@ for an example of how to use this tag set. This tag set is optionally contained
 within the ``<param>`` tag when the ``type`` attribute value is ``select`` or
 ``data`` and used to dynamically generated lists of options.
 
-For data parameters it can only be used to restrict inputs to datasets having
-the same ``dbkey`` like another input by using a ``data_meta`` filter. See for
+For data parameters this tag can be used to restrict possible input datasets to datasets that match the ``dbkey`` of another data input by including a ``data_meta`` filter. See for
 instance here: [/tools/maf/interval2maf.xml](https://github.com/galaxyproject/galaxy/blob/master/tools/maf/interval2maf.xml)
 
 For select parameters this tag set dynamically creates a list of options whose
