@@ -82,6 +82,14 @@ export class AxisAlignedBoundingBox implements Rectangle {
         this.endX += by;
         this.endY += by;
     }
+
+    isPointInBounds(point: { x: number; y: number }) {
+        if (point.x > this.x && point.y > this.y && point.x < this.endX && point.y < this.endY) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 }
 
 /* Format
