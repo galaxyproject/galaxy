@@ -19,7 +19,8 @@ export class AxisAlignedBoundingBox implements Rectangle {
     endY = -Infinity;
 
     get width() {
-        return this.endX - this.x;
+        const width = this.endX - this.x;
+        return width > 0 ? width : 0;
     }
 
     set width(value) {
@@ -27,7 +28,8 @@ export class AxisAlignedBoundingBox implements Rectangle {
     }
 
     get height() {
-        return this.endY - this.y;
+        const height = this.endY - this.y;
+        return height > 0 ? height : 0;
     }
 
     set height(value) {
@@ -79,5 +81,85 @@ export class AxisAlignedBoundingBox implements Rectangle {
         this.y -= by;
         this.endX += by;
         this.endY += by;
+    }
+}
+
+/* Format
+   [a b
+    c d
+    e f]
+   as used by canvas: https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D/transform
+*/
+// prettier-ignore
+export type Matrix = [
+    number, number,
+    number, number,
+    number, number,
+];
+
+export type Vector = [number, number];
+
+export function scaleVector(vector: Vector, scale: number): Vector {
+    return [vector[0] * scale, vector[1] * scale];
+}
+
+export function addVector(vectorA: Vector, vectorB: Vector): Vector {
+    return [vectorA[0] + vectorB[0], vectorA[1] + vectorB[1]];
+}
+
+export class Transform {
+    matrix: Matrix;
+
+    constructor(matrix: Matrix = [0, 1, 0, 1, 0, 0]) {
+        this.matrix = matrix;
+    }
+
+    translate(vector: Vector) {
+        // prettier-ignore
+        return new Transform([
+            this.matrix[0], this.matrix[1],
+            this.matrix[2], this.matrix[3],
+            this.matrix[4] + vector[0], this.matrix[5] + vector[1]
+        ]);
+    }
+
+    scale(vector: Vector) {
+        // prettier-ignore
+        return new Transform([
+            this.matrix[0] * vector[0], this.matrix[1] * vector[1],
+            this.matrix[2] * vector[0], this.matrix[3] * vector[1],
+            this.matrix[4], this.matrix[5]
+        ]);
+    }
+
+    inverse() {
+        const m = this.matrix;
+        // https://www.wolframalpha.com/input?i=Inverse+%5B%7B%7Ba%2Cc%2Ce%7D%2C%7Bb%2Cd%2Cf%7D%2C%7B0%2C0%2C1%7D%7D%5D
+        const denominator = m[0] * m[3] - m[1] * m[2];
+
+        const a = m[3] / denominator;
+        const b = m[1] / -denominator;
+        const c = m[2] / -denominator;
+        const d = m[0] / denominator;
+        const e = (m[3] * m[4] - m[2] * m[5]) / -denominator;
+        const f = (m[1] * m[4] - m[0] * m[5]) / denominator;
+
+        // prettier-ignore
+        return new Transform([
+            a, b,
+            c, d,
+            e, f
+        ]);
+    }
+
+    applyToContext(ctx: CanvasRenderingContext2D): void {
+        ctx.transform(...this.matrix);
+    }
+
+    apply(vector: Vector): Vector {
+        return [
+            this.matrix[0] * vector[0] + this.matrix[2] * vector[1] + this.matrix[4],
+            this.matrix[1] * vector[0] + this.matrix[3] * vector[1] + this.matrix[5],
+        ];
     }
 }
