@@ -209,10 +209,13 @@
                 @extend .mr-1;
             }
             .workflow-overview {
+                --workflow-overview-size: 150px;
+
                 border-top-left-radius: 0.3rem;
                 cursor: nwse-resize;
                 position: absolute;
-                width: 100%;
+                width: var(--workflow-overview-size);
+                height: var(--workflow-overview-size);
                 right: 0px;
                 bottom: 0px;
                 border-top: solid $border-color 1px;
