@@ -28,5 +28,10 @@ class Base64FilesSource(BaseFilesSource):
     def _write_from(self, target_path, native_path, user_context=None):
         raise NotImplementedError()
 
+    def score_url_match(self, url: str):
+        if url.startswith("base64://"):
+            return len("base64://")
+        else:
+            return 0
 
 __all__ = ("Base64FilesSource",)
