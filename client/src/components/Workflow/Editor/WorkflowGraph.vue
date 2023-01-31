@@ -40,7 +40,7 @@
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
-import WorkflowMinimap from "@/components/Workflow/Editor/Minimap.vue";
+import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
 import { computed, provide, reactive, ref, watch, type Ref, type PropType, watchEffect } from "vue";
 import { useElementBounding, useScroll } from "@vueuse/core";
 import { storeToRefs } from "pinia";
