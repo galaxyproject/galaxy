@@ -182,7 +182,7 @@ export class Transform {
         ];
     }
 
-    /** removes the translation portion of the vector */
+    /** removes the translation portion of the transform */
     resetTranslation(): Transform {
         // prettier-ignore
         return new Transform ([
