@@ -110,7 +110,7 @@ export function addVector(vectorA: Vector, vectorB: Vector): Vector {
 export class Transform {
     matrix: Matrix;
 
-    constructor(matrix: Matrix = [0, 1, 0, 1, 0, 0]) {
+    constructor(matrix: Matrix = [1, 0, 0, 1, 0, 0]) {
         this.matrix = matrix;
     }
 
@@ -161,5 +161,22 @@ export class Transform {
             this.matrix[0] * vector[0] + this.matrix[2] * vector[1] + this.matrix[4],
             this.matrix[1] * vector[0] + this.matrix[3] * vector[1] + this.matrix[5],
         ];
+    }
+
+    resetTranslation(): Transform {
+        // prettier-ignore
+        return new Transform ([
+            this.matrix[0], this.matrix[1],
+            this.matrix[2], this.matrix[3],
+            0, 0
+        ]);
+    }
+
+    get scaleX() {
+        return this.matrix[0];
+    }
+
+    get scaleY() {
+        return this.matrix[3];
     }
 }
