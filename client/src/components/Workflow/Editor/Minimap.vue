@@ -238,6 +238,8 @@ watch(isHandleDragging, () => {
 });
 
 // -- Repositioning Viewport --
+
+/** Scaling factor of the canvas element. Draw size in relation to actual size on screen */
 const scaleFactor = computed(() => size.max / minimapSize.value);
 let dragViewport = false;
 
