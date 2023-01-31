@@ -64,7 +64,6 @@ log = logging.getLogger(__name__)
 
 
 class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
-
     model_class = model.History
     foreign_key_name = "history"
     user_share_model = model.HistoryUserShareAssociation
@@ -417,17 +416,16 @@ class HistoryStorageCleanerManager(StorageCleanerManager):
         total_free_bytes = 0
         errors: List[StorageItemCleanupError] = []
 
-        for history_id in item_ids:
-            try:
-                history = self.history_manager.get_owned(history_id, user)
-                self.history_manager.purge(history, flush=False)
-                success_item_count += 1
-                total_free_bytes += int(history.disk_size)
-            except BaseException as e:
-                errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
+        with self.history_manager.session().begin():
+            for history_id in item_ids:
+                try:
+                    history = self.history_manager.get_owned(history_id, user)
+                    self.history_manager.purge(history, flush=False)
+                    success_item_count += 1
+                    total_free_bytes += int(history.disk_size)
+                except BaseException as e:
+                    errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
 
-        if success_item_count:
-            self.history_manager.session().flush()
         return StorageItemsCleanupResult(
             total_item_count=len(item_ids),
             success_item_count=success_item_count,

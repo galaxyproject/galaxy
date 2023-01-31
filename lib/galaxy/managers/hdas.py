@@ -407,17 +407,16 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         total_free_bytes = 0
         errors: List[StorageItemCleanupError] = []
 
-        for hda_id in item_ids:
-            try:
-                hda = self.hda_manager.get_owned(hda_id, user)
-                self.hda_manager.purge(hda)
-                success_item_count += 1
-                total_free_bytes += int(hda.get_size())
-            except BaseException as e:
-                errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
+        with self.hda_manager.session().begin():
+            for hda_id in item_ids:
+                try:
+                    hda = self.hda_manager.get_owned(hda_id, user)
+                    self.hda_manager.purge(hda)
+                    success_item_count += 1
+                    total_free_bytes += int(hda.get_size())
+                except BaseException as e:
+                    errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
 
-        if success_item_count:
-            self.hda_manager.session().flush()
         return StorageItemsCleanupResult(
             total_item_count=len(item_ids),
             success_item_count=success_item_count,
