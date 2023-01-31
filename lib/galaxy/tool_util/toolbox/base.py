@@ -116,6 +116,16 @@ class ToolBoxRegistryImpl(ToolBoxRegistry):
 DynamicToolConfDict = Dict[str, Any]
 
 
+class AbstractToolTagManager(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def reset_tags(self):
+        """Starting to load tool panels, reset all tags."""
+
+    @abc.abstractmethod
+    def handle_tags(self, tool_id, tool_definition_source):
+        """Parse out tags and persist them."""
+
+
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
@@ -229,6 +239,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         return True
 
     def _load_workflow(self, workflow_id):
+        raise NotImplementedError()
+
+    def tool_tag_manager(self):
+        """Build a tool tag manager according to app's configuration and return it."""
         raise NotImplementedError()
 
     def _init_tools_from_configs(self, config_filenames):
