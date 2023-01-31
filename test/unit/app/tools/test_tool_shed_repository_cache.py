@@ -1,5 +1,6 @@
 import pytest
 
+from galaxy.model.base import transaction
 from .conftest import create_repo
 
 
@@ -24,7 +25,9 @@ def test_add_repository_and_tool_conf_repository_to_repository_cache(
     assert len(tool_shed_repository_cache.repositories) == 10
     assert len(tool_shed_repository_cache.local_repositories) == 10
     create_repo(tool_shed_repository_cache.session, "21", "20")
-    tool_shed_repository_cache.session.flush()
+    session = tool_shed_repository_cache.session
+    with transaction(session):
+        session.commit()
     tool_shed_repository_cache._build()
     assert len(tool_shed_repository_cache.repositories) == 11
     assert len(tool_shed_repository_cache.local_repositories) == 10
