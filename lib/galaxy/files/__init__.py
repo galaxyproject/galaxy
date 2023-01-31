@@ -97,7 +97,7 @@ class ConfiguredFileSources:
         """Returns the best matching file source for handling a particular url. Each filesource scores its own
         ability to match a particular url, and the highest scorer with a score > 0 is selected."""
         scores = [FileSourceScore(file_source, file_source.score_url_match(url)) for file_source in self._file_sources]
-        scores.sort(key=lambda f: f.score)
+        scores.sort(key=lambda f: f.score, reverse=True)
         return next((fsscore.file_source for fsscore in scores if fsscore.score > 0), None)
 
     def get_file_source_path(self, uri):

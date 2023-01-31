@@ -26,7 +26,12 @@ class HTTPFilesSource(BaseFilesSource):
         self._props = props
 
     def _realize_to(self, source_path, native_path, user_context=None):
-        with urllib.request.urlopen(source_path, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
+        props = self._serialization_props(user_context)
+        headers = props.pop("http_headers", {}) or {}
+
+        req = urllib.request.Request(source_path, headers=headers)
+
+        with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
             f = open(native_path, "wb")  # fd will be .close()ed in stream_to_open_named_file
             return stream_to_open_named_file(
                 page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
@@ -34,6 +39,11 @@ class HTTPFilesSource(BaseFilesSource):
 
     def _write_from(self, target_path, native_path, user_context=None):
         raise NotImplementedError()
+
+    def _serialization_props(self, user_context=None):
+        effective_props = super()._serialization_props(user_context=user_context)
+        effective_props["url_regex"] = self._url_regex
+        return effective_props
 
     def score_url_match(self, url: str):
         match = self._url_regex.match(url)

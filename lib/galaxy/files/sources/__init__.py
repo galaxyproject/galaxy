@@ -21,7 +21,6 @@ DEFAULT_WRITABLE = False
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
-
     @abc.abstractmethod
     def get_scheme(self) -> str:
         """Return a prefix for the root (e.g. the gxfiles in gxfiles://prefix/path)."""
@@ -74,8 +73,8 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         context doesn't need to be present after the plugin is re-hydrated.
         """
 
-class BrowsableSourceMixin(metaclass=abc.ABCMeta):
 
+class BrowsableSourceMixin(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def get_uri_root(self) -> str:
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
@@ -233,6 +232,10 @@ class BaseFilesSource(FilesSource):
                 config=self._file_sources_config,
             )
             rval = fill_template(prop_val, context=template_context, futurized=True)
+        elif isinstance(prop_val, dict):
+            rval = {key: self._evaluate_prop(childprop, user_context) for key, childprop in prop_val.items()}
+        elif isinstance(prop_val, list):
+            rval = [self._evaluate_prop(childprop, user_context) for childprop in prop_val]
 
         return rval
 
