@@ -5,6 +5,7 @@ import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
 from galaxy.jobs.handler import ItemGrabber
+from galaxy.model.base import transaction
 from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
 from galaxy.util.monitors import Monitors
@@ -87,7 +88,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         if workflow_invocation.handler is None:
             workflow_invocation.handler = self.app.config.server_name
             sa_session.add(workflow_invocation)
-            sa_session.flush()
+            with transaction(sa_session):
+                sa_session.commit()
         else:
             log.warning(
                 "(%s) Handler '%s' received setup message for workflow invocation but handler '%s' is"
@@ -111,7 +113,8 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
         workflow_invocation.handler = self.app.config.server_name
         sa_session = self.app.model.context
         sa_session.add(workflow_invocation)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
     def _message_callback(self, workflow_invocation):
         return WorkflowSchedulingMessage(task="setup", workflow_invocation_id=workflow_invocation.id)
