@@ -748,6 +748,67 @@ steps:
         assert len(workflow["steps"]) == 3
 
     @selenium_test
+    def test_editor_create_conditional_step(self):
+        editor = self.components.workflow_editor
+        self.workflow_create_new(annotation="simple when step definition")
+        # Insert a boolean parameter
+        self.workflow_editor_add_input(item_name="parameter_input")
+        param_type_element = editor.param_type_form.wait_for_present()
+        self.switch_param_type(param_type_element, "Boolean")
+        editor.label_input.wait_for_and_send_keys("param_input")
+        editor.tool_menu.wait_for_visible()
+        # Insert cat tool
+        self.tool_open("cat")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("downstream_step")
+        # Insert head tool
+        self.tool_open("head")
+        self.workflow_editor_click_option("Auto Layout")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("conditional_step")
+        # Connect head to cat
+        self.workflow_editor_connect("conditional_step#out_file1", "downstream_step#input1")
+        self.assert_connected("conditional_step#out_file1", "downstream_step#input1")
+        # Make head tool conditional
+        conditional_node = editor.node._(label="conditional_step")
+        conditional_node.input_terminal(name="input").wait_for_present()
+        # Assert no when input before making step conditional
+        conditional_node.input_terminal(name="when").wait_for_absent()
+        conditional_toggle = editor.step_when.wait_for_present()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        # Toggling conditional should cause when input to appear
+        conditional_node.input_terminal(name="when").wait_for_present()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        # Toggling conditional should cause when input to disappear
+        conditional_node.input_terminal(name="when").wait_for_absent()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        conditional_node.input_terminal(name="when").wait_for_present()
+        # Output connection should be invalid, as output from conditional step is potentially null
+        self.assert_connection_invalid("conditional_step#out_file1", "downstream_step#input1")
+        downstream_step = editor.node._(label="downstream_step")
+        downstream_step.destroy.wait_for_and_click()
+        downstream_step.wait_for_absent()
+        # Connect boolean input to when
+        self.workflow_editor_connect("param_input#output", "conditional_step#when")
+        self.assert_connected("param_input#output", "conditional_step#when")
+        # Change boolean input parameter to invalid parameter type
+        editor.node._(label="param_input").wait_for_and_click()
+        param_type_element = editor.param_type_form.wait_for_present()
+        self.switch_param_type(param_type_element, "Text")
+        self.assert_connection_invalid("param_input#output", "conditional_step#when")
+        self.workflow_editor_destroy_connection("conditional_step#when")
+        # Make sure the when input is still shown
+        conditional_node.input_terminal(name="when").wait_for_present()
+        # Assert save button is disabled because of disconnected when
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        # TODO: hook up best practice panel, disable save when "when" not connected
+        # assert save_button.has_class("disabled")
+
+    def switch_param_type(self, element, param_type):
+        self.action_chains().move_to_element(element).click().send_keys(param_type).send_keys(Keys.ENTER).perform()
+
+    @selenium_test
     def test_editor_invalid_tool_state(self):
         workflow_populator = self.workflow_populator
         workflow_populator.upload_yaml_workflow(WORKFLOW_WITH_INVALID_STATE, exact_tools=True)
