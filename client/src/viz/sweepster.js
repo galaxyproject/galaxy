@@ -8,7 +8,7 @@ import $ from "jquery";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
-import * as d3 from "d3";
+import * as d3 from "d3v3";
 import visualization from "viz/visualization";
 import tracks from "viz/trackster/tracks";
 import tools from "viz/tools";
