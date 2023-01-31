@@ -27,8 +27,8 @@ def resolution_cache(tmpdir, appconfig):
         "cache.lock_dir": str(tmpdir / "lock"),
         "cache.expire": "1",
         "cache.url": "sqlite://",
-        "cache.schema_name" : appconfig.mulled_resolution_cache_schema_name,
-        "cache.table_name" : appconfig.mulled_resolution_cache_table_name,
+        "cache.schema_name": appconfig.mulled_resolution_cache_schema_name,
+        "cache.table_name": appconfig.mulled_resolution_cache_table_name,
     }
     cm = CacheManager(**parse_cache_config_options(cache_opts)).get_cache("mulled_resolution")
     resolution_cache.mulled_resolution_cache = cm
