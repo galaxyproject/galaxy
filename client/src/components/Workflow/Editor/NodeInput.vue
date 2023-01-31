@@ -32,7 +32,6 @@ import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { computed } from "vue";
 import { inject, ref, toRefs, watchEffect } from "vue";
-import { UseElementBoundingReturn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -58,7 +57,8 @@ export default {
             required: true,
         },
         rootOffset: {
-            type: UseElementBoundingReturn,
+            // type UseElementBoundingReturn from "@vueuse/core";
+            type: Object,
             required: true,
         },
         scale: {
