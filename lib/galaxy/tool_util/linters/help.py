@@ -43,7 +43,7 @@ def rst_invalid(text):
     Return False if the supplied text is valid reStructuredText or
     a string indicating the problem.
     """
-    invalid_rst = False
+    invalid_rst: Union[bool, str] = False
     try:
         rst_to_html(text, error=True)
     except Exception as e:
