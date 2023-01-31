@@ -283,11 +283,12 @@ useDraggable(canvas, {
 </template>
 
 <style lang="scss" scoped>
+@import "~bootstrap/scss/_functions.scss";
 @import "theme/blue.scss";
 
 .workflow-overview-body {
     --node-color: #{$brand-primary};
-    --error-color: #{$brand-warning};
+    --error-color: #{$state-danger-bg};
     --selected-outline-color: #{$brand-primary};
     --view-color: #{fade-out($brand-dark, 0.8)};
     --view-outline-color: #{$brand-info};
