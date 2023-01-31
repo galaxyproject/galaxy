@@ -640,7 +640,7 @@ class ToolEvaluator:
                 else:
                     environment_variable_template = ""
                 is_template = False
-            elif inject.startswith("oidc_"):
+            elif inject and inject.startswith("oidc_"):
                 environment_variable_template = self.get_oidc_token(inject)
                 is_template = False
             else:
