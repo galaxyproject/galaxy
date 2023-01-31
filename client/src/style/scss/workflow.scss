@@ -230,10 +230,22 @@
                 padding: var(--workflow-overview-padding) 0 0 var(--workflow-overview-padding);
 
                 // account for padding and border
-                max-width: calc(var(--workflow-overview-max-size) + var(--workflow-overview-padding) + var(--workflow-overview-border));
-                max-height: calc(var(--workflow-overview-max-size) + var(--workflow-overview-padding) + var(--workflow-overview-border));
-                min-width: calc(var(--workflow-overview-min-size) + var(--workflow-overview-padding) + var(--workflow-overview-border));
-                min-height: calc(var(--workflow-overview-min-size) + var(--workflow-overview-padding) + var(--workflow-overview-border));
+                max-width: calc(
+                    var(--workflow-overview-max-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
+                max-height: calc(
+                    var(--workflow-overview-max-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
+                min-width: calc(
+                    var(--workflow-overview-min-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
+                min-height: calc(
+                    var(--workflow-overview-min-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
 
                 .workflow-overview-body {
                     cursor: pointer;
