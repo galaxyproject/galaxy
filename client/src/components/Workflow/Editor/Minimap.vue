@@ -34,6 +34,17 @@ const emit = defineEmits<{
 
 const stateStore = useWorkflowStateStore();
 
+/** bounding box following the viewport */
+const viewportBounds = computed(() => {
+    const bounds = new AxisAlignedBoundingBox();
+    bounds.x = -props.viewportPan.x / props.viewportScale;
+    bounds.y = -props.viewportPan.y / props.viewportScale;
+    bounds.width = unref(props.viewportBounds.width) / props.viewportScale;
+    bounds.height = unref(props.viewportBounds.height) / props.viewportScale;
+
+    return bounds;
+});
+
 /** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 let redraw = false;
@@ -69,22 +80,12 @@ function recalculateAABB() {
 }
 
 // redraw if any of these props change
-watch(props.viewportBounds, () => (redraw = true), { deep: true });
+watch(viewportBounds, () => (redraw = true));
 watch(
     props.steps,
     () => {
         redraw = true;
         aabbChanged = true;
-    },
-    { deep: true }
-);
-watch(
-    () => {
-        props.viewportScale;
-        props.viewportPan;
-    },
-    () => {
-        redraw = true;
     },
     { deep: true }
 );
@@ -206,12 +207,7 @@ function renderMinimap() {
     ctx.strokeStyle = colors.viewOutline;
     ctx.fillStyle = colors.view;
     ctx.lineWidth = 1 / canvasTransform.scaleX;
-    ctx.rect(
-        -props.viewportPan.x / props.viewportScale,
-        -props.viewportPan.y / props.viewportScale,
-        unref(props.viewportBounds.width) / props.viewportScale,
-        unref(props.viewportBounds.height) / props.viewportScale
-    );
+    ctx.rect(viewportBounds.value.x, viewportBounds.value.y, viewportBounds.value.width, viewportBounds.value.height);
     ctx.fill();
     ctx.stroke();
 }
@@ -247,20 +243,13 @@ let dragViewport = false;
 
 useDraggable(canvas, {
     onStart: (position, event) => {
-        // convert viewport to bounds
-        const bounds = new AxisAlignedBoundingBox();
-        bounds.x = -props.viewportPan.x / props.viewportScale;
-        bounds.y = -props.viewportPan.y / props.viewportScale;
-        bounds.width = unref(props.viewportBounds.width) / props.viewportScale;
-        bounds.height = unref(props.viewportBounds.height) / props.viewportScale;
-
         // minimap coordinates to global coordinates
         const [x, y] = canvasTransform
             .inverse()
             .scale([scaleFactor.value, scaleFactor.value])
             .apply([event.offsetX, event.offsetY]);
 
-        if (bounds.isPointInBounds({ x, y })) {
+        if (viewportBounds.value.isPointInBounds({ x, y })) {
             dragViewport = true;
         }
     },
