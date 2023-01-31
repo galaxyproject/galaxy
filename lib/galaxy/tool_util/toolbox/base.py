@@ -24,11 +24,6 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tool_util.deps import (
-    build_dependency_manager,
-    NullDependencyManager,
-)
-from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     etree,
     ExecutionTimer,
@@ -52,7 +47,6 @@ from .parser import (
     ensure_tool_conf_item,
     get_toolbox_parser,
 )
-from .tags import tool_tag_manager
 from .views.edam import (
     EdamPanelMode,
     EdamToolPanelView,
@@ -177,7 +171,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._tool_watcher = self.app.watchers.tool_watcher
         self._tool_config_watcher = self.app.watchers.tool_config_watcher
         self._filter_factory = FilterFactory(self)
-        self._tool_tag_manager = tool_tag_manager(app)
+        self._tool_tag_manager = self.tool_tag_manager()
         self._init_tools_from_configs(config_filenames)
 
         if self.app.name == "galaxy" and self._integrated_tool_panel_config_has_contents:

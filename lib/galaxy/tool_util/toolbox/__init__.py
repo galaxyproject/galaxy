@@ -1,6 +1,9 @@
 """API for this module containing functionality related to the toolbox."""
 
-from .base import AbstractToolBox
+from .base import (
+    AbstractToolBox,
+    AbstractToolTagManager,
+)
 from .panel import (
     panel_item_types,
     ToolSection,
@@ -9,6 +12,7 @@ from .panel import (
 
 __all__ = (
     "AbstractToolBox",
+    "AbstractToolTagManager",
     "panel_item_types",
     "ToolSection",
     "ToolSectionLabel",
