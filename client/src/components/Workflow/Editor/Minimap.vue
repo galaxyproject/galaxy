@@ -1,11 +1,12 @@
 <script lang="ts" setup>
-import { onMounted, ref, unref, watch } from "vue";
+import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { AxisAlignedBoundingBox } from "./modules/geomerty";
+import { AxisAlignedBoundingBox, Transform } from "./modules/geomerty";
+import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
 
 import type { Step, Steps } from "@/stores/workflowStepStore";
-import type { PropType, Ref, ToRefs } from "vue";
+import type { PropType, Ref } from "vue";
 
 const props = defineProps({
     steps: {
@@ -13,7 +14,7 @@ const props = defineProps({
         required: true,
     },
     viewportBounds: {
-        type: Object as PropType<ToRefs<{ width: number; height: number }>>,
+        type: Object as PropType<UseElementBoundingReturn>,
         required: true,
     },
     viewportPan: {
@@ -25,6 +26,11 @@ const props = defineProps({
         required: true,
     },
 });
+
+const emit = defineEmits<{
+    (e: "pan-by", offset: { x: number; y: number }): void;
+    (e: "moveTo", position: { x: number; y: number }): void;
+}>();
 
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 let redraw = false;
@@ -42,7 +48,17 @@ const colors = {
     viewOutline: "#000",
 };
 
+const size = {
+    default: 150,
+    min: 50,
+    max: 300,
+    padding: 5,
+    border: 0,
+};
+
 onMounted(() => {
+    // these settings are controlled via css, so they can be defined in one common place
+    // this ensures future style changes wont break the minimap's behavior
     const element = canvas.value!;
     const style = getComputedStyle(element);
 
@@ -51,6 +67,12 @@ onMounted(() => {
     colors.selectedOutline = style.getPropertyValue("--selected-outline-color");
     colors.view = style.getPropertyValue("--view-color");
     colors.viewOutline = style.getPropertyValue("--view-outline-color");
+
+    size.default = parseInt(style.getPropertyValue("--workflow-overview-size"));
+    size.min = parseInt(style.getPropertyValue("--workflow-overview-min-size"));
+    size.max = parseInt(style.getPropertyValue("--workflow-overview-max-size"));
+    size.padding = parseInt(style.getPropertyValue("--workflow-overview-padding"));
+    size.border = parseInt(style.getPropertyValue("--workflow-overview-border"));
 
     recalculateAABB();
     redraw = true;
@@ -76,6 +98,8 @@ watch(
     { deep: true }
 );
 
+let canvasTransform = new Transform();
+
 function recalculateAABB() {
     aabb.reset();
 
@@ -90,7 +114,12 @@ function recalculateAABB() {
     });
 
     aabb.squareCenter();
-    aabb.expand(20);
+    aabb.expand(120);
+
+    if (canvas.value) {
+        const scale = canvas.value.width / aabb.width;
+        canvasTransform = new Transform().translate([-aabb.x * scale, -aabb.y * scale]).scale([scale, scale]);
+    }
 }
 
 useAnimationFrame(() => {
@@ -110,11 +139,7 @@ function renderMinimap() {
     ctx.resetTransform();
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
-    // move ctx to aabb
-    const scale = ctx.canvas.width / aabb.width;
-
-    ctx.translate(-aabb.x * scale, -aabb.y * scale);
-    ctx.scale(scale, scale);
+    canvasTransform.applyToContext(ctx);
 
     const allSteps = Object.values(props.steps);
     const okSteps: Step[] = [];
@@ -151,26 +176,26 @@ function renderMinimap() {
     ctx.fill();
 
     if (selectedStep) {
-        const edge = 2 / scale;
+        const edge = 2 / canvasTransform.scaleX;
 
         ctx.beginPath();
         ctx.strokeStyle = colors.selectedOutline;
         ctx.lineWidth = edge;
         const rect = stateStore.stepPosition[selectedStep.id];
         ctx.rect(
-            selectedStep.position!.left - edge * 2,
-            selectedStep.position!.top - edge * 2,
-            rect.width + edge * 4,
-            rect.height + edge * 4
+            selectedStep.position!.left - edge,
+            selectedStep.position!.top - edge,
+            rect.width + edge * 2,
+            rect.height + edge * 2
         );
         ctx.stroke();
     }
 
-    // draw view
+    // draw viewport
     ctx.beginPath();
     ctx.strokeStyle = colors.viewOutline;
     ctx.fillStyle = colors.view;
-    ctx.lineWidth = 1 / scale;
+    ctx.lineWidth = 1 / canvasTransform.scaleX;
     ctx.rect(
         -props.viewportPan.x / props.viewportScale,
         -props.viewportPan.y / props.viewportScale,
@@ -180,11 +205,88 @@ function renderMinimap() {
     ctx.fill();
     ctx.stroke();
 }
+
+// resizing
+const minimap: Ref<HTMLCanvasElement | null> = ref(null);
+const { position: dragHandlePosition, isDragging: isHandleDragging } = useDraggable(minimap, {
+    preventDefault: true,
+    exact: true,
+});
+const minimapSize = ref(parseInt(localStorage.getItem("overview-size") || size.default.toString()));
+
+watch(dragHandlePosition, () => {
+    // resize
+    minimapSize.value = Math.max(
+        unref(props.viewportBounds.right) - dragHandlePosition.value.x,
+        unref(props.viewportBounds.bottom) - dragHandlePosition.value.y
+    );
+
+    // clamp
+    minimapSize.value = Math.min(Math.max(minimapSize.value, size.min), size.max);
+});
+
+watch(isHandleDragging, () => {
+    if (!isHandleDragging.value) {
+        localStorage.setItem("overview-size", minimapSize.value.toString());
+    }
+});
+
+// repositioning
+const scaleFactor = computed(() => size.max / minimapSize.value);
+let dragViewport = false;
+
+useDraggable(canvas, {
+    onStart: (position, event) => {
+        const bounds = new AxisAlignedBoundingBox();
+        bounds.x = -props.viewportPan.x / props.viewportScale;
+        bounds.y = -props.viewportPan.y / props.viewportScale;
+        bounds.width = unref(props.viewportBounds.width) / props.viewportScale;
+        bounds.height = unref(props.viewportBounds.height) / props.viewportScale;
+
+        const [x, y] = canvasTransform
+            .inverse()
+            .scale([scaleFactor.value, scaleFactor.value])
+            .apply([event.offsetX, event.offsetY]);
+
+        if (bounds.isPointInBounds({ x, y })) {
+            dragViewport = true;
+        }
+    },
+    onMove: (position, event) => {
+        if (!dragViewport || Object.values(props.steps).length === 0) {
+            return;
+        }
+
+        const [x, y] = canvasTransform
+            .resetTranslation()
+            .inverse()
+            .scale([scaleFactor.value, scaleFactor.value])
+            .apply([-event.movementX, -event.movementY]);
+
+        emit("pan-by", { x, y });
+    },
+    onEnd(position, event) {
+        const [x, y] = canvasTransform
+            .inverse()
+            .scale([scaleFactor.value, scaleFactor.value])
+            .apply([event.offsetX, event.offsetY]);
+
+        if (!dragViewport && Object.values(props.steps).length > 0) {
+            emit("moveTo", { x, y });
+        }
+
+        dragViewport = false;
+    },
+    exact: true,
+});
 </script>
 
 <template>
-    <div ref="minimap" class="workflow-overview">
-        <canvas ref="canvas" class="workflow-overview-body" width="300" height="300" />
+    <div
+        ref="minimap"
+        class="workflow-overview"
+        :style="{ '--workflow-overview-size': `${minimapSize + size.padding + size.border}px` }">
+        <canvas ref="canvas" class="workflow-overview-body" :width="size.max" :height="size.max" />
     </div>
 </template>
 
@@ -194,7 +296,7 @@ function renderMinimap() {
 .workflow-overview-body {
     --node-color: #{$brand-primary};
     --error-color: #{$brand-warning};
-    --selected-outline-color: #{$brand-info};
+    --selected-outline-color: #{$brand-primary};
     --view-color: #{fade-out($brand-dark, 0.8)};
     --view-outline-color: #{$brand-info};
 }
