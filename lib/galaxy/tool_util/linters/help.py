@@ -1,4 +1,7 @@
 """This module contains a linting function for a tool's help."""
+
+from typing import Union
+
 from galaxy.util import (
     rst_to_html,
     unicodify,
@@ -37,7 +40,7 @@ def lint_help(tool_xml, lint_ctx):
         lint_ctx.valid("Help contains valid reStructuredText.", node=helps[0])
 
 
-def rst_invalid(text):
+def rst_invalid(text: str) -> Union[bool, str]:
     """
     Predicate to determine if text is invalid reStructuredText.
     Return False if the supplied text is valid reStructuredText or
