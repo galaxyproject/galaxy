@@ -1,9 +1,6 @@
 import { getGalaxyInstance, setGalaxyInstance } from "app";
-import sinon from "sinon";
 import Backbone from "backbone";
-import { getAppRoot } from "onload";
 import galaxyOptions from "@tests/qunit/test-data/bootstrapped";
-import serverdata from "@tests/qunit/test-data/fakeserver";
 
 export function setupTestGalaxy(galaxyOptions_ = null) {
     galaxyOptions_ = galaxyOptions_ || galaxyOptions;
@@ -19,22 +16,6 @@ export function setupTestGalaxy(galaxyOptions_ = null) {
 describe("App base construction/initializiation defaults", () => {
     beforeEach(() => {
         setupTestGalaxy(galaxyOptions);
-        window.WAIT_FADE = 300;
-        window.fakeserver = sinon.fakeServer.create();
-        for (const route in serverdata) {
-            window.fakeserver.respondWith("GET", getAppRoot() + route, [
-                200,
-                { "Content-Type": "application/json" },
-                serverdata[route].data,
-            ]);
-        }
-    });
-
-    afterEach(() => {
-        if (window.fakeserver) {
-            window.fakeserver.restore();
-            delete window.fakeserver;
-        }
     });
 
     test("App base construction/initializiation defaults", function () {
@@ -55,7 +36,7 @@ describe("App base construction/initializiation defaults", () => {
     test("App base extends from Backbone.Events", function () {
         const app = getGalaxyInstance();
         ["on", "off", "trigger", "listenTo", "stopListening"].forEach(function (fn) {
-            expect(app.fn && typeof app[fn] === "function").toBeTruthy();
+            expect(Object.prototype.hasOwnProperty.call(app, fn) && typeof app[fn] === "function").toBeTruthy();
         });
     });
 

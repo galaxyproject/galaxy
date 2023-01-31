@@ -38,18 +38,11 @@ GalaxyApp.prototype._init = function (options, bootstrapped) {
     this.params = options.params || {};
     this.session_csrf_token = options.session_csrf_token || null;
 
-    // at this point, either logging or not and namespaces are enabled - chat it up
-    console.debug("GalaxyApp.options: ", this.options);
-    console.debug("GalaxyApp.config: ", this.config);
-
     this._initLocale();
-    console.debug("GalaxyApp.localize: ", this.localize);
 
     this.config = options.config || {};
-    console.debug("GalaxyApp.config: ", this.config);
 
     this._initUser(options.user || {});
-    console.debug("GalaxyApp.user: ", this.user);
 
     _setUserLocale(this.user, this.config);
     _getUserLocale();
@@ -113,8 +106,7 @@ GalaxyApp.prototype._patchGalaxy = function _patchGalaxy(patchWith) {
 };
 
 /** add the localize fn to this object and the window namespace (as '_l') */
-GalaxyApp.prototype._initLocale = function _initLocale(options) {
-    console.debug("_initLocale:", options);
+GalaxyApp.prototype._initLocale = function _initLocale() {
     this.localize = localize;
     // add to window as global shortened alias
     // TODO: temporary - remove when can require for plugins

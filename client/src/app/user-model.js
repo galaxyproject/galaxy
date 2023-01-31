@@ -32,8 +32,6 @@ var User = Backbone.Model.extend(
          *  @param {Object} data Initial model data.
          */
         initialize: function (data) {
-            console.log("User.initialize:", data);
-
             this.on("loaded", function (model, resp) {
                 console.log(`${this} has loaded:`, model, resp);
             });
