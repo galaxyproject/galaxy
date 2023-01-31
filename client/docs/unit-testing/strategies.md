@@ -1,4 +1,4 @@
-Part of making good code is making that code easy to test. 
+Part of making good code is making that code easy to test.
 
 ### Implement logic in pure functions when possible
 
@@ -10,14 +10,13 @@ There is almost definitely no such thing as a well-written 1000 line function.
 Most of whatever happened in that thing was probably deterministic and can be
 broken up into easily testable chunks.
 
-
 ### Wrap native browser resources in a function so they can be easily mocked
 
 If your javascript needs to talk to the window object, or navigator, etc. wrap
 that in a function call so that it can be easily mocked during testing.
 
-
 #### Your Module
+
 ```js static
 // myModule.js
 
@@ -35,6 +34,7 @@ export function theThingYouReallyCareAbout() {
 ```
 
 #### Your test file
+
 ```js static
 // myModule.test.js
 import { theThingYouReallyCareAbout, redirectTo } from "./myModule";
