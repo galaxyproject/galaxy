@@ -2,7 +2,7 @@
 import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { AxisAlignedBoundingBox, Transform } from "./modules/geomerty";
+import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
 
 import type { Step, Steps } from "@/stores/workflowStepStore";
