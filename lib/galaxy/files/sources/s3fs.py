@@ -84,9 +84,7 @@ class S3FsFilesSource(BaseFilesSource):
             }
 
     def _serialization_props(self, user_context=None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
+        effective_props = super()._serialization_props(user_context=user_context)
         effective_props["bucket"] = self._bucket
         return effective_props
 

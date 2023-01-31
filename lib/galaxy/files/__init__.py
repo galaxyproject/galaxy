@@ -19,6 +19,7 @@ from galaxy.util.dictifiable import Dictifiable
 log = logging.getLogger(__name__)
 
 FileSourcePath = namedtuple("FileSourcePath", ["file_source", "path"])
+FileSourceScore = namedtuple("FileSourceScore", ["file_source", "score"])
 
 
 class ConfiguredFileSources:
@@ -51,12 +52,17 @@ class ConfiguredFileSources:
                         return
                 stock_file_source_conf_dict.append({"type": plugin_type})
 
+            _ensure_loaded("http")
+            _ensure_loaded("base64")
+            _ensure_loaded("drs")
+
             if file_sources_config.ftp_upload_dir is not None:
                 _ensure_loaded("gxftp")
             if file_sources_config.library_import_dir is not None:
                 _ensure_loaded("gximport")
             if file_sources_config.user_library_import_dir is not None:
                 _ensure_loaded("gxuserimport")
+
             if stock_file_source_conf_dict:
                 stock_plugin_source = plugin_config.plugin_source_from_dict(stock_file_source_conf_dict)
                 # insert at begining instead of append so FTP and library import appear
@@ -87,24 +93,21 @@ class ConfiguredFileSources:
             dict_to_list_key="id",
         )
 
+    def find_best_match(self, url: str):
+        """Returns the best matching file source for handling a particular url. Each filesource scores its own
+        ability to match a particular url, and the highest scorer with a score > 0 is selected."""
+        scores = [FileSourceScore(file_source, file_source.score_url_match(url)) for file_source in self._file_sources]
+        scores.sort(key=lambda f: f.score)
+        return next((fsscore.file_source for fsscore in scores if fsscore.score > 0), None)
+
     def get_file_source_path(self, uri):
         """Parse uri into a FileSource object and a path relative to its base."""
         if "://" not in uri:
             raise exceptions.RequestParameterInvalidException(f"Invalid uri [{uri}]")
-        scheme, rest = uri.split("://", 1)
-        if scheme not in self.get_schemes():
-            raise exceptions.RequestParameterInvalidException(f"Unsupported URI scheme [{scheme}]")
-
-        if scheme != "gxfiles":
-            # prefix unused
-            id_prefix = None
-            path = rest
-        else:
-            if "/" in rest:
-                id_prefix, path = rest.split("/", 1)
-            else:
-                id_prefix, path = rest, "/"
-        file_source = self.get_file_source(id_prefix, scheme)
+        file_source = self.find_best_match(uri)
+        if not file_source:
+            raise exceptions.RequestParameterInvalidException(f"Could not find handler for URI [{uri}]")
+        path = file_source.to_relative_path(uri)
         return FileSourcePath(file_source, path)
 
     def validate_uri_root(self, uri, user_context):
@@ -139,16 +142,6 @@ class ConfiguredFileSources:
                     "Your FTP directory does not exist, attempting to upload files to it may cause it to be created."
                 )
 
-    def get_file_source(self, id_prefix, scheme):
-        for file_source in self._file_sources:
-            # gxfiles uses prefix to find plugin, other scheme are assumed to have
-            # at most one file_source.
-            if scheme != file_source.get_scheme():
-                continue
-            prefix_match = scheme != "gxfiles" or file_source.get_prefix() == id_prefix
-            if prefix_match:
-                return file_source
-
     def looks_like_uri(self, path_or_uri):
         # is this string a URI this object understands how to realize
         if path_or_uri.startswith("gx") and "://" in path_or_uri:
@@ -165,11 +158,14 @@ class ConfiguredFileSources:
         return schemes
 
     def plugins_to_dict(
-        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None
+        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None,
+        browsable_only: Optional[bool] = False
     ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
+                continue
+            if browsable_only and not file_source.get_browsable():
                 continue
             el = file_source.to_dict(for_serialization=for_serialization, user_context=user_context)
             rval.append(el)
@@ -196,7 +192,7 @@ class ConfiguredFileSources:
         )
 
     @staticmethod
-    def from_dict(as_dict):
+    def from_dict(as_dict, load_stock_plugins=False):
         if as_dict is not None:
             sources_as_dict = as_dict["file_sources"]
             config_as_dict = as_dict["config"]
@@ -204,7 +200,8 @@ class ConfiguredFileSources:
         else:
             sources_as_dict = []
             file_sources_config = ConfiguredFileSourcesConfig()
-        return ConfiguredFileSources(file_sources_config, conf_dict=sources_as_dict)
+        return ConfiguredFileSources(
+            file_sources_config, conf_dict=sources_as_dict, load_stock_plugins=load_stock_plugins)
 
 
 class NullConfiguredFileSources(ConfiguredFileSources):

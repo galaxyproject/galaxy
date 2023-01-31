@@ -20,12 +20,7 @@ DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
 
 
-class FilesSource(metaclass=abc.ABCMeta):
-    """ """
-
-    @abc.abstractmethod
-    def get_uri_root(self) -> str:
-        """Return a prefix for the root (e.g. gxfiles://prefix/)."""
+class SingleFileSource(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_scheme(self) -> str:
@@ -39,11 +34,6 @@ class FilesSource(metaclass=abc.ABCMeta):
     def user_has_access(self, user_context) -> bool:
         """Return a boolean indicating if the user can access the FileSource."""
 
-    # TODO: off-by-default
-    @abc.abstractmethod
-    def list(self, source_path="/", recursive=False, user_context=None):
-        """Return dictionary of 'Directory's and 'File's."""
-
     @abc.abstractmethod
     def realize_to(self, source_path, native_path, user_context=None):
         """Realize source path (relative to uri root) to local file system path."""
@@ -53,6 +43,30 @@ class FilesSource(metaclass=abc.ABCMeta):
         """Write file at native path to target_path (relative to uri root)."""
 
     @abc.abstractmethod
+    def score_url_match(self, url):
+        """Return how well a given url matches this filesource. A score greater than zero indicates that
+        this filesource is capable of processing the given url.
+
+        Scoring is based on the following rules:
+        a. The maximum score will be the length of the url.
+        b. The minimum score will be the length of the scheme if the filesource can handle the file.
+        c. The score will be zero if the filesource cannot handle the file.
+
+        For example, given the following file source config:
+        - type: webdav
+          id: cloudstor
+          url: "https://cloudstor.aarnet.edu.au"
+          root: "/plus/remote.php/webdav"
+        - type: http
+          id: generic_http
+
+        the generic http handler may return a score of 8 for the url
+        https://cloudstor.aarnet.edu.au/plus/remote.php/webdav/myfolder/myfile.txt,
+        as it can handle only the scheme part of the url. A webdav handler may return a score of
+        55 for the same url, as both the webdav url and root combined are a specific match.
+        """
+
+    @abc.abstractmethod
     def to_dict(self, for_serialization=False, user_context=None):
         """Return a dictified representation of this FileSource instance.
 
@@ -60,9 +74,32 @@ class FilesSource(metaclass=abc.ABCMeta):
         context doesn't need to be present after the plugin is re-hydrated.
         """
 
+class BrowsableSourceMixin(metaclass=abc.ABCMeta):
+
+    @abc.abstractmethod
+    def get_uri_root(self) -> str:
+        """Return a prefix for the root (e.g. gxfiles://prefix/)."""
+
+    @abc.abstractmethod
+    def list(self, source_path="/", recursive=False, user_context=None, limit=None, marker=None):
+        """Return dictionary of 'Directory's and 'File's."""
+
+
+class FilesSource(SingleFileSource, BrowsableSourceMixin):
+    """ """
+
+    # TODO: off-by-default
+    @abc.abstractmethod
+    def get_browsable(self):
+        """Return true if the filesource implements the BrowsableSourceMixin interface."""
+
 
 class BaseFilesSource(FilesSource):
     plugin_type: ClassVar[str]
+
+    def get_browsable(self):
+        # Check whether the list method has been overridden
+        return type(self).list != BaseFilesSource.list or type(self)._list != BaseFilesSource._list
 
     def get_prefix(self):
         return self.id
@@ -94,6 +131,13 @@ class BaseFilesSource(FilesSource):
             root = uri_join(root, prefix)
         return root
 
+    def to_relative_path(self, url: str):
+        return url.replace(self.get_uri_root(), "")
+
+    def score_url_match(self, url: str):
+        root = self.get_uri_root()
+        return len(root) if root in url else 0
+
     def uri_from_path(self, path):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
@@ -111,19 +155,22 @@ class BaseFilesSource(FilesSource):
         # If coming from to_dict, strip API helper values
         kwd.pop("uri_root", None)
         kwd.pop("type", None)
+        kwd.pop("browsable", None)
         return kwd
 
     def to_dict(self, for_serialization=False, user_context=None):
         rval = {
             "id": self.id,
             "type": self.plugin_type,
-            "uri_root": self.get_uri_root(),
             "label": self.label,
             "doc": self.doc,
             "writable": self.writable,
+            "browsable": self.get_browsable(),
             "requires_roles": self.requires_roles,
             "requires_groups": self.requires_groups,
         }
+        if self.get_browsable():
+            rval["uri_root"] = self.get_uri_root()
         if for_serialization:
             rval.update(self._serialization_props(user_context=user_context))
         return rval
@@ -147,7 +194,6 @@ class BaseFilesSource(FilesSource):
         self._check_user_access(user_context)
         return self._list(path, recursive, user_context)
 
-    @abc.abstractmethod
     def _list(self, path="/", recursive=False, user_context=None):
         pass
 
@@ -216,6 +262,12 @@ class BaseFilesSource(FilesSource):
             raise ConfigurationError(_get_error_msg_for("requires_roles"))
         if self.requires_groups and not BooleanExpressionEvaluator.is_valid_expression(self.requires_groups):
             raise ConfigurationError(_get_error_msg_for("requires_groups"))
+
+    def _serialization_props(self, user_context=None):
+        effective_props = {}
+        for key, val in self._props.items():
+            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
+        return effective_props
 
 
 def uri_join(*args):

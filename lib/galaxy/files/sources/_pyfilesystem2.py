@@ -79,9 +79,3 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                 "uri": uri,
                 "path": path,
             }
-
-    def _serialization_props(self, user_context=None):
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
