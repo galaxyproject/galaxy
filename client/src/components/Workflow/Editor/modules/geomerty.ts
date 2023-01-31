@@ -116,16 +116,6 @@ export type Matrix = [
 /** vector as a tuple */
 export type Vector = [number, number];
 
-/** scale a vector by a fixed value */
-export function scaleVector(vector: Vector, scale: number): Vector {
-    return [vector[0] * scale, vector[1] * scale];
-}
-
-/** add two vectors together */
-export function addVector(vectorA: Vector, vectorB: Vector): Vector {
-    return [vectorA[0] + vectorB[0], vectorA[1] + vectorB[1]];
-}
-
 /**
  * Wraps basic transform operations.
  * Each operation returns a new instance, so method calls can be chained
