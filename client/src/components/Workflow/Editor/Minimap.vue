@@ -28,18 +28,69 @@ const props = defineProps({
 });
 
 const emit = defineEmits<{
-    (e: "pan-by", offset: { x: number; y: number }): void;
+    (e: "panBy", offset: { x: number; y: number }): void;
     (e: "moveTo", position: { x: number; y: number }): void;
 }>();
 
+const stateStore = useWorkflowStateStore();
+
+/** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
 let redraw = false;
-let aabbChanged = false;
-const stateStore = useWorkflowStateStore();
+
+/** bounding box encompassing all nodes in the workflow */
 const aabb = new AxisAlignedBoundingBox();
+let aabbChanged = false;
 
+/** transform mapping workflow coordinates to minimap coordinates */
+let canvasTransform = new Transform();
+
+function recalculateAABB() {
+    aabb.reset();
+
+    Object.values(props.steps).forEach((step) => {
+        const rect = stateStore.stepPosition[step.id];
+        aabb.fitRectangle({
+            x: step.position!.left,
+            y: step.position!.top,
+            width: rect.width,
+            height: rect.height,
+        });
+    });
+
+    aabb.squareCenter();
+    aabb.expand(120);
+
+    // transform canvas to show entire workflow bounding box
+    if (canvas.value) {
+        const scale = canvas.value.width / aabb.width;
+        canvasTransform = new Transform().translate([-aabb.x * scale, -aabb.y * scale]).scale([scale, scale]);
+    }
+}
+
+// redraw if any of these props change
 watch(props.viewportBounds, () => (redraw = true), { deep: true });
+watch(
+    props.steps,
+    () => {
+        redraw = true;
+        aabbChanged = true;
+    },
+    { deep: true }
+);
+watch(
+    () => {
+        props.viewportScale;
+        props.viewportPan;
+    },
+    () => {
+        redraw = true;
+    },
+    { deep: true }
+);
 
+// these settings are controlled via css, so they can be defined in one common place
+// this ensures future style changes wont break the minimap's behavior
 const colors = {
     node: "#000",
     error: "#000",
@@ -57,8 +108,6 @@ const size = {
 };
 
 onMounted(() => {
-    // these settings are controlled via css, so they can be defined in one common place
-    // this ensures future style changes wont break the minimap's behavior
     const element = canvas.value!;
     const style = getComputedStyle(element);
 
@@ -78,50 +127,7 @@ onMounted(() => {
     redraw = true;
 });
 
-watch(
-    props.steps,
-    () => {
-        redraw = true;
-        aabbChanged = true;
-    },
-    { deep: true }
-);
-
-watch(
-    () => {
-        props.viewportScale;
-        props.viewportPan;
-    },
-    () => {
-        redraw = true;
-    },
-    { deep: true }
-);
-
-let canvasTransform = new Transform();
-
-function recalculateAABB() {
-    aabb.reset();
-
-    Object.values(props.steps).forEach((step) => {
-        const rect = stateStore.stepPosition[step.id];
-        aabb.fitRectangle({
-            x: step.position!.left,
-            y: step.position!.top,
-            width: rect.width,
-            height: rect.height,
-        });
-    });
-
-    aabb.squareCenter();
-    aabb.expand(120);
-
-    if (canvas.value) {
-        const scale = canvas.value.width / aabb.width;
-        canvasTransform = new Transform().translate([-aabb.x * scale, -aabb.y * scale]).scale([scale, scale]);
-    }
-}
-
+// for performance reasons, only draw and calculate on animation frames.
 useAnimationFrame(() => {
     if (aabbChanged) {
         recalculateAABB();
@@ -134,11 +140,13 @@ useAnimationFrame(() => {
     }
 });
 
+/** Renders the entire minimap to the canvas */
 function renderMinimap() {
     const ctx = canvas.value!.getContext("2d") as CanvasRenderingContext2D;
     ctx.resetTransform();
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
 
+    // apply global to local transform
     canvasTransform.applyToContext(ctx);
 
     const allSteps = Object.values(props.steps);
@@ -146,6 +154,7 @@ function renderMinimap() {
     const errorSteps: Step[] = [];
     let selectedStep: Step | undefined;
 
+    // sort steps into different arrays
     allSteps.forEach((step) => {
         if (stateStore.activeNodeId === step.id) {
             selectedStep = step;
@@ -175,6 +184,7 @@ function renderMinimap() {
     });
     ctx.fill();
 
+    // draw selected
     if (selectedStep) {
         const edge = 2 / canvasTransform.scaleX;
 
@@ -206,7 +216,7 @@ function renderMinimap() {
     ctx.stroke();
 }
 
-// resizing
+// -- Resizing --
 const minimap: Ref<HTMLCanvasElement | null> = ref(null);
 const { position: dragHandlePosition, isDragging: isHandleDragging } = useDraggable(minimap, {
     preventDefault: true,
@@ -231,18 +241,20 @@ watch(isHandleDragging, () => {
     }
 });
 
-// repositioning
+// -- Repositioning Viewport --
 const scaleFactor = computed(() => size.max / minimapSize.value);
 let dragViewport = false;
 
 useDraggable(canvas, {
     onStart: (position, event) => {
+        // convert viewport to bounds
         const bounds = new AxisAlignedBoundingBox();
         bounds.x = -props.viewportPan.x / props.viewportScale;
         bounds.y = -props.viewportPan.y / props.viewportScale;
         bounds.width = unref(props.viewportBounds.width) / props.viewportScale;
         bounds.height = unref(props.viewportBounds.height) / props.viewportScale;
 
+        // minimap coordinates to global coordinates
         const [x, y] = canvasTransform
             .inverse()
             .scale([scaleFactor.value, scaleFactor.value])
@@ -257,15 +269,17 @@ useDraggable(canvas, {
             return;
         }
 
+        // minimap coordinates to global coordinates, without translation
         const [x, y] = canvasTransform
             .resetTranslation()
             .inverse()
             .scale([scaleFactor.value, scaleFactor.value])
             .apply([-event.movementX, -event.movementY]);
 
-        emit("pan-by", { x, y });
+        emit("panBy", { x, y });
     },
     onEnd(position, event) {
+        // minimap coordinates to global coordinates
         const [x, y] = canvasTransform
             .inverse()
             .scale([scaleFactor.value, scaleFactor.value])
@@ -277,7 +291,6 @@ useDraggable(canvas, {
 
         dragViewport = false;
     },
-    exact: true,
 });
 </script>
 

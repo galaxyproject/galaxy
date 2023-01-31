@@ -1,3 +1,4 @@
+/** simple rectangle without rotation */
 export interface Rectangle {
     x: number;
     y: number;
@@ -5,6 +6,12 @@ export interface Rectangle {
     height: number;
 }
 
+/**
+ * Class compatible with rectangle interface.
+ * Provides additional properties and methods specific to bounding boxes.
+ * Useful to calculate the bounds of multiple rectangles,
+ * using the `fitRectangle` method.
+ */
 export class AxisAlignedBoundingBox implements Rectangle {
     /** x coordinate of left edge */
     x = Infinity;
@@ -83,6 +90,7 @@ export class AxisAlignedBoundingBox implements Rectangle {
         this.endY += by;
     }
 
+    /** check if a point is inside the bounding box */
     isPointInBounds(point: { x: number; y: number }) {
         if (point.x > this.x && point.y > this.y && point.x < this.endX && point.y < this.endY) {
             return true;
@@ -105,16 +113,24 @@ export type Matrix = [
     number, number,
 ];
 
+/** vector as a tuple */
 export type Vector = [number, number];
 
+/** scale a vector by a fixed value */
 export function scaleVector(vector: Vector, scale: number): Vector {
     return [vector[0] * scale, vector[1] * scale];
 }
 
+/** add two vectors together */
 export function addVector(vectorA: Vector, vectorB: Vector): Vector {
     return [vectorA[0] + vectorB[0], vectorA[1] + vectorB[1]];
 }
 
+/**
+ * Wraps basic transform operations.
+ * Each operation returns a new instance, so method calls can be chained
+ * without mutating the initial transform.
+ */
 export class Transform {
     matrix: Matrix;
 
@@ -122,6 +138,7 @@ export class Transform {
         this.matrix = matrix;
     }
 
+    /** returns a new transform with a translation vector added */
     translate(vector: Vector) {
         // prettier-ignore
         return new Transform([
@@ -131,6 +148,7 @@ export class Transform {
         ]);
     }
 
+    /** returns a new transform scaled by a given vector */
     scale(vector: Vector) {
         // prettier-ignore
         return new Transform([
@@ -140,6 +158,7 @@ export class Transform {
         ]);
     }
 
+    /** Returns the inverse vector. Can be used to un-transform things */
     inverse() {
         const m = this.matrix;
         // https://www.wolframalpha.com/input?i=Inverse+%5B%7B%7Ba%2Cc%2Ce%7D%2C%7Bb%2Cd%2Cf%7D%2C%7B0%2C0%2C1%7D%7D%5D
@@ -160,10 +179,12 @@ export class Transform {
         ]);
     }
 
+    /** applies this transform to a rendering context */
     applyToContext(ctx: CanvasRenderingContext2D): void {
         ctx.transform(...this.matrix);
     }
 
+    /** returns a vector transformed by this transform */
     apply(vector: Vector): Vector {
         return [
             this.matrix[0] * vector[0] + this.matrix[2] * vector[1] + this.matrix[4],
@@ -171,6 +192,7 @@ export class Transform {
         ];
     }
 
+    /** removes the translation portion of the vector */
     resetTranslation(): Transform {
         // prettier-ignore
         return new Transform ([

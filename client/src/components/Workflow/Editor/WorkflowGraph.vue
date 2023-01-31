@@ -32,7 +32,7 @@
             :viewport-bounds="elementBounding"
             :viewport-scale="scale"
             :viewport-pan="transform"
-            @pan-by="panBy"
+            @panBy="panBy"
             @moveTo="moveTo" />
     </div>
 </template>
