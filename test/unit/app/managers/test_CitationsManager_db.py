@@ -2,8 +2,8 @@ import pytest
 from beaker.cache import CacheManager
 from beaker.util import parse_cache_config_options
 
-from galaxy.managers.citations import DoiCache
 import galaxy.config
+from galaxy.managers.citations import DoiCache
 
 
 class MockDoiCache(DoiCache):
