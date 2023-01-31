@@ -6,26 +6,14 @@ import { AxisAlignedBoundingBox, Transform } from "./modules/geomerty";
 import { useDraggable, type UseElementBoundingReturn } from "@vueuse/core";
 
 import type { Step, Steps } from "@/stores/workflowStepStore";
-import type { PropType, Ref } from "vue";
+import type { Ref } from "vue";
 
-const props = defineProps({
-    steps: {
-        type: Object as PropType<Steps>,
-        required: true,
-    },
-    viewportBounds: {
-        type: Object as PropType<UseElementBoundingReturn>,
-        required: true,
-    },
-    viewportPan: {
-        type: Object as PropType<{ x: number; y: number }>,
-        required: true,
-    },
-    viewportScale: {
-        type: Number,
-        required: true,
-    },
-});
+const props = defineProps<{
+    steps: Steps;
+    viewportBounds: UseElementBoundingReturn;
+    viewportPan: { x: number; y: number };
+    viewportScale: number;
+}>();
 
 const emit = defineEmits<{
     (e: "panBy", offset: { x: number; y: number }): void;
