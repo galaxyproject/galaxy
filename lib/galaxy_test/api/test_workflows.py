@@ -3411,6 +3411,65 @@ input1:
             )
             assert "0\n" == self.dataset_populator.get_history_dataset_content(history_id)
 
+    def test_subworkflow_map_over_data_column(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input:
+    collection_type: list
+outputs:
+  reduced:
+    outputSource: list:list reduction/out_file1
+steps:
+  subworkflow:
+    in:
+      input collection:
+        source: input
+      input dataset:
+        source: input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        input dataset:
+          type: data
+        input collection:
+          collection_type: list
+      outputs:
+        subworkflow_out:
+          outputSource: join out/out_file1
+      steps:
+        join out:
+          tool_id: join1
+          tool_state:
+            field1: '1'
+            field2: '1'
+          in:
+            input1:
+              source: input dataset
+            input2:
+              source: input collection
+  list:list reduction:
+    tool_id: cat_list
+    in:
+      input1:
+        source: subworkflow/subworkflow_out
+test_data:
+  input:
+    collection_type: list
+    elements:
+      - identifier: 1
+        content: A  1
+        ext: tabular
+      - identifier: 2
+        content: B  2
+        ext: tabular
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+
     @skip_without_tool("random_lines1")
     def test_change_datatype_collection_map_over(self):
         with self.dataset_populator.test_history() as history_id:
