@@ -548,6 +548,15 @@ class ToolBox(AbstractToolBox):
             default_tool_dependency_dir=default_tool_dependency_dir,
         )
 
+    def _load_workflow(self, workflow_id):
+        """
+        Return an instance of 'Workflow' identified by `id`,
+        which is encoded in the tool panel.
+        """
+        id = self.app.security.decode_id(workflow_id)
+        stored = self.app.model.context.query(self.app.model.StoredWorkflow).get(id)
+        return stored.latest_workflow
+
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
         """Build a SelectField whose options are the ids for the received list of tools."""
         options: List[Tuple[str, str]] = []

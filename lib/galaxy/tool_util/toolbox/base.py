@@ -228,6 +228,9 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     def can_load_config_file(self, config_filename):
         return True
 
+    def _load_workflow(self, workflow_id):
+        raise NotImplementedError()
+
     def _init_tools_from_configs(self, config_filenames):
         """Read through all tool config files and initialize tools in each
         with init_tools_from_config below.
@@ -1244,15 +1247,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 else:
                     tool_panel_section_id = ""
         return tool_panel_section_id
-
-    def _load_workflow(self, workflow_id):
-        """
-        Return an instance of 'Workflow' identified by `id`,
-        which is encoded in the tool panel.
-        """
-        id = self.app.security.decode_id(workflow_id)
-        stored = self.app.model.context.query(self.app.model.StoredWorkflow).get(id)
-        return stored.latest_workflow
 
     def tool_panel_contents(self, trans, view=None, **kwds):
         """Filter tool_panel contents for displaying for user."""
