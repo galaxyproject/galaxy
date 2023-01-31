@@ -3440,7 +3440,7 @@ steps:
           outputSource: join out/out_file1
       steps:
         join out:
-          tool_id: join1
+          tool_id: comp1
           tool_state:
             field1: '1'
             field2: '1'
