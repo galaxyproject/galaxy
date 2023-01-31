@@ -17,9 +17,10 @@ export function useD3Zoom(
     minZoom: number,
     maxZoom: number,
     targetRef: Ref<HTMLElement | null>,
-    scroll: UseScrollReturn
+    scroll: UseScrollReturn,
+    initialPan: XYPosition = { x: 0, y: 0 }
 ) {
-    const transform = ref({ x: 0, y: 0, k: k });
+    const transform = ref({ x: initialPan.x, y: initialPan.y, k: k });
     const d3Zoom = zoom<HTMLElement, unknown>().filter(filter).scaleExtent([minZoom, maxZoom]);
 
     watch(targetRef, () => {
