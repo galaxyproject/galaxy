@@ -29,10 +29,10 @@
         <workflow-minimap
             v-if="elementBounding"
             :steps="steps"
-            :root-offset="elementBounding"
-            :scale="scale"
-            :pan="transform"
-            @pan-by="panBy"
+            :viewport-bounds="elementBounding"
+            :viewport-scale="scale"
+            :viewport-pan="transform"
+            @panBy="panBy"
             @moveTo="moveTo" />
     </div>
 </template>
@@ -69,7 +69,7 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useD3Zoom(1, minZoom, maxZoom, canvas, scroll);
+const { transform, panBy, setZoom, moveTo } = useD3Zoom(1, minZoom, maxZoom, canvas, scroll, { x: 20, y: 20 });
 
 const isDragging = ref(false);
 provide("isDragging", isDragging);

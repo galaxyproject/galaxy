@@ -109,7 +109,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
 }
 
 PARAM_TYPE_CHILD_COMBINATIONS = [
-    ("./options", ["select", "drill_down"]),
+    ("./options", ["data", "select", "drill_down"]),
     ("./options/option", ["drill_down"]),
     ("./column", ["data_column"]),
 ]
@@ -186,6 +186,37 @@ def lint_inputs(tool_xml, lint_ctx):
                 lint_ctx.warn(
                     f"Param input [{param_name}] with no format specified - 'data' format will be assumed.", node=param
                 )
+            options = param.findall("./options")
+            has_options_filter_attribute = False
+            if len(options) == 1:
+                for oa in options[0].attrib:
+                    if oa == "options_filter_attribute":
+                        has_options_filter_attribute = True
+                    else:
+                        lint_ctx.error(f"Data parameter [{param_name}] uses invalid attribute: {oa}", node=param)
+            elif len(options) > 1:
+                lint_ctx.error(f"Data parameter [{param_name}] contains multiple options elements.", node=options[1])
+            # for data params only filters with key='build' of type='data_meta' are allowed
+            filters = param.findall("./options/filter")
+            for f in filters:
+                if not f.get("ref"):
+                    lint_ctx.error(
+                        f"Data parameter [{param_name}] filter needs to define a ref attribute",
+                        node=f,
+                    )
+                if has_options_filter_attribute:
+                    if f.get("type") != "data_meta":
+                        lint_ctx.error(
+                            f'Data parameter [{param_name}] for filters only type="data_meta" is allowed, found type="{f.get("type")}"',
+                            node=f,
+                        )
+                else:
+                    if f.get("key") != "dbkey" or f.get("type") != "data_meta":
+                        lint_ctx.error(
+                            f'Data parameter [{param_name}] for filters only type="data_meta" and key="dbkey" are allowed, found type="{f.get("type")}" and key="{f.get("key")}"',
+                            node=f,
+                        )
+
         elif param_type == "select":
             # get dynamic/statically defined options
             dynamic_options = param.get("dynamic_options", None)

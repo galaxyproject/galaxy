@@ -24,11 +24,6 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.tool_util.deps import (
-    build_dependency_manager,
-    NullDependencyManager,
-)
-from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.util import (
     etree,
     ExecutionTimer,
@@ -52,7 +47,6 @@ from .parser import (
     ensure_tool_conf_item,
     get_toolbox_parser,
 )
-from .tags import tool_tag_manager
 from .views.edam import (
     EdamPanelMode,
     EdamToolPanelView,
@@ -116,6 +110,16 @@ class ToolBoxRegistryImpl(ToolBoxRegistry):
 DynamicToolConfDict = Dict[str, Any]
 
 
+class AbstractToolTagManager(metaclass=abc.ABCMeta):
+    @abc.abstractmethod
+    def reset_tags(self):
+        """Starting to load tool panels, reset all tags."""
+
+    @abc.abstractmethod
+    def handle_tags(self, tool_id, tool_definition_source):
+        """Parse out tags and persist them."""
+
+
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
     """
     Abstract container for managing a ToolPanel - containing tools and
@@ -167,7 +171,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._tool_watcher = self.app.watchers.tool_watcher
         self._tool_config_watcher = self.app.watchers.tool_config_watcher
         self._filter_factory = FilterFactory(self)
-        self._tool_tag_manager = tool_tag_manager(app)
+        self._tool_tag_manager = self.tool_tag_manager()
         self._init_tools_from_configs(config_filenames)
 
         if self.app.name == "galaxy" and self._integrated_tool_panel_config_has_contents:
@@ -227,6 +231,13 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
 
     def can_load_config_file(self, config_filename):
         return True
+
+    def _load_workflow(self, workflow_id):
+        raise NotImplementedError()
+
+    def tool_tag_manager(self):
+        """Build a tool tag manager according to app's configuration and return it."""
+        raise NotImplementedError()
 
     def _init_tools_from_configs(self, config_filenames):
         """Read through all tool config files and initialize tools in each
@@ -1245,15 +1256,6 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     tool_panel_section_id = ""
         return tool_panel_section_id
 
-    def _load_workflow(self, workflow_id):
-        """
-        Return an instance of 'Workflow' identified by `id`,
-        which is encoded in the tool panel.
-        """
-        id = self.app.security.decode_id(workflow_id)
-        stored = self.app.model.context.query(self.app.model.StoredWorkflow).get(id)
-        return stored.latest_workflow
-
     def tool_panel_contents(self, trans, view=None, **kwds):
         """Filter tool_panel contents for displaying for user."""
         if view is None:
@@ -1410,72 +1412,3 @@ def _filter_for_panel(item, item_type, filters, context):
                 return copy
 
     return None
-
-
-class BaseGalaxyToolBox(AbstractToolBox):
-    """
-    Extend the AbstractToolBox with more Galaxy tooling-specific
-    functionality. Adds dependencies on dependency resolution and
-    tool loading modules, that an abstract description of panels
-    shouldn't really depend on.
-    """
-
-    def __init__(
-        self,
-        config_filenames,
-        tool_root_dir,
-        app,
-        view_sources=None,
-        default_panel_view=None,
-        save_integrated_tool_panel=True,
-    ):
-        super().__init__(
-            config_filenames, tool_root_dir, app, view_sources, default_panel_view, save_integrated_tool_panel
-        )
-        old_toolbox = getattr(app, "toolbox", None)
-        if old_toolbox:
-            self.dependency_manager = old_toolbox.dependency_manager
-        else:
-            self._init_dependency_manager()
-
-    @property
-    def sa_session(self):
-        """
-        Returns a SQLAlchemy session
-        """
-        return self.app.model.context
-
-    def _looks_like_a_tool(self, path):
-        return looks_like_a_tool(path, enable_beta_formats=getattr(self.app.config, "enable_beta_tool_formats", False))
-
-    def _init_dependency_manager(self):
-        use_tool_dependency_resolution = getattr(self.app, "use_tool_dependency_resolution", True)
-        if not use_tool_dependency_resolution:
-            self.dependency_manager = NullDependencyManager()
-            return
-        app_config_dict = self.app.config.config_dict
-        conf_file = app_config_dict.get("dependency_resolvers_config_file")
-        default_tool_dependency_dir = os.path.join(
-            self.app.config.data_dir, self.app.config.schema.defaults["tool_dependency_dir"]
-        )
-        self.dependency_manager = build_dependency_manager(
-            app_config_dict=app_config_dict,
-            conf_file=conf_file,
-            default_tool_dependency_dir=default_tool_dependency_dir,
-        )
-
-    def reload_dependency_manager(self):
-        self._init_dependency_manager()
-
-    def load_builtin_converters(self):
-        id = "builtin_converters"
-        section = ToolSection({"name": "Built-in Converters", "id": id})
-        self._tool_panel[id] = section
-
-        converters = self.app.datatypes_registry.datatype_converters
-        for source, targets in converters.items():
-            for target, tool in targets.items():
-                tool.name = f"{source}-to-{target}"
-                tool.description = "converter"
-                tool.hidden = False
-                section.elems.append_tool(tool)
