@@ -1,6 +1,5 @@
 import { defineStore } from "pinia";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { state } from "@/store/tagStore";
 import Vue from "vue";
 
 interface InvalidConnections {
