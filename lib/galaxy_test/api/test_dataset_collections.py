@@ -590,7 +590,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
     def _compare_collection_contents_elements(self, contents_elements, hdca_elements):
         # compare collection api results to existing hdca element contents
         fields = ["element_identifier", "element_index", "element_type", "id", "model_class"]
-        for (content_element, hdca_element) in zip(contents_elements, hdca_elements):
+        for content_element, hdca_element in zip(contents_elements, hdca_elements):
             for f in fields:
                 assert content_element[f] == hdca_element[f]
 

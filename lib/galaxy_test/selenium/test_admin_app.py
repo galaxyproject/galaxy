@@ -7,7 +7,6 @@ from .framework import (
 
 
 class TestAdminApp(SeleniumTestCase):
-
     run_as_admin = True
 
     @selenium_test

@@ -1082,7 +1082,7 @@ class ModelFilterParser(HasAModelManager):
         """
         # TODO: allow defining the default filter op in this class (and not 'eq' in base/controller.py)
         parsed = []
-        for (attr, op, val) in filter_tuple_list:
+        for attr, op, val in filter_tuple_list:
             filter_ = self.parse_filter(attr, op, val)
             parsed.append(filter_)
         return parsed

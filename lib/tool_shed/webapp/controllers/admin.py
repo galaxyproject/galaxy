@@ -21,7 +21,6 @@ log = logging.getLogger(__name__)
 
 
 class AdminController(BaseUIController, Admin):
-
     user_list_grid = admin_grids.UserGrid()
     role_list_grid = admin_grids.RoleGrid()
     group_list_grid = admin_grids.GroupGrid()

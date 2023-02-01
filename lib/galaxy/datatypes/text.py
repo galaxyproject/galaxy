@@ -443,7 +443,7 @@ class Biom1(Json):
                     return []
 
                 b_transform = {"rows": _transform_dict_list_ids, "columns": _transform_dict_list_ids}
-                for (m_name, b_name) in [
+                for m_name, b_name in [
                     ("table_rows", "rows"),
                     ("table_matrix_element_type", "matrix_element_type"),
                     ("table_format", "format"),

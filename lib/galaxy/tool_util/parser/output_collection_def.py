@@ -104,12 +104,10 @@ class DatasetCollectionDescription:
 
 
 class ToolProvidedMetadataDatasetCollection(DatasetCollectionDescription):
-
     discover_via = "tool_provided_metadata"
 
 
 class FilePatternDatasetCollectionDescription(DatasetCollectionDescription):
-
     discover_via = "pattern"
 
     def __init__(self, **kwargs):

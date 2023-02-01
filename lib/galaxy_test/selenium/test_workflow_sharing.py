@@ -7,7 +7,6 @@ from .framework import (
 
 
 class TestWorkflowSharingRedirect(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test

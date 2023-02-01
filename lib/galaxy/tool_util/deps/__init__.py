@@ -241,7 +241,6 @@ class DependencyManager:
         tool_info = ToolInfo(**tool_info_kwds)
 
         for i, resolver in enumerate(self.dependency_resolvers):
-
             if index is not None and i != index:
                 continue
 
@@ -304,7 +303,6 @@ class DependencyManager:
                     break
 
             if not isinstance(resolver, ContainerResolver):
-
                 # Check individual requirements
                 for requirement in resolvable_requirements:
                     if requirement in _requirement_to_dependency:

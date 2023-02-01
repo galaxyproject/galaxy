@@ -123,7 +123,7 @@ class EdamToolPanelView(ToolPanelView):
                 populate_section(*tuple_)
 
         section = new_panel.get_or_create_section("uncategorized", "Uncategorized")
-        for (tool_id, key, val, val_name) in uncategorized:
+        for tool_id, key, val, val_name in uncategorized:
             toolbox_registry.add_tool_to_tool_panel_view(val, section)
             new_panel.record_section_for_tool_id(tool_id, key, val_name)
         log.debug("Loading EDAM tool panel finished %s", execution_timer)

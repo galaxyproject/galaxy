@@ -6,7 +6,6 @@ from .framework import (
 
 
 class TestPages(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test

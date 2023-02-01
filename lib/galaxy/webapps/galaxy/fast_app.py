@@ -121,7 +121,6 @@ def add_galaxy_middleware(app: FastAPI, gx_app):
             max_age=600,
         )
     else:
-
         # handle CORS preflight requests - synchronize with wsgi behavior.
         @app.options("/api/{rest_of_path:path}")
         async def preflight_handler(request: Request, rest_of_path: str) -> Response:

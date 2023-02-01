@@ -6,7 +6,6 @@ from .framework import (
 
 
 class TestLibraryToCollections(SeleniumTestCase, UsesLibraryAssertions):
-
     requires_admin = True
 
     @selenium_test

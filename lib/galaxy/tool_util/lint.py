@@ -327,7 +327,7 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> Lint
         if not ("*" in lint_tool_types or tool_type in lint_tool_types):
             continue
 
-        for (name, value) in inspect.getmembers(module):
+        for name, value in inspect.getmembers(module):
             if callable(value) and name.startswith("lint_"):
                 # Look at the first argument to the linter to decide
                 # if we should lint the XML description or the abstract

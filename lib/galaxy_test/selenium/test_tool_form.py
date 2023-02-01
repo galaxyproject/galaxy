@@ -181,7 +181,6 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
 
 
 class TestLoggedInToolForm(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test
