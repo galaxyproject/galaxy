@@ -4015,7 +4015,7 @@ steps:
             # If this starts failing we may have prevented running workflows on collections with deleted members,
             # in which case we can disable this test.
             self.workflow_populator.wait_for_invocation_and_jobs(
-                workflow_id, history_id, invocation_id, assert_ok=False
+                history_id=history_id, workflow_id=workflow_id, invocation_id=invocation_id, assert_ok=False
             )
             contents = self.__history_contents(history_id)
             datasets = [content for content in contents if content["history_content_type"] == "dataset"]
