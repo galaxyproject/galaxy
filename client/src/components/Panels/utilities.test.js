@@ -38,7 +38,8 @@ describe("test helpers in tool searching utilities", () => {
         results = searchToolsByKeys(normalizeTools(toolsList), keys, q);
         expect(results).toEqual(expectedResults);
 
-        q = "filter empty datasets";
+        // whitespace precedes to ensure query.trim() works
+        q = " filter empty datasets";
         expectedResults = ["__FILTER_EMPTY_DATASETS__"];
         keys = { description: 1, name: 2, combined: 0 };
         results = searchToolsByKeys(normalizeTools(toolsList), keys, q);

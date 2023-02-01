@@ -95,7 +95,7 @@ export function searchToolsByKeys(tools, keys, query) {
             } else {
                 actualValue = tool[key] ? tool[key].toLowerCase() : "";
             }
-            const queryLowerCase = query.toLowerCase();
+            const queryLowerCase = query.trim().toLowerCase();
             if (actualValue.match(queryLowerCase)) {
                 // do we care for exact matches && is it an exact match ?
                 const order = keys.exact && actualValue === queryLowerCase ? keys.exact : keys[key];
