@@ -109,15 +109,20 @@ class Terminal extends EventEmitter {
             }
             outputVal = val.effectiveMapOver(description);
         }
+
         const effectiveMapOver = this._effectiveMapOver(outputVal);
+
         if (!this.localMapOver.equal(effectiveMapOver)) {
             this.stepStore.changeStepInputMapOver(this.stepId, this.name, effectiveMapOver);
             this.localMapOver = effectiveMapOver;
         }
+
         if (
             !this.mapOver.equal(effectiveMapOver) &&
             (effectiveMapOver.isCollection ||
-                !Object.values(this.stepStore.stepInputMapOver[this.stepId]).find((mapOver) => mapOver.isCollection))
+                !Object.values(this.stepStore.stepInputMapOver[this.stepId] ?? []).find(
+                    (mapOver) => mapOver.isCollection
+                ))
         ) {
             this.stepStore.changeStepMapOver(this.stepId, effectiveMapOver);
         }
@@ -177,8 +182,8 @@ class BaseInputTerminal extends Terminal {
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
-        if (this.stepStore.stepInputMapOver[this.stepId] && this.stepStore.stepInputMapOver[this.stepId][this.name]) {
-            this.localMapOver = this.stepStore.stepInputMapOver[this.stepId][this.name];
+        if (this.stepStore.stepInputMapOver[this.stepId] && this.stepStore.stepInputMapOver[this.stepId]?.[this.name]) {
+            this.localMapOver = this.stepStore.stepInputMapOver[this.stepId]![this.name]!;
         } else {
             this.localMapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
         }
@@ -628,6 +633,8 @@ class BaseOutputTerminal extends Terminal {
     getConnectedTerminals(): InputTerminalsAndInvalid[] {
         return this.connections.map((connection) => {
             const inputStep = this.stepStore.getStep(connection.input.stepId);
+            assertDefined(inputStep, `Invalid step. Could not find step with id ${connection.input.stepId} in store.`);
+
             const extraStepInput = this.stepStore.getStepExtraInputs(inputStep.id);
             const terminalSource = [...extraStepInput, ...inputStep.inputs].find(
                 (input) => input.name === connection.input.name
@@ -718,6 +725,8 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
         if (connection) {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
             const inputStep = this.stepStore.getStep(this.stepId);
+            assertDefined(inputStep, `Invalid step. Could not find step with id ${connection.input.stepId} in store.`);
+
             if (outputStep) {
                 const stepOutput = outputStep.outputs.find((output) => output.name == connection.output.name);
                 const stepInput = inputStep.inputs.find((input) => input.name === this.collectionTypeSource);
