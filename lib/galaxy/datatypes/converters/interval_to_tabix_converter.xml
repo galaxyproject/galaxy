@@ -1,18 +1,31 @@
-<tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.1" hidden="true" profile="16.04">
+<tool id="CONVERTER_interval_to_tabix_0" name="Convert Interval to tabix" version="1.0.2" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
+        <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
     <command><![CDATA[
-        python '$__tool_directory__/interval_to_tabix_converter.py'
-        #if $input1.ext in ['bed', 'gff', 'vcf']
-            -P $input1.ext
+        ln -s '$bgzip' input.bgz &&
+        tabix 
+        #if $input1.is_of_type('bed')
+            -p bed
+        #elif $input1.is_of_type('vcf')
+            -p vcf
+        #elif $input1.is_of_type('gff')
+            -p gff
         #else
-            -c ${input1.metadata.chromCol}
-            -s ${input1.metadata.startCol}
+            -s ${input1.metadata.chromCol}
+            -b ${input1.metadata.startCol}
             -e ${input1.metadata.endCol}
+            ## --zero-based information missing in interval datatype
         #end if
-        '$input1' '$bgzip' '$output1'
+        input.bgz
+        &&
+        if [ ! -s input.bgz.tbi ]; then
+            >&2 echo "The converted tabix index file is empty, meaning the input data is invalid.";
+            exit 1;
+        fi 
+        &&
+        tabix -l input.bgz
     ]]></command>
     <inputs>
         <!-- gff because gff and vcf are not a subclass of interval -->
@@ -23,12 +36,22 @@
         <param format="bgzip" name="bgzip" type="data" label="BGZIP file"/>
     </inputs>
     <outputs>
-        <data format="tabix" name="output1"/>
+        <data format="tabix" name="output1" from_work_dir="input.bgz.tbi"/>
     </outputs>
     <tests>
         <test>
             <param name="input1" ftype="bed" value="droPer1.bed"/>
-            <output name="output1" ftype="tabix" value="droPer1.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="133"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p bed"/>
+            </assert_command>
+            <assert_stdout>
+                <has_line line="super_1"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
@@ -37,19 +60,66 @@
                     <has_size value="110" delta="10"/>
                 </assert_contents>
             </output>
+            <assert_command>
+                <has_text text="-p" negate="true"/>
+            </assert_command>
+            <assert_stdout>
+                <has_line line="chr1"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" ftype="tabix" value="tabix_filter_by_feature_count_out2.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="120"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p gff"/>
+            </assert_command>
+            <assert_stdout>
+                <has_line line="ctgA"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
-            <output name="output1" ftype="tabix" value="2.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="247"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p" negate="true"/>
+            </assert_command>
+            <assert_stdout>
+                <has_line line="chrX"/>
+            </assert_stdout>
         </test>
         <test>
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
-            <output name="output1" ftype="tabix" value="tabix_to_maf_in.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="143"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p vcf"/>
+            </assert_command>
+            <assert_stdout>
+                <has_line line="20"/>
+            </assert_stdout>
         </test>
+        <test>
+            <param name="input1" ftype="gtf" value="cufflinks_out1.gtf"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="125"/>
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-p gff"/>
+            </assert_command>
+        </test>        
     </tests>
     <help>
     </help>

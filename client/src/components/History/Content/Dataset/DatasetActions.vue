@@ -44,7 +44,7 @@
                 </b-button>
                 <b-button
                     v-if="showVisualizations"
-                    class="px-1"
+                    class="visualize-btn px-1"
                     title="Visualize"
                     size="sm"
                     variant="link"

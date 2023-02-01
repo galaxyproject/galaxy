@@ -3485,7 +3485,11 @@ or ``select``.
         </xs:attribute>
         <xs:attribute name="accept_default" type="PermissiveBoolean">
           <xs:annotation>
-            <xs:documentation xml:lang="en"></xs:documentation>
+            <xs:documentation xml:lang="en"><![CDATA[
+Deprecated. Take the value given by ``default_value`` (or ``value``) and ``1``
+if no ``value`` is given. Applies to ``data_column`` and ``group_tag``
+parameters.
+            ]]></xs:documentation>
           </xs:annotation>
         </xs:attribute>
         <xs:attribute name="refresh_on_change" type="PermissiveBoolean">

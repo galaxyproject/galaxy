@@ -6,9 +6,9 @@ Using them effectively can make your code more reusable, decoupled, and easier t
 
 **More about Composables:**
 
-* [Composables Overview](https://vuejs.org/guide/reusability/composables.html)
-* [Composition API](https://vuejs.org/api/composition-api-setup.html)
-* [\<script setup\>](https://vuejs.org/api/sfc-script-setup.html)
+-   [Composables Overview](https://vuejs.org/guide/reusability/composables.html)
+-   [Composition API](https://vuejs.org/api/composition-api-setup.html)
+-   [\<script setup\>](https://vuejs.org/api/sfc-script-setup.html)
 
 ## Using Composables in the Composition API
 
@@ -36,8 +36,8 @@ export default {
     setup() {
         const { currentUser } = useCurrentUser();
         return { currentUser };
-    }
-}
+    },
+};
 </script>
 ```
 
@@ -79,7 +79,7 @@ import { useCurrentUser } from "composables/user";
 
 jest.mock("composables/user");
 useCurrentUser.mockReturnValue({
-    currentUser: {}
+    currentUser: {},
 });
 ```
 
@@ -95,11 +95,7 @@ Usage:
 <script setup>
 import { useFilterObjectArray } from "composables/utils/filter";
 
-const filteredArray = useFilterObjectArray(
-    someReactiveArray,
-    searchValue,
-    ["name", "description"]
-);
+const filteredArray = useFilterObjectArray(someReactiveArray, searchValue, ["name", "description"]);
 </script>
 ```
 

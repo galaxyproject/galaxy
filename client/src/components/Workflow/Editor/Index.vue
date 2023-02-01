@@ -91,6 +91,7 @@
                             <div class="unified-panel-header-inner">
                                 <WorkflowOptions
                                     :has-changes="hasChanges"
+                                    :has-invalid-connections="hasInvalidConnections"
                                     @onSave="onSave"
                                     @onSaveAs="onSaveAs"
                                     @onRun="onRun"
@@ -107,11 +108,13 @@
                             <div>
                                 <FormTool
                                     v-if="hasActiveNodeTool"
+                                    :key="activeStep.id"
                                     :step="activeStep"
                                     :datatypes="datatypes"
                                     @onChangePostJobActions="onChangePostJobActions"
                                     @onAnnotation="onAnnotation"
                                     @onLabel="onLabel"
+                                    @onUpdateStep="onUpdateStep"
                                     @onSetData="onSetData" />
                                 <FormDefault
                                     v-else-if="hasActiveNodeDefault"
@@ -121,6 +124,7 @@
                                     @onLabel="onLabel"
                                     @onEditSubworkflow="onEditSubworkflow"
                                     @onAttemptRefactor="onAttemptRefactor"
+                                    @onUpdateStep="onUpdateStep"
                                     @onSetData="onSetData" />
                                 <WorkflowAttributes
                                     v-else-if="showAttributes"
@@ -185,7 +189,7 @@ import WorkflowGraph from "./WorkflowGraph.vue";
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 
-import Vue, { onUnmounted, computed } from "vue";
+import Vue, { onUnmounted, computed, ref } from "vue";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
@@ -233,7 +237,7 @@ export default {
             required: true,
         },
     },
-    setup() {
+    setup(props, { emit }) {
         const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
         const connectionsStore = useConnectionStore();
         const stepStore = useWorkflowStepStore();
@@ -247,6 +251,13 @@ export default {
             return null;
         });
 
+        const hasChanges = ref(false);
+        const hasInvalidConnections = computed(() => Object.keys(connectionsStore.invalidConnections).length > 0);
+
+        stepStore.$subscribe((mutation, state) => {
+            hasChanges.value = true;
+        });
+
         function resetStores() {
             connectionsStore.$reset();
             stepStore.$reset();
@@ -254,9 +265,12 @@ export default {
         }
         onUnmounted(() => {
             resetStores();
+            emit("update:confirmation", false);
         });
         return {
             connectionsStore,
+            hasChanges,
+            hasInvalidConnections,
             stepStore,
             steps,
             nodeIndex: getStepIndex,
@@ -276,7 +290,6 @@ export default {
             markdownText: null,
             versions: [],
             parameters: null,
-            hasChanges: false,
             report: {},
             labels: {},
             license: null,
@@ -333,9 +346,6 @@ export default {
                 this.hasChanges = true;
             }
         },
-        steps(newSteps, oldSteps) {
-            this.hasChanges = true;
-        },
         hasChanges() {
             this.$emit("update:confirmation", this.hasChanges);
         },
@@ -348,7 +358,6 @@ export default {
     methods: {
         onUpdateStep(step) {
             this.stepStore.updateStep(step);
-            this.hasChanges = true;
         },
         onUpdateStepPosition(stepId, position) {
             const step = { ...this.steps[stepId], position };
@@ -400,6 +409,7 @@ export default {
             hide_modal(); // hide other modals created in utilities also...
         },
         async onRefactor(response) {
+            this.resetStores();
             await fromSimple(response.workflow);
             this._loadEditorData(response.workflow);
         },
@@ -637,6 +647,7 @@ export default {
                 name: name,
                 content_id: contentId,
                 type: type,
+                outputs: [],
                 position: defaultPosition(this.graphOffset, this.transform),
                 post_job_actions: {},
             };

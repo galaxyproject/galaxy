@@ -163,12 +163,12 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
         # of its steps to be eagerly loaded.
         return (
             trans.sa_session.query(self.model_class)
-            .join("user")
+            .join(self.model_class.user)
             .options(
-                lazyload("latest_workflow"),
-                joinedload("user").load_only("username"),
-                joinedload("annotations"),
-                undefer("average_rating"),
+                lazyload(self.model_class.latest_workflow),
+                joinedload(self.model_class.user).load_only(model.User.username),
+                joinedload(self.model_class.annotations),
+                undefer(self.model_class.average_rating),
             )
         )
 
@@ -487,7 +487,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             trans.sa_session.query(model.StoredWorkflow)
             .filter_by(user=trans.user, deleted=False, hidden=False)
             .order_by(desc(model.StoredWorkflow.table.c.update_time))
-            .options(joinedload("latest_workflow").joinedload("steps"))
+            .options(joinedload(model.StoredWorkflow.latest_workflow).joinedload(model.Workflow.steps))
             .all()
         )
         if version is None:
@@ -706,14 +706,11 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             )
             # Index page with message
             workflow_id = trans.security.encode_id(stored_workflow.id)
+            edit_url = url_for(f"/workflows/edit?id={workflow_id}")
+            run_url = url_for(f"/workflows/run?id={workflow_id}")
             return trans.show_message(
-                'Workflow "%s" created from current history. '
-                'You can <a href="%s" target="_parent">edit</a> or <a href="%s" target="_parent">run</a> the workflow.'
-                % (
-                    escape(workflow_name),
-                    url_for(controller="workflow", action="editor", id=workflow_id),
-                    url_for(controller="workflows", action="run", id=workflow_id),
-                )
+                f'Workflow "{escape(workflow_name)}" created from current history. '
+                f'You can <a href="{edit_url}" target="_parent">edit</a> or <a href="{run_url}" target="_parent">run</a> the workflow.'
             )
 
     def get_item(self, trans, id):

@@ -4,7 +4,10 @@ from typing import (
     List,
 )
 from unittest import SkipTest
-from urllib.parse import urlparse
+from urllib.parse import (
+    urljoin,
+    urlparse,
+)
 
 import requests
 
@@ -31,18 +34,18 @@ class TestDrsApi(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_service_info(self):
-        api_url = f"{self.url}ga4gh/drs/v1/service-info"
+        api_url = self._url_join("ga4gh/drs/v1/service-info")
         info_response = requests.get(api_url)
         info_response.raise_for_status()
 
-    def test_404_on_private_datsets(self):
+    def test_404_on_private_datasets(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
         dataset_id = hda["id"]
         drs_id = hda["drs_id"]
         self.dataset_populator.make_private(history_id=history_id, dataset_id=dataset_id)
         for method in HTTP_METHODS:
-            api_url = f"{self.url}ga4gh/drs/v1/objects/{drs_id}"
+            api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}")
             show_response = method(api_url)
             assert show_response.status_code == 403
 
@@ -52,7 +55,7 @@ class TestDrsApi(ApiTestCase):
         drs_id = hda["drs_id"]
         for method in HTTP_METHODS:
             for _ in range(10):
-                api_url = f"{self.url}ga4gh/drs/v1/objects/{drs_id}"
+                api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}")
                 show_response = method(api_url)
                 show_response.raise_for_status()
                 if show_response.status_code != 202:
@@ -102,10 +105,13 @@ class TestDrsApi(ApiTestCase):
         drs_id = hda["drs_id"]
 
         for method in HTTP_METHODS:
-            api_url = f"{self.url}ga4gh/drs/v1/objects/{drs_id}/access/fakeid"
+            api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}/access/fakeid")
             error_response = method(api_url)
             assert type(error_response.status_code) == int
             assert error_response.status_code == 404
             error_as_dict = error_response.json()
             assert "status_code" in error_as_dict
             assert "msg" in error_as_dict
+
+    def _url_join(self, suffix):
+        return urljoin(self.url, suffix)

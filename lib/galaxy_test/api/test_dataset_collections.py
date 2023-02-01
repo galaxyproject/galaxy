@@ -4,6 +4,7 @@ from typing import List
 
 from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_object_id_error
+from galaxy_test.base.decorators import requires_new_user
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -181,6 +182,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
             namelist = archive.namelist()
             assert len(namelist) == 3, f"Expected 3 elements in [{namelist}]"
 
+    @requires_new_user
     def test_hda_security(self):
         with self.dataset_populator.test_history(require_new=False) as history_id:
             element_identifiers = self.dataset_collection_populator.pair_identifiers(history_id)
@@ -374,6 +376,7 @@ class TestDatasetCollectionsApi(ApiTestCase):
     def _download_dataset_collection(self, history_id: str, hdca_id: str):
         return self._get(f"histories/{history_id}/contents/dataset_collections/{hdca_id}/download")
 
+    @requires_new_user
     def test_collection_contents_security(self, history_id):
         # request contents on an hdca that doesn't belong to user
         hdca, contents_url = self._create_collection_contents_pair(history_id)

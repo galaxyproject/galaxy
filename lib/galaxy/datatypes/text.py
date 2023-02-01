@@ -12,13 +12,17 @@ from typing import (
     IO,
     Optional,
     Tuple,
-    TYPE_CHECKING,
 )
 
 import yaml
 
+from galaxy.datatypes._protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasCreatingJob,
+    HasExtraFilesAndMetadata,
+)
 from galaxy.datatypes.data import (
-    GeneratePrimaryFileDataset,
     get_file_peek,
     Headers,
     Text,
@@ -39,12 +43,6 @@ from galaxy.util import (
     unicodify,
 )
 
-if TYPE_CHECKING:
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
-
 log = logging.getLogger(__name__)
 
 
@@ -55,7 +53,7 @@ class Html(Text):
     edam_format = "format_2331"
     file_ext = "html"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "HTML file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -91,7 +89,7 @@ class Json(Text):
     edam_format = "format_3464"
     file_ext = "json"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "JavaScript Object Notation (JSON)"
@@ -128,7 +126,7 @@ class Json(Text):
                 return start.startswith("[") or start.startswith("{")
             return False
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -143,7 +141,7 @@ class ExpressionJson(Json):
         name="json_type", default=None, desc="JavaScript or JSON type of expression", readonly=True, visible=True
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """ """
         if dataset.has_data():
             json_type = "null"
@@ -170,7 +168,7 @@ class ExpressionJson(Json):
 class Ipynb(Json):
     file_ext = "ipynb"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Jupyter Notebook"
@@ -197,7 +195,7 @@ class Ipynb(Json):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -218,7 +216,7 @@ class Ipynb(Json):
     def _display_data_trusted(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -253,7 +251,7 @@ class Ipynb(Json):
                 )
             return open(ofilename, mode="rb"), headers
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of models in dataset.
         """
@@ -389,7 +387,7 @@ class Biom1(Json):
         no_value=[],
     )
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "Biological Observation Matrix v1"
@@ -426,7 +424,7 @@ class Biom1(Json):
             pass
         return is_biom
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Store metadata information from the BIOM file.
         """
@@ -488,7 +486,7 @@ class ImgtJson(Json):
 
     MetadataElement(name="taxon_names", default=[], desc="taxonID: names", readonly=True, visible=True, no_value=[])
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "IMGT Library"
@@ -527,7 +525,7 @@ class ImgtJson(Json):
             pass
         return is_imgt
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Store metadata information from the imgt file.
         """
@@ -554,7 +552,7 @@ class GeoJson(Json):
 
     file_ext = "geojson"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         super().set_peek(dataset)
         if not dataset.dataset.purged:
             dataset.blurb = "GeoJSON"
@@ -615,7 +613,7 @@ class Obo(Text):
     edam_format = "format_2549"
     file_ext = "obo"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Open Biomedical Ontology (OBO)"
@@ -657,7 +655,7 @@ class Arff(Text):
     )
     MetadataElement(name="columns", default=0, desc="Number of columns", readonly=True, visible=True, no_value=0)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "Attribute-Relation File Format (ARFF)"
@@ -693,7 +691,7 @@ class Arff(Text):
                     return True
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Trying to count the comment lines and the number of columns included.
         A typical ARFF data block looks like this:
@@ -778,7 +776,7 @@ class SnpEffDb(Text):
             pass
         return snpeff_version
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         data_dir = dataset.extra_files_path
         # search data_dir/genome_version for files
@@ -864,14 +862,14 @@ class SnpSiftDbNSFP(Text):
             "%s.gz.tbi", description="Tabix Index File", substitute_name_with_metadata="reference_name", is_binary=True
         )
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
         """
         return "<html><head><title>SnpSiftDbNSFP Composite Dataset</title></head></html>"
 
-    def regenerate_primary_file(self, dataset: "DatasetInstance") -> None:
+    def regenerate_primary_file(self, dataset: DatasetProtocol) -> None:
         """
         cannot do this until we are setting metadata
         """
@@ -883,7 +881,7 @@ class SnpSiftDbNSFP(Text):
                 f.write("\n")
             f.write(annotations)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         try:
             efp = dataset.extra_files_path
             if os.path.exists(efp):
@@ -909,7 +907,7 @@ class SnpSiftDbNSFP(Text):
                 unicodify(e),
             )
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"{dataset.metadata.reference_name} :  {','.join(dataset.metadata.annotation)}"
             dataset.blurb = f"{dataset.metadata.reference_name}"
@@ -1094,7 +1092,7 @@ class Yaml(Text):
         """Returns the mime type of the datatype"""
         return "application/yaml"
 
-    def _yield_user_file_content(self, trans, from_dataset: "DatasetInstance", filename: str, headers: Headers) -> IO:
+    def _yield_user_file_content(self, trans, from_dataset: HasCreatingJob, filename: str, headers: Headers) -> IO:
         # Override non-standard application/yaml mediatype with
         # text/plain, so preview is shown in preview iframe,
         # instead of downloading the file.
@@ -1152,7 +1150,7 @@ class BCSLts(Json):
             is_bcsl_ts = self._looks_like_bcsl_ts(file_prefix)
         return is_bcsl_ts
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             lines = "States: {}\nTransitions: {}\nUnique agents: {}\nInitial state: {}"
             ts = json.load(open(dataset.file_name))
@@ -1186,7 +1184,7 @@ class StormSample(Text):
         keywords = ["Storm-pars", "Result (initial states)"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Storm-pars sample results."
             dataset.blurb = nice_size(dataset.get_size())
@@ -1211,7 +1209,7 @@ class StormCheck(Text):
         keywords = ["Storm ", "Result (for initial states)"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             with open(dataset.file_name) as result:
                 answer = ""
@@ -1239,7 +1237,7 @@ class CTLresult(Text):
         keywords = ["Result:", "Number of satisfying states:"]
         return all(keyword in file_prefix.contents_header for keyword in keywords)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             with open(dataset.file_name) as result:
                 answer = ""

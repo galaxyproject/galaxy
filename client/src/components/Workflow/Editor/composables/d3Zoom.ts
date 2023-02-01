@@ -1,6 +1,6 @@
 import { zoom, zoomIdentity, type D3ZoomEvent } from "d3-zoom";
 import { ref, watch } from "vue";
-import { pointer, select } from "d3-selection";
+import { select } from "d3-selection";
 import type { Ref } from "vue";
 import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import type { UseScrollReturn } from "@vueuse/core";
@@ -12,7 +12,7 @@ const filter = (event: any) => {
     return !preventZoom;
 };
 
-export function useZoom(
+export function useD3Zoom(
     k: number,
     minZoom: number,
     maxZoom: number,
@@ -29,20 +29,6 @@ export function useZoom(
                 .translate(transform.value.x, transform.value.y)
                 .scale(transform.value.k);
             d3Zoom.transform(d3Selection, updatedTransform);
-
-            d3Selection
-                .on("wheel", (event) => {
-                    const currentZoom = d3Selection.property("__zoom").k || 1;
-
-                    const pinchDelta =
-                        -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002) * 10;
-                    const point = pointer(event);
-                    point[0] += scroll.x.value;
-                    point[1] += scroll.y.value;
-                    const zoom = currentZoom * 2 ** pinchDelta;
-                    d3Zoom.scaleTo(d3Selection, zoom, point);
-                })
-                .on("wheel.zoom", null);
         }
 
         d3Zoom.on("zoom", (event: D3ZoomEvent<HTMLElement, unknown>) => {

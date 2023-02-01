@@ -8,7 +8,7 @@ import Utils from "utils/utils";
 import Repeat from "./repeat";
 import { visitInputs } from "components/Form/utilities";
 import FormDisplay from "components/Form/FormDisplay";
-import { appendVueComponent } from "utils/mountVueComponent";
+import { replaceChildrenWithComponent } from "utils/mountVueComponent";
 
 var GroupView = Backbone.View.extend({
     initialize: function (app, options) {
@@ -75,7 +75,7 @@ var GroupView = Backbone.View.extend({
                             params[name] = input.value;
                         });
                         self.redraw(params);
-                        const instance = appendVueComponent(self.$el, FormDisplay, {
+                        const instance = replaceChildrenWithComponent(self.el, FormDisplay, {
                             inputs: inputs,
                         });
                         instance.$on("onChange", (data) => {

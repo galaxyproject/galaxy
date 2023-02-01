@@ -11,8 +11,8 @@
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
-            <loading-span v-if="isLoading" message="Loading details" />
             <b-button-group class="float-right">
+                <loading-span v-if="isLoading" spinner-only />
                 <b-button
                     v-if="canClone"
                     v-b-tooltip.hover
@@ -57,6 +57,9 @@
                 </b-popover>
             </b-button-group>
             <i :class="iconClass" />
+            <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
+                <font-awesome-icon icon="fa-code-branch" />
+            </span>
             <span
                 v-b-tooltip.hover
                 title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
@@ -69,8 +72,8 @@
         </b-alert>
         <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <node-input
-                v-for="input in inputs"
-                :key="input.name"
+                v-for="(input, index) in inputs"
+                :key="`${index}-${input.name}`"
                 :input="input"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
@@ -82,8 +85,8 @@
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
-                v-for="output in outputs"
-                :key="output.name"
+                v-for="(output, index) in outputs"
+                :key="`${index + inputs.length}-${output.name}`"
                 :output="output"
                 :workflow-outputs="workflowOutputs"
                 :post-job-actions="postJobActions"
@@ -118,8 +121,16 @@ import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorS
 import type { Step } from "@/stores/workflowStepStore";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
 
 Vue.use(BootstrapVue);
+
+// @ts-ignore
+library.add(faCodeBranch);
 
 const props = defineProps({
     id: { type: Number, required: true },
@@ -161,7 +172,9 @@ function remove() {
 const el: Ref<HTMLElement | null> = ref(null);
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
+const connectionStore = useConnectionStore();
 const stateStore = useWorkflowStateStore();
+const stepStore = useWorkflowStepStore();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(el, props.id, stateStore);
 const title = computed(() => props.step.label || props.step.name);
@@ -184,8 +197,43 @@ const style = computed(() => {
     return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
 });
 const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
-const inputs = computed(() => props.step.inputs);
-const outputs = computed(() => props.step.outputs);
+const inputs = computed(() => {
+    const connections = connectionStore.getConnectionsForStep(props.id);
+    const extraStepInputs = stepStore.getStepExtraInputs(props.id);
+    const stepInputs = [...extraStepInputs, ...(props.step.inputs || [])];
+    const unknownInputs: string[] = [];
+    connections.forEach((connection) => {
+        if (connection.input.stepId == props.id && !stepInputs.find((input) => input.name === connection.input.name)) {
+            unknownInputs.push(connection.input.name);
+        }
+    });
+    const invalidInputNames = [...new Set(unknownInputs)];
+    const invalidInputTerminalSource = invalidInputNames.map((name) => {
+        return { name, optional: false, extensions: [], valid: false, input_type: "dataset" };
+    });
+    return [...stepInputs, ...invalidInputTerminalSource];
+});
+const invalidOutputs = computed(() => {
+    const connections = connectionStore.getConnectionsForStep(props.id);
+    const invalidConnections = connections.filter(
+        (connection) =>
+            connection.output.stepId == props.id &&
+            !props.step.outputs.find((output) => output.name === connection.output.name)
+    );
+    const invalidOutputNames = [...new Set(invalidConnections.map((connection) => connection.output.name))];
+    return invalidOutputNames.map((name) => {
+        return { name, optional: false, datatypes: [], valid: false };
+    });
+});
+const outputs = computed(() => {
+    let stepOutputs = props.step.outputs;
+    if (props.step.when) {
+        stepOutputs = stepOutputs.map((output) => {
+            return { ...output, optional: true };
+        });
+    }
+    return [...stepOutputs, ...invalidOutputs.value];
+});
 
 function onMoveTo(position: XYPosition) {
     emit("onUpdateStepPosition", props.id, {

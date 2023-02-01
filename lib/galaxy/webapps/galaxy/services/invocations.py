@@ -24,11 +24,13 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.model import WorkflowInvocation
 from galaxy.model.store import (
     BcoExportOptions,
     get_export_store_factory,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.invocation import InvocationMessageResponseModel
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -190,7 +192,7 @@ class InvocationsService(ServiceBase):
 
     def serialize_workflow_invocation(
         self,
-        invocation,
+        invocation: WorkflowInvocation,
         params: InvocationSerializationParams,
         default_view: InvocationSerializationView = InvocationSerializationView.element,
     ):
@@ -198,7 +200,11 @@ class InvocationsService(ServiceBase):
         step_details = params.step_details
         legacy_job_state = params.legacy_job_state
         as_dict = invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state)
-        return self.security.encode_all_ids(as_dict, recursive=True)
+        as_dict = self.security.encode_all_ids(as_dict, recursive=True)
+        as_dict["messages"] = [
+            InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
+        ]
+        return as_dict
 
     def serialize_workflow_invocations(
         self,

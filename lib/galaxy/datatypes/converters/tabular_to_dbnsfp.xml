@@ -1,9 +1,13 @@
-<tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.1" profile="16.04">
+<tool id="tabular_to_dbnsfp" name="Convert tabular to dbnsfp" version="1.0.2" profile="16.04">
     <description></description>
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
+        <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
-    <command>python '$__tool_directory__/tabular_to_dbnsfp.py' '$input' '$dbnsfp.extra_files_path/dbNSFP.gz'</command>
+    <command><![CDATA[
+        mkdir -p '$dbnsfp.extra_files_path' &&
+        bgzip -c '$input' > '$dbnsfp.extra_files_path/dbNSFP.gz' &&
+        tabix -s 1 -b 2 -e 2 '$dbnsfp.extra_files_path/dbNSFP.gz'
+    ]]></command>
     <inputs>
         <param format="tabular" name="input" type="data" label="Choose a dbnsfp tabular file"/>
     </inputs>

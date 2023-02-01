@@ -26,6 +26,10 @@ const dragStyle = computed(() => {
     }
     return dragStyle;
 });
+
+const dragIsOptional = computed(() => {
+    return props.draggingTerminal?.optional;
+});
 </script>
 <template>
     <div>
@@ -35,7 +39,8 @@ const dragStyle = computed(() => {
                 v-if="draggingTerminal && draggingConnection"
                 :position="draggingConnection"
                 :input-is-mapped-over="false"
-                :output-is-mapped-over="draggingTerminal.mapOver.isCollection"></raw-connector>
+                :output-is-mapped-over="draggingTerminal.mapOver.isCollection"
+                :nullable="dragIsOptional"></raw-connector>
             <terminal-connector
                 v-for="connection in connections"
                 :key="connection.id"

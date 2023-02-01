@@ -12,18 +12,26 @@
                     title="Download PDF" />
             </span>
         </div>
-        <div v-else>
+        <div v-else-if="!invocationSchedulingTerminal">
             <b-alert variant="info" show>
                 <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
             </b-alert>
             <span
-                v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
                 class="fa fa-times cancel-workflow-scheduling"
                 title="Cancel scheduling of workflow invocation"
                 @click="onCancel"></span>
         </div>
         <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
+        <template v-if="invocation.messages?.length">
+            <invocation-message
+                v-for="message in invocation.messages"
+                :key="message.reason"
+                class="steps-progress my-1"
+                :invocation-message="message"
+                :invocation="invocation">
+            </invocation-message>
+        </template>
         <progress-bar
             v-else-if="invocationState == 'cancelled'"
             note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
@@ -57,6 +65,7 @@ import { getRootFromIndexLink } from "onload";
 import mixin from "components/JobStates/mixin";
 import ProgressBar from "components/ProgressBar";
 import LoadingSpan from "components/LoadingSpan";
+import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 import { mapGetters } from "vuex";
 
@@ -64,6 +73,7 @@ const getUrl = (path) => getRootFromIndexLink() + path;
 
 export default {
     components: {
+        InvocationMessage,
         ProgressBar,
         LoadingSpan,
     },

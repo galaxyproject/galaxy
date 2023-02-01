@@ -218,7 +218,6 @@ export default {
         },
         immediateUpload: function (files) {
             this.$refs.regular?.addFiles(files);
-            this.$refs.regular?._eventStart();
         },
     },
 };

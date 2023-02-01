@@ -7,6 +7,7 @@ import logging
 import re
 
 from fastapi import (
+    Body,
     Path,
     Response,
     status,
@@ -35,6 +36,7 @@ from galaxy.model import (
 )
 from galaxy.schema import APIKeyModel
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.schema import UserBeaconSetting
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_password,
@@ -137,6 +139,44 @@ class FastAPIHistories:
     ):
         self.service.delete_api_key(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/users/{user_id}/beacon",
+        summary="Returns information about beacon share settings",
+    )
+    def get_beacon(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+    ) -> UserBeaconSetting:
+        """
+        **Warning**: This endpoint is experimental and might change or disappear in future versions.
+        """
+        user = self.service._get_user(trans, user_id)
+
+        enabled = user.preferences["beacon_enabled"] if "beacon_enabled" in user.preferences else False
+
+        return UserBeaconSetting(enabled=enabled)
+
+    @router.post(
+        "/api/users/{user_id}/beacon",
+        summary="Changes beacon setting",
+    )
+    def set_beacon(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParam,
+        payload: UserBeaconSetting = Body(...),
+    ) -> UserBeaconSetting:
+        """
+        **Warning**: This endpoint is experimental and might change or disappear in future versions.
+        """
+        user = self.service._get_user(trans, user_id)
+
+        user.preferences["beacon_enabled"] = payload.enabled
+        trans.sa_session.flush()
+
+        return payload
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):

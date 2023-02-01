@@ -5077,3 +5077,13 @@
 
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_beacon_integration``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables user preferences and api endpoint for the beacon integration.
+:Default: ``false``
+:Type: bool
+
+

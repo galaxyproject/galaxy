@@ -208,7 +208,7 @@ class SharedHistoryListGrid(grids.Grid):
     ]
 
     def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class).join("users_shared_with")
+        return trans.sa_session.query(self.model_class).join(self.model_class.users_shared_with)
 
     def apply_query_filter(self, trans, query, **kwargs):
         return query.filter(model.HistoryUserShareAssociation.user == trans.user)

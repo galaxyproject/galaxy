@@ -38,9 +38,12 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
+from galaxy.datatypes._protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -53,12 +56,6 @@ from .data import (
 )
 from .xml import GenericXml
 
-if TYPE_CHECKING:
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
-
 log = logging.getLogger(__name__)
 
 
@@ -70,7 +67,7 @@ class BlastXml(GenericXml):
     edam_format = "format_3331"
     edam_data = "data_0857"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
@@ -195,7 +192,7 @@ class BlastXml(GenericXml):
 class _BlastDb(Data):
     """Base class for BLAST database datatype."""
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "BLAST database (multiple files)"
@@ -204,7 +201,7 @@ class _BlastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -214,7 +211,7 @@ class _BlastDb(Data):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -372,7 +369,7 @@ class LastDb(Data):
     file_ext = "lastdb"
     composite_type = "basic"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text."""
         if not dataset.dataset.purged:
             dataset.peek = "LAST database (multiple files)"
@@ -381,7 +378,7 @@ class LastDb(Data):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

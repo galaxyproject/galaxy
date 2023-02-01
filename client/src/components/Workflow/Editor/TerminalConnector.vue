@@ -4,14 +4,16 @@
         :id="connectionId"
         :position="position"
         :output-is-mapped-over="outputIsMappedOver"
-        :input-is-mapped-over="inputIsMappedOver"></raw-connector>
+        :input-is-mapped-over="inputIsMappedOver"
+        :connection-is-valid="connectionIsValid"
+        :nullable="outputIsOptional"></raw-connector>
 </template>
 
 <script lang="ts" setup>
 import RawConnector from "@/components/Workflow/Editor/Connector.vue";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import type { Connection } from "@/stores/workflowConnectionStore";
+import { useConnectionStore, type Connection } from "@/stores/workflowConnectionStore";
 import { computed } from "vue";
 
 const props = defineProps<{
@@ -19,8 +21,27 @@ const props = defineProps<{
 }>();
 
 const stepStore = useWorkflowStepStore();
+const connectionStore = useConnectionStore();
 const outputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.output.stepId]?.isCollection);
-const inputIsMappedOver = computed(() => stepStore.stepMapOver[props.connection.input.stepId]?.isCollection);
+const inputIsMappedOver = computed(
+    () =>
+        stepStore.stepInputMapOver[props.connection.input.stepId] &&
+        stepStore.stepInputMapOver[props.connection.input.stepId][props.connection.input.name]?.isCollection
+);
+const outputIsOptional = computed(() => {
+    return Boolean(
+        stepStore.getStep(props.connection.output.stepId)?.when ||
+            stepStore
+                .getStep(props.connection.output.stepId)
+                ?.outputs.find((output) => output.name === props.connection.output.name && output.optional)
+    );
+});
+
+// move into connection store ?
+// move all of terminal logic into connection store ?
+const connectionIsValid = computed(() => {
+    return !connectionStore.invalidConnections[props.connection.id];
+});
 
 const stateStore = useWorkflowStateStore();
 const connectionId = computed(() => {

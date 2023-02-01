@@ -24,20 +24,20 @@ class MulledJobTestCases:
 
     def test_explicit(self, history_id: str) -> None:
         self.dataset_populator.run_tool("mulled_example_explicit", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        output = self.dataset_populator.get_history_dataset_content(history_id, timeout=EXTENDED_TIMEOUT)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+        output = self.dataset_populator.get_history_dataset_content(history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_simple(self, history_id: str) -> None:
         self.dataset_populator.run_tool("mulled_example_simple", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        output = self.dataset_populator.get_history_dataset_content(history_id, timeout=EXTENDED_TIMEOUT)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+        output = self.dataset_populator.get_history_dataset_content(history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_explicit_invalid_case(self, history_id: str) -> None:
         self.dataset_populator.run_tool("mulled_example_invalid_case", {}, history_id)
-        self.dataset_populator.wait_for_history(history_id, assert_ok=True)
-        output = self.dataset_populator.get_history_dataset_content(history_id, timeout=EXTENDED_TIMEOUT)
+        self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
+        output = self.dataset_populator.get_history_dataset_content(history_id)
         assert "0.7.15-r1140" in output
 
 

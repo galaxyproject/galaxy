@@ -1,5 +1,5 @@
 <template>
-    <div class="ui-thumbnails">
+    <div>
         <h1 class="h-lg">Galaxy Tours</h1>
         <p>
             This page presents a list of interactive tours available on this Galaxy server. Select any tour to get

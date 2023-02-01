@@ -994,3 +994,60 @@ bed_input:
   file_type: bed
   type: File
 """
+
+
+NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE = """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files: collection
+steps:
+  create_list_of_boolean:
+    tool_id: param_value_from_file
+    in:
+       input1: boolean_input_files
+    state:
+      param_type: boolean
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        boolean_input_file: data
+        should_run: boolean
+      steps:
+        create_more_inputs:
+          tool_id: collection_creates_dynamic_nested
+        consume_expression_parameter:
+          tool_id: cat1
+          state:
+            input1:
+              $link: create_more_inputs/list_output
+            queries:
+              - input2:
+                $link: boolean_input_file
+          out:
+            out_file1:
+              change_datatype: txt
+        consume_expression_parameter_2:
+          tool_id: cat1
+          state:
+            input1:
+              $link: consume_expression_parameter/out_file1
+      outputs:
+        inner_create_nested:
+          outputSource: create_more_inputs/list_output
+        inner_output_1:
+          outputSource: consume_expression_parameter/out_file1
+        inner_output_2:
+          outputSource: consume_expression_parameter_2/out_file1
+    in:
+      boolean_input_file: boolean_input_files
+      should_run: create_list_of_boolean/boolean_param
+    when: $(inputs.should_run)
+outputs:
+  outer_create_nested:
+    outputSource: subworkflow/inner_create_nested
+  outer_output_1:
+    outputSource: subworkflow/inner_output_1
+  outer_output_2:
+    outputSource: subworkflow/inner_output_2
+"""

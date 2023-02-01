@@ -6,15 +6,14 @@ tags:
   - "UI"
   - "visualization"
 
+requirements:
+  - new_history
+
 steps:
     - content: "This short tour will walk you through <b>Galaxy's Window Manager</b> feature"
 
-    - element: "#current-history-panel .create-hist-btn"
-      intro: "Before using the Window Manager, we will create a new history for this tour."
-      postclick: true
-
     - element: "#tool-panel-upload-button"
-      intro: "Now, we will upload some tabular data into our new history."
+      intro: "First, we will upload some tabular data into our new history."
       postclick: true
 
     - element: "#btn-new"
@@ -78,7 +77,7 @@ steps:
 
     - element: "#right"
       intro: "This is your history. It contains our two tables being uploaded."
-    
+
     - component: history_panel.item(hid=1,state=ok).display_button
       intro: "Clicking the eye-icon usually displays a dataset in the center panel."
       postclick: true

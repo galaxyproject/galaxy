@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import (
     Any,
@@ -168,6 +169,15 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
 
 
 def _hda_to_object(hda):
+    if hda.extension == "expression.json":
+        # We may have a null data value
+        with open(str(hda)) as inp:
+            try:
+                rval = json.loads(inp.read(5))
+                if rval is None:
+                    return rval
+            except Exception:
+                pass
     hda_dict = hda.to_dict()
     metadata_dict = {}
 

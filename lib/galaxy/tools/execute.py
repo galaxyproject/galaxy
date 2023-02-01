@@ -90,7 +90,7 @@ def execute(
         )
     execution_cache = ToolExecutionCache(trans)
 
-    def execute_single_job(execution_slice, completed_job):
+    def execute_single_job(execution_slice, completed_job, skip=False):
         job_timer = tool.app.execution_timer_factory.get_timer(
             "internals.galaxy.tools.execute.job_single", SINGLE_EXECUTION_SUCCESS_MESSAGE
         )
@@ -121,6 +121,7 @@ def execute(
             collection_info,
             job_callback=job_callback,
             flush_job=False,
+            skip=skip,
         )
         if job:
             log.debug(job_timer.to_str(tool_id=tool.id, job_id=job.id))
@@ -161,7 +162,8 @@ def execute(
             has_remaining_jobs = True
             break
         else:
-            execute_single_job(execution_slice, completed_jobs[i])
+            skip = execution_slice.param_combination.pop("__when_value__", None) is False
+            execute_single_job(execution_slice, completed_jobs[i], skip=skip)
             history = execution_slice.history or history
             jobs_executed += 1
 
@@ -526,7 +528,7 @@ class ToolExecutionTracker(ExecutionTracker):
             self.outputs_by_output_name[job_output.name].append(job_output.dataset_collection)
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(
+        for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
             zip(self.param_combinations, self.walk_implicit_collections())
         ):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]
@@ -550,7 +552,7 @@ class WorkflowStepExecutionTracker(ExecutionTracker):
             self.invocation_step.job = job
 
     def new_collection_execution_slices(self):
-        for job_index, (param_combination, dataset_collection_elements) in enumerate(
+        for job_index, (param_combination, (dataset_collection_elements, _when_value)) in enumerate(
             zip(self.param_combinations, self.walk_implicit_collections())
         ):
             completed_job = self.completed_jobs and self.completed_jobs[job_index]

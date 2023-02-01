@@ -1,6 +1,6 @@
 import { setActivePinia, createPinia } from "pinia";
 
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStepStore, type TerminalSource } from "@/stores/workflowStepStore";
 import {
     terminalFactory,
     InputCollectionTerminal,
@@ -10,11 +10,16 @@ import {
     OutputTerminal,
     OutputParameterTerminal,
     producesAcceptableDatatype,
+    InvalidOutputTerminal,
 } from "./terminals";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import type { DataOutput, Steps, Step } from "@/stores/workflowStepStore";
-import { NULL_COLLECTION_TYPE_DESCRIPTION } from "./collectionTypeDescription";
+import {
+    ANY_COLLECTION_TYPE_DESCRIPTION,
+    CollectionTypeDescription,
+    NULL_COLLECTION_TYPE_DESCRIPTION,
+} from "./collectionTypeDescription";
 import { simpleSteps, advancedSteps } from "../test_fixtures";
 
 function setupAdvanced() {
@@ -32,6 +37,17 @@ function setupAdvanced() {
         }
     });
     return terminals;
+}
+
+function rebuildTerminal<T extends ReturnType<typeof terminalFactory>>(terminal: T): T {
+    let terminalSource: TerminalSource;
+    const step = terminal.stepStore.getStep(terminal.stepId);
+    if (terminal.terminalType === "input") {
+        terminalSource = step.inputs.find((input) => input.name == terminal.name)!;
+    } else {
+        terminalSource = step.outputs.find((output) => output.name == terminal.name)!;
+    }
+    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper) as T;
 }
 
 describe("terminalFactory", () => {
@@ -63,6 +79,8 @@ describe("terminalFactory", () => {
         expect(terminals["any collection"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
         expect(terminals["multi data"]?.["advanced|advanced_threshold"]).toBeInstanceOf(InputParameterTerminal);
         expect(terminals["list collection input"]?.["input1"]).toBeInstanceOf(InputCollectionTerminal);
+        expect(terminals["filter_failed"]?.["input"]).toBeInstanceOf(InputCollectionTerminal);
+        expect(terminals["filter_failed"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
     });
     it("throws error on invalid terminalSource", () => {
         const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper);
@@ -101,6 +119,9 @@ describe("canAccept", () => {
         dataIn.connect(collectionOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(dataIn.canAccept(collectionOut).reason).toBe(
+            "Input already filled with another connection, delete it before connecting another output."
+        );
         dataIn.disconnect(collectionOut);
         expect(dataIn.canAccept(collectionOut).canAccept).toBe(true);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
@@ -142,7 +163,7 @@ describe("canAccept", () => {
         const dataOut = terminals["simple data"]!["out_file1"] as OutputTerminal;
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
         expect(dataIn.canAccept(dataOut).canAccept).toBe(false);
-        expect(dataIn.canAccept(dataOut).reason).toBe("Cannot connection output to input of same step.");
+        expect(dataIn.canAccept(dataOut).reason).toBe("Cannot connect output to input of same step.");
     });
     it("rejects paired input on multi-data input", () => {
         const multiDataIn = terminals["multi data"]!["f1"] as InputTerminal;
@@ -204,6 +225,8 @@ describe("canAccept", () => {
         const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;
         const integerOutputParam = terminals["integer parameter input"]!["output"] as OutputParameterTerminal;
         expect(integerInputParam.canAccept(integerOutputParam).canAccept).toBe(true);
+        // regression test for https://github.com/galaxyproject/galaxy/issues/15417
+        expect(integerInputParam.canAccept(integerOutputParam).reason).toBe(null);
     });
     it("rejects text to integer parameter connection", () => {
         const integerInputParam = terminals["multi data"]!["advanced|advanced_threshold"] as InputParameterTerminal;
@@ -251,7 +274,7 @@ describe("canAccept", () => {
             "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
         );
     });
-    it("rejects attaching non-collection outputs to mapper over inputs", () => {
+    it("rejects attaching non-collection outputs to mapped-over inputs", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
         const simpleDataOut = terminals["data input"]!["output"] as OutputTerminal;
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
@@ -260,22 +283,31 @@ describe("canAccept", () => {
         dataIn.connect(collectionOut);
         dataInTwo.connect(dataOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.localMapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         //
         dataIn.disconnect(collectionOut);
         // this is weird and not particularly robust, if you save and reload this will most likely not be constrained
         // TODO: avoid this if possible ...
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.localMapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
+        expect(dataIn.localMapOver.isCollection).toBe(true);
         expect(dataIn.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(simpleDataOut).reason).toBe(
             "Cannot attach non-collection outputs to mapped over inputs, consider disconnecting inputs and outputs to reset this input's mapping."
         );
+        dataInTwo.disconnect(dataOut);
+        // terminal isn't a reactive class in any way (worth a thought doing, but difficult!), the following happens when a new terminal is built
+        // in useTerminal.ts
+        const rebuiltDataIn = rebuildTerminal(dataIn);
+        expect(rebuiltDataIn.localMapOver.isCollection).toBe(false);
+        expect(rebuiltDataIn.canAccept(simpleDataOut).canAccept).toBe(true);
     });
     // TODO: test mapOver reset when constraint removed
     it("resets mapOver when constraint is lifted", () => {
-        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
-        const dataIn = terminals["simple data"]!["input"] as InputTerminal;
-        const dataOut = terminals["simple data"]!["out_file1"] as OutputTerminal;
-        const dataInTwo = terminals["simple data 2"]!["input"] as InputTerminal;
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]["input"] as InputTerminal;
+        const dataOut = terminals["simple data"]["out_file1"] as OutputTerminal;
+        const dataInTwo = terminals["simple data 2"]["input"] as InputTerminal;
         dataIn.connect(collectionOut);
         dataInTwo.connect(dataOut);
         expect(dataIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
@@ -342,7 +374,9 @@ describe("canAccept", () => {
         const collectionOut = terminals["list:list input"]!["output"] as OutputCollectionTerminal;
         const collectionIn = terminals["list collection input"]!["input1"] as InputCollectionTerminal;
         expect(collectionIn.canAccept(collectionOut).canAccept).toBe(true);
+        expect(collectionIn.isMappedOver()).toBe(false);
         collectionIn.connect(collectionOut);
+        expect(collectionIn.isMappedOver()).toBe(true);
         expect(collectionIn.mapOver).toEqual({ collectionType: "list", isCollection: true, rank: 1 });
         const intermediateOut = terminals["list collection input"]!["out_file1"] as OutputCollectionTerminal;
         const otherListIn = terminals["list collection input 2"]!["input1"] as InputCollectionTerminal;
@@ -412,6 +446,20 @@ describe("canAccept", () => {
             "Effective output data type(s) [tabular] do not appear to match input type(s) [ab1]."
         );
     });
+    it("resolves collection type source", () => {
+        const filterFailedInput = terminals["filter_failed"]["input"] as InputCollectionTerminal;
+        const filterFailedOutput = terminals["filter_failed"]["output"] as OutputCollectionTerminal;
+        expect(filterFailedOutput.collectionType).toBe(ANY_COLLECTION_TYPE_DESCRIPTION);
+        const collectionOut = terminals["list input"]["output"] as OutputCollectionTerminal;
+        filterFailedInput.connect(collectionOut);
+        expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(new CollectionTypeDescription("list"));
+        filterFailedInput.disconnect(collectionOut);
+        const listPairedOutput = terminals["list:paired input"]["output"] as OutputCollectionTerminal;
+        filterFailedInput.connect(listPairedOutput);
+        expect(rebuildTerminal(filterFailedOutput).collectionType).toStrictEqual(
+            new CollectionTypeDescription("list:paired")
+        );
+    });
 });
 
 describe("Input terminal", () => {
@@ -472,6 +520,14 @@ describe("Input terminal", () => {
         expect(dataInputOutputTerminal.validInputTerminals().length).toBe(1);
         connectionStore.addConnection(connection);
         expect(firstInputTerminal.canAccept(dataInputOutputTerminal).canAccept).toBe(false);
+    });
+    it("will maintain invalid connections", () => {
+        const connection = connectionStore.connections[0];
+        connection.output.name = "I don't exist";
+        const firstInputTerminal = terminals[1]["input"] as InputTerminal;
+        const invalidTerminals = firstInputTerminal.getConnectedTerminals();
+        expect(invalidTerminals.length).toBe(1);
+        expect(invalidTerminals[0]).toBeInstanceOf(InvalidOutputTerminal);
     });
 });
 

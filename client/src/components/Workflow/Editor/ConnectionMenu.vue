@@ -24,7 +24,12 @@
 <script lang="ts" setup>
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
-import { type OutputTerminals, type InputTerminals, terminalFactory } from "./modules/terminals";
+import {
+    type OutputTerminals,
+    type InputTerminalsAndInvalid,
+    terminalFactory,
+    type InputTerminals,
+} from "./modules/terminals";
 import { useFocusWithin } from "@/composables/useActiveElement";
 import { assertDefined } from "@/utils/assertions";
 
@@ -79,7 +84,7 @@ function decrement() {
     }
 }
 
-function terminalToInputObject(terminal: InputTerminals, connected: boolean): InputObject {
+function terminalToInputObject(terminal: InputTerminalsAndInvalid, connected: boolean): InputObject {
     const step = stepStore.getStep(terminal.stepId);
     assertDefined(step);
     const inputLabel = `${terminal.name} in step ${step.id + 1}: ${step.label}`;

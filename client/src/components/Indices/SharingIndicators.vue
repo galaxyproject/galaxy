@@ -1,19 +1,17 @@
 <template>
     <span>
-        <font-awesome-icon
-            v-if="object.published"
-            v-b-tooltip.hover
-            :title="'Published' | localize"
-            icon="globe"
-            class="sharing-indicator-published"
-            @click="$emit('filter', 'is:published')" />
-        <font-awesome-icon
-            v-if="object.shared"
-            v-b-tooltip.hover
-            :title="'Shared' | localize"
-            icon="share-alt"
-            class="sharing-indicator-shared"
-            @click="$emit('filter', 'is:shared_with_me')" />
+        <span v-if="object.published" v-b-tooltip.hover :title="'Published' | localize">
+            <font-awesome-icon
+                icon="globe"
+                class="sharing-indicator-published"
+                @click="$emit('filter', 'is:published')" />
+        </span>
+        <span v-if="object.shared" v-b-tooltip.hover :title="'Shared' | localize">
+            <font-awesome-icon
+                icon="share-alt"
+                class="sharing-indicator-shared"
+                @click="$emit('filter', 'is:shared_with_me')" />
+        </span>
     </span>
 </template>
 

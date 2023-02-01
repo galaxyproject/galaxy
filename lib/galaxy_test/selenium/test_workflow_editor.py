@@ -557,7 +557,18 @@ steps:
         editor.select_datatype_text_search.wait_for_and_send_keys("bam")
         editor.select_datatype(datatype="bam").wait_for_and_click()
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
-        self.assert_not_connected("create_2#out_file1", "checksum#input")
+        self.assert_connection_invalid("create_2#out_file1", "checksum#input")
+        save_button = self.components.workflow_editor.save_button
+        # Assert save button is disabled
+        assert save_button.has_class("disabled")
+        # Make connection valid again
+        editor.change_datatype.wait_for_and_click()
+        editor.select_datatype_text_search.wait_for_and_send_keys("tabular")
+        editor.select_datatype(datatype="tabular").wait_for_and_click()
+        # Assert connection is valid
+        self.assert_connected("create_2#out_file1", "checksum#input")
+        # Assert save button is enabled
+        assert not save_button.has_class("disabled")
 
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
@@ -686,7 +697,10 @@ steps:
         workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
         parent_workflow_id = workflow_populator.upload_yaml_workflow(
             """class: GalaxyWorkflow
-inputs: []
+inputs:
+  input_collection:
+    type: collection
+    collection_type: "list"
 steps:
   - tool_id: multiple_versions
     tool_version: 0.1
@@ -705,10 +719,16 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
-        subworkflow_step = workflow["steps"]["1"]
+        subworkflow_step = workflow["steps"]["2"]
         assert subworkflow_step["name"] == child_workflow_name
         assert subworkflow_step["type"] == "subworkflow"
         assert subworkflow_step["subworkflow"]["a_galaxy_workflow"] == "true"
+        self.workflow_editor_connect("input_collection#output", f"{child_workflow_name}#input1")
+        self.assert_connected("input_collection#output", f"{child_workflow_name}#input1")
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(parent_workflow_id)
+        subworkflow_step = workflow["steps"]["2"]
+        assert subworkflow_step["input_connections"]["input1"]["input_subworkflow_step_id"] == 0
 
     @selenium_test
     def test_editor_insert_steps(self):
@@ -861,6 +881,10 @@ steps:
     def assert_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
         self.components.workflow_editor.connector_for(source_id=source_id, sink_id=sink_id).wait_for_visible()
+
+    def assert_connection_invalid(self, source, sink):
+        source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)
+        self.components.workflow_editor.connector_invalid_for(source_id=source_id, sink_id=sink_id).wait_for_present()
 
     def assert_not_connected(self, source, sink):
         source_id, sink_id = self.workflow_editor_source_sink_terminal_ids(source, sink)

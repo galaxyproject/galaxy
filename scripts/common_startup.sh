@@ -17,6 +17,8 @@ FETCH_WHEELS=1
 CREATE_VENV=1
 COPY_SAMPLE_FILES=1
 SKIP_CLIENT_BUILD=${GALAXY_SKIP_CLIENT_BUILD:-0}
+SKIP_NODE=${GALAXY_SKIP_NODE:-0}
+INSTALL_PREBUILT_CLIENT=${GALAXY_INSTALL_PREBUILT_CLIENT:-0}
 NODE_VERSION=${GALAXY_NODE_VERSION:-"$(cat client/.node_version)"}
 YARN_INSTALL_OPTS=${YARN_INSTALL_OPTS:-"--network-timeout 300000 --check-files"}
 
@@ -28,6 +30,7 @@ for arg in "$@"; do
     [ "$arg" = "--stop-daemon" ] && FETCH_WHEELS=0
     [ "$arg" = "--skip-samples" ] && COPY_SAMPLE_FILES=0
     [ "$arg" = "--skip-client-build" ] && SKIP_CLIENT_BUILD=1
+    [ "$arg" = "--skip-node" ] && SKIP_NODE=1
 done
 
 SAMPLES="
@@ -197,19 +200,21 @@ if [ $FETCH_WHEELS -eq 1 ]; then
 fi
 
 # Install node if not installed
-if [ -n "$VIRTUAL_ENV" ]; then
-    if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
-        echo "Installing node into $VIRTUAL_ENV with nodeenv."
-        if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
-            echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
-            rm -rf "${VIRTUAL_ENV}/lib/node_modules"
+if [ $SKIP_NODE -eq 0 ]; then
+    if [ -n "$VIRTUAL_ENV" ]; then
+        if ! in_venv "$(command -v node)" || [ "$(node --version)" != "v${NODE_VERSION}" ]; then
+            echo "Installing node into $VIRTUAL_ENV with nodeenv."
+            if [ -d "${VIRTUAL_ENV}/lib/node_modules" ]; then
+                echo "Removing old ${VIRTUAL_ENV}/lib/node_modules directory."
+                rm -rf "${VIRTUAL_ENV}/lib/node_modules"
+            fi
+            nodeenv -n "$NODE_VERSION" -p
         fi
-        nodeenv -n "$NODE_VERSION" -p
-    fi
-elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
-    if ! in_conda_env "$(command -v node)"; then
-        echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
-        $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
+    elif [ -n "$CONDA_DEFAULT_ENV" ] && [ -n "$CONDA_EXE" ]; then
+        if ! in_conda_env "$(command -v node)"; then
+            echo "Installing node into '$CONDA_DEFAULT_ENV' Conda environment with conda."
+            $CONDA_EXE install --yes --override-channels --channel conda-forge --name "$CONDA_DEFAULT_ENV" nodejs="$NODE_VERSION"
+        fi
     fi
 fi
 
@@ -257,16 +262,32 @@ if [ $SKIP_CLIENT_BUILD -eq 0 ]; then
     set_galaxy_config_file_var
     # Set plugin path
     GALAXY_PLUGIN_PATH=$(python scripts/config_parse.py --setting=plugin_path --config-file="$GALAXY_CONFIG_FILE")
-    # Build client
-    cd client
-    if yarn install $YARN_INSTALL_OPTS; then
-        if ! (export GALAXY_PLUGIN_PATH="$GALAXY_PLUGIN_PATH"; yarn run build-production-maps;) then
-            echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+
+    if [ $INSTALL_PREBUILT_CLIENT -eq 0 ]; then
+        # If we have not opted to use a prebuilt client, then build client.
+        cd client
+        if yarn install $YARN_INSTALL_OPTS; then
+            if ! (export GALAXY_PLUGIN_PATH="$GALAXY_PLUGIN_PATH"; yarn run build-production-maps;) then
+                echo "ERROR: Galaxy client build failed. See ./client/README.md for more information, including how to get help."
+                exit 1
+            fi
+        else
+            echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
             exit 1
         fi
+        cd -
     else
-        echo "ERROR: Galaxy client dependency installation failed. See ./client/README.md for more information, including how to get help."
-        exit 1
+        # Install prebuilt client
+        if yarn install $YARN_INSTALL_OPTS; then
+            if ! (yarn run stage) then
+                echo "ERROR: Galaxy prebuilt client install failed. See ./client/README.md for more information, including how to get help."
+                exit 1
+            fi
+        else
+            echo "ERROR: Galaxy prebuilt client dependency installation failed. See ./client/README.md for more information, including how to get help."
+            exit 1
+        fi
+
     fi
-    cd -
+
 fi
