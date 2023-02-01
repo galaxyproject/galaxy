@@ -97,6 +97,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        sortItems: {
+            type: Boolean,
+            default: true,
+        },
     },
     setup() {
         const { config, isLoaded } = useConfig();
@@ -135,6 +139,7 @@ export default {
             if (
                 this.isLoaded &&
                 this.config.toolbox_auto_sort === true &&
+                this.sortItems === true &&
                 !this.category.elems.some((el) => el.text !== undefined && el.text !== "")
             ) {
                 const elements = [...this.category.elems];
