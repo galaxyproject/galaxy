@@ -170,7 +170,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
                                 extensions: [],
                             };
                             if (extraInputs[step.id]) {
-                                extraInputs[step.id].push(terminalSource);
+                                extraInputs[step.id]!.push(terminalSource);
                             } else {
                                 extraInputs[step.id] = [terminalSource];
                             }
@@ -227,7 +227,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         changeStepInputMapOver(stepId: number, inputName: string, mapOver: CollectionTypeDescriptor) {
             if (this.stepInputMapOver[stepId]) {
-                Vue.set(this.stepInputMapOver[stepId], inputName, mapOver);
+                Vue.set(this.stepInputMapOver[stepId]!, inputName, mapOver);
             } else {
                 Vue.set(this.stepInputMapOver, stepId, { [inputName]: mapOver });
             }
