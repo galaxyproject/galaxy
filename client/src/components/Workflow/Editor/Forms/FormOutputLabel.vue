@@ -45,7 +45,8 @@ const label = computed(() => {
 });
 
 function onInput(newLabel: string) {
-    if (!stepStore.workflowOutputs[newLabel]) {
+    const existingWorkflowOutput = stepStore.workflowOutputs[newLabel];
+    if (!existingWorkflowOutput) {
         const newWorkflowOutputs = [...(props.step.workflow_outputs || [])].filter(
             (workflowOutput) => workflowOutput.output_name !== props.name
         );
@@ -55,7 +56,7 @@ function onInput(newLabel: string) {
         });
         stepStore.updateStep({ ...props.step, workflow_outputs: newWorkflowOutputs });
         error.value = undefined;
-    } else {
+    } else if (existingWorkflowOutput.stepId !== props.step.id) {
         error.value = `Duplicate output label '${newLabel}' will be ignored.`;
     }
 }
