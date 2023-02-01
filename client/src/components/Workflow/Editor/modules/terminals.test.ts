@@ -293,7 +293,7 @@ describe("canAccept", () => {
         expect(dataIn.localMapOver.isCollection).toBe(true);
         expect(dataIn.canAccept(simpleDataOut).canAccept).toBe(false);
         expect(dataIn.canAccept(simpleDataOut).reason).toBe(
-            "Cannot attach non-collection outputs to mapped over inputs, consider disconnecting inputs and outputs to reset this input's mapping."
+            "Cannot attach non-collection output to mapped over input, consider disconnecting inputs and outputs to reset this input's mapping."
         );
         dataInTwo.disconnect(dataOut);
         // terminal isn't a reactive class in any way (worth a thought doing, but difficult!), the following happens when a new terminal is built
