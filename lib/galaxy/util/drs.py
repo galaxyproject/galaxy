@@ -31,8 +31,8 @@ class RetryOptions:
     override_retry_after: Optional[float] = None
 
 
-def retry_and_get(get_url: str, retry_options: RetryOptions) -> requests.Response:
-    response = requests.get(get_url, timeout=DEFAULT_SOCKET_TIMEOUT)
+def retry_and_get(get_url: str, retry_options: RetryOptions, headers: Optional[dict] = None) -> requests.Response:
+    response = requests.get(get_url, timeout=DEFAULT_SOCKET_TIMEOUT, headers=headers)
     response.raise_for_status()
     if response.status_code == 202:
         if retry_options.retry_times == 0:
@@ -48,7 +48,7 @@ def retry_and_get(get_url: str, retry_options: RetryOptions) -> requests.Respons
 
 
 def fetch_drs_to_file(
-    drs_uri: str, target_path: TargetPathT, force_http=False, retry_options: Optional[RetryOptions] = None
+    drs_uri: str, target_path: TargetPathT, force_http=False, retry_options: Optional[RetryOptions] = None, headers: Optional[dict] = None
 ):
     """Fetch contents of drs:// URI to a target path."""
     if not drs_uri.startswith("drs://"):
@@ -63,7 +63,7 @@ def fetch_drs_to_file(
     if force_http:
         scheme = "http"
     get_url = f"{scheme}://{netspec}/ga4gh/drs/v1/objects/{object_id}"
-    response = retry_and_get(get_url, retry_options or RetryOptions())
+    response = retry_and_get(get_url, retry_options or RetryOptions(), headers=headers)
     response.raise_for_status()
     response_object = response.json()
     if "access_methods" not in response_object:

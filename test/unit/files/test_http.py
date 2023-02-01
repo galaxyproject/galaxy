@@ -38,7 +38,7 @@ def test_file_source_another_http_specific():
         return response
 
     with mock.patch.object(urllib.request, 'urlopen', new=check_another_header):
-        test_url = "https://www.galaxyproject.org/anotherfile.txt"
+        test_url = "http://www.galaxyproject.org/anotherfile.txt"
         user_context = user_context_fixture()
         file_sources = configured_file_sources(FILE_SOURCES_CONF)
         file_source_pair = file_sources.get_file_source_path(test_url)
