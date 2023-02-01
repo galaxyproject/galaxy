@@ -176,7 +176,12 @@ const connectionStore = useConnectionStore();
 const stateStore = useWorkflowStateStore();
 const stepStore = useWorkflowStepStore();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
-useNodePosition(el, props.id, stateStore);
+useNodePosition(
+    el,
+    props.id,
+    stateStore,
+    computed(() => props.scale)
+);
 const title = computed(() => props.step.label || props.step.name);
 const idString = computed(() => `wf-node-step-${props.id}`);
 const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);

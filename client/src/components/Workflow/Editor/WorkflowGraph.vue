@@ -29,10 +29,10 @@
         <workflow-minimap
             v-if="elementBounding"
             :steps="steps"
-            :root-offset="elementBounding"
-            :scale="scale"
-            :pan="transform"
-            @pan-by="panBy"
+            :viewport-bounds="elementBounding"
+            :viewport-scale="scale"
+            :viewport-pan="transform"
+            @panBy="panBy"
             @moveTo="moveTo" />
     </div>
 </template>
