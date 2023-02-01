@@ -114,6 +114,10 @@ export function normalizeTools(tools) {
     return tools;
 }
 
+export function hideToolsSection(tools) {
+    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
+}
+
 export function removeDisabledTools(tools) {
     return tools.filter((section) => {
         if (section.model_class === "ToolSectionLabel") {
@@ -191,10 +195,6 @@ function deleteEmptyToolsSections(tools, results) {
         });
 
     return tools;
-}
-
-function hideToolsSection(tools) {
-    return tools.filter((section) => !TOOLS_RESULTS_SECTIONS_HIDE.includes(section.name));
 }
 
 function flattenTools(tools) {
