@@ -50,7 +50,7 @@ const columnStyle = computed(() => {
     const columnStyle = Array(props.options.dataset_config.metadata_columns);
     if (props.options.dataset_config.metadata_column_types?.length > 0) {
         props.options.dataset_config.metadata_column_types.forEach((column_type, index) => {
-            columnStyle[index] = column_type === "str" || column_type === "list" ? "stringalign" : "numberalign";
+            columnStyle[index] = column_type === "str" || column_type === "list" ? "string-align" : "number-align";
         });
     }
     return columnStyle;
@@ -190,10 +190,10 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.stringalign {
+.string-align {
     text-align: left;
 }
-.numberalign {
+.number-align {
     text-align: right;
 }
 </style>
