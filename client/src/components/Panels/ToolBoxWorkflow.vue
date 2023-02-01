@@ -59,7 +59,7 @@
                     :key="workflowSection.name"
                     :category="workflowSection"
                     section-name="workflows"
-                    sort-items="false"
+                    :sort-items="false"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
                     :query-filter="query"
