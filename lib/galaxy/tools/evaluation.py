@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import re
 import shlex
 import string
 import tempfile
@@ -98,6 +99,7 @@ DeferrableObjectsT = Union[
 
 class ToolEvaluator:
     """An abstraction linking together a tool and a job runtime to evaluate
+    tool inputs in an isolated, testable manner.
     tool inputs in an isolated, testable manner.
     """
 
@@ -677,15 +679,17 @@ class ToolEvaluator:
         if not self._user:
             return "token-unavailable"
 
-        provider = inject.rsplit("_", 1)[-1]
-        provider_backend = provider_name_to_backend(provider)
-        id_token, access_token, refresh_token = self._user.get_oidc_tokens(provider_backend)
-        if inject.startswith("oidc_id"):
-            environment_variable_template = id_token or "token-unavailable"
-        elif inject.startswith("oidc_access"):
-            environment_variable_template = access_token or "token-unavailable"
-        elif inject.startswith("oidc_refresh"):
-            environment_variable_template = refresh_token or "token-unavailable"
+        p = re.compile("^oidc_(id|access|refresh)_token_(.*)$")
+        match = p.match(inject)
+        provider_backend = None
+        if match:
+            token_type = match.group(1)
+            provider_backend = provider_name_to_backend(match.group(2))
+        if not match or not provider_backend:
+            return "token-unavailable"
+
+        tokens = self._user.get_oidc_tokens(provider_backend)
+        environment_variable_template = tokens[token_type] or "token-unavailable"
 
         return environment_variable_template
 

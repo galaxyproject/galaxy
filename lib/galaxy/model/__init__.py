@@ -769,24 +769,22 @@ class User(Base, Dictifiable, RepresentById):
         return None
 
     def get_oidc_tokens(self, provider_backend):
-        access_token = None
-        refresh_token = None
-        id_token = None
+        tokens = {"id": None, "access": None, "refresh": None}
         auth = self._get_social_auth(provider_backend)
         if auth:
-            access_token = auth.extra_data.get("access_token", None)
-            refresh_token = auth.extra_data.get("refresh_token", None)
-            id_token = auth.extra_data.get("id_token", None)
-            return id_token, access_token, refresh_token
+            tokens["access"] = auth.extra_data.get("access_token", None)
+            tokens["refresh"] = auth.extra_data.get("refresh_token", None)
+            tokens["id"] = auth.extra_data.get("id_token", None)
+            return tokens
 
         # no social auth found, check custos auth
         auth = self._get_custos_auth(provider_backend)
         if auth:
-            access_token = auth.access_token
-            refresh_token = auth.refresh_token
-            id_token = auth.id_token
+            tokens["access"] = auth.access_token
+            tokens["refresh"] = auth.refresh_token
+            tokens["id"] = auth.id_token
 
-        return id_token, access_token, refresh_token
+        return tokens
 
     @property
     def nice_total_disk_usage(self):
