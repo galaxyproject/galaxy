@@ -241,21 +241,44 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             if (input && "input_subworkflow_step_id" in input && input.input_subworkflow_step_id !== undefined) {
                 connectionLink["input_subworkflow_step_id"] = input.input_subworkflow_step_id;
             }
+            let connectionLinks: ConnectionOutputLink[] = [connectionLink];
+            let inputConnection = inputStep.input_connections[connection.input.name];
+            if (inputConnection) {
+                if (!Array.isArray(inputConnection)) {
+                    inputConnection = [inputConnection];
+                }
+                inputConnection = inputConnection.filter(
+                    (connection) =>
+                        !(connection.id === connectionLink.id && connection.output_name === connectionLink.output_name)
+                );
+                connectionLinks = [...connectionLinks, ...inputConnection];
+            }
             const updatedStep = {
                 ...inputStep,
                 input_connections: {
                     ...inputStep.input_connections,
-                    [connection.input.name]: connectionLink,
+                    [connection.input.name]: connectionLinks.sort((a, b) =>
+                        a.id === b.id ? a.output_name.localeCompare(b.output_name) : a.id - b.id
+                    ),
                 },
             };
             this.updateStep(updatedStep);
         },
         removeConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            const inputConnections = inputStep.input_connections[connection.input.name];
             if (this.getStepExtraInputs(inputStep.id).find((input) => connection.input.name === input.name)) {
                 inputStep.input_connections[connection.input.name] = undefined;
             } else {
-                Vue.delete(inputStep.input_connections, connection.input.name);
+                if (Array.isArray(inputConnections)) {
+                    inputStep.input_connections[connection.input.name] = inputConnections.filter(
+                        (outputLink) =>
+                            !(outputLink.id === connection.output.stepId,
+                            outputLink.output_name === connection.output.name)
+                    );
+                } else {
+                    Vue.delete(inputStep.input_connections, connection.input.name);
+                }
             }
             this.updateStep(inputStep);
         },
@@ -263,7 +286,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             const connectionStore = useConnectionStore();
             connectionStore
                 .getConnectionsForStep(stepId)
-                .map((connection) => connectionStore.removeConnection(connection.input));
+                .map((connection) => connectionStore.removeConnection(connection.id));
             Vue.delete(this.steps, stepId.toString());
         },
     },
