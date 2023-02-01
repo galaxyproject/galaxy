@@ -1,7 +1,5 @@
 <script setup lang="ts">
-// import FormBoolean from "./Elements/FormBoolean.vue";
 import { computed, onMounted } from "vue";
-
 import type { ComputedRef } from "vue";
 import { useJobStore } from "@/stores/jobStore";
 import { useRouter } from "vue-router/composables";
