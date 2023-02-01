@@ -29,6 +29,7 @@ from packaging.version import (
     parse as parse_version,
     Version,
 )
+from pydantic import BaseModel
 from requests import Response
 from requests.cookies import RequestsCookieJar
 from typing_extensions import (
@@ -222,12 +223,15 @@ class GalaxyInteractorApi:
         assert response.status_code == 200, f"Non 200 response from tool tests available API. [{response.content}]"
         return response.json()
 
-    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
+    def get_tool_tests_model(self, tool_id: str, tool_version: Optional[str] = None) -> "ToolTestCaseList":
         url = f"tools/{tool_id}/test_data"
         params = {"tool_version": tool_version} if tool_version else None
         response = self._get(url, data=params)
         assert response.status_code == 200, f"Non 200 response from tool test API. [{response.content}]"
-        return response.json()
+        return ToolTestCaseList(__root__=[ToolTestCase(**t) for t in response.json()])
+
+    def get_tool_tests(self, tool_id: str, tool_version: Optional[str] = None) -> ToolTestDictsT:
+        return [test_case_to_dict(m) for m in self.get_tool_tests_model(tool_id, tool_version).__root__]
 
     def verify_output_collection(
         self, output_collection_def, output_collection_id, history, tool_id, tool_version=None
@@ -1590,6 +1594,43 @@ class JobOutputsError(AssertionError):
         self.output_exceptions = output_exceptions
 
 
+class Assertion(BaseModel):
+    tag: str
+    attributes: Dict[str, Any]
+    children: Optional[List[Dict[str, Any]]]
+
+
+AssertionModelList = Optional[List[Assertion]]
+
+
+class ToolTestCase(BaseModel):
+    inputs: Any
+    outputs: Any
+    output_collections: List[Dict[str, Any]] = []
+    stdout: AssertionModelList = []
+    stderr: AssertionModelList = []
+    expect_exit_code: Optional[int] = None
+    expect_failure: bool = False
+    expect_test_failure: bool = False
+    maxseconds: Optional[int] = None
+    num_outputs: Optional[int] = None
+    command_line: AssertionModelList = []
+    command_version: AssertionModelList = []
+    required_files: List[Any] = []
+    required_data_tables: List[Any] = []
+    required_loc_files: List[str] = []
+    error: bool = False
+    exception: Optional[str] = None
+    name: str
+    tool_id: str
+    tool_version: str
+    test_index: int
+
+
+class ToolTestCaseList(BaseModel):
+    __root__: List[ToolTestCase]
+
+
 class ToolTestDescription:
     """
     Encapsulates information about a tool test, and allows creation of a
@@ -1612,7 +1653,6 @@ class ToolTestDescription:
             processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
             maxseconds = DEFAULT_TOOL_TEST_WAIT
             output_collections = []
-
         self.test_index = test_index
         assert (
             "tool_id" in processed_test_dict
@@ -1655,7 +1695,7 @@ class ToolTestDescription:
         """
         return test_data_iter(self.required_files)
 
-    def to_dict(self):
+    def to_model(self) -> ToolTestCase:
         inputs_dict = {}
         for key, value in self.inputs.items():
             if hasattr(value, "to_dict"):
@@ -1663,28 +1703,39 @@ class ToolTestDescription:
             else:
                 inputs_dict[key] = value
 
-        return {
-            "inputs": inputs_dict,
-            "outputs": self.outputs,
-            "output_collections": [_.to_dict() for _ in self.output_collections],
-            "num_outputs": self.num_outputs,
-            "command_line": self.command_line,
-            "command_version": self.command_version,
-            "stdout": self.stdout,
-            "stderr": self.stderr,
-            "expect_exit_code": self.expect_exit_code,
-            "expect_failure": self.expect_failure,
-            "expect_test_failure": self.expect_test_failure,
-            "name": self.name,
-            "test_index": self.test_index,
-            "tool_id": self.tool_id,
-            "tool_version": self.tool_version,
-            "required_files": self.required_files,
-            "required_data_tables": self.required_data_tables,
-            "required_loc_files": self.required_loc_files,
-            "error": self.error,
-            "exception": self.exception,
-        }
+        return ToolTestCase(
+            **{
+                "inputs": inputs_dict,
+                "outputs": self.outputs,
+                "output_collections": [_.to_dict() for _ in self.output_collections],
+                "num_outputs": self.num_outputs,
+                "command_line": self.command_line,
+                "command_version": self.command_version,
+                "stdout": self.stdout,
+                "stderr": self.stderr,
+                "expect_exit_code": self.expect_exit_code,
+                "expect_failure": self.expect_failure,
+                "expect_test_failure": self.expect_test_failure,
+                "name": self.name,
+                "test_index": self.test_index,
+                "tool_id": self.tool_id,
+                "tool_version": self.tool_version,
+                "required_files": self.required_files,
+                "required_data_tables": self.required_data_tables,
+                "required_loc_files": self.required_loc_files,
+                "error": self.error,
+                "exception": self.exception,
+            }
+        )
+
+    def to_dict(self) -> ToolTestDict:
+        # For backward compatibility maintain a dict version - if
+        # this comment got merged the converter tests failed without this.
+        return test_case_to_dict(self.to_model())
+
+
+def test_case_to_dict(model: ToolTestCase) -> ToolTestDict:
+    return cast(ToolTestDict, model.dict())
 
 
 def test_data_iter(required_files):
