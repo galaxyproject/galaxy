@@ -10,10 +10,10 @@ Here's an example of what this rule enforces:
 ```ts
 type NumberDictionary = {
     [key: string]: number;
-}
+};
 
 const object: NumberDictionary = {
-    keyA: 1
+    keyA: 1,
 };
 
 // type of a is number, but it is clearly undefined here
@@ -25,10 +25,10 @@ const a = object.keyB;
 ```ts
 type NumberDictionary = {
     [key: string]: number;
-}
+};
 
 const object: NumberDictionary = {
-    keyA: 1
+    keyA: 1,
 };
 
 // type of a is number | undefined, improving type safety
@@ -141,7 +141,6 @@ let terminalSource = outputStep.outputs.find((output) => output.name === connect
 ```
 
 This code will compile with errors, because `outputStep` is potentially undefined. While we may know that this state is not possible, a future error or mistake may still make it possible and properly asserting can be helpful. Here I'm using the new `assertDefined` utility.
-
 
 ```ts
 const outputStep = this.stepStore.getStep(connection.output.stepId);
