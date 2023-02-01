@@ -150,18 +150,11 @@ class ConfiguredFileSources:
 
     def looks_like_uri(self, path_or_uri):
         # is this string a URI this object understands how to realize
-        if path_or_uri.startswith("gx") and "://" in path_or_uri:
-            for scheme in self.get_schemes():
-                if path_or_uri.startswith(f"{scheme}://"):
-                    return True
-
-        return False
-
-    def get_schemes(self):
-        schemes = set()
-        for file_source in self._file_sources:
-            schemes.add(file_source.get_scheme())
-        return schemes
+        file_source = self.find_best_match(path_or_uri)
+        if file_source:
+            return True
+        else:
+            return False
 
     def plugins_to_dict(
         self,

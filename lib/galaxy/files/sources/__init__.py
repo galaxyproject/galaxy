@@ -23,10 +23,6 @@ DEFAULT_WRITABLE = False
 class SingleFileSource(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
-    def get_scheme(self) -> str:
-        """Return a prefix for the root (e.g. the gxfiles in gxfiles://prefix/path)."""
-
-    @abc.abstractmethod
     def get_writable(self):
         """Return a boolean indicating if this target is writable."""
 
@@ -75,7 +71,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         """
 
 
-class BrowsableSourceMixin(metaclass=abc.ABCMeta):
+class SupportsBrowsing(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def get_uri_root(self) -> str:
@@ -86,13 +82,13 @@ class BrowsableSourceMixin(metaclass=abc.ABCMeta):
         """Return dictionary of 'Directory's and 'File's."""
 
 
-class FilesSource(SingleFileSource, BrowsableSourceMixin):
+class FilesSource(SingleFileSource, SupportsBrowsing):
     """ """
 
     # TODO: off-by-default
     @abc.abstractmethod
     def get_browsable(self):
-        """Return true if the filesource implements the BrowsableSourceMixin interface."""
+        """Return true if the filesource implements the SupportsBrowsing interface."""
 
 
 class BaseFilesSource(FilesSource):
@@ -133,7 +129,7 @@ class BaseFilesSource(FilesSource):
         return root
 
     def to_relative_path(self, url: str):
-        return url.replace(self.get_uri_root(), "")
+        return url.replace(self.get_uri_root(), "") or "/"
 
     def score_url_match(self, url: str):
         root = self.get_uri_root()
