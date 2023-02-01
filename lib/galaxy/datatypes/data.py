@@ -23,7 +23,7 @@ from markupsafe import escape
 from typing_extensions import Literal
 
 from galaxy import util
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
     HasClearAssociatedFiles,

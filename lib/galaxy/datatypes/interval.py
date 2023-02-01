@@ -21,7 +21,7 @@ from bx.intervals.io import (
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasId,
     HasMetadata,

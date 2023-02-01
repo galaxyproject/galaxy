@@ -12,7 +12,7 @@ from galaxy.datatypes import (
     data,
     sequence,
 )
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )

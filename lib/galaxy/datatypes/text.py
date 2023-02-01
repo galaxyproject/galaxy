@@ -16,7 +16,7 @@ from typing import (
 
 import yaml
 
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
     HasCreatingJob,

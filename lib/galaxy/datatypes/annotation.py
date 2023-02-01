@@ -1,7 +1,7 @@
 import logging
 import tarfile
 
-from galaxy.datatypes._protocols import DatasetProtocol
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.binary import CompressedArchive
 from galaxy.datatypes.data import (
     get_file_peek,

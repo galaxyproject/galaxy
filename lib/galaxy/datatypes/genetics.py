@@ -27,7 +27,7 @@ from urllib.parse import quote_plus
 from markupsafe import escape
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
     HasMetadata,

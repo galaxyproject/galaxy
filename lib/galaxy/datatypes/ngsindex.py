@@ -4,7 +4,7 @@ NGS indexes
 import logging
 import os
 
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )

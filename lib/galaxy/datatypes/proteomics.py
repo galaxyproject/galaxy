@@ -10,7 +10,7 @@ from typing import (
 )
 
 from galaxy.datatypes import data
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )

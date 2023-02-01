@@ -11,7 +11,7 @@ from typing import (
     Optional,
 )
 
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,

@@ -33,7 +33,7 @@ from bx.seq.twobit import (
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,

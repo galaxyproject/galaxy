@@ -1,4 +1,4 @@
-from galaxy.datatypes._protocols import DatasetProtocol
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import (
     ListParameter,

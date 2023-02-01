@@ -3,7 +3,7 @@ Neo4j Composite Dataset
 """
 import logging
 
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
