@@ -49,12 +49,15 @@ function recalculateAABB() {
 
     Object.values(props.steps).forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        aabb.fitRectangle({
-            x: step.position!.left,
-            y: step.position!.top,
-            width: rect.width,
-            height: rect.height,
-        });
+
+        if (rect) {
+            aabb.fitRectangle({
+                x: step.position!.left,
+                y: step.position!.top,
+                width: rect.width,
+                height: rect.height,
+            });
+        }
     });
 
     aabb.squareCenter();
@@ -161,7 +164,10 @@ function renderMinimap() {
     ctx.fillStyle = colors.node;
     okSteps.forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+
+        if (rect) {
+            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+        }
     });
     ctx.fill();
 
@@ -169,7 +175,10 @@ function renderMinimap() {
     ctx.fillStyle = colors.error;
     errorSteps.forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+
+        if (rect) {
+            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+        }
     });
     ctx.fill();
 
@@ -181,12 +190,16 @@ function renderMinimap() {
         ctx.strokeStyle = colors.selectedOutline;
         ctx.lineWidth = edge;
         const rect = stateStore.stepPosition[selectedStep.id];
-        ctx.rect(
-            selectedStep.position!.left - edge,
-            selectedStep.position!.top - edge,
-            rect.width + edge * 2,
-            rect.height + edge * 2
-        );
+
+        if (rect) {
+            ctx.rect(
+                selectedStep.position!.left - edge,
+                selectedStep.position!.top - edge,
+                rect.width + edge * 2,
+                rect.height + edge * 2
+            );
+        }
+
         ctx.stroke();
     }
 
