@@ -46,6 +46,7 @@ import Sharing from "components/Sharing/Sharing";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
 import ToolsList from "components/ToolsList/ToolsList";
+import ToolSuccess from "components/Tool/ToolSuccess";
 import TourList from "components/Tour/TourList";
 import TourRunner from "components/Tour/TourRunner";
 import TrsImport from "components/Workflow/Import/TrsImport";
@@ -251,6 +252,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "interactivetool_entry_points/list",
                         component: InteractiveTools,
+                    },
+                    {
+                        path: "jobs/:jobId/success",
+                        component: ToolSuccess,
+                        props: true,
                     },
                     {
                         path: "jobs/:jobId/view",
