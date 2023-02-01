@@ -18,7 +18,6 @@ import type {
     TerminalSource,
 } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import Vue from "vue";
 
 export class ConnectionAcceptable {
     reason: string | null;
