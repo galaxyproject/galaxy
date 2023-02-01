@@ -281,7 +281,7 @@ class BaseInputTerminal extends Terminal {
             const step = this.stepStore.getStep(outputTerminal.stepId);
 
             if (!step) {
-                console.error(`Invalid step. Could not fine step with id ${outputTerminal.stepId} in store.`);
+                console.error(`Invalid step. Could not find step with id ${outputTerminal.stepId} in store.`);
                 return false;
             }
 
