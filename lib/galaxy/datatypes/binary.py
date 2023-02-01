@@ -327,7 +327,6 @@ class Bref3(Binary):
 
 
 class DynamicCompressedArchive(CompressedArchive):
-
     compressed_format: str
     uncompressed_datatype_instance: Data
 

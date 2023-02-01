@@ -40,7 +40,6 @@ URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "
 
 
 class Group(Dictifiable):
-
     dict_collection_visible_keys = ["name", "type"]
     type: str
 
@@ -77,7 +76,6 @@ class Group(Dictifiable):
 
 
 class Repeat(Group):
-
     dict_collection_visible_keys = ["name", "type", "title", "help", "default", "min", "max"]
     type = "repeat"
 
@@ -169,7 +167,6 @@ class Repeat(Group):
 
 
 class Section(Group):
-
     dict_collection_visible_keys = ["name", "type", "title", "help", "expanded"]
     type = "section"
 

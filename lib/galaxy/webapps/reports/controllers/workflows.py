@@ -126,7 +126,6 @@ class SpecifiedDateListGrid(grids.Grid):
 
 
 class Workflows(BaseUIController, ReportQueryBuilder):
-
     specified_date_list_grid = SpecifiedDateListGrid()
 
     @web.expose

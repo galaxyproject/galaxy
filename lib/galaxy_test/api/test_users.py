@@ -47,7 +47,6 @@ class TestUsersApi(ApiTestCase):
         user = self._setup_user(TEST_USER_EMAIL)
         not_the_user = self._setup_user("email@example.com")
         with self._different_user(email=TEST_USER_EMAIL):
-
             # working
             update_response = self.__update(user, username=new_name)
             self._assert_status_code_is(update_response, 200)

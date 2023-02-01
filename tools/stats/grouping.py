@@ -127,7 +127,6 @@ def main():
         return item
 
     with open(sys.argv[1], "w") as fout:
-
         for key, line_list in groupby(tmpfile, key=is_new_item):
             op_vals = [[] for _ in ops]
             out_str = key

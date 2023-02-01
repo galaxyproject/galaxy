@@ -709,7 +709,6 @@ class GalaxyInteractorApi:
             return
 
         for history_content in history_contents:
-
             dataset = history_content
 
             print(ERROR_MESSAGE_DATASET_SEP)

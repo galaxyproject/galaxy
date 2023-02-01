@@ -99,7 +99,6 @@ class TestGalaxySession(BaseTest):
         assert cls_.__tablename__ == "galaxy_session"
 
     def test_columns(self, session, cls_, user, galaxy_session):
-
         create_time = datetime.now()
         update_time = create_time + timedelta(hours=1)
         remote_host = "a"
@@ -416,7 +415,6 @@ class TestRepositoryMetadata(BaseTest):
         repository,
         user,
     ):
-
         obj = cls_()
         obj.repository = repository
         obj.changeset_revision = "nonempty"

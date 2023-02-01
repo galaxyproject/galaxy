@@ -78,7 +78,6 @@ class LicensesManager:
     def __init__(self):
         by_index = {}
         for spdx_license in self.index():
-
             by_index[spdx_license["licenseId"]] = spdx_license
             by_index[spdx_license["detailsUrl"]] = spdx_license
             for seeAlso in spdx_license.get("seeAlso", []):

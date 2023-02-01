@@ -138,7 +138,6 @@ class BaseWorkflowHandlerConfigurationTestCase(integration_util.IntegrationTestC
 
 
 class TestHistoryRestrictionConfiguration(BaseWorkflowHandlerConfigurationTestCase):
-
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
     assign_with = "db-preassign"
 
@@ -155,7 +154,6 @@ class TestHistoryRestrictionConfiguration(BaseWorkflowHandlerConfigurationTestCa
 
 
 class TestHistoryParallelConfiguration(BaseWorkflowHandlerConfigurationTestCase):
-
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
     assign_with = "db-preassign"
 
@@ -179,7 +177,6 @@ class TestHistoryParallelConfiguration(BaseWorkflowHandlerConfigurationTestCase)
 
 # Setup an explicit workflow handler and make sure this is assigned to that.
 class TestWorkflowSchedulerHandlerAssignment(BaseWorkflowHandlerConfigurationTestCase):
-
     # Assign with db-preassign. Would also work with grabbing assignment, but we don't start grabber.
     assign_with = "db-preassign"
 
@@ -226,7 +223,6 @@ class TestDefaultWorkflowHandlerIfJobHandlerOn(BaseWorkflowHandlerConfigurationT
 
 
 class TestJobHandlerAsWorkflowHandlerWithDbSkipLocked(BaseWorkflowHandlerConfigurationTestCase):
-
     assign_with = "db-skip-locked"
 
     @classmethod
@@ -263,7 +259,6 @@ class TestDefaultWorkflowHandlerIfJobHandlerOff(BaseWorkflowHandlerConfiguration
 
 
 class TestExplicitWorkflowHandlersOn(BaseWorkflowHandlerConfigurationTestCase):
-
     assign_with = ""
 
     @classmethod
@@ -280,7 +275,6 @@ class TestExplicitWorkflowHandlersOn(BaseWorkflowHandlerConfigurationTestCase):
 
 @integration_util.skip_unless_postgres()
 class TestWorkflowSchedulerHandlerAssignmentDbSkipLocked(TestExplicitWorkflowHandlersOn):
-
     assign_with = "db-skip-locked"
 
     def test_handler_assignment(self, history_id: str):
@@ -292,7 +286,6 @@ class TestWorkflowSchedulerHandlerAssignmentDbSkipLocked(TestExplicitWorkflowHan
 
 @integration_util.skip_unless_postgres()
 class TestWorkflowSchedulerHandlerAssignmentDbTransactionIsolation(TestWorkflowSchedulerHandlerAssignmentDbSkipLocked):
-
     assign_with = "db-transaction-isolation"
 
 

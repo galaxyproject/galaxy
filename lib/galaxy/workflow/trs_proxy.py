@@ -47,7 +47,7 @@ def parse_search_kwds(search_query):
         query_kwd["description"] = (description_term,)
 
     if keyed_terms is not None:
-        for (key, value, _) in keyed_terms:
+        for key, value, _ in keyed_terms:
             query_kwd[key] = value
     return query_kwd
 

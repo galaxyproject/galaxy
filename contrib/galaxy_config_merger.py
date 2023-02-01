@@ -47,7 +47,7 @@ def main():
         if not config_sample.has_section(section):
             logging.warning("-MISSING- section [%s] not found in sample file. It will be ignored.", section)
         else:
-            for (name, value) in config.items(section):
+            for name, value in config.items(section):
                 if not config_sample.has_option(section, name):
                     if f"#{name}" not in config_sample_content:
                         logging.warning(

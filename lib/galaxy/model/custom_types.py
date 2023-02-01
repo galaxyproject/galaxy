@@ -63,7 +63,6 @@ def _sniffnfix_pg9_hex(value):
 
 
 class GalaxyLargeBinary(LargeBinary):
-
     # This hack is necessary because the LargeBinary result processor
     # does not specify an encoding in the `bytes` call ,
     # likely because `result` should be binary.

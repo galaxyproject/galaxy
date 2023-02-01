@@ -2,7 +2,6 @@ from galaxy_test.driver import integration_util
 
 
 class TestEdamToolboxIntegration(integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
 
     @classmethod
@@ -32,7 +31,6 @@ class TestEdamToolboxIntegration(integration_util.IntegrationTestCase):
 
 
 class TestEdamToolboxDefaultIntegration(integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
 
     @classmethod

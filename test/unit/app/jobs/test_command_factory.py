@@ -25,7 +25,6 @@ CP_WORK_DIR_OUTPUTS = '; \nif [ -f "foo" ] ; then cp "foo" "bar" ; fi'
 
 
 class TestCommandFactory(TestCase):
-
     maxDiff = None
     stream_stdout_stderr = False
     TEE_LOG = " "
@@ -199,7 +198,6 @@ class TestCommandFactory(TestCase):
 
 
 class TestCommandFactoryStreamStdoutStderr(TestCommandFactory):
-
     stream_stdout_stderr = True
     TEE_LOG = """ __out="${TMPDIR:-.}/out.$$" __err="${TMPDIR:-.}/err.$$"
 mkfifo "$__out" "$__err"

@@ -44,7 +44,6 @@ class BasePagesApiTestCase(ApiTestCase):
 
 
 class TestPagesApi(BasePagesApiTestCase, SharingApiTests):
-
     api_name = "pages"
 
     def create(self, name: str) -> str:

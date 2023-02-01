@@ -207,7 +207,7 @@ class TestKubernetesIntegration(BaseJobEnvironmentIntegrationTestCase, MulledJob
         ]
         cls.persistent_volumes = []
         cls.persistent_volume_claims = []
-        for (path, volume, claim) in volumes:
+        for path, volume, claim in volumes:
             volume_obj = persistent_volume(path, volume)
             volume_obj.setup()
             cls.persistent_volumes.append(volume_obj)

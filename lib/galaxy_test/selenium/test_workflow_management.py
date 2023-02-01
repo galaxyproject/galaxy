@@ -11,7 +11,6 @@ from .framework import (
 
 
 class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAssertions):
-
     ensure_registered = True
 
     @selenium_test

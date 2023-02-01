@@ -613,7 +613,7 @@ class JobHandlerQueue(Monitors):
         jobs_to_pause = defaultdict(list)
         jobs_to_fail = defaultdict(list)
         jobs_to_ignore = defaultdict(list)
-        for (job_id, hda_deleted, hda_state, hda_name, dataset_deleted, dataset_purged, dataset_state) in queries:
+        for job_id, hda_deleted, hda_state, hda_name, dataset_deleted, dataset_purged, dataset_state in queries:
             if hda_deleted or dataset_deleted:
                 if dataset_purged:
                     # If the dataset has been purged we can't resume the job by undeleting the input

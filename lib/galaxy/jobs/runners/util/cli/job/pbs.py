@@ -7,7 +7,6 @@ log = getLogger(__name__)
 
 
 class OpenPBS(Torque):
-
     ERROR_MESSAGE_UNRECOGNIZED_ARG = "Unrecognized long argument passed to OpenPBS CLI plugin: %s"
 
     def get_status(self, job_ids=None):

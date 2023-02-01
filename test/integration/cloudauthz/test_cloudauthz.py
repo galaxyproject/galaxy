@@ -22,7 +22,6 @@ class TestDefineCloudAuthz(integration_util.IntegrationTestCase):
         client_id = "def"
         client_secret = "ghi"
         with self._different_user("vahid@test.com"):
-
             # The payload for the POST API.
             payload = {
                 "provider": provider,

@@ -752,7 +752,7 @@ class DefaultToolAction(ToolAction):
                     current_job.parameters.append(p.copy())
             remapped_hdas = self.__remap_data_inputs(old_job=old_job, current_job=current_job)
             for jtod in old_job.output_datasets:
-                for (job_to_remap, jtid) in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
+                for job_to_remap, jtid in [(jtid.job, jtid) for jtid in jtod.dataset.dependent_jobs]:
                     if (trans.user is not None and job_to_remap.user_id == trans.user.id) or (
                         trans.user is None and job_to_remap.session_id == galaxy_session.id
                     ):
@@ -838,7 +838,7 @@ class DefaultToolAction(ToolAction):
         #        parameters to the command as a special case.
         reductions: Dict[str, List[str]] = {}
         for name, dataset_collection_info_pairs in inp_dataset_collections.items():
-            for (dataset_collection, reduced) in dataset_collection_info_pairs:
+            for dataset_collection, reduced in dataset_collection_info_pairs:
                 if reduced:
                     if name not in reductions:
                         reductions[name] = []
@@ -1193,7 +1193,8 @@ def determine_output_format(
                             check, context=parameter_context, python_template_version=python_template_version
                         ) == when_elem.get("value", None):
                             ext = when_elem.get("format", ext)
-                    except Exception:  # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                    except Exception:
+                        # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
                         continue
                 else:
                     check = when_elem.get("input_dataset", None)

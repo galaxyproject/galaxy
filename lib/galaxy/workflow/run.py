@@ -208,7 +208,7 @@ class WorkflowInvoker:
         remaining_steps = self.progress.remaining_steps()
         delayed_steps = False
         max_jobs_per_iteration_reached = False
-        for (step, workflow_invocation_step) in remaining_steps:
+        for step, workflow_invocation_step in remaining_steps:
             max_jobs_to_schedule = self.progress.maximum_jobs_to_schedule_or_none
             if max_jobs_to_schedule is not None and max_jobs_to_schedule <= 0:
                 max_jobs_per_iteration_reached = True

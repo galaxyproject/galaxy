@@ -73,7 +73,6 @@ def get_mercurial_default_options_dict(command):
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
-
     category_grid = repository_grids.CategoryGrid()
     datatypes_grid = repository_grids.DatatypesGrid()
     deprecated_repositories_i_own_grid = repository_grids.DeprecatedRepositoriesIOwnGrid()

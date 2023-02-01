@@ -144,7 +144,6 @@ def write_script(path: str, contents, job_io: DescribesScriptIntegrityChecks, mo
 def _handle_script_integrity(
     path: str, check_job_script_integrity_count: int, check_job_script_integrity_sleep: float
 ) -> None:
-
     script_integrity_verified = False
     for _ in range(check_job_script_integrity_count):
         try:

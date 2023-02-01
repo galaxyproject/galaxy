@@ -261,7 +261,6 @@ class TestInlineJobEnvironmentContainerResolver(integration_util.IntegrationTest
 # TMPDIR can fix this.
 # TMPDIR=/home/vagrant/tmp/ pytest test/integration/test_containerized_jobs.py::TestSingularityJobsIntegration
 class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
-
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
     build_mulled_resolver = "build_mulled_singularity"
     container_type = "singularity"

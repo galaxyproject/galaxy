@@ -379,7 +379,6 @@ class CondaInDockerContext(CondaContext):
 
 
 class InvolucroContext(installable.InstallableContext):
-
     installable_description = "Involucro"
 
     def __init__(self, involucro_bin=None, shell_exec=None, verbose="3"):

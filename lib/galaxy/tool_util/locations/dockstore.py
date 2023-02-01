@@ -8,7 +8,6 @@ from . import ToolLocationResolver
 
 
 class DockStoreResolver(ToolLocationResolver):
-
     scheme = "dockstore"
 
     def get_tool_source_path(self, uri_like: str) -> str:

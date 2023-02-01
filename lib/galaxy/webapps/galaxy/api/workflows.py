@@ -972,7 +972,7 @@ class WorkflowsAPIController(
         decoded_invocation_id = self.decode_id(invocation_id)
         ids = []
         types = []
-        for (job_source_type, job_source_id, _) in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
+        for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
             ids.append(job_source_id)
             types.append(job_source_type)
         return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]

@@ -9,7 +9,6 @@ from galaxy_test.driver import integration_util
 
 
 class TestPurgeDatasetsIntegration(integration_util.IntegrationTestCase):
-
     dataset_populator: DatasetPopulator
 
     def setUp(self):

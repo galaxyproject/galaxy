@@ -1813,9 +1813,7 @@ class CMAP(TabularData):
                 for i, line in enumerate(dataset_fh):
                     line = line.strip("\n")
                     if line.startswith("#"):
-
                         if line.startswith("#h"):
-
                             column_headers = line.split("\t")[1:]
                         elif line.startswith("#f"):
                             cleaned_column_types = []

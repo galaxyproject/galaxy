@@ -54,7 +54,6 @@ class GithubPlugin(BaseGitPlugin):
         log.info(self.github)
 
         if self.github:
-
             # Determine the ToolShed url, initially we connect with HTTP and if redirect to HTTPS is set up,
             # this will be detected by requests and used further down the line. Also cache this so everything is
             # as fast as possible

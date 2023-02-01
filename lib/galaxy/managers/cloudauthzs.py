@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class CloudAuthzManager(sharable.SharableModelManager):
-
     model_class = model.CloudAuthz
     foreign_key_name = "cloudauthz"
 

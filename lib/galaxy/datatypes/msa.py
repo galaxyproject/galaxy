@@ -246,7 +246,6 @@ class Stockholm_1_0(Text):
                 part_file.writelines(accumulated_lines)
 
         try:
-
             stockholm_records = _read_stockholm_records(input_files[0])
             stockholm_lines_accumulated = []
             for counter, stockholm_record in enumerate(stockholm_records, start=1):

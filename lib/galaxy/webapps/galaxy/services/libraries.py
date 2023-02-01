@@ -232,7 +232,6 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             if not is_public:
                 raise exceptions.InternalServerError("An error occurred while making library public.")
         elif action == "set_permissions":
-
             # ACCESS LIBRARY ROLES
             valid_access_roles = []
             invalid_access_roles_names = []

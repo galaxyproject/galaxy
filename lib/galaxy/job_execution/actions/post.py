@@ -402,7 +402,7 @@ class DeleteIntermediatesAction(DefaultJobAction):
                         )
                     else:
                         creating_jobs.append((input_dataset, input_dataset.dataset.creating_job))
-                for (input_dataset, creating_job) in creating_jobs:
+                for input_dataset, creating_job in creating_jobs:
                     sa_session.refresh(creating_job)
                     sa_session.refresh(input_dataset)
                 for input_dataset in [
@@ -497,7 +497,6 @@ class RemoveTagDatasetAction(TagDatasetAction):
 
 
 class ActionBox:
-
     actions = {
         "RenameDatasetAction": RenameDatasetAction,
         "HideDatasetAction": HideDatasetAction,

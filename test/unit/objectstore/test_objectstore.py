@@ -263,7 +263,6 @@ backends:
 def test_hierarchical_store():
     for config_str in [HIERARCHICAL_TEST_CONFIG, HIERARCHICAL_TEST_CONFIG_YAML]:
         with TestConfig(config_str) as (directory, object_store):
-
             # Test no dataset with id 1 exists.
             assert not object_store.exists(MockDataset(1))
 
@@ -683,7 +682,6 @@ def test_config_parse_cloud():
             open(path, "w").write("some_gcp_config")
             config_str = config_str.replace("gcp.config", path)
         with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
-
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
@@ -750,7 +748,6 @@ CLOUD_AWS_NO_AUTH_TEST_CONFIG = """<object_store type="cloud" provider="aws">
 def test_config_parse_cloud_noauth_for_aws():
     for config_str in [CLOUD_AWS_NO_AUTH_TEST_CONFIG]:
         with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
-
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 

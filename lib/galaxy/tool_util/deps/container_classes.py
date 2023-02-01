@@ -271,7 +271,6 @@ class HasDockerLikeVolumes:
 
 
 class DockerContainer(Container, HasDockerLikeVolumes):
-
     container_type = DOCKER_CONTAINER_TYPE
 
     @property
@@ -383,7 +382,6 @@ def docker_cache_path(cache_directory, container_id):
 
 
 class SingularityContainer(Container, HasDockerLikeVolumes):
-
     container_type = SINGULARITY_CONTAINER_TYPE
 
     def get_singularity_target_kwds(self):
@@ -411,7 +409,6 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         )
 
     def containerize_command(self, command):
-
         env = []
         for pass_through_var in self.tool_info.env_pass_through:
             env.append((pass_through_var, f"${pass_through_var}"))

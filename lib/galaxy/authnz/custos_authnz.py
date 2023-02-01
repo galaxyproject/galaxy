@@ -264,7 +264,6 @@ class CustosAuthnz(IdentityProvider):
         return session
 
     def _fetch_token(self, oauth2_session, trans):
-
         if self.config.get("iam_client_secret"):
             # Custos uses the Keycloak client secret to get the token
             client_secret = self.config["iam_client_secret"]
