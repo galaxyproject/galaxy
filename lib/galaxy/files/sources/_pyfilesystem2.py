@@ -32,13 +32,13 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         self._props = props
 
     @abc.abstractmethod
-    def _open_fs(self, user_context=None):
+    def _open_fs(self, user_context=None, extra_props=None):
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
-    def _list(self, path="/", recursive=False, user_context=None):
+    def _list(self, path="/", recursive=False, user_context=None, extra_props=None):
         """Return dictionary of 'Directory's and 'File's."""
 
-        with self._open_fs(user_context=user_context) as h:
+        with self._open_fs(user_context=user_context, extra_props=extra_props) as h:
             if recursive:
                 res: List[Dict[str, Any]] = []
                 for p, dirs, files in h.walk(path):
@@ -51,13 +51,13 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                 to_dict = functools.partial(self._resource_info_to_dict, path)
                 return list(map(to_dict, res))
 
-    def _realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         with open(native_path, "wb") as write_file:
-            self._open_fs(user_context=user_context).download(source_path, write_file)
+            self._open_fs(user_context=user_context, extra_props=extra_props).download(source_path, write_file)
 
-    def _write_from(self, target_path, native_path, user_context=None):
+    def _write_from(self, target_path, native_path, user_context=None, extra_props=None):
         with open(native_path, "rb") as read_file:
-            openfs = self._open_fs(user_context=user_context)
+            openfs = self._open_fs(user_context=user_context, extra_props=extra_props)
             dirname = fs.path.dirname(target_path)
             if not openfs.isdir(dirname):
                 openfs.makedirs(dirname)

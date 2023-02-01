@@ -21,10 +21,10 @@ class DRSFilesSource(BaseFilesSource):
         props = self._parse_common_config_opts(kwds)
         self._props = props
 
-    def _realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         props = self._serialization_props(user_context)
         headers = props.pop("http_headers", {}) or {}
-        fetch_drs_to_file(source_path, native_path, headers=headers)
+        fetch_drs_to_file(source_path, native_path, headers=headers, user_context=user_context)
 
     def _write_from(self, target_path, native_path, user_context=None):
         raise NotImplementedError()

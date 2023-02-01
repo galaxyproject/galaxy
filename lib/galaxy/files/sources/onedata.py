@@ -11,9 +11,9 @@ class OneDataFilesSource(PyFilesystem2FilesSource):
     required_module = OnedataFS
     required_package = "fs-onedatafs"
 
-    def _open_fs(self, user_context):
+    def _open_fs(self, user_context, extra_props=None):
         props = self._serialization_props(user_context)
-        handle = OnedataFS(**props)
+        handle = OnedataFS(**{**props, **extra_props})
         return handle
 
 

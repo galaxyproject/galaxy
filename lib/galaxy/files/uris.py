@@ -1,4 +1,3 @@
-import base64
 import ipaddress
 import logging
 import os
@@ -7,7 +6,6 @@ import tempfile
 from typing import (
     List,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 from urllib.parse import urlparse
@@ -22,6 +20,7 @@ from galaxy.util import (
 )
 
 from galaxy.files import ConfiguredFileSources
+from galaxy.files import NoMatchingFileSource
 
 
 log = logging.getLogger(__name__)
@@ -44,18 +43,20 @@ def stream_url_to_file(
     prefix: str = "gx_file_stream",
     dir: Optional[str] = None,
     user_context=None,
+    target_path: Optional[str] = None,
+    extra_props: Optional[dict] = None
 ) -> str:
-    temp_name: str
     if not file_sources:
         file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
     file_source, rel_path = file_sources.get_file_source_path(url)
     if file_source:
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
-            temp_name = temp.name
-        file_source.realize_to(rel_path, temp_name, user_context=user_context)
-        return temp_name
+        if not target_path:
+            with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
+                target_path = temp.name
+        file_source.realize_to(rel_path, target_path, user_context=user_context, extra_props=extra_props)
+        return target_path
     else:
-        raise Exception(f"Could not find a matching handler for: {url}")
+        raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")
 
 
 def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):

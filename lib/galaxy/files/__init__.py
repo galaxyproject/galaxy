@@ -15,11 +15,17 @@ from typing import (
 from galaxy import exceptions
 from galaxy.util import plugin_config
 from galaxy.util.dictifiable import Dictifiable
+from galaxy.security.vault import UserVaultWrapper
+from galaxy.security.vault import Vault
 
 log = logging.getLogger(__name__)
 
 FileSourcePath = namedtuple("FileSourcePath", ["file_source", "path"])
 FileSourceScore = namedtuple("FileSourceScore", ["file_source", "score"])
+
+
+class NoMatchingFileSource(Exception):
+    pass
 
 
 class ConfiguredFileSources:
@@ -158,8 +164,10 @@ class ConfiguredFileSources:
         return schemes
 
     def plugins_to_dict(
-        self, for_serialization: bool = False, user_context: Optional["FileSourceDictifiable"] = None,
-        browsable_only: Optional[bool] = False
+        self,
+        for_serialization: bool = False,
+        user_context: Optional["FileSourceDictifiable"] = None,
+        browsable_only: Optional[bool] = False,
     ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
@@ -201,7 +209,8 @@ class ConfiguredFileSources:
             sources_as_dict = []
             file_sources_config = ConfiguredFileSourcesConfig()
         return ConfiguredFileSources(
-            file_sources_config, conf_dict=sources_as_dict, load_stock_plugins=load_stock_plugins)
+            file_sources_config, conf_dict=sources_as_dict, load_stock_plugins=load_stock_plugins
+        )
 
 
 class NullConfiguredFileSources(ConfiguredFileSources):
@@ -273,14 +282,27 @@ class FileSourceDictifiable(Dictifiable):
         raise NotImplementedError
 
     @property
-    def group_names(sefl) -> Set[str]:
+    def group_names(self) -> Set[str]:
+        raise NotImplementedError
+
+    @property
+    def user_vault(self) -> UserVaultWrapper:
+        raise NotImplementedError
+
+    @property
+    def app_vault(self) -> Vault:
+        raise NotImplementedError
+
+    @property
+    def file_sources(self):
+        """Return other filesources available in the system, for chained filesource resolution"""
         raise NotImplementedError
 
 
 class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
     """Implement a FileSourcesUserContext from a Galaxy ProvidesUserContext (e.g. trans)."""
 
-    def __init__(self, trans):
+    def __init__(self, trans, **kwargs):
         self.trans = trans
 
     @property
@@ -331,6 +353,10 @@ class ProvidesUserFileSourcesUserContext(FileSourceDictifiable):
         vault = self.trans.app.vault
         return vault or defaultdict(lambda: None)
 
+    @property
+    def file_sources(self):
+        return self.trans.app.file_sources
+
 
 class DictFileSourcesUserContext(FileSourceDictifiable):
     def __init__(self, **kwd):
@@ -371,3 +397,7 @@ class DictFileSourcesUserContext(FileSourceDictifiable):
     @property
     def app_vault(self):
         return self._kwd.get("app_vault")
+
+    @property
+    def file_sources(self):
+        return self._kwd.get("file_sources")

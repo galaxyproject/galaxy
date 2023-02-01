@@ -11,9 +11,9 @@ class S3FilesSource(PyFilesystem2FilesSource):
     required_module = S3FS
     required_package = "fs-s3fs"
 
-    def _open_fs(self, user_context):
+    def _open_fs(self, user_context, extra_props=None):
         props = self._serialization_props(user_context)
-        handle = S3FS(**props)
+        handle = S3FS(**{**props, **extra_props})
         return handle
 
 

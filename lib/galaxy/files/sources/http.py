@@ -25,9 +25,10 @@ class HTTPFilesSource(BaseFilesSource):
         assert self._url_regex
         self._props = props
 
-    def _realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         props = self._serialization_props(user_context)
         headers = props.pop("http_headers", {}) or {}
+        headers.update(extra_props.get("http_headers", {}) if extra_props else {})
 
         req = urllib.request.Request(source_path, headers=headers)
 

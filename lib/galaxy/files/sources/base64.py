@@ -20,7 +20,7 @@ class Base64FilesSource(BaseFilesSource):
         props = self._parse_common_config_opts(kwds)
         self._props = props
 
-    def _realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         with open(native_path, "wb") as temp:
             temp.write(base64.b64decode(source_path[len("base64://"):]))
             temp.flush()

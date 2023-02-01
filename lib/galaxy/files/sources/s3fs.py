@@ -29,11 +29,12 @@ class S3FsFilesSource(BaseFilesSource):
         props = self._parse_common_config_opts(kwd)
         self._bucket = props.pop("bucket", "")
         self._endpoint_url = props.pop("endpoint_url", None)
-        assert self._endpoint_url or self._bucket
         self._props = props
+        if self._endpoint_url:
+            self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
 
-    def _list(self, path="/", recursive=True, user_context=None):
-        fs = self._open_fs(user_context=user_context)
+    def _list(self, path="/", recursive=True, user_context=None, extra_props=None):
+        fs = self._open_fs(user_context=user_context, extra_props=None)
         if recursive:
             res: List[Dict[str, Any]] = []
             bucket_path = self._bucket_path(path)
@@ -48,9 +49,9 @@ class S3FsFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res))
 
-    def _realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         bucket_path = self._bucket_path(source_path)
-        self._open_fs(user_context=user_context).download(bucket_path, native_path)
+        self._open_fs(user_context=user_context, extra_props=extra_props).download(bucket_path, native_path)
 
     def _write_from(self, target_path, native_path, user_context=None):
         raise NotImplementedError()
@@ -60,10 +61,9 @@ class S3FsFilesSource(BaseFilesSource):
             path = f"/{path}"
         return f"{self._bucket}{path}"
 
-    def _open_fs(self, user_context=None):
-        if self._endpoint_url:
-            self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
-        fs = s3fs.S3FileSystem(**self._props)
+    def _open_fs(self, user_context=None, extra_props=None):
+        extra_props = extra_props or {}
+        fs = s3fs.S3FileSystem(**{**self._props, **extra_props})
         return fs
 
     def _resource_info_to_dict(self, dir_path, resource_info):
@@ -87,6 +87,15 @@ class S3FsFilesSource(BaseFilesSource):
         effective_props = super()._serialization_props(user_context=user_context)
         effective_props["bucket"] = self._bucket
         return effective_props
+
+    def score_url_match(self, url: str):
+        if url.startswith("s3://"):
+            return len("s3://")
+        else:
+            return super().score_url_match(url)
+
+    def to_relative_path(self, url: str):
+        return super().to_relative_path(url.replace("s3://", ""))
 
 
 __all__ = ("S3FsFilesSource",)

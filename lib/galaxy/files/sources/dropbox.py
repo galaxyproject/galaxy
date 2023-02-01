@@ -11,9 +11,9 @@ class DropboxFilesSource(PyFilesystem2FilesSource):
     required_module = DropboxFS
     required_package = "fs.dropboxfs"
 
-    def _open_fs(self, user_context):
+    def _open_fs(self, user_context, extra_props=None):
         props = self._serialization_props(user_context)
-        handle = DropboxFS(**props)
+        handle = DropboxFS(**{**props, **extra_props})
         return handle
 
 

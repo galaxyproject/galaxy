@@ -11,9 +11,9 @@ class WebDavFilesSource(PyFilesystem2FilesSource):
     required_module = WebDAVFS
     required_package = "fs.webdavfs"
 
-    def _open_fs(self, user_context):
+    def _open_fs(self, user_context, extra_props=None):
         props = self._serialization_props(user_context)
-        handle = WebDAVFS(**props)
+        handle = WebDAVFS(**{**props, **extra_props})
         return handle
 
 

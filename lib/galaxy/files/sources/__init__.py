@@ -21,6 +21,7 @@ DEFAULT_WRITABLE = False
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
+
     @abc.abstractmethod
     def get_scheme(self) -> str:
         """Return a prefix for the root (e.g. the gxfiles in gxfiles://prefix/path)."""
@@ -34,11 +35,11 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         """Return a boolean indicating if the user can access the FileSource."""
 
     @abc.abstractmethod
-    def realize_to(self, source_path, native_path, user_context=None):
+    def realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         """Realize source path (relative to uri root) to local file system path."""
 
     @abc.abstractmethod
-    def write_from(self, target_path, native_path, user_context=None):
+    def write_from(self, target_path, native_path, user_context=None, extra_props=None):
         """Write file at native path to target_path (relative to uri root)."""
 
     @abc.abstractmethod
@@ -75,12 +76,13 @@ class SingleFileSource(metaclass=abc.ABCMeta):
 
 
 class BrowsableSourceMixin(metaclass=abc.ABCMeta):
+
     @abc.abstractmethod
     def get_uri_root(self) -> str:
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def list(self, source_path="/", recursive=False, user_context=None, limit=None, marker=None):
+    def list(self, source_path="/", recursive=False, user_context=None, extra_props=None):
         """Return dictionary of 'Directory's and 'File's."""
 
 
@@ -189,29 +191,29 @@ class BaseFilesSource(FilesSource):
         Used in to_dict method if for_serialization is True.
         """
 
-    def list(self, path="/", recursive=False, user_context=None):
+    def list(self, path="/", recursive=False, user_context=None, extra_props=None):
         self._check_user_access(user_context)
-        return self._list(path, recursive, user_context)
+        return self._list(path, recursive, user_context, extra_props=extra_props)
 
-    def _list(self, path="/", recursive=False, user_context=None):
+    def _list(self, path="/", recursive=False, user_context=None, extra_props=None):
         pass
 
-    def write_from(self, target_path, native_path, user_context=None):
+    def write_from(self, target_path, native_path, user_context=None, extra_props=None):
         if not self.get_writable():
             raise Exception("Cannot write to a non-writable file source.")
         self._check_user_access(user_context)
-        self._write_from(target_path, native_path, user_context=user_context)
+        self._write_from(target_path, native_path, user_context=user_context, extra_props=extra_props)
 
     @abc.abstractmethod
-    def _write_from(self, target_path, native_path, user_context=None):
+    def _write_from(self, target_path, native_path, user_context=None, extra_props=None):
         pass
 
-    def realize_to(self, source_path, native_path, user_context=None):
+    def realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         self._check_user_access(user_context)
-        self._realize_to(source_path, native_path, user_context)
+        self._realize_to(source_path, native_path, user_context, extra_props=extra_props)
 
     @abc.abstractmethod
-    def _realize_to(self, source_path, native_path, user_context=None):
+    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
         pass
 
     def _check_user_access(self, user_context):
