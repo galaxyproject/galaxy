@@ -59,7 +59,6 @@ def idfn(val: ToolTest):
 
 
 class TestFrameworkTools(ApiTestCase):
-
     conda_auto_init = True
     conda_auto_install = True
 

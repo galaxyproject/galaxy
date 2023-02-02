@@ -324,7 +324,6 @@ def build_env_statements(cellar_root, cellar_path, relaxed=None, custom_only=Fal
 
 
 def build_env_actions(deps, cellar_root, cellar_path, relaxed=None, custom_only=False):
-
     path_appends = []
     ld_path_appends = []
     actions = []

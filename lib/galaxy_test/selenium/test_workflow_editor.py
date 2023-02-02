@@ -28,7 +28,6 @@ from .framework import (
 
 
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
-
     ensure_registered = True
 
     @selenium_test
@@ -558,6 +557,17 @@ steps:
         editor.select_datatype(datatype="bam").wait_for_and_click()
         editor.node.output_data_row(output_name="out_file1", extension="bam").wait_for_visible()
         self.assert_connection_invalid("create_2#out_file1", "checksum#input")
+        save_button = self.components.workflow_editor.save_button
+        # Assert save button is disabled
+        assert save_button.has_class("disabled")
+        # Make connection valid again
+        editor.change_datatype.wait_for_and_click()
+        editor.select_datatype_text_search.wait_for_and_send_keys("tabular")
+        editor.select_datatype(datatype="tabular").wait_for_and_click()
+        # Assert connection is valid
+        self.assert_connected("create_2#out_file1", "checksum#input")
+        # Assert save button is enabled
+        assert not save_button.has_class("disabled")
 
     @selenium_test
     def test_change_datatype_post_job_action_lost_regression(self):
@@ -686,7 +696,10 @@ steps:
         workflow_populator.upload_yaml_workflow(WORKFLOW_OPTIONAL_TRUE_INPUT_COLLECTION, name=child_workflow_name)
         parent_workflow_id = workflow_populator.upload_yaml_workflow(
             """class: GalaxyWorkflow
-inputs: []
+inputs:
+  input_collection:
+    type: collection
+    collection_type: "list"
 steps:
   - tool_id: multiple_versions
     tool_version: 0.1
@@ -705,10 +718,16 @@ steps:
         self.sleep_for(self.wait_types.UX_RENDER)
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(parent_workflow_id)
-        subworkflow_step = workflow["steps"]["1"]
+        subworkflow_step = workflow["steps"]["2"]
         assert subworkflow_step["name"] == child_workflow_name
         assert subworkflow_step["type"] == "subworkflow"
         assert subworkflow_step["subworkflow"]["a_galaxy_workflow"] == "true"
+        self.workflow_editor_connect("input_collection#output", f"{child_workflow_name}#input1")
+        self.assert_connected("input_collection#output", f"{child_workflow_name}#input1")
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(parent_workflow_id)
+        subworkflow_step = workflow["steps"]["2"]
+        assert subworkflow_step["input_connections"]["input1"]["input_subworkflow_step_id"] == 0
 
     @selenium_test
     def test_editor_insert_steps(self):
@@ -726,6 +745,67 @@ steps:
         workflow_id = self.driver.current_url.split("id=")[1]
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert len(workflow["steps"]) == 3
+
+    @selenium_test
+    def test_editor_create_conditional_step(self):
+        editor = self.components.workflow_editor
+        self.workflow_create_new(annotation="simple when step definition")
+        # Insert a boolean parameter
+        self.workflow_editor_add_input(item_name="parameter_input")
+        param_type_element = editor.param_type_form.wait_for_present()
+        self.switch_param_type(param_type_element, "Boolean")
+        editor.label_input.wait_for_and_send_keys("param_input")
+        editor.tool_menu.wait_for_visible()
+        # Insert cat tool
+        self.tool_open("cat")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("downstream_step")
+        # Insert head tool
+        self.tool_open("head")
+        self.workflow_editor_click_option("Auto Layout")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("conditional_step")
+        # Connect head to cat
+        self.workflow_editor_connect("conditional_step#out_file1", "downstream_step#input1")
+        self.assert_connected("conditional_step#out_file1", "downstream_step#input1")
+        # Make head tool conditional
+        conditional_node = editor.node._(label="conditional_step")
+        conditional_node.input_terminal(name="input").wait_for_present()
+        # Assert no when input before making step conditional
+        conditional_node.input_terminal(name="when").wait_for_absent()
+        conditional_toggle = editor.step_when.wait_for_present()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        # Toggling conditional should cause when input to appear
+        conditional_node.input_terminal(name="when").wait_for_present()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        # Toggling conditional should cause when input to disappear
+        conditional_node.input_terminal(name="when").wait_for_absent()
+        self.action_chains().move_to_element(conditional_toggle).click().perform()
+        conditional_node.input_terminal(name="when").wait_for_present()
+        # Output connection should be invalid, as output from conditional step is potentially null
+        self.assert_connection_invalid("conditional_step#out_file1", "downstream_step#input1")
+        downstream_step = editor.node._(label="downstream_step")
+        downstream_step.destroy.wait_for_and_click()
+        downstream_step.wait_for_absent()
+        # Connect boolean input to when
+        self.workflow_editor_connect("param_input#output", "conditional_step#when")
+        self.assert_connected("param_input#output", "conditional_step#when")
+        # Change boolean input parameter to invalid parameter type
+        editor.node._(label="param_input").wait_for_and_click()
+        param_type_element = editor.param_type_form.wait_for_present()
+        self.switch_param_type(param_type_element, "Text")
+        self.assert_connection_invalid("param_input#output", "conditional_step#when")
+        self.workflow_editor_destroy_connection("conditional_step#when")
+        # Make sure the when input is still shown
+        conditional_node.input_terminal(name="when").wait_for_present()
+        # Assert save button is disabled because of disconnected when
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        # TODO: hook up best practice panel, disable save when "when" not connected
+        # assert save_button.has_class("disabled")
+
+    def switch_param_type(self, element, param_type):
+        self.action_chains().move_to_element(element).click().send_keys(param_type).send_keys(Keys.ENTER).perform()
 
     @selenium_test
     def test_editor_invalid_tool_state(self):

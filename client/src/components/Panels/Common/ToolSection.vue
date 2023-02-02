@@ -97,6 +97,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        sortItems: {
+            type: Boolean,
+            default: true,
+        },
     },
     setup() {
         const { config, isLoaded } = useConfig();
@@ -135,11 +139,22 @@ export default {
             if (
                 this.isLoaded &&
                 this.config.toolbox_auto_sort === true &&
+                this.sortItems === true &&
                 !this.category.elems.some((el) => el.text !== undefined && el.text !== "")
             ) {
-                return Object.entries(
-                    [...this.category.elems].sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase())
-                );
+                const elements = [...this.category.elems];
+                const sorted = elements.sort((a, b) => {
+                    const aNameLower = a.name.toLowerCase();
+                    const bNameLower = b.name.toLowerCase();
+                    if (aNameLower > bNameLower) {
+                        return 1;
+                    } else if (aNameLower < bNameLower) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                });
+                return Object.entries(sorted);
             } else {
                 return Object.entries(this.category.elems);
             }

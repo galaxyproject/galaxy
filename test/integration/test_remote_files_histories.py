@@ -5,7 +5,6 @@ from .test_remote_files import ConfiguresRemoteFilesIntegrationTestCase
 
 
 class TestRemoteFilesHistoryImportExportIntegration(ConfiguresRemoteFilesIntegrationTestCase):
-
     framework_tool_and_types = True
 
     def test_history_import_from_library_dir(self):

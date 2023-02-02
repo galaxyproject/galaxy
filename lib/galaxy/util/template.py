@@ -19,7 +19,6 @@ refactoring_tool = RefactoringTool(myfixes, {"print_function": True})
 
 
 class FixedModuleCodeCompiler(Compiler):
-
     module_code = None
 
     def getModuleCode(self):

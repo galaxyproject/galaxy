@@ -120,7 +120,6 @@ def handle_outputs(job_directory=None):
 
         secondary_files = output.get("secondaryFiles", [])
         if secondary_files:
-
             order = []
             index_contents = {"order": order}
 

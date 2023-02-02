@@ -25,7 +25,6 @@ from .framework import (
 
 
 class TestWorkflowRun(SeleniumTestCase, UsesHistoryItemAssertions, RunsWorkflows):
-
     ensure_registered = True
 
     @selenium_test

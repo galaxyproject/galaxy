@@ -319,7 +319,7 @@ def _construct_steps_for_map_over() -> List[MapOverTestCase]:
         ("list:list", ["list", "pair"], "list:list", "list:list:list"),
     ]
     test_cases = []
-    for (data_input, step_input_def, step_output_def, expected_collection_type) in test_case_args:
+    for data_input, step_input_def, step_output_def, expected_collection_type in test_case_args:
         steps: Dict[int, Dict[str, Any]] = {
             0: _input_step(collection_type=data_input),
             1: _output_step(step_input_def=step_input_def, step_output_def=step_output_def),

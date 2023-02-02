@@ -4,7 +4,7 @@ Triple format classes
 import logging
 import re
 
-from galaxy.datatypes._protocols import DatasetProtocol
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,

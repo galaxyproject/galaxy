@@ -27,16 +27,16 @@ from urllib.parse import quote_plus
 from markupsafe import escape
 
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-    HasMetadata,
-)
 from galaxy.datatypes.data import (
     DatatypeValidation,
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+    HasMetadata,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,

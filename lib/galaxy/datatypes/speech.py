@@ -1,9 +1,9 @@
-from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import (
     ListParameter,
     MetadataElement,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import get_headers
 
 
@@ -37,7 +37,6 @@ class TextGrid(Text):
     )
 
     def sniff(self, filename: str) -> bool:
-
         with open(filename) as fd:
             text = fd.read(len(self.header))
             return text == self.header

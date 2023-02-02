@@ -34,7 +34,6 @@ class ExplicitContainerResolver(ContainerResolver):
 
 
 class ExplicitSingularityContainerResolver(ExplicitContainerResolver):
-
     resolver_type = "explicit_singularity"
     container_type = "singularity"
 
@@ -160,7 +159,6 @@ class FallbackSingularityContainerResolver(FallbackContainerResolver):
 
 
 class FallbackNoRequirementsContainerResolver(FallbackContainerResolver):
-
     resolver_type = "fallback_no_requirements"
 
     def _match(self, enabled_container_types, tool_info, container_description):
@@ -169,13 +167,11 @@ class FallbackNoRequirementsContainerResolver(FallbackContainerResolver):
 
 
 class FallbackNoRequirementsSingularityContainerResolver(FallbackNoRequirementsContainerResolver):
-
     resolver_type = "fallback_no_requirements_singularity"
     container_type = "singularity"
 
 
 class RequiresGalaxyEnvironmentContainerResolver(FallbackContainerResolver):
-
     resolver_type = "requires_galaxy_environment"
 
     def _match(self, enabled_container_types, tool_info, container_description):
@@ -184,7 +180,6 @@ class RequiresGalaxyEnvironmentContainerResolver(FallbackContainerResolver):
 
 
 class RequiresGalaxyEnvironmentSingularityContainerResolver(RequiresGalaxyEnvironmentContainerResolver):
-
     resolver_type = "requires_galaxy_environment_singularity"
     container_type = "singularity"
 

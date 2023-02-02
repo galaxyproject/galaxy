@@ -8,13 +8,13 @@ from typing import (
     List,
 )
 
-from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -243,7 +243,6 @@ class Stockholm_1_0(Text):
                 part_file.writelines(accumulated_lines)
 
         try:
-
             stockholm_records = _read_stockholm_records(input_files[0])
             stockholm_lines_accumulated = []
             for counter, stockholm_record in enumerate(stockholm_records, start=1):

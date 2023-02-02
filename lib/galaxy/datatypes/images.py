@@ -10,14 +10,14 @@ import mrcfile
 import numpy as np
 import tifffile
 
-from galaxy.datatypes._protocols import (
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
     FileParameter,
     MetadataElement,
+)
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,

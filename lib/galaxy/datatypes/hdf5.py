@@ -4,12 +4,12 @@ This datatype was created for use with the iSEE interactive tool.
 """
 from typing import Optional
 
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.data import Data
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
     HasExtraFilesAndMetadata,
     HasMetadata,
 )
-from galaxy.datatypes.data import Data
-from galaxy.datatypes.metadata import MetadataElement
 
 
 class HDF5SummarizedExperiment(Data):

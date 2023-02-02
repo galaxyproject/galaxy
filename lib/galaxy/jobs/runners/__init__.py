@@ -82,7 +82,6 @@ class RunnerParams(ParamsWithSpecs):
 
 
 class BaseJobRunner:
-
     runner_name = "BaseJobRunner"
 
     start_methods = ["_init_monitor_thread", "_init_worker_threads"]
@@ -343,7 +342,7 @@ class BaseJobRunner:
         # Walk job's output associations to find and use from_work_dir attributes.
         job = job_wrapper.get_job()
         job_tool = job_wrapper.tool
-        for (joda, dataset) in self._walk_dataset_outputs(job):
+        for joda, dataset in self._walk_dataset_outputs(job):
             if joda and job_tool:
                 hda_tool_output = job_tool.find_output_def(joda.name)
                 if hda_tool_output and hda_tool_output.from_work_dir:

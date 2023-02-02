@@ -10,11 +10,11 @@ Phylip datatype sniffer
 from typing import TYPE_CHECKING
 
 from galaxy import util
-from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,

@@ -615,6 +615,11 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__annotation']//textarea
+    step_when:
+      type: xpath
+      selector: >
+       //div[@id='form-element-__conditional']//input
+    param_type_form: '#parameter_definition\|parameter_type'
     configure_output:
       type: xpath
       selector: >

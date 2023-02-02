@@ -423,7 +423,6 @@ def targets_to_mulled_name(
 
 
 class CliContainerResolver(ContainerResolver):
-
     container_type = "docker"
     cli = "docker"
 
@@ -445,7 +444,6 @@ class CliContainerResolver(ContainerResolver):
 
 
 class SingularityCliContainerResolver(CliContainerResolver):
-
     container_type = "singularity"
     cli = "singularity"
 
@@ -465,7 +463,6 @@ class SingularityCliContainerResolver(CliContainerResolver):
 
 
 class CachedMulledDockerContainerResolver(CliContainerResolver):
-
     resolver_type = "cached_mulled"
     shell = "/bin/bash"
 
@@ -494,7 +491,6 @@ class CachedMulledDockerContainerResolver(CliContainerResolver):
 
 
 class CachedMulledSingularityContainerResolver(SingularityCliContainerResolver):
-
     resolver_type = "cached_mulled_singularity"
     shell = "/bin/bash"
 
@@ -611,7 +607,6 @@ class MulledDockerContainerResolver(CliContainerResolver):
 
 
 class MulledSingularityContainerResolver(SingularityCliContainerResolver, MulledDockerContainerResolver):
-
     resolver_type = "mulled_singularity"
     protocol = "docker://"
 

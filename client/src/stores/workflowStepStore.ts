@@ -8,6 +8,7 @@ interface State {
     steps: { [index: string]: Step };
     stepIndex: number;
     stepMapOver: { [index: number]: CollectionTypeDescriptor };
+    stepInputMapOver: StepInputMapOver;
 }
 
 interface StepPosition {
@@ -62,6 +63,7 @@ interface BaseStepInput {
     extensions: string[];
     optional: boolean;
     input_type: string;
+    input_subworkflow_step_id?: number;
 }
 
 export interface DataStepInput extends BaseStepInput {
@@ -84,8 +86,8 @@ export type TerminalSource = InputTerminalSource | OutputTerminalSource;
 
 interface WorkflowOutput {
     output_name: string;
-    label?: string;
-    uuid?: string;
+    label?: string | null;
+    uuid?: string | null;
 }
 
 export interface NewStep {
@@ -96,7 +98,7 @@ export interface NewStep {
     errors?: string[] | null;
     input_connections: StepInputConnection;
     inputs: Array<InputTerminalSource>;
-    label?: string;
+    label?: string | null;
     name: string;
     outputs: Array<OutputTerminalSource>;
     position?: StepPosition;
@@ -105,7 +107,7 @@ export interface NewStep {
     tooltip?: string;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
-    when?: string;
+    when?: string | null;
     workflow_outputs?: WorkflowOutput[];
 }
 
@@ -124,6 +126,7 @@ export interface StepInputConnection {
 export interface ConnectionOutputLink {
     output_name: string;
     id: number;
+    input_subworkflow_step_id?: number;
 }
 
 interface WorkflowOutputs {
@@ -133,10 +136,15 @@ interface WorkflowOutputs {
     };
 }
 
+interface StepInputMapOver {
+    [index: number]: { [index: string]: CollectionTypeDescriptor };
+}
+
 export const useWorkflowStepStore = defineStore("workflowStepStore", {
     state: (): State => ({
         steps: {} as Steps,
         stepMapOver: {} as { [index: number]: CollectionTypeDescriptor },
+        stepInputMapOver: {} as StepInputMapOver,
         stepIndex: -1,
     }),
     getters: {
@@ -211,22 +219,44 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             this.steps[step.id.toString()] = step;
         },
         changeStepMapOver(stepId: number, mapOver: CollectionTypeDescriptor) {
-            this.stepMapOver[stepId] = mapOver;
+            Vue.set(this.stepMapOver, stepId, mapOver);
+        },
+        resetStepInputMapOver(stepId: number) {
+            Vue.set(this.stepInputMapOver, stepId, {});
+        },
+        changeStepInputMapOver(stepId: number, inputName: string, mapOver: CollectionTypeDescriptor) {
+            if (this.stepInputMapOver[stepId]) {
+                Vue.set(this.stepInputMapOver[stepId], inputName, mapOver);
+            } else {
+                Vue.set(this.stepInputMapOver, stepId, { [inputName]: mapOver });
+            }
         },
         addConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            const input = inputStep.inputs.find((input) => input.name === connection.input.name);
+            const connectionLink: ConnectionOutputLink = {
+                output_name: connection.output.name,
+                id: connection.output.stepId,
+            };
+            if (input && "input_subworkflow_step_id" in input && input.input_subworkflow_step_id !== undefined) {
+                connectionLink["input_subworkflow_step_id"] = input.input_subworkflow_step_id;
+            }
             const updatedStep = {
                 ...inputStep,
                 input_connections: {
                     ...inputStep.input_connections,
-                    [connection.input.name]: { output_name: connection.output.name, id: connection.output.stepId },
+                    [connection.input.name]: connectionLink,
                 },
             };
             this.updateStep(updatedStep);
         },
         removeConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
-            Vue.delete(inputStep.input_connections, connection.input.name);
+            if (this.getStepExtraInputs(inputStep.id).find((input) => connection.input.name === input.name)) {
+                inputStep.input_connections[connection.input.name] = undefined;
+            } else {
+                Vue.delete(inputStep.input_connections, connection.input.name);
+            }
             this.updateStep(inputStep);
         },
         removeStep(this: State, stepId: number) {
@@ -242,7 +272,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
 export function stepToConnections(step: Step): Connection[] {
     const connections: Connection[] = [];
     if (step.input_connections) {
-        Object.entries(step?.input_connections).forEach(([input_name, outputArray]) => {
+        Object.entries(step?.input_connections).forEach(([inputName, outputArray]) => {
             if (outputArray === undefined) {
                 return;
             }
@@ -253,7 +283,7 @@ export function stepToConnections(step: Step): Connection[] {
                 const connection = new Connection(
                     {
                         stepId: step.id,
-                        name: input_name,
+                        name: inputName,
                         connectorType: "input",
                     },
                     {
@@ -262,6 +292,10 @@ export function stepToConnections(step: Step): Connection[] {
                         connectorType: "output",
                     }
                 );
+                const connectionInput = step.inputs.find((input) => input.name == inputName);
+                if (connectionInput && "input_subworkflow_step_id" in connectionInput) {
+                    connection.input.input_subworkflow_step_id = connectionInput.input_subworkflow_step_id;
+                }
                 connections.push(connection);
             });
         });

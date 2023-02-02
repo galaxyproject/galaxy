@@ -6,7 +6,7 @@ from typing import (
     Union,
 )
 
-from galaxy.datatypes._protocols import DatasetProtocol
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -122,7 +122,6 @@ class AGPFile:
     """
 
     def __init__(self, in_file):
-
         self._agp_version = "2.1"
         self._fname = os.path.abspath(in_file)
 
@@ -190,7 +189,6 @@ class AGPFile:
     def _add_line(self, agp_line):
         # Perform validity checks if this is a new object
         if agp_line.obj != self._current_obj:
-
             # Check if we have already seen this object before
             if agp_line.obj in self._seen_objs:
                 raise AGPError(self.fname, agp_line.line_number, "object identifier out of order")

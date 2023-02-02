@@ -236,15 +236,16 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/list",
+                        component: GridHistory,
+                        props: true,
+                        redirect: redirectAnon(),
+                    },
+                    {
                         path: "histories/:historyId/export",
                         get component() {
                             return Galaxy.config.enable_celery_tasks ? HistoryExportTasks : HistoryExport;
                         },
-                        props: true,
-                    },
-                    {
-                        path: "histories/:actionId",
-                        component: GridHistory,
                         props: true,
                     },
                     {

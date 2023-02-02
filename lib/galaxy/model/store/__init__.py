@@ -2258,7 +2258,6 @@ class DirectoryModelExportStore(ModelExportStore):
             jobs_attrs.append({"id": job_id, "output_dataset_mapping": output_dataset_mapping})
 
         if self.serialize_jobs:
-
             #
             # Write jobs attributes file.
             #

@@ -14,16 +14,16 @@ from typing import (
 
 from galaxy import util
 from galaxy.datatypes import data
-from galaxy.datatypes._protocols import (
-    DatasetProtocol,
-    HasMetadata,
-)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import (
     get_file_peek,
     nice_size,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasMetadata,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,

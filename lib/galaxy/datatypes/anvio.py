@@ -7,11 +7,11 @@ import logging
 import os
 from typing import Optional
 
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
-from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.text import Html
 
 log = logging.getLogger(__name__)

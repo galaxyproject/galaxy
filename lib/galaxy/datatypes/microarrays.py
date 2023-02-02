@@ -1,10 +1,10 @@
 import logging
 
 from galaxy.datatypes import data
-from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.binary import Cel  # noqa: F401
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,

@@ -451,7 +451,7 @@ class SortRuleDefinition(BaseRuleDefinition):
         new_data = []
         new_sources = []
 
-        for (row, source) in sorted_data:
+        for row, source in sorted_data:
             new_data.append(row)
             new_sources.append(source)
 

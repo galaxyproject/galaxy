@@ -229,7 +229,8 @@ class GunicornApplicationStack(ApplicationStack):
     def log_startup(self):
         msg = [f"Galaxy server instance '{self.config.server_name}' is running"]
         if "GUNICORN_LISTENERS" in os.environ:
-            msg.append(f'serving on {os.environ["GUNICORN_LISTENERS"]}')
+            message = f'\nServing on {os.environ["GUNICORN_LISTENERS"]}\n'
+            msg.append(f"\033[92m{message}\033[0m")  # Highlight in green
         log.info("\n".join(msg))
 
 

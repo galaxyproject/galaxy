@@ -537,7 +537,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             reset_user, prt = self.get_reset_token(trans, email)
             if prt:
                 host = self.__get_host(trans)
-                reset_url = url_for(controller="root", action="login", token=prt.token)
+                reset_url = url_for(controller="login", action="start", token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (
                     host,
                     prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),

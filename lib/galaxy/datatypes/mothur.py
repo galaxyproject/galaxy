@@ -8,12 +8,12 @@ from typing import (
     Optional,
 )
 
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.data import Text
+from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasMetadata,
 )
-from galaxy.datatypes.data import Text
-from galaxy.datatypes.metadata import MetadataElement
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,

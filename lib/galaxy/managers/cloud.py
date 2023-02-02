@@ -47,7 +47,6 @@ SINGED_URL_TTL = 3600
 
 
 class CloudManager(sharable.SharableModelManager):
-
     # This manager does not manage a history; however,
     # some of its functions require operations
     # on history objects using methods from the base

@@ -22,11 +22,11 @@
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">
                 <span class="fa fa-eye fa-fw mr-1" />
-                <span>Show in History</span>
+                <span>Switch to History containing dataset</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="copyDataset">
                 <span class="fa fa-copy fa-fw mr-1" />
-                <span>Copy to History</span>
+                <span>Copy to current History</span>
             </a>
         </div>
     </div>

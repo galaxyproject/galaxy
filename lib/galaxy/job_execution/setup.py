@@ -222,7 +222,7 @@ class JobIO(Dictifiable):
         if getattr(dataset, "fake_dataset_association", False):
             return dataset.file_name
         assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
-        for (hda, dataset_path) in self.output_hdas_and_paths.values():
+        for hda, dataset_path in self.output_hdas_and_paths.values():
             if hda.id == dataset.id:
                 return dataset_path
         raise KeyError(f"Couldn't find job output for [{dataset}] in [{self.output_hdas_and_paths.values()}]")

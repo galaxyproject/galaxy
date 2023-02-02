@@ -398,7 +398,6 @@ class ExecutionTracker:
         # walk through and optional replace runtime values with None, assume they
         # would have been replaced by now if they were going to be set.
         def replace_optional_runtime_values(path, key, value):
-
             if is_runtime_value(value):
                 return key, None
             return key, value

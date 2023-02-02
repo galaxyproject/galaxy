@@ -277,7 +277,6 @@ input1:
 
 
 class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
-
     api_name = "workflows"
 
     def create(self, name: str) -> str:
@@ -2051,6 +2050,8 @@ steps:
       inputs:
         some_file:
           type: data
+        should_run:
+          type: boolean
       steps:
         a_tool_step:
           tool_id: cat1
@@ -2154,6 +2155,7 @@ steps:
       class: GalaxyWorkflow
       inputs:
         boolean_input_file: data
+        should_run: boolean
       steps:
         consume_expression_parameter:
           tool_id: cat1
@@ -3408,6 +3410,65 @@ input1:
             )
             assert "0\n" == self.dataset_populator.get_history_dataset_content(history_id)
 
+    def test_subworkflow_map_over_data_column(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  input:
+    collection_type: list
+outputs:
+  reduced:
+    outputSource: list:list reduction/out_file1
+steps:
+  subworkflow:
+    in:
+      input collection:
+        source: input
+      input dataset:
+        source: input
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        input dataset:
+          type: data
+        input collection:
+          collection_type: list
+      outputs:
+        subworkflow_out:
+          outputSource: join out/out_file1
+      steps:
+        join out:
+          tool_id: comp1
+          tool_state:
+            field1: '1'
+            field2: '1'
+          in:
+            input1:
+              source: input dataset
+            input2:
+              source: input collection
+  list:list reduction:
+    tool_id: cat_list
+    in:
+      input1:
+        source: subworkflow/subworkflow_out
+test_data:
+  input:
+    collection_type: list
+    elements:
+      - identifier: 1
+        content: A  1
+        ext: tabular
+      - identifier: 2
+        content: B  2
+        ext: tabular
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+
     @skip_without_tool("random_lines1")
     def test_change_datatype_collection_map_over(self):
         with self.dataset_populator.test_history() as history_id:
@@ -3953,7 +4014,7 @@ steps:
             # If this starts failing we may have prevented running workflows on collections with deleted members,
             # in which case we can disable this test.
             self.workflow_populator.wait_for_invocation_and_jobs(
-                workflow_id, history_id, invocation_id, assert_ok=False
+                history_id=history_id, workflow_id=workflow_id, invocation_id=invocation_id, assert_ok=False
             )
             contents = self.__history_contents(history_id)
             datasets = [content for content in contents if content["history_content_type"] == "dataset"]
@@ -6534,7 +6595,6 @@ input_c:
 
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
-
     require_admin_user = True
 
     def test_import_export_dynamic_tools(self, history_id):

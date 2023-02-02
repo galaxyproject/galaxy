@@ -8,12 +8,12 @@ from typing import (
     Tuple,
 )
 
-from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.metadata import (
     ListParameter,
     MetadataElement,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import which
 
 
@@ -32,7 +32,6 @@ def ffprobe(path):
 
 
 class Audio(Binary):
-
     MetadataElement(
         name="duration",
         default=0,
@@ -87,7 +86,6 @@ class Audio(Binary):
 
 
 class Video(Binary):
-
     MetadataElement(
         name="resolution_w",
         default=0,

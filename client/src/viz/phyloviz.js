@@ -1,7 +1,7 @@
 import $ from "jquery";
 import Backbone from "backbone";
 import _l from "utils/localization";
-import * as d3 from "d3";
+import * as d3 from "d3v3";
 import visualization_mod from "viz/visualization";
 import { Dataset } from "mvc/dataset/data";
 import mod_icon_btn from "mvc/ui/icon-button";

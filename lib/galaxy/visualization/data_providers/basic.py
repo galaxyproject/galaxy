@@ -147,7 +147,6 @@ class ColumnDataProvider(BaseDataProvider):
         f = open(self.original_dataset.file_name)
         # TODO: add f.seek if given fptr in kwargs
         for count, line in enumerate(f):
-
             # check line v. desired start, end
             if count < start_val:
                 continue
@@ -165,7 +164,6 @@ class ColumnDataProvider(BaseDataProvider):
                 if column < fields_len:
                     column_val = cast_val(fields[column], column_type)
                     if column_val is not None:
-
                         # if numeric, maintain min, max, sum
                         if column_type == "float" or column_type == "int":
                             if (meta[index]["min"] is None) or (column_val < meta[index]["min"]):

@@ -169,7 +169,7 @@ class StaticToolPanelView(ToolPanelView):
         if root_items is None:
             root_items = []
             # No items found, use base tool panel and apply filters to that...
-            for (_, panel_type, panel_value) in base_tool_panel.panel_items_iter():
+            for _, panel_type, panel_value in base_tool_panel.panel_items_iter():
                 item: Optional[ExpandedRootContent] = None
                 if panel_type == panel_item_types.TOOL:
                     item = Tool(

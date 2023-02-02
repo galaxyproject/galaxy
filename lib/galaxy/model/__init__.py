@@ -377,7 +377,6 @@ class HasName:
 
 
 class UsesCreateAndUpdateTime:
-
     update_time: DateTime
 
     @property
@@ -2874,7 +2873,6 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         return [hda for hda in self.datasets if not hda.dataset.deleted]
 
     def _serialize(self, id_encoder, serialization_options):
-
         history_attrs = dict_for(
             self,
             create_time=self.create_time.__str__(),
@@ -2889,7 +2887,6 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         return history_attrs
 
     def to_dict(self, view="collection", value_mapper=None):
-
         # Get basic value.
         rval = super().to_dict(view=view, value_mapper=value_mapper)
 
@@ -4301,7 +4298,7 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
         self, accepted_formats: List[str], **kwd
     ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
         """Returns ( target_ext, existing converted dataset )"""
-        return self.datatype.find_conversion_destination(self, accepted_formats, _get_datatypes_registry(), **kwd)  # type: ignore[arg-type]
+        return self.datatype.find_conversion_destination(self, accepted_formats, _get_datatypes_registry(), **kwd)
 
     def add_validation_error(self, validation_error):
         self.validation_errors.append(validation_error)
@@ -7197,8 +7194,20 @@ class WorkflowStep(Base, RepresentById):
         conn.output_name = output_name
         add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
-        if input_subworkflow_step_index is not None:
-            input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
+        if self.subworkflow:
+            if input_subworkflow_step_index is not None:
+                input_subworkflow_step = self.subworkflow.step_by_index(input_subworkflow_step_index)
+            else:
+                input_subworkflow_steps = [step for step in self.subworkflow.input_steps if step.label == input_name]
+                if not input_subworkflow_steps:
+                    inferred_order_index = input_name.split(":", 1)[0]
+                    if inferred_order_index.isdigit():
+                        input_subworkflow_steps = [self.subworkflow.step_by_index(int(inferred_order_index))]
+                if len(input_subworkflow_steps) != 1:
+                    raise galaxy.exceptions.MessageException(
+                        f"Invalid subworkflow connection at step index {self.order_index + 1}"
+                    )
+                input_subworkflow_step = input_subworkflow_steps[0]
             conn.input_subworkflow_step = input_subworkflow_step
         return conn
 

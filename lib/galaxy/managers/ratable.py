@@ -13,7 +13,6 @@ log = logging.getLogger(__name__)
 
 
 class RatableManagerMixin:
-
     rating_assoc: Type[ItemRatingAssociation]
 
     def rating(self, item, user, as_int=True):

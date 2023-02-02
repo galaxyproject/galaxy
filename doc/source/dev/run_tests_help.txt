@@ -75,8 +75,8 @@ Run a specific selenium test (under Linux or Mac OS X after installing geckodriv
 
 Run a selenium test against a running server while watching client (fastest iterating on client tests):
     ./run.sh & # run Galaxy on 8080
-    make client-watch & # watch for client changes
-    export GALAXY_TEST_EXTERNAL=http://localhost:8080/  # Target tests at server.
+    make client-dev-server & # watch for client changes
+    export GALAXY_TEST_EXTERNAL=http://localhost:8081/  # Target tests at server.
     . .venv/bin/activate # source the virtualenv so can skip run_tests.sh.
     pytest lib/galaxy_test/selenium/test_workflow_editor.py::TestWorkflowEditor::test_data_input
 

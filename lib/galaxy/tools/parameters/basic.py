@@ -360,7 +360,7 @@ class TextToolParameter(SimpleTextToolParameter):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
         self.datalist = []
-        for (title, value, _) in input_source.parse_static_options():
+        for title, value, _ in input_source.parse_static_options():
             self.datalist.append({"label": title, "value": value})
         self.value = input_source.get("value")
         self.area = input_source.get_bool("area", False)
@@ -905,7 +905,7 @@ class SelectToolParameter(ToolParameter):
                 self.validators.append(validator)
         if self.dynamic_options is None and self.options is None:
             self.static_options = input_source.parse_static_options()
-            for (_, value, _) in self.static_options:
+            for _, value, _ in self.static_options:
                 self.legal_values.add(value)
         self.is_dynamic = (self.dynamic_options is not None) or (self.options is not None)
 
@@ -1399,6 +1399,8 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
+            if isinstance(dataset, DatasetCollectionElement) and dataset.hda:
+                dataset = dataset.hda
             if isinstance(dataset, HistoryDatasetAssociation) and self.ref_input and self.ref_input.formats:
                 direct_match, target_ext, converted_dataset = dataset.find_conversion_destination(
                     self.ref_input.formats
@@ -1483,6 +1485,8 @@ class ColumnListParameter(SelectToolParameter):
             # Use representative dataset if a dataset collection is parsed
             if isinstance(dataset, HistoryDatasetCollectionAssociation):
                 dataset = dataset.to_hda_representative()
+            if isinstance(dataset, DatasetCollectionElement):
+                dataset = dataset.hda
             if isinstance(dataset, DatasetInstance):
                 return not dataset.has_data()
             if is_runtime_value(dataset):
@@ -1790,7 +1794,6 @@ class DrillDownSelectToolParameter(SelectToolParameter):
 
 
 class BaseDataToolParameter(ToolParameter):
-
     multiple: bool
 
     def __init__(self, tool, input_source, trans):

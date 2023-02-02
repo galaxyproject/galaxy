@@ -70,7 +70,6 @@ class SqlitePGView(PGView):
 
 
 def get_view_instance(definition: str):
-
     try:
         url = make_url(context.config.get_main_option("sqlalchemy.url"))
         dialect = url.get_dialect().name

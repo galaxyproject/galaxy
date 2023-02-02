@@ -10,12 +10,12 @@ from typing import (
 )
 
 from galaxy.datatypes import data
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.data import Text
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
-from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import Text
 from galaxy.datatypes.sequence import Sequence
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,

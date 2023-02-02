@@ -24,16 +24,16 @@ from markupsafe import escape
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasMetadata,
-)
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.metadata import (
     DictParameter,
     MetadataElement,
+)
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasMetadata,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,

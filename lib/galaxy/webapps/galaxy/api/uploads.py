@@ -16,7 +16,6 @@ log = logging.getLogger(__name__)
 
 
 class UploadsAPIController(BaseGalaxyAPIController):
-
     READ_CHUNK_SIZE = 2**16
 
     @expose_api_raw_anonymous

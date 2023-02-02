@@ -18,7 +18,7 @@
             <tool-search
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
-                :toolbox="toolbox"
+                :toolbox="workflowTools"
                 :query="query"
                 @onQuery="onQuery"
                 @onResults="onResults" />
@@ -59,6 +59,7 @@
                     :key="workflowSection.name"
                     :category="workflowSection"
                     section-name="workflows"
+                    :sort-items="false"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
                     :query-filter="query"
@@ -74,7 +75,7 @@
 import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections } from "./utilities";
+import { filterToolSections, removeDisabledTools } from "./utilities";
 import PanelViewButton from "./Buttons/PanelViewButton";
 
 export default {
@@ -140,12 +141,13 @@ export default {
             };
         },
         sections() {
-            return filterToolSections(this.toolsLayout, this.results);
+            return filterToolSections(this.workflowTools, this.results);
         },
         toolsLayout() {
             return this.toolbox.map((section) => {
                 return {
                     ...section,
+                    disabled: !section.elems && !section.is_workflow_compatible,
                     elems:
                         section.elems &&
                         section.elems.map((el) => {
@@ -154,6 +156,9 @@ export default {
                         }),
                 };
             });
+        },
+        workflowTools() {
+            return removeDisabledTools(this.toolsLayout);
         },
     },
     methods: {

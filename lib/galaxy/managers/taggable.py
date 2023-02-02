@@ -108,7 +108,6 @@ class TaggableDeserializerMixin:
 
 
 class TaggableFilterMixin:
-
     valid_ops = ("eq", "contains", "has")
 
     def create_tag_filter(self, attr, op, val):

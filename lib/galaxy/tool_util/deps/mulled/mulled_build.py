@@ -29,6 +29,7 @@ from galaxy.tool_util.deps.conda_util import (
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
     commands,
+    download_to_file,
     safe_makedirs,
     shlex_join,
     unicodify,
@@ -378,7 +379,6 @@ class CondaInDockerContext(CondaContext):
 
 
 class InvolucroContext(installable.InstallableContext):
-
     installable_description = "Involucro"
 
     def __init__(self, involucro_bin=None, shell_exec=None, verbose="3"):
@@ -428,10 +428,12 @@ def ensure_installed(involucro_context, auto_init):
 def install_involucro(involucro_context):
     install_path = os.path.abspath(involucro_context.involucro_bin)
     involucro_context.involucro_bin = install_path
-    download_cmd = commands.download_command(involucro_link(), to=install_path)
-    exit_code = involucro_context.shell_exec(download_cmd)
-    if exit_code:
-        return exit_code
+
+    try:
+        download_to_file(involucro_link(), install_path)
+    except Exception:
+        log.exception(f"Failed to download involucro from url '{involucro_link()}'")
+        return 1
     try:
         os.chmod(install_path, os.stat(install_path).st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
         return 0

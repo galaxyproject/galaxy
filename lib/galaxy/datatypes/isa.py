@@ -26,13 +26,13 @@ from isatools import (
 from markupsafe import escape
 
 from galaxy import util
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.data import Data
+from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
     HasExtraFilesAndMetadata,
     HasExtraFilesPath,
 )
-from galaxy.datatypes.data import Data
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
@@ -106,7 +106,6 @@ class _Isa(Data):
         isa_folder = self._get_isa_folder_path(dataset)
 
         if os.path.exists(isa_folder):
-
             # Get ISA archive older
             isa_files = os.listdir(isa_folder)
 
@@ -348,7 +347,6 @@ class IsaTab(_Isa):
     ################################################################
 
     def _make_investigation_instance(self, filename: str) -> "Investigation":
-
         # Parse ISA-Tab investigation file
         parser = isatab_meta.InvestigationParser()
         isa_dir = os.path.dirname(filename)
@@ -382,7 +380,6 @@ class IsaJson(_Isa):
     ################################################################
 
     def _make_investigation_instance(self, filename: str) -> "Investigation":
-
         # Parse JSON file
         with open(filename, newline="", encoding="utf8") as fp:
             isa = isajson.load(fp)

@@ -21,11 +21,6 @@ from bx.intervals.io import (
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes._protocols import (
-    DatasetProtocol,
-    HasId,
-    HasMetadata,
-)
 from galaxy.datatypes.data import DatatypeValidation
 from galaxy.datatypes.dataproviders.dataset import (
     DatasetDataProvider,
@@ -34,6 +29,11 @@ from galaxy.datatypes.dataproviders.dataset import (
     WiggleDataProvider,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasId,
+    HasMetadata,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,

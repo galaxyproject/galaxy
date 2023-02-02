@@ -209,44 +209,50 @@
                 @extend .mr-1;
             }
             .workflow-overview {
+                --workflow-overview-size: 150px;
+                --workflow-overview-min-size: 50px;
+                --workflow-overview-max-size: 300px;
+                --workflow-overview-padding: 7px;
+                --workflow-overview-border: 1px;
+
                 border-top-left-radius: 0.3rem;
-                cursor: pointer;
+                cursor: nwse-resize;
                 position: absolute;
-                width: 150px;
-                height: 150px;
+                width: var(--workflow-overview-size);
+                height: var(--workflow-overview-size);
                 right: 0px;
                 bottom: 0px;
-                border-top: solid $border-color 1px;
-                border-left: solid $border-color 1px;
-                padding: 7px 0 0 7px;
+                border-top: solid $border-color var(--workflow-overview-border);
+                border-left: solid $border-color var(--workflow-overview-border);
                 background: $workflow-overview-bg no-repeat url("../../assets/images/resizable.png");
                 z-index: 20000;
                 overflow: hidden;
-                max-width: 300px;
-                max-height: 300px;
-                min-width: 50px;
-                min-height: 50px;
-                .viewport {
-                    stroke: #25537b;
-                }
+                padding: var(--workflow-overview-padding) 0 0 var(--workflow-overview-padding);
+
+                // account for padding and border
+                max-width: calc(
+                    var(--workflow-overview-max-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
+                max-height: calc(
+                    var(--workflow-overview-max-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
+                min-width: calc(
+                    var(--workflow-overview-min-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
+                min-height: calc(
+                    var(--workflow-overview-min-size) + var(--workflow-overview-padding) +
+                        var(--workflow-overview-border)
+                );
+
                 .workflow-overview-body {
+                    cursor: pointer;
                     position: relative;
                     overflow: hidden;
                     width: 100%;
                     height: 100%;
-                }
-                .mini-node {
-                    + .ok {
-                        // this is $primary-brand / #25537b
-                        filter: invert(26%) sepia(75%) saturate(489%) hue-rotate(166deg) brightness(90%) contrast(89%);
-                    }
-                    + .error {
-                        // this is #e31a1e
-                        filter: invert(16%) sepia(86%) saturate(3962%) hue-rotate(350deg) brightness(96%) contrast(97%);
-                    }
-                    + .highlight {
-                        filter: invert(14%) sepia(38%) saturate(1544%) hue-rotate(321deg) brightness(84%) contrast(117%);
-                    }
                 }
             }
             #input-choices-menu {

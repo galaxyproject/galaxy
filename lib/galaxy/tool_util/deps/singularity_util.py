@@ -66,7 +66,7 @@ def build_singularity_run_command(
     command_parts = []
     # http://singularity.lbl.gov/docs-environment-metadata
     home = None
-    for (key, value) in env:
+    for key, value in env:
         if key == "HOME":
             home = value
         command_parts.extend([f"SINGULARITYENV_{key}={value}"])

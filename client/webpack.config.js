@@ -250,16 +250,20 @@ module.exports = (env = {}, argv = {}) => {
             allowedHosts: process.env.GITPOD_WORKSPACE_ID ? "all" : "auto",
             devMiddleware: {
                 publicPath: "/static/dist",
+                writeToDisk: true,
             },
             hot: true,
-            port: 8081,
+            port: process.env.WEBPACK_PORT || 8081,
             host: "0.0.0.0",
             // proxy *everything* to the galaxy server.
             // someday, when we have a fully API-driven independent client, this
             // can be a more limited set -- e.g. `/api`, `/auth`
             proxy: {
                 "**": {
-                    target: process.env.GALAXY_URL || "http://localhost:8080",
+                    // We explicitly use ipv4 loopback instead of localhost to
+                    // avoid ipv6/ipv4 resolution order issues; this should
+                    // align with Galaxy's default.
+                    target: process.env.GALAXY_URL || "http://127.0.0.1:8080",
                     secure: process.env.CHANGE_ORIGIN ? !process.env.CHANGE_ORIGIN : true,
                     changeOrigin: !!process.env.CHANGE_ORIGIN,
                     logLevel: "debug",

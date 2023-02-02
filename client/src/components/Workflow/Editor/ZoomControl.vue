@@ -1,8 +1,38 @@
+<script lang="ts" setup>
+import Vue, { computed } from "vue";
+import BootstrapVue from "bootstrap-vue";
+import { getZoomInLevel, getZoomOutLevel, isMinZoom, isMaxZoom } from "./modules/zoomLevels";
+
+Vue.use(BootstrapVue);
+
+const props = defineProps({
+    zoomLevel: { type: Number, default: 1 },
+});
+
+const emit = defineEmits<{
+    (e: "onZoom", zoom: number): void;
+}>();
+
+const zoomDefault = 1;
+const zoomPercentage = computed(() => Math.round(props.zoomLevel * 100));
+
+function onZoomIn() {
+    emit("onZoom", getZoomInLevel(props.zoomLevel));
+}
+
+function onZoomOut() {
+    emit("onZoom", getZoomOutLevel(props.zoomLevel));
+}
+
+function onZoomReset() {
+    emit("onZoom", zoomDefault);
+}
+</script>
+
 <template>
     <span class="zoom-control float-right btn-group-horizontal">
         <b-button
-            v-b-tooltip.hover
-            :disabled="isMin"
+            :disabled="isMinZoom(props.zoomLevel)"
             role="button"
             class="fa fa-minus"
             title="Zoom Out"
@@ -21,8 +51,7 @@
             {{ zoomPercentage }}%
         </b-button>
         <b-button
-            v-b-tooltip.hover
-            :disabled="isMax"
+            :disabled="isMaxZoom(props.zoomLevel)"
             role="button"
             class="fa fa-plus"
             title="Zoom In"
@@ -31,54 +60,6 @@
             @click="onZoomIn" />
     </span>
 </template>
-
-<script lang="ts" setup>
-import Vue, { computed } from "vue";
-import BootstrapVue from "bootstrap-vue";
-
-Vue.use(BootstrapVue);
-
-const props = withDefaults(
-    defineProps<{
-        zoomLevel: number;
-    }>(),
-    {
-        zoomLevel: 1,
-    }
-);
-const emit = defineEmits(["onZoom"]);
-
-const zoomDefault = 1;
-const zoomLevels = [0.1, 0.2, 0.25, 0.33, 0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.33, 1.5, 2, 2.5, 3, 4, 5];
-const isMin = computed(() => Math.round(props.zoomLevel * 100) == Math.round(zoomLevels[0] * 100));
-const isMax = computed(() => Math.round(props.zoomLevel * 100) == Math.round(zoomLevels.at(-1)! * 100));
-const zoomPercentage = computed(() => Math.round(props.zoomLevel * 100));
-const index = computed(() => {
-    let index = zoomLevels.indexOf(props.zoomLevel);
-    if (index < 0) {
-        const closest = zoomLevels.reduce((prev, curr) => {
-            return Math.abs(curr - props.zoomLevel) < Math.abs(prev - props.zoomLevel) ? curr : prev;
-        });
-        index = zoomLevels.indexOf(closest);
-    }
-    return index;
-});
-function onZoomIn() {
-    const zoomLevel = zoomLevels[index.value + 1];
-    if (zoomLevel) {
-        emit("onZoom", zoomLevel);
-    }
-}
-function onZoomOut() {
-    const zoomLevel = zoomLevels[index.value - 1];
-    if (zoomLevel) {
-        emit("onZoom", zoomLevel);
-    }
-}
-function onZoomReset() {
-    emit("onZoom", zoomDefault);
-}
-</script>
 
 <style scoped>
 .zoom-reset {

@@ -213,7 +213,7 @@ class LibraryActions:
         (files_and_folders, _response_code, _message) = self._get_path_files_and_folders(params, preserve_dirs)
         if _response_code:
             return (uploaded_datasets, _response_code, _message)
-        for (path, name, folder) in files_and_folders:
+        for path, name, folder in files_and_folders:
             uploaded_datasets.append(
                 self._make_library_uploaded_dataset(trans, params, name, path, "path_paste", library_bunch, folder)
             )
@@ -224,7 +224,7 @@ class LibraryActions:
         if problem_response:
             return problem_response
         files_and_folders = []
-        for (line, path) in self._paths_list(params):
+        for line, path in self._paths_list(params):
             line_files_and_folders = self._get_single_path_files_and_folders(line, path, preserve_dirs)
             files_and_folders.extend(line_files_and_folders)
         return files_and_folders, None, None
@@ -257,7 +257,7 @@ class LibraryActions:
             response_code = 400
             return None, response_code, message
         bad_paths = []
-        for (_, path) in self._paths_list(params):
+        for _, path in self._paths_list(params):
             if not os.path.exists(path):
                 bad_paths.append(path)
         if bad_paths:

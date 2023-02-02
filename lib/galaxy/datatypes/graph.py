@@ -4,10 +4,10 @@ Graph content classes.
 import logging
 from typing import List
 
-from galaxy.datatypes._protocols import DatasetProtocol
 from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
 from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
 from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import simplegraph
 from . import (
     data,

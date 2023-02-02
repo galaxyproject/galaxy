@@ -15,7 +15,6 @@ from bx.interval_index_file import Indexes
 
 
 def main():
-
     # Read options, args.
     parser = optparse.OptionParser()
     parser.add_option("-c", "--chr-col", type="int", dest="chrom_col", default=1)

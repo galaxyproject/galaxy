@@ -48,7 +48,6 @@ DatabaseIdT = TypeVar("DatabaseIdT")
 
 class StepOrderIndexGetter(GetterDict):
     def get(self, key: Any, default: Any = None) -> Any:
-
         # Fetch the order_index when serializing for the API,
         # which makes much more sense when pointing to steps.
         if key == "workflow_step_id":

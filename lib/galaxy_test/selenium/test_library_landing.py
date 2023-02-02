@@ -6,7 +6,6 @@ from .framework import (
 
 
 class TestLibraryLanding(SeleniumTestCase):
-
     requires_admin = True
 
     def setup_with_driver(self):

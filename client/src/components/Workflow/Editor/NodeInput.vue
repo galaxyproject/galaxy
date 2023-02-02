@@ -17,6 +17,13 @@
             @click="onRemove"
             @keyup.delete="onRemove" />
         {{ label }}
+        <span
+            v-if="!input.optional && !hasTerminals"
+            v-b-tooltip.hover
+            class="input-required"
+            title="Input is required">
+            *
+        </span>
     </div>
 </template>
 
@@ -25,7 +32,6 @@ import { useCoordinatePosition } from "./composables/useCoordinatePosition";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { computed } from "vue";
 import { inject, ref, toRefs, watchEffect } from "vue";
-import { UseElementBoundingReturn } from "@vueuse/core";
 import { storeToRefs } from "pinia";
 import { useTerminal } from "./composables/useTerminal";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
@@ -51,7 +57,8 @@ export default {
             required: true,
         },
         rootOffset: {
-            type: UseElementBoundingReturn,
+            // type UseElementBoundingReturn from "@vueuse/core";
+            type: Object,
             required: true,
         },
         scale: {
@@ -214,3 +221,16 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+@import "~@fortawesome/fontawesome-free/scss/_variables";
+
+.input-required {
+    margin-top: $margin-v * 0.25;
+    margin-bottom: $margin-v * 0.25;
+    color: $brand-danger;
+    font-weight: 300;
+    cursor: default;
+}
+</style>

@@ -121,7 +121,6 @@ class TestHistorySharing(SeleniumTestCase):
 
 
 class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test

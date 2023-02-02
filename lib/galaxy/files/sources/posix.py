@@ -44,7 +44,7 @@ class PosixFilesSource(BaseFilesSource):
         if recursive:
             res: List[Dict[str, Any]] = []
             effective_root = self._effective_root(user_context)
-            for (p, dirs, files) in safe_walk(dir_path, allowlist=self._allowlist):
+            for p, dirs, files in safe_walk(dir_path, allowlist=self._allowlist):
                 rel_dir = os.path.relpath(p, effective_root)
                 to_dict = functools.partial(self._resource_info_to_dict, rel_dir, user_context=user_context)
                 res.extend(map(to_dict, dirs))

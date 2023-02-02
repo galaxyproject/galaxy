@@ -1,11 +1,11 @@
 """
 GIS classes
 """
-from galaxy.datatypes._protocols import (
+from galaxy.datatypes.binary import Binary
+from galaxy.datatypes.protocols import (
     DatasetProtocol,
     HasExtraFilesAndMetadata,
 )
-from galaxy.datatypes.binary import Binary
 
 
 class Shapefile(Binary):
