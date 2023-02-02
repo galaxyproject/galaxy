@@ -362,7 +362,7 @@ class TextToolParameter(SimpleTextToolParameter):
     >>> p = TextToolParameter(None, XML('<param name="_name" type="text" value="default" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', False), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
+    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
     """
 
     def __init__(self, tool, input_source):
