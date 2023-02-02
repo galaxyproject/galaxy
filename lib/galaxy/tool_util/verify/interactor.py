@@ -552,11 +552,13 @@ class GalaxyInteractorApi:
             file_name = None
             file_name_exists = False
             location: Optional[str] = test_data.get("location")
-            has_valid_location = location and self.is_valid_url(location)
-            if fname and has_valid_location:
+            has_valid_location = location and util.is_url(location)
+            if not has_valid_location:
+                raise ValueError(f"Invalid `location` URL: `{location}`")
+            if fname:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 file_name_exists = os.path.exists(f"{file_name}")
-            upload_from_location = has_valid_location and not file_name_exists
+            upload_from_location = not file_name_exists
             name = os.path.basename(location if upload_from_location else fname)
             tool_input.update(
                 {
@@ -592,12 +594,6 @@ class GalaxyInteractorApi:
         jobs = submit_response["jobs"]
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
-
-    def is_valid_url(self, url: str) -> bool:
-        parsed_url = urllib.parse.urlparse(url)
-        if parsed_url.scheme not in ["https", "http"] or not parsed_url.netloc:
-            raise AssertionError(f"Invalid 'location' URL: `{url}`")
-        return True
 
     def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
