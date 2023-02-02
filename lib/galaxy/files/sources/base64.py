@@ -34,4 +34,5 @@ class Base64FilesSource(BaseFilesSource):
         else:
             return 0
 
+
 __all__ = ("Base64FilesSource",)

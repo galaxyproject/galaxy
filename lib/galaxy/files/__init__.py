@@ -15,8 +15,6 @@ from typing import (
 from galaxy import exceptions
 from galaxy.util import plugin_config
 from galaxy.util.dictifiable import Dictifiable
-from galaxy.security.vault import UserVaultWrapper
-from galaxy.security.vault import Vault
 
 log = logging.getLogger(__name__)
 
@@ -276,14 +274,6 @@ class FileSourceDictifiable(Dictifiable):
 
     @property
     def group_names(self) -> Set[str]:
-        raise NotImplementedError
-
-    @property
-    def user_vault(self) -> UserVaultWrapper:
-        raise NotImplementedError
-
-    @property
-    def app_vault(self) -> Vault:
         raise NotImplementedError
 
     @property

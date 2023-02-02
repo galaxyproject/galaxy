@@ -72,6 +72,7 @@ BrowsableQueryParam: Optional[bool] = Query(
     ),
 )
 
+
 @router.cbv
 class FastAPIRemoteFiles:
     manager: RemoteFilesManager = depends(RemoteFilesManager)
