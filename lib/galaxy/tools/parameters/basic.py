@@ -328,7 +328,7 @@ class SimpleTextToolParameter(ToolParameter):
         super().__init__(tool, input_source)
         self.optional = input_source.get_bool("optional", False)
 
-        if not self.optional:
+        if not self.optional and self.type == "text":
             try:
                 for validator in self.validators:
                     validator.validate("")
