@@ -57,7 +57,9 @@ class S3FsFilesSource(BaseFilesSource):
         raise NotImplementedError()
 
     def _bucket_path(self, path):
-        if not path.startswith("/"):
+        if path.startswith("s3://"):
+            return path.replace("s3://", "")
+        elif not path.startswith("/"):
             path = f"/{path}"
         return f"{self._bucket}{path}"
 
@@ -89,13 +91,12 @@ class S3FsFilesSource(BaseFilesSource):
         return effective_props
 
     def score_url_match(self, url: str):
-        if url.startswith("s3://"):
+        if self._bucket and url.startswith(f"s3://{self._bucket}"):
+            return len(f"s3://{self._bucket}")
+        elif not self._bucket and url.startswith("s3://"):
             return len("s3://")
         else:
             return super().score_url_match(url)
-
-    def to_relative_path(self, url: str):
-        return super().to_relative_path(url.replace("s3://", ""))
 
 
 __all__ = ("S3FsFilesSource",)
