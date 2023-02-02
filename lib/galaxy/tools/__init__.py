@@ -1349,10 +1349,22 @@ class Tool(Dictifiable):
             # under development, and some older ToolShed published tools that
             # used stock test data.
             try:
-                test_data = self.app.test_data_resolver.get_filename(filename)
+                test_data_context = self._find_required_file_context(filename)
+                test_data = self.app.test_data_resolver.get_filename(filename, test_data_context)
             except ValueError:
                 test_data = None
         return test_data
+
+    def _find_required_file_context(self, filename: str):
+        """Returns the attributes (context) associated with a required file."""
+        for test in self.tests:
+            for required_file in test.required_files:
+                # We are returning the first that matches the filename
+                # Could there be multiple different required files with the same filename
+                # and different attributes? I hope not...
+                if len(required_file) > 1 and required_file[0] == filename:
+                    return required_file[1]
+        return None
 
     def __walk_test_data(self, dir, filename):
         for root, dirs, _ in os.walk(dir):
