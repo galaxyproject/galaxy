@@ -108,10 +108,16 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.browse_repository(
             repository, strings_displayed=[f"Repository '{repository.name}' revision", "(repository tip)"]
         )
+        strings = ["Uploaded filtering 1.1.0"]
+        if self._browser.is_twill:
+            # this appears in a link - it isn't how one would check this
+            # in playwright. But also we're testing the mercurial page
+            # here so this is probably a questionable check overall.
+            strings += [latest_changeset_revision]
         self.display_repository_clone_page(
             common.test_user_1_name,
             repository_name,
-            strings_displayed=["Uploaded filtering 1.1.0", latest_changeset_revision],
+            strings_displayed=strings,
         )
 
     def test_0045_alter_repository_states(self):
@@ -145,33 +151,40 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """Display the contents of filtering.xml in the repository tip revision"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         assert repository
-        self.display_repository_file_contents(
-            repository=repository,
-            filename="filtering.xml",
-            filepath=None,
-            strings_displayed=["1.1.0"],
-            strings_not_displayed=[],
-        )
+        if self._browser.is_twill:
+            # probably not porting this functionality - just test
+            # with Twill for older UI and drop when that is all dropped
+            self.display_repository_file_contents(
+                repository=repository,
+                filename="filtering.xml",
+                filepath=None,
+                strings_displayed=["1.1.0"],
+                strings_not_displayed=[],
+            )
 
     def test_0055_upload_filtering_txt_file(self):
         """Upload filtering.txt file associated with tool version 1.1.0."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_file_to_repository(repository, "filtering/filtering_0000.txt")
+        expected = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
         self.display_manage_repository_page(
-            repository, strings_displayed=["Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0"]
+            repository, strings_displayed=[expected]
         )
 
     def test_0060_upload_filtering_test_data(self):
         """Upload filtering test data."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_tar_to_repository(repository, "filtering/filtering_test_data.tar")
-        self.display_repository_file_contents(
-            repository=repository,
-            filename="1.bed",
-            filepath="test-data",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        if self._browser.is_twill:
+            # probably not porting this functionality - just test
+            # with Twill for older UI and drop when that is all dropped
+            self.display_repository_file_contents(
+                repository=repository,
+                filename="1.bed",
+                filepath="test-data",
+                strings_displayed=[],
+                strings_not_displayed=[],
+            )
         self.check_repository_metadata(repository, tip_only=True)
 
     def test_0065_upload_filtering_2_2_0(self):
@@ -208,15 +221,17 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """Upload readme.txt file associated with tool version 2.2.0."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_file_to_repository(repository, "readme.txt")
+        content = self._escape_page_content_if_needed("This is a readme file.")
         self.display_manage_repository_page(
-            repository, strings_displayed=["This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file."]
+            repository, strings_displayed=[content]
         )
         # Verify that there is a different readme file for each metadata revision.
+        readme_content = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
         self.display_manage_repository_page(
             repository,
             strings_displayed=[
-                "Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0",
-                "This&nbsp;is&nbsp;a&nbsp;readme&nbsp;file.",
+                readme_content,
+                content,
             ],
         )
 
@@ -225,8 +240,9 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.delete_files_from_repository(repository, filenames=["readme.txt"])
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=2)
+        readme_content = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
         self.display_manage_repository_page(
-            repository, strings_displayed=["Readme&nbsp;file&nbsp;for&nbsp;filtering&nbsp;1.1.0"]
+            repository, strings_displayed=[readme_content]
         )
 
     def test_0085_search_for_valid_filter_tool(self):
@@ -278,11 +294,14 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
         self.delete_repository(repository)
+        metadata = self._populator.get_metadata(repository, downloadable_only=False)
+        for _, value in metadata.__root__.items():
+            assert not value.downloadable
         # Explicitly reload all metadata revisions from the database, to ensure that we have the current status of the downloadable flag.
         # for metadata_revision in repository.metadata_revisions:
         #    self.test_db_util.refresh(metadata_revision)
         # Marking a repository as deleted should result in no metadata revisions being downloadable.
-        assert True not in [metadata.downloadable for metadata in self._db_repository(repository).metadata_revisions]
+        # assert True not in [metadata.downloadable for metadata in self._db_repository(repository).metadata_revisions]
 
     def test_0115_undelete_filtering_repository(self):
         """Undelete the filtering_0000 repository and verify that it now has two downloadable revisions."""
@@ -312,8 +331,9 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         # Upload readme.txt to the filtering_0000 repository and verify that it is now displayed.
         self.add_file_to_repository(repository, "filtering/readme.txt")
+        content = self._escape_page_content_if_needed("These characters should not")
         self.display_manage_repository_page(
-            repository, strings_displayed=["These&nbsp;characters&nbsp;should&nbsp;not"]
+            repository, strings_displayed=[content]
         )
 
     def test_0130_verify_handling_of_invalid_characters(self):
@@ -331,13 +351,14 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
                 break
         # Check for the changeset revision, repository name, owner username, 'repos' in the clone url, and the captured
         # unicode decoding error message.
+        content = self._escape_page_content_if_needed("These characters should not")
         strings_displayed = [
             "%d:%s" % (revision_number, revision_hash),
             "filtering_0000",
             "user1",
             "repos",
             "added:",
-            "+These&nbsp;characters&nbsp;should&nbsp;not",
+            f"+{content}",
         ]
         self.load_changeset_in_tool_shed(repository_id, changeset_revision, strings_displayed=strings_displayed)
 
@@ -352,9 +373,11 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         """View repository using an invalid changeset"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         encoded_repository_id = repository.id
+        assert encoded_repository_id
         strings_displayed = ["Invalid+changeset+revision"]
         view_repo_url = (
             f"/repository/view_repository?id={encoded_repository_id}&changeset_revision=nonsensical_changeset"
         )
         self.visit_url(view_repo_url)
-        self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=[])
+        if self._browser.is_twill:
+            self.check_for_strings(strings_displayed=strings_displayed, strings_not_displayed=[])

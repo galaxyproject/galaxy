@@ -239,14 +239,18 @@ class GalaxyInteractorToolShedInstallationClient(ToolShedInstallationClient):
         for data_manager_name in data_manager_names:
             params = {"id": data_managers[data_manager_name]["guid"]}
             self._visit_galaxy_url("/data_manager/jobs_list", params=params)
-            self.testcase.check_for_strings(strings_displayed)
+            content = page_content()
+            for expected in strings_displayed:
+                if content.find(expected) == -1:
+                    raise AssertionError(f"Failed to find pattern {expected} in {content}")
 
     def installed_repository_extended_info(
         self, installed_repository: galaxy_model.ToolShedRepository
     ) -> Dict[str, Any]:
         params = {"id": self.testcase.security.encode_id(installed_repository.id)}
         self._visit_galaxy_url("/admin_toolshed/manage_repository_json", params=params)
-        return loads(self.testcase.last_page())
+        json = page_content()
+        return loads(json)
 
     def install_repository(
         self,
@@ -653,6 +657,12 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _browser(self) -> ShedBrowser:
         assert self.__browser
         return self.__browser
+
+    def _escape_page_content_if_needed(self, content: str) -> str:
+        # if twill browser is being used - replace spaces with "&nbsp;"
+        if self._browser.is_twill:
+            content = content.replace(" ", "&nbsp;")
+        return content
 
     def check_for_strings(self, strings_displayed=None, strings_not_displayed=None):
         strings_displayed = strings_displayed or []
