@@ -50,7 +50,6 @@ def stop_minio(container_name):
 
 
 class BaseObjectStoreIntegrationTestCase(integration_util.IntegrationTestCase):
-
     dataset_populator: DatasetPopulator
     framework_tool_and_types = True
 
@@ -81,7 +80,6 @@ def files_count(directory):
 
 @integration_util.skip_unless_docker()
 class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase):
-
     object_store_cache_path: str
 
     @classmethod

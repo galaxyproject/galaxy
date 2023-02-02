@@ -255,7 +255,7 @@ def administrative_delete_datasets(
                 app.sa_session.flush()
 
     emailtemplate = Template(filename=template_file)
-    for (email, dataset_list) in user_notifications.items():
+    for email, dataset_list in user_notifications.items():
         msgtext = emailtemplate.render(email=email, datasets=dataset_list, cutoff=cutoff_days)
         subject = "Galaxy Server Cleanup " "- %d datasets DELETED" % len(dataset_list)
         fromaddr = config.email_from

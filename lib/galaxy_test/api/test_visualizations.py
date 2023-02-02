@@ -13,7 +13,6 @@ REVISION_KEYS = ["id", "title", "visualization_id", "dbkey", "model_class", "con
 
 
 class TestVisualizationsApi(ApiTestCase, SharingApiTests):
-
     api_name = "visualizations"
 
     def create(self, _: str) -> str:

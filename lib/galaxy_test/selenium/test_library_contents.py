@@ -13,7 +13,6 @@ from .framework import (
 
 
 class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
-
     run_as_admin = True
 
     @selenium_test

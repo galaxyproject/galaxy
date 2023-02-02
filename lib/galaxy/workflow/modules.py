@@ -239,7 +239,6 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
 
 
 class WorkflowModule:
-
     label: str
     type: str
     name: str
@@ -754,7 +753,7 @@ class SubWorkflowModule(WorkflowModule):
 
         when_values = []
         if step.when_expression:
-            for (iteration_elements, when_value) in iteration_elements_iter:
+            for iteration_elements, when_value in iteration_elements_iter:
                 if when_value is False:
                     when_values.append(when_value)
                     continue
@@ -1657,7 +1656,6 @@ class PauseModule(WorkflowModule):
 
 
 class ToolModule(WorkflowModule):
-
     type = "tool"
     name = "Tool"
 
@@ -2130,7 +2128,7 @@ class ToolModule(WorkflowModule):
             iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
         resource_parameters = invocation.resource_parameters
-        for (iteration_elements, when_value) in iteration_elements_iter:
+        for iteration_elements, when_value in iteration_elements_iter:
             execution_state = tool_state.copy()
             # TODO: Move next step into copy()
             execution_state.inputs = make_dict_copy(execution_state.inputs)

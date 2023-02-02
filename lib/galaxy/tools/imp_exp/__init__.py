@@ -67,7 +67,6 @@ class JobImportHistoryArchiveWrapper:
             )
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:
-
                 jiha.history = new_history
                 self.sa_session.flush()
                 model_store.perform_import(new_history, job=job, new_history=True)

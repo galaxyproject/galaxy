@@ -233,7 +233,6 @@ def singularity_search(search_string):
 
 
 def readable_output(json, organization="biocontainers", channel="bioconda"):
-
     # if json is empty:
     if sum(len(json[destination][results]) for destination in json for results in json[destination]) == 0:
         sys.stdout.write("No results found for that query.\n")

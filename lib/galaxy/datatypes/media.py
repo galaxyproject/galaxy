@@ -35,7 +35,6 @@ def ffprobe(path):
 
 
 class Audio(Binary):
-
     MetadataElement(
         name="duration",
         default=0,
@@ -90,7 +89,6 @@ class Audio(Binary):
 
 
 class Video(Binary):
-
     MetadataElement(
         name="resolution_w",
         default=0,

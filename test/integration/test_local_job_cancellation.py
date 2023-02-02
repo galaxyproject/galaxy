@@ -32,7 +32,6 @@ class CancelsJob:
 
 
 class TestLocalJobCancellation(CancelsJob, integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
 
     def setUp(self):

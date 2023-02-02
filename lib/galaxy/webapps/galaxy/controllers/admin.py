@@ -547,7 +547,6 @@ class DatatypesEntryT(TypedDict):
 
 
 class AdminGalaxy(controller.JSAppLauncher):
-
     user_list_grid = UserListGrid()
     role_list_grid = RoleListGrid()
     group_list_grid = GroupListGrid()

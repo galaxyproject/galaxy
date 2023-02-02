@@ -1141,7 +1141,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
 
 class SamDataProvider(BamDataProvider):
-
     dataset_type = "bai"
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None):

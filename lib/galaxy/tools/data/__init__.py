@@ -172,7 +172,6 @@ class RefgenieToolDataTable(TabularToolDataTable):
         return rval
 
     def _remove_entry(self, values):
-
         log.warning(
             "Deletion from refgenie-backed '%s' data table is not supported, will only try to delete from .loc files",
             self.name,

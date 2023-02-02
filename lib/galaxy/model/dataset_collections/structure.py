@@ -131,7 +131,7 @@ class Tree(BaseTree):
 
         new_collection_type = self.collection_type_description.multiply(other_structure.collection_type_description)
         new_children = []
-        for (identifier, structure) in self.children:
+        for identifier, structure in self.children:
             new_children.append((identifier, structure.multiply(other_structure)))
 
         return Tree(new_children, new_collection_type)

@@ -167,7 +167,6 @@ def decompress_path_to_directory(path: str) -> str:
 
 
 class CompressedFile:
-
     archive: Union[tarfile.TarFile, zipfile.ZipFile]
 
     @staticmethod

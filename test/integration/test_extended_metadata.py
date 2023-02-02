@@ -128,7 +128,6 @@ class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCa
 
 
 class ExtendedMetadataIntegrationInstance(integration_util.IntegrationInstance):
-
     framework_tool_and_types = True
 
     @classmethod

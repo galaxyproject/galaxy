@@ -6,7 +6,6 @@ from galaxy_test.driver import integration_util
 
 
 class TestGalaxyInteractor(integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
 
     def test_local_test_data_download(self):

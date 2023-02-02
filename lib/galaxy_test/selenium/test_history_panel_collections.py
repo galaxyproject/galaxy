@@ -11,7 +11,6 @@ from .framework import (
 
 
 class TestHistoryPanelCollections(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test

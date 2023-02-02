@@ -9,7 +9,6 @@ NEW_HISTORY_NAME = "New History Name"
 
 
 class TestHistoryPanel(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test
@@ -46,7 +45,6 @@ class TestHistoryPanel(SeleniumTestCase):
 
         @retry_assertion_during_transitions
         def assert_current_annotation(expected, error_message="History annotation", is_equal=True):
-
             text_component = history_panel.annotation_editable_text
             current_annotation = text_component.wait_for_visible()
             error_message += " given: [%s] expected [%s] "

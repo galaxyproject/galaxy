@@ -191,7 +191,6 @@ class TestNonAdminsCannotPasteFilePath(BaseUploadContentConfigurationTestCase):
 
 
 class TestAdminsCanPasteFilePaths(BaseUploadContentConfigurationTestCase):
-
     require_admin_user = True
 
     @classmethod
@@ -261,7 +260,6 @@ class TestAdminsCanPasteFilePaths(BaseUploadContentConfigurationTestCase):
 
 
 class TestDefaultBinaryContentFilters(BaseUploadContentConfigurationTestCase):
-
     require_admin_user = True
 
     @classmethod
@@ -285,7 +283,6 @@ class TestDefaultBinaryContentFilters(BaseUploadContentConfigurationTestCase):
 
 
 class TestDisableContentChecking(BaseUploadContentConfigurationTestCase):
-
     require_admin_user = True
 
     @classmethod
@@ -304,7 +301,6 @@ class TestDisableContentChecking(BaseUploadContentConfigurationTestCase):
 
 
 class TestAutoDecompress(BaseUploadContentConfigurationTestCase):
-
     require_admin_user = True
 
     @classmethod
@@ -675,7 +671,6 @@ class TestUploadOptionsFtpUploadConfiguration(BaseFtpUploadConfigurationTestCase
 
 
 class TestServerDirectoryOffByDefault(BaseUploadContentConfigurationTestCase):
-
     require_admin_user = True
 
     @classmethod
@@ -795,7 +790,6 @@ class TestUserServerDirectoryValidUsage(BaseUploadContentConfigurationTestCase):
 
 
 class TestFetchByPath(BaseUploadContentConfigurationTestCase):
-
     require_admin_user = True
 
     @classmethod
@@ -931,7 +925,6 @@ class TestFetchByPath(BaseUploadContentConfigurationTestCase):
 
 
 class TestDirectoryAndCompressedTypes(BaseUploadContentConfigurationTestCase):
-
     require_admin_user = True
 
     @classmethod

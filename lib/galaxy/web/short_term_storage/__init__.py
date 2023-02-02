@@ -105,7 +105,6 @@ ShortTermStorageServeInformation = Union[
 
 
 class ShortTermStorageAllocator(metaclass=abc.ABCMeta):
-
     # TODO: Implement upstream_mod_zip=False, upstream_gzip=False - in initial request and serving...
     @abc.abstractmethod
     def new_target(

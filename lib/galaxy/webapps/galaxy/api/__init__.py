@@ -291,7 +291,6 @@ class Router(InferringRouter):
         include_in_schema = kwd.pop("include_in_schema", True)
 
         def decorate_route(route, include_in_schema=include_in_schema):
-
             # Decorator solely exists to allow passing `route_class_override` to add_api_route
             def decorated_route(func):
                 self.add_api_route(

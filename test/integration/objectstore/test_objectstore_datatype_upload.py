@@ -118,7 +118,6 @@ def stop_irods(container_name):
 
 
 class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
-
     object_store_template: Optional[string.Template] = None
 
     @classmethod
@@ -140,7 +139,6 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
 
 
 class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
-
     object_store_template = IRODS_OBJECT_STORE_CONFIG
 
     @classmethod
@@ -171,12 +169,10 @@ class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
 
 
 class IrodsIdleConnectionUploadTestCase(IrodsUploadTestDatatypeDataTestCase):
-
     object_store_template = IRODS_OBJECT_STORE_CONFIG
 
 
 class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
-
     object_store_template = DISTRIBUTED_OBJECT_STORE_CONFIG
 
     @classmethod
@@ -185,7 +181,6 @@ class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
 
 
 class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
-
     object_store_template = DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG
 
 

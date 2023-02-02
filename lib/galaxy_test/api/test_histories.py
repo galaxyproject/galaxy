@@ -504,7 +504,6 @@ class ImportExportTests(BaseHistories):
         )
 
     def _import_history_and_wait(self, import_data, history_name, wait_on_history_length=None):
-
         imported_history_id = self.dataset_populator.import_history_and_wait_for_name(import_data, history_name)
 
         if wait_on_history_length:

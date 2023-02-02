@@ -32,7 +32,6 @@ args = parser.parse_args()
 
 
 def init():
-
     if args.username == "all":
         args.username = None
     if args.email == "all":

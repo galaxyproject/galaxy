@@ -747,7 +747,6 @@ def test_history_import_relpath_in_archive():
     """
     dest_parent = tempfile.mkdtemp()
     with HistoryArchive(arcname_prefix="../insecure") as history_archive:
-
         history_archive.write_metafiles()
         history_archive.write_file("datasets/Pasted_Entry_1.txt", "foo")
         history_archive.finalize()

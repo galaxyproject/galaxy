@@ -6,7 +6,6 @@ from abc import (
 
 
 class ContainerVolume(metaclass=ABCMeta):
-
     valid_modes = frozenset({"ro", "rw"})
 
     def __init__(self, path, host_path=None, mode=None):

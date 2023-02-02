@@ -377,7 +377,6 @@ class HasName:
 
 
 class UsesCreateAndUpdateTime:
-
     update_time: DateTime
 
     @property
@@ -2840,7 +2839,6 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         return [hda for hda in self.datasets if not hda.dataset.deleted]
 
     def _serialize(self, id_encoder, serialization_options):
-
         history_attrs = dict_for(
             self,
             create_time=self.create_time.__str__(),
@@ -2855,7 +2853,6 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         return history_attrs
 
     def to_dict(self, view="collection", value_mapper=None):
-
         # Get basic value.
         rval = super().to_dict(view=view, value_mapper=value_mapper)
 

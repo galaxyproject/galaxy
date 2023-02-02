@@ -168,7 +168,6 @@ class LibraryFoldersService(ServiceBase):
         if action is None:
             raise RequestParameterMissingException('The mandatory parameter "action" is missing.')
         elif action == "set_permissions":
-
             # ADD TO LIBRARY ROLES
             valid_add_roles = []
             invalid_add_roles_names = []

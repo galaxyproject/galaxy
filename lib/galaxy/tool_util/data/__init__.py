@@ -266,7 +266,7 @@ class ToolDataTable(Dictifiable):
         merged_info = self._merged_load_info
         self.__init__(*self._load_info[0], **self._load_info[1])  # type: ignore[misc]
         self._update_version(version=new_version)
-        for (tool_data_table_class, load_info) in merged_info:
+        for tool_data_table_class, load_info in merged_info:
             self.merge_tool_data_table(tool_data_table_class(*load_info[0], **load_info[1]), allow_duplicates=False)
         return self._update_version()
 
@@ -709,10 +709,8 @@ class TabularToolDataTable(ToolDataTable):
                 data_table_fh.write(fields_collapsed.encode("utf-8"))
 
     def _remove_entry(self, values):
-
         # update every file
         for filename in self.filenames:
-
             if os.path.exists(filename):
                 values = self._replace_field_separators(values)
                 self.filter_file_fields(filename, values)
@@ -792,7 +790,6 @@ class TabularToolDataTable(ToolDataTable):
 
 
 class TabularToolDataField(Dictifiable):
-
     dict_collection_visible_keys: List[str] = []
 
     def __init__(self, data: Dict):

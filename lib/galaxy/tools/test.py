@@ -216,7 +216,7 @@ def _process_simple_value(param, param_value, required_data_tables, required_loc
         def process_param_value(param_value):
             found_value = False
             value_for_text = None
-            for (text, opt_value, _) in getattr(param, "static_options", []):
+            for text, opt_value, _ in getattr(param, "static_options", []):
                 if param_value == opt_value:
                     found_value = True
                 if value_for_text is None and param_value == text:
@@ -270,7 +270,7 @@ def _matching_case_for_value(tool, cond, declared_value):
             # No explicit value in test case, not much to do if options are dynamic but
             # if static options are available can find the one specified as default or
             # fallback on top most option (like GUI).
-            for (name, _, selected) in test_param.static_options:
+            for name, _, selected in test_param.static_options:
                 if selected:
                     default_option = name
             else:

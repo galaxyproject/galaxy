@@ -8,7 +8,6 @@ from .framework import (
 
 
 class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
-
     ensure_registered = True
 
     @selenium_test

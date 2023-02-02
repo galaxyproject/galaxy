@@ -41,7 +41,6 @@ class TextGrid(Text):
     )
 
     def sniff(self, filename: str) -> bool:
-
         with open(filename) as fd:
             text = fd.read(len(self.header))
             return text == self.header

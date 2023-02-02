@@ -3,7 +3,6 @@ from . import ToolLocationResolver
 
 
 class HttpToolResolver(ToolLocationResolver):
-
     scheme = "http"
 
     def __init__(self, **kwds):
@@ -16,7 +15,6 @@ class HttpToolResolver(ToolLocationResolver):
 
 
 class HttpsToolResolver(HttpToolResolver):
-
     scheme = "https"
 
 

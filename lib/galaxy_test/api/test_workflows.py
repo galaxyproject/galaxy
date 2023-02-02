@@ -277,7 +277,6 @@ input1:
 
 
 class TestWorkflowSharingApi(ApiTestCase, SharingApiTests):
-
     api_name = "workflows"
 
     def create(self, name: str) -> str:
@@ -6596,7 +6595,6 @@ input_c:
 
 
 class TestAdminWorkflowsApi(BaseWorkflowsApiTestCase):
-
     require_admin_user = True
 
     def test_import_export_dynamic_tools(self, history_id):

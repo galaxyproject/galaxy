@@ -147,7 +147,6 @@ def galaxy_task(*args, action=None, **celery_task_kwd):
         @shared_task(**celery_task_kwd)
         @wraps(func)
         def wrapper(*args, **kwds):
-
             app = get_galaxy_app()
             assert app
 

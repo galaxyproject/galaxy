@@ -315,7 +315,6 @@ def output_adjacent_tmpdir(output_path):
 
 
 def __main__():
-
     if len(sys.argv) < 4:
         print("usage: upload.py <root> <datatypes_conf> <json paramfile> <output spec> ...", file=sys.stderr)
         sys.exit(1)

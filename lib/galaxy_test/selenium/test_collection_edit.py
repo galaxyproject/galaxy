@@ -5,7 +5,6 @@ from .framework import (
 
 
 class TestCollectionEdit(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test

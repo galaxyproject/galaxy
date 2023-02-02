@@ -51,7 +51,6 @@ class NameColumn(grids.TextColumn):
 
 
 class HistoryListGrid(grids.Grid):
-
     # Custom column types
     class ItemCountColumn(grids.GridColumn):
         def get_value(self, trans, grid, history):
@@ -175,7 +174,6 @@ class HistoryListGrid(grids.Grid):
 
 
 class SharedHistoryListGrid(grids.Grid):
-
     # Custom column types
     class DatasetsByStateColumn(grids.GridColumn):
         def get_value(self, trans, grid, history):

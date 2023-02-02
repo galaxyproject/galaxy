@@ -516,7 +516,6 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
 
 class HasDatasets:
-
     job_working_directory: Optional[str]
 
     @abc.abstractmethod
