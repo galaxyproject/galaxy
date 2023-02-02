@@ -254,7 +254,7 @@ export function getRouter(Galaxy) {
                         component: InteractiveTools,
                     },
                     {
-                        path: "jobs/:jobId/success",
+                        path: "jobs/submission/success",
                         component: ToolSuccess,
                         props: true,
                     },

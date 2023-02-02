@@ -229,7 +229,7 @@ export default {
         });
     },
     methods: {
-        ...mapActions(useJobStore, ["saveResponseForJobId"]),
+        ...mapActions(useJobStore, ["saveLatestResponse"]),
         emailAllowed(config, user) {
             return config.server_mail_configured && !user.isAnonymous;
         },
@@ -325,14 +325,13 @@ export default {
                         this.showForm = false;
                         this.jobDef = jobDef;
                         this.jobResponse = jobResponse;
-                        const refJobId = this.jobResponse.jobs[0].id;
                         const response = {
                             jobDef: this.jobDef,
                             jobResponse: this.jobResponse,
                             toolName: this.toolName,
                         };
-                        this.saveResponseForJobId(refJobId, response);
-                        this.$router.push(`/jobs/${refJobId}/success`);
+                        this.saveLatestResponse(response);
+                        this.$router.push(`/jobs/submission/success`);
                     } else {
                         this.showError = true;
                         this.showForm = true;
