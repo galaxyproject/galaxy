@@ -43,7 +43,6 @@ class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase)
 
 
 class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
-
     framework_tool_and_types = True
 
     @classmethod
@@ -176,7 +175,6 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
 
 
 class TestJobResubmissionDefaultIntegration(_BaseResubmissionIntegrationTestCase):
-
     framework_tool_and_types = True
 
     @classmethod
@@ -191,7 +189,6 @@ class TestJobResubmissionDefaultIntegration(_BaseResubmissionIntegrationTestCase
 
 
 class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegrationTestCase):
-
     framework_tool_and_types = True
 
     @classmethod

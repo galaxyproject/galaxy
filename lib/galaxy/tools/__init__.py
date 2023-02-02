@@ -1580,7 +1580,7 @@ class Tool(Dictifiable):
                     # Must refresh when test_param changes
                     group_c.test_param.refresh_on_change = True
                     # And a set of possible cases
-                    for (value, case_inputs_source) in input_source.parse_when_input_sources():
+                    for value, case_inputs_source in input_source.parse_when_input_sources():
                         case = ConditionalWhen()
                         case.value = value
                         case.inputs = self.parse_input_elem(case_inputs_source, enctypes, context)
@@ -2927,7 +2927,6 @@ class ExpressionTool(Tool):
                 # Skip filtered outputs
                 continue
             if val.output_type == "data":
-
                 with open(out_data[key].file_name) as f:
                     src = json.load(f)
                 assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"

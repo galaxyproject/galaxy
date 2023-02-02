@@ -23,6 +23,9 @@ from markupsafe import escape
 from typing_extensions import Literal
 
 from galaxy import util
+from galaxy.datatypes.metadata import (
+    MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
+)
 from galaxy.datatypes.protocols import (
     DatasetHasHidProtocol,
     DatasetProtocol,
@@ -34,9 +37,6 @@ from galaxy.datatypes.protocols import (
     HasInfo,
     HasMetadata,
     HasName,
-)
-from galaxy.datatypes.metadata import (
-    MetadataElement,  # import directly to maintain ease of use in Datatype class definitions
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,

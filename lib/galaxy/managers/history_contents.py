@@ -57,7 +57,6 @@ log = logging.getLogger(__name__)
 # into its own class to have it's own filters, etc.
 # TODO: but can't inherit from model manager (which assumes only one model)
 class HistoryContentsManager(base.SortableManager):
-
     root_container_class = model.History
 
     contained_class = model.HistoryDatasetAssociation
@@ -553,7 +552,6 @@ class HistoryContentsFilters(
         return super().parse_query_filters(query_filters)
 
     def _parse_orm_filter(self, attr, op, val):
-
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
         # using the model_class defined above - they need to be wrapped in their own .column()
         # (and some of these are *not* a normal columns (especially 'state') anyway)

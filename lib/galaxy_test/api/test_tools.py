@@ -2194,7 +2194,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             (element10, "456\n789\n"),
             (element11, "456\n0ab\n"),
         ]
-        for (element, expected_contents) in expected_contents_list:
+        for element, expected_contents in expected_contents_list:
             dataset_id = element["object"]["id"]
             contents = self.dataset_populator.get_history_dataset_content(history_id, dataset_id=dataset_id)
             assert expected_contents == contents

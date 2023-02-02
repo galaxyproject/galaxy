@@ -347,7 +347,6 @@ class VisualizationSelectionGrid(ItemSelectionGrid):
 
 # Adapted from the _BaseHTMLProcessor class of https://github.com/kurtmckee/feedparser
 class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, UsesVisualizationMixin, UsesItemRatings):
-
     _page_list = PageListGrid()
     _all_published_list = PageAllPublishedGrid()
     _history_selection_grid = HistorySelectionGrid()

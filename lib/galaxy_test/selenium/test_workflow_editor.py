@@ -28,7 +28,6 @@ from .framework import (
 
 
 class TestWorkflowEditor(SeleniumTestCase, RunsWorkflows):
-
     ensure_registered = True
 
     @selenium_test

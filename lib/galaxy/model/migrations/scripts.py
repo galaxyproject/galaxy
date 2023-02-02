@@ -93,7 +93,6 @@ def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, Databa
 def get_configuration_from_file(
     cwd: str, config_file: Optional[str] = None
 ) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
-
     if config_file is None:
         cwds = [cwd, os.path.join(cwd, CONFIG_DIR_NAME)]
         config_file = find_config_file(DEFAULT_CONFIG_NAMES, dirs=cwds)
@@ -163,7 +162,6 @@ class LegacyScriptsException(Exception):
 
 
 class LegacyManageDb:
-
     LEGACY_CONFIG_FILE_ARG_NAMES = ["-c", "--config", "--config-file"]
 
     def __init__(self):

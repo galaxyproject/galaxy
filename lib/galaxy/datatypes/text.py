@@ -16,12 +16,6 @@ from typing import (
 
 import yaml
 
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasCreatingJob,
-    HasExtraFilesAndMetadata,
-)
 from galaxy.datatypes.data import (
     get_file_peek,
     Headers,
@@ -30,6 +24,12 @@ from galaxy.datatypes.data import (
 from galaxy.datatypes.metadata import (
     MetadataElement,
     MetadataParameter,
+)
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasCreatingJob,
+    HasExtraFilesAndMetadata,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -441,7 +441,7 @@ class Biom1(Json):
                     return []
 
                 b_transform = {"rows": _transform_dict_list_ids, "columns": _transform_dict_list_ids}
-                for (m_name, b_name) in [
+                for m_name, b_name in [
                     ("table_rows", "rows"),
                     ("table_matrix_element_type", "matrix_element_type"),
                     ("table_format", "format"),

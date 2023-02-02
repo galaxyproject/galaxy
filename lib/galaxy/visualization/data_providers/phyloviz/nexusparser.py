@@ -48,7 +48,6 @@ class Nexus_Parser(Newick_Parser):
                 continue
 
             if inTreeBlock:
-
                 if "title" in lline:  # Adding title to the tree
                     continue
 

@@ -32,7 +32,6 @@ from .util import is_dict
 
 
 class YamlToolSource(ToolSource):
-
     language = "yaml"
 
     def __init__(self, root_dict: Dict, source_path=None):

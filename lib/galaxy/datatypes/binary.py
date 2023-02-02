@@ -33,13 +33,6 @@ from bx.seq.twobit import (
 
 from galaxy import util
 from galaxy.datatypes import metadata
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasExtraFilesAndMetadata,
-    HasFileName,
-    HasMetadata,
-)
 from galaxy.datatypes.data import (
     Data,
     DatatypeValidation,
@@ -66,6 +59,13 @@ from galaxy.datatypes.metadata import (
     ListParameter,
     MetadataElement,
     MetadataParameter,
+)
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+    HasFileName,
+    HasMetadata,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -329,7 +329,6 @@ class Bref3(Binary):
 
 
 class DynamicCompressedArchive(CompressedArchive):
-
     compressed_format: str
     uncompressed_datatype_instance: Data
 

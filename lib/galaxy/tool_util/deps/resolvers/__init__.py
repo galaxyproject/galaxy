@@ -285,7 +285,6 @@ class Dependency(Dictifiable, metaclass=ABCMeta):
 
 
 class ContainerDependency(Dependency):
-
     dict_collection_visible_keys = Dependency.dict_collection_visible_keys + [
         "environment_path",
         "container_description",

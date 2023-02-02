@@ -55,7 +55,6 @@ Configuration example (for internal authentication, use email for user details):
 
 
 class PAM(AuthProvider):
-
     plugin_type = "PAM"
 
     def authenticate(self, email, username, password, options, request):

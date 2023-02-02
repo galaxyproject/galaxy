@@ -106,7 +106,6 @@ class InputInstanceArrayDict(TypedDict):
 
 
 class ToolProxy(metaclass=ABCMeta):
-
     _class: str
 
     def __init__(self, tool, uuid, raw_process_reference=None, tool_path=None):
@@ -610,7 +609,7 @@ class WorkflowProxy:
                 cwl_source_id = input_proxy.cwl_source_id
                 input_name = input_proxy.input_name
                 # Consider only allow multiple if MultipleInputFeatureRequirement is enabled
-                for (output_step_name, output_name) in split_step_references(cwl_source_id, workflow_id=self.cwl_id):
+                for output_step_name, output_name in split_step_references(cwl_source_id, workflow_id=self.cwl_id):
                     if "#" in self.cwl_id:
                         sep_on = "/"
                     else:
@@ -1188,7 +1187,6 @@ class ConditionalInstance:
         self.whens = whens
 
     def to_dict(self):
-
         as_dict = dict(
             name=self.name,
             type=INPUT_TYPE.CONDITIONAL,

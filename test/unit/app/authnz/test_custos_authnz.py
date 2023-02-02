@@ -27,7 +27,6 @@ from galaxy.util.unittest import TestCase
 
 
 class TestCustosAuthnz(TestCase):
-
     _create_oauth2_session_called = False
     _fetch_token_called = False
     _get_userinfo_called = False
@@ -605,7 +604,6 @@ class TestCustosAuthnz(TestCase):
         assert redirect_uri is None
 
     def test_logout_with_redirect(self):
-
         logout_redirect_url = "http://localhost:8080/post-logout"
         redirect_url = self.custos_authnz.logout(self.trans, logout_redirect_url)
 

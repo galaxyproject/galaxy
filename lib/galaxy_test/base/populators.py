@@ -335,7 +335,6 @@ class CwlWorkflowRun(CwlRun):
 
 
 class BasePopulator(metaclass=ABCMeta):
-
     galaxy_interactor: ApiTestInteractor
 
     @abstractmethod

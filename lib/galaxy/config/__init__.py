@@ -412,7 +412,6 @@ class BaseAppConfiguration(HasDynamicProperties):
                     return path
 
     def _update_raw_config_from_kwargs(self, kwargs):
-
         type_converters: Dict[str, Callable[[Any], Union[bool, int, float, str]]] = {
             "bool": string_as_bool,
             "int": int,

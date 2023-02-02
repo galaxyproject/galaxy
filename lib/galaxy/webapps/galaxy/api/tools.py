@@ -62,12 +62,10 @@ SEARCH_RESERVED_TERMS_FAVORITES = ["#favs", "#favorites", "#favourites"]
 
 
 class FormDataApiRoute(APIContentTypeRoute):
-
     match_content_type = "multipart/form-data"
 
 
 class JsonApiRoute(APIContentTypeRoute):
-
     match_content_type = "application/json"
 
 
@@ -419,6 +417,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         Return diagnostic information to help debug panel
         and dependency related problems.
         """
+
         # TODO: Move this into tool.
         def to_dict(x):
             return x.to_dict()

@@ -80,7 +80,7 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
     expecting_container_close_for = None
     last_line_no = 0
     function_calls = 0
-    for (line, fenced, open_fence, line_no) in _split_markdown_lines(galaxy_markdown):
+    for line, fenced, open_fence, line_no in _split_markdown_lines(galaxy_markdown):
         last_line_no = line_no
 
         expecting_container_close = expecting_container_close_for is not None

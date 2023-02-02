@@ -1099,7 +1099,6 @@ class TestGalaxySession(BaseTest):
         assert cls_.__tablename__ == "galaxy_session"
 
     def test_columns(self, session, cls_, user, history, galaxy_session):
-
         create_time = now()
         update_time = create_time + timedelta(hours=1)
         remote_host = "a"
@@ -3191,7 +3190,6 @@ class TestLibraryDatasetCollectionAssociation(BaseTest):
         library_dataset_collection_rating_association,
         library_dataset_collection_tag_association,
     ):
-
         obj = cls_()
         obj.collection = dataset_collection
         obj.folder = library_folder
@@ -6400,6 +6398,7 @@ class TestWorkflowStepTagAssociation(BaseTest):
 
 
 # Misc. helper fixtures.
+
 
 # When enabled, this fixture auto-runs before each test and any unscoped fixtures
 # (except session and model on which it depends) and verifies that all model

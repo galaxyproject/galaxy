@@ -392,7 +392,6 @@ class SharableItemSecurityMixin:
 
 
 class UsesLibraryMixinItems(SharableItemSecurityMixin):
-
     get_object: Callable
 
     def get_library_folder(self, trans, id: int, check_ownership=False, check_accessible=True):

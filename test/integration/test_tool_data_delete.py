@@ -18,7 +18,6 @@ SOURCE_TOOL_DATA_DIRECTORY = os.path.join(THIS_DIR, os.pardir, "functional", "to
 
 
 class DataManagerIntegrationTestCase(integration_util.IntegrationTestCase):
-
     require_admin_user = True
     dataset_populator: DatasetPopulator
 

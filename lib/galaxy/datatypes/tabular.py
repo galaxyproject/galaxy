@@ -29,12 +29,6 @@ from galaxy.datatypes import (
     data,
     metadata,
 )
-from galaxy.datatypes.protocols import (
-    DatasetHasHidProtocol,
-    DatasetProtocol,
-    HasFileName,
-    HasMetadata,
-)
 from galaxy.datatypes.binary import _BamOrSam
 from galaxy.datatypes.data import (
     DatatypeValidation,
@@ -57,6 +51,12 @@ from galaxy.datatypes.dataproviders.line import (
 from galaxy.datatypes.metadata import (
     MetadataElement,
     MetadataParameter,
+)
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasFileName,
+    HasMetadata,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -1812,9 +1812,7 @@ class CMAP(TabularData):
                 for i, line in enumerate(dataset_fh):
                     line = line.strip("\n")
                     if line.startswith("#"):
-
                         if line.startswith("#h"):
-
                             column_headers = line.split("\t")[1:]
                         elif line.startswith("#f"):
                             cleaned_column_types = []

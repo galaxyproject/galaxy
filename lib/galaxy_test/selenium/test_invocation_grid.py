@@ -8,7 +8,6 @@ from .framework import (
 
 
 class TestInvocationGridSelenium(SeleniumTestCase, TestsGalaxyPagers):
-
     ensure_registered = True
 
     @selenium_test
