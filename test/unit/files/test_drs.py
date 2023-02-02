@@ -4,14 +4,7 @@ import os
 import urllib
 from unittest import mock
 
-import pytest
-
 import responses
-
-try:
-    import s3fs
-except ImportError:
-    s3fs = None
 
 from ._util import configured_file_sources, user_context_fixture, assert_realizes_as, assert_realizes_contains
 
@@ -19,10 +12,6 @@ from ._util import configured_file_sources, user_context_fixture, assert_realize
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "drs_file_sources_conf.yml")
 
-
-skip_if_no_s3fs = pytest.mark.skipif(
-    not s3fs, reason="s3fs is required to run this DRS filesource test"
-)
 
 @responses.activate
 def test_file_source_drs_http():
@@ -70,7 +59,6 @@ def test_file_source_drs_http():
         assert_realizes_as(file_sources, test_url, "hello drs world", user_context=user_context)
 
 
-@skip_if_no_s3fs
 @responses.activate
 def test_file_source_drs_s3():
     def drs_repo_handler(request):
