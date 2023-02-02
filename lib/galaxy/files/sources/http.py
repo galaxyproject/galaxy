@@ -21,8 +21,9 @@ class HTTPFilesSource(BaseFilesSource):
         )
         kwds.update(kwd)
         props = self._parse_common_config_opts(kwds)
-        self._url_regex = re.compile(props.pop("url_regex", r"^https?://"))
-        assert self._url_regex
+        self._url_regex_str = props.pop("url_regex", r"^https?://")
+        assert self._url_regex_str
+        self._url_regex = re.compile(self._url_regex_str)
         self._props = props
 
     def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
@@ -43,7 +44,7 @@ class HTTPFilesSource(BaseFilesSource):
 
     def _serialization_props(self, user_context=None):
         effective_props = super()._serialization_props(user_context=user_context)
-        effective_props["url_regex"] = self._url_regex
+        effective_props["url_regex"] = self._url_regex_str
         return effective_props
 
     def score_url_match(self, url: str):
