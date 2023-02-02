@@ -54,7 +54,7 @@ IncludeDeletedQueryParam: Optional[bool] = Query(
 )
 
 SortByQueryParam: LibraryFolderContentsIndexSortByEnum = Query(
-    default=LibraryFolderContentsIndexSortByEnum.name,
+    default="name",
     title="Sort By",
     description="Sort results by specified field.",
 )

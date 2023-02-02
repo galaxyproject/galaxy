@@ -37,10 +37,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
 )
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.schema import (
-    LibraryFolderContentsIndexQueryPayload,
-    LibraryFolderContentsIndexSortByEnum,
-)
+from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
 from galaxy.security.idencoding import IdEncodingHelper
 
@@ -57,17 +54,17 @@ class SecurityParams:
 
 
 LDDA_SORT_COLUMN_MAP = {
-    LibraryFolderContentsIndexSortByEnum.name: lambda ldda, dataset: ldda.name,
-    LibraryFolderContentsIndexSortByEnum.description: lambda ldda, dataset: ldda.message,
-    LibraryFolderContentsIndexSortByEnum.type: lambda ldda, dataset: ldda.extension,
-    LibraryFolderContentsIndexSortByEnum.size: lambda ldda, dataset: dataset.file_size,
-    LibraryFolderContentsIndexSortByEnum.update_time: lambda ldda, dataset: ldda.update_time,
+    "name": lambda ldda, dataset: ldda.name,
+    "description": lambda ldda, dataset: ldda.message,
+    "type": lambda ldda, dataset: ldda.extension,
+    "size": lambda ldda, dataset: dataset.file_size,
+    "update_time": lambda ldda, dataset: ldda.update_time,
 }
 
 FOLDER_SORT_COLUMN_MAP = {
-    LibraryFolderContentsIndexSortByEnum.name: lambda folder: folder.name,
-    LibraryFolderContentsIndexSortByEnum.description: lambda folder: folder.description,
-    LibraryFolderContentsIndexSortByEnum.update_time: lambda folder: folder.update_time,
+    "name": lambda folder: folder.name,
+    "description": lambda folder: folder.description,
+    "update_time": lambda folder: folder.update_time,
 }
 
 

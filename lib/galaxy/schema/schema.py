@@ -1093,11 +1093,7 @@ class ExportHistoryArchivePayload(Model):
     )
 
 
-class WorkflowSortByEnum(str, Enum):
-    create_time = "create_time"
-    update_time = "update_time"
-    name = "name"
-    none = None
+WorkflowSortByEnum = Literal["create_time", "update_time", "name"]
 
 
 class WorkflowIndexQueryPayload(Model):
@@ -2718,12 +2714,7 @@ class LibraryFolderCurrentPermissions(Model):
     )
 
 
-class LibraryFolderContentsIndexSortByEnum(str, Enum):
-    name = "name"
-    description = "description"
-    type = "type"
-    size = "size"
-    update_time = "update_time"
+LibraryFolderContentsIndexSortByEnum = Literal["name", "description", "type", "size", "update_time"]
 
 
 class LibraryFolderContentsIndexQueryPayload(Model):
@@ -2731,7 +2722,7 @@ class LibraryFolderContentsIndexQueryPayload(Model):
     offset: int = 0
     search_text: Optional[str] = None
     include_deleted: Optional[bool] = None
-    order_by: LibraryFolderContentsIndexSortByEnum = LibraryFolderContentsIndexSortByEnum.name
+    order_by: LibraryFolderContentsIndexSortByEnum = "name"
     sort_desc: Optional[bool] = False
 
 
