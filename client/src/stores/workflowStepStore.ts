@@ -286,7 +286,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             const connectionStore = useConnectionStore();
             connectionStore
                 .getConnectionsForStep(stepId)
-                .map((connection) => connectionStore.removeConnection(connection.id));
+                .forEach((connection) => connectionStore.removeConnection(connection.id));
             Vue.delete(this.steps, stepId.toString());
         },
     },
