@@ -566,13 +566,21 @@ def upload_tar_and_set_metadata(
     assert user
     repo_dir = repository.repo_path(app)
     tip = repository.tip()
-    (ok, message, _, content_alert_str, _, _,) = upload_tar(
+    tar_response = upload_tar(
         trans,
         user.username,
         repository,
         uploaded_file,
         commit_message,
     )
+    (
+        ok,
+        message,
+        _,
+        content_alert_str,
+        _,
+        _,
+    ) = tar_response
     if ok:
         # Update the repository files for browsing.
         hg_util.update_repository(repo_dir)
