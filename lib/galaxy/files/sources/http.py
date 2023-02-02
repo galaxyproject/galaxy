@@ -21,7 +21,7 @@ class HTTPFilesSource(BaseFilesSource):
         )
         kwds.update(kwd)
         props = self._parse_common_config_opts(kwds)
-        self._url_regex_str = props.pop("url_regex", r"^https?://")
+        self._url_regex_str = props.pop("url_regex", r"^https?://|^ftp://")
         assert self._url_regex_str
         self._url_regex = re.compile(self._url_regex_str)
         self._props = props
