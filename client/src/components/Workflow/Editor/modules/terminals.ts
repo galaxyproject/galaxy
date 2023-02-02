@@ -19,6 +19,7 @@ import type {
 } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import Vue from "vue";
+import { assertDefined } from "@/utils/assertions";
 
 export class ConnectionAcceptable {
     reason: string | null;
@@ -108,15 +109,20 @@ class Terminal extends EventEmitter {
             }
             outputVal = val.effectiveMapOver(description);
         }
+
         const effectiveMapOver = this._effectiveMapOver(outputVal);
+
         if (!this.localMapOver.equal(effectiveMapOver)) {
             this.stepStore.changeStepInputMapOver(this.stepId, this.name, effectiveMapOver);
             this.localMapOver = effectiveMapOver;
         }
+
         if (
             !this.mapOver.equal(effectiveMapOver) &&
             (effectiveMapOver.isCollection ||
-                !Object.values(this.stepStore.stepInputMapOver[this.stepId]).find((mapOver) => mapOver.isCollection))
+                !Object.values(this.stepStore.stepInputMapOver[this.stepId] ?? []).find(
+                    (mapOver) => mapOver.isCollection
+                ))
         ) {
             this.stepStore.changeStepMapOver(this.stepId, effectiveMapOver);
         }
@@ -176,8 +182,8 @@ class BaseInputTerminal extends Terminal {
         this.datatypes = attr.input.datatypes;
         this.multiple = attr.input.multiple;
         this.optional = attr.input.optional;
-        if (this.stepStore.stepInputMapOver[this.stepId] && this.stepStore.stepInputMapOver[this.stepId][this.name]) {
-            this.localMapOver = this.stepStore.stepInputMapOver[this.stepId][this.name];
+        if (this.stepStore.stepInputMapOver[this.stepId] && this.stepStore.stepInputMapOver[this.stepId]?.[this.name]) {
+            this.localMapOver = this.stepStore.stepInputMapOver[this.stepId]![this.name]!;
         } else {
             this.localMapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
         }
@@ -229,11 +235,15 @@ class BaseInputTerminal extends Terminal {
         }
         Array.from(new Set(outputStepIds)).forEach((stepId) => {
             const step = this.stepStore.getStep(stepId);
-            // step must have an output, since it is or was connected to this step
-            const terminalSource = step.outputs[0];
-            if (terminalSource) {
-                const terminal = terminalFactory(step.id, terminalSource, this.datatypesMapper);
-                terminal.resetMappingIfNeeded();
+            if (step) {
+                // step must have an output, since it is or was connected to this step
+                const terminalSource = step.outputs[0];
+                if (terminalSource) {
+                    const terminal = terminalFactory(step.id, terminalSource, this.datatypesMapper);
+                    terminal.resetMappingIfNeeded();
+                }
+            } else {
+                console.error(`Invalid step. Could not fine step with id ${stepId} in store.`);
             }
         });
     }
@@ -273,9 +283,14 @@ class BaseInputTerminal extends Terminal {
     _collectionAttached() {
         const outputTerminals = this._getOutputTerminals();
         return outputTerminals.some((outputTerminal) => {
-            const output = this.stepStore
-                .getStep(outputTerminal.stepId)
-                .outputs.find((output) => output.name == outputTerminal.name);
+            const step = this.stepStore.getStep(outputTerminal.stepId);
+
+            if (!step) {
+                console.error(`Invalid step. Could not find step with id ${outputTerminal.stepId} in store.`);
+                return false;
+            }
+
+            const output = step.outputs.find((output) => output.name == outputTerminal.name);
 
             if (
                 output &&
@@ -353,11 +368,14 @@ class BaseInputTerminal extends Terminal {
                 outputStep.post_job_actions &&
                 postJobActionKey in outputStep.post_job_actions
             ) {
-                terminalSource = {
+                const extensionType = outputStep.post_job_actions![postJobActionKey]!.action_arguments.newtype;
+
+                (terminalSource as DataOutput | CollectionOutput) = {
                     ...terminalSource,
-                    extensions: [outputStep.post_job_actions[postJobActionKey].action_arguments.newtype],
+                    extensions: extensionType ? [extensionType] : [],
                 };
             }
+
             return terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
         });
     }
@@ -529,9 +547,11 @@ export class InputCollectionTerminal extends BaseInputTerminal {
         const canMatch = collectionTypes.some((collectionType) => collectionType.canMatch(otherCollectionType));
         if (!canMatch) {
             for (const collectionTypeIndex in collectionTypes) {
-                const collectionType = collectionTypes[collectionTypeIndex];
+                const collectionType = collectionTypes[collectionTypeIndex]!;
+
                 if (otherCollectionType.canMapOver(collectionType)) {
                     const effectiveMapOver = otherCollectionType.effectiveMapOver(collectionType);
+
                     if (effectiveMapOver != NULL_COLLECTION_TYPE_DESCRIPTION) {
                         return effectiveMapOver;
                     }
@@ -613,6 +633,8 @@ class BaseOutputTerminal extends Terminal {
     getConnectedTerminals(): InputTerminalsAndInvalid[] {
         return this.connections.map((connection) => {
             const inputStep = this.stepStore.getStep(connection.input.stepId);
+            assertDefined(inputStep, `Invalid step. Could not find step with id ${connection.input.stepId} in store.`);
+
             const extraStepInput = this.stepStore.getStepExtraInputs(inputStep.id);
             const terminalSource = [...extraStepInput, ...inputStep.inputs].find(
                 (input) => input.name === connection.input.name
@@ -703,6 +725,8 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
         if (connection) {
             const outputStep = this.stepStore.getStep(connection.output.stepId);
             const inputStep = this.stepStore.getStep(this.stepId);
+            assertDefined(inputStep, `Invalid step. Could not find step with id ${connection.input.stepId} in store.`);
+
             if (outputStep) {
                 const stepOutput = outputStep.outputs.find((output) => output.name == connection.output.name);
                 const stepInput = inputStep.inputs.find((input) => input.name === this.collectionTypeSource);
@@ -771,17 +795,20 @@ export function producesAcceptableDatatype(
     otherDatatypes: string[]
 ) {
     for (const t in inputDatatypes) {
-        const thisDatatype = inputDatatypes[t];
-        if (thisDatatype == "input") {
+        const thisDatatype = inputDatatypes[t]!;
+
+        if (thisDatatype === "input") {
             return new ConnectionAcceptable(true, null);
         }
+
         // FIXME: No idea what to do about case when datatype is 'input'
         const validMatch = otherDatatypes.some(
             (otherDatatype) =>
-                otherDatatype == "input" ||
-                otherDatatype == "_sniff_" ||
+                otherDatatype === "input" ||
+                otherDatatype === "_sniff_" ||
                 datatypesMapper.isSubType(otherDatatype, thisDatatype)
         );
+
         if (validMatch) {
             return new ConnectionAcceptable(true, null);
         }

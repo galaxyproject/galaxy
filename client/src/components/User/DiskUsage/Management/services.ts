@@ -125,19 +125,28 @@ export async function cleanupDiscardedDatasets(items: CleanableItem[]): Promise<
             (acc: { [key: string]: CleanableItem }, item: CleanableItem) => ((acc[item.id] = item), acc),
             {}
         );
+
         const datasetSourceIds: DatasetSourceId[] = items.map((item: CleanableItem) => {
             const dataset = item as DiscardedDataset;
             return { id: dataset.id, src: dataset.hda_ldda };
         });
+
         const requestResult = await purgeDatasets(datasetSourceIds);
+
         resultResponse.totalItemCount = items.length;
+
         if (requestResult.errors) {
             resultResponse.errors = mapErrors(datasetsTable, requestResult.errors);
+
             const erroredIds = requestResult.errors?.reduce((acc: string[], error) => [...acc, error.dataset.id], []);
-            resultResponse.totalFreeBytes = datasetSourceIds.reduce(
-                (partial_sum, item) => partial_sum + (erroredIds?.includes(item.id) ? 0 : datasetsTable[item.id].size),
-                0
-            );
+
+            resultResponse.totalFreeBytes = datasetSourceIds.reduce((partial_sum, item) => {
+                if (erroredIds?.includes(item.id)) {
+                    return partial_sum;
+                } else {
+                    return partial_sum + (datasetsTable[item.id]?.size ?? 0);
+                }
+            }, 0);
         }
     } catch (error) {
         resultResponse.errorMessage = error as string;
@@ -207,12 +216,13 @@ export async function cleanupDiscardedHistories(histories: DiscardedHistory[]) {
     try {
         for (const history of histories) {
             await purgeHistory(history.id);
-            resultResponse.totalFreeBytes += historiesTable[history.id].size;
+            resultResponse.totalFreeBytes += historiesTable[history.id]?.size ?? 0;
             resultResponse.totalItemCount += 1;
         }
     } catch (error) {
         resultResponse.errorMessage = error as string;
     }
+
     return new CleanupResult(resultResponse);
 }
 
@@ -224,7 +234,7 @@ export async function cleanupDiscardedHistories(histories: DiscardedHistory[]) {
  */
 function mapErrors(datasetsTable: { [key: string]: CleanableItem }, errors: DatasetErrorMessage[]): ItemError[] {
     return errors.map((error) => {
-        const name = datasetsTable[error.dataset.id].name;
+        const name = datasetsTable[error.dataset.id]?.name ?? "Unknown Dataset";
         return { name: name, reason: error.error_message };
     });
 }

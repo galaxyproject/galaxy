@@ -50,7 +50,7 @@ const columnStyle = computed(() => {
     const columnStyle = Array(props.options.dataset_config.metadata_columns);
     if (props.options.dataset_config.metadata_column_types?.length > 0) {
         props.options.dataset_config.metadata_column_types.forEach((column_type, index) => {
-            columnStyle[index] = column_type === "str" || column_type === "list" ? "stringalign" : "numberalign";
+            columnStyle[index] = column_type === "str" || column_type === "list" ? "string-align" : "number-align";
         });
     }
     return columnStyle;
@@ -116,17 +116,17 @@ function processRow(row: string[]) {
         return row.slice(0, num_columns - 1).concat([row.slice(num_columns - 1).join("\t")]);
     } else if (row.length === 1) {
         // Try to split by comma first
-        let rowDataSplit = row[0].split(",");
+        let rowDataSplit = row[0]!.split(",");
         if (rowDataSplit.length === num_columns) {
             return rowDataSplit;
         }
         // Try to split by tab
-        rowDataSplit = row[0].split("\t");
+        rowDataSplit = row[0]!.split("\t");
         if (rowDataSplit.length === num_columns) {
             return rowDataSplit;
         }
         // Try to split by space
-        rowDataSplit = row[0].split(" ");
+        rowDataSplit = row[0]!.split(" ");
         if (rowDataSplit.length === num_columns) {
             return rowDataSplit;
         }
@@ -190,10 +190,10 @@ onMounted(() => {
 </template>
 
 <style lang="scss" scoped>
-.stringalign {
+.string-align {
     text-align: left;
 }
-.numberalign {
+.number-align {
     text-align: right;
 }
 </style>

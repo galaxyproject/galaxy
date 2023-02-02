@@ -81,6 +81,7 @@ export default {
     },
     props: {
         step: {
+            // type Step from @/stores/workflowStepStore
             type: Object,
             required: true,
         },
