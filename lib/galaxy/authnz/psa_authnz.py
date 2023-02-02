@@ -148,7 +148,6 @@ class PSAAuthnz(IdentityProvider):
         self.config["user"] = user
 
     def refresh_azure(self, user_authnz_token):
-
         logging.getLogger("msal").setLevel(logging.WARN)
         old_extra_data = user_authnz_token.extra_data
         app = ConfidentialClientApplication(
