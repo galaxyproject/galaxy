@@ -104,7 +104,7 @@ def fetch_drs_to_file(
         try:
             stream_url_to_file(
                 access_url,
-                target_path=target_path,
+                target_path=str(target_path),
                 file_sources=user_context.file_sources,
                 user_context=user_context,
                 extra_props=extra_props,
