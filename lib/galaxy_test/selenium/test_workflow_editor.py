@@ -918,6 +918,77 @@ steps:
         output_connector.send_keys(Keys.SPACE)
         assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
 
+    @selenium_test
+    def test_workflow_output_handling(self):
+        self.open_in_workflow_editor(
+            """
+class: GalaxyWorkflow
+inputs: []
+outputs:
+  first_out:
+    outputSource: first/out_file1
+  second_out:
+    outputSource: second/out_file1
+steps:
+  first:
+    tool_id: create_2
+  second:
+    tool_id: create_2
+""",
+            auto_layout=True,
+        )
+        editor = self.components.workflow_editor
+        # assert both steps have one workflow output each
+        first = editor.node._(label="first")
+        first.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        first.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        second = editor.node._(label="second")
+        second.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        second.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        # toggle out_file1 on second step, both outputs not active
+        second.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        # just toggling outputs doesn't set a label
+        second.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        second.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        # switch to first node
+        editor.node._(label="first").wait_for_and_click()
+        # toggle out_file1 on first step
+        first.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        # turn out_file1 back on
+        first.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        first.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        # turn out_file1 off
+        first.workflow_output_toggle(name="out_file1").wait_for_and_click()
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        editor.node._(label="second").wait_for_and_click()
+        editor.node._(label="first").wait_for_and_click()
+        # make sure workflow outputs are both off for second step
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        first.workflow_output_toggle_active(name="out_file2").wait_for_absent()
+        # add an output label
+        editor.configure_output(output="out_file1").wait_for_and_click()
+        output_label = editor.label_output(output="out_file1")
+        self.set_text_element(output_label, "workflow output label")
+        # should indicate active workflow output
+        first.workflow_output_toggle_active(name="out_file1").wait_for_visible()
+        self.set_text_element(output_label, "")
+        # deleting label also deletes active output
+        first.workflow_output_toggle_active(name="out_file1").wait_for_absent()
+        # set duplicate label
+        output_label = editor.label_output(output="out_file1")
+        self.set_text_element(output_label, "workflow output label")
+        editor.node._(label="second").wait_for_and_click()
+        editor.configure_output(output="out_file1").wait_for_and_click()
+        output_label = editor.label_output(output="out_file1")
+        self.set_text_element(output_label, "workflow output label")
+        # should show error
+        editor.duplicate_label_error(output="out_file1").wait_for_visible()
+        # make label unique
+        self.set_text_element(output_label, "workflow output label2")
+        # should not show error
+        editor.duplicate_label_error(output="out_file1").wait_for_absent()
+
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
             self.components._.left_panel_collapse.wait_for_and_click()

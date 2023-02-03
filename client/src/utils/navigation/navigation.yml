@@ -587,6 +587,8 @@ workflow_editor:
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].multiple"
+      workflow_output_toggle: "${_} .callout-terminal.${name}"
+      workflow_output_toggle_active: "${_} .callout-terminal.${name} .mark-terminal-active"
   selectors:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
@@ -628,6 +630,10 @@ workflow_editor:
       type: xpath
       selector: >
         //div[@id='form-element-__label__${output}']//input
+    duplicate_label_error:
+      type: xpath
+      selector: >
+        //div[@id='form-element-__label__${output}']//span[contains(text(), 'Duplicate output label')]
     rename_output:
       type: xpath
       selector: >
