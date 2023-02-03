@@ -1503,14 +1503,6 @@ select an option for a test.
       <xs:element name="composite_data" type="TestCompositeData" minOccurs="0" maxOccurs="unbounded" />
       <xs:element name="metadata" type="TestParamMetadata" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
-    <xs:attribute name="location" type="xs:anyURI">
-      <xs:annotation>
-        <xs:documentation xml:lang="en">URL that points to a remote input file that will be directly uploaded to Galaxy.
-Please use this option only when is not possible to include the files in the `test-data` folder, since
-this is more error prone due to external factors like remote availability.
-You don't need to specify the `value` attribute in this case.</xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">This value must match the name of the
@@ -1548,6 +1540,20 @@ of ``type`` ``data``.</xs:documentation>
     <xs:attribute name="tags" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="location" type="xs:anyURI">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">URL that points to a remote input file that will be directly uploaded to Galaxy.
+Please use this option only when is not possible to include the files in the `test-data` folder, since
+this is more error prone due to external factors like remote availability.
+You don't need to specify the `value` attribute in this case.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="checksum" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">If specified in combination with `location`, after downloading the test input file, the checksum should match the value specified
+here. This value should have the form ``hash_type$hash_value`` (e.g. ``sha1$8156d7ca0f46ed7abac98f82e36cfaddb2aca041``).</xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
