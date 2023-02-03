@@ -127,6 +127,12 @@ export default {
     },
     created() {
         this.onCloneInputs();
+        // build flat formData that is ready to be submitted
+        Object.entries(this.formIndex).forEach(([key, input]) => {
+            this.formData[key] = input.value;
+        });
+        // emit back to parent, so that parent has submittable data
+        this.$emit("onChange", this.formData);
     },
     methods: {
         onReplaceParams() {

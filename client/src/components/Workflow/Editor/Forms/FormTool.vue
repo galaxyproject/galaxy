@@ -110,7 +110,7 @@ export default {
     },
     data() {
         return {
-            mainValues: {},
+            mainValues: null,
             messageText: "",
             messageVariant: "success",
         };
@@ -168,7 +168,7 @@ export default {
          * @param { Object } values contains flat key-value pairs `prefixed-name=value`
          */
         onChange(values) {
-            const initialRequest = Object.keys(this.mainValues).length === 0;
+            const initialRequest = this.mainValues === null;
             this.mainValues = values;
             if (!initialRequest) {
                 this.postChanges();
