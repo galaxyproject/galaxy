@@ -245,10 +245,6 @@ class ConditionalDependencies:
     def check_fs_webdavfs(self):
         return "webdav" in self.file_sources
 
-    def check_fs_s3fs(self):
-        # pyfilesystem plugin access to s3
-        return "s3" in self.file_sources
-
     def check_fs_anvilfs(self):
         # pyfilesystem plugin access to terra on anvil
         return "anvil" in self.file_sources
