@@ -337,6 +337,7 @@ class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerialize
                 "hid",
                 "history_content_type",
                 "dataset_id",
+                "genome_build",
                 "state",
                 "extension",
                 "deleted",

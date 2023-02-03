@@ -46,6 +46,8 @@
             <small class="mt-1">Filter by state:</small>
             <b-form-input v-model="filterSettings['state:']" size="sm" placeholder="any state" list="stateSelect" />
             <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
+            <small>Filter by database:</small>
+            <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
             <b-form-input v-model="filterSettings['related:']" size="sm" placeholder="index equals" />
             <small class="mt-1">Filter by item index:</small>
