@@ -14,14 +14,14 @@ from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
 )
+from galaxy.files import (
+    ConfiguredFileSources,
+    NoMatchingFileSource,
+)
 from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
 )
-
-from galaxy.files import ConfiguredFileSources
-from galaxy.files import NoMatchingFileSource
-
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def stream_url_to_file(
     dir: Optional[str] = None,
     user_context=None,
     target_path: Optional[str] = None,
-    **kwargs: dict
+    **kwargs: dict,
 ) -> str:
     if file_sources is None:
         file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)

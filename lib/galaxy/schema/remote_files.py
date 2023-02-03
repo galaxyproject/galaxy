@@ -96,7 +96,7 @@ class FilesSourcePluginList(Model):
                 "label": "Library Import Directory",
                 "doc": "Galaxy's library import directory",
                 "writable": False,
-                "listable": True
+                "listable": True,
             }
         ],
     )

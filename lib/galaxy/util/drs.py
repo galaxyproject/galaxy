@@ -1,15 +1,17 @@
 import time
 from os import PathLike
-from typing import Optional, Union, Tuple
+from typing import (
+    Optional,
+    Tuple,
+    Union,
+)
 
 import requests
 
 from galaxy import exceptions
-from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-)
+from galaxy.files import FileSourceDictifiable
 from galaxy.files.uris import stream_url_to_file
-
+from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 
 TargetPathT = Union[str, PathLike]
 
@@ -70,10 +72,10 @@ def _get_access_info(obj_url: str, access_method: dict, headers=None) -> Tuple[s
 def fetch_drs_to_file(
     drs_uri: str,
     target_path: TargetPathT,
+    user_context: FileSourceDictifiable,
     force_http=False,
     retry_options: Optional[RetryOptions] = None,
     headers: Optional[dict] = None,
-    user_context=None,
 ):
     """Fetch contents of drs:// URI to a target path."""
     if not drs_uri.startswith("drs://"):

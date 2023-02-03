@@ -22,7 +22,7 @@ class Base64FilesSource(BaseFilesSource):
 
     def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
         with open(native_path, "wb") as temp:
-            temp.write(base64.b64decode(source_path[len("base64://"):]))
+            temp.write(base64.b64decode(source_path[len("base64://") :]))
             temp.flush()
 
     def _write_from(self, target_path, native_path, user_context=None):

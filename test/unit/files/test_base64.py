@@ -1,8 +1,12 @@
 import base64
 import os
-from galaxy import util
 
-from ._util import configured_file_sources, user_context_fixture, assert_realizes_as
+from galaxy import util
+from ._util import (
+    assert_realizes_as,
+    configured_file_sources,
+    user_context_fixture,
+)
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "base64_file_sources_conf.yml")

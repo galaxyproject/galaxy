@@ -2,8 +2,11 @@ import logging
 import re
 import urllib.request
 
-from galaxy.util import DEFAULT_SOCKET_TIMEOUT, get_charset_from_http_headers, stream_to_open_named_file
-
+from galaxy.util import (
+    DEFAULT_SOCKET_TIMEOUT,
+    get_charset_from_http_headers,
+    stream_to_open_named_file,
+)
 from . import BaseFilesSource
 
 log = logging.getLogger(__name__)

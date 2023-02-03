@@ -76,7 +76,7 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
         role_names=role_names or set(),
         group_names=group_names or set(),
         is_admin=is_admin,
-        file_sources=file_sources
+        file_sources=file_sources,
     )
     return user_context
 

@@ -2,9 +2,12 @@ import os
 
 import pytest
 
-from ._util import assert_simple_file_realize
-
-from ._util import configured_file_sources, user_context_fixture, assert_realizes_contains
+from ._util import (
+    assert_realizes_contains,
+    assert_simple_file_realize,
+    configured_file_sources,
+    user_context_fixture,
+)
 
 pytest.importorskip("s3fs")
 

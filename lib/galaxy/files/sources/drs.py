@@ -1,7 +1,6 @@
 import logging
 
 from galaxy.util.drs import fetch_drs_to_file
-
 from . import BaseFilesSource
 
 log = logging.getLogger(__name__)
@@ -24,7 +23,7 @@ class DRSFilesSource(BaseFilesSource):
     def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
         props = self._serialization_props(user_context)
         headers = props.pop("http_headers", {}) or {}
-        fetch_drs_to_file(source_path, native_path, headers=headers, user_context=user_context)
+        fetch_drs_to_file(source_path, native_path, user_context, headers=headers)
 
     def _write_from(self, target_path, native_path, user_context=None, **kwargs):
         raise NotImplementedError()
