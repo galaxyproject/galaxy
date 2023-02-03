@@ -20,7 +20,7 @@ class Base64FilesSource(BaseFilesSource):
         props = self._parse_common_config_opts(kwds)
         self._props = props
 
-    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
+    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
         with open(native_path, "wb") as temp:
             temp.write(base64.b64decode(source_path[len("base64://"):]))
             temp.flush()
@@ -28,7 +28,7 @@ class Base64FilesSource(BaseFilesSource):
     def _write_from(self, target_path, native_path, user_context=None):
         raise NotImplementedError()
 
-    def score_url_match(self, url: str):
+    def score_url_match(self, url: str, **kwargs):
         if url.startswith("base64://"):
             return len("base64://")
         else:

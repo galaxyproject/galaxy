@@ -21,25 +21,24 @@ DEFAULT_WRITABLE = False
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
-
     @abc.abstractmethod
     def get_writable(self):
         """Return a boolean indicating if this target is writable."""
 
     @abc.abstractmethod
-    def user_has_access(self, user_context) -> bool:
+    def user_has_access(self, user_context, **kwargs) -> bool:
         """Return a boolean indicating if the user can access the FileSource."""
 
     @abc.abstractmethod
-    def realize_to(self, source_path, native_path, user_context=None, extra_props=None):
+    def realize_to(self, source_path, native_path, user_context=None, **kwargs):
         """Realize source path (relative to uri root) to local file system path."""
 
     @abc.abstractmethod
-    def write_from(self, target_path, native_path, user_context=None, extra_props=None):
+    def write_from(self, target_path, native_path, user_context=None, **kwargs):
         """Write file at native path to target_path (relative to uri root)."""
 
     @abc.abstractmethod
-    def score_url_match(self, url):
+    def score_url_match(self, url, **kwargs):
         """Return how well a given url matches this filesource. A score greater than zero indicates that
         this filesource is capable of processing the given url.
 
@@ -63,7 +62,14 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def to_dict(self, for_serialization=False, user_context=None):
+    def to_relative_path(self, url: str):
+        """Convert this url to a filesource relative path. For example, given the url
+        `gxfiles://mysource1/myfile.txt` it will return `/myfile.txt`. Protocols directly understood
+        by the handler need not be relativized. For example, the url `s3://bucket/myfile.txt` can be
+        returned unchanged."""
+
+    @abc.abstractmethod
+    def to_dict(self, for_serialization=False, user_context=None, **kwargs):
         """Return a dictified representation of this FileSource instance.
 
         If ``user_context`` is supplied, properties should be written so user
@@ -72,13 +78,12 @@ class SingleFileSource(metaclass=abc.ABCMeta):
 
 
 class SupportsBrowsing(metaclass=abc.ABCMeta):
-
     @abc.abstractmethod
     def get_uri_root(self) -> str:
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def list(self, source_path="/", recursive=False, user_context=None, extra_props=None):
+    def list(self, source_path="/", recursive=False, user_context=None, **kwargs):
         """Return dictionary of 'Directory's and 'File's."""
 
 
@@ -107,7 +112,7 @@ class BaseFilesSource(FilesSource):
     def get_writable(self):
         return self.writable
 
-    def user_has_access(self, user_context) -> bool:
+    def user_has_access(self, user_context, **kwargs) -> bool:
         if user_context is None and self.user_context_required:
             return False
         return (
@@ -131,7 +136,7 @@ class BaseFilesSource(FilesSource):
     def to_relative_path(self, url: str):
         return url.replace(self.get_uri_root(), "") or "/"
 
-    def score_url_match(self, url: str):
+    def score_url_match(self, url: str, **kwargs):
         root = self.get_uri_root()
         return len(root) if root in url else 0
 
@@ -155,7 +160,7 @@ class BaseFilesSource(FilesSource):
         kwd.pop("browsable", None)
         return kwd
 
-    def to_dict(self, for_serialization=False, user_context=None):
+    def to_dict(self, for_serialization=False, user_context=None, **kwargs):
         rval = {
             "id": self.id,
             "type": self.plugin_type,
@@ -190,29 +195,29 @@ class BaseFilesSource(FilesSource):
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
         return effective_props
 
-    def list(self, path="/", recursive=False, user_context=None, extra_props=None):
+    def list(self, path="/", recursive=False, user_context=None, **kwargs):
         self._check_user_access(user_context)
-        return self._list(path, recursive, user_context, extra_props=extra_props)
+        return self._list(path, recursive, user_context, **kwargs)
 
-    def _list(self, path="/", recursive=False, user_context=None, extra_props=None):
+    def _list(self, path="/", recursive=False, user_context=None, **kwargs):
         pass
 
-    def write_from(self, target_path, native_path, user_context=None, extra_props=None):
+    def write_from(self, target_path, native_path, user_context=None, **kwargs):
         if not self.get_writable():
             raise Exception("Cannot write to a non-writable file source.")
         self._check_user_access(user_context)
-        self._write_from(target_path, native_path, user_context=user_context, extra_props=extra_props)
+        self._write_from(target_path, native_path, user_context=user_context, **kwargs)
 
     @abc.abstractmethod
-    def _write_from(self, target_path, native_path, user_context=None, extra_props=None):
+    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
         pass
 
-    def realize_to(self, source_path, native_path, user_context=None, extra_props=None):
+    def realize_to(self, source_path, native_path, user_context=None, **kwargs):
         self._check_user_access(user_context)
-        self._realize_to(source_path, native_path, user_context, extra_props=extra_props)
+        self._realize_to(source_path, native_path, user_context, **kwargs)
 
     @abc.abstractmethod
-    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
+    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
         pass
 
     def _check_user_access(self, user_context):

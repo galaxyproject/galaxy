@@ -11,8 +11,9 @@ class SshFilesSource(PyFilesystem2FilesSource):
     required_module = SSHFS
     required_package = "fs.sshfs"
 
-    def _open_fs(self, user_context, extra_props=None):
+    def _open_fs(self, user_context, **kwargs):
         props = self._serialization_props(user_context)
+        extra_props = kwargs.get("extra_props") or {}
         path = props.pop("path")
         handle = SSHFS(**{**props, **extra_props})
         if path:

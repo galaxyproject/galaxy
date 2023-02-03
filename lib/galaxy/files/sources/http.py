@@ -26,10 +26,11 @@ class HTTPFilesSource(BaseFilesSource):
         self._url_regex = re.compile(self._url_regex_str)
         self._props = props
 
-    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
+    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
         props = self._serialization_props(user_context)
+        extra_props = kwargs.get("extra_props") or {}
         headers = props.pop("http_headers", {}) or {}
-        headers.update(extra_props.get("http_headers", {}) if extra_props else {})
+        headers.update(extra_props.get("http_headers") or {})
 
         req = urllib.request.Request(source_path, headers=headers)
 
@@ -39,7 +40,7 @@ class HTTPFilesSource(BaseFilesSource):
                 page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
             )
 
-    def _write_from(self, target_path, native_path, user_context=None):
+    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
         raise NotImplementedError()
 
     def _serialization_props(self, user_context=None):
@@ -47,7 +48,7 @@ class HTTPFilesSource(BaseFilesSource):
         effective_props["url_regex"] = self._url_regex_str
         return effective_props
 
-    def score_url_match(self, url: str):
+    def score_url_match(self, url: str, **kwargs):
         match = self._url_regex.match(url)
         if match:
             return match.span()[1]

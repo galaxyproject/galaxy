@@ -103,7 +103,11 @@ def fetch_drs_to_file(
             extra_props["http_headers"] = access_headers or {}
         try:
             stream_url_to_file(
-                access_url, target_path=target_path, file_sources=user_context.file_sources, user_context=user_context, extra_props=extra_props
+                access_url,
+                target_path=target_path,
+                file_sources=user_context.file_sources,
+                user_context=user_context,
+                extra_props=extra_props,
             )
             downloaded = True
             break

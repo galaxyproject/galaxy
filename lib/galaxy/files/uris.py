@@ -44,7 +44,7 @@ def stream_url_to_file(
     dir: Optional[str] = None,
     user_context=None,
     target_path: Optional[str] = None,
-    extra_props: Optional[dict] = None
+    **kwargs: dict
 ) -> str:
     if not file_sources:
         file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
@@ -53,7 +53,7 @@ def stream_url_to_file(
         if not target_path:
             with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
                 target_path = temp.name
-        file_source.realize_to(rel_path, target_path, user_context=user_context, extra_props=extra_props)
+        file_source.realize_to(rel_path, target_path, user_context=user_context, **kwargs)
         return target_path
     else:
         raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")

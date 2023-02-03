@@ -33,8 +33,8 @@ class S3FsFilesSource(BaseFilesSource):
         if self._endpoint_url:
             self._props.update({"client_kwargs": {"endpoint_url": self._endpoint_url}})
 
-    def _list(self, path="/", recursive=True, user_context=None, extra_props=None):
-        fs = self._open_fs(user_context=user_context, extra_props=None)
+    def _list(self, path="/", recursive=True, user_context=None, **kwargs):
+        fs = self._open_fs(user_context=user_context, **kwargs)
         if recursive:
             res: List[Dict[str, Any]] = []
             bucket_path = self._bucket_path(path)
@@ -49,11 +49,11 @@ class S3FsFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path)
             return list(map(to_dict, res))
 
-    def _realize_to(self, source_path, native_path, user_context=None, extra_props=None):
+    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
         bucket_path = self._bucket_path(source_path)
-        self._open_fs(user_context=user_context, extra_props=extra_props).download(bucket_path, native_path)
+        self._open_fs(user_context=user_context, **kwargs).download(bucket_path, native_path)
 
-    def _write_from(self, target_path, native_path, user_context=None):
+    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
         raise NotImplementedError()
 
     def _bucket_path(self, path):
@@ -63,8 +63,8 @@ class S3FsFilesSource(BaseFilesSource):
             path = f"/{path}"
         return f"{self._bucket}{path}"
 
-    def _open_fs(self, user_context=None, extra_props=None):
-        extra_props = extra_props or {}
+    def _open_fs(self, user_context=None, **kwargs):
+        extra_props = kwargs.get("extra_props") or {}
         fs = s3fs.S3FileSystem(**{**self._props, **extra_props})
         return fs
 
@@ -90,8 +90,9 @@ class S3FsFilesSource(BaseFilesSource):
         effective_props["bucket"] = self._bucket
         return effective_props
 
-    def score_url_match(self, url: str):
-        if self._bucket and url.startswith(f"s3://{self._bucket}"):
+    def score_url_match(self, url: str, **kwargs):
+        # For security, we need to ensure that a partial match doesn't work. e.g. s3://{bucket}something/myfiles
+        if self._bucket and (url.startswith(f"s3://{self._bucket}/") or url == f"s3://{self._bucket}"):
             return len(f"s3://{self._bucket}")
         elif not self._bucket and url.startswith("s3://"):
             return len("s3://")
