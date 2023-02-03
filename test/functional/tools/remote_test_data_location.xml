@@ -19,8 +19,10 @@
             </output>
         </test>
         <test>
-            <!-- When the `value` and the `location` are defined, if the local file is not present, the location will be used as a fallback and directly URL pasted to Galaxy. -->
-            <param name="input" value="does_not_exists.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
+            <!-- When the `value` and the `location` are defined, if the local file is missing, the remote file pointed by location will be pre-downloaded
+                to the test data cache directory (GALAXY_TEST_DATA_REPO_CACHE) and then uploaded to Galaxy as usual.
+                Additional download integrity checks can be done by specifying a `checksum`. -->
+            <param name="input" value="missing_file_1.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
             <output name="output">
                 <assert_contents>
                     <has_line line="Hello World!"/>
@@ -28,7 +30,16 @@
             </output>
         </test>
         <test>
-            <!-- When the `value` and the `location` are defined, if the local file is present, the location will be ignored. -->
+            <!-- Additional download integrity checks can be done by specifying a `checksum`. -->
+            <param name="input" value="missing_file_2.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt" checksum="sha1$2ef7bde608ce5404e97d5f042f95f89f1c232871"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="Hello World!"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test>
+            <!-- When the `value` and the `location` are defined, if the local file already exists, the location will be ignored. -->
             <param name="input" value="simple_line.txt" location="https://raw.githubusercontent.com/galaxyproject/planemo/7be1bf5b3971a43eaa73f483125bfb8cabf1c440/tests/data/hello.txt"/>
             <output name="output">
                 <assert_contents>
