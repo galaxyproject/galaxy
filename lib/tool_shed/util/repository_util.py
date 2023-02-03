@@ -363,6 +363,7 @@ def get_repositories_by_category(
         for changeset, changehash in repository.installable_revisions(app):
             encoded_id = app.security.encode_id(repository.id)
             metadata = get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
+            assert metadata
             repository_dict["metadata"][f"{changeset}:{changehash}"] = metadata.to_dict(
                 value_mapper=default_value_mapper
             )
