@@ -4,6 +4,7 @@
     <CollectionElementsProvider
         v-if="dsc"
         :id="dsc.id"
+        ref="provider"
         :key="dsc.id"
         v-slot="{ loading, result: payload }"
         :contents-url="contentsUrl"
@@ -76,6 +77,9 @@ export default {
             const arr = this.selectedCollections;
             return arr[arr.length - 1];
         },
+        jobState() {
+            return this.dsc["job_state_summary"];
+        },
         isRoot() {
             return this.dsc == this.rootCollection;
         },
@@ -92,6 +96,12 @@ export default {
                 // Send up event closing out selected collection on history change.
                 this.$emit("update:selected-collections", []);
             }
+        },
+        jobState: {
+            handler() {
+                this.$refs.provider.load();
+            },
+            deep: true,
         },
     },
     methods: {
