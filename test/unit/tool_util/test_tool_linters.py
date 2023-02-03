@@ -538,8 +538,15 @@ OUTPUTS_UNNAMED_INVALID_NAME = """
     </outputs>
 </tool>
 """
-OUTPUTS_FORMAT_INPUT = """
+OUTPUTS_FORMAT_INPUT_LEGACY = """
 <tool>
+    <outputs>
+        <data name="valid_name" format="input"/>
+    </outputs>
+</tool>
+"""
+OUTPUTS_FORMAT_INPUT = """
+<tool profile="16.04">
     <outputs>
         <data name="valid_name" format="input"/>
     </outputs>
@@ -911,15 +918,6 @@ def get_tool_xml_exact(xml_string: str):
         return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
 
 
-def failed_assert_print(lint_ctx):
-    return (
-        f"Valid: {lint_ctx.valid_messages}\n"
-        f"Info: {lint_ctx.info_messages}\n"
-        f"Warnings: {lint_ctx.warn_messages}\n"
-        f"Errors: {lint_ctx.error_messages}"
-    )
-
-
 def run_lint(lint_ctx, lint_func, lint_target):
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
     # check if the lint messages have the line
@@ -1117,8 +1115,8 @@ def test_help_invalid_rst(lint_ctx):
 
 
 def test_inputs_no_inputs(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_NO_INPUTS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_NO_INPUTS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found no input parameters." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1127,8 +1125,8 @@ def test_inputs_no_inputs(lint_ctx):
 
 
 def test_inputs_no_inputs_datasource(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_NO_INPUTS_DATASOURCE)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_NO_INPUTS_DATASOURCE)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "No input parameters, OK for data sources" in lint_ctx.info_messages
     assert "display tag usually present in data sources" in lint_ctx.info_messages
     assert "uihints tag usually present in data sources" in lint_ctx.info_messages
@@ -1139,8 +1137,8 @@ def test_inputs_no_inputs_datasource(lint_ctx):
 
 
 def test_inputs_valid(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_VALID)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_VALID)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 2 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1149,8 +1147,8 @@ def test_inputs_valid(lint_ctx):
 
 
 def test_inputs_param_name(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_PARAM_NAME)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_PARAM_NAME)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 5 input parameters." in lint_ctx.info_messages
     assert "Param input [2] is not a valid Cheetah placeholder." in lint_ctx.warn_messages
     assert "Found param input with no name specified." in lint_ctx.error_messages
@@ -1166,8 +1164,8 @@ def test_inputs_param_name(lint_ctx):
 
 
 def test_inputs_param_type(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_PARAM_TYPE)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_PARAM_TYPE)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 2 input parameters." in lint_ctx.info_messages
     assert "Param input [valid_name] input with no type specified." in lint_ctx.error_messages
     assert "Param input [another_valid_name] with empty type specified." in lint_ctx.error_messages
@@ -1178,8 +1176,8 @@ def test_inputs_param_type(lint_ctx):
 
 
 def test_inputs_data_param(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_DATA_PARAM)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert (
         "Param input [valid_name] with no format specified - 'data' format will be assumed." in lint_ctx.warn_messages
@@ -1201,8 +1199,8 @@ def test_inputs_boolean_param(lint_ctx):
 
 
 def test_inputs_data_param_options(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_DATA_PARAM_OPTIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert not lint_ctx.valid_messages
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1211,8 +1209,8 @@ def test_inputs_data_param_options(lint_ctx):
 
 
 def test_inputs_data_param_options_filter_attribute(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_DATA_PARAM_OPTIONS_FILTER_ATTRIBUTE)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert not lint_ctx.valid_messages
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1221,8 +1219,8 @@ def test_inputs_data_param_options_filter_attribute(lint_ctx):
 
 
 def test_inputs_data_param_invalid_options(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_DATA_PARAM_INVALIDOPTIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_DATA_PARAM_INVALIDOPTIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert not lint_ctx.valid_messages
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1237,8 +1235,8 @@ def test_inputs_data_param_invalid_options(lint_ctx):
 
 
 def test_inputs_conditional(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_CONDITIONAL)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_CONDITIONAL)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 10 input parameters." in lint_ctx.info_messages
     assert "Conditional without a name" in lint_ctx.error_messages
     assert (
@@ -1264,8 +1262,8 @@ def test_inputs_conditional(lint_ctx):
 
 
 def test_inputs_select_incompatible_display(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_SELECT_INCOMPATIBLE_DISPLAY)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_SELECT_INCOMPATIBLE_DISPLAY)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 3 input parameters." in lint_ctx.info_messages
     assert 'Select [radio_select] display="radio" is incompatible with optional="true"' in lint_ctx.error_messages
     assert 'Select [radio_select] display="radio" is incompatible with multiple="true"' in lint_ctx.error_messages
@@ -1284,8 +1282,8 @@ def test_inputs_select_incompatible_display(lint_ctx):
 
 
 def test_inputs_duplicated_options(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_SELECT_DUPLICATED_OPTIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_SELECT_DUPLICATED_OPTIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert "Select parameter [select] has multiple options with the same text content" in lint_ctx.error_messages
     assert "Select parameter [select] has multiple options with the same value" in lint_ctx.error_messages
@@ -1296,15 +1294,15 @@ def test_inputs_duplicated_options(lint_ctx):
 
 
 def test_inputs_duplicated_options_with_different_select(lint_ctx):
-    tool_source = get_xml_tool_source(SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(SELECT_DUPLICATED_OPTIONS_WITH_DIFF_SELECTED)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert not lint_ctx.warn_messages
     assert not lint_ctx.error_messages
 
 
 def test_inputs_select_deprections(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_SELECT_DEPRECATIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_SELECT_DEPRECATIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 3 input parameters." in lint_ctx.info_messages
     assert "Select parameter [select_do] uses deprecated 'dynamic_options' attribute." in lint_ctx.warn_messages
     assert "Select parameter [select_ff] options uses deprecated 'from_file' attribute." in lint_ctx.warn_messages
@@ -1321,8 +1319,8 @@ def test_inputs_select_deprections(lint_ctx):
 
 
 def test_inputs_select_option_definitions(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_SELECT_OPTION_DEFINITIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_SELECT_OPTION_DEFINITIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 6 input parameters." in lint_ctx.info_messages
     assert (
         "Select parameter [select_noopt] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute."
@@ -1354,8 +1352,8 @@ def test_inputs_select_option_definitions(lint_ctx):
 
 
 def test_inputs_select_filter(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_SELECT_FILTER)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_SELECT_FILTER)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 1 input parameters." in lint_ctx.info_messages
     assert "Select parameter [select_filter_types] contains filter without type." in lint_ctx.error_messages
     assert (
@@ -1369,8 +1367,8 @@ def test_inputs_select_filter(lint_ctx):
 
 
 def test_inputs_validator_incompatibilities(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_VALIDATOR_INCOMPATIBILITIES)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_VALIDATOR_INCOMPATIBILITIES)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 2 input parameters." in lint_ctx.info_messages
     assert (
         "Parameter [param_name]: 'in_range' validators are not expected to contain text (found 'TEXT')"
@@ -1413,8 +1411,8 @@ def test_inputs_validator_incompatibilities(lint_ctx):
 
 
 def test_inputs_validator_correct(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_VALIDATOR_CORRECT)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_VALIDATOR_CORRECT)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert "Found 5 input parameters." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1423,8 +1421,8 @@ def test_inputs_validator_correct(lint_ctx):
 
 
 def test_inputs_type_child_combinations(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_TYPE_CHILD_COMBINATIONS)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_TYPE_CHILD_COMBINATIONS)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -1444,8 +1442,8 @@ def test_inputs_type_child_combinations(lint_ctx):
 
 
 def test_inputs_duplicate_names(lint_ctx):
-    tool_source = get_xml_tool_source(INPUTS_DUPLICATE_NAMES)
-    run_lint(lint_ctx, inputs.lint_inputs, tool_source)
+    tool_xml_tree = get_xml_tree(INPUTS_DUPLICATE_NAMES)
+    run_lint(lint_ctx, inputs.lint_inputs, tool_xml_tree)
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -1514,14 +1512,25 @@ def test_outputs_unnamed_invalid_name(lint_ctx):
     assert not lint_ctx.error_messages
 
 
+def test_outputs_format_input_legacy(lint_ctx):
+    tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT_LEGACY)
+    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    assert "1 outputs found." in lint_ctx.info_messages
+    assert (
+        "Using format='input' on data: format_source attribute is less ambiguous and should be used instead (with a non-legacy tool profile)."
+        in lint_ctx.warn_messages
+    )
+    assert len(lint_ctx.info_messages) == 1
+    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.error_messages
+
+
 def test_outputs_format_input(lint_ctx):
     tool_xml_tree = get_xml_tree(OUTPUTS_FORMAT_INPUT)
     run_lint(lint_ctx, outputs.lint_output, tool_xml_tree)
     assert "1 outputs found." in lint_ctx.info_messages
-    assert (
-        "Using format='input' on data, format_source attribute is less ambiguous and should be used instead."
-        in lint_ctx.error_messages
-    )
+    assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.error_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
