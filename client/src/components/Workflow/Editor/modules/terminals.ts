@@ -18,7 +18,6 @@ import type {
     TerminalSource,
 } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import Vue from "vue";
 import { assertDefined } from "@/utils/assertions";
 
 export class ConnectionAcceptable {

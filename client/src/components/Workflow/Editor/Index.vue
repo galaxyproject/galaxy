@@ -646,6 +646,7 @@ export default {
             const stepData = {
                 name: name,
                 content_id: contentId,
+                input_connections: {},
                 type: type,
                 outputs: [],
                 position: defaultPosition(this.graphOffset, this.transform),

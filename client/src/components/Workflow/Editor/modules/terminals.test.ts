@@ -152,6 +152,38 @@ describe("canAccept", () => {
         multiDataIn.connect(collectionOut);
         expect(multiDataIn.mapOver).toBe(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
+    it("accepts multiple simple data inputs on multi-data input", () => {
+        const multiDataIn = terminals["multi data"]!["f1"] as InputTerminal;
+        const dataOutOne = terminals["data input"]!["output"] as OutputTerminal;
+        const dataOutTwo = terminals["simple data"]!["out_file1"] as OutputTerminal;
+        let step = stepStore.getStep(multiDataIn.stepId)!;
+        expect(step.input_connections["f1"]).toBe(undefined);
+        multiDataIn.connect(dataOutOne);
+        step = stepStore.getStep(multiDataIn.stepId)!;
+        expect(step.input_connections["f1"]).toStrictEqual([{ id: dataOutOne.stepId, output_name: dataOutOne.name }]);
+        multiDataIn.connect(dataOutTwo);
+        step = stepStore.getStep(multiDataIn.stepId)!;
+        expect(step.input_connections["f1"]).toStrictEqual([
+            { id: dataOutOne.stepId, output_name: dataOutOne.name },
+            { id: dataOutTwo.stepId, output_name: dataOutTwo.name },
+        ]);
+        multiDataIn.disconnect(dataOutTwo);
+        step = stepStore.getStep(multiDataIn.stepId)!;
+        expect(step.input_connections["f1"]).toStrictEqual([{ id: dataOutOne.stepId, output_name: dataOutOne.name }]);
+        multiDataIn.disconnect(dataOutOne);
+        step = stepStore.getStep(multiDataIn.stepId)!;
+        expect(step.input_connections["f1"]).toStrictEqual([]);
+        multiDataIn.connect(dataOutOne);
+        multiDataIn.connect(dataOutTwo);
+        step = stepStore.getStep(multiDataIn.stepId)!;
+        expect(step.input_connections["f1"]).toStrictEqual([
+            { id: dataOutOne.stepId, output_name: dataOutOne.name },
+            { id: dataOutTwo.stepId, output_name: dataOutTwo.name },
+        ]);
+        stepStore.removeStep(dataOutTwo.stepId);
+        step = stepStore.getStep(multiDataIn.stepId)!;
+        expect(step.input_connections["f1"]).toStrictEqual([{ id: dataOutOne.stepId, output_name: dataOutOne.name }]);
+    });
     it("accepts separate list:list inputs on separate multi-data inputs of same tool", () => {
         const collectionOut = terminals["list:list input"]!["output"] as OutputCollectionTerminal;
         const multiDataInOne = terminals["multi data"]!["f1"] as InputTerminal;
