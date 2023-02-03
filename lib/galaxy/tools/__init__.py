@@ -78,6 +78,7 @@ from galaxy.tool_util.toolbox import (
     ToolSection,
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
+from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tools import expressions
 from galaxy.tools.actions import (
     DefaultToolAction,
@@ -1347,11 +1348,11 @@ class Tool(Dictifiable):
         if not test_data:
             # Fallback to Galaxy test data directory for builtin tools, tools
             # under development, and some older ToolShed published tools that
-            # used stock test data.
+            # used stock test data. Also possible remote test data using `location`.
             try:
                 test_data_context = self._find_required_file_context(filename)
                 test_data = self.app.test_data_resolver.get_filename(filename, test_data_context)
-            except ValueError:
+            except TestDataNotFoundError:
                 test_data = None
         return test_data
 
