@@ -185,15 +185,11 @@ class BaseFilesSource(FilesSource):
         else:
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
+    @abc.abstractmethod
     def _serialization_props(self, user_context=None):
         """Serialize properties needed to recover plugin configuration.
-
         Used in to_dict method if for_serialization is True.
         """
-        effective_props = {}
-        for key, val in self._props.items():
-            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
-        return effective_props
 
     def list(self, path="/", recursive=False, user_context=None, **kwargs):
         self._check_user_access(user_context)

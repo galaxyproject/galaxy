@@ -10,7 +10,7 @@ class AnVILFilesSource(PyFilesystem2FilesSource):
     required_module = AnVILFS
     required_package = "fs.anvilfs"
 
-    def _open_fs(self, user_context, extra_props=None):
+    def _open_fs(self, user_context, kwargs=None):
         props = self._serialization_props(user_context)
         extra_props = kwargs.get("extra_props") or {}
         handle = AnVILFS(**{**props, **extra_props})

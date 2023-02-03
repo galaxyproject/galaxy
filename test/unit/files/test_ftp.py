@@ -1,9 +1,6 @@
-import io
 import os
-import urllib
-from unittest import mock
 
-from ._util import configured_file_sources, user_context_fixture, assert_realizes_as, assert_realizes_contains
+from ._util import configured_file_sources, user_context_fixture, assert_realizes_contains
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 FILE_SOURCES_CONF = os.path.join(SCRIPT_DIRECTORY, "ftp_file_sources_conf.yml")

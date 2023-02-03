@@ -44,7 +44,9 @@ class HTTPFilesSource(BaseFilesSource):
         raise NotImplementedError()
 
     def _serialization_props(self, user_context=None):
-        effective_props = super()._serialization_props(user_context=user_context)
+        effective_props = {}
+        for key, val in self._props.items():
+            effective_props[key] = self._evaluate_prop(val, user_context=user_context)
         effective_props["url_regex"] = self._url_regex_str
         return effective_props
 

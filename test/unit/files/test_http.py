@@ -1,6 +1,7 @@
 import io
 import os
 import urllib
+from typing import Any
 from unittest import mock
 
 from ._util import configured_file_sources, user_context_fixture, assert_realizes_as, assert_realizes_contains
@@ -13,7 +14,7 @@ def test_file_source_http_specific():
 
     def check_specific_header(request, **kwargs):
         assert request.headers["Authorization"] == "Bearer IBearTokens"
-        response = io.StringIO('hello specific world')
+        response: Any = io.StringIO('hello specific world')
         response.headers = {}
         return response
 
@@ -33,7 +34,7 @@ def test_file_source_another_http_specific():
 
     def check_another_header(request, **kwargs):
         assert request.headers["Another_header"] == "found"
-        response = io.StringIO('hello another world')
+        response: Any = io.StringIO('hello another world')
         response.headers = {}
         return response
 
@@ -53,7 +54,7 @@ def test_file_source_http_generic():
 
     def check_generic_headers(request, **kwargs):
         assert not request.headers
-        response = io.StringIO('hello generic world')
+        response: Any = io.StringIO('hello generic world')
         response.headers = {}
         return response
 
@@ -73,7 +74,7 @@ def test_file_source_ftp_url():
 
     def check_generic_headers(request, **kwargs):
         assert not request.headers
-        response = io.StringIO('This is ftp.gnu.org, the FTP server of the the GNU project.')
+        response: Any = io.StringIO('This is ftp.gnu.org, the FTP server of the the GNU project.')
         response.headers = {}
         return response
 

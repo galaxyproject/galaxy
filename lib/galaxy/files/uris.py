@@ -46,7 +46,7 @@ def stream_url_to_file(
     target_path: Optional[str] = None,
     **kwargs: dict
 ) -> str:
-    if not file_sources:
+    if file_sources is None:
         file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
     file_source, rel_path = file_sources.get_file_source_path(url)
     if file_source:

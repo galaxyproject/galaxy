@@ -2,6 +2,7 @@ import io
 import json
 import os
 import urllib
+from typing import Any
 from unittest import mock
 
 import responses
@@ -43,7 +44,7 @@ def test_file_source_drs_http():
     def check_specific_header(request, **kwargs):
         assert request.full_url == "https://my.respository.org/myfile.txt"
         assert request.headers["Authorization"] == "Basic Z2E0Z2g6ZHJz"
-        response = io.StringIO("hello drs world")
+        response: Any = io.StringIO("hello drs world")
         response.headers = {}
         return response
 
