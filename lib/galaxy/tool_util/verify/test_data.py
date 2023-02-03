@@ -7,8 +7,9 @@ from typing import (
     Any,
     Dict,
     Optional,
-    Protocol,
 )
+
+from typing_extensions import Protocol
 
 from galaxy.util import (
     asbool,
@@ -16,6 +17,10 @@ from galaxy.util import (
     in_directory,
     is_url,
     smart_str,
+)
+from galaxy.util.hash_util import (
+    memory_bound_hexdigest,
+    parse_checksum_hash,
 )
 
 UPDATE_TEMPLATE = Template(
@@ -64,6 +69,10 @@ class TestDataResolver:
 
 
 class TestDataNotFoundError(ValueError):
+    pass
+
+
+class TestDataChecksumError(ValueError):
     pass
 
 
@@ -155,16 +164,42 @@ class RemoteLocationDataResolver(FileDataResolver):
         exists_now = super().exists(filename, context)
         if exists_now or not self.fetch_data or context is None:
             return exists_now
-        self.update_from_context(context)
-        return super().exists(filename, context)
+        self._try_download_from_location(context)
+        exists_now = super().exists(filename, context)
+        if exists_now:
+            self._verify_checksum(filename, context)
+        return exists_now
 
-    def update_from_context(self, context: TestDataContext):
-        value = context.get("value")
+    def _try_download_from_location(self, context: TestDataContext):
+        filename = context.get("value")
         location = context.get("location")
+        if not is_url(location):
+            raise ValueError(f"Invalid 'location' URL for remote test data provided: {location}")
+        if filename:
+            if self._is_direct_url_paste_upload(filename, location):
+                return  # No pre-download required
+            self._ensure_base_dir_exists()
+            dest_file_path = self.path(filename)
+            download_to_file(location, dest_file_path)
 
+    def _ensure_base_dir_exists(self):
         if not os.path.exists(self.file_dir):
             os.makedirs(self.file_dir)
 
-        if value and is_url(location) and value != location:
-            dest_file_path = self.path(value)
-            download_to_file(location, dest_file_path)
+    def _verify_checksum(self, filename: str, context: Optional[TestDataContext] = None):
+        if context is None or is_url(filename):
+            return
+        checksum = context.get("checksum")
+        if checksum is None:
+            return
+        hash_function, expected_hash_value = parse_checksum_hash(checksum)
+        file_path = self.path(filename)
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
+        if calculated_hash_value != expected_hash_value:
+            raise TestDataChecksumError(
+                f"Failed to validate test data '{filename}' with [{hash_function}] - expected [{expected_hash_value}] got [{calculated_hash_value}]"
+            )
+
+    def _is_direct_url_paste_upload(self, filename: str, location: str):
+        """Checks if the test data file is an URL and will be directly url_pasted to Galaxy."""
+        return filename == location and is_url(location)
