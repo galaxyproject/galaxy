@@ -252,10 +252,6 @@ class ConditionalDependencies:
     def check_fs_sshfs(self):
         return "ssh" in self.file_sources
 
-    def check_s3fs(self):
-        # use s3fs directly (skipping pyfilesystem) for direct access to more options
-        return "s3fs" in self.file_sources
-
     def check_fs_googledrivefs(self):
         return "googledrive" in self.file_sources
 

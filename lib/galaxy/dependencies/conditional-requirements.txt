@@ -19,7 +19,6 @@ total-perspective-vortex<3
 fs.webdavfs>=0.4.2  # type: webdav
 fs.dropboxfs  # type: dropbox
 fs.sshfs  # type: ssh
-s3fs  # type: s3fs
 fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage
