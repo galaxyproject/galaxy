@@ -74,7 +74,7 @@ import { UploadButton } from "components/Upload";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
-import { filterToolSections, filterTools, hasResults } from "./utilities";
+import { filterToolSections, filterTools, hasResults, hideToolsSection } from "./utilities";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
@@ -135,7 +135,9 @@ export default {
             if (this.showSections) {
                 return filterToolSections(this.toolbox, this.results);
             } else {
-                return hasResults(this.results) ? filterTools(this.toolbox, this.results) : this.toolbox;
+                return hasResults(this.results)
+                    ? filterTools(this.toolbox, this.results)
+                    : hideToolsSection(this.toolbox);
             }
         },
         isUser() {
