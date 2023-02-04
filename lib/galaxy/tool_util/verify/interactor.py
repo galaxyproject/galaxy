@@ -556,7 +556,7 @@ class GalaxyInteractorApi:
             file_name_exists = False
             location: Optional[str] = test_data.get("location")
             has_valid_location = location and util.is_url(location)
-            if not has_valid_location:
+            if location and not has_valid_location:
                 raise ValueError(f"Invalid `location` URL: `{location}`")
             if fname:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
