@@ -1,5 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
+import MockAdapter from "axios-mock-adapter";
+import axios from "axios";
 import ToolCard from "./ToolCard";
 import Vuex from "vuex";
 import { userStore } from "store/userStore";
@@ -18,8 +20,12 @@ const createStore = (currentUser) => {
 
 describe("ToolCard", () => {
     let wrapper;
+    let axiosMock;
 
     beforeEach(() => {
+        axiosMock = new MockAdapter(axios);
+        axiosMock.onGet(`/api/webhooks`).reply(200, []);
+
         const store = createStore({
             id: "user.id",
             email: "user.email",
