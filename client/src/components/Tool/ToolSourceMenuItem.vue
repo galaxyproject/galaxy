@@ -5,7 +5,7 @@ import { useCurrentUser } from "composables/user";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 const { config } = useConfig();
-const { currentUser } = useCurrentUser();
+const { currentUser } = useCurrentUser(false, true);
 
 const props = defineProps({
     toolId: {

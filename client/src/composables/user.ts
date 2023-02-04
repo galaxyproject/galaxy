@@ -6,15 +6,16 @@ import type { Store } from "vuex";
 /**
  * composable user store wrapper
  * @param noFetch when true, the user will not be fetched from the server
+ * @param fetchOnce when true, the user will only be fetched from the server if it is not already in the store
  * @returns currentUser computed
  */
-export function useCurrentUser(noFetch: boolean | Ref<boolean> = false) {
+export function useCurrentUser(noFetch: boolean | Ref<boolean> = false, fetchOnce: boolean | Ref<boolean> = false) {
     // TODO: add store typing
     const store = inject("store") as Store<unknown>;
     const currentUser = computed(() => store.getters["user/currentUser"]);
     const currentFavorites = computed(() => store.getters["user/currentFavorites"]);
     onMounted(() => {
-        if (!unref(noFetch)) {
+        if (!unref(noFetch) && !(Object.keys(currentUser).length > 0) && unref(fetchOnce)) {
             store.dispatch("user/loadUser");
         }
     });
