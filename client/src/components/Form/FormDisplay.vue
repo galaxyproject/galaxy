@@ -128,13 +128,18 @@ export default {
     created() {
         this.onCloneInputs();
         // build flat formData that is ready to be submitted
-        Object.entries(this.formIndex).forEach(([key, input]) => {
-            this.formData[key] = input.value;
-        });
+        this.formData = this.buildFormData();
         // emit back to parent, so that parent has submittable data
         this.$emit("onChange", this.formData);
     },
     methods: {
+        buildFormData() {
+            const params = {};
+            Object.entries(this.formIndex).forEach(([key, input]) => {
+                params[key] = input.value;
+            });
+            return params;
+        },
         onReplaceParams() {
             let refreshOnChange = false;
             Object.entries(this.replaceParams).forEach(([key, value]) => {
@@ -165,10 +170,7 @@ export default {
         },
         onChange(refreshOnChange) {
             this.onCreateIndex();
-            const params = {};
-            Object.entries(this.formIndex).forEach(([key, input]) => {
-                params[key] = input.value;
-            });
+            const params = this.buildFormData();
             if (JSON.stringify(params) != JSON.stringify(this.formData)) {
                 this.formData = params;
                 this.resetError();
