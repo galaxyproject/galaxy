@@ -202,6 +202,6 @@ class RemoteLocationDataResolver(FileDataResolver):
                 f"Failed to validate test data '{filename}' with [{hash_function}] - expected [{expected_hash_value}] got [{calculated_hash_value}]"
             )
 
-    def _is_direct_url_paste_upload(self, filename: str, location: str):
+    def _is_direct_url_paste_upload(self, filename: str, location: Optional[str]):
         """Checks if the test data file is an URL and will be directly url_pasted to Galaxy."""
-        return filename == location and is_url(location)
+        return location and filename == location and is_url(location)

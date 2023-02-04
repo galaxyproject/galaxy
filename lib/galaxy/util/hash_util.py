@@ -142,7 +142,7 @@ def is_hashable(value: Any) -> bool:
     return True
 
 
-def parse_checksum_hash(checksum: str) -> Tuple[str, str]:
+def parse_checksum_hash(checksum: str) -> Tuple[HashFunctionNameEnum, str]:
     """Parses checksum strings in the form of `hash_type$hash_value` considering possible aliases."""
     hash_name, hash_value = checksum.split("$", 1)
     hash_name = hash_name.upper()
@@ -150,7 +150,7 @@ def parse_checksum_hash(checksum: str) -> Tuple[str, str]:
         hash_name = HASH_NAME_ALIAS[hash_name]
     if hash_name not in HASH_NAMES:
         raise ValueError(f"Unsupported hash function '{hash_name}'. Supported functions: [{','.join(HASH_NAMES)}]")
-    return hash_name, hash_value
+    return HashFunctionNameEnum(hash_name), hash_value
 
 
 __all__ = (
