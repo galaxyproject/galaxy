@@ -173,6 +173,8 @@ class RemoteLocationDataResolver(FileDataResolver):
     def _try_download_from_location(self, context: TestDataContext):
         filename = context.get("value")
         location = context.get("location")
+        if location is None:
+            return
         if not is_url(location):
             raise ValueError(f"Invalid 'location' URL for remote test data provided: {location}")
         if filename:
