@@ -956,8 +956,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
         if len(jobs.response["items"]) > 1:
             log.warning(
-                "More than one job matches selector: %s. Possible configuration error"
-                " in job id '%s'" % (jobs.response["items"], job_state.job_id)
+                "More than one job matches selector: %s. Possible configuration error in job id '%s'",
+                jobs.response["items"],
+                job_state.job_id,
             )
         elif len(jobs.response["items"]) == 0:
             log.warning("No k8s job found which matches job id '%s'. Ignoring...", job_state.job_id)

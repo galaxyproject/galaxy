@@ -43,8 +43,7 @@ def wrap_if_allowed_or_fail(app, stack, wrap, name=None, args=None, kwargs=None)
     name = name or wrap.__name__
     if not stack.allowed_middleware(wrap):
         raise MiddlewareWrapUnsupported(
-            "'%s' is enabled in your configuration but the %s application stack does not support it, this "
-            "middleware has been disabled" % (name, stack.name)
+            f"'{name}' is enabled in your configuration but the {stack.name} application stack does not support it, this middleware has been disabled"
         )
     args = args or []
     kwargs = kwargs or {}

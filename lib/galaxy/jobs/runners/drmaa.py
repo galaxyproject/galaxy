@@ -70,9 +70,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             drmaa = __import__("drmaa")
         except (ImportError, RuntimeError) as exc:
             raise exc.__class__(
-                "The Python drmaa package is required to use this "
-                "feature, please install it or correct the "
-                "following error:\n%s: %s" % (exc.__class__.__name__, str(exc))
+                f"The Python drmaa package is required to use this feature, please install it or correct the following error:\n{exc.__class__.__name__}: {str(exc)}"
             )
         from pulsar.managers.util.drmaa import DrmaaSessionFactory
 
