@@ -1,7 +1,7 @@
 import { computed, onMounted, inject } from "vue";
 
 /* composable config wrapper */
-export function useConfig() {
+export function useConfig(fetchOnce = false) {
     const store = inject("store");
 
     const config = computed(() => store.getters["config/config"]);
@@ -9,7 +9,9 @@ export function useConfig() {
 
     // Anytime we mount this (for now), make sure to load.
     onMounted(() => {
-        store.dispatch("config/loadConfigs");
+        if (!(fetchOnce && isLoaded)) {
+            store.dispatch("config/loadConfigs");
+        }
     });
 
     return { config, isLoaded };
