@@ -213,8 +213,7 @@ class LDAP(AuthProvider):
 
                 if self.auto_create_roles_or_groups and self.role_search_option not in params:
                     raise ConfigurationError(
-                        "Missing or mismatching LDAP parameters for %s. Make sure the %s is "
-                        "included in the 'search-fields'." % (self.role_search_option, self.role_search_attribute)
+                        f"Missing or mismatching LDAP parameters for {self.role_search_option}. Make sure the {self.role_search_attribute} is included in the 'search-fields'."
                     )
                 params["dn"] = dn
             except Exception:
@@ -400,8 +399,7 @@ class LDAP3(LDAP):
 
                 if self.auto_create_roles_or_groups and self.role_search_option not in params:
                     raise ConfigurationError(
-                        "Missing or mismatching LDAP parameters for %s. Make sure the %s is "
-                        "included in the 'search-fields'." % (self.role_search_option, self.role_search_attribute)
+                        f"Missing or mismatching LDAP parameters for {self.role_search_option}. Make sure the {self.role_search_attribute} is included in the 'search-fields'."
                     )
                 params["dn"] = dn
             except Exception:

@@ -986,12 +986,10 @@ class DistributedObjectStore(NestedObjectStore):
                     obj.object_store_id = random.choice(self.weighted_backend_ids)
                 except IndexError:
                     raise ObjectInvalid(
-                        "objectstore.create, could not generate "
-                        "obj.object_store_id: %s, kwargs: %s" % (str(obj), str(kwargs))
+                        f"objectstore.create, could not generate obj.object_store_id: {obj}, kwargs: {kwargs}"
                     )
                 log.debug(
-                    "Selected backend '%s' for creation of %s %s"
-                    % (obj.object_store_id, obj.__class__.__name__, obj.id)
+                    "Selected backend '%s' for creation of %s %s", obj.object_store_id, obj.__class__.__name__, obj.id
                 )
             else:
                 log.debug(
