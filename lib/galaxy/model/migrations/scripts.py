@@ -19,7 +19,7 @@ from galaxy.model.migrations import (
     DatabaseConfig,
     DatabaseStateCache,
     GXY,
-    IncorrectVersionError,
+    IncorrectSAMigrateVersionError,
     NoVersionTableError,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     TSI,
@@ -196,7 +196,7 @@ class LegacyManageDb:
                 if version is None:
                     raise NoVersionTableError(GXY)
                 elif version != SQLALCHEMYMIGRATE_LAST_VERSION_GXY:
-                    raise IncorrectVersionError(GXY, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
+                    raise IncorrectSAMigrateVersionError(GXY, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
             return version
         finally:
             engine.dispose()
