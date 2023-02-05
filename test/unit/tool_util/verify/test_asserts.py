@@ -216,6 +216,18 @@ XML_XML_ELEMENT = """
     </assert_contents>
 """
 
+JSON_HAS_PROPERTY_WITH_VALUE = """
+    <assert_contents>
+        <has_json_property_with_value property="{property}" value="{value}" />
+    </assert_contents>
+"""
+
+JSON_HAS_PROPERTY_WITH_WITH = """
+    <assert_contents>
+        <has_json_property_with_text property="{property}" text="{text}" />
+    </assert_contents>
+"""
+
 VALID_XML = """<root>
     <elem name="foo">
         <more name="bar">BAR</more>
@@ -226,6 +238,9 @@ VALID_XML = """<root>
 </root>
 """
 INVALID_XML = '<root><elem name="foo"></root>'
+
+VALID_SIMPLE_JSON = """{"foo": 5, "list": [{"textprop": "right"}]}"""
+
 
 if h5py is not None:
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
@@ -693,6 +708,26 @@ TESTS = [
         lambda x: "Text of element with path './/more': Did not expect text matching expression '(BA[RZ]|QUX)$' in output ('BAR')"
         in x,
     ),
+    (
+        JSON_HAS_PROPERTY_WITH_VALUE.format(property="foo", value="5"),
+        VALID_SIMPLE_JSON,
+        lambda x: len(x) == 0,
+    ),
+    (
+        JSON_HAS_PROPERTY_WITH_VALUE.format(property="foo", value="6"),
+        VALID_SIMPLE_JSON,
+        lambda x: "Failed to find property [foo] with JSON value [6]" in x,
+    ),
+    (
+        JSON_HAS_PROPERTY_WITH_WITH.format(property="textprop", text="right"),
+        VALID_SIMPLE_JSON,
+        lambda x: len(x) == 0,
+    ),
+    (
+        JSON_HAS_PROPERTY_WITH_WITH.format(property="textprop", text="wrong"),
+        VALID_SIMPLE_JSON,
+        lambda x: "Failed to find property [textprop] with text [wrong]" in x,
+    ),
     # test has_archive_member with zip
     (
         ARCHIVE_HAS_ARCHIVE_MEMBER.format(path="(\\./)?testdir/file1.txt", content_assert="", all="false"),
@@ -988,6 +1023,10 @@ TEST_IDS = [
     "xml_element failure (due to n)",
     "xml_element failure (due to min/max in combination with negate)",
     "xml_element failure (due to subassertion)",
+    "has_json_property_with_value success",
+    "has_json_property_with_value failure",
+    "has_json_property_with_text success",
+    "has_json_property_with_text failure",
     "has_archive_member zip",
     "has_archive_member tar",
     "has_archive_member non-archive",
