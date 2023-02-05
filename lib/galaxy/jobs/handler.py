@@ -173,26 +173,25 @@ class ItemGrabber:
         # https://blog.2ndquadrant.com/what-is-select-skip-locked-for-in-postgresql-9-5/
         if self._grab_query is None:
             self.setup_query()
-        self.sa_session.expunge_all()
-        conn = self.sa_session.connection(execution_options=self._grab_conn_opts)
-        with conn.begin() as trans:
-            try:
-                proxy = conn.execute(self._grab_query)
-                if self._supports_returning:
-                    rows = proxy.fetchall()
-                    if rows:
-                        log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
-                        trans.commit()
-                    else:
-                        trans.rollback()
-                else:
-                    trans.commit()
-            except OperationalError as e:
-                # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
-                # and should have attribute `code`. Other engines should just report the message and move on.
-                if int(getattr(e.orig, "pgcode", -1)) != 40001:
-                    log.debug("Grabbing %s failed (serialization failures are ok): %s", self.grab_type, unicodify(e))
-                trans.rollback()
+
+        with self.app.model.engine.connect() as conn:
+            with conn.begin() as trans:
+                try:
+                    proxy = conn.execute(self._grab_query)
+                    if self._supports_returning:
+                        rows = proxy.fetchall()
+                        if rows:
+                            log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
+                        else:
+                            trans.rollback()
+                except OperationalError as e:
+                    # If this is a serialization failure on PostgreSQL, then e.orig is a psycopg2 TransactionRollbackError
+                    # and should have attribute `code`. Other engines should just report the message and move on.
+                    if int(getattr(e.orig, "pgcode", -1)) != 40001:
+                        log.debug(
+                            "Grabbing %s failed (serialization failures are ok): %s", self.grab_type, unicodify(e)
+                        )
+                    trans.rollback()
 
 
 class JobHandlerQueue(Monitors):
