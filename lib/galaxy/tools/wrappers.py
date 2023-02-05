@@ -66,7 +66,7 @@ class ToolParameterValueWrapper:
     Base class for object that Wraps a Tool Parameter and Value.
     """
 
-    value: Union[str, List[str]]
+    value: Optional[Union[str, List[str]]]
     input: "ToolParameter"
 
     def __bool__(self) -> bool:
@@ -246,7 +246,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         compute_environment: Optional["ComputeEnvironment"] = None,
     ):
         self.input = input
-        self.value = value
+        self.value: Union[str, List[str]] = value
         self.input.value_label = input.value_to_display_text(value)
         self._other_values = other_values or {}
         self.compute_environment = compute_environment
