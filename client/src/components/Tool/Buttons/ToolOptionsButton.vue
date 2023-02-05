@@ -6,7 +6,7 @@ import Webhooks from "utils/webhooks";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-const { currentUser: user } = useCurrentUser();
+const { currentUser: user } = useCurrentUser(false, true);
 
 const props = defineProps({
     id: {
@@ -28,9 +28,7 @@ const webhookDetails = ref([]);
 Webhooks.load({
     type: "tool-menu",
     callback: (webhooks) => {
-        webhooks.each((model) => {
-            const webhook = model.toJSON();
-
+        webhooks.forEach((webhook) => {
             if (webhook.activate && webhook.config.function) {
                 webhookDetails.value.push({
                     icon: `fa ${webhook.config.icon}`,

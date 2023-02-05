@@ -490,6 +490,7 @@ tool_form:
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
+    repeat_insert: '[data-description="repeat insert"]'
     reference: '.formatted-reference'
     about: '.tool-footer'
 

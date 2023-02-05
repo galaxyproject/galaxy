@@ -30,6 +30,7 @@ describe("ToolForm", () => {
             help: "help_text",
         };
         axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, toolData);
+        axiosMock.onGet(`/api/webhooks`).reply(200, []);
 
         const citations = [];
         axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, citations);

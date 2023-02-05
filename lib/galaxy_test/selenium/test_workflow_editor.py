@@ -919,6 +919,26 @@ steps:
         assert self.driver.switch_to.active_element.text == "No compatible input found in workflow"
 
     @selenium_test
+    def test_insert_input_handling(self):
+        self.open_in_workflow_editor(
+            """class: GalaxyWorkflow
+inputs: []
+steps:
+  build_list:
+    tool_id: __BUILD_LIST__
+        """
+        )
+        editor = self.components.workflow_editor
+        node = editor.node._(label="build_list")
+        node.wait_for_and_click()
+        assert not node.has_class("input-terminal")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        node.input_terminal(name="datasets_0|input").wait_for_present()
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        node.input_terminal(name="datasets_1|input").wait_for_present()
+        self.assert_workflow_has_changes_and_save()
+
+    @selenium_test
     def test_workflow_output_handling(self):
         self.open_in_workflow_editor(
             """
