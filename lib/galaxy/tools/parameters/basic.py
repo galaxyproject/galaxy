@@ -164,6 +164,7 @@ class ToolParameter(Dictifiable):
         self.hidden = input_source.get_bool("hidden", False)
         self.refresh_on_change = input_source.get_bool("refresh_on_change", False)
         self.optional = input_source.parse_optional()
+        self.optionality_inferred = False
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
@@ -326,15 +327,23 @@ class SimpleTextToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.optional = input_source.get_bool("optional", False)
-
-        if not self.optional and self.type == "text":
-            try:
-                for validator in self.validators:
-                    validator.validate("")
-                self.optional = True
-            except ValueError:
-                self.optional = False
+        optional = input_source.get("optional", None)
+        if optional is not None:
+            optional = string_as_bool(optional)
+        else:
+            # Optionality not explicitly defined, default to False
+            optional = False
+            if self.type == "text":
+                # A text parameter that doesn't raise a validation error on empty string
+                # is considered to be optional
+                try:
+                    for validator in self.validators:
+                        validator.validate("")
+                    optional = True
+                    self.optionality_inferred = True
+                except ValueError:
+                    pass
+        self.optional = optional
 
         if self.optional:
             self.value = None
@@ -362,7 +371,8 @@ class TextToolParameter(SimpleTextToolParameter):
     >>> p = TextToolParameter(None, XML('<param name="_name" type="text" value="default" />'))
     >>> print(p.name)
     _name
-    >>> assert sorted(p.to_dict(trans).items()) == [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', u'default')]
+    >>> sorted(p.to_dict(trans).items())
+    [('area', False), ('argument', None), ('datalist', []), ('help', ''), ('hidden', False), ('is_dynamic', False), ('label', ''), ('model_class', 'TextToolParameter'), ('name', '_name'), ('optional', True), ('refresh_on_change', False), ('type', 'text'), ('value', 'default')]
     """
 
     def __init__(self, tool, input_source):

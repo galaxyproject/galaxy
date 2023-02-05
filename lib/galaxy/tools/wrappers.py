@@ -120,10 +120,20 @@ class InputValueWrapper(ToolParameterValueWrapper):
     def __init__(
         self,
         input: "ToolParameter",
-        value: str,
+        value: Optional[str],
         other_values: Optional[Dict[str, str]] = None,
+        profile: Optional[float] = None,
     ) -> None:
         self.input = input
+        if (
+            value is None
+            and input.type == "text"
+            and input.optional
+            and input.optionality_inferred
+            and (profile is None or profile < 23.0)
+        ):
+            # Tools with old profile versions may treat an optional text parameter as `""`
+            value = ""
         self.value = value
         self._other_values: Dict[str, str] = other_values or {}
 
