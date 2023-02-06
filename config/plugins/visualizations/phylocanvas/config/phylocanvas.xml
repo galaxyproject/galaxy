@@ -21,27 +21,27 @@
             <help>Select a tree type.</help>
             <type>select</type>
             <display>radio</display>
-            <value>rectangular</value>
+            <value>rc</value>
             <data>
                 <data>
+                    <label>Rectangular</label>
+                    <value>rc</value>
+                </data>
+                <data>
                     <label>Circular</label>
-                    <value>circular</value>
+                    <value>cr</value>
                 </data>
                 <data>
                     <label>Diagonal</label>
-                    <value>diagonal</value>
+                    <value>dg</value>
                 </data>
                 <data>
                     <label>Hierarchical</label>
-                    <value>hierarchical</value>
+                    <value>hr</value>
                 </data>
                 <data>
                     <label>Radial</label>
-                    <value>radial</value>
-                </data>
-                <data>
-                    <label>Rectangular</label>
-                    <value>rectangular</value>
+                    <value>rd</value>
                 </data>
             </data>
         </input>

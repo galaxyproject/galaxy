@@ -1,46 +1,46 @@
-import * as Phylocanvas from "phylocanvas";
+import * as phylocanvas from "@phylocanvas/phylocanvas.gl";
 
 /* This will be part of the charts/viz standard lib in 23.1 */
 const slashCleanup = /(\/)+/g;
 function prefixedDownloadUrl(root, path) {
     return `${root}/${path}`.replace(slashCleanup, "/");
 }
+console.debug(phylocanvas);
 
 _.extend(window.bundleEntries || {}, {
-    load: function(options) {
+    load: function (options) {
+        console.debug("Starting phylocanvas with ", options);
         var chart = options.chart;
         var dataset = options.dataset;
         var settings = options.chart.settings;
-        $.ajax( {
-            url     : prefixedDownloadUrl(options.root, dataset.download_url),
-            success : function( content ) {
+        $.ajax({
+            url: prefixedDownloadUrl(options.root, dataset.download_url),
+            success: function (content) {
                 try {
-                    var tree = Phylocanvas.default.createTree( options.target ),
-                        node_size = 20,
-                        text_size = 20,
-                        line_width = 2;
+                    const tree = new phylocanvas.PhylocanvasGL(
+                        document.getElementById(options.target),
+                        {
+                            source: content,
+                            nodeSize: 20,
+                            fontSize: 20,
+                            lineWidth: 2,
+                            showLabels: settings.get("show_labels") === "true" ? true : false,
+                            showLeafLabels: settings.get("show_labels") === "true" ? true : false,
+                            interactive: true,
+                            nodeShape: settings.get("node_shape"),
+                            type: settings.get("tree_type"),
+                        },
+                        [phylocanvas.plugins.scalebar]
+                    );
+                    // // Set properties related to labels
+                    // tree.alignLabels = settings.get( 'align_labels' ) === "true" ? true : false;
+                    // // Set properties related to colors
+                    // tree.branchColour = settings.get( 'edge_color' );
+                    // tree.highlightColour = settings.get( 'highlighted_color' );
+                    // tree.selectedColour = settings.get( 'selected_color' );
 
-                    // Set different properties of the tree
-                    tree.setTreeType( settings.get( 'tree_type' ) );
-                    // Set properties related to labels
-                    tree.showLabels = settings.get( 'show_labels' ) === "true" ? true : false;
-                    tree.alignLabels = settings.get( 'align_labels' ) === "true" ? true : false;
-                    // Set properties related to colors
-                    tree.branchColour = settings.get( 'edge_color' );
-                    tree.highlightColour = settings.get( 'highlighted_color' );
-                    tree.selectedColour = settings.get( 'selected_color' );
-                    // Set properties related to size
-                    tree.setNodeSize( node_size );
-                    tree.setTextSize( text_size );
-                    tree.lineWidth = line_width;
-                    // Show bootstrap confidence levels
-                    tree.showBootstrap = settings.get( 'show_bootstrap' ) === "true" ? true : false;
-                    tree.showInternalNodeLabels = tree.showBootstrap;
-                    // Update font and color for internal nodel labels
-                    tree.internalLabelStyle.colour = tree.branchColour;
-                    tree.internalLabelStyle.font = tree.font;
-                    tree.internalLabelStyle.textSize = tree.textSize;
-
+                    // tree.showInternalNodeLabels = settings.get( 'show_bootstrap' ) === "true" ? true : false,
+                    /*
                     // Register click event on tree
                     tree.on( 'click', function ( e ) {
                         var node = tree.getNodeAtMousePosition( e );
@@ -57,27 +57,24 @@ _.extend(window.bundleEntries || {}, {
                             tree.draw();
                         }
                     });
-                    // Draw the phylogenetic tree
-                    tree.load( content );
-                    // Set node shape
-                    for(var j = 0, length = tree.leaves.length; j < length; j++) {
-                        tree.leaves[ j ].nodeShape = settings.get( 'node_shape' );
-                    }
-                    tree.draw();
-                    chart.state( 'ok', 'Done.' );
+                    */
+
+                    console.debug(tree);
+                    chart.state("ok", "Done.");
                     options.process.resolve();
-                    // Adjust the size of tree on window resize
-                    $( window ).resize( function() {
-                        tree.fitInPanel( tree.leaves ); tree.draw();
-                    } );
-                } catch( err ) {
-                    chart.state( 'failed', err );
+                    // // Adjust the size of tree on window resize
+                    // $( window ).resize( function() {
+                    //     tree.fitInPanel();
+                    //     tree.draw();
+                    // } );
+                } catch (err) {
+                    chart.state("failed", err);
                 }
             },
-            error: function() {
-                chart.state( 'failed', 'Failed to access dataset.' );
+            error: function () {
+                chart.state("failed", "Failed to access dataset.");
                 options.process.resolve();
-            }
+            },
         });
-    }
+    },
 });
