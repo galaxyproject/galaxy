@@ -91,7 +91,9 @@ class TestParameterParsing(BaseParameterTestCase):
     def test_parse_optional(self):
         param = self._parameter_for(
             xml="""
-            <param type="text" name="texti" value="mydefault" />
+            <param type="text" name="texti" value="mydefault">
+                <validator type="empty_field" />
+            </param>
         """
         )
         assert param.optional is False

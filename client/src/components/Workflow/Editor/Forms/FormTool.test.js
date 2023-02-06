@@ -1,5 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import FormTool from "./FormTool";
 import MockCurrentUser from "components/providers/MockCurrentUser";
 import MockConfigProvider from "components/providers/MockConfigProvider";
@@ -11,6 +13,9 @@ import { createTestingPinia } from "@pinia/testing";
 const localVue = getLocalVue();
 
 describe("FormTool", () => {
+    const axiosMock = new MockAdapter(axios);
+    axiosMock.onGet(`/api/webhooks`).reply(200, []);
+
     function mountTarget() {
         const store = new Vuex.Store({
             modules: {
