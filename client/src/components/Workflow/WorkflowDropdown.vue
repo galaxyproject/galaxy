@@ -3,6 +3,7 @@
         <b-link
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
+            :title="getWorkflowTooltip(sourceType, workflow)"
             aria-haspopup="true"
             aria-expanded="false">
             <font-awesome-icon icon="caret-down" />
@@ -217,6 +218,15 @@ export default {
                 .catch((error) => {
                     this.$emit("onError", error);
                 });
+        },
+        getWorkflowTooltip: function (sourceType, workflow) {
+            let tooltip = "";
+            if (sourceType.includes("trs")) {
+                tooltip = `Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`;
+            } else if (sourceType == "url") {
+                tooltip = `Imported from ${workflow.source_metadata.url}`;
+            }
+            return tooltip;
         },
     },
 };
