@@ -98,7 +98,7 @@ class WrappedParameters:
                     name=input.name,
                 )
             else:
-                input_values[input.name] = InputValueWrapper(input, value, incoming)
+                input_values[input.name] = InputValueWrapper(input, value, incoming, tool.profile)
 
 
 def make_dict_copy(from_dict):

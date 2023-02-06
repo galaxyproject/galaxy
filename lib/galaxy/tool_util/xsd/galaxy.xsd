@@ -59,6 +59,11 @@ List of behavior changes associated with profile versions:
 
 - Do not strip leading and trailing whitespaces in `from_work_dir` attribute.
 
+### 23.0
+
+- Text parameters that are inferred to be optional (i.e the `optional` tag is not set, but the tool parameter accepts an empty string)
+  are set to `None` for templating in Cheetah. Older tools receive the empty string `""` as the templated value.
+
 ### Examples
 
 A normal tool:

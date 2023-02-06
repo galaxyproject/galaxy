@@ -82,9 +82,8 @@ const collapsed = ref(false);
 const collapsible = computed(() => !props.disabled && collapsibleValue.value !== undefined);
 const connectable = computed(() => collapsible.value && Boolean(attrs.value["connectable"]));
 
-// Determines to wether expand or collapse the input
+// Determines whether to expand or collapse the input
 {
-    setValue(props.value);
     const valueJson = JSON.stringify(props.value);
     connected.value = valueJson === JSON.stringify(connectedValue);
     collapsed.value =

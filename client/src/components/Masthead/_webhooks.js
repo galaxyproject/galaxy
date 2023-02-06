@@ -5,8 +5,7 @@ export function loadWebhookMenuItems(items) {
     Webhooks.load({
         type: "masthead",
         callback: function (webhooks) {
-            webhooks.each((model) => {
-                const webhook = model.toJSON();
+            webhooks.forEach((webhook) => {
                 if (webhook.activate) {
                     const obj = {
                         id: webhook.id,
