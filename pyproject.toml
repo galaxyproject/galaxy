@@ -97,7 +97,6 @@ schema-salad = "!=8.3.20220721194857"  # https://github.com/common-workflow-lang
 social-auth-core = {version = "==4.0.3", extras = ["openidconnect"]}
 sortedcontainers = "*"
 SQLAlchemy = ">=1.4.25,<2"
-sqlalchemy-migrate = "*"  # required to support tool shed
 sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
