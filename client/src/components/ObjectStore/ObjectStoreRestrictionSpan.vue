@@ -1,5 +1,5 @@
 <template>
-    <span class="stored-how" v-b-tooltip.hover :title="title">{{ text }}</span>
+    <span v-b-tooltip.hover class="stored-how" :title="title">{{ text }}</span>
 </template>
 
 <script>

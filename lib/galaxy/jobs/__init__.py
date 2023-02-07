@@ -1895,13 +1895,17 @@ class MinimalJobWrapper(HasResourceParameters):
         # custom post process setup
 
         collected_bytes = 0
+        quota_source_info = None
         # Once datasets are collected, set the total dataset size (includes extra files)
         for dataset_assoc in job.output_datasets:
             if not dataset_assoc.dataset.dataset.purged:
+                # assume all datasets in a job get written to the same objectstore
+                quota_source_info = dataset_assoc.dataset.dataset.quota_source_info
                 collected_bytes += dataset_assoc.dataset.set_total_size()
 
-        if job.user:
-            job.user.adjust_total_disk_usage(collected_bytes)
+        user = job.user
+        if user and collected_bytes > 0 and quota_source_info is not None and quota_source_info.use:
+            user.adjust_total_disk_usage(collected_bytes, quota_source_info.label)
 
         # Certain tools require tasks to be completed after job execution
         # ( this used to be performed in the "exec_after_process" hook, but hooks are deprecated ).

@@ -16,21 +16,7 @@
             </p>
         </div>
         <div v-else>
-            <p>
-                This dataset is stored in
-                <span class="display-os-by-name" v-if="storageInfo.name">
-                    a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store named
-                    <b>{{ storageInfo.name }}</b>
-                </span>
-                <span class="display-os-by-id" v-else-if="storageInfo.object_store_id">
-                    a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store with id
-                    <b>{{ storageInfo.object_store_id }}</b>
-                </span>
-                <span class="display-os-default" v-else>
-                    the default configured Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store </span
-                >.
-            </p>
-            <div v-html="descriptionRendered"></div>
+            <describe-object-store what="This dataset is stored in" :storage-info="storageInfo" />
         </div>
     </div>
 </template>
@@ -38,15 +24,14 @@
 <script>
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
-import LoadingSpan from "components/LoadingSpan";
-import MarkdownIt from "markdown-it";
 import { errorMessageAsString } from "utils/simple-error";
-import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
+import DescribeObjectStore from "components/ObjectStore/DescribeObjectStore";
+import LoadingSpan from "components/LoadingSpan";
 
 export default {
     components: {
+        DescribeObjectStore,
         LoadingSpan,
-        ObjectStoreRestrictionSpan,
     },
     props: {
         datasetId: {
@@ -64,7 +49,6 @@ export default {
     data() {
         return {
             storageInfo: null,
-            descriptionRendered: null,
             errorMessage: null,
         };
     },
@@ -86,9 +70,6 @@ export default {
             }
             return rootSources[0].source_uri;
         },
-        isPrivate() {
-            return this.storageInfo.private;
-        },
     },
     created() {
         const datasetId = this.datasetId;
@@ -103,13 +84,7 @@ export default {
     methods: {
         handleResponse(response) {
             const storageInfo = response.data;
-            const description = storageInfo.description;
             this.storageInfo = storageInfo;
-            if (description) {
-                this.descriptionRendered = MarkdownIt({ html: true }).render(storageInfo.description);
-            } else {
-                this.descriptionRendered = null;
-            }
         },
     },
 };
