@@ -18,13 +18,17 @@
         <div v-else>
             <p>
                 This dataset is stored in
-                <span v-if="storageInfo.name" class="display-os-by-name">
-                    a Galaxy object store named <b>{{ storageInfo.name }}</b>
+                <span class="display-os-by-name" v-if="storageInfo.name">
+                    a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store named
+                    <b>{{ storageInfo.name }}</b>
                 </span>
-                <span v-else-if="storageInfo.object_store_id" class="display-os-by-id">
-                    a Galaxy object store with id <b>{{ storageInfo.object_store_id }}</b>
+                <span class="display-os-by-id" v-else-if="storageInfo.object_store_id">
+                    a Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store with id
+                    <b>{{ storageInfo.object_store_id }}</b>
                 </span>
-                <span v-else class="display-os-default"> the default configured Galaxy object store </span>.
+                <span class="display-os-default" v-else>
+                    the default configured Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store </span
+                >.
             </p>
             <div v-html="descriptionRendered"></div>
         </div>
@@ -37,10 +41,12 @@ import { getAppRoot } from "onload/loadConfig";
 import LoadingSpan from "components/LoadingSpan";
 import MarkdownIt from "markdown-it";
 import { errorMessageAsString } from "utils/simple-error";
+import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
 
 export default {
     components: {
         LoadingSpan,
+        ObjectStoreRestrictionSpan,
     },
     props: {
         datasetId: {
@@ -79,6 +85,9 @@ export default {
                 return null;
             }
             return rootSources[0].source_uri;
+        },
+        isPrivate() {
+            return this.storageInfo.private;
         },
     },
     created() {

@@ -1599,6 +1599,8 @@ class MinimalJobWrapper(HasResourceParameters):
 
         object_store_populator = ObjectStorePopulator(self.app, job.user)
         object_store_id = self.get_destination_configuration("object_store_id", None)
+        require_shareable = job.requires_shareable_storage(self.app.security_agent)
+
         if object_store_id:
             object_store_populator.object_store_id = object_store_id
 
@@ -1610,7 +1612,7 @@ class MinimalJobWrapper(HasResourceParameters):
         # afterward. State below needs to happen the same way.
         for dataset_assoc in job.output_datasets + job.output_library_datasets:
             dataset = dataset_assoc.dataset
-            object_store_populator.set_object_store_id(dataset)
+            object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
 
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
