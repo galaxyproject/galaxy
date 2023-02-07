@@ -122,10 +122,6 @@ utils](https://vue-test-utils.vuejs.org/) to mount individual components in a
 test bed and check them for rendered features. Please use jest-based mocking
 for isolating test functionality.
 
-A set of older qUnit tests also exist which will be phased-out as the code they
-support is replaced with modern component-based implementations. In the
-meantime, we still run the qunit tests in sequence.
-
 ### Running the tests
 
 #### At Build-Time
@@ -145,15 +141,7 @@ commands.
 This is what CI is going to run, and also what 'make client-test' invokes,
 executing all the client tests:
 
-     yarn run test
-
-You can also bypass qunit and single-run all of the jest tests like so:
-
-     yarn run jest
-
-Or, if you want to run just the qunit tests:
-
-    yarn run qunit
+     yarn test
 
 ##### Watch and rerun jest unit tests every time a source file changes
 
