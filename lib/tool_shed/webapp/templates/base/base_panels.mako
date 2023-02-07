@@ -19,9 +19,6 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     <!--- base/base_panels.mako stylesheets() -->
-    ${h.css(
-        'bootstrap-tour',
-    )}
     ${h.dist_css(
         'base'
     )}
