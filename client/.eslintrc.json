@@ -2,16 +2,13 @@
     "root": true,
     "extends": [
         "eslint:recommended",
+        "plugin:compat/recommended",
         "plugin:vue/recommended",
-        "plugin:vuejs-accessibility/recommended",
-        "plugin:compat/recommended"
+        "plugin:vuejs-accessibility/recommended"
     ],
     "env": {
         "browser": true,
-        "commonjs": true,
-        "es6": true,
-        "node": true,
-        "jest": true
+        "es6": true
     },
     "rules": {
         // Standard rules
@@ -61,6 +58,12 @@
     },
     "ignorePatterns": ["dist", "src/libs", "src/nls", "src/legacy"],
     "overrides": [
+        {
+            "files": ["**/*.test.js", "**/*.test.ts"],
+            "env": {
+                "jest": true
+            }
+        },
         {
             "files": ["**/*.vue"],
             "parser": "vue-eslint-parser",
