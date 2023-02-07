@@ -25,7 +25,10 @@ from galaxy.managers import (
     secured,
     users,
 )
-from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
+from galaxy.schema.tasks import (
+    ComputeDatasetHashTaskRequest,
+    PurgeDatasetsTaskRequest,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.hash_util import memory_bound_hexdigest
 
@@ -84,6 +87,23 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         if flush:
             self.session().flush()
         return dataset
+
+    def purge_datasets(self, request: PurgeDatasetsTaskRequest):
+        """
+        Caution: any additional security checks must be done before executing this action.
+
+        Completely removes a set of object_store/files associated with the datasets from storage and marks them as purged.
+        They might not be removed if there are still un-purged associations to the dataset.
+        """
+        self.error_unless_dataset_purge_allowed()
+        with self.session().begin():
+            for dataset_id in request.dataset_ids:
+                dataset: model.Dataset = self.session().query(model.Dataset).get(dataset_id)
+                if dataset.user_can_purge:
+                    try:
+                        dataset.full_delete()
+                    except Exception:
+                        log.exception(f"Unable to purge dataset ({dataset.id})")
 
     # TODO: this may be more conv. somewhere else
     # TODO: how to allow admin bypass?
