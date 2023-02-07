@@ -18,6 +18,7 @@ import string
 import subprocess
 import sys
 from sys import platform as _platform
+from typing import List, TYPE_CHECKING
 
 import yaml
 
@@ -39,13 +40,16 @@ from .util import (
     conda_build_target_str,
     create_repository,
     default_mulled_conda_channels_from_env,
-    get_file_from_recipe_url,
+    get_file_from_conda_package,
     PrintProgress,
     quay_repository,
     v1_image_name,
     v2_image_name,
 )
 from ..conda_compat import MetaData
+
+if TYPE_CHECKING:
+    from .util import Target
 
 log = logging.getLogger(__name__)
 
@@ -154,19 +158,23 @@ def get_conda_hits_for_targets(targets, conda_context):
     return [r for r in search_results if r]
 
 
-def base_image_for_targets(targets, conda_context):
+def base_image_for_targets(targets: List["Target"], conda_context: CondaContext) -> str:
+    """
+    determine base image (DEFAULT_BASE_IMAGE/DEFAULT_EXTENDED_BASE_IMAGE) for a
+    list of targets by inspecting the conda package (i.e. if the use of an
+    extended image is indicated in info/about.json or info/recipe/meta.yaml
+    """
     hits = get_conda_hits_for_targets(targets, conda_context)
     for hit in hits:
         try:
-            tarball = get_file_from_recipe_url(hit["url"])
-            meta_content = unicodify(tarball.extractfile("info/about.json").read())
-            if json.loads(meta_content).get("extra", {}).get("container", {}).get("extended-base", False):
+            name, content = get_file_from_conda_package(hit["url"], ["info/about.json", "info/recipe/meta.yaml"])
+            strcontent = unicodify(content)
+            if name == "info/about.json" and json.loads(strcontent).get("extra", {}).get("container", {}).get(
+                "extended-base", False
+            ):
                 return DEFAULT_EXTENDED_BASE_IMAGE
-            elif (
-                yaml.safe_load(unicodify(tarball.extractfile("info/recipe/meta.yaml").read()))
-                .get("extra", {})
-                .get("container", {})
-                .get("extended-base", False)
+            elif name == "info/recipe/meta.yaml" and (
+                yaml.safe_load(strcontent).get("extra", {}).get("container", {}).get("extended-base", False)
             ):
                 return DEFAULT_EXTENDED_BASE_IMAGE
         except Exception:
