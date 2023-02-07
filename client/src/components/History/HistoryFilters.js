@@ -5,6 +5,7 @@ export const validFilters = {
     state: equals("state"),
     name: contains("name"),
     extension: equals("extension"),
+    genome_build: contains("genome_build"),
     hid_ge: compare("hid", "ge"),
     hid_gt: compare("hid", "gt"),
     hid_le: compare("hid", "le"),

@@ -1248,7 +1248,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
         with self.dataset_populator.test_history() as history_id:
             self._create_test_history_contents(history_id)
 
-            invalid_filter_keys_with_stats = ["genome_build", "data_type", "annotation"]
+            invalid_filter_keys_with_stats = ["data_type", "annotation"]
 
             for filter_key in invalid_filter_keys_with_stats:
                 response = self._get_contents_with_stats(

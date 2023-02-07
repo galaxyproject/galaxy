@@ -38,6 +38,8 @@ describe("HistoryFilters", () => {
             "[placeholder='any extension']": "ext-filter",
             "[placeholder='any tag']": "tag filter",
             "[placeholder='any state']": "state-filter",
+            "[placeholder='any database']": "db-filter",
+            "[placeholder='index equals']": "hid-related",
             "[placeholder='index greater']": "hid-greater",
             "[placeholder='index lower']": "hid-lower",
             "[placeholder='created after']": "January 1, 2022",
@@ -79,7 +81,7 @@ describe("HistoryFilters", () => {
         await expectCorrectEmits(
             wrapper,
             false,
-            "create_time>'January 1, 2022' create_time<'January 1, 2023' extension:ext-filter hid>hid-greater hid<hid-lower name:name-filter state:state-filter tag:'tag filter'"
+            "create_time>'January 1, 2022' create_time<'January 1, 2023' extension:ext-filter genome_build:db-filter related:hid-related hid>hid-greater hid<hid-lower name:name-filter state:state-filter tag:'tag filter'"
         );
 
         // -------- Test esc key:  ---------
