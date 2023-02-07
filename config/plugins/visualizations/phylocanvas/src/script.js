@@ -28,7 +28,7 @@ _.extend(window.bundleEntries || {}, {
                             alignLabels: settings.get("align_labels") === "true" ? true : false,
                             strokeColour: settings.get("edge_color"),
                             highlightColour: settings.get("highlighted_color"),
-                            nodeColour: settings.get("node_color"),
+                            fillColour: settings.get("node_color"),
                             showInternalNodeLabels: settings.get("show_bootstrap") === "true" ? true : false,
                         },
                         [phylocanvas.plugins.scalebar]
