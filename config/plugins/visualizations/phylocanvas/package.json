@@ -16,6 +16,6 @@
         "parcel-bundler": "^1.4.1"
     },
     "scripts": {
-        "build": "parcel build src/script.js -d static --no-minify"
+        "build": "parcel build src/script.js -d static"
     }
 }
