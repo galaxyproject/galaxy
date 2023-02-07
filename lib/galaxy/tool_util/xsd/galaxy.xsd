@@ -5646,7 +5646,7 @@ Source of the tabular data ``from_data_table``, ``from_param``, or ``from_file``
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-Name of the referred data table, parameter, of file (required).
+Name of the referred data table, parameter, or file (required).
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
