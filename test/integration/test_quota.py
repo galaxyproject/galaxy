@@ -3,6 +3,7 @@ from galaxy_test.driver import integration_util
 
 
 class TestQuotaIntegration(integration_util.IntegrationTestCase):
+    dataset_populator: DatasetPopulator
     require_admin_user = True
 
     @classmethod
@@ -162,6 +163,26 @@ class TestQuotaIntegration(integration_util.IntegrationTestCase):
         }
         create_response = self._post("quotas", data=payload, json=True)
         self._assert_status_code_is(create_response, 400)
+
+    def test_quota_source_label_basics(self):
+        quotas = self.dataset_populator.get_quotas()
+        prior_quotas_len = len(quotas)
+
+        payload = {
+            "name": "defaultmylabeledquota1",
+            "description": "first default quota that is labeled",
+            "amount": "120MB",
+            "operation": "=",
+            "default": "registered",
+            "quota_source_label": "mylabel",
+        }
+        self.dataset_populator.create_quota(payload)
+
+        quotas = self.dataset_populator.get_quotas()
+        assert len(quotas) == prior_quotas_len + 1
+
+        labels = [q["quota_source_label"] for q in quotas]
+        assert "mylabel" in labels
 
     def _create_quota_with_name(self, quota_name: str, is_default: bool = False):
         payload = self._build_quota_payload_with_name(quota_name, is_default)

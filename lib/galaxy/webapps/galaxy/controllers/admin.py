@@ -698,6 +698,9 @@ class AdminGalaxy(controller.JSAppLauncher):
         if trans.request.method == "GET":
             all_users = []
             all_groups = []
+            labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
+            label_options = [("Default Quota", None)]
+            label_options.extend([(label, label) for label in labels])
             for user in (
                 trans.sa_session.query(trans.app.model.User)
                 .filter(trans.app.model.User.table.c.deleted == false())
@@ -713,7 +716,7 @@ class AdminGalaxy(controller.JSAppLauncher):
             default_options = [("No", "no")]
             for type_ in trans.app.model.DefaultQuotaAssociation.types:
                 default_options.append((f"Yes, {type_}", type_))
-            return {
+            rval = {
                 "title": "Create Quota",
                 "inputs": [
                     {"name": "name", "label": "Name"},
@@ -730,10 +733,23 @@ class AdminGalaxy(controller.JSAppLauncher):
                         "options": default_options,
                         "help": "Warning: Any users or groups associated with this quota will be disassociated.",
                     },
-                    build_select_input("in_groups", "Groups", all_groups, []),
-                    build_select_input("in_users", "Users", all_users, []),
                 ],
             }
+            if len(label_options) > 1:
+                rval["inputs"].append(
+                    {
+                        "name": "quota_source_label",
+                        "label": "Apply quota to labeled object stores.",
+                        "options": label_options,
+                    }
+                )
+            rval["inputs"].extend(
+                [
+                    build_select_input("in_groups", "Groups", all_groups, []),
+                    build_select_input("in_users", "Users", all_users, []),
+                ]
+            )
+            return rval
         else:
             try:
                 quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)

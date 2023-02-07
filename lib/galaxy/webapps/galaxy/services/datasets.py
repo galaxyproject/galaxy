@@ -98,6 +98,15 @@ class RequestDataType(str, Enum):
     in_use_state = "in_use_state"
 
 
+class ConcreteObjectStoreQuotaSourceDetails(Model):
+    source: Optional[str] = Field(
+        description="The quota source label corresponding to the object store the dataset is stored in (or would be stored in)"
+    )
+    enabled: bool = Field(
+        description="Whether the object store tracks quota on the data (independent of Galaxy's configuration)"
+    )
+
+
 class DatasetStorageDetails(Model):
     object_store_id: Optional[str] = Field(
         description="The identifier of the destination ObjectStore for this dataset.",
@@ -119,6 +128,7 @@ class DatasetStorageDetails(Model):
     shareable: bool = Field(
         description="Is this dataset shareable.",
     )
+    quota: dict = Field(description="Information about quota sources around dataset storage.")
 
 
 class DatasetInheritanceChainEntry(Model):
@@ -376,6 +386,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except FileNotFoundError:
             # uninitalized directory (emtpy) disk object store can cause this...
             percent_used = None
+
+        quota_source = dataset.quota_source_info
+        quota = ConcreteObjectStoreQuotaSourceDetails(
+            source=quota_source.label,
+            enabled=quota_source.use,
+        )
+
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
         sources = [s.to_dict() for s in dataset.sources]
@@ -388,6 +405,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             dataset_state=dataset_state,
             hashes=hashes,
             sources=sources,
+            quota=quota,
         )
 
     def show_inheritance_chain(

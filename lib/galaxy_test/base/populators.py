@@ -1077,6 +1077,17 @@ class BaseDatasetPopulator(BasePopulator):
         assert "id" in role, role
         return role["id"]
 
+    def get_usage(self) -> List[Dict[str, Any]]:
+        usage_response = self.galaxy_interactor.get("users/current/usage")
+        usage_response.raise_for_status()
+        return usage_response.json()
+
+    def get_usage_for(self, label: Optional[str]) -> Dict[str, Any]:
+        label_as_str = label if label is not None else "__null__"
+        usage_response = self.galaxy_interactor.get(f"users/current/usage/{label_as_str}")
+        usage_response.raise_for_status()
+        return usage_response.json()
+
     def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         using_requirement("admin")
         payload = {
@@ -1090,14 +1101,14 @@ class BaseDatasetPopulator(BasePopulator):
 
     def create_quota(self, quota_payload: dict) -> dict:
         using_requirement("admin")
-        quota_response = self._post("quotas", data=quota_payload, admin=True)
-        quota_response.raise_for_status()
+        quota_response = self._post("quotas", data=quota_payload, admin=True, json=True)
+        api_asserts.assert_status_code_is_ok(quota_response)
         return quota_response.json()
 
     def get_quotas(self) -> list:
         using_requirement("admin")
         quota_response = self._get("quotas", admin=True)
-        quota_response.raise_for_status()
+        api_asserts.assert_status_code_is_ok(quota_response)
         return quota_response.json()
 
     def make_private(self, history_id: str, dataset_id: str) -> dict:
@@ -1109,14 +1120,14 @@ class BaseDatasetPopulator(BasePopulator):
             "manage": [role_id],
         }
         response = self.update_permissions_raw(history_id, dataset_id, payload)
-        response.raise_for_status()
+        api_asserts.assert_status_code_is_ok(response)
         return response.json()
 
-    def make_public_raw(self, history_id: str, dataset_id: str) -> Response:
+    def make_dataset_public_raw(self, history_id: str, dataset_id: str) -> Response:
         role_id = self.user_private_role_id()
         payload = {
-            "access": json.dumps([]),
-            "manage": json.dumps([role_id]),
+            "access": [],
+            "manage": [role_id],
         }
         response = self.update_permissions_raw(history_id, dataset_id, payload)
         return response
@@ -1124,12 +1135,12 @@ class BaseDatasetPopulator(BasePopulator):
     def update_permissions_raw(self, history_id: str, dataset_id: str, payload: dict) -> Response:
         url = f"histories/{history_id}/contents/{dataset_id}/permissions"
         update_response = self._put(url, payload, admin=True, json=True)
-        update_response.raise_for_status()
         return update_response
 
     def make_public(self, history_id: str) -> dict:
         using_requirement("new_published_objects")
         sharing_response = self._put(f"histories/{history_id}/publish")
+        api_asserts.assert_status_code_is_ok(sharing_response)
         assert sharing_response.status_code == 200
         return sharing_response.json()
 
