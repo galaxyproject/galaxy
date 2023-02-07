@@ -2,7 +2,7 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <link rel="stylesheet" href="style/base.css" type="text/css" />
+        <link rel="stylesheet" href="dist/base.css" type="text/css" />
     </head>
     <body class="m-0">
         <div class="py-4">
