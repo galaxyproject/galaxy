@@ -25,11 +25,6 @@ class RelationBuilder:
         self.handled_key_rd_dicts = []
         self.key_rd_dicts_to_be_processed = []
         self.tool_shed_url = tool_shed_url
-        # This is a temporary work-around for handling repository dependencies that are needed
-        # only if compiling a dependent package.  This value should be True unless exporting
-        # a repository capsule, in which case the set_filter_dependencies_needed_for_compiling()
-        # function is called.
-        self.filter_dependencies_needed_for_compiling = True
 
     def can_add_to_key_rd_dicts(self, key_rd_dict, key_rd_dicts):
         """Handle the case where an update to the changeset revision was done."""
@@ -440,12 +435,11 @@ class RelationBuilder:
             current_repository_key_rd_dicts
         )
         for key_rd_dict in current_repository_key_rd_dicts:
-            if self.filter_dependencies_needed_for_compiling:
-                # Filter out repository dependencies that are required only if compiling the dependent
-                # repository's tool dependency.
-                # TODO: this temporary work-around should be removed when the underlying framework
-                # support for handling only_if_compiling_contained_td-flagged repositories is completed.
-                key_rd_dict = self.filter_only_if_compiling_contained_td(key_rd_dict)
+            # Filter out repository dependencies that are required only if compiling the dependent
+            # repository's tool dependency.
+            # TODO: this temporary work-around should be removed when the underlying framework
+            # support for handling only_if_compiling_contained_td-flagged repositories is completed.
+            key_rd_dict = self.filter_only_if_compiling_contained_td(key_rd_dict)
             if key_rd_dict:
                 is_circular = False
                 in_handled_key_rd_dicts = self.in_key_rd_dicts(key_rd_dict, self.handled_key_rd_dicts)
@@ -543,9 +537,6 @@ class RelationBuilder:
                 new_key_rd_dict[key] = repository_dependency
                 clean_key_rd_dicts.append(new_key_rd_dict)
         return clean_key_rd_dicts
-
-    def set_filter_dependencies_needed_for_compiling(self, value):
-        self.filter_dependencies_needed_for_compiling = asbool(value)
 
     def update_circular_repository_dependencies(self, repository_key, repository_dependency, repository_dependencies):
         repository_key_as_repository_dependency = repository_key.split(container_util.STRSEP)

@@ -76,7 +76,7 @@ APIKeyPathParam: str = Path(..., title="API Key", description="The API key of th
 
 
 @router.cbv
-class FastAPIHistories:
+class FastAPIUsers:
     service: UsersService = depends(UsersService)
 
     @router.put(
