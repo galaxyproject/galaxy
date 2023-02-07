@@ -55,6 +55,7 @@
         "vuejs-accessibility/label-has-for": "warn",
         "vuejs-accessibility/mouse-events-have-key-events": "warn",
         "vuejs-accessibility/no-autofocus": "error",
+        "vuejs-accessibility/no-static-element-interactions": "warn",
         "vuejs-accessibility/tabindex-no-positive": "error"
     },
     "ignorePatterns": ["dist", "src/libs", "src/nls", "src/legacy"],
