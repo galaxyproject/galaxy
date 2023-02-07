@@ -13,10 +13,10 @@ class TestCollectionEdit(SeleniumTestCase):
         self.create_simple_list_collection()
         self.open_collection_edit_view()
         self.navigate_to_database_tab()
-        self.components.edit_collection_attributes.alert_info.wait_for_visible()
+        alert_element = self.components.edit_collection_attributes.alert_info.wait_for_visible()
         assert (
             "This will create a new collection in your History. Your quota will not increase."
-            in self.find_element_by_selector("div.alert-info").text
+            in alert_element.text
         )
         dataValue = "unspecified"
         self.check_current_data_value(dataValue)
