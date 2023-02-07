@@ -37,6 +37,10 @@ _.extend(window.bundleEntries || {}, {
                     tree.resize(container.parentElement.clientWidth, container.parentElement.clientHeight);
                     chart.state("ok", "Done.");
                     options.process.resolve();
+                    // resize tree on window resize
+                    window.addEventListener("resize", () => {
+                        tree.resize(container.parentElement.clientWidth, container.parentElement.clientHeight);
+                    });
                 } catch (err) {
                     chart.state("failed", err);
                 }
