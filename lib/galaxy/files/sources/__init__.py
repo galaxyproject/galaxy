@@ -4,7 +4,10 @@ import time
 from typing import (
     ClassVar,
     Set,
+    Optional,
+    List
 )
+from typing_extensions import TypedDict
 
 from galaxy.exceptions import (
     ConfigurationError,
@@ -20,25 +23,40 @@ DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
 
 
+class FilesSourceProperties(TypedDict):
+    id: str
+    label: str
+    doc: Optional[str]
+    scheme: str
+    writable: bool
+    required_roles: Optional[List[str]]
+    requires_groups: Optional[List[str]]
+
+
+class FilesSourceOptions(TypedDict):
+    # Overridees for file source initialization properties
+    extra_props: FilesSourceProperties
+
+
 class SingleFileSource(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def get_writable(self):
+    def get_writable(self) -> bool:
         """Return a boolean indicating if this target is writable."""
 
     @abc.abstractmethod
-    def user_has_access(self, user_context, **kwargs) -> bool:
+    def user_has_access(self, user_context) -> bool:
         """Return a boolean indicating if the user can access the FileSource."""
 
     @abc.abstractmethod
-    def realize_to(self, source_path, native_path, user_context=None, **kwargs):
+    def realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: FilesSourceOptions):
         """Realize source path (relative to uri root) to local file system path."""
 
     @abc.abstractmethod
-    def write_from(self, target_path, native_path, user_context=None, **kwargs):
+    def write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: FilesSourceOptions):
         """Write file at native path to target_path (relative to uri root)."""
 
     @abc.abstractmethod
-    def score_url_match(self, url, **kwargs):
+    def score_url_match(self, url: str) -> int:
         """Return how well a given url matches this filesource. A score greater than zero indicates that
         this filesource is capable of processing the given url.
 
@@ -62,14 +80,14 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         """
 
     @abc.abstractmethod
-    def to_relative_path(self, url: str):
+    def to_relative_path(self, url: str) -> str:
         """Convert this url to a filesource relative path. For example, given the url
         `gxfiles://mysource1/myfile.txt` it will return `/myfile.txt`. Protocols directly understood
         by the handler need not be relativized. For example, the url `s3://bucket/myfile.txt` can be
         returned unchanged."""
 
     @abc.abstractmethod
-    def to_dict(self, for_serialization=False, user_context=None, **kwargs):
+    def to_dict(self, for_serialization=False, user_context=None):
         """Return a dictified representation of this FileSource instance.
 
         If ``user_context`` is supplied, properties should be written so user
@@ -83,7 +101,7 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def list(self, source_path="/", recursive=False, user_context=None, **kwargs):
+    def list(self, source_path="/", recursive=False, user_context=None, **kwargs: FilesSourceOptions):
         """Return dictionary of 'Directory's and 'File's."""
 
 
@@ -92,27 +110,27 @@ class FilesSource(SingleFileSource, SupportsBrowsing):
 
     # TODO: off-by-default
     @abc.abstractmethod
-    def get_browsable(self):
+    def get_browsable(self) -> bool:
         """Return true if the filesource implements the SupportsBrowsing interface."""
 
 
 class BaseFilesSource(FilesSource):
     plugin_type: ClassVar[str]
 
-    def get_browsable(self):
+    def get_browsable(self) -> bool:
         # Check whether the list method has been overridden
         return type(self).list != BaseFilesSource.list or type(self)._list != BaseFilesSource._list
 
-    def get_prefix(self):
+    def get_prefix(self) -> str:
         return self.id
 
-    def get_scheme(self):
+    def get_scheme(self) -> str:
         return "gxfiles"
 
-    def get_writable(self):
+    def get_writable(self) -> bool:
         return self.writable
 
-    def user_has_access(self, user_context, **kwargs) -> bool:
+    def user_has_access(self, user_context) -> bool:
         if user_context is None and self.user_context_required:
             return False
         return (
@@ -125,7 +143,7 @@ class BaseFilesSource(FilesSource):
     def user_context_required(self) -> bool:
         return self.requires_roles is not None or self.requires_groups is not None
 
-    def get_uri_root(self):
+    def get_uri_root(self) -> str:
         prefix = self.get_prefix()
         scheme = self.get_scheme()
         root = f"{scheme}://"
@@ -133,14 +151,14 @@ class BaseFilesSource(FilesSource):
             root = uri_join(root, prefix)
         return root
 
-    def to_relative_path(self, url: str):
+    def to_relative_path(self, url: str) -> str:
         return url.replace(self.get_uri_root(), "") or "/"
 
-    def score_url_match(self, url: str, **kwargs):
+    def score_url_match(self, url: str) -> int:
         root = self.get_uri_root()
         return len(root) if root in url else 0
 
-    def uri_from_path(self, path):
+    def uri_from_path(self, path) -> str:
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
@@ -160,7 +178,7 @@ class BaseFilesSource(FilesSource):
         kwd.pop("browsable", None)
         return kwd
 
-    def to_dict(self, for_serialization=False, user_context=None, **kwargs):
+    def to_dict(self, for_serialization=False, user_context=None):
         rval = {
             "id": self.id,
             "type": self.plugin_type,
