@@ -10,14 +10,19 @@ import tarfile
 import threading
 from io import BytesIO
 from typing import (
+    Iterable,
     List,
     NamedTuple,
     Optional,
+    Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 import packaging.version
 import requests
+from conda_package_streaming.package_streaming import stream_conda_info
+from conda_package_streaming.url import stream_conda_info as stream_conda_info_from_url
 
 if TYPE_CHECKING:
     from galaxy.tool_util.deps.container_resolvers import ResolutionCache
@@ -353,21 +358,42 @@ def v2_image_name(targets, image_build=None, name_override=None):
         return f"mulled-v2-{package_hash.hexdigest()}{suffix}"
 
 
-def get_file_from_recipe_url(url):
+def get_file_from_conda_package(
+    url: str, checklist: Union[str, Iterable[str]]
+) -> Tuple[Optional[str], Optional[bytes]]:
     """
-    Downloads file at url and returns tarball
-    
-    >>> f = get_file_from_recipe_url("https://anaconda.org/conda-forge/chopin2/1.0.6/download/noarch/chopin2-1.0.6-pyhd8ed1ab_0.tar.bz2")
-    >>> assert isinstance(f, tarfile.TarFile)
-    >>> f = get_file_from_recipe_url("https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda")
-    >>> assert isinstance(f, tarfile.TarFile)
+    Get file content for an element in a conda package.
+    The url can be a path to a local file or an url.
+    The checklist can be the name of the element to etract
+    or a Iterable of potentially desired elements the content
+    of the first that is contained in the conda package
+    is returned.
+    Return the name and content (bytes) of the first found element
+    and None, None otherwise
+
+    >>> name, content = get_file_from_conda_package("https://anaconda.org/conda-forge/chopin2/1.0.6/download/noarch/chopin2-1.0.6-pyhd8ed1ab_0.tar.bz2", "info/recipe/meta.yaml")
+    >>> assert name == "info/recipe/meta.yaml"
+    >>> assert isinstance(content, bytes)
+    >>> name, content = get_file_from_conda_package("https://anaconda.org/conda-forge/chopin2/1.0.7/download/noarch/chopin2-1.0.7-pyhd8ed1ab_1.conda", ["info/about.json", "info/recipe/meta.yaml"])
+    >>> assert name == "info/recipe/meta.yaml"
+    >>> assert isinstance(content, bytes)
     """
-    log.error(f"{url}")
-    if url.startswith("file://"):
-        return tarfile.open(mode="r:bz2", name=url[7:])
+
+    if isinstance(checklist, str):
+        checklist = set([checklist])
     else:
-        r = requests.get(url, timeout=MULLED_SOCKET_TIMEOUT)
-        return tarfile.open(mode="r:bz2", fileobj=BytesIO(r.content))
+        checklist = set(checklist)
+    # print(checklist)
+    try:
+        stream = stream_conda_info(url)
+    except FileNotFoundError:
+        stream = stream_conda_info_from_url(url)
+    for tar, member in stream:
+        # print(member.name)
+        if member.name in checklist:
+            return member.name, tar.extractfile(member).read()
+    # print("None")
+    return None, None
 
 
 def split_container_name(name):
