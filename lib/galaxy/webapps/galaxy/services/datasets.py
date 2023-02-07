@@ -116,6 +116,9 @@ class DatasetStorageDetails(Model):
     )
     hashes: List[dict] = Field(description="The file contents hashes associated with the supplied dataset instance.")
     sources: List[dict] = Field(description="The file sources associated with the supplied dataset instance.")
+    shareable: bool = Field(
+        description="Is this dataset shareable.",
+    )
 
 
 class DatasetInheritanceChainEntry(Model):
@@ -378,6 +381,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         sources = [s.to_dict() for s in dataset.sources]
         return DatasetStorageDetails(
             object_store_id=object_store_id,
+            shareable=dataset.shareable,
             name=name,
             description=description,
             percent_used=percent_used,

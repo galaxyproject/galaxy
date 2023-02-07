@@ -198,6 +198,11 @@ def get_legacy_index_query_params(
         description="Whether to return visible or hidden datasets only. Leave unset for both.",
         deprecated=True,
     ),
+    shareable: Optional[bool] = Query(
+        default=None,
+        title="Shareable",
+        description="Whether to return only shareable or not shareable datasets. Leave unset for both.",
+    ),
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
     correctly"""
@@ -207,6 +212,7 @@ def get_legacy_index_query_params(
         details=details,
         deleted=deleted,
         visible=visible,
+        shareable=shareable,
     )
 
 
@@ -216,6 +222,7 @@ def parse_legacy_index_query_params(
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
+    shareable: Optional[bool] = None,
     **_,  # Additional params are ignored
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
@@ -242,6 +249,7 @@ def parse_legacy_index_query_params(
             ids=id_list,
             deleted=deleted,
             visible=visible,
+            shareable=shareable,
             dataset_details=dataset_details,
         )
     except ValidationError as e:
