@@ -40,7 +40,10 @@ _.extend(window.bundleEntries || {}, {
                         const node = tree.collapseNode(tree.selectedNode);
                         console.debug(node);
                     });
-                    console.debug(tree);
+                    // get pixel size of parent element
+                    const width = container.parentElement.clientWidth;
+                    const height = container.parentElement.clientHeight;
+                    tree.resize(width, height);
                     chart.state("ok", "Done.");
                     options.process.resolve();
                 } catch (err) {
