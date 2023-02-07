@@ -34,16 +34,7 @@ _.extend(window.bundleEntries || {}, {
                         [phylocanvas.plugins.scalebar]
                     );
 
-                    // on click of element
-                    container.addEventListener("click", function (e) {
-                        console.debug("clicked", e);
-                        const node = tree.collapseNode(tree.selectedNode);
-                        console.debug(node);
-                    });
-                    // get pixel size of parent element
-                    const width = container.parentElement.clientWidth;
-                    const height = container.parentElement.clientHeight;
-                    tree.resize(width, height);
+                    tree.resize(container.parentElement.clientWidth, container.parentElement.clientHeight);
                     chart.state("ok", "Done.");
                     options.process.resolve();
                 } catch (err) {
