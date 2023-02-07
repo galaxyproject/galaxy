@@ -52,6 +52,7 @@ from galaxy.schema.storage_cleaner import (
 )
 from galaxy.schema.tasks import (
     MaterializeDatasetInstanceTaskRequest,
+    PurgeDatasetsTaskRequest,
     RequestUser,
 )
 from galaxy.structured_app import (
@@ -333,8 +334,9 @@ class HDAManager(
 
 
 class HDAStorageCleanerManager(base.StorageCleanerManager):
-    def __init__(self, hda_manager: HDAManager):
+    def __init__(self, hda_manager: HDAManager, dataset_manager: datasets.DatasetManager):
         self.hda_manager = hda_manager
+        self.dataset_manager = dataset_manager
         self.sort_map = {
             StoredItemOrderBy.NAME_ASC: asc(model.HistoryDatasetAssociation.name),
             StoredItemOrderBy.NAME_DSC: desc(model.HistoryDatasetAssociation.name),
@@ -406,16 +408,23 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         success_item_count = 0
         total_free_bytes = 0
         errors: List[StorageItemCleanupError] = []
+        dataset_ids_to_remove: Set[int] = set()
 
         with self.hda_manager.session().begin():
             for hda_id in item_ids:
                 try:
-                    hda = self.hda_manager.get_owned(hda_id, user)
-                    self.hda_manager.purge(hda)
+                    hda: model.HistoryDatasetAssociation = self.hda_manager.get_owned(hda_id, user)
+                    hda.deleted = True
+                    quota_amount = int(hda.quota_amount(user))
+                    hda.purge_usage_from_quota(user)
+                    hda.purged = True
+                    dataset_ids_to_remove.add(hda.dataset.id)
                     success_item_count += 1
-                    total_free_bytes += int(hda.get_size())
+                    total_free_bytes += quota_amount
                 except BaseException as e:
                     errors.append(StorageItemCleanupError(item_id=hda_id, error=str(e)))
+
+        self._request_full_delete_all(dataset_ids_to_remove)
 
         return StorageItemsCleanupResult(
             total_item_count=len(item_ids),
@@ -423,6 +432,16 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
             total_free_bytes=total_free_bytes,
             errors=errors,
         )
+
+    def _request_full_delete_all(self, dataset_ids_to_remove: Set[int]):
+        use_tasks = self.dataset_manager.app.config.enable_celery_tasks
+        request = PurgeDatasetsTaskRequest(dataset_ids=list(dataset_ids_to_remove))
+        if use_tasks:
+            from galaxy.celery.tasks import purge_datasets
+
+            purge_datasets.delay(request=request)
+        else:
+            self.dataset_manager.purge_datasets(request)
 
 
 class HDASerializer(  # datasets._UnflattenedMetadataDatasetAssociationSerializer,
