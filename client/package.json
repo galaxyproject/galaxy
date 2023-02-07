@@ -14,7 +14,8 @@
     "dist"
   ],
   "browserslist": [
-    "defaults"
+    "defaults",
+    "not op_mini all"
   ],
   "resolutions": {
     "chokidar": "3.5.3",
