@@ -99,7 +99,7 @@ in `client/src/style/scss`. Many components will also have local style blocks
 containing styles that are particular to that individual component and do not
 apply site-wide.
 
-On build, the compiled css bundle is served at `/static/style/base.css`.
+On build, the compiled css bundle is served at `/static/dist/base.css`.
 
 As mentioned above, `make client` will rebuild styles as a part of the webpack
 build. For iterative development, "Watch Mode" rebuilds as described above do
