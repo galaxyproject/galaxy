@@ -40,7 +40,7 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-${h.css('base')}
+${h.dist_css('base')}
 </%def>
 
 ## Default javascripts
