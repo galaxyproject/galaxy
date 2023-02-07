@@ -98,9 +98,7 @@ export default {
     },
     methods: {
         fields(columns) {
-            // Columns and data are given as arrays. Use each column index as field
-            // key for the table and the column values as labels
-            return columns.reduce((acc, c, i) => Object.assign(acc, { [i]: { label: c } }), {});
+            return columns.map((elem, index) => ({ key: index.toString(), label: elem }));
         },
         reload() {
             axios
