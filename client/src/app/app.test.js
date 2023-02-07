@@ -1,6 +1,6 @@
 import { getGalaxyInstance, setGalaxyInstance } from "app";
 import Backbone from "backbone";
-import galaxyOptions from "@tests/qunit/test-data/bootstrapped";
+import galaxyOptions from "@tests/test-data/bootstrapped";
 
 export function setupTestGalaxy(galaxyOptions_ = null) {
     galaxyOptions_ = galaxyOptions_ || galaxyOptions;
