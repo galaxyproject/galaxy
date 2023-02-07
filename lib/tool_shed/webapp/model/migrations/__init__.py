@@ -61,8 +61,21 @@ class DatabaseStateVerifier:
     def __init__(self, engine):
         self.engine = engine
         self.metadata = Base.metadata
-        self.alembic_manager = AlembicManager(engine)
-        self.db_state = DatabaseStateCache(engine=engine)
+        # These values may or may not be required, so do a lazy load.
+        self._db_state: Optional[DatabaseStateCache] = None
+        self._alembic_manager: Optional[AlembicManager] = None
+
+    @property
+    def db_state(self) -> DatabaseStateCache:
+        if not self._db_state:
+            self._db_state = DatabaseStateCache(engine=self.engine)
+        return self._db_state
+
+    @property
+    def alembic_manager(self) -> AlembicManager:
+        if not self._alembic_manager:
+            self._alembic_manager = AlembicManager(self.engine)
+        return self._alembic_manager
 
     def run(self) -> None:
         if self._handle_no_database():
