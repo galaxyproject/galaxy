@@ -57,6 +57,85 @@ def verify_database(url, engine_options=None):
     verifier.run()
 
 
+class AlembicManager:
+    def __init__(self, engine: Engine, config_dict: Optional[dict] = None) -> None:
+        self.engine = engine
+        self.alembic_cfg = self._load_config(config_dict)
+        self.script_directory = ScriptDirectory.from_config(self.alembic_cfg)
+        self._db_heads: Optional[Iterable[str]]
+        self._reset_db_heads()
+
+    def _load_config(self, config_dict: Optional[dict]) -> Config:
+        alembic_root = os.path.dirname(__file__)
+        _alembic_file = os.path.join(alembic_root, "alembic.ini")
+        config = Config(_alembic_file)
+        url = get_url_string(self.engine)
+        config.set_main_option("sqlalchemy.url", url)
+        if config_dict:
+            for key, value in config_dict.items():
+                config.set_main_option(key, value)
+        return config
+
+    @property
+    def db_heads(self) -> Optional[Iterable]:
+        if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
+            with self.engine.connect() as conn:
+                context: MigrationContext = MigrationContext.configure(conn)
+                self._db_heads = context.get_current_heads()  # returns single value: no branches used
+            self._db_heads = listify(self._db_heads)
+        return self._db_heads
+
+    def stamp_head(self) -> None:
+        """Partial proxy to alembic's stamp command."""
+        command.stamp(self.alembic_cfg, "head")
+        self._reset_db_heads()
+
+    def is_up_to_date(self) -> bool:
+        """
+        True if the head revision in the script directory is stored in the database.
+        """
+        head_id = self.get_script_head()
+        return bool(self.db_heads and head_id in self.db_heads)
+
+    def get_script_head(self) -> Optional[str]:
+        return self.script_directory.get_current_head()
+
+    def get_db_head(self) -> Optional[str]:
+        return self._get_head_revision(cast(Iterable[str], self.db_heads))
+
+    def _get_head_revision(self, heads: Iterable[str]) -> Optional[str]:
+        for head in heads:
+            if self._get_revision(head):
+                return head
+        return None
+
+    def is_under_version_control(self) -> bool:
+        """
+        True if the database version table contains a revision that corresponds to a revision
+        in the script directory.
+        """
+        if self.db_heads:
+            for db_head in self.db_heads:
+                try:
+                    revision = self._get_revision(db_head)
+                    if revision:
+                        log.info(f"The version in the database is {db_head}.")
+                        return True
+                except alembic.util.exc.CommandError:  # No need to raise exception.
+                    log.info(f"Revision {db_head} does not exist in the script directory.")
+        return False
+
+    def _get_revision(self, revision_id: str) -> Optional[Script]:
+        try:
+            return self.script_directory.get_revision(revision_id)
+        except alembic.util.exc.CommandError as e:
+            log.error(f"Revision {revision_id} not found in the script directory")
+            raise e
+
+    def _reset_db_heads(self) -> None:
+        self._db_heads = None
+
+
 class DatabaseStateVerifier:
     def __init__(self, engine):
         self.engine = engine
@@ -152,82 +231,3 @@ class DatabaseStateVerifier:
 
     def _upgrade_script(self):
         return "manage_toolshed_db.sh upgrade"
-
-
-class AlembicManager:
-    def __init__(self, engine: Engine, config_dict: Optional[dict] = None) -> None:
-        self.engine = engine
-        self.alembic_cfg = self._load_config(config_dict)
-        self.script_directory = ScriptDirectory.from_config(self.alembic_cfg)
-        self._db_heads: Optional[Iterable[str]]
-        self._reset_db_heads()
-
-    def _load_config(self, config_dict: Optional[dict]) -> Config:
-        alembic_root = os.path.dirname(__file__)
-        _alembic_file = os.path.join(alembic_root, "alembic.ini")
-        config = Config(_alembic_file)
-        url = get_url_string(self.engine)
-        config.set_main_option("sqlalchemy.url", url)
-        if config_dict:
-            for key, value in config_dict.items():
-                config.set_main_option(key, value)
-        return config
-
-    @property
-    def db_heads(self) -> Optional[Iterable]:
-        if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
-            with self.engine.connect() as conn:
-                context: MigrationContext = MigrationContext.configure(conn)
-                self._db_heads = context.get_current_heads()  # returns single value: no branches used
-            self._db_heads = listify(self._db_heads)
-        return self._db_heads
-
-    def stamp_head(self) -> None:
-        """Partial proxy to alembic's stamp command."""
-        command.stamp(self.alembic_cfg, "head")
-        self._reset_db_heads()
-
-    def is_up_to_date(self) -> bool:
-        """
-        True if the head revision in the script directory is stored in the database.
-        """
-        head_id = self.get_script_head()
-        return bool(self.db_heads and head_id in self.db_heads)
-
-    def get_script_head(self) -> Optional[str]:
-        return self.script_directory.get_current_head()
-
-    def get_db_head(self) -> Optional[str]:
-        return self._get_head_revision(cast(Iterable[str], self.db_heads))
-
-    def _get_head_revision(self, heads: Iterable[str]) -> Optional[str]:
-        for head in heads:
-            if self._get_revision(head):
-                return head
-        return None
-
-    def is_under_version_control(self) -> bool:
-        """
-        True if the database version table contains a revision that corresponds to a revision
-        in the script directory.
-        """
-        if self.db_heads:
-            for db_head in self.db_heads:
-                try:
-                    revision = self._get_revision(db_head)
-                    if revision:
-                        log.info(f"The version in the database is {db_head}.")
-                        return True
-                except alembic.util.exc.CommandError:  # No need to raise exception.
-                    log.info(f"Revision {db_head} does not exist in the script directory.")
-        return False
-
-    def _get_revision(self, revision_id: str) -> Optional[Script]:
-        try:
-            return self.script_directory.get_revision(revision_id)
-        except alembic.util.exc.CommandError as e:
-            log.error(f"Revision {revision_id} not found in the script directory")
-            raise e
-
-    def _reset_db_heads(self) -> None:
-        self._db_heads = None
