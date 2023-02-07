@@ -5,13 +5,13 @@
     echo index_static $index_static > '$output' &&
 #end if
 #if $index_static_keep
-echo index_static_keep $index_static_keep >> '$output' &&
+    echo index_static_keep $index_static_keep >> '$output' &&
 #end if
 #if $index_regexp
-echo index_regexp $index_regexp >> '$output' &&
+    echo index_regexp $index_regexp >> '$output' &&
 #end if
 #if $index_regexp_keep
-echo index_regexp_keep $index_regexp_keep >> '$output'
+    echo index_regexp_keep $index_regexp_keep >> '$output'
 #end if
     ]]></command>
     <inputs>
