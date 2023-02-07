@@ -29,11 +29,9 @@ const WebhookView = Backbone.View.extend({
         this.$el.attr("tool_version", toolVersion);
 
         getWebHookData().then((data) => {
-            if (options.type) {
-                data.reset(filterType(data, options.type));
-            }
-            if (data.length > 0) {
-                this.render(weightedRandomPick(data));
+            const filteredData = filterData(data, options);
+            if (filteredData.length > 0) {
+                this.render(weightedRandomPick(filteredData));
             }
         });
     },
@@ -46,13 +44,17 @@ const WebhookView = Backbone.View.extend({
     },
 });
 
+function filterData(data, options) {
+    let filteredData = data;
+    if (options.type) {
+        filteredData = filterType(data, options.type);
+    }
+    return filteredData;
+}
+
 const load = (options) => {
     getWebHookData().then((data) => {
-        let filteredData = data;
-        if (options.type) {
-            filteredData = filterType(data, options.type);
-        }
-        options.callback(filteredData);
+        options.callback(filterData(data, options));
     });
 };
 
