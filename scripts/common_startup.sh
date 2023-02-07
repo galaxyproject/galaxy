@@ -34,7 +34,6 @@ for arg in "$@"; do
 done
 
 SAMPLES="
-    lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml.sample
     tool-data/shared/ucsc/builds.txt.sample
     tool-data/shared/ucsc/manual_builds.txt.sample
     static/welcome.html.sample
