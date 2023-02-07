@@ -161,7 +161,7 @@ class AlembicManager:
         return config
 
     @property
-    def db_heads(self) -> Iterable:
+    def db_heads(self) -> Optional[Iterable]:
         if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
             with self.engine.connect() as conn:
                 context: MigrationContext = MigrationContext.configure(conn)
