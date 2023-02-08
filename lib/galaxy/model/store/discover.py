@@ -104,7 +104,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         if primary_data is not None:
             primary_data.extension = ext
-            primary_data.visible = visible
             primary_data.dbkey = dbkey
         else:
             if not library_folder:
@@ -811,12 +810,13 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                 hashes = fields_match.hashes
                 created_from_basename = fields_match.created_from_basename
                 extra_files = fields_match.extra_files
+                visible = fields_match.visible
 
                 info, state = discovered_file.discovered_state(element, final_job_state)
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
-                    visible=True,
+                    visible=visible,
                     dbkey=dbkey,
                     name=name,
                     filename=discovered_file.path,

@@ -5693,22 +5693,30 @@ Source of the tabular data ``from_data_table``, ``from_param``, or ``from_file``
     </xs:attribute>
     <xs:attribute name="name" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Name of the referred data table, parameter, or file (required).
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="column" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+The column to choose the value from (required)
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="offset" type="xs:integer">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+The row (of the options) to choose the value from (by default -1, ie. last row)
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="param_attribute" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en"></xs:documentation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Applies to ``from_param``. The attribute of the parameter to use.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -5747,7 +5755,7 @@ of this directive.
       ]]></xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="action" type="Action" minOccurs="1" maxOccurs="unbounded"/>
+      <xs:group ref="ActionsElement" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
     <xs:attribute name="value" type="xs:string" use="optional">
       <xs:annotation>
@@ -5872,6 +5880,13 @@ Applies to ``param_value``, ``boolean``</xs:documentation>
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="iterate" type="PermissiveBoolean">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Applies to ``insert_column``. Default is ``False``</xs:documentation>
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="param_attribute" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">
@@ -5884,9 +5899,9 @@ Applies to ``param_value``</xs:documentation>
         <xs:documentation xml:lang="en">Applies to ``multiple_splitter``</xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="strip" type="PermissiveBoolean">
+    <xs:attribute name="strip" type="xs:string">
       <xs:annotation>
-        <xs:documentation xml:lang="en">Applies to ``column_strip``</xs:documentation>
+        <xs:documentation xml:lang="en">Applies to ``column_strip``. The given string is removed from the start or end of the column.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="old_column" type="xs:string">
