@@ -30,10 +30,9 @@ class TestCollectionEdit(SeleniumTestCase):
         self.open_collection_edit_view()
         self.navigate_to_datatype_tab()
         alert_element = self.components.edit_collection_attributes.alert_info.wait_for_visible()
-        
+
         assert (
-            "This operation might take a short while, depending on the size of your collection."
-            in alert_element.text
+            "This operation might take a short while, depending on the size of your collection." in alert_element.text
         )
         dataValue = "txt"
         self.check_current_data_value(dataValue)
