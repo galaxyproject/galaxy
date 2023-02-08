@@ -418,7 +418,7 @@ class FastAPIHistoryContents:
     @router.get(
         "/api/histories/{history_id}/contents/{id}",
         name="history_content",
-        summary="Return detailed information about an HDA within a history.",
+        summary="Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         response_model_exclude_unset=True,
         deprecated=True,
     )
@@ -675,7 +675,7 @@ class FastAPIHistoryContents:
     )
     @router.put(
         "/api/histories/{history_id}/contents/{id}",
-        summary="Updates the values for the history content item with the given ``ID``.",
+        summary="Updates the values for the history content item with the given ``ID``. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.",
         response_model_exclude_unset=True,
         deprecated=True,
     )
