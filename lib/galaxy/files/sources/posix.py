@@ -5,7 +5,10 @@ from typing import (
     Any,
     Dict,
     List,
+    Union,
 )
+
+from typing_extensions import Unpack
 
 from galaxy import exceptions
 from galaxy.util.path import (
@@ -13,11 +16,22 @@ from galaxy.util.path import (
     safe_path,
     safe_walk,
 )
-from . import BaseFilesSource
+from . import (
+    BaseFilesSource,
+    FilesSourceOptions,
+    FilesSourceProperties,
+)
 
 DEFAULT_ENFORCE_SYMLINK_SECURITY = True
 DEFAULT_DELETE_ON_REALIZE = False
 DEFAULT_ALLOW_SUBDIR_CREATION = True
+
+
+class PosixFilesSourceProperties(FilesSourceProperties, total=False):
+    root: str
+    enforce_symlink_security: bool
+    delete_on_realize: bool
+    allow_subdir_creation: bool
 
 
 class PosixFilesSource(BaseFilesSource):
@@ -37,7 +51,7 @@ class PosixFilesSource(BaseFilesSource):
         self.delete_on_realize = props.get("delete_on_realize", DEFAULT_DELETE_ON_REALIZE)
         self.allow_subdir_creation = props.get("allow_subdir_creation", DEFAULT_ALLOW_SUBDIR_CREATION)
 
-    def _list(self, path="/", recursive=True, user_context=None, **kwargs):
+    def _list(self, path="/", recursive=True, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         dir_path = self._to_native_path(path, user_context=user_context)
         if not self._safe_directory(dir_path):
             raise exceptions.ObjectNotFound(f"The specified directory does not exist [{dir_path}].")
@@ -55,7 +69,7 @@ class PosixFilesSource(BaseFilesSource):
             to_dict = functools.partial(self._resource_info_to_dict, path, user_context=user_context)
             return list(map(to_dict, res))
 
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
+    def _realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         effective_root = self._effective_root(user_context)
         source_native_path = self._to_native_path(source_path, user_context=user_context)
         if self.enforce_symlink_security:
@@ -70,7 +84,7 @@ class PosixFilesSource(BaseFilesSource):
         else:
             shutil.move(source_native_path, native_path)
 
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
+    def _write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         effective_root = self._effective_root(user_context)
         target_native_path = self._to_native_path(target_path, user_context=user_context)
         if self.enforce_symlink_security:
@@ -89,7 +103,7 @@ class PosixFilesSource(BaseFilesSource):
 
         shutil.copyfile(native_path, target_native_path)
 
-    def _to_native_path(self, source_path, user_context=None):
+    def _to_native_path(self, source_path: str, user_context=None):
         source_path = os.path.normpath(source_path)
         if source_path.startswith("/"):
             source_path = source_path[1:]
@@ -98,7 +112,7 @@ class PosixFilesSource(BaseFilesSource):
     def _effective_root(self, user_context=None):
         return self._evaluate_prop(self.root, user_context=user_context)
 
-    def _resource_info_to_dict(self, dir, name, user_context=None):
+    def _resource_info_to_dict(self, dir: str, name: str, user_context=None):
         rel_path = os.path.normpath(os.path.join(dir, name))
         full_path = self._to_native_path(rel_path, user_context=user_context)
         uri = self.uri_from_path(rel_path)
@@ -126,7 +140,7 @@ class PosixFilesSource(BaseFilesSource):
             return False
         return True
 
-    def _serialization_props(self, user_context=None):
+    def _serialization_props(self, user_context=None) -> PosixFilesSourceProperties:
         return {
             # abspath needed because will be used by external Python from
             # a job working directory

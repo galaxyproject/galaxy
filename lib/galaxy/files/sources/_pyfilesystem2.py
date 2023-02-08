@@ -13,8 +13,12 @@ from typing import (
 
 import fs
 from fs.base import FS
+from typing_extensions import Unpack
 
-from . import BaseFilesSource
+from . import (
+    BaseFilesSource,
+    FilesSourceOptions,
+)
 
 log = logging.getLogger(__name__)
 
@@ -32,10 +36,10 @@ class PyFilesystem2FilesSource(BaseFilesSource):
         self._props = props
 
     @abc.abstractmethod
-    def _open_fs(self, user_context=None, **kwargs):
+    def _open_fs(self, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         """Subclasses must instantiate a PyFilesystem2 handle for this file system."""
 
-    def _list(self, path="/", recursive=False, user_context=None, **kwargs):
+    def _list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         """Return dictionary of 'Directory's and 'File's."""
 
         with self._open_fs(user_context=user_context, **kwargs) as h:
@@ -51,11 +55,11 @@ class PyFilesystem2FilesSource(BaseFilesSource):
                 to_dict = functools.partial(self._resource_info_to_dict, path)
                 return list(map(to_dict, res))
 
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
+    def _realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         with open(native_path, "wb") as write_file:
             self._open_fs(user_context=user_context, **kwargs).download(source_path, write_file)
 
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
+    def _write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         with open(native_path, "rb") as read_file:
             openfs = self._open_fs(user_context=user_context, **kwargs)
             dirname = fs.path.dirname(target_path)

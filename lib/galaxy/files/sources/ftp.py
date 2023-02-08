@@ -5,7 +5,25 @@ try:
 except ImportError:
     FTPFS = None  # type: ignore[misc,assignment]
 
+from typing import (
+    cast,
+    Tuple,
+)
+
+from typing_extensions import Unpack
+
+from . import (
+    FilesSourceOptions,
+    FilesSourceProperties,
+)
 from ._pyfilesystem2 import PyFilesystem2FilesSource
+
+
+class FTPFilesSourceProperties(FilesSourceProperties, total=False):
+    host: str
+    port: int
+    user: str
+    passwd: str
 
 
 class FtpFilesSource(PyFilesystem2FilesSource):
@@ -13,23 +31,25 @@ class FtpFilesSource(PyFilesystem2FilesSource):
     required_module = FTPFS
     required_package = "fs.ftpfs"
 
-    def _open_fs(self, user_context, **kwargs):
+    def _open_fs(self, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         props = self._serialization_props(user_context)
-        extra_props = kwargs.get("extra_props") or {}
+        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, kwargs.get("extra_props") or {})
         handle = FTPFS(**{**props, **extra_props})
         return handle
 
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
-        extra_props = kwargs.get("extra_props") or {}
+    def _realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, kwargs.get("extra_props") or {})
         path, kwargs["extra_props"] = self._get_props_and_rel_path(extra_props, source_path)
         super()._realize_to(path, native_path, user_context=user_context, **kwargs)
 
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
-        extra_props = kwargs.get("extra_props") or {}
+    def _write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
+        extra_props: FTPFilesSourceProperties = cast(FTPFilesSourceProperties, kwargs.get("extra_props") or {})
         path, kwargs["extra_props"] = self._get_props_and_rel_path(extra_props, target_path)
         super()._write_from(path, native_path, user_context=user_context, **kwargs)
 
-    def _get_props_and_rel_path(self, extra_props, url):
+    def _get_props_and_rel_path(
+        self, extra_props: FTPFilesSourceProperties, url: str
+    ) -> Tuple[str, FTPFilesSourceProperties]:
         host = self._props.get("host")
         port = self._props.get("port")
         user = self._props.get("user")
@@ -44,7 +64,7 @@ class FtpFilesSource(PyFilesystem2FilesSource):
             rel_path = props["path"] or url
         return rel_path, extra_props
 
-    def _extract_url_props(self, url):
+    def _extract_url_props(self, url: str):
         result = urllib.parse.urlparse(url)
         return {
             "host": result.hostname,
@@ -54,7 +74,7 @@ class FtpFilesSource(PyFilesystem2FilesSource):
             "path": result.path,
         }
 
-    def score_url_match(self, url: str, **kwargs):
+    def score_url_match(self, url: str):
         host = self._props.get("host")
         port = self._props.get("port")
         if host and port and url.startswith(f"ftp://{host}:{port}"):

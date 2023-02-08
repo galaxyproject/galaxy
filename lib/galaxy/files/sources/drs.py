@@ -1,7 +1,12 @@
 import logging
 
+from typing_extensions import Unpack
+
 from galaxy.util.drs import fetch_drs_to_file
-from . import BaseFilesSource
+from . import (
+    BaseFilesSource,
+    FilesSourceOptions,
+)
 
 log = logging.getLogger(__name__)
 
@@ -20,15 +25,15 @@ class DRSFilesSource(BaseFilesSource):
         props = self._parse_common_config_opts(kwds)
         self._props = props
 
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
+    def _realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         props = self._serialization_props(user_context)
         headers = props.pop("http_headers", {}) or {}
         fetch_drs_to_file(source_path, native_path, user_context, headers=headers)
 
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
+    def _write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         raise NotImplementedError()
 
-    def score_url_match(self, url: str, **kwargs):
+    def score_url_match(self, url: str, **kwargs: Unpack[FilesSourceOptions]):
         if url.startswith("drs://"):
             return len("drs://")
         else:

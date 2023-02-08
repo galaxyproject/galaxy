@@ -5,7 +5,24 @@ try:
 except ImportError:
     GCSFS = None
 
+from typing import (
+    cast,
+)
+
+from typing_extensions import Unpack
+
+from . import (
+    FilesSourceOptions,
+    FilesSourceProperties,
+)
 from ._pyfilesystem2 import PyFilesystem2FilesSource
+
+
+class GoogleCloudStorageFilesSourceProperties(FilesSourceProperties, total=False):
+    bucket_name: str
+    root_path: str
+    project: str
+    anonymous: bool
 
 
 class GoogleCloudStorageFilesSource(PyFilesystem2FilesSource):
@@ -13,9 +30,11 @@ class GoogleCloudStorageFilesSource(PyFilesystem2FilesSource):
     required_module = GCSFS
     required_package = "fs-gcsfs"
 
-    def _open_fs(self, user_context, **kwargs):
+    def _open_fs(self, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         props = self._serialization_props(user_context)
-        extra_props = kwargs.get("extra_props") or {}
+        extra_props: GoogleCloudStorageFilesSourceProperties = cast(
+            GoogleCloudStorageFilesSourceProperties, kwargs.get("extra_props") or {}
+        )
         bucket_name = props.pop("bucket_name", None)
         root_path = props.pop("root_path", None)
         project = props.pop("project", None)

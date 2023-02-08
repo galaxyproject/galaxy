@@ -2,12 +2,19 @@ import abc
 import os
 import time
 from typing import (
+    Any,
     ClassVar,
-    Set,
+    List,
     Optional,
-    List
+    Set,
+    TYPE_CHECKING,
 )
-from typing_extensions import TypedDict
+
+from typing_extensions import (
+    NotRequired,
+    TypedDict,
+    Unpack,
+)
 
 from galaxy.exceptions import (
     ConfigurationError,
@@ -22,20 +29,24 @@ from galaxy.util.template import fill_template
 DEFAULT_SCHEME = "gxfiles"
 DEFAULT_WRITABLE = False
 
+if TYPE_CHECKING:
+    from galaxy.files import ConfiguredFileSourcesConfig
+
 
 class FilesSourceProperties(TypedDict):
-    id: str
-    label: str
-    doc: Optional[str]
-    scheme: str
-    writable: bool
-    required_roles: Optional[List[str]]
-    requires_groups: Optional[List[str]]
+    file_sources_config: NotRequired["ConfiguredFileSourcesConfig"]
+    id: NotRequired[str]
+    label: NotRequired[str]
+    doc: NotRequired[str]
+    scheme: NotRequired[str]
+    writable: NotRequired[bool]
+    required_roles: NotRequired[List[str]]
+    requires_groups: NotRequired[List[str]]
 
 
 class FilesSourceOptions(TypedDict):
     # Overridees for file source initialization properties
-    extra_props: FilesSourceProperties
+    extra_props: NotRequired[FilesSourceProperties]
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
@@ -48,11 +59,11 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         """Return a boolean indicating if the user can access the FileSource."""
 
     @abc.abstractmethod
-    def realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: FilesSourceOptions):
+    def realize_to(self, source_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         """Realize source path (relative to uri root) to local file system path."""
 
     @abc.abstractmethod
-    def write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: FilesSourceOptions):
+    def write_from(self, target_path: str, native_path: str, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         """Write file at native path to target_path (relative to uri root)."""
 
     @abc.abstractmethod
@@ -101,7 +112,7 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def list(self, source_path="/", recursive=False, user_context=None, **kwargs: FilesSourceOptions):
+    def list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         """Return dictionary of 'Directory's and 'File's."""
 
 
@@ -121,7 +132,7 @@ class BaseFilesSource(FilesSource):
         # Check whether the list method has been overridden
         return type(self).list != BaseFilesSource.list or type(self)._list != BaseFilesSource._list
 
-    def get_prefix(self) -> str:
+    def get_prefix(self) -> Optional[str]:
         return self.id
 
     def get_scheme(self) -> str:
@@ -204,34 +215,34 @@ class BaseFilesSource(FilesSource):
             return ctime.strftime("%m/%d/%Y %I:%M:%S %p")
 
     @abc.abstractmethod
-    def _serialization_props(self, user_context=None):
+    def _serialization_props(self, user_context=None) -> FilesSourceProperties:
         """Serialize properties needed to recover plugin configuration.
         Used in to_dict method if for_serialization is True.
         """
 
-    def list(self, path="/", recursive=False, user_context=None, **kwargs):
+    def list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         self._check_user_access(user_context)
         return self._list(path, recursive, user_context, **kwargs)
 
-    def _list(self, path="/", recursive=False, user_context=None, **kwargs):
+    def _list(self, path="/", recursive=False, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         pass
 
-    def write_from(self, target_path, native_path, user_context=None, **kwargs):
+    def write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         if not self.get_writable():
             raise Exception("Cannot write to a non-writable file source.")
         self._check_user_access(user_context)
         self._write_from(target_path, native_path, user_context=user_context, **kwargs)
 
     @abc.abstractmethod
-    def _write_from(self, target_path, native_path, user_context=None, **kwargs):
+    def _write_from(self, target_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         pass
 
-    def realize_to(self, source_path, native_path, user_context=None, **kwargs):
+    def realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         self._check_user_access(user_context)
         self._realize_to(source_path, native_path, user_context, **kwargs)
 
     @abc.abstractmethod
-    def _realize_to(self, source_path, native_path, user_context=None, **kwargs):
+    def _realize_to(self, source_path, native_path, user_context=None, **kwargs: Unpack[FilesSourceOptions]):
         pass
 
     def _check_user_access(self, user_context):
@@ -243,7 +254,7 @@ class BaseFilesSource(FilesSource):
         if user_context is not None and not self.user_has_access(user_context):
             raise ItemAccessibilityException(f"User {user_context.username} has no access to file source.")
 
-    def _evaluate_prop(self, prop_val, user_context):
+    def _evaluate_prop(self, prop_val: Any, user_context):
         rval = prop_val
         if isinstance(prop_val, str) and "$" in prop_val:
             template_context = dict(
