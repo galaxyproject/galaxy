@@ -19,12 +19,16 @@ from galaxy.model.migrations import (
     DatabaseConfig,
     DatabaseStateCache,
     GXY,
-    IncorrectSAMigrateVersionError,
-    NoVersionTableError,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     TSI,
 )
 from galaxy.model.migrations.base import pop_arg_from_args
+from galaxy.model.migrations.exceptions import (
+    DatabaseDoesNotExistError,
+    DatabaseNotInitializedError,
+    IncorrectSAMigrateVersionError,
+    NoVersionTableError,
+)
 from galaxy.util.properties import (
     find_config_file,
     get_data_dir,
@@ -36,27 +40,6 @@ CONFIG_FILE_ARG = "--galaxy-config"
 CONFIG_DIR_NAME = "config"
 GXY_CONFIG_PREFIX = "GALAXY_CONFIG_"
 TSI_CONFIG_PREFIX = "GALAXY_INSTALL_CONFIG_"
-
-
-class DatabaseDoesNotExistError(Exception):
-    def __init__(self, db_url: str) -> None:
-        super().__init__(
-            f"""The database at {db_url} does not exist. You must
-            create and initialize the database before running this script. You
-            can do so by (a) running `create_db.sh`; or by (b) starting Galaxy,
-            in which case Galaxy will create and initialize the database
-            automatically."""
-        )
-
-
-class DatabaseNotInitializedError(Exception):
-    def __init__(self, db_url: str) -> None:
-        super().__init__(
-            f"""The database at {db_url} is empty. You must
-            initialize the database before running this script. You can do so by
-            (a) running `create_db.sh`; or by (b) starting Galaxy, in which case
-            Galaxy will initialize the database automatically."""
-        )
 
 
 def verify_database_is_initialized(db_url: str) -> None:
@@ -146,12 +129,6 @@ def invoke_alembic() -> None:
         alembic.config.main()
     else:
         alembic.config.main()
-
-
-class LegacyScriptsException(Exception):
-    # Misc. errors caused by incorrect arguments passed to a legacy script.
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
 
 
 class LegacyManageDb:

@@ -1,3 +1,6 @@
+"""
+Shared code for galaxy and tool shed migrations.
+"""
 import abc
 import logging
 import os

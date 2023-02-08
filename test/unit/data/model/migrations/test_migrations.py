@@ -18,19 +18,21 @@ from galaxy.model.migrations import (
     DatabaseStateVerifier,
     get_last_sqlalchemymigrate_version,
     GXY,
-    IncorrectSAMigrateVersionError,
     listify,
     load_metadata,
     metadata_contains_only_kombu_tables,
-    NoVersionTableError,
-    OutdatedDatabaseError,
-    SAMigrateError,
     scripts,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     SQLALCHEMYMIGRATE_LAST_VERSION_TSI,
     SQLALCHEMYMIGRATE_TABLE,
     TSI,
     verify_databases,
+)
+from galaxy.model.migrations.exceptions import (
+    IncorrectSAMigrateVersionError,
+    NoVersionTableError,
+    OutdatedDatabaseError,
+    SAMigrateError,
 )
 from galaxy.model.migrations.scripts import LegacyManageDb
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)

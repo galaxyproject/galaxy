@@ -23,9 +23,11 @@ from galaxy.model.database_utils import (
 from galaxy.model.migrations import (
     DatabaseStateCache,
     get_url_string,
-    IncorrectSAMigrateVersionError,
     listify,
     load_metadata,
+)
+from galaxy.model.migrations.exceptions import (
+    IncorrectSAMigrateVersionError,
     NoVersionTableError,
     OutdatedDatabaseError,
     SAMigrateError,
