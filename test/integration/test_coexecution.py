@@ -8,7 +8,7 @@ communicate job status updates back.
 For this reason, this test will only work out of the box currently with Docker for Mac,
 rabbitmq installed via Homebrew, and if a fixed port is set for the test.
 
-   GALAXY_TEST_PORT=9234 pytest test/integration/test_kubernetes_staging.py
+   GALAXY_TEST_PORT=9234 pytest test/integration/test_coexecution.py
 
 """
 import os
@@ -186,6 +186,37 @@ tools:
 """
 
 
+TES_CONTAINERIZED_TEMPLATE_CUSTOM_AMQP_KEY = """
+runners:
+  local:
+    load: galaxy.jobs.runners.local:LocalJobRunner
+    workers: 1
+  pulsar_tes:
+    load: galaxy.jobs.runners.pulsar:PulsarTesJobRunner
+    amqp_url: ${amqp_url}
+    amqp_key_prefix: pulsar_foobar34_
+
+execution:
+  default: pulsar_tes_environment
+  environments:
+    pulsar_tes_environment:
+      runner: pulsar_tes
+      tes_url: ${tes_url}
+      docker_enabled: true
+      docker_default_container_id: busybox:ubuntu-14.04
+      pulsar_app_config:
+        message_queue_url: '${container_amqp_url}'
+      env:
+        - name: SOME_ENV_VAR
+          value: '42'
+    local_environment:
+      runner: local
+tools:
+  - id: __DATA_FETCH__
+    environment: local_environment
+"""
+
+
 def tes_job_config(template_str: str, jobs_directory: str) -> str:
     job_conf_template = string.Template(template_str)
     assert AMQP_URL
@@ -313,6 +344,20 @@ class TestTesCoexecutionContainerIntegration(TestCoexecution):
 
 
 @integration_util.skip_unless_environ("FUNNEL_SERVER_TARGET")
+class TestTesCoexecutionCustomAmqpKeyContainerIntegration(TestCoexecution):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config) -> None:
+        config["jobs_directory"] = cls.jobs_directory
+        config["file_path"] = cls.jobs_directory
+        config["job_config_file"] = tes_job_config(TES_CONTAINERIZED_TEMPLATE_CUSTOM_AMQP_KEY, cls.jobs_directory)
+
+        config["default_job_shell"] = "/bin/sh"
+        # Disable tool dependency resolution.
+        config["tool_dependency_dir"] = "none"
+        set_infrastucture_url(config)
+
+
+@integration_util.skip_unless_environ("FUNNEL_SERVER_TARGET")
 class TestTesDependencyResolutionIntegration(TestCoexecution):
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
@@ -342,7 +387,7 @@ def to_infrastructure_uri(uri: str) -> str:
     # remap MQ or file server URI hostnames for in-container versions, this is sloppy
     # should actually parse the URI and rebuild with correct host
     # Copied from Pulsar's integraiton tests.
-    infrastructure_host = os.environ.get("GALAXY_TEST_INFRASTRUCTURE_HOST")
+    infrastructure_host = GALAXY_TEST_INFRASTRUCTURE_HOST
     if infrastructure_host == "_PLATFORM_AUTO_":
         system = platform.system()
         if system in ["Darwin", "Windows"]:
