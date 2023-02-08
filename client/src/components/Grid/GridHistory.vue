@@ -5,8 +5,16 @@
 <script>
 import HistoryList from "./history-list";
 export default {
+    props: {
+        actionId: {
+            type: String,
+            required: true,
+        },
+    },
     mounted() {
-        new HistoryList.View().$el.appendTo(this.$refs.target);
+        new HistoryList.View({
+            action_id: this.actionId,
+        }).$el.appendTo(this.$refs.target);
     },
 };
 </script>

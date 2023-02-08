@@ -37,6 +37,7 @@ from galaxy.managers import (
     annotatable,
     base,
     deletable,
+    genomes,
     hdas,
     hdcas,
     taggable,
@@ -521,6 +522,7 @@ class HistoryContentsFilters(
     base.ModelFilterParser,
     annotatable.AnnotatableFilterMixin,
     deletable.PurgableFiltersMixin,
+    genomes.GenomeFilterMixin,
     taggable.TaggableFilterMixin,
     tools.ToolFilterMixin,
 ):
@@ -563,8 +565,10 @@ class HistoryContentsFilters(
                     return sql.column("history_content_type") == val
                 raise_filter_err(attr, op, val, "bad op in filter")
 
-            if attr == "related" and op == "eq":
-                return sql.column("hid").in_(json.loads(val))
+            if attr == "related":
+                if op == "eq":
+                    return sql.column("hid").in_(json.loads(val))
+                raise_filter_err(attr, op, val, "bad op in filter")
 
             if attr == "type_id":
                 if op == "eq":
@@ -617,12 +621,14 @@ class HistoryContentsFilters(
     def _add_parsers(self):
         super()._add_parsers()
         annotatable.AnnotatableFilterMixin._add_parsers(self)
+        genomes.GenomeFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)
         self.orm_filter_parsers.update(
             {
                 "history_content_type": {"op": ("eq")},
+                # maybe remove related from here, as there's no corresponding field?
                 "related": {"op": ("eq")},
                 "type_id": {"op": ("eq", "in"), "val": self.parse_type_id_list},
                 "hid": {"op": ("eq", "ge", "le", "gt", "lt"), "val": int},
