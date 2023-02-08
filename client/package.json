@@ -21,6 +21,7 @@
   ],
   "resolutions": {
     "chokidar": "3.5.3",
+    "prismjs": "1.29.0",
     "vue": "2.7.14",
     "vue-loader": "15.10.0"
   },
