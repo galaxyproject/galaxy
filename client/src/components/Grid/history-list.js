@@ -65,7 +65,7 @@ var View = Backbone.View.extend({
         this.active_tab = "user";
         this.model = new Backbone.Model();
         Utils.get({
-            url: `${getAppRoot()}history/list?${$.param(Galaxy.params)}`,
+            url: `${getAppRoot()}history/${options.action_id}?${$.param(Galaxy.params)}`,
             success: (response) => {
                 this.model.set(response);
                 this.render();
