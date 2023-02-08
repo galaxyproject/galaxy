@@ -237,7 +237,7 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
-                        path: "histories/list",
+                        path: "histories/:actionId",
                         component: GridHistory,
                         props: true,
                         redirect: redirectAnon(),
