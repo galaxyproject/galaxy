@@ -55,6 +55,7 @@ def verify_database(url, engine_options=None):
     engine = create_engine(url, **engine_options)
     verifier = DatabaseStateVerifier(engine)
     verifier.run()
+    engine.dispose()
 
 
 class AlembicManager:

@@ -24,6 +24,7 @@ from galaxy.model.migrations import (
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     TSI,
 )
+from galaxy.model.migrations.base import pop_arg_from_args
 from galaxy.util.properties import (
     find_config_file,
     get_data_dir,
@@ -86,7 +87,7 @@ def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, Databa
     """
     Return a 3-item-tuple with configuration values used for managing databases.
     """
-    config_file = _pop_config_file(argv)
+    config_file = pop_arg_from_args(argv, CONFIG_FILE_ARG)
     return get_configuration_from_file(cwd, config_file)
 
 
@@ -115,14 +116,6 @@ def get_configuration_from_file(
     tsi_config = DatabaseConfig(url, template, encoding)
 
     return (gxy_config, tsi_config, is_auto_migrate)
-
-
-def _pop_config_file(argv: List[str]) -> Optional[str]:
-    if CONFIG_FILE_ARG in argv:
-        pos = argv.index(CONFIG_FILE_ARG)
-        argv.pop(pos)  # pop argument name
-        return argv.pop(pos)  # pop and return argument value
-    return None
 
 
 def add_db_urls_to_command_arguments(argv: List[str], gxy_url: str, tsi_url: str) -> None:

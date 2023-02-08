@@ -42,7 +42,7 @@ def _run_migrations_invoked_via_script(run_migrations: Callable[[str], None]) ->
     run_migrations(url)
 
 
-def _process_cmd_current(url: str) -> bool:  # TODO check this!
+def _process_cmd_current(url: str) -> bool:
     if config.cmd_opts.cmd[0].__name__ == "current":  # type: ignore[union-attr]
         # Run command for each url only if urls are different; otherwise run once.
         _configure_and_run_migrations_online(url)
