@@ -1,5 +1,5 @@
 """
-This script is intended to be invoked by the manage_db.sh script.
+This script is intended to be invoked by the manage_toolshed_db.sh script.
 """
 
 import os
@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 
 sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
-from galaxy.model.migrations.dbscript import (
+from tool_shed.webapp.model.migrations.dbscript import (
     CONFIG_FILE_ARG,
     ParserBuilder,
 )
@@ -16,10 +16,10 @@ from galaxy.model.migrations.dbscript import (
 
 def main() -> None:
     parser = ArgumentParser(
-        prog="manage_db.sh",
+        prog="manage_toolshed_db.sh",
         description="Common database schema migration operations",
     )
-    parser.add_argument("-c", f"{CONFIG_FILE_ARG}", help="Alternate Galaxy configuration file", dest="config")
+    parser.add_argument("-c", f"{CONFIG_FILE_ARG}", help="Alternate Tool Shed configuration file", dest="config")
 
     parser_builder = ParserBuilder(parser)
 
