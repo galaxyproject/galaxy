@@ -40,6 +40,6 @@ class DbScript(BaseDbScript):
         self.url = get_dburl_from_file(os.getcwd(), config_file)
         self.alembic_config.set_main_option("sqlalchemy.url", self.url)
 
-    def _upgrade_to_head(self, is_sql_mode: bool):
+    def _upgrade_to_head(self, is_sql_mode: bool) -> None:
         self.alembic_config.set_main_option("sqlalchemy.url", self.url)
         self._upgrade_to_revision("head", is_sql_mode)

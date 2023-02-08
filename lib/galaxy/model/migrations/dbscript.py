@@ -52,6 +52,15 @@ class Command(BaseCommand):
 
 
 class DbScript(BaseDbScript):
+    """
+    Facade for common database schema migration operations on the gxy branch.
+    When the gxy and tsi branches are persisted in the same database, some
+    alembic commands will display output on the state on both branches (e.g.
+    history, version, dbversion). The upgrade command is executed on both
+    branches: gxy and tsi (the upgrade command ensures the branch has been
+    initialized by stamping its version in the alembic_version table).
+    """
+
     def _add_branch_label(self, revision_id: str) -> str:
         return f"gxy@{revision_id}"
 

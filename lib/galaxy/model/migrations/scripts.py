@@ -17,12 +17,14 @@ from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
     AlembicManager,
     DatabaseConfig,
-    DatabaseStateCache,
     GXY,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     TSI,
 )
-from galaxy.model.migrations.base import pop_arg_from_args
+from galaxy.model.migrations.base import (
+    DatabaseStateCache,
+    pop_arg_from_args,
+)
 from galaxy.model.migrations.exceptions import (
     DatabaseDoesNotExistError,
     DatabaseNotInitializedError,

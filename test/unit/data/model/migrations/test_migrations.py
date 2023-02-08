@@ -14,19 +14,21 @@ from galaxy.model import migrations
 from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
     AlembicManager,
-    DatabaseStateCache,
     DatabaseStateVerifier,
     get_last_sqlalchemymigrate_version,
     GXY,
-    listify,
-    load_metadata,
-    metadata_contains_only_kombu_tables,
     scripts,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     SQLALCHEMYMIGRATE_LAST_VERSION_TSI,
-    SQLALCHEMYMIGRATE_TABLE,
     TSI,
     verify_databases,
+)
+from galaxy.model.migrations.base import (
+    DatabaseStateCache,
+    listify,
+    load_metadata,
+    metadata_contains_only_kombu_tables,
+    SQLALCHEMYMIGRATE_TABLE,
 )
 from galaxy.model.migrations.exceptions import (
     IncorrectSAMigrateVersionError,

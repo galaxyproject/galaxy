@@ -7,23 +7,17 @@ from typing import (
 )
 
 import alembic
-from alembic import command
-from alembic.config import Config
-from alembic.runtime.migration import MigrationContext
-from alembic.script import ScriptDirectory
-from alembic.script.base import Script
 from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 
 from galaxy.model.database_utils import (
     create_database,
     database_exists,
 )
-from galaxy.model.migrations import (
+from galaxy.model.migrations.base import (
+    BaseAlembicManager,
     DatabaseStateCache,
     get_url_string,
-    listify,
     load_metadata,
 )
 from galaxy.model.migrations.exceptions import (
@@ -34,8 +28,6 @@ from galaxy.model.migrations.exceptions import (
 )
 from tool_shed.webapp.model import Base
 
-ALEMBIC_TABLE = "alembic_version"
-SQLALCHEMYMIGRATE_TABLE = "migrate_version"
 SQLALCHEMYMIGRATE_LAST_VERSION = 27
 TOOLSHED = "tool shed"
 
@@ -52,7 +44,7 @@ class RevisionNotFoundError(Exception):
         super().__init__(msg)
 
 
-def verify_database(url, engine_options=None):
+def verify_database(url, engine_options=None) -> None:
     engine_options = engine_options or {}
     engine = create_engine(url, **engine_options)
     verifier = DatabaseStateVerifier(engine)
@@ -60,38 +52,12 @@ def verify_database(url, engine_options=None):
     engine.dispose()
 
 
-class AlembicManager:
-    def __init__(self, engine: Engine, config_dict: Optional[dict] = None) -> None:
-        self.engine = engine
-        self.alembic_cfg = self._load_config(config_dict)
-        self.script_directory = ScriptDirectory.from_config(self.alembic_cfg)
-        self._db_heads: Optional[Iterable[str]]
-        self._reset_db_heads()
-
-    def _load_config(self, config_dict: Optional[dict]) -> Config:
-        alembic_root = os.path.dirname(__file__)
-        _alembic_file = os.path.join(alembic_root, "alembic.ini")
-        config = Config(_alembic_file)
-        url = get_url_string(self.engine)
-        config.set_main_option("sqlalchemy.url", url)
-        if config_dict:
-            for key, value in config_dict.items():
-                config.set_main_option(key, value)
-        return config
-
-    @property
-    def db_heads(self) -> Optional[Iterable]:
-        if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
-            with self.engine.connect() as conn:
-                context: MigrationContext = MigrationContext.configure(conn)
-                self._db_heads = context.get_current_heads()  # returns single value: no branches used
-            self._db_heads = listify(self._db_heads)
-        return self._db_heads
+class AlembicManager(BaseAlembicManager):
+    def _get_alembic_root(self) -> str:
+        return os.path.dirname(__file__)
 
     def stamp_head(self) -> None:
-        """Partial proxy to alembic's stamp command."""
-        command.stamp(self.alembic_cfg, "head")
-        self._reset_db_heads()
+        self.stamp_revision("head")
 
     def is_up_to_date(self) -> bool:
         """
@@ -99,18 +65,6 @@ class AlembicManager:
         """
         head_id = self.get_script_head()
         return bool(self.db_heads and head_id in self.db_heads)
-
-    def get_script_head(self) -> Optional[str]:
-        return self.script_directory.get_current_head()
-
-    def get_db_head(self) -> Optional[str]:
-        return self._get_head_revision(cast(Iterable[str], self.db_heads))
-
-    def _get_head_revision(self, heads: Iterable[str]) -> Optional[str]:
-        for head in heads:
-            if self._get_revision(head):
-                return head
-        return None
 
     def is_under_version_control(self) -> bool:
         """
@@ -128,15 +82,17 @@ class AlembicManager:
                     log.info(f"Revision {db_head} does not exist in the script directory.")
         return False
 
-    def _get_revision(self, revision_id: str) -> Optional[Script]:
-        try:
-            return self.script_directory.get_revision(revision_id)
-        except alembic.util.exc.CommandError as e:
-            log.error(f"Revision {revision_id} not found in the script directory")
-            raise e
+    def get_db_head(self) -> Optional[str]:
+        return self._get_head_revision(cast(Iterable[str], self.db_heads))
 
-    def _reset_db_heads(self) -> None:
-        self._db_heads = None
+    def get_script_head(self) -> Optional[str]:
+        return self.script_directory.get_current_head()
+
+    def _get_head_revision(self, heads: Iterable[str]) -> Optional[str]:
+        for head in heads:
+            if self._get_revision(head):
+                return head
+        return None
 
 
 class DatabaseStateVerifier:
@@ -232,5 +188,5 @@ class DatabaseStateVerifier:
     def _is_last_sqlalchemymigrate_version(self) -> bool:
         return self.db_state.is_last_sqlalchemymigrate_version(SQLALCHEMYMIGRATE_LAST_VERSION)
 
-    def _upgrade_script(self):
+    def _upgrade_script(self) -> str:
         return "manage_toolshed_db.sh upgrade"

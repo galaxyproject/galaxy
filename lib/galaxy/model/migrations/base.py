@@ -5,18 +5,39 @@ import abc
 import logging
 import os
 import sys
+import urllib.parse
 from argparse import (
     ArgumentParser,
     Namespace,
 )
 from typing import (
+    cast,
+    Dict,
+    Iterable,
     List,
     Optional,
+    Union,
 )
 
 import alembic
 from alembic import command
 from alembic.config import Config
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from alembic.script.base import Script
+from sqlalchemy import (
+    MetaData,
+    Table,
+    text,
+)
+from sqlalchemy.engine import (
+    Connection,
+    CursorResult,
+    Engine,
+)
+
+ALEMBIC_TABLE = "alembic_version"
+SQLALCHEMYMIGRATE_TABLE = "migrate_version"
 
 logging.basicConfig(level=logging.DEBUG)
 log = logging.getLogger(__name__)
@@ -134,14 +155,7 @@ class BaseParserBuilder(abc.ABC):
 
 
 class BaseDbScript(abc.ABC):
-    """
-    Facade for common database schema migration operations on the gxy branch.
-    When the gxy and tsi branches are persisted in the same database, some
-    alembic commands will display output on the state on both branches (e.g.
-    history, version, dbversion). The upgrade command is executed on both
-    branches: gxy and tsi (the upgrade command ensures the branch has been
-    initialized by stamping its version in the alembic_version table).
-    """
+    """Facade for common database schema migration operations."""
 
     @abc.abstractmethod
     def _set_dburl(self, config_file: Optional[str] = None) -> None:
@@ -258,6 +272,114 @@ class BaseCommand(abc.ABC):
                 sys.exit(1)
 
 
+class BaseAlembicManager(abc.ABC):
+    """
+    Alembic operations on one database.
+    """
+
+    @abc.abstractmethod
+    def _get_alembic_root(self):
+        ...
+
+    @staticmethod
+    def is_at_revision(engine: Engine, revision: Union[str, Iterable[str]]) -> bool:
+        """
+        True if revision is a subset of the set of version heads stored in the database.
+        """
+        revision = listify(revision)
+        with engine.connect() as conn:
+            context = MigrationContext.configure(conn)
+            db_version_heads = context.get_current_heads()
+            return set(revision) <= set(db_version_heads)
+
+    def __init__(self, engine: Engine, config_dict: Optional[dict] = None) -> None:
+        self.engine = engine
+        self.alembic_cfg = self._load_config(config_dict)
+        self.script_directory = ScriptDirectory.from_config(self.alembic_cfg)
+        self._db_heads: Optional[Iterable[str]]
+        self._reset_db_heads()
+
+    @property
+    def db_heads(self) -> Optional[Iterable]:
+        if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
+            with self.engine.connect() as conn:
+                context: MigrationContext = MigrationContext.configure(conn)
+                self._db_heads = context.get_current_heads()
+            # We get a tuple as long as we use branches. Otherwise, we'd get a single value.
+            # listify() is a safeguard in case we stop using branches.
+            self._db_heads = listify(self._db_heads)
+        return self._db_heads
+
+    def stamp_revision(self, revision: Union[str, Iterable[str]]) -> None:
+        """Partial proxy to alembic's stamp command."""
+        command.stamp(self.alembic_cfg, revision)  # type: ignore[arg-type]  # https://alembic.sqlalchemy.org/en/latest/api/commands.html#alembic.command.stamp.params.revision
+        self._reset_db_heads()
+
+    def _load_config(self, config_dict: Optional[dict]) -> Config:
+        alembic_root = self._get_alembic_root()
+        _alembic_file = os.path.join(alembic_root, "alembic.ini")
+        config = Config(_alembic_file)
+        url = get_url_string(self.engine)
+        config.set_main_option("sqlalchemy.url", url)
+        if config_dict:
+            for key, value in config_dict.items():
+                config.set_main_option(key, value)
+        return config
+
+    def _get_revision(self, revision_id: str) -> Optional[Script]:
+        try:
+            return self.script_directory.get_revision(revision_id)
+        except alembic.util.exc.CommandError as e:
+            log.error(f"Revision {revision_id} not found in the script directory")
+            raise e
+
+    def _reset_db_heads(self) -> None:
+        self._db_heads = None
+
+
+class DatabaseStateCache:
+    """
+    Snapshot of database state.
+    """
+
+    def __init__(self, engine: Engine) -> None:
+        self._load_db(engine)
+
+    @property
+    def tables(self) -> Dict[str, Table]:
+        return self.db_metadata.tables
+
+    def is_database_empty(self) -> bool:
+        return not bool(self.db_metadata.tables)
+
+    def contains_only_kombu_tables(self) -> bool:
+        return metadata_contains_only_kombu_tables(self.db_metadata)
+
+    def has_alembic_version_table(self) -> bool:
+        return ALEMBIC_TABLE in self.db_metadata.tables
+
+    def has_sqlalchemymigrate_version_table(self) -> bool:
+        return SQLALCHEMYMIGRATE_TABLE in self.db_metadata.tables
+
+    def is_last_sqlalchemymigrate_version(self, last_version: int) -> bool:
+        return self.sqlalchemymigrate_version == last_version
+
+    def _load_db(self, engine: Engine) -> None:
+        with engine.connect() as conn:
+            self.db_metadata = self._load_db_metadata(conn)
+            self.sqlalchemymigrate_version = self._load_sqlalchemymigrate_version(conn)
+
+    def _load_db_metadata(self, conn: Connection) -> MetaData:
+        metadata = MetaData()
+        metadata.reflect(bind=conn)
+        return metadata
+
+    def _load_sqlalchemymigrate_version(self, conn: Connection) -> CursorResult:
+        if self.has_sqlalchemymigrate_version_table():
+            sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
+            return conn.execute(sql).scalar()
+
+
 def pop_arg_from_args(args: List[str], arg_name) -> Optional[str]:
     """
     Pop and return argument name and value from args if arg_name is in args.
@@ -267,3 +389,27 @@ def pop_arg_from_args(args: List[str], arg_name) -> Optional[str]:
         args.pop(pos)  # pop argument name
         return args.pop(pos)  # pop and return argument value
     return None
+
+
+def metadata_contains_only_kombu_tables(metadata: MetaData) -> bool:
+    """
+    Return True if metadata contains only kombu-related tables.
+    (ref: https://github.com/galaxyproject/galaxy/issues/13689)
+    """
+    return all(table.startswith("kombu_") or table.startswith("sqlite_") for table in metadata.tables.keys())
+
+
+def get_url_string(engine: Engine) -> str:
+    db_url = engine.url.render_as_string(hide_password=False)
+    return urllib.parse.unquote(db_url)
+
+
+def load_metadata(metadata: MetaData, engine: Engine) -> None:
+    with engine.connect() as conn:
+        metadata.create_all(bind=conn)
+
+
+def listify(data: Union[str, Iterable[str]]) -> Iterable[str]:
+    if not isinstance(data, (list, tuple)):
+        return [cast(str, data)]
+    return data
