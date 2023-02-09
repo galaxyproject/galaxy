@@ -64,6 +64,7 @@ masthead:
     histories: 'Histories'
     invocations: 'Workflow Invocations'
     pages: 'Pages'
+    histories_shared_with_me: 'Histories shared with me'
 
     # Shared data
     libraries: 'Data Libraries'
@@ -365,6 +366,11 @@ published_histories:
     advanced_search_submit: '#published-histories-advanced-filter-submit'
     tag_content: '#published-histories-table tbody tr .ti-tag .tag-name'
     column_header: '#published-histories-table thead tr th:nth-child(${column_number})'
+
+shared_histories:
+  selectors:
+    _: ".histories-shared-with-you-by-others"
+    histories: "#grid-table-body tr"
 
 history_copy_elements:
   selectors:
