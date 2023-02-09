@@ -20,6 +20,16 @@ log = logging.getLogger(__name__)
 
 CONFIG_FILE_ARG = "--toolshed-config"
 
+# Update this dict with tags for each new release.
+# Note: the key should NOT be a prefix of an existing revision hash in alembic/versions/.
+# For example, if we have a hash 231xxxxxxxxx and use 231 as the key for release 23.1,
+# then using 231 as a partial revision identifier like `sh manage_toolshed_db.sh upgrade 231`
+# will map to release 23.1 instead of revision 231xxxxxxxxx.
+REVISION_TAGS = {
+    "release_23.1": "base",
+    "23.1": "base",
+}
+
 
 class ParserBuilder(BaseParserBuilder):
     def _get_command_object(self):
@@ -43,3 +53,6 @@ class DbScript(BaseDbScript):
     def _upgrade_to_head(self, is_sql_mode: bool) -> None:
         self.alembic_config.set_main_option("sqlalchemy.url", self.url)
         self._upgrade_to_revision("head", is_sql_mode)
+
+    def _revision_tags(self):
+        return REVISION_TAGS
