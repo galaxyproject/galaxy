@@ -6,7 +6,6 @@
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
             <test type="isinstance" test_attr="datatype" result_type="datatype">binary.H5</test>
-            <to_param param_attr="id">dataset_id</to_param>
         </data_source>
     </data_sources>
     <params>

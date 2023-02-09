@@ -30,7 +30,7 @@ window.bundleEntries.load = function (options) {
     var dataset = options.dataset;
     var settings = options.chart.settings;
     var explorer = settings.get('explorer');
-    var url = window.location.origin + "/api/datasets/" + options.dataset.dataset_id + "/content";
+    var url = window.location.origin + "/api/datasets/" + dataset.id + "/content";
     reactRender(
       <MyApp 
         url={url} 
