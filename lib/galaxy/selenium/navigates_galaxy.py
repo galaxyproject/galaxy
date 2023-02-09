@@ -1055,6 +1055,11 @@ class NavigatesGalaxy(HasDriver):
         self.click_masthead_user()
         self.components.masthead.histories.wait_for_and_click()
 
+    def navigate_to_histories_shared_with_me_page(self):
+        self.home()
+        self.click_masthead_user()
+        self.components.masthead.histories_shared_with_me.wait_for_and_click()
+
     def navigate_to_user_preferences(self):
         self.home()
         self.click_masthead_user()
