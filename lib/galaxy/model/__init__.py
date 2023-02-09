@@ -652,6 +652,7 @@ class User(Base, Dictifiable, RepresentById):
     last_password_change = Column(DateTime, default=now)
     external = Column(Boolean, default=False)
     form_values_id = Column(Integer, ForeignKey("form_values.id"), index=True)
+    preferred_object_store_id = Column(String(255), nullable=True)
     deleted = Column(Boolean, index=True, default=False)
     purged = Column(Boolean, index=True, default=False)
     disk_usage = Column(Numeric(15, 0), index=True)
@@ -727,6 +728,7 @@ class User(Base, Dictifiable, RepresentById):
         "deleted",
         "active",
         "last_password_change",
+        "preferred_object_store_id",
     ]
 
     def __init__(self, email=None, password=None, username=None):
@@ -1222,6 +1224,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     imported = Column(Boolean, default=False, index=True)
     params = Column(TrimmedString(255), index=True)
     handler = Column(TrimmedString(255), index=True)
+    preferred_object_store_id = Column(String(255), nullable=True)
 
     user = relationship("User")
     galaxy_session = relationship("GalaxySession")
@@ -2737,6 +2740,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     importable = Column(Boolean, default=False)
     slug = Column(TEXT)
     published = Column(Boolean, index=True, default=False)
+    preferred_object_store_id = Column(String(255), nullable=True)
 
     datasets = relationship(
         "HistoryDatasetAssociation", back_populates="history", cascade_backrefs=False, order_by=lambda: asc(HistoryDatasetAssociation.hid)  # type: ignore[has-type]
@@ -2835,6 +2839,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         "importable",
         "slug",
         "empty",
+        "preferred_object_store_id",
     ]
     default_name = "Unnamed history"
 
@@ -7763,6 +7768,21 @@ class StoredWorkflowMenuEntry(Base, RepresentById):
     )
 
 
+class WorkflowInvocationObjectStores(NamedTuple):
+    preferred_object_store_id: Optional[str]
+    preferred_outputs_object_store_id: Optional[str]
+    preferred_intermediate_object_store_id: Optional[str]
+
+    @property
+    def is_split_configuration(self):
+        preferred_outputs_object_store_id = self.preferred_outputs_object_store_id
+        preferred_intermediate_object_store_id = self.preferred_intermediate_object_store_id
+        has_typed_preferences = (
+            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
+        )
+        return has_typed_preferences and preferred_outputs_object_store_id != preferred_intermediate_object_store_id
+
+
 class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     __tablename__ = "workflow_invocation"
 
@@ -8217,6 +8237,27 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 _resource_parameters[input_parameter.name] = input_parameter.value
 
         return _resource_parameters
+
+    @property
+    def preferred_object_stores(self) -> WorkflowInvocationObjectStores:
+        meta_type = WorkflowRequestInputParameter.types.META_PARAMETERS
+        preferred_object_store_id = None
+        preferred_outputs_object_store_id = None
+        preferred_intermediate_object_store_id = None
+
+        for input_parameter in self.input_parameters:
+            if input_parameter.type != meta_type:
+                continue
+            if input_parameter.name == "preferred_object_store_id":
+                preferred_object_store_id = input_parameter.value
+            elif input_parameter.name == "preferred_outputs_object_store_id":
+                preferred_outputs_object_store_id = input_parameter.value
+            elif input_parameter.name == "preferred_intermediate_object_store_id":
+                preferred_intermediate_object_store_id = input_parameter.value
+
+        return WorkflowInvocationObjectStores(
+            preferred_object_store_id, preferred_outputs_object_store_id, preferred_intermediate_object_store_id
+        )
 
     def has_input_for_step(self, step_id):
         for content in self.input_datasets:

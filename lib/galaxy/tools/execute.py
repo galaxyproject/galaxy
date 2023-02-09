@@ -57,6 +57,7 @@ def execute(
     mapping_params: MappingParameters,
     history: model.History,
     rerun_remap_job_id: Optional[int] = None,
+    preferred_object_store_id: Optional[str] = None,
     collection_info: Optional[MatchingCollections] = None,
     workflow_invocation_uuid: Optional[str] = None,
     invocation_step: Optional[model.WorkflowInvocationStep] = None,
@@ -120,6 +121,7 @@ def execute(
             completed_job,
             collection_info,
             job_callback=job_callback,
+            preferred_object_store_id=preferred_object_store_id,
             flush_job=False,
             skip=skip,
         )

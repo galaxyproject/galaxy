@@ -1597,8 +1597,15 @@ class MinimalJobWrapper(HasResourceParameters):
             # jobs may have this set. Skip this following code if that is the case.
             return
 
-        object_store_populator = ObjectStorePopulator(self.app, job.user)
+        object_store = self.app.object_store
+        if not object_store.object_store_allows_id_selection:
+            self._set_object_store_ids_basic(job)
+        else:
+            self._set_object_store_ids_full(job)
+
+    def _set_object_store_ids_basic(self, job):
         object_store_id = self.get_destination_configuration("object_store_id", None)
+        object_store_populator = ObjectStorePopulator(self.app, job.user)
         require_shareable = job.requires_shareable_storage(self.app.security_agent)
 
         if object_store_id:
@@ -1616,6 +1623,71 @@ class MinimalJobWrapper(HasResourceParameters):
 
         job.object_store_id = object_store_populator.object_store_id
         self._setup_working_directory(job=job)
+
+    def _set_object_store_ids_full(self, job):
+        user = job.user
+        object_store_id = self.get_destination_configuration("object_store_id", None)
+        split_object_stores = None
+        if object_store_id is None:
+            object_store_id = job.preferred_object_store_id
+        if object_store_id is None and job.workflow_invocation_step:
+            workflow_invocation_step = job.workflow_invocation_step
+            workflow_invocation = job.workflow_invocation_step.workflow_invocation
+            invocation_object_stores = workflow_invocation.preferred_object_stores
+            if invocation_object_stores.is_split_configuration:
+                # Redo for subworkflows...
+                outputs_object_store_populator = ObjectStorePopulator(self.app, user)
+                outputs_object_store_populator.object_store_id = (
+                    invocation_object_stores.preferred_outputs_object_store_id
+                )
+                intermediate_object_store_populator = ObjectStorePopulator(self.app, user)
+                intermediate_object_store_populator.object_store_id = (
+                    invocation_object_stores.preferred_intermediate_object_store_id
+                )
+
+                # default for the job... probably isn't used in anyway but for job working
+                # directory?
+                object_store_id = invocation_object_stores.preferred_outputs_object_store_id
+                object_store_populator = intermediate_object_store_populator
+                output_names = [o.output_name for o in workflow_invocation_step.workflow_step.unique_workflow_outputs]
+
+                def split_object_stores(output_name):
+                    if output_name in output_names:
+                        return outputs_object_store_populator
+                    else:
+                        return intermediate_object_store_populator
+
+            else:
+                object_store_id = invocation_object_stores.preferred_object_store_id
+
+        if object_store_id is None:
+            history = job.history
+            if history is not None:
+                object_store_id = history.preferred_object_store_id
+        if object_store_id is None:
+            if user is not None:
+                object_store_id = user.preferred_object_store_id
+
+        require_shareable = job.requires_shareable_storage(self.app.security_agent)
+        if not split_object_stores:
+            object_store_populator = ObjectStorePopulator(self.app, user)
+
+            if object_store_id:
+                object_store_populator.object_store_id = object_store_id
+
+            for dataset_assoc in job.output_datasets + job.output_library_datasets:
+                dataset = dataset_assoc.dataset
+                object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
+
+            job.object_store_id = object_store_populator.object_store_id
+            self._setup_working_directory(job=job)
+        else:
+            for dataset_assoc in job.output_datasets + job.output_library_datasets:
+                dataset = dataset_assoc.dataset
+                dataset_object_store_populator = split_object_stores(dataset_assoc.name)
+                dataset_object_store_populator.set_object_store_id(dataset, require_shareable=require_shareable)
+            job.object_store_id = object_store_populator.object_store_id
+            self._setup_working_directory(job=job)
 
     def _finish_dataset(self, output_name, dataset, job, context, final_job_state, remote_metadata_directory):
         implicit_collection_jobs = job.implicit_collection_jobs_association

@@ -38,6 +38,7 @@ from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
     validate_password,
+    validate_preferred_object_store_id,
     validate_publicname,
 )
 from galaxy.structured_app import (
@@ -625,6 +626,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "tags_used",
                 # all annotations
                 # 'annotations'
+                "preferred_object_store_id",
             ],
             include_keys_from="summary",
         )
@@ -676,11 +678,18 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        self.deserializers.update(
-            {
-                "username": self.deserialize_username,
-            }
-        )
+        history_deserializers: Dict[str, base.Deserializer] = {
+            "username": self.deserialize_username,
+            "preferred_object_store_id": self.deserialize_preferred_object_store_id,
+        }
+        self.deserializers.update(history_deserializers)
+
+    def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, **context):
+        preferred_object_store_id = val
+        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        if validation_error:
+            raise base.ModelDeserializingError(validation_error)
+        return self.default_deserializer(item, key, preferred_object_store_id, **context)
 
     def deserialize_username(self, item, key, username, trans=None, **context):
         # TODO: validate_publicname requires trans and should(?) raise exceptions

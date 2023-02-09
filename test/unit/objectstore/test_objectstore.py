@@ -383,6 +383,106 @@ def test_mixed_private():
         assert as_dict["private"] is True
 
 
+BADGES_TEST_1_CONFIG_XML = """<?xml version="1.0"?>
+<object_store type="disk">
+    <files_dir path="${temp_directory}/files1"/>
+    <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+    <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+    <badges>
+        <short_term />
+        <faster>Fast interconnects.</faster>
+        <less_stable />
+        <more_secure />
+        <backed_up>Storage is backed up to tape nightly.</backed_up>
+    </badges>
+</object_store>
+"""
+
+
+BADGES_TEST_1_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+store_by: uuid
+extra_dirs:
+  - type: temp
+    path: "${temp_directory}/tmp1"
+  - type: job_work
+    path: "${temp_directory}/job_working_directory1"
+badges:
+  - type: short_term
+  - type: faster
+    message: Fast interconnects.
+  - type: less_stable
+  - type: more_secure
+  - type: backed_up
+    message: Storage is backed up to tape nightly.
+"""
+
+
+def test_badges_parsing():
+    for config_str in [BADGES_TEST_1_CONFIG_XML, BADGES_TEST_1_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            badges = object_store.to_dict()["badges"]
+            assert len(badges) == 6
+            badge_1 = badges[0]
+            assert badge_1["type"] == "short_term"
+            assert badge_1["message"] is None
+
+            badge_2 = badges[1]
+            assert badge_2["type"] == "faster"
+            assert badge_2["message"] == "Fast interconnects."
+
+            badge_3 = badges[2]
+            assert badge_3["type"] == "less_stable"
+            assert badge_3["message"] is None
+
+            badge_4 = badges[3]
+            assert badge_4["type"] == "more_secure"
+            assert badge_4["message"] is None
+
+
+BADGES_TEST_CONFLICTS_1_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+badges:
+  - type: slower
+  - type: faster
+"""
+
+
+BADGES_TEST_CONFLICTS_2_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+badges:
+  - type: more_secure
+  - type: less_secure
+"""
+
+
+def test_badges_parsing_conflicts():
+    for config_str in [BADGES_TEST_CONFLICTS_1_CONFIG_YAML]:
+        exception_raised = False
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            assert "faster" in str(e)
+            assert "slower" in str(e)
+            exception_raised = True
+        assert exception_raised
+
+    for config_str in [BADGES_TEST_CONFLICTS_2_CONFIG_YAML]:
+        exception_raised = False
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            assert "more_secure" in str(e)
+            assert "less_secure" in str(e)
+            exception_raised = True
+        assert exception_raised
+
+
 DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="distributed">
     <backends>

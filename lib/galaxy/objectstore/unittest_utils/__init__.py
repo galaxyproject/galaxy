@@ -74,6 +74,7 @@ class MockConfig:
         self.new_file_path = temp_directory
         self.umask = 0000
         self.gid = 1000
+        self.enable_quotas = True
 
 
 __all__ = [

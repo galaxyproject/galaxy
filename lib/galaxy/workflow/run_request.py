@@ -72,6 +72,9 @@ class WorkflowRunConfig:
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
         resource_params: Optional[Dict[int, Any]] = None,
+        preferred_object_store_id: Optional[str] = None,
+        preferred_outputs_object_store_id: Optional[str] = None,
+        preferred_intermediate_object_store_id: Optional[str] = None,
     ) -> None:
         self.target_history = target_history
         self.replacement_dict = replacement_dict or {}
@@ -81,6 +84,9 @@ class WorkflowRunConfig:
         self.resource_params = resource_params or {}
         self.allow_tool_state_corrections = allow_tool_state_corrections
         self.use_cached_job = use_cached_job
+        self.preferred_object_store_id = preferred_object_store_id
+        self.preferred_outputs_object_store_id = preferred_outputs_object_store_id
+        self.preferred_intermediate_object_store_id = preferred_intermediate_object_store_id
 
 
 def _normalize_inputs(
@@ -431,6 +437,16 @@ def build_workflow_run_configs(
                                 f"Invalid value for parameter '{name}' found."
                             )
         history.add_pending_items()
+        preferred_object_store_id = payload.get("preferred_object_store_id")
+        preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
+        preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
+        split_object_store_config = bool(
+            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
+        )
+        if split_object_store_config and preferred_object_store_id:
+            raise exceptions.RequestParameterInvalidException(
+                "May specified either 'preferred_object_store_id' or one/both of 'preferred_outputs_object_store_id' and 'preferred_intermediate_object_store_id' but not both"
+            )
         run_configs.append(
             WorkflowRunConfig(
                 target_history=history,
@@ -440,6 +456,9 @@ def build_workflow_run_configs(
                 allow_tool_state_corrections=allow_tool_state_corrections,
                 use_cached_job=use_cached_job,
                 resource_params=resource_params,
+                preferred_object_store_id=preferred_object_store_id,
+                preferred_outputs_object_store_id=preferred_outputs_object_store_id,
+                preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,
             )
         )
 
@@ -520,6 +539,15 @@ def workflow_run_config_to_request(
         "copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS
     )
     add_parameter("use_cached_job", "true" if run_config.use_cached_job else "false", param_types.META_PARAMETERS)
+    for param in [
+        "preferred_object_store_id",
+        "preferred_outputs_object_store_id",
+        "preferred_intermediate_object_store_id",
+    ]:
+        value = getattr(run_config, param)
+        if value:
+            add_parameter(param, value, param_types.META_PARAMETERS)
+
     return workflow_invocation
 
 
@@ -533,6 +561,10 @@ def workflow_request_to_run_config(
     param_map = {}
     resource_params = {}
     copy_inputs_to_history = None
+    # Preferred object store IDs - either split or join.
+    preferred_object_store_id = None
+    preferred_outputs_object_store_id = None
+    preferred_intermediate_object_store_id = None
     for parameter in workflow_invocation.input_parameters:
         parameter_type = parameter.type
 
@@ -543,6 +575,12 @@ def workflow_request_to_run_config(
                 copy_inputs_to_history = parameter.value == "true"
             if parameter.name == "use_cached_job":
                 use_cached_job = parameter.value == "true"
+            if parameter.name == "preferred_object_store_id":
+                preferred_object_store_id = parameter.value
+            if parameter.name == "preferred_outputs_object_store_id":
+                preferred_outputs_object_store_id = parameter.value
+            if parameter.name == "preferred_intermediate_object_store_id":
+                preferred_intermediate_object_store_id = parameter.value
         elif parameter_type == param_types.RESOURCE_PARAMETERS:
             resource_params[parameter.name] = parameter.value
         elif parameter_type == param_types.STEP_PARAMETERS:
@@ -569,5 +607,8 @@ def workflow_request_to_run_config(
         copy_inputs_to_history=copy_inputs_to_history,
         use_cached_job=use_cached_job,
         resource_params=resource_params,
+        preferred_object_store_id=preferred_object_store_id,
+        preferred_outputs_object_store_id=preferred_outputs_object_store_id,
+        preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,
     )
     return workflow_run_config

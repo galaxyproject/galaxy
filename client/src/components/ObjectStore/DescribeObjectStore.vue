@@ -14,6 +14,7 @@
                 the default configured Galaxy <object-store-restriction-span :is-private="isPrivate" /> object store </span
             >.
         </div>
+        <ObjectStoreBadges :badges="badges"> </ObjectStoreBadges>
         <QuotaSourceUsageProvider
             v-if="storageInfo.quota && storageInfo.quota.enabled"
             v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
@@ -27,17 +28,20 @@
 </template>
 
 <script>
-import MarkdownIt from "markdown-it";
 import ObjectStoreRestrictionSpan from "./ObjectStoreRestrictionSpan";
 import QuotaUsageBar from "components/User/DiskUsage/Quota/QuotaUsageBar";
 import { QuotaSourceUsageProvider } from "components/User/DiskUsage/Quota/QuotaUsageProvider";
+import ObjectStoreBadges from "./ObjectStoreBadges";
+import adminConfigMixin from "./adminConfigMixin";
 
 export default {
     components: {
+        ObjectStoreBadges,
         ObjectStoreRestrictionSpan,
         QuotaSourceUsageProvider,
         QuotaUsageBar,
     },
+    mixins: [adminConfigMixin],
     props: {
         storageInfo: {
             type: Object,
@@ -53,17 +57,13 @@ export default {
             return this.storageInfo.quota?.source;
         },
         descriptionRendered() {
-            const description = this.storageInfo.description;
-            let descriptionRendered;
-            if (description) {
-                descriptionRendered = MarkdownIt({ html: true }).render(description);
-            } else {
-                descriptionRendered = null;
-            }
-            return descriptionRendered;
+            return this.adminMarkup(this.storageInfo.description);
         },
         isPrivate() {
             return this.storageInfo.private;
+        },
+        badges() {
+            return this.storageInfo.badges;
         },
     },
 };

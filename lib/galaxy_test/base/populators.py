@@ -1088,6 +1088,15 @@ class BaseDatasetPopulator(BasePopulator):
         usage_response.raise_for_status()
         return usage_response.json()
 
+    def update_user(self, properties: Dict[str, Any]) -> Dict[str, Any]:
+        update_response = self.update_user_raw(properties)
+        update_response.raise_for_status()
+        return update_response.json()
+
+    def update_user_raw(self, properties: Dict[str, Any]) -> Response:
+        update_response = self.galaxy_interactor.put("users/current", properties, json=True)
+        return update_response
+
     def create_role(self, user_ids: list, description: Optional[str] = None) -> dict:
         using_requirement("admin")
         payload = {
@@ -1245,9 +1254,12 @@ class BaseDatasetPopulator(BasePopulator):
     def history_names(self) -> Dict[str, Dict]:
         return {h["name"]: h for h in self.get_histories()}
 
-    def rename_history(self, history_id, new_name):
+    def rename_history(self, history_id: str, new_name: str):
+        self.update_history(history_id, {"name": new_name})
+
+    def update_history(self, history_id: str, payload: Dict[str, Any]) -> Response:
         update_url = f"histories/{history_id}"
-        put_response = self._put(update_url, {"name": new_name}, json=True)
+        put_response = self._put(update_url, payload, json=True)
         return put_response
 
     def get_histories(self):
@@ -1793,6 +1805,7 @@ class BaseWorkflowPopulator(BasePopulator):
         expected_response: int = 200,
         assert_ok: bool = True,
         client_convert: Optional[bool] = None,
+        extra_invocation_kwds: Optional[Dict[str, Any]] = None,
         round_trip_format_conversion: bool = False,
         invocations: int = 1,
         raw_yaml: bool = False,
@@ -1843,6 +1856,8 @@ class BaseWorkflowPopulator(BasePopulator):
             workflow_request["parameters_normalized"] = True
         if replacement_parameters:
             workflow_request["replacement_params"] = json.dumps(replacement_parameters)
+        if extra_invocation_kwds is not None:
+            workflow_request.update(extra_invocation_kwds)
         if has_uploads:
             self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         assert invocations > 0
@@ -2011,6 +2026,9 @@ class RunJobsSummary(NamedTuple):
     jobs: list
     invocation: dict
     workflow_request: dict
+
+    def jobs_for_tool(self, tool_id):
+        return [j for j in self.jobs if j["tool_id"] == tool_id]
 
 
 class WorkflowPopulator(GalaxyInteractorHttpMixin, BaseWorkflowPopulator, ImporterGalaxyInterface):

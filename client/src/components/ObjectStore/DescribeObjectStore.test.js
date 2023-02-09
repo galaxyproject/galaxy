@@ -8,18 +8,21 @@ const localVue = getLocalVue();
 const TEST_STORAGE_API_RESPONSE_WITHOUT_ID = {
     object_store_id: null,
     private: false,
+    badges: [],
 };
 const TEST_RENDERED_MARKDOWN_AS_HTML = "<p>My cool <strong>markdown</strong>\n";
 
 const TEST_STORAGE_API_RESPONSE_WITH_ID = {
     object_store_id: "foobar",
     private: false,
+    badges: [],
 };
 const TEST_STORAGE_API_RESPONSE_WITH_NAME = {
     object_store_id: "foobar",
     name: "my cool storage",
     description: "My cool **markdown**",
     private: true,
+    badges: [],
 };
 
 // works fine without mocking but I guess it is more JS unit-y with the mock?
