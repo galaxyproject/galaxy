@@ -2083,6 +2083,11 @@ export interface components {
              * @default =
              */
             operation?: components["schemas"]["QuotaOperation"];
+            /**
+             * Quota Source Label
+             * @description If set, quota source label to apply this quota operation to. Otherwise, the default quota is used.
+             */
+            quota_source_label?: string;
         };
         /**
          * CreateQuotaResult
@@ -2114,6 +2119,11 @@ export interface components {
              * @description The name of the quota. This must be unique within a Galaxy instance.
              */
             name: string;
+            /**
+             * Quota Source Label
+             * @description Quota source label
+             */
+            quota_source_label?: string;
             /**
              * URL
              * @deprecated
@@ -2475,6 +2485,16 @@ export interface components {
              * @description The percentage indicating how full the store is.
              */
             percent_used?: number;
+            /**
+             * Quota
+             * @description Information about quota sources around dataset storage.
+             */
+            quota: Record<string, never>;
+            /**
+             * Shareable
+             * @description Is this dataset shareable.
+             */
+            shareable: boolean;
             /**
              * Sources
              * @description The file sources associated with the supplied dataset instance.
@@ -6199,6 +6219,11 @@ export interface components {
              */
             operation?: components["schemas"]["QuotaOperation"];
             /**
+             * Quota Source Label
+             * @description Quota source label
+             */
+            quota_source_label?: string;
+            /**
              * Users
              * @description A list of specific users associated with this quota.
              * @default []
@@ -6236,6 +6261,11 @@ export interface components {
              * @description The name of the quota. This must be unique within a Galaxy instance.
              */
             name: string;
+            /**
+             * Quota Source Label
+             * @description Quota source label
+             */
+            quota_source_label?: string;
             /**
              * URL
              * @deprecated
@@ -10039,6 +10069,7 @@ export interface operations {
              * @deprecated
              * @description Whether to return visible or hidden datasets only. Leave unset for both.
              */
+            /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /**
@@ -10062,6 +10093,7 @@ export interface operations {
                 types?: string[];
                 deleted?: boolean;
                 visible?: boolean;
+                shareable?: boolean;
                 view?: string;
                 keys?: string;
                 q?: string[];
@@ -10848,6 +10880,7 @@ export interface operations {
              * @deprecated
              * @description Whether to return visible or hidden datasets only. Leave unset for both.
              */
+            /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /**
@@ -10871,6 +10904,7 @@ export interface operations {
                 types?: string[];
                 deleted?: boolean;
                 visible?: boolean;
+                shareable?: boolean;
                 view?: string;
                 keys?: string;
                 q?: string[];
