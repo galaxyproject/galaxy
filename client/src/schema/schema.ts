@@ -520,7 +520,7 @@ export interface paths {
     };
     "/api/histories/{history_id}/contents/{id}": {
         /**
-         * Return detailed information about an HDA within a history.
+         * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
          * @description Return detailed information about an `HDA` or `HDCA` within a history.
          *
@@ -528,7 +528,7 @@ export interface paths {
          */
         get: operations["history_content_api_histories__history_id__contents__id__get"];
         /**
-         * Updates the values for the history content item with the given ``ID``.
+         * Updates the values for the history content item with the given ``ID``. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
          * @description Updates the values for the history content item with the given ``ID``.
          */
@@ -3097,10 +3097,10 @@ export interface components {
          * @default []
          * @example [
          *   {
+         *     "browsable": true,
          *     "doc": "Galaxy's library import directory",
          *     "id": "_import",
          *     "label": "Library Import Directory",
-         *     "listable": true,
          *     "type": "gximport",
          *     "uri_root": "gximport://",
          *     "writable": false
@@ -10606,7 +10606,7 @@ export interface operations {
     };
     history_content_api_histories__history_id__contents__id__get: {
         /**
-         * Return detailed information about an HDA within a history.
+         * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
          * @description Return detailed information about an `HDA` or `HDCA` within a history.
          *
@@ -10659,7 +10659,7 @@ export interface operations {
     };
     update_api_histories__history_id__contents__id__put: {
         /**
-         * Updates the values for the history content item with the given ``ID``.
+         * Updates the values for the history content item with the given ``ID``. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
          * @deprecated
          * @description Updates the values for the history content item with the given ``ID``.
          */

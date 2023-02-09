@@ -4,7 +4,6 @@ import time
 from typing import (
     Any,
     ClassVar,
-    List,
     Optional,
     Set,
     TYPE_CHECKING,
@@ -33,6 +32,12 @@ if TYPE_CHECKING:
 
 
 class FilesSourceProperties(TypedDict):
+    """Initial set of properties used to initialize a filesource.
+
+    Filesources can extend this typed dict to define any additional
+    filesource specific properties.
+    """
+
     file_sources_config: NotRequired["ConfiguredFileSourcesConfig"]
     id: NotRequired[str]
     label: NotRequired[str]
@@ -48,29 +53,69 @@ class FilesSourceProperties(TypedDict):
 
 
 class FilesSourceOptions:
+    """Options to control behaviour of filesource operations, such as realize_to and write_from"""
+
+    # Property overrides for values initially configured through the constructor. For example
+    # the HTTPFilesSource passes in additional http_headers through these properties, which
+    # are merged with constructor defined http_headers. The interpretation of these properties
+    # are filesystem specific.
     extra_props: Optional[FilesSourceProperties]
 
 
 class SingleFileSource(metaclass=abc.ABCMeta):
+    """
+    Represents a protocol handler for a single remote file that can be read by or written to by Galaxy.
+    A remote file source can typically handle a url like `https://galaxyproject.org/myfile.txt` or
+    `drs://myserver/123456`. The filesource abstraction allows programmatic control over the specific source
+    to access, injection of credentials and access control. Filesources are typically listed and configured
+    through `file_sources_conf.yml` or programmatically, as required.
+
+    Filesources can be contextualized with a `user_context`, which contains information related to the current
+    user attempting to access that filesource such as the username, preferences, roles etc., which can then
+    be used by the filesource to make authorization decisions or inject credentials.
+
+    Filesources are loaded through Galaxy's plugin system in `galaxy.util.plugin_config`.
+    """
+
     @abc.abstractmethod
     def get_writable(self) -> bool:
-        """Return a boolean indicating if this target is writable."""
+        """Return a boolean indicating whether this target is writable."""
 
     @abc.abstractmethod
     def user_has_access(self, user_context) -> bool:
-        """Return a boolean indicating if the user can access the FileSource."""
+        """Return a boolean indicating whether the user can access the FileSource."""
 
     @abc.abstractmethod
     def realize_to(
         self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
     ):
-        """Realize source path (relative to uri root) to local file system path."""
+        """Realize source path (relative to uri root) to local file system path.
+
+        :param source_path: url of the source file to copy from. e.g. `https://galaxyproject.org/myfile.txt`
+        :type source_path: str
+        :param native_path: local path to write to. e.g. `/tmp/myfile.txt`
+        :type native_path: str
+        :param user_context: A user context , defaults to None
+        :type user_context: FileSourceDictifiable, optional
+        :param opts: A set of options to exercise additional control over the realize_to method. Filesource specific, defaults to None
+        :type opts: Optional[FilesSourceOptions], optional
+        """
 
     @abc.abstractmethod
     def write_from(
         self, target_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
     ):
-        """Write file at native path to target_path (relative to uri root)."""
+        """Write file at native path to target_path (relative to uri root).
+
+        :param target_path: url of the target file to write to within the filesource. e.g. `gxfiles://myftp1/myfile.txt`
+        :type target_path: str
+        :param native_path: The local file to read. e.g. `/tmp/myfile.txt`
+        :type native_path: str
+        :param user_context: A user context , defaults to None
+        :type user_context: _type_, optional
+        :param opts: A set of options to exercise additional control over the write_from method. Filesource specific, defaults to None
+        :type opts: Optional[FilesSourceOptions], optional
+        """
 
     @abc.abstractmethod
     def score_url_match(self, url: str) -> int:
@@ -94,6 +139,11 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         https://cloudstor.aarnet.edu.au/plus/remote.php/webdav/myfolder/myfile.txt,
         as it can handle only the scheme part of the url. A webdav handler may return a score of
         55 for the same url, as both the webdav url and root combined are a specific match.
+
+        :param url: The url to score for a match against this filesource.
+        :type url: str
+        :return: A score based on the aforementioned rules.
+        :rtype: int
         """
 
     @abc.abstractmethod
@@ -113,6 +163,14 @@ class SingleFileSource(metaclass=abc.ABCMeta):
 
 
 class SupportsBrowsing(metaclass=abc.ABCMeta):
+    """An interface indicating that this filesource is browsable.
+
+    Browsable filesources will typically have a root uri from which to start browsing.
+    e.g. In an s3 bucket, the root uri may be gxfiles://bucket1/
+
+    They will also have a list method to list files in a specific path within the filesource.
+    """
+
     @abc.abstractmethod
     def get_uri_root(self) -> str:
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
@@ -123,9 +181,11 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
 
 
 class FilesSource(SingleFileSource, SupportsBrowsing):
-    """ """
+    """Represents a combined interface for single or browsable filesources.
+    The `get_browsable` method can be used to determine whether the filesource is browsable and
+    implements the `SupportsBrowsing` interface.
+    """
 
-    # TODO: off-by-default
     @abc.abstractmethod
     def get_browsable(self) -> bool:
         """Return true if the filesource implements the SupportsBrowsing interface."""
