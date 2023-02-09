@@ -3270,7 +3270,7 @@ class PageSummaryBase(Model):
 
 class NotificationResponseModel(BaseModel):
     id: EncodedDatabaseIdField
-    message_text: str
+    content: str
 
     class Config:
         orm_mode = True
@@ -3281,12 +3281,12 @@ class NotificationListResponseModel(BaseModel):
 
 
 class NotificationCreateRequestModel(BaseModel):
-    message_text: str
+    content: str
     user_ids: List[DecodedDatabaseIdField]
 
 
 class NotificationUpdateRequestModel(BaseModel):
-    message_text: str
+    content: str
 
 
 class MaterializeDatasetInstanceAPIRequest(Model):

@@ -2,7 +2,6 @@ from typing import (
     List,
     Optional,
 )
-from xmlrpc.client import boolean
 
 from sqlalchemy import false
 
@@ -18,7 +17,7 @@ class NotificationManager:
     def __init__(self, sa_session: galaxy_scoped_session):
         self.sa_session = sa_session
 
-    def index(self, limit: int = 10, offset: int = 0, user: Optional[model.User] = None):
+    def index(self, limit: Optional[int] = None, offset: Optional[int] = None, user: Optional[model.User] = None):
         """
         Displays a collection (list) of notifications.
         """
@@ -32,11 +31,11 @@ class NotificationManager:
             rval.append(notification)
         return rval
 
-    def create(self, message_text: str):
+    def create(self, content: str):
         """
         Creates a new notification.
         """
-        notification = model.Notification(message_text=message_text)
+        notification = model.Notification(content=content)
         self.sa_session.add(notification)
         self.sa_session.flush()
         return notification
@@ -50,27 +49,27 @@ class NotificationManager:
             raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
         return notification
 
-    def update(self, notification_id, updated_message: str):
+    def update(self, notification_id, updated_content: str):
         """
         Modifies a notification.
         """
         notification = self.sa_session.query(model.Notification).get(notification_id)
         if notification is None:
             raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
-        notification.message_text = updated_message
+        notification.content = updated_content
         self.sa_session.add(notification)
         self.sa_session.flush()
         return notification
 
-    def update_status(self, user_id, notification_id, status_seen: boolean):
+    def update_status(self, user_id, notification_id, seen: bool):
         """
         Modifies a notification status.
         """
-        user = self.sa_session.query(model.User).get(user_id)
+        # user = self.sa_session.query(model.User).get(user_id)
         notification = self.sa_session.query(model.Notification).get(notification_id)
         if notification is None:
             raise ObjectNotFound(f"Notification with id {notification_id} was not found.")
-        notification.status_seen = status_seen
+        notification.seen = seen
         self.sa_session.add(notification)
         self.sa_session.flush()
         return notification

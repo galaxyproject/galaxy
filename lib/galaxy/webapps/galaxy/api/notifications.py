@@ -5,7 +5,7 @@ API operations on Notification objects.
 import logging
 from typing import Optional
 
-from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -33,8 +33,8 @@ class FastAPINotifications:
     def index(
         self,
         limit: Optional[int] = 20,
-        offset: Optional[int] = 0,
-        trans: ProvidesAppContext = DependsOnTrans,
+        offset: Optional[int] = None,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> NotificationListResponseModel:
         return self.manager.index(limit=limit, offset=offset)
 
@@ -45,27 +45,25 @@ class FastAPINotifications:
     def show(
         self,
         notification_id: DecodedDatabaseIdField,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> NotificationResponseModel:
         return self.manager.show(notification_id)
 
-    @router.post("/api/notifications", summary="Create a notification message", require_admin=True)
+    @router.post("/api/notifications", summary="Create a notification", require_admin=True)
     def create(
         self,
         payload: NotificationCreateRequestModel,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> NotificationResponseModel:
-        notification = self.manager.create(payload.message_text)
-        assoc_user_ids = self.manager.associate_user_notification(payload.user_ids, notification)
-        return notification, assoc_user_ids
+        notification = self.manager.create(payload.content)
+        self.manager.associate_user_notification(payload.user_ids, notification)
+        return notification
 
-    @router.put("/api/notifications/{notification_id}", summary="Updates a notificaton message")
+    @router.put("/api/notifications/{notification_id}", summary="Updates a notification")
     def update(
         self,
         notification_id: DecodedDatabaseIdField,
         payload: NotificationUpdateRequestModel,
-        trans: ProvidesAppContext = DependsOnTrans,
+        trans: ProvidesUserContext = DependsOnTrans,
     ) -> NotificationResponseModel:
-        return self.manager.update(notification_id, payload.message_text)
-
-    
+        return self.manager.update(notification_id, payload.content)

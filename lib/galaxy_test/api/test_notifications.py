@@ -2,14 +2,14 @@ from galaxy_test.base.populators import DatasetPopulator
 from ._framework import ApiTestCase
 
 
-class NotificationsApiTestCase(ApiTestCase):
+class TestNotificationsApi(ApiTestCase):
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_index(self):
         encoded_user_id = self.dataset_populator.user_id()
-        create_notification_payload = {"message_text": "Test Message", "user_ids": [encoded_user_id]}
+        create_notification_payload = {"content": "Test Message", "user_ids": [encoded_user_id]}
         notification_response = self._post("notifications", create_notification_payload, json=True, admin=True)
         notification_response.raise_for_status()
         notification_list_parameters = {"limit": 5, "offset": 0}
@@ -21,16 +21,16 @@ class NotificationsApiTestCase(ApiTestCase):
 
     def test_create(self):
         encoded_user_id = self.dataset_populator.user_id()
-        create_notification_payload = {"message_text": "Test Message", "user_ids": [encoded_user_id]}
+        create_notification_payload = {"content": "Test Message", "user_ids": [encoded_user_id]}
         notification_response = self._post("notifications", create_notification_payload, json=True, admin=True)
         notification_response.raise_for_status()
         notification = notification_response.json()
         assert notification["id"] is not None
-        assert notification["message_text"] == "Test Message"
+        assert notification["content"] == "Test Message"
 
     def test_show(self):
         encoded_user_id = self.dataset_populator.user_id()
-        create_notification_payload = {"message_text": "Test Message", "user_ids": [encoded_user_id]}
+        create_notification_payload = {"content": "Test Message", "user_ids": [encoded_user_id]}
         notification_response = self._post("notifications", create_notification_payload, json=True, admin=True)
         notification_response.raise_for_status()
         notification = notification_response.json()
@@ -38,30 +38,30 @@ class NotificationsApiTestCase(ApiTestCase):
         notification_response.raise_for_status()
         notification = notification_response.json()
         assert notification["id"] is not None
-        assert notification["message_text"] is not None
+        assert notification["content"] is not None
 
     def test_update(self):
         encoded_user_id = self.dataset_populator.user_id()
-        create_notification_payload = {"message_text": "Test Message", "user_ids": [encoded_user_id]}
+        create_notification_payload = {"content": "Test Message", "user_ids": [encoded_user_id]}
         notification_response = self._post("notifications", create_notification_payload, json=True, admin=True)
         notification_response.raise_for_status()
         notification = notification_response.json()
-        create_update_payload = {"message_text": "New Message"}
+        create_update_payload = {"content": "New Message"}
         notification_id = notification["id"]
         notification_response = self._put(f"notifications/{notification_id}", create_update_payload, json=True)
         notification_response.raise_for_status()
         notification = notification_response.json()
-        assert notification["message_text"] == "New Message"
-    
+        assert notification["content"] == "New Message"
+
     # def test_update_status(self):
     #     encoded_user_id = self.dataset_populator.user_id()
-    #     create_notification_payload = {"message_text": "Test Message", "user_ids": [encoded_user_id]}
+    #     create_notification_payload = {"content": "Test Message", "user_ids": [encoded_user_id]}
     #     notification_response = self._post("notifications", create_notification_payload, json=True, admin=True)
     #     notification_response.raise_for_status()
     #     notification = notification_response.json()
-    #     create_update_payload = {"status_seen": True}
+    #     create_update_payload = {"seen": True}
     #     notification_id = notification["id"]
     #     notification_response = self._put(f"notifications/{notification_id}", create_update_payload, json=True)
     #     notification_response.raise_for_status()
     #     notification = notification_response.json()
-    #     assert notification["message_text"] == "New Message"
+    #     assert notification["content"] == "New Message"
