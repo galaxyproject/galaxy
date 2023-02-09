@@ -1,34 +1,21 @@
 import logging
 import os
-import urllib.parse
 from typing import (
     cast,
-    Dict,
     Iterable,
     NamedTuple,
     NewType,
     NoReturn,
     Optional,
-    Union,
 )
 
 import alembic
 from alembic import command
-from alembic.config import Config
-from alembic.runtime.migration import MigrationContext
-from alembic.script import ScriptDirectory
-from alembic.script.base import Script
 from sqlalchemy import (
     create_engine,
     MetaData,
-    Table,
-    text,
 )
-from sqlalchemy.engine import (
-    Connection,
-    CursorResult,
-    Engine,
-)
+from sqlalchemy.engine import Engine
 from sqlalchemy.exc import OperationalError
 
 from galaxy.model import Base as gxy_base
@@ -37,6 +24,20 @@ from galaxy.model.database_utils import (
     database_exists,
 )
 from galaxy.model.mapping import create_additional_database_objects
+from galaxy.model.migrations.base import (
+    ALEMBIC_TABLE,
+    BaseAlembicManager,
+    DatabaseStateCache,
+    get_url_string,
+    load_metadata,
+)
+from galaxy.model.migrations.exceptions import (
+    IncorrectSAMigrateVersionError,
+    NoVersionTableError,
+    OutdatedDatabaseError,
+    RevisionNotFoundError,
+    SAMigrateError,
+)
 from galaxy.model.tool_shed_install import Base as tsi_base
 
 ModelId = NewType("ModelId", str)
@@ -46,8 +47,6 @@ ModelId = NewType("ModelId", str)
 GXY = ModelId("gxy")  # galaxy model identifier
 TSI = ModelId("tsi")  # tool_shed_install model identifier
 
-ALEMBIC_TABLE = "alembic_version"
-SQLALCHEMYMIGRATE_TABLE = "migrate_version"
 SQLALCHEMYMIGRATE_LAST_VERSION_GXY = 180
 SQLALCHEMYMIGRATE_LAST_VERSION_TSI = 17
 log = logging.getLogger(__name__)
@@ -59,101 +58,34 @@ class DatabaseConfig(NamedTuple):
     encoding: str
 
 
-class NoVersionTableError(Exception):
-    # The database has no version table (neither SQLAlchemy Migrate, nor Alembic), so it is
-    # impossible to automatically determine the state of the database. Manual update required.
-    def __init__(self, model: str) -> None:
-        super().__init__(f"Your {model} database has no version table; manual update is required")
-
-
-class IncorrectVersionError(Exception):
-    # The database has a SQLAlchemy Migrate version table, but its version is either older or more recent
-    # than {SQLALCHEMYMIGRATE_LAST_VERSION_GXY/TSI}, so it cannot be upgraded with Alembic.
-    # (A more recent version may indicate that something has changed in the database past the point
-    # where we can automatically migrate from SQLAlchemy Migrate to Alembic.)
-    # Manual update required.
-    def __init__(self, model: str, expected_version: int) -> None:
-        msg = f"Your {model} database version is incorrect; version {expected_version} is expected. "
-        msg += "Manual update is required. "
-        msg += "Please see documentation: https://docs.galaxyproject.org/en/master/admin/db_migration.html#how-to-handle-migrations-incorrectversionerror"
-        super().__init__(msg)
-
-
-class OutdatedDatabaseError(Exception):
-    # The database is under Alembic version control, but is out-of-date. Automatic upgrade possible.
-    def __init__(self, model: str, db_version: str, code_version: str) -> None:
-        msg = f"Your {model} database has version {db_version}, but this code expects "
-        msg += f"version {code_version}. "
-        msg += "To upgrade your database, run `manage_db.sh upgrade`. "
-        msg += "For more options (e.g. upgrading/downgrading to a specific version) see instructions in that file. "
-        msg += "Please remember to backup your database before migrating."
-        super().__init__(msg)
-
-
 class InvalidModelIdError(Exception):
     def __init__(self, model: str) -> None:
         super().__init__(f"Invalid model: {model}")
 
 
-class RevisionNotFoundError(Exception):
-    # The database has an Alembic version table; however, that table does not contain a revision identifier
-    # for the given model. As a result, it is impossible to determine the state of the database for this model
-    # (gxy or tsi).
-    def __init__(self, model: str) -> None:
-        msg = "The database has an alembic version table, but that table does not contain "
-        msg += f"a revision for the {model} model"
-        super().__init__(msg)
-
-
-class AlembicManager:
-    """
-    Alembic operations on one database.
-    """
-
-    @staticmethod
-    def is_at_revision(engine: Engine, revision: Union[str, Iterable[str]]) -> bool:
-        """
-        True if revision is a subset of the set of version heads stored in the database.
-        """
-        revision = listify(revision)
-        with engine.connect() as conn:
-            context = MigrationContext.configure(conn)
-            db_version_heads = context.get_current_heads()
-            return set(revision) <= set(db_version_heads)
-
-    def __init__(self, engine: Engine, config_dict: Optional[dict] = None) -> None:
-        self.engine = engine
-        self.alembic_cfg = self._load_config(config_dict)
-        self.script_directory = ScriptDirectory.from_config(self.alembic_cfg)
-        self._db_heads: Optional[Iterable[str]]
-        self._reset_db_heads()
-
-    def _load_config(self, config_dict: Optional[dict]) -> Config:
-        alembic_root = os.path.dirname(__file__)
-        _alembic_file = os.path.join(alembic_root, "alembic.ini")
-        config = Config(_alembic_file)
-        url = get_url_string(self.engine)
-        config.set_main_option("sqlalchemy.url", url)
-        if config_dict:
-            for key, value in config_dict.items():
-                config.set_main_option(key, value)
-        return config
+class AlembicManager(BaseAlembicManager):
+    def _get_alembic_root(self):
+        return os.path.dirname(__file__)
 
     def stamp_model_head(self, model: ModelId) -> None:
         """Partial proxy to alembic's stamp command."""
-        command.stamp(self.alembic_cfg, f"{model}@head")
-        self._reset_db_heads()
-
-    def stamp_revision(self, revision: Union[str, Iterable[str]]) -> None:
-        """Partial proxy to alembic's stamp command."""
-        command.stamp(self.alembic_cfg, revision)  # type: ignore[arg-type]  # https://alembic.sqlalchemy.org/en/latest/api/commands.html#alembic.command.stamp.params.revision
-        self._reset_db_heads()
+        revision = f"{model}@head"
+        self.stamp_revision(revision)
 
     def upgrade(self, model: ModelId) -> None:
         """Partial proxy to alembic's upgrade command."""
         # This works with or without an existing alembic version table.
-        command.upgrade(self.alembic_cfg, f"{model}@head")
+        revision = f"{model}@head"
+        command.upgrade(self.alembic_cfg, revision)
         self._reset_db_heads()
+
+    def is_up_to_date(self, model: ModelId) -> bool:
+        """
+        True if the head revision for `model` in the script directory is stored
+        in the database.
+        """
+        head_id = self.get_model_script_head(model)
+        return bool(self.db_heads and head_id in self.db_heads)
 
     def is_under_version_control(self, model: ModelId) -> bool:
         """
@@ -171,14 +103,6 @@ class AlembicManager:
                     log.info(f"Revision {db_head} does not exist in the script directory.")
         return False
 
-    def is_up_to_date(self, model: ModelId) -> bool:
-        """
-        True if the head revision for `model` in the script directory is stored
-        in the database.
-        """
-        head_id = self.get_model_script_head(model)
-        return bool(self.db_heads and head_id in self.db_heads)
-
     def get_model_db_head(self, model: ModelId) -> Optional[str]:
         return self._get_head_revision(model, cast(Iterable[str], self.db_heads))
 
@@ -191,78 +115,6 @@ class AlembicManager:
             if revision and model in revision.branch_labels:
                 return head
         return None
-
-    @property
-    def db_heads(self) -> Iterable:
-        if self._db_heads is None:  # Explicitly check for None: could be an empty tuple.
-            with self.engine.connect() as conn:
-                context: MigrationContext = MigrationContext.configure(conn)
-                self._db_heads = context.get_current_heads()
-            # We get a tuple as long as we use branches. Otherwise, we'd get a single value.
-            # listify() is a safeguard in case we stop using branches.
-            self._db_heads = listify(self._db_heads)
-        return self._db_heads
-
-    def _get_revision(self, revision_id: str) -> Optional[Script]:
-        try:
-            return self.script_directory.get_revision(revision_id)
-        except alembic.util.exc.CommandError as e:
-            log.error(f"Revision {revision_id} not found in the script directory")
-            raise e
-
-    def _reset_db_heads(self) -> None:
-        self._db_heads = None
-
-
-class DatabaseStateCache:
-    """
-    Snapshot of database state.
-    """
-
-    def __init__(self, engine: Engine) -> None:
-        self._load_db(engine)
-
-    @property
-    def tables(self) -> Dict[str, Table]:
-        return self.db_metadata.tables
-
-    def is_database_empty(self) -> bool:
-        return not bool(self.db_metadata.tables)
-
-    def contains_only_kombu_tables(self) -> bool:
-        return metadata_contains_only_kombu_tables(self.db_metadata)
-
-    def has_alembic_version_table(self) -> bool:
-        return ALEMBIC_TABLE in self.db_metadata.tables
-
-    def has_sqlalchemymigrate_version_table(self) -> bool:
-        return SQLALCHEMYMIGRATE_TABLE in self.db_metadata.tables
-
-    def is_last_sqlalchemymigrate_version(self, last_version: int) -> bool:
-        return self.sqlalchemymigrate_version == last_version
-
-    def _load_db(self, engine: Engine) -> None:
-        with engine.connect() as conn:
-            self.db_metadata = self._load_db_metadata(conn)
-            self.sqlalchemymigrate_version = self._load_sqlalchemymigrate_version(conn)
-
-    def _load_db_metadata(self, conn: Connection) -> MetaData:
-        metadata = MetaData()
-        metadata.reflect(bind=conn)
-        return metadata
-
-    def _load_sqlalchemymigrate_version(self, conn: Connection) -> CursorResult:
-        if self.has_sqlalchemymigrate_version_table():
-            sql = text(f"select version from {SQLALCHEMYMIGRATE_TABLE}")
-            return conn.execute(sql).scalar()
-
-
-def metadata_contains_only_kombu_tables(metadata: MetaData) -> bool:
-    """
-    Return True if metadata contains only kombu-related tables.
-    (ref: https://github.com/galaxyproject/galaxy/issues/13689)
-    """
-    return all(table.startswith("kombu_") or table.startswith("sqlite_") for table in metadata.tables.keys())
 
 
 def verify_databases_via_script(
@@ -386,7 +238,7 @@ class DatabaseStateVerifier:
             self._handle_with_alembic()
         elif self._has_sqlalchemymigrate_version_table():
             if self._is_last_sqlalchemymigrate_version():
-                self._try_to_upgrade()
+                self._try_to_upgrade(has_alembic=False)
             else:
                 self._handle_wrong_sqlalchemymigrate_version()
         else:
@@ -416,13 +268,17 @@ class DatabaseStateVerifier:
             else:
                 raise RevisionNotFoundError(model)
 
-    def _try_to_upgrade(self):
+    def _try_to_upgrade(self, has_alembic=True):
         am = self.alembic_manager
         model = self._get_model_name()
         code_version = am.get_model_script_head(self.model)
         if not self.is_auto_migrate:
             db_version = am.get_model_db_head(self.model)
-            raise OutdatedDatabaseError(model, cast(str, db_version), cast(str, code_version))
+            script = "manage_db.sh upgrade"
+            if has_alembic:
+                raise OutdatedDatabaseError(model, cast(str, db_version), cast(str, code_version), script)
+            else:
+                raise SAMigrateError(model, script)
         else:
             log.info("Database is being upgraded to current version: {code_version}")
             am.upgrade(self.model)
@@ -487,7 +343,7 @@ class DatabaseStateVerifier:
         else:
             expected_version = SQLALCHEMYMIGRATE_LAST_VERSION_TSI
         model = self._get_model_name()
-        raise IncorrectVersionError(model, expected_version)
+        raise IncorrectSAMigrateVersionError(model, expected_version)
 
 
 def get_last_sqlalchemymigrate_version(model: ModelId) -> int:
@@ -497,11 +353,6 @@ def get_last_sqlalchemymigrate_version(model: ModelId) -> int:
         return SQLALCHEMYMIGRATE_LAST_VERSION_TSI
     else:
         raise InvalidModelIdError(model)
-
-
-def get_url_string(engine: Engine) -> str:
-    db_url = engine.url.render_as_string(hide_password=False)
-    return urllib.parse.unquote(db_url)
 
 
 def get_alembic_manager(engine: Engine) -> AlembicManager:
@@ -515,17 +366,6 @@ def get_metadata(model: ModelId) -> MetaData:
         return get_tsi_metadata()
     else:
         raise InvalidModelIdError(model)
-
-
-def load_metadata(metadata: MetaData, engine: Engine) -> None:
-    with engine.connect() as conn:
-        metadata.create_all(bind=conn)
-
-
-def listify(data: Union[str, Iterable[str]]) -> Iterable[str]:
-    if not isinstance(data, (list, tuple)):
-        return [cast(str, data)]
-    return data
 
 
 def get_gxy_metadata() -> MetaData:
