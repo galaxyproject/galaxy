@@ -2,9 +2,12 @@ import base64
 import logging
 from typing import Optional
 
+from typing_extensions import Unpack
+
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
+    FilesSourceProperties,
 )
 
 log = logging.getLogger(__name__)
@@ -13,11 +16,11 @@ log = logging.getLogger(__name__)
 class Base64FilesSource(BaseFilesSource):
     plugin_type = "base64"
 
-    def __init__(self, label="Base64 encoded string", doc="Base64 string handler", **kwd):
-        kwds = dict(
+    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
+        kwds: FilesSourceProperties = dict(
             id="_base64",
-            label=label,
-            doc=doc,
+            label="Base64 encoded string",
+            doc="Base64 string handler",
             writable=False,
         )
         kwds.update(kwd)

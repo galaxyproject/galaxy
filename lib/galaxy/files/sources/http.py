@@ -7,6 +7,8 @@ from typing import (
     Optional,
 )
 
+from typing_extensions import Unpack
+
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
@@ -29,8 +31,8 @@ class HTTPFilesSourceProperties(FilesSourceProperties, total=False):
 class HTTPFilesSource(BaseFilesSource):
     plugin_type = "http"
 
-    def __init__(self, **kwd):
-        kwds = dict(
+    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
+        kwds: FilesSourceProperties = dict(
             id="_http",
             label="HTTP File",
             doc="Default HTTP file handler",

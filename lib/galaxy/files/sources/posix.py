@@ -8,6 +8,8 @@ from typing import (
     Optional,
 )
 
+from typing_extensions import Unpack
+
 from galaxy import exceptions
 from galaxy.util.path import (
     safe_contains,
@@ -42,7 +44,7 @@ class PosixFilesSource(BaseFilesSource):
     #    handle = OSFS(**self._props)
     #    return handle
 
-    def __init__(self, **kwd):
+    def __init__(self, **kwd: Unpack[PosixFilesSourceProperties]):
         props = self._parse_common_config_opts(kwd)
         self.root = props["root"]
         self.enforce_symlink_security = props.get("enforce_symlink_security", DEFAULT_ENFORCE_SYMLINK_SECURITY)

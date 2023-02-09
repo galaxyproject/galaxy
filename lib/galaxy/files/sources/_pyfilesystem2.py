@@ -13,10 +13,12 @@ from typing import (
 
 import fs
 from fs.base import FS
+from typing_extensions import Unpack
 
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
+    FilesSourceProperties,
 )
 
 log = logging.getLogger(__name__)
@@ -28,7 +30,7 @@ class PyFilesystem2FilesSource(BaseFilesSource):
     required_module: ClassVar[Optional[Type[FS]]]
     required_package: ClassVar[str]
 
-    def __init__(self, **kwd):
+    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         if self.required_module is None:
             raise Exception(PACKAGE_MESSAGE % self.required_package)
         props = self._parse_common_config_opts(kwd)

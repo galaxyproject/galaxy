@@ -1,10 +1,13 @@
 import logging
 from typing import Optional
 
+from typing_extensions import Unpack
+
 from galaxy.util.drs import fetch_drs_to_file
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
+    FilesSourceProperties,
 )
 
 log = logging.getLogger(__name__)
@@ -13,11 +16,11 @@ log = logging.getLogger(__name__)
 class DRSFilesSource(BaseFilesSource):
     plugin_type = "drs"
 
-    def __init__(self, label="DRS file", doc="DRS file handler", **kwd):
-        kwds = dict(
+    def __init__(self, **kwd: Unpack[FilesSourceProperties]):
+        kwds: FilesSourceProperties = dict(
             id="_drs",
-            label=label,
-            doc=doc,
+            label="DRS file",
+            doc="DRS file handler",
             writable=False,
         )
         kwds.update(kwd)

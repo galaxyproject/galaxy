@@ -36,11 +36,15 @@ class FilesSourceProperties(TypedDict):
     file_sources_config: NotRequired["ConfiguredFileSourcesConfig"]
     id: NotRequired[str]
     label: NotRequired[str]
-    doc: NotRequired[str]
+    doc: NotRequired[Optional[str]]
     scheme: NotRequired[str]
     writable: NotRequired[bool]
-    required_roles: NotRequired[List[str]]
-    requires_groups: NotRequired[List[str]]
+    requires_roles: NotRequired[Optional[str]]
+    requires_groups: NotRequired[Optional[str]]
+    # API helper values
+    uri_root: NotRequired[str]
+    type: NotRequired[str]
+    browsable: NotRequired[bool]
 
 
 class FilesSourceOptions:
@@ -100,7 +104,7 @@ class SingleFileSource(metaclass=abc.ABCMeta):
         returned unchanged."""
 
     @abc.abstractmethod
-    def to_dict(self, for_serialization=False, user_context=None):
+    def to_dict(self, for_serialization=False, user_context=None) -> FilesSourceProperties:
         """Return a dictified representation of this FileSource instance.
 
         If ``user_context`` is supplied, properties should be written so user
@@ -114,7 +118,7 @@ class SupportsBrowsing(metaclass=abc.ABCMeta):
         """Return a prefix for the root (e.g. gxfiles://prefix/)."""
 
     @abc.abstractmethod
-    def list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None):
+    def list(self, path="/", recursive=False, user_context=None, opts: Optional[FilesSourceOptions] = None) -> dict:
         """Return dictionary of 'Directory's and 'File's."""
 
 
@@ -175,7 +179,7 @@ class BaseFilesSource(FilesSource):
         uri_root = self.get_uri_root()
         return uri_join(uri_root, path)
 
-    def _parse_common_config_opts(self, kwd: dict):
+    def _parse_common_config_opts(self, kwd: FilesSourceProperties):
         self._file_sources_config = kwd.pop("file_sources_config")
         self.id = kwd.pop("id")
         self.label = kwd.pop("label", None) or self.id
@@ -191,8 +195,8 @@ class BaseFilesSource(FilesSource):
         kwd.pop("browsable", None)
         return kwd
 
-    def to_dict(self, for_serialization=False, user_context=None):
-        rval = {
+    def to_dict(self, for_serialization=False, user_context=None) -> FilesSourceProperties:
+        rval: FilesSourceProperties = {
             "id": self.id,
             "type": self.plugin_type,
             "label": self.label,

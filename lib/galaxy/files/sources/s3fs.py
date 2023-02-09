@@ -9,6 +9,8 @@ from typing import (
     Optional,
 )
 
+from typing_extensions import Unpack
+
 from . import (
     FilesSourceOptions,
     FilesSourceProperties,
@@ -38,7 +40,7 @@ class S3FsFilesSourceProperties(FilesSourceProperties, total=False):
 class S3FsFilesSource(BaseFilesSource):
     plugin_type = "s3fs"
 
-    def __init__(self, **kwd):
+    def __init__(self, **kwd: Unpack[S3FsFilesSourceProperties]):
         if s3fs is None:
             raise Exception("Package s3fs unavailable but required for this file source plugin.")
         props: S3FsFilesSourceProperties = cast(S3FsFilesSourceProperties, self._parse_common_config_opts(kwd))
